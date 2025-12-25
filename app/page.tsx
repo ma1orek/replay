@@ -149,8 +149,8 @@ export default function ReplayTool() {
   const [refinements, setRefinements] = useState("");
   const [analysisSection, setAnalysisSection] = useState<"style" | "layout" | "components">("style");
   
-  // Mobile state
-  const [mobilePanel, setMobilePanel] = useState<"flows" | "preview" | "code" | null>("preview");
+  // Mobile state - flows visible by default
+  const [mobilePanel, setMobilePanel] = useState<"flows" | "preview" | "code" | null>("flows");
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   
   // Live analysis state for "Matrix" view

@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Zap, CreditCard, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import Logo from "@/components/Logo";
 
 interface OutOfCreditsModalProps {
   isOpen: boolean;
@@ -27,31 +28,29 @@ export default function OutOfCreditsModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/80 backdrop-blur-md z-50"
           />
           
-          {/* Modal */}
+          {/* Modal - Centered and responsive */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ duration: 0.2 }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-8 shadow-2xl">
+            <div className="relative w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl">
               {/* Close button */}
               <button
                 onClick={onClose}
-                className="absolute right-4 top-4 p-2 rounded-lg hover:bg-white/5 transition-colors"
+                className="absolute right-3 top-3 md:right-4 md:top-4 p-2 rounded-lg hover:bg-white/5 transition-colors"
               >
                 <X className="w-5 h-5 text-white/40" />
               </button>
 
-              {/* Icon */}
+              {/* Logo */}
               <div className="flex justify-center mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-[#FF6E3C]/20 flex items-center justify-center">
-                  <Zap className="w-8 h-8 text-[#FF6E3C]" />
-                </div>
+                <Logo />
               </div>
 
               {/* Content */}

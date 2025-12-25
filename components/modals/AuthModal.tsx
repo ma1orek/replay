@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Mail, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth/context";
 import { cn } from "@/lib/utils";
+import Logo from "@/components/Logo";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -73,34 +74,29 @@ export default function AuthModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/80 backdrop-blur-md z-50"
           />
           
-          {/* Modal */}
+          {/* Modal - Centered and responsive */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ duration: 0.2 }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-8 shadow-2xl">
+            <div className="relative w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl">
               {/* Close button */}
               <button
                 onClick={handleClose}
-                className="absolute right-4 top-4 p-2 rounded-lg hover:bg-white/5 transition-colors"
+                className="absolute right-3 top-3 md:right-4 md:top-4 p-2 rounded-lg hover:bg-white/5 transition-colors"
               >
                 <X className="w-5 h-5 text-white/40" />
               </button>
 
-              {/* Logo */}
+              {/* Replay Logo */}
               <div className="flex justify-center mb-6">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#FF6E3C] to-[#FF8F5C] flex items-center justify-center">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M16.2929 7.92773C18.9779 9.478 18.9779 13.353 16.2929 14.9033L6.00293 20.8447C2.30976 22.9769 -1.73045 18.6584 0.642522 15.1152L2.77338 11.9326C2.98297 11.6197 2.98297 11.2114 2.77338 10.8984L0.642522 7.71582C-1.73045 4.17263 2.30977 -0.145889 6.00293 1.98633L16.2929 7.92773Z" fill="white"/>
-                  </svg>
-                </div>
-              </div>
+                <Logo />
 
               {/* Content */}
               <div className="text-center mb-8">
@@ -203,7 +199,7 @@ export default function AuthModal({
               )}
 
               {/* Footer */}
-              <p className="mt-6 text-xs text-white/30 text-center">
+              <p className="mt-6 text-[10px] md:text-xs text-white/30 text-center">
                 By continuing, you agree to our Terms of Service and Privacy Policy.
               </p>
             </div>
