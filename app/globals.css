@@ -1072,3 +1072,125 @@ select:focus-visible {
   outline: none;
   box-shadow: 0 0 20px rgba(255, 100, 50, 0.05);
 }
+
+/* ==========================================
+   MOBILE STYLES
+   ========================================== */
+
+/* Safe area padding for iOS devices */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-area-pt {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Mobile bottom nav styling */
+@media (max-width: 767px) {
+  /* Ensure main content doesn't overlap bottom nav */
+  .mobile-content-area {
+    padding-bottom: 80px;
+  }
+  
+  /* Hide desktop scrollbars on mobile */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 2px;
+  }
+  
+  /* Touch-friendly buttons */
+  button {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Prevent zoom on input focus */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+  
+  /* Mobile preview iframe */
+  .mobile-preview-frame {
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  
+  /* Mobile code view */
+  .mobile-code-view {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+}
+
+/* Mobile panel transitions */
+.mobile-panel-enter {
+  transform: translateY(100%);
+}
+
+.mobile-panel-enter-active {
+  transform: translateY(0);
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-panel-exit {
+  transform: translateY(0);
+}
+
+.mobile-panel-exit-active {
+  transform: translateY(100%);
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Mobile sheet handle */
+.mobile-sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  margin: 8px auto;
+}
+
+/* Mobile floating action button */
+.mobile-fab {
+  position: fixed;
+  bottom: 100px;
+  right: 16px;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #FF6E3C 0%, #FF8F5C 100%);
+  box-shadow: 0 4px 20px rgba(255, 110, 60, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+}
+
+/* Touch ripple effect */
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.touch-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.touch-ripple::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: scale(0);
+  opacity: 1;
+}
+
+.touch-ripple:active::after {
+  animation: ripple 0.4s ease-out;
+}
