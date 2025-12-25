@@ -128,6 +128,7 @@ export default function ReplayTool() {
   const [styleDirective, setStyleDirective] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+  const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false);
   const [displayedCode, setDisplayedCode] = useState<string>("");
   const [editableCode, setEditableCode] = useState<string>("");
   const [isCodeEditable, setIsCodeEditable] = useState(false);
@@ -278,6 +279,74 @@ export default function ReplayTool() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
+
+  // Load flows from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedFlows = localStorage.getItem("replay_flows");
+      const savedCode = localStorage.getItem("replay_generated_code");
+      const savedStyle = localStorage.getItem("replay_style");
+      const savedRefinements = localStorage.getItem("replay_refinements");
+      
+      if (savedFlows) {
+        const parsed = JSON.parse(savedFlows);
+        // Filter out any flows with invalid video URLs (blob URLs don't persist)
+        const validFlows = parsed.filter((f: FlowItem) => f.videoUrl && !f.videoUrl.startsWith("blob:"));
+        if (validFlows.length > 0) {
+          setFlows(validFlows);
+          setSelectedFlowId(validFlows[0].id);
+        }
+      }
+      if (savedCode) setGeneratedCode(savedCode);
+      if (savedStyle) setStyleDirective(savedStyle);
+      if (savedRefinements) setRefinements(savedRefinements);
+      
+      setHasLoadedFromStorage(true);
+    } catch (e) {
+      console.error("Error loading from localStorage:", e);
+      setHasLoadedFromStorage(true);
+    }
+  }, []);
+
+  // Save flows to localStorage (but not blob URLs - they don't persist)
+  useEffect(() => {
+    if (!hasLoadedFromStorage) return; // Don't save until we've loaded
+    
+    try {
+      // Don't save blob URLs as they won't work after reload
+      const flowsToSave = flows.map(f => ({
+        ...f,
+        // Keep data URLs, but clear blob URLs
+        videoUrl: f.videoUrl?.startsWith("blob:") ? "" : f.videoUrl,
+        thumbnail: f.thumbnail?.startsWith("blob:") ? "" : f.thumbnail,
+      })).filter(f => f.videoUrl); // Only save flows with valid URLs
+      
+      localStorage.setItem("replay_flows", JSON.stringify(flowsToSave));
+    } catch (e) {
+      console.error("Error saving flows:", e);
+    }
+  }, [flows, hasLoadedFromStorage]);
+
+  // Save generated code to localStorage
+  useEffect(() => {
+    if (!hasLoadedFromStorage || !generatedCode) return;
+    try {
+      localStorage.setItem("replay_generated_code", generatedCode);
+    } catch (e) {
+      console.error("Error saving code:", e);
+    }
+  }, [generatedCode, hasLoadedFromStorage]);
+
+  // Save style to localStorage
+  useEffect(() => {
+    if (!hasLoadedFromStorage) return;
+    try {
+      localStorage.setItem("replay_style", styleDirective);
+      localStorage.setItem("replay_refinements", refinements);
+    } catch (e) {
+      console.error("Error saving style:", e);
+    }
+  }, [styleDirective, refinements, hasLoadedFromStorage]);
 
   // Video time update
   useEffect(() => {
@@ -508,7 +577,19 @@ export default function ReplayTool() {
     return "video/webm";
   };
 
+  // Check if mobile device
+  const isMobileDevice = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+           (window.innerWidth <= 768);
+  };
+
   const startRecording = async () => {
+    // Check for mobile - show info message
+    if (isMobileDevice()) {
+      alert("📱 Screen recording is not available on mobile browsers.\n\nTo record your phone screen:\n1. Use your phone's built-in screen recorder\n2. Upload the recording here\n\niOS: Control Center → Screen Recording\nAndroid: Quick Settings → Screen Record");
+      return;
+    }
+
     try {
       const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
       streamRef.current = screenStream;

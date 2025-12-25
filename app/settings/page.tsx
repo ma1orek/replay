@@ -468,6 +468,48 @@ function SettingsContent() {
                 ))}
               </div>
             </div>
+
+            {/* Test Credits - REMOVE IN PRODUCTION */}
+            <div className="p-6 rounded-xl border border-yellow-500/30 bg-yellow-500/5">
+              <div className="flex items-center gap-2 mb-4">
+                <Zap className="w-5 h-5 text-yellow-500" />
+                <h2 className="text-lg font-medium text-yellow-500">Test Mode</h2>
+              </div>
+              <p className="text-sm text-white/50 mb-4">
+                Add test credits for development. Remove this section before production.
+              </p>
+              <button
+                onClick={async () => {
+                  setIsCheckingOut("test");
+                  try {
+                    const res = await fetch("/api/credits/test-add", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ amount: 1000 }),
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                      alert(`✅ Added 1000 test credits!`);
+                      window.location.reload();
+                    } else {
+                      alert(`❌ Error: ${data.error}`);
+                    }
+                  } catch (error) {
+                    alert("❌ Failed to add test credits");
+                  } finally {
+                    setIsCheckingOut(null);
+                  }
+                }}
+                disabled={isCheckingOut === "test"}
+                className="px-6 py-3 rounded-xl bg-yellow-500 text-black font-medium hover:bg-yellow-400 transition-colors disabled:opacity-50"
+              >
+                {isCheckingOut === "test" ? (
+                  <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                ) : (
+                  "+ Add 1000 Test Credits"
+                )}
+              </button>
+            </div>
           </motion.div>
         )}
       </div>
