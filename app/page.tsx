@@ -1,0 +1,2069 @@
+"use client";
+
+import { useState, useCallback, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  Loader2, 
+  Trash2,
+  Upload,
+  Download,
+  ChevronRight,
+  Film,
+  CheckCircle,
+  ExternalLink,
+  Monitor,
+  Video,
+  Code,
+  Eye,
+  Square,
+  ChevronDown,
+  User,
+  Sparkles,
+  Activity,
+  Palette,
+  FileInput,
+  Send,
+  Pencil,
+  X,
+  GitBranch,
+  Box,
+  Layers,
+  Layout,
+  Type,
+  MousePointer,
+  Play,
+  Pause,
+  Check,
+  Droplet,
+  Paintbrush,
+  ZoomIn,
+  ZoomOut,
+  RefreshCw,
+  Smartphone,
+  Crosshair,
+  Clock,
+  Plus
+} from "lucide-react";
+import { cn, generateId, formatDuration } from "@/lib/utils";
+import { transmuteVideoToCode, editCodeWithAI } from "@/actions/transmute";
+import Logo from "@/components/Logo";
+import StyleInjector from "@/components/StyleInjector";
+import { Highlight, themes } from "prism-react-renderer";
+import { usePendingFlow } from "@/app/providers";
+import { useAuth } from "@/lib/auth/context";
+import { useCredits, CREDIT_COSTS } from "@/lib/credits/context";
+import AuthModal from "@/components/modals/AuthModal";
+import OutOfCreditsModal from "@/components/modals/OutOfCreditsModal";
+import CreditsBar from "@/components/CreditsBar";
+import Link from "next/link";
+
+interface FlowItem {
+  id: string;
+  name: string;
+  videoBlob: Blob;
+  videoUrl: string;
+  thumbnail?: string;
+  duration: number;
+  trimStart: number;
+  trimEnd: number;
+}
+
+interface ArchNode {
+  id: string;
+  name: string;
+  type: "page" | "component" | "section" | "element" | "interactive";
+  description?: string;
+  x: number;
+  y: number;
+  connections?: string[];
+}
+
+interface StyleInfo {
+  colors: { name: string; value: string }[];
+  fonts: { name: string; usage: string; weight: string; family: string }[];
+  spacing: string;
+  borderRadius: string;
+  shadows: string;
+}
+
+type ViewMode = "preview" | "code" | "architecture" | "style" | "input";
+
+const STREAMING_MESSAGES = [
+  "Scanning video frames",
+  "Extracting visual information from your recording",
+  "Identifying components",
+  "Detecting UI elements, buttons, inputs, and containers",
+  "Mapping interactions",
+  "Understanding click areas, hover states, and transitions",
+  "Processing with Gemini",
+  "AI is generating optimized HTML and CSS code",
+  "Finalizing output",
+  "Applying your style preferences and polishing the result",
+];
+
+const LogoIcon = ({ className, color = "currentColor" }: { className?: string; color?: string }) => (
+  <svg className={className} viewBox="0 0 82 109" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M68.099 37.2285C78.1678 43.042 78.168 57.5753 68.099 63.3887L29.5092 85.668C15.6602 93.6633 0.510418 77.4704 9.40857 64.1836L17.4017 52.248C18.1877 51.0745 18.1876 49.5427 17.4017 48.3691L9.40857 36.4336C0.509989 23.1467 15.6602 6.95306 29.5092 14.9482L68.099 37.2285Z" stroke={color} strokeWidth="11.6182" strokeLinejoin="round"/>
+    <rect x="34.054" y="98.6841" width="48.6555" height="11.6182" rx="5.80909" transform="rotate(-30 34.054 98.6841)" fill={color}/>
+  </svg>
+);
+
+const getNodeIcon = (type: string) => {
+  switch (type) {
+    case "page": return Layout;
+    case "component": return Box;
+    case "section": return Layers;
+    case "element": return Type;
+    case "interactive": return MousePointer;
+    default: return Box;
+  }
+};
+
+export default function ReplayTool() {
+  const { pending, clearPending } = usePendingFlow();
+  const { user, isLoading: authLoading } = useAuth();
+  const { totalCredits: userTotalCredits, wallet, membership, canAfford, refreshCredits } = useCredits();
+  
+  const [flows, setFlows] = useState<FlowItem[]>([]);
+  const [styleDirective, setStyleDirective] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+  const [displayedCode, setDisplayedCode] = useState<string>("");
+  const [editableCode, setEditableCode] = useState<string>("");
+  const [isCodeEditable, setIsCodeEditable] = useState(false);
+  const [isStreamingCode, setIsStreamingCode] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("preview");
+  const [selectedFlowId, setSelectedFlowId] = useState<string | null>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [streamingMessage, setStreamingMessage] = useState("");
+  
+  // Auth/Credits modals
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"generate" | "edit" | null>(null);
+  const [analysisDescription, setAnalysisDescription] = useState<string>("");
+  const [editInput, setEditInput] = useState("");
+  const [isMobilePreview, setIsMobilePreview] = useState(false);
+  const [isPointAndEdit, setIsPointAndEdit] = useState(false);
+  const [refinements, setRefinements] = useState("");
+  const [analysisSection, setAnalysisSection] = useState<"style" | "layout" | "components">("style");
+  
+  // Live analysis state for "Matrix" view
+  interface AnalysisPhase {
+    palette: string[];
+    typography: string;
+    vibe: string;
+    layout: string;
+    container: string;
+    responsive: string;
+    components: { name: string; status: "waiting" | "generating" | "done" }[];
+    stats?: { tech: string; componentCount: number; imageCount: number; theme: string };
+  }
+  const [analysisPhase, setAnalysisPhase] = useState<AnalysisPhase | null>(null);
+  const [generationComplete, setGenerationComplete] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [showFloatingEdit, setShowFloatingEdit] = useState(false);
+  const [architecture, setArchitecture] = useState<ArchNode[]>([]);
+  const [archBuilding, setArchBuilding] = useState(false);
+  const [selectedArchNode, setSelectedArchNode] = useState<string | null>(null);
+  const [styleInfo, setStyleInfo] = useState<StyleInfo | null>(null);
+  const [archZoom, setArchZoom] = useState(1);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedNodeModal, setSelectedNodeModal] = useState<ArchNode | null>(null);
+  
+  // Canvas pan state for architecture - start centered
+  const [canvasPan, setCanvasPan] = useState({ x: -200, y: 50 });
+  const [isPanning, setIsPanning] = useState(false);
+  const panStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+  const archCanvasRef = useRef<HTMLDivElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
+  
+  // Video player state
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isDraggingTrim, setIsDraggingTrim] = useState<"start" | "end" | null>(null);
+  const [trimPreviewTime, setTrimPreviewTime] = useState<number | null>(null);
+  
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const trimBarRef = useRef<HTMLDivElement>(null);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const analysisRef = useRef<HTMLDivElement>(null);
+  const codeContainerRef = useRef<HTMLDivElement>(null);
+
+  const selectedFlow = flows.find(f => f.id === selectedFlowId);
+
+  // Get suggestions for @ mentions
+  const getSuggestions = () => {
+    if (!editInput.includes("@")) return [];
+    const lastAt = editInput.lastIndexOf("@");
+    const query = editInput.slice(lastAt + 1).toLowerCase();
+    return architecture.filter(node => 
+      node.id.toLowerCase().includes(query) || 
+      node.name.toLowerCase().includes(query)
+    ).slice(0, 5);
+  };
+
+  const suggestions = getSuggestions();
+
+  // Show suggestions when typing @
+  useEffect(() => {
+    setShowSuggestions(editInput.includes("@") && suggestions.length > 0 && showFloatingEdit);
+  }, [editInput, suggestions.length, showFloatingEdit]);
+
+  useEffect(() => {
+    if (!isProcessing) {
+      setStreamingMessage("");
+      return;
+    }
+    
+    let index = 0;
+    setStreamingMessage(STREAMING_MESSAGES[0]);
+    
+    const interval = setInterval(() => {
+      index = (index + 1) % STREAMING_MESSAGES.length;
+      setStreamingMessage(STREAMING_MESSAGES[index]);
+    }, 2500);
+    
+    return () => clearInterval(interval);
+  }, [isProcessing]);
+
+  useEffect(() => {
+    if (!generatedCode || !isStreamingCode) return;
+    let index = 0;
+    const chunkSize = 20;
+    const interval = setInterval(() => {
+      if (index < generatedCode.length) {
+        setDisplayedCode(generatedCode.slice(0, index + chunkSize));
+        setEditableCode(generatedCode.slice(0, index + chunkSize));
+        index += chunkSize;
+        if (codeContainerRef.current) codeContainerRef.current.scrollTop = codeContainerRef.current.scrollHeight;
+      } else {
+        // Streaming finished!
+        setDisplayedCode(generatedCode);
+        setEditableCode(generatedCode);
+        setIsStreamingCode(false);
+        
+        // NOW mark as complete and all components as done
+        setAnalysisPhase(prev => prev ? {
+          ...prev,
+          components: prev.components.map(c => ({ ...c, status: "done" as const }))
+        } : prev);
+        setGenerationComplete(true);
+        
+        // Generate description after streaming done
+        const description = generateAnalysisDescription(generatedCode, styleDirective);
+        typeText(description, (typed) => setAnalysisDescription(typed), 15);
+        
+        clearInterval(interval);
+      }
+    }, 8);
+    return () => clearInterval(interval);
+  }, [generatedCode, isStreamingCode, styleDirective]);
+
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) streamRef.current.getTracks().forEach(track => track.stop());
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
+
+  // Video time update
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const handleTimeUpdate = () => setCurrentTime(video.currentTime);
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    return () => video.removeEventListener("timeupdate", handleTimeUpdate);
+  }, [selectedFlowId]);
+
+  // Build architecture from code - better positioning with no overlaps
+  const buildArchitectureLive = async (code: string) => {
+    setArchBuilding(true);
+    setArchitecture([]);
+    
+    const addNode = async (node: ArchNode) => {
+      await new Promise(r => setTimeout(r, 120));
+      setArchitecture(prev => [...prev, node]);
+    };
+    
+    // Better layout - tree structure with proper spacing
+    const centerX = 400;
+    let currentY = 40;
+    const rowHeight = 120;
+    const colWidth = 250;
+    
+    // Analyze code for smarter naming
+    const hasNav = /<nav/i.test(code);
+    const hasHeader = /<header/i.test(code);
+    const hasSidebar = /sidebar|aside/i.test(code);
+    const hasHero = /hero|banner|jumbotron/i.test(code);
+    const hasCards = /card/gi.test(code);
+    const hasForms = /<form/i.test(code);
+    const hasTable = /<table/i.test(code);
+    
+    await addNode({ id: "root", name: "Document", type: "page", description: "HTML root", x: centerX, y: currentY, connections: [] });
+    currentY += rowHeight;
+    
+    // Row 2: Layout structure
+    const row2Nodes: string[] = [];
+    if (hasNav || hasHeader) {
+      await addNode({ id: "nav", name: hasNav ? "Navigation" : "Header", type: "component", description: hasNav ? "Site navigation menu" : "Page header", x: centerX - colWidth, y: currentY, connections: ["root"] });
+      row2Nodes.push("nav");
+    }
+    
+    await addNode({ id: "content", name: "Content Area", type: "section", description: "Main page content", x: centerX, y: currentY, connections: ["root"] });
+    row2Nodes.push("content");
+    
+    if (hasSidebar) {
+      await addNode({ id: "sidebar", name: "Sidebar", type: "component", description: "Side navigation", x: centerX + colWidth, y: currentY, connections: ["root"] });
+    }
+    
+    currentY += rowHeight;
+    
+    // Row 3: Content sections
+    const row3Nodes: { id: string; name: string; desc: string }[] = [];
+    if (hasHero) row3Nodes.push({ id: "hero", name: "Hero Section", desc: "Main visual banner" });
+    if (hasCards) row3Nodes.push({ id: "cards", name: "Card Grid", desc: "Content cards layout" });
+    if (hasForms) row3Nodes.push({ id: "forms", name: "Form Block", desc: "User input forms" });
+    if (hasTable) row3Nodes.push({ id: "table", name: "Data Table", desc: "Tabular data display" });
+    
+    // Add generic sections if none detected
+    const sections = (code.match(/<section/gi) || []).length;
+    if (row3Nodes.length === 0 && sections > 0) {
+      for (let i = 0; i < Math.min(sections, 3); i++) {
+        row3Nodes.push({ id: `section-${i}`, name: `Section ${i + 1}`, desc: "Content section" });
+      }
+    }
+    
+    const spacing3 = colWidth;
+    const startX3 = centerX - ((row3Nodes.length - 1) * spacing3) / 2;
+    for (let i = 0; i < row3Nodes.length; i++) {
+      await addNode({ 
+        id: row3Nodes[i].id, 
+        name: row3Nodes[i].name, 
+        type: "component",
+        description: row3Nodes[i].desc,
+        x: startX3 + (i * spacing3), 
+        y: currentY, 
+        connections: ["content"] 
+      });
+    }
+    
+    currentY += rowHeight;
+    
+    // Row 4: Elements
+    const buttons = (code.match(/<button/gi) || []).length;
+    const images = (code.match(/<img/gi) || []).length;
+    const inputs = (code.match(/<input/gi) || []).length;
+    const links = (code.match(/<a /gi) || []).length;
+    
+    const row4Nodes: { id: string; name: string; type: "interactive" | "element"; desc: string }[] = [];
+    if (buttons > 0) row4Nodes.push({ id: "btns", name: `${buttons} Buttons`, type: "interactive", desc: "Click actions" });
+    if (links > 5) row4Nodes.push({ id: "links", name: `${links} Links`, type: "interactive", desc: "Navigation links" });
+    if (images > 0) row4Nodes.push({ id: "imgs", name: `${images} Images`, type: "element", desc: "Visual media" });
+    if (inputs > 0) row4Nodes.push({ id: "inputs", name: `${inputs} Inputs`, type: "interactive", desc: "Form fields" });
+    
+    const spacing4 = colWidth;
+    const startX4 = centerX - ((row4Nodes.length - 1) * spacing4) / 2;
+    const parentNode = row3Nodes.length > 0 ? row3Nodes[0].id : "content";
+    for (let i = 0; i < row4Nodes.length; i++) {
+      await addNode({ 
+        id: row4Nodes[i].id, 
+        name: row4Nodes[i].name, 
+        type: row4Nodes[i].type, 
+        description: row4Nodes[i].desc, 
+        x: startX4 + (i * spacing4), 
+        y: currentY, 
+        connections: [parentNode] 
+      });
+    }
+    
+    currentY += rowHeight;
+    
+    // Row 5: Footer
+    if (/<footer/i.test(code)) {
+      await addNode({ id: "footer", name: "Footer", type: "component", description: "Page footer & links", x: centerX, y: currentY, connections: ["root"] });
+    }
+    
+    setArchBuilding(false);
+  };
+
+  // Extract style info from code - with actual fonts and colors
+  const extractStyleInfo = (code: string): StyleInfo => {
+    const colors: { name: string; value: string }[] = [];
+    
+    // Extract hex colors
+    const hexMatches = code.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g) || [];
+    // Extract rgb/rgba colors
+    const rgbMatches = code.match(/rgba?\([^)]+\)/g) || [];
+    
+    // Prioritize actual color values, filter out common neutrals at the end
+    const allColors = [...hexMatches, ...rgbMatches];
+    const neutrals = ['#fff', '#ffffff', '#000', '#000000', '#fff', 'rgba(0', 'rgb(0', 'rgba(255', 'rgb(255'];
+    
+    const colorFrequency = new Map<string, number>();
+    allColors.forEach(c => {
+      const normalized = c.toLowerCase();
+      colorFrequency.set(normalized, (colorFrequency.get(normalized) || 0) + 1);
+    });
+    
+    // Sort by frequency and filter out pure black/white
+    const sortedColors = [...colorFrequency.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .filter(([c]) => !neutrals.some(n => c.startsWith(n)))
+      .slice(0, 4);
+    
+    // Add back black/white at end if space
+    const finalColors = sortedColors.map(([c]) => c);
+    if (finalColors.length < 6 && hexMatches.some(c => c.toLowerCase() === '#ffffff' || c.toLowerCase() === '#fff')) {
+      finalColors.push('#ffffff');
+    }
+    if (finalColors.length < 6 && hexMatches.some(c => c.toLowerCase() === '#000000' || c.toLowerCase() === '#000')) {
+      finalColors.push('#000000');
+    }
+    
+    finalColors.slice(0, 6).forEach((c, i) => {
+      const names = ["Primary", "Secondary", "Accent", "Background", "Text", "Border"];
+      colors.push({ name: names[i] || `Color ${i + 1}`, value: c });
+    });
+    
+    // If no colors found, use defaults
+    if (colors.length === 0) {
+      colors.push({ name: "Primary", value: "#6366f1" });
+      colors.push({ name: "Background", value: "#ffffff" });
+    }
+    
+    const fonts: { name: string; usage: string; weight: string; family: string }[] = [];
+    
+    // Extract actual font families from code
+    const fontFamilyMatch = code.match(/font-family:\s*['"]?([^'";,]+)/gi) || [];
+    const googleFontsMatch = code.match(/family=([^&:]+)/gi) || [];
+    
+    const detectedFonts = new Set<string>();
+    
+    fontFamilyMatch.forEach(f => {
+      const name = f.replace(/font-family:\s*['"]?/i, '').trim();
+      if (name && !name.includes('sans-serif') && !name.includes('system') && name.length < 30) {
+        detectedFonts.add(name);
+      }
+    });
+    
+    googleFontsMatch.forEach(f => {
+      const name = f.replace(/family=/i, '').replace(/\+/g, ' ').split(':')[0].trim();
+      if (name && name.length < 30) detectedFonts.add(name);
+    });
+    
+    // Check for common font names in code
+    const commonFonts = ["Inter", "Space Grotesk", "Poppins", "Roboto", "Open Sans", "Montserrat", "Nunito", "Lato", "Raleway", "Playfair Display"];
+    commonFonts.forEach(font => {
+      if (code.includes(font)) detectedFonts.add(font);
+    });
+    
+    Array.from(detectedFonts).slice(0, 4).forEach((font, i) => {
+      fonts.push({ 
+        name: font, 
+        usage: i === 0 ? "Primary font" : i === 1 ? "Secondary font" : "Accent font",
+        weight: "400-700",
+        family: `'${font}', sans-serif`
+      });
+    });
+    
+    if (fonts.length === 0) {
+      fonts.push({ name: "System UI", usage: "Default", weight: "400", family: "system-ui, sans-serif" });
+    }
+    
+    return {
+      colors,
+      fonts,
+      spacing: code.includes("gap-") || code.includes("space-") ? "Tailwind spacing scale" : "Custom spacing",
+      borderRadius: code.includes("rounded-xl") || code.includes("rounded-2xl") ? "Large (12-16px)" : code.includes("rounded-lg") ? "Medium (8px)" : "Small (4px)",
+      shadows: code.includes("shadow-xl") || code.includes("shadow-2xl") ? "Prominent shadows" : code.includes("shadow") ? "Subtle shadows" : "Minimal shadows"
+    };
+  };
+
+  useEffect(() => {
+    if (generatedCode && !isStreamingCode) {
+      buildArchitectureLive(generatedCode);
+      setStyleInfo(extractStyleInfo(generatedCode));
+    }
+  }, [generatedCode, isStreamingCode]);
+
+  const getSupportedMimeType = () => {
+    const types = ["video/webm;codecs=vp8,opus", "video/webm;codecs=vp8", "video/webm", "video/mp4"];
+    for (const type of types) {
+      if (MediaRecorder.isTypeSupported(type)) return type;
+    }
+    return "video/webm";
+  };
+
+  const startRecording = async () => {
+    try {
+      const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+      streamRef.current = screenStream;
+      chunksRef.current = [];
+      const mimeType = getSupportedMimeType();
+      const mediaRecorder = new MediaRecorder(screenStream, { mimeType });
+      
+      mediaRecorder.ondataavailable = (e) => { 
+        console.log("Data chunk received:", e.data.size);
+        if (e.data.size > 0) chunksRef.current.push(e.data); 
+      };
+      
+      let hasProcessedStop = false;
+      
+      mediaRecorder.onstop = async () => {
+        // Guard against multiple calls
+        if (hasProcessedStop) {
+          console.log("onstop already processed, skipping");
+          return;
+        }
+        hasProcessedStop = true;
+        
+        console.log("=== MediaRecorder.onstop fired ===");
+        
+        // Clear timer
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+        
+        // Stop all tracks
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
+        }
+        
+        // Create blob and add to flows - copy chunks immediately
+        const chunks = [...chunksRef.current];
+        chunksRef.current = []; // Clear immediately to prevent reuse
+        
+        console.log("Chunks collected:", chunks.length);
+        
+        if (chunks.length > 0) {
+          const blob = new Blob(chunks, { type: mimeType });
+          console.log("Created blob, size:", blob.size, "bytes");
+          
+          try {
+            await addVideoToFlows(blob, `Recording ${Date.now()}`);
+            console.log("Flow added successfully");
+          } catch (e) {
+            console.error("Error adding flow:", e);
+          }
+        } else {
+          console.log("WARNING: No chunks available!");
+        }
+        
+        // Update state after flow is added
+        setIsRecording(false);
+        setRecordingDuration(0);
+        setViewMode("input");
+        mediaRecorderRef.current = null;
+        
+        console.log("=== Recording cleanup complete ===");
+      };
+      
+      // Handle when user clicks "Stop sharing" in browser UI
+      const videoTrack = screenStream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.onended = () => {
+          console.log("Screen sharing stopped by user (track ended)");
+          if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+            mediaRecorderRef.current.stop();
+          }
+        };
+      }
+      
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start(1000); // Collect data every second
+      setIsRecording(true);
+      timerRef.current = setInterval(() => setRecordingDuration(prev => prev + 1), 1000);
+      console.log("Recording started");
+    } catch (err) {
+      console.error("Recording error:", err);
+      setIsRecording(false);
+    }
+  };
+
+  const stopRecording = () => {
+    console.log("stopRecording called, state:", mediaRecorderRef.current?.state);
+    
+    // Request final data chunk before stopping
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      mediaRecorderRef.current.requestData(); // Get any pending data
+      mediaRecorderRef.current.stop();
+    }
+    
+    // Clear timer (onstop will also do this, but just in case)
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  const addVideoToFlows = async (blob: Blob, name: string) => {
+    console.log("addVideoToFlows called, blob size:", blob.size);
+    const url = URL.createObjectURL(blob);
+    const video = document.createElement("video");
+    video.src = url;
+    video.muted = true;
+    video.playsInline = true;
+    
+    return new Promise<void>((resolve) => {
+      let resolved = false;
+      
+      const generateThumbnail = (videoEl: HTMLVideoElement): string | undefined => {
+        try {
+          const canvas = document.createElement("canvas");
+          const vw = videoEl.videoWidth || 320;
+          const vh = videoEl.videoHeight || 180;
+          canvas.width = 160;
+          canvas.height = Math.round((160 / vw) * vh) || 90;
+          const ctx = canvas.getContext("2d");
+          if (ctx && vw > 0 && vh > 0) {
+            ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+            // Check if thumbnail is not empty/black
+            if (dataUrl.length > 1000) return dataUrl;
+          }
+        } catch (e) {
+          console.error("Thumbnail error:", e);
+        }
+        return undefined;
+      };
+      
+      const finishCreation = (rawDuration: number, thumbnail?: string) => {
+        if (resolved) return;
+        resolved = true;
+        
+        let duration = rawDuration;
+        if (!isFinite(duration) || isNaN(duration) || duration <= 0) {
+          duration = recordingDuration || 30;
+        }
+        
+        const flowNum = flows.length + 1;
+        const newFlow: FlowItem = {
+          id: generateId(), 
+          name: `Recording ${flowNum}`, 
+          videoBlob: blob, 
+          videoUrl: url, 
+          thumbnail: thumbnail || "",
+          duration, 
+          trimStart: 0, 
+          trimEnd: duration,
+        };
+        console.log("Flow added:", newFlow.name, "duration:", duration, "has thumbnail:", !!thumbnail);
+        setFlows(prev => [...prev, newFlow]);
+        setSelectedFlowId(newFlow.id);
+        resolve();
+      };
+      
+      // When video can play through, generate thumbnail
+      video.oncanplaythrough = () => {
+        if (resolved) return;
+        const duration = Math.round(video.duration) || recordingDuration || 10;
+        // Seek to 1 second or 25% of video
+        video.currentTime = Math.min(1, duration * 0.25);
+      };
+      
+      video.onseeked = () => {
+        if (resolved) return;
+        const duration = Math.round(video.duration) || recordingDuration || 10;
+        // Wait a bit for frame to render
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            if (resolved) return;
+            const thumbnail = generateThumbnail(video);
+            finishCreation(duration, thumbnail);
+          }, 50);
+        });
+      };
+      
+      video.onerror = () => {
+        console.error("Video load error");
+        finishCreation(recordingDuration || 10);
+      };
+      
+      // Fallback
+      setTimeout(() => {
+        if (!resolved) {
+          const duration = (video.duration && isFinite(video.duration)) ? Math.round(video.duration) : (recordingDuration || 10);
+          const thumbnail = generateThumbnail(video);
+          finishCreation(duration, thumbnail);
+        }
+      }, 2000);
+    });
+  };
+
+  // Import flow from landing hero (upload/record/context/style) without touching tool behavior.
+  useEffect(() => {
+    if (!pending?.blob) return;
+
+    // Safety: only consume once per pending payload
+    const payload = pending;
+    (async () => {
+      try {
+        await addVideoToFlows(payload.blob, payload.name || "Flow");
+        if (payload.context) setRefinements(payload.context);
+        if (payload.styleDirective) setStyleDirective(payload.styleDirective);
+        setViewMode("input");
+      } finally {
+        clearPending();
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pending?.createdAt]);
+
+  const handleFileInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      for (const file of Array.from(files)) {
+        if (file.type.startsWith("video/")) {
+          await addVideoToFlows(file, file.name.replace(/\.[^/.]+$/, ""));
+        }
+      }
+    }
+    e.target.value = "";
+  }, []);
+
+  const removeFlow = (flowId: string) => {
+    setFlows(prev => prev.filter(f => f.id !== flowId));
+    if (selectedFlowId === flowId) setSelectedFlowId(flows.length > 1 ? flows.find(f => f.id !== flowId)?.id || null : null);
+  };
+
+  // Smooth trim handlers with live preview
+  const handleTrimDrag = (e: React.MouseEvent, type: "start" | "end") => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!trimBarRef.current || !selectedFlow) return;
+    
+    // Capture values at start
+    const flowId = selectedFlow.id;
+    const duration = selectedFlow.duration;
+    
+    // Guard against invalid duration
+    if (!duration || !isFinite(duration) || duration <= 0) return;
+    
+    setIsDraggingTrim(type);
+    
+    const updateTrim = (clientX: number) => {
+      if (!trimBarRef.current) return;
+      const rect = trimBarRef.current.getBoundingClientRect();
+      const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+      const percent = x / rect.width;
+      let time = percent * duration;
+      
+      // Guard against NaN/Infinity
+      if (!isFinite(time)) time = 0;
+      time = Math.max(0, Math.min(time, duration));
+      
+      setTrimPreviewTime(time);
+      
+      // Seek video to show preview - guard against invalid values
+      if (videoRef.current && isFinite(time)) {
+        videoRef.current.currentTime = time;
+      }
+      
+      setFlows(prev => prev.map(f => {
+        if (f.id !== flowId) return f;
+        if (type === "start") {
+          return { ...f, trimStart: Math.min(time, f.trimEnd - 0.5) };
+        }
+        return { ...f, trimEnd: Math.max(time, f.trimStart + 0.5) };
+      }));
+    };
+    
+    const handleMove = (moveEvent: MouseEvent) => {
+      moveEvent.preventDefault();
+      requestAnimationFrame(() => updateTrim(moveEvent.clientX));
+    };
+    
+    const handleUp = () => {
+      setIsDraggingTrim(null);
+      setTrimPreviewTime(null);
+      document.removeEventListener("mousemove", handleMove);
+      document.removeEventListener("mouseup", handleUp);
+    };
+    
+    document.addEventListener("mousemove", handleMove);
+    document.addEventListener("mouseup", handleUp);
+  };
+
+  const applyTrim = async () => {
+    if (!selectedFlow) return;
+    
+    const trimDuration = selectedFlow.trimEnd - selectedFlow.trimStart;
+    console.log(`Trim applied to ${selectedFlow.name}: ${selectedFlow.trimStart}s - ${selectedFlow.trimEnd}s (${trimDuration}s)`);
+    
+    // Create a trimmed video blob using MediaSource and Canvas
+    // For now, we mark it as trimmed and the API will receive the full video
+    // with instructions to only consider the trimmed section
+    setFlows(prev => prev.map(f => 
+      f.id === selectedFlow.id 
+        ? { ...f, name: `${f.name} (${Math.round(selectedFlow.trimStart)}s-${Math.round(selectedFlow.trimEnd)}s)` }
+        : f
+    ));
+  };
+
+  // Canvas pan handlers for architecture
+  const handleCanvasMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('.arch-node-card')) return;
+    setIsPanning(true);
+    panStartRef.current = { x: e.clientX, y: e.clientY, panX: canvasPan.x, panY: canvasPan.y };
+  };
+
+  const handleCanvasMouseMove = (e: React.MouseEvent) => {
+    if (!isPanning) return;
+    const dx = e.clientX - panStartRef.current.x;
+    const dy = e.clientY - panStartRef.current.y;
+    setCanvasPan({ x: panStartRef.current.panX + dx, y: panStartRef.current.panY + dy });
+  };
+
+  const handleCanvasMouseUp = () => {
+    setIsPanning(false);
+  };
+
+  // Handle suggestion click
+  const handleSuggestionClick = (nodeId: string) => {
+    const lastAt = editInput.lastIndexOf("@");
+    setEditInput(editInput.slice(0, lastAt) + `@${nodeId} `);
+    setShowSuggestions(false);
+    setSelectedArchNode(nodeId);
+    editInputRef.current?.focus();
+  };
+
+  const togglePlayPause = () => {
+    if (!videoRef.current) return;
+    if (isPlaying) videoRef.current.pause();
+    else videoRef.current.play();
+    setIsPlaying(!isPlaying);
+  };
+
+  const typeText = async (text: string, onUpdate: (typed: string) => void, speed = 20) => {
+    for (let i = 0; i <= text.length; i++) {
+      onUpdate(text.slice(0, i));
+      await new Promise(r => setTimeout(r, speed));
+    }
+  };
+
+  const handleGenerate = async () => {
+    if (flows.length === 0) return;
+    
+    // Auth gate: require login
+    if (!user) {
+      setPendingAction("generate");
+      setShowAuthModal(true);
+      return;
+    }
+    
+    // Credits gate: check if user can afford
+    if (!canAfford(CREDIT_COSTS.VIDEO_GENERATE)) {
+      setShowOutOfCreditsModal(true);
+      return;
+    }
+    
+    // Spend credits before generation
+    try {
+      const spendRes = await fetch("/api/credits/spend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cost: CREDIT_COSTS.VIDEO_GENERATE,
+          reason: "video_generate",
+          referenceId: `gen_${Date.now()}`,
+        }),
+      });
+      const spendData = await spendRes.json();
+      if (!spendData.success) {
+        setShowOutOfCreditsModal(true);
+        return;
+      }
+      // Refresh credits after spending
+      refreshCredits();
+    } catch (error) {
+      console.error("Failed to spend credits:", error);
+      return;
+    }
+    
+    setIsProcessing(true);
+    setGenerationComplete(false);
+    setAnalysisDescription("");
+    setGeneratedCode(null);
+    setDisplayedCode("");
+    setEditableCode("");
+    setPreviewUrl(null);
+    setIsCodeEditable(false);
+    setArchitecture([]);
+    setStyleInfo(null);
+    
+    // Initialize live analysis phase
+    const initialPhase: AnalysisPhase = {
+      palette: [],
+      typography: "Detecting fonts",
+      vibe: "Analyzing aesthetics",
+      layout: "Scanning structure",
+      container: "Detecting layout",
+      responsive: "Analyzing breakpoints",
+      components: [
+        { name: "Navigation", status: "waiting" },
+        { name: "Hero Section", status: "waiting" },
+        { name: "Content Blocks", status: "waiting" },
+        { name: "Footer", status: "waiting" },
+      ]
+    };
+    setAnalysisPhase(initialPhase);
+    setAnalysisSection("style");
+    
+    // Progressive analysis reveal - matches AI processing stages
+    const updatePhase = async () => {
+      // Phase 1: STYLE (0-2s) - AI decoding visual style
+      setAnalysisSection("style");
+      await new Promise(r => setTimeout(r, 800));
+      setAnalysisPhase(prev => prev ? { ...prev, typography: "Inter (Detected)" } : prev);
+      await new Promise(r => setTimeout(r, 600));
+      setAnalysisPhase(prev => prev ? { ...prev, vibe: "Dark • Modern" } : prev);
+      
+      // Phase 2: LAYOUT (2-4s) - AI planning structure
+      await new Promise(r => setTimeout(r, 600));
+      setAnalysisSection("layout");
+      await new Promise(r => setTimeout(r, 500));
+      setAnalysisPhase(prev => prev ? { ...prev, layout: "Flexbox + Grid" } : prev);
+      await new Promise(r => setTimeout(r, 400));
+      setAnalysisPhase(prev => prev ? { ...prev, container: "Centered (max-w-7xl)" } : prev);
+      await new Promise(r => setTimeout(r, 400));
+      setAnalysisPhase(prev => prev ? { ...prev, responsive: "Mobile-First" } : prev);
+      
+      // Phase 3: COMPONENTS (4s+) - AI generating code
+      await new Promise(r => setTimeout(r, 600));
+      setAnalysisSection("components");
+      
+      // Components update one by one
+      await new Promise(r => setTimeout(r, 800));
+      setAnalysisPhase(prev => prev ? { 
+        ...prev, 
+        components: prev.components.map((c, i) => i === 0 ? { ...c, status: "generating" as const } : c)
+      } : prev);
+      
+      await new Promise(r => setTimeout(r, 1500));
+      setAnalysisPhase(prev => prev ? { 
+        ...prev, 
+        components: prev.components.map((c, i) => 
+          i === 0 ? { ...c, status: "done" as const } : 
+          i === 1 ? { ...c, status: "generating" as const } : c
+        )
+      } : prev);
+      
+      await new Promise(r => setTimeout(r, 1500));
+      setAnalysisPhase(prev => prev ? { 
+        ...prev, 
+        components: prev.components.map((c, i) => 
+          i <= 1 ? { ...c, status: "done" as const } : 
+          i === 2 ? { ...c, status: "generating" as const } : c
+        )
+      } : prev);
+      
+      await new Promise(r => setTimeout(r, 1500));
+      setAnalysisPhase(prev => prev ? { 
+        ...prev, 
+        components: prev.components.map((c, i) => 
+          i <= 2 ? { ...c, status: "done" as const } : 
+          i === 3 ? { ...c, status: "generating" as const } : c
+        )
+      } : prev);
+    };
+    
+    updatePhase();
+    
+    try {
+      const flow = flows[0];
+      const arrayBuffer = await flow.videoBlob.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      let binary = '';
+      for (let i = 0; i < uint8Array.length; i += 8192) {
+        binary += String.fromCharCode.apply(null, Array.from(uint8Array.slice(i, i + 8192)));
+      }
+      const videoBase64 = btoa(binary);
+      
+      // Build style directive with refinements and trim info
+      let fullStyleDirective = styleDirective || "Modern, clean design with smooth animations";
+      
+      // Add refinements if provided
+      if (refinements.trim()) {
+        fullStyleDirective += `. Additional refinements: ${refinements.trim()}`;
+      }
+      
+      // Add trim info if applicable
+      if (flow.trimStart > 0 || flow.trimEnd < flow.duration) {
+        fullStyleDirective += `. CRITICAL: ONLY analyze video content between timestamps ${flow.trimStart.toFixed(1)}s and ${flow.trimEnd.toFixed(1)}s. Ignore ALL content before ${flow.trimStart.toFixed(1)}s and after ${flow.trimEnd.toFixed(1)}s.`;
+      }
+      
+      const result = await transmuteVideoToCode({
+        videoBase64,
+        styleDirective: fullStyleDirective,
+      });
+      
+      console.log("Generation result:", result);
+      
+      if (result.success && result.code) {
+        setGeneratedCode(result.code);
+        setIsStreamingCode(true);
+        setViewMode("code");
+        const blob = new Blob([result.code], { type: "text/html" });
+        setPreviewUrl(URL.createObjectURL(blob));
+        
+        // Extract real stats from code - but DON'T set complete yet (streaming first)
+        const buttonCount = (result.code.match(/<button/gi) || []).length;
+        const imageCount = (result.code.match(/<img/gi) || []).length;
+        const componentCount = (result.code.match(/<section|<header|<footer|<nav|<aside/gi) || []).length;
+        
+        // Store stats but don't show complete state yet
+        setAnalysisPhase(prev => prev ? {
+          ...prev,
+          components: prev.components.map((c, i) => i < 2 ? { ...c, status: "done" as const } : { ...c, status: "generating" as const }),
+          stats: {
+            tech: "Tailwind CSS + Alpine.js",
+            componentCount: componentCount + buttonCount,
+            imageCount,
+            theme: styleDirective || "Modern Design"
+          }
+        } : prev);
+        
+        // NOTE: generationComplete will be set in the streaming useEffect when streaming finishes
+      } else {
+        console.error("Generation failed:", result.error);
+        setAnalysisDescription(`Error: ${result.error || "Generation failed. Please try again."}`);
+        alert(`Generation failed: ${result.error || "Unknown error"}`);
+      }
+    } catch (error: any) {
+      console.error("Generation error:", error);
+      setAnalysisDescription(`Error: ${error.message || "Unknown error occurred"}`);
+      alert(`Error: ${error.message || "Unknown error"}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Generate description based on code content
+  const generateAnalysisDescription = (code: string, style: string): string => {
+    const hasHeader = /<header|<nav/i.test(code);
+    const hasHero = /hero|banner|jumbotron/i.test(code);
+    const hasCards = /card|grid.*card/i.test(code);
+    const hasForms = /<form|<input/i.test(code);
+    const hasFooter = /<footer/i.test(code);
+    const buttonCount = (code.match(/<button/gi) || []).length;
+    const imageCount = (code.match(/<img/gi) || []).length;
+    
+    let desc = `Generated a modern ${style || "clean"} web page`;
+    
+    const features: string[] = [];
+    if (hasHeader) features.push("navigation header");
+    if (hasHero) features.push("hero section");
+    if (hasCards) features.push("card components");
+    if (hasForms) features.push("interactive forms");
+    if (hasFooter) features.push("footer");
+    
+    if (features.length > 0) {
+      desc += ` featuring ${features.slice(0, 3).join(", ")}`;
+      if (features.length > 3) desc += ` and more`;
+    }
+    
+    desc += `. Includes ${buttonCount} interactive button${buttonCount !== 1 ? 's' : ''}`;
+    if (imageCount > 0) desc += ` and ${imageCount} image${imageCount !== 1 ? 's' : ''}`;
+    desc += `. Built with Tailwind CSS and Alpine.js for smooth interactions and modern styling.`;
+    
+    return desc;
+  };
+
+  const handleEdit = async () => {
+    if (!editInput.trim() || !editableCode) return;
+    
+    // Auth gate
+    if (!user) {
+      setPendingAction("edit");
+      setShowAuthModal(true);
+      return;
+    }
+    
+    // Credits gate
+    if (!canAfford(CREDIT_COSTS.AI_EDIT)) {
+      setShowOutOfCreditsModal(true);
+      return;
+    }
+    
+    // Spend credits
+    try {
+      const spendRes = await fetch("/api/credits/spend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cost: CREDIT_COSTS.AI_EDIT,
+          reason: "ai_edit",
+          referenceId: `edit_${Date.now()}`,
+        }),
+      });
+      const spendData = await spendRes.json();
+      if (!spendData.success) {
+        setShowOutOfCreditsModal(true);
+        return;
+      }
+      refreshCredits();
+    } catch (error) {
+      console.error("Failed to spend credits:", error);
+      return;
+    }
+    
+    setIsEditing(true);
+    try {
+      // Include selected node context if any
+      let prompt = editInput;
+      if (selectedArchNode) {
+        prompt = `For the @${selectedArchNode} element: ${editInput}`;
+      }
+      
+      const result = await editCodeWithAI(editableCode, prompt);
+      if (result.success && result.code) {
+        setGeneratedCode(result.code);
+        setEditableCode(result.code);
+        setDisplayedCode(result.code);
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(URL.createObjectURL(new Blob([result.code], { type: "text/html" })));
+        buildArchitectureLive(result.code);
+        setStyleInfo(extractStyleInfo(result.code));
+      }
+    } catch (error) {
+      console.error("Edit error:", error);
+    } finally {
+      setIsEditing(false);
+      setEditInput("");
+      setShowFloatingEdit(false);
+      setSelectedArchNode(null);
+    }
+  };
+
+  const applyCodeChanges = () => {
+    if (editableCode) {
+      setGeneratedCode(editableCode);
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(URL.createObjectURL(new Blob([editableCode], { type: "text/html" })));
+      setIsCodeEditable(false);
+    }
+  };
+
+  const handleDownload = () => {
+    if (!editableCode) return;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([editableCode], { type: "text/html" }));
+    a.download = "generated.html";
+    a.click();
+  };
+
+  const handlePublish = () => previewUrl && window.open(previewUrl, "_blank");
+
+  const handleRefresh = () => {
+    // Refresh the preview by re-creating the blob URL
+    if (editableCode) {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(URL.createObjectURL(new Blob([editableCode], { type: "text/html" })));
+      // Rebuild architecture and style
+      buildArchitectureLive(editableCode);
+      setStyleInfo(extractStyleInfo(editableCode));
+    }
+  };
+
+  // Select architecture node and open edit
+  const handleArchNodeClick = (nodeId: string) => {
+    if (selectedArchNode === nodeId) {
+      setSelectedArchNode(null);
+    } else {
+      setSelectedArchNode(nodeId);
+      setEditInput(`@${nodeId} `);
+      setShowFloatingEdit(true);
+    }
+  };
+
+  const EmptyState = ({ icon: Icon, title, subtitle }: { icon: any; title: string; subtitle: string }) => (
+    <div className="empty-state">
+      <div className="empty-logo-container">
+        {Icon === "logo" ? (
+          <svg className="empty-logo" viewBox="0 0 82 109" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M68.099 37.2285C78.1678 43.042 78.168 57.5753 68.099 63.3887L29.5092 85.668C15.6602 93.6633 0.510418 77.4704 9.40857 64.1836L17.4017 52.248C18.1877 51.0745 18.1876 49.5427 17.4017 48.3691L9.40857 36.4336C0.509989 23.1467 15.6602 6.95306 29.5092 14.9482L68.099 37.2285Z" stroke="currentColor" strokeWidth="11.6182" strokeLinejoin="round"/>
+            <rect x="34.054" y="98.6841" width="48.6555" height="11.6182" rx="5.80909" transform="rotate(-30 34.054 98.6841)" fill="currentColor"/>
+          </svg>
+        ) : (
+          <Icon className="w-12 h-12 text-white/10 mx-auto" />
+        )}
+      </div>
+      <p className="text-base text-white/25 mt-6">{title}</p>
+      <p className="text-lg text-white/15 mt-1">{subtitle}</p>
+    </div>
+  );
+
+  const LoadingState = () => (
+    <div className="logo-loader">
+      <div className="logo-loader-container">
+        <svg className="logo-loader-svg" viewBox="0 0 82 109" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M68.099 37.2285C78.1678 43.042 78.168 57.5753 68.099 63.3887L29.5092 85.668C15.6602 93.6633 0.510418 77.4704 9.40857 64.1836L17.4017 52.248C18.1877 51.0745 18.1876 49.5427 17.4017 48.3691L9.40857 36.4336C0.509989 23.1467 15.6602 6.95306 29.5092 14.9482L68.099 37.2285Z" />
+          <rect x="34.054" y="98.6841" width="48.6555" height="11.6182" rx="5.80909" transform="rotate(-30 34.054 98.6841)" />
+        </svg>
+        <div className="logo-loader-gradient" />
+      </div>
+      <div className="streaming-text">
+        <motion.div 
+          key={isStreamingCode ? "finalizing" : streamingMessage}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.4 }}
+          className="streaming-text-inner"
+        >
+          {isStreamingCode ? "Finalizing..." : streamingMessage}
+        </motion.div>
+      </div>
+    </div>
+  );
+
+  // Render edit input with highlighted @tags
+  const renderEditDisplay = () => {
+    const parts = editInput.split(/(@\w+)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith("@")) {
+        return <span key={i} className="at-tag">{part}</span>;
+      }
+      return part;
+    });
+  };
+
+  return (
+    <div className="h-screen flex flex-col bg-[#050505] overflow-hidden font-poppins">
+      <div className="gradient-bg" />
+      <div className="grain-overlay" />
+      <div className="vignette" />
+      
+      <header className="relative z-20 flex items-center justify-between px-5 py-3 border-b border-white/5 bg-black/60 backdrop-blur-xl">
+        <a href="/" className="hover:opacity-80 transition-opacity">
+          <Logo />
+        </a>
+        <div className="flex items-center gap-4">
+          {user && <CreditsBar />}
+          
+          <div className="relative">
+            {user ? (
+              <>
+                <button onClick={() => setShowUserMenu(!showUserMenu)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FF6E3C] to-[#FF8F5C] flex items-center justify-center text-white text-sm font-medium">
+                    {user.email?.[0]?.toUpperCase() || "U"}
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-white/40" />
+                </button>
+                <AnimatePresence>
+                  {showUserMenu && (
+                    <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }} className="absolute top-full right-0 mt-2 w-56 bg-[#111] border border-white/10 rounded-xl overflow-hidden shadow-2xl z-50">
+                      <div className="p-3 border-b border-white/5">
+                        <div className="text-sm font-medium text-white truncate">{user.email}</div>
+                        <div className="text-xs text-white/40 mt-1 capitalize">{membership?.plan || "Free"} Plan</div>
+                      </div>
+                      <div className="p-1.5">
+                        <Link href="/settings" className="w-full dropdown-item text-left text-sm text-white/80 flex items-center gap-2">
+                          <User className="w-4 h-4 opacity-50" /> Settings
+                        </Link>
+                        <Link href="/settings?tab=plans" className="w-full dropdown-item text-left text-sm text-[#FF6E3C] flex items-center gap-2">
+                          <Sparkles className="w-4 h-4" /> Upgrade plan
+                        </Link>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </>
+            ) : (
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="px-4 py-2 rounded-lg bg-[#FF6E3C] text-white text-sm font-medium hover:bg-[#FF8F5C] transition-colors"
+              >
+                Sign in
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <div className="flex-1 flex overflow-hidden relative z-10">
+        {/* Left Panel - Wider */}
+        <div className="w-[340px] border-r border-white/5 bg-black/40 backdrop-blur-sm flex flex-col">
+          <div className="p-4 border-b border-white/5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Film className="w-4 h-4 text-white/40" />
+                <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Flows</span>
+                {flows.length > 0 && <span className="px-1.5 py-0.5 bg-white/5 rounded text-[10px] text-white/40">{flows.length}</span>}
+              </div>
+              <div className="flex gap-1.5">
+                {isRecording ? (
+                  <button onClick={stopRecording} className="btn-black flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs">
+                    <Square className="w-3 h-3 fill-red-500 text-red-500" />{formatDuration(recordingDuration)}
+                  </button>
+                ) : (
+                  <button onClick={startRecording} className="btn-black flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs"><Monitor className="w-3.5 h-3.5" /> Record</button>
+                )}
+                <button onClick={() => fileInputRef.current?.click()} className="btn-black flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs"><Upload className="w-3.5 h-3.5" /> Upload</button>
+              </div>
+              <input ref={fileInputRef} type="file" accept="video/*" multiple onChange={handleFileInput} className="hidden" />
+            </div>
+            <div className="space-y-2 max-h-[160px] overflow-auto custom-scrollbar">
+              {flows.length === 0 ? (
+                <div onClick={() => fileInputRef.current?.click()} className="drop-zone flex flex-col items-center justify-center py-8 rounded-xl cursor-pointer transition-colors">
+                  <Video className="w-6 h-6 text-white/15 mb-2" />
+                  <p className="text-xs text-white/25 text-center px-4">Drop or record video. Get code.</p>
+                  <p className="text-[10px] text-white/15 text-center px-4 mt-1">We analyze the flow, map interactions, and export clean code.</p>
+                </div>
+              ) : flows.map((flow) => (
+                <div key={flow.id} onClick={() => setSelectedFlowId(flow.id)} className={cn("flow-item flex items-center gap-2.5 p-2 cursor-pointer group", selectedFlowId === flow.id && "selected")}>
+                  <div className="w-14 h-8 rounded overflow-hidden bg-white/5 flex-shrink-0 flex items-center justify-center">
+                    {flow.thumbnail ? <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" /> : <Film className="w-3 h-3 text-white/20" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white/80 truncate">{flow.name}</p>
+                    <p className="text-xs text-white/40">
+                      {formatDuration(flow.trimEnd - flow.trimStart)} / {formatDuration(flow.duration)}
+                    </p>
+                  </div>
+                  <button onClick={(e) => { e.stopPropagation(); removeFlow(flow.id); }} className="p-1 opacity-0 group-hover:opacity-100 hover:bg-white/10 rounded"><Trash2 className="w-3 h-3 text-white/40" /></button>
+                </div>
+              ))}
+              
+              {/* Add next flow button */}
+              {flows.length > 0 && (
+                <button 
+                  onClick={() => fileInputRef.current?.click()} 
+                  className="w-full mt-2 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs text-white/40 hover:text-white/60 hover:bg-white/5 border border-dashed border-white/10 hover:border-white/20 transition-colors"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Add next flow</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* CONTEXT Section - Above Style */}
+          <div className="p-4 border-b border-white/5">
+            <div className="flex items-center gap-2 mb-3"><Sparkles className="w-4 h-4 text-white/40" /><span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Context</span></div>
+            <textarea
+              value={refinements}
+              onChange={(e) => setRefinements(e.target.value)}
+              placeholder="Explain interactions, logic, or specific details for the code (optional)"
+              disabled={isProcessing}
+              rows={3}
+              className={cn(
+                "w-full px-3 py-2.5 rounded-lg text-xs text-white/70 placeholder:text-white/25 transition-colors focus:outline-none textarea-grow input-subtle min-h-[72px]",
+                isProcessing && "opacity-50 cursor-not-allowed"
+              )}
+            />
+          </div>
+
+          <div className="p-4 border-b border-white/5">
+            <div className="flex items-center gap-2 mb-3"><Palette className="w-4 h-4 text-white/40" /><span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Style</span></div>
+            <StyleInjector value={styleDirective} onChange={setStyleDirective} disabled={isProcessing} />
+          </div>
+
+          <div className="p-4 border-b border-white/5">
+            <button onClick={handleGenerate} disabled={isProcessing || flows.length === 0} className={cn("w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl font-semibold text-sm transition-all btn-generate", isProcessing && "processing")}>
+              <div className="btn-generate-grain" />
+              <span className="relative z-10 flex items-center gap-2.5">
+                {isProcessing ? (<><Loader2 className="w-4 h-4 animate-spin" /><span className="generating-text">Generating...</span></>) : (<><LogoIcon className="btn-logo-icon" color="#FF6E3C" /><span>Generate</span><ChevronRight className="w-4 h-4" /></>)}
+              </span>
+            </button>
+          </div>
+
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2"><Activity className="w-4 h-4 text-white/40" /><span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Analysis</span></div>
+            <div ref={analysisRef} className="flex-1 p-4 overflow-auto custom-scrollbar">
+              {(isProcessing || isStreamingCode) && analysisPhase ? (
+                <div className="space-y-4">
+                  {/* DECODING STYLE - Always visible when processing */}
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    className="analysis-section"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Palette className="w-3.5 h-3.5 text-[#FF6E3C]/60" />
+                      <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Decoding Style</span>
+                      {analysisSection === "style" && <Loader2 className="w-3 h-3 animate-spin text-[#FF6E3C]/50 ml-auto" />}
+                      {analysisSection !== "style" && <Check className="w-3 h-3 text-green-500/50 ml-auto" />}
+                    </div>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-white/30 w-14">Font:</span>
+                        <span className="text-[10px] text-white/60">{analysisPhase.typography}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-white/30 w-14">Vibe:</span>
+                        <span className="text-[10px] text-white/60">{analysisPhase.vibe}</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                  
+                  {/* STRUCTURING LAYOUT - Visible after style phase */}
+                  <AnimatePresence>
+                    {(analysisSection === "layout" || analysisSection === "components") && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }} 
+                        animate={{ opacity: 1, y: 0 }} 
+                        exit={{ opacity: 0 }}
+                        className="analysis-section"
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <Layout className="w-3.5 h-3.5 text-[#FF6E3C]/60" />
+                          <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Structuring Layout</span>
+                          {analysisSection === "layout" && <Loader2 className="w-3 h-3 animate-spin text-[#FF6E3C]/50 ml-auto" />}
+                          {analysisSection === "components" && <Check className="w-3 h-3 text-green-500/50 ml-auto" />}
+                        </div>
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-white/30 w-14">Grid:</span>
+                            <span className="text-[10px] text-white/60">{analysisPhase.layout}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-white/30 w-14">Container:</span>
+                            <span className="text-[10px] text-white/60">{analysisPhase.container}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-white/30 w-14">Responsive:</span>
+                            <span className="text-[10px] text-white/60">{analysisPhase.responsive}</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  
+                  {/* COMPONENT CHECKLIST - Visible after layout phase */}
+                  <AnimatePresence>
+                    {analysisSection === "components" && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }} 
+                        animate={{ opacity: 1, y: 0 }} 
+                        exit={{ opacity: 0 }}
+                        className="analysis-section"
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <Box className="w-3.5 h-3.5 text-[#FF6E3C]/60" />
+                          <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Components</span>
+                        </div>
+                        <div className="space-y-1">
+                          {analysisPhase.components.map((comp, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                              {comp.status === "done" ? (
+                                <Check className="w-3 h-3 text-green-500/70" />
+                              ) : comp.status === "generating" ? (
+                                <Loader2 className="w-3 h-3 animate-spin text-[#FF6E3C]/70" />
+                              ) : (
+                                <div className="w-3 h-3 rounded-full border border-white/10" />
+                              )}
+                              <span className={cn("text-[10px]", comp.status === "done" ? "text-white/60" : comp.status === "generating" ? "text-[#FF6E3C]/70" : "text-white/30")}>
+                                {comp.name} {comp.status === "generating" && "(Generating...)"}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ) : generationComplete && analysisPhase?.stats ? (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <LogoIcon className="w-4 h-5" color="#FF6E3C" />
+                    <span className="text-xs font-medium text-white/60">Complete</span>
+                  </div>
+                  
+                  {/* Stats tiles - compact single line */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-white/40">Stack</span>
+                      <span className="text-xs text-white/70 font-medium">Tailwind + Alpine</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-white/40">Elements</span>
+                      <span className="text-xs text-white/70 font-medium">{analysisPhase.stats.componentCount}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-white/40">Style</span>
+                      <span className="text-xs text-white/70 font-medium truncate max-w-[140px]">{analysisPhase.stats.theme.split(' ')[0]}</span>
+                    </div>
+                  </div>
+                  
+                  {/* Show actual colors from generated code */}
+                  {styleInfo && styleInfo.colors.length > 0 && (
+                    <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                      <span className="text-xs text-white/30">Colors:</span>
+                      <div className="flex gap-1">
+                        {styleInfo.colors.slice(0, 5).map((c, i) => (
+                          <div key={i} className="w-5 h-5 rounded-sm border border-white/10" style={{ background: c.value }} title={c.value} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {analysisDescription && (
+                    <p className="text-xs text-white/40 leading-relaxed mt-2 pt-2 border-t border-white/5">
+                      {analysisDescription}
+                    </p>
+                  )}
+                </motion.div>
+              ) : (
+                <div className="analysis-section">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="w-3.5 h-3.5 text-white/20" />
+                    <span className="text-xs font-semibold text-white/30 uppercase tracking-wider">Waiting for generation</span>
+                  </div>
+                  <p className="text-xs text-white/25 leading-relaxed">Live analysis logs will display here once generation starts.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col bg-[#0a0a0a]">
+          <div className="flex items-center justify-between px-4 py-2 border-b border-white/5 bg-black/40">
+            <div className="flex items-center gap-1 bg-black/40 rounded-lg p-0.5">
+              {[
+                { id: "preview", icon: Eye, label: "Preview" },
+                { id: "code", icon: Code, label: "Code" },
+                { id: "architecture", icon: GitBranch, label: "Architecture" },
+                { id: "style", icon: Paintbrush, label: "Style" },
+                { id: "input", icon: FileInput, label: "Input" },
+              ].map((tab) => (
+                <button key={tab.id} onClick={() => { setViewMode(tab.id as ViewMode); setShowFloatingEdit(false); }} className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors", viewMode === tab.id ? "bg-white/10 text-white" : "text-white/40 hover:text-white/60")}>
+                  <tab.icon className="w-3.5 h-3.5" />{tab.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              {viewMode === "architecture" && (
+                <div className="flex items-center gap-1 mr-2">
+                  <button onClick={() => setArchZoom(z => Math.max(0.5, z - 0.1))} className="btn-black p-1.5 rounded-lg"><ZoomOut className="w-3.5 h-3.5" /></button>
+                  <span className="text-xs text-white/40 w-12 text-center">{Math.round(archZoom * 100)}%</span>
+                  <button onClick={() => setArchZoom(z => Math.min(2, z + 0.1))} className="btn-black p-1.5 rounded-lg"><ZoomIn className="w-3.5 h-3.5" /></button>
+                </div>
+              )}
+              {viewMode === "code" && editableCode && !isCodeEditable && (
+                <button onClick={() => setIsCodeEditable(true)} className="btn-black flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"><Pencil className="w-3.5 h-3.5" /> Edit</button>
+              )}
+              {viewMode === "code" && isCodeEditable && (
+                <button onClick={applyCodeChanges} className="btn-black flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-green-400"><Check className="w-3.5 h-3.5" /> Apply</button>
+              )}
+              {editableCode && (
+                <>
+                  {viewMode === "preview" && (
+                    <button 
+                      onClick={() => setIsMobilePreview(!isMobilePreview)} 
+                      className={cn("btn-black p-1.5 rounded-lg", isMobilePreview && "bg-[#FF6E3C]/20 text-[#FF6E3C]")} 
+                      title={isMobilePreview ? "Desktop view" : "Mobile view"}
+                    >
+                      {isMobilePreview ? <Monitor className="w-3.5 h-3.5" /> : <Smartphone className="w-3.5 h-3.5" />}
+                    </button>
+                  )}
+                  <button onClick={handleRefresh} className="btn-black p-1.5 rounded-lg" title="Refresh"><RefreshCw className="w-3.5 h-3.5" /></button>
+                  <button onClick={handleDownload} className="btn-black flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"><Download className="w-3.5 h-3.5" /> Download</button>
+                  <button onClick={handlePublish} className="btn-black flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-white/10"><ExternalLink className="w-3.5 h-3.5" /> Publish</button>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-hidden flex flex-col relative">
+            {/* Preview - only show iframe when code streaming is done */}
+            {viewMode === "preview" && (
+              <div className="flex-1 preview-container relative bg-[#0a0a0a] flex flex-col">
+                {previewUrl && !isStreamingCode ? (
+                  <>
+                    {/* Iframe container */}
+                    <div className={cn("flex-1 flex items-center justify-center", isMobilePreview && "py-4 bg-[#0a0a0a]")}>
+                      <iframe 
+                        src={previewUrl} 
+                        className={cn(
+                          "border-0 bg-white transition-all duration-300",
+                          isMobilePreview 
+                            ? "w-[375px] h-[667px] rounded-3xl shadow-2xl ring-4 ring-black/50" 
+                            : "w-full h-full"
+                        )} 
+                        title="Preview" 
+                        sandbox="allow-scripts allow-same-origin" 
+                      />
+                    </div>
+                    
+                    {!showFloatingEdit && (
+                      <button onClick={() => setShowFloatingEdit(true)} className="floating-edit-btn flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium text-white/90">
+                        <Sparkles className="w-4 h-4 text-[#FF6E3C]" /> Edit with AI
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-[#0a0a0a]">
+                    {(isStreamingCode || isProcessing) ? (
+                      <LoadingState />
+                    ) : (
+                      <EmptyState icon="logo" title="Drop or record video. Get code." subtitle="We analyze the flow, map interactions, and export clean code." />
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Code - Fixed Scroll */}
+            {viewMode === "code" && (
+              <div className="flex-1 flex flex-col relative bg-[#0a0a0a] min-h-0 overflow-hidden">
+                <div ref={codeContainerRef} className="absolute inset-0 overflow-auto bg-[#0a0a0a]">
+                  {isCodeEditable ? (
+                    <textarea value={editableCode} onChange={(e) => setEditableCode(e.target.value)} className="w-full min-h-full p-4 bg-[#0a0a0a] text-xs text-white/80 font-mono resize-none focus:outline-none" style={{ fontFamily: "'JetBrains Mono', monospace" }} spellCheck={false} />
+                  ) : displayedCode ? (
+                    <Highlight theme={themes.nightOwl} code={displayedCode} language="html">
+                      {({ style, tokens, getLineProps, getTokenProps }) => (
+                        <pre className="p-4 text-xs leading-relaxed" style={{ ...style, background: "#0a0a0a", fontFamily: "'JetBrains Mono', monospace", minHeight: "100%" }}>
+                          {tokens.map((line, i) => (<div key={i} {...getLineProps({ line })} className="table-row"><span className="table-cell pr-4 text-right text-white/20 select-none w-10 text-[10px]">{i + 1}</span><span className="table-cell">{line.map((token, key) => <span key={key} {...getTokenProps({ token })} />)}</span></div>))}
+                          {isStreamingCode && <span className="text-[#FF6E3C] animate-pulse">▋</span>}
+                        </pre>
+                      )}
+                    </Highlight>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-[#0a0a0a]">{isProcessing ? <LoadingState /> : <EmptyState icon="logo" title="No code generated" subtitle="Generate from a video to see the code" />}</div>
+                  )}
+                </div>
+                {editableCode && !isStreamingCode && !isCodeEditable && !showFloatingEdit && (
+                  <button onClick={() => setShowFloatingEdit(true)} className="floating-edit-btn flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium text-white/90">
+                    <Sparkles className="w-4 h-4 text-[#FF6E3C]" /> Edit with AI
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Architecture - Full Grid Canvas with Drag Pan */}
+            {viewMode === "architecture" && (
+              <div className="flex-1 overflow-hidden bg-[#080808] relative">
+                {architecture.length > 0 || archBuilding ? (
+                  <div 
+                    ref={archCanvasRef}
+                    className={cn("arch-canvas w-full h-full", isPanning && "dragging")}
+                    onMouseDown={handleCanvasMouseDown}
+                    onMouseMove={handleCanvasMouseMove}
+                    onMouseUp={handleCanvasMouseUp}
+                    onMouseLeave={handleCanvasMouseUp}
+                  >
+                    <div 
+                      className="arch-canvas-inner" 
+                      style={{ 
+                        transform: `translate(${canvasPan.x}px, ${canvasPan.y}px) scale(${archZoom})`,
+                        transformOrigin: 'center center'
+                      }}
+                    >
+                      {/* Connection Lines */}
+                      <svg className="absolute inset-0 pointer-events-none" style={{ width: "2000px", height: "1500px" }}>
+                        {architecture.map(node => 
+                          node.connections?.map(connId => {
+                            const target = architecture.find(n => n.id === connId);
+                            if (!target) return null;
+                            return (
+                              <line key={`${node.id}-${connId}`} x1={target.x + 80} y1={target.y + 40} x2={node.x + 80} y2={node.y} stroke="rgba(255, 110, 60, 0.25)" strokeWidth="2" strokeDasharray="6 4" />
+                            );
+                          })
+                        )}
+                      </svg>
+                      
+                      {/* Nodes */}
+                      {architecture.map((node, idx) => {
+                        const Icon = getNodeIcon(node.type);
+                        return (
+                          <motion.div 
+                            key={node.id} 
+                            initial={{ opacity: 0, scale: 0.9 }} 
+                            animate={{ opacity: 1, scale: 1 }} 
+                            transition={{ delay: idx * 0.06 }}
+                            className={cn("arch-node-card", selectedArchNode === node.id && "selected")}
+                            style={{ left: node.x, top: node.y }}
+                            onClick={() => handleArchNodeClick(node.id)}
+                            onDoubleClick={() => setSelectedNodeModal(node)}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Icon className="w-3.5 h-3.5 text-[#FF6E3C] flex-shrink-0" />
+                              <span className="node-name">{node.name}</span>
+                            </div>
+                            {node.description && <p className="node-desc">{node.description}</p>}
+                          </motion.div>
+                        );
+                      })}
+                      
+                      {archBuilding && <div className="absolute top-4 right-4 flex items-center gap-2 text-xs text-white/40"><Loader2 className="w-4 h-4 animate-spin text-[#FF6E3C]" /> Building...</div>}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-[#080808]">{isProcessing ? <LoadingState /> : <EmptyState icon="logo" title="No architecture yet" subtitle="Generate code to see the component structure" />}</div>
+                )}
+                {architecture.length > 0 && !archBuilding && !showFloatingEdit && (
+                  <button onClick={() => setShowFloatingEdit(true)} className="floating-edit-btn flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium text-white/90">
+                    <Sparkles className="w-4 h-4 text-[#FF6E3C]" /> Edit with AI
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Style */}
+            {viewMode === "style" && (
+              <div className="flex-1 overflow-auto p-6 bg-[#080808] relative">
+                {styleInfo ? (
+                  <div className="max-w-3xl mx-auto space-y-6">
+                    <div className="flex items-center gap-2 mb-6"><Paintbrush className="w-5 h-5 text-[#FF6E3C]/60" /><h3 className="text-sm font-medium text-white/70">Design System</h3></div>
+                    
+                    {/* Colors */}
+                    <div className="style-card">
+                      <div className="flex items-center gap-2 mb-4"><Droplet className="w-4 h-4 text-[#FF6E3C]/60" /><span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Colors</span></div>
+                      <div className="flex flex-wrap gap-4">
+                        {styleInfo.colors.map((color, i) => (
+                          <div key={i} className="flex items-center gap-3">
+                            <div className="color-swatch-large" style={{ backgroundColor: color.value }} />
+                            <div><p className="text-xs text-white/70">{color.name}</p><p className="text-[10px] text-white/40 font-mono">{color.value}</p></div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Typography - with actual fonts */}
+                    <div className="style-card">
+                      <div className="flex items-center gap-2 mb-4"><Type className="w-4 h-4 text-[#FF6E3C]/60" /><span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Typography</span></div>
+                      <div className="space-y-3">
+                        {styleInfo.fonts.map((font, i) => (
+                          <div key={i} className="font-preview flex items-center justify-between">
+                            <div>
+                              <p className="text-lg text-white/80" style={{ fontFamily: font.family }}>{font.name}</p>
+                              <p className="text-[10px] text-white/40">{font.usage}</p>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-xs text-white/30">{font.weight}</span>
+                              <p className="text-[10px] text-white/20 font-mono mt-1">{font.family}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Other Styles */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="style-card"><p className="text-[10px] text-white/40 uppercase mb-2">Spacing</p><p className="text-sm text-white/70">{styleInfo.spacing}</p></div>
+                      <div className="style-card"><p className="text-[10px] text-white/40 uppercase mb-2">Border Radius</p><p className="text-sm text-white/70">{styleInfo.borderRadius}</p></div>
+                      <div className="style-card"><p className="text-[10px] text-white/40 uppercase mb-2">Shadows</p><p className="text-sm text-white/70">{styleInfo.shadows}</p></div>
+                    </div>
+                    
+                    {!showFloatingEdit && (
+                      <button onClick={() => setShowFloatingEdit(true)} className="floating-edit-btn flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium text-white/90">
+                        <Sparkles className="w-4 h-4 text-[#FF6E3C]" /> Edit with AI
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-[#080808]">{isProcessing ? <LoadingState /> : <EmptyState icon="logo" title="No style info yet" subtitle="Generate code to see the design system" />}</div>
+                )}
+              </div>
+            )}
+
+            {/* Input - Custom Video Player with better trim */}
+            {viewMode === "input" && (
+              <div className="flex-1 bg-[#0a0a0a] flex flex-col overflow-hidden">
+                {selectedFlow ? (
+                  <>
+                    <div className="flex-1 flex items-center justify-center p-4 min-h-0 bg-black">
+                      <video 
+                        ref={videoRef} 
+                        src={selectedFlow.videoUrl} 
+                        className="max-w-full max-h-full rounded-lg" 
+                        onPlay={() => setIsPlaying(true)} 
+                        onPause={() => setIsPlaying(false)}
+                        onLoadedMetadata={(e) => {
+                          const video = e.currentTarget;
+                          if (video.duration && isFinite(video.duration) && video.duration > 0) {
+                            const newDuration = Math.round(video.duration);
+                            // Update flow duration if it was invalid
+                            if (!selectedFlow.duration || !isFinite(selectedFlow.duration) || selectedFlow.duration <= 0) {
+                              setFlows(prev => prev.map(f => 
+                                f.id === selectedFlow.id 
+                                  ? { ...f, duration: newDuration, trimEnd: newDuration }
+                                  : f
+                              ));
+                            }
+                          }
+                        }}
+                        onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+                      />
+                    </div>
+                    <div className="p-4 border-t border-white/5 bg-[#0a0a0a]">
+                      {/* Playback controls */}
+                      <div className="flex items-center gap-3 mb-4">
+                        <button onClick={togglePlayPause} className="btn-black p-2.5 rounded-lg">
+                          {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                        </button>
+                        <span className="text-xs text-white/50 font-mono w-24">{formatDuration(Math.floor(currentTime))} / {formatDuration(selectedFlow.duration)}</span>
+                      </div>
+                      
+                      {/* Trim bar with live preview */}
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between text-xs text-white/40 mb-2">
+                          <span>Trim selection</span>
+                          <span className="font-mono">{formatDuration(selectedFlow.trimStart)} - {formatDuration(selectedFlow.trimEnd)}</span>
+                        </div>
+                        <div 
+                          ref={trimBarRef} 
+                          className="trim-slider-container relative cursor-pointer"
+                          onClick={(e) => {
+                            // Click to seek - only if not clicking on handles
+                            if ((e.target as HTMLElement).classList.contains('trim-handle')) return;
+                            const rect = trimBarRef.current?.getBoundingClientRect();
+                            if (!rect || !videoRef.current || !selectedFlow || !selectedFlow.duration || selectedFlow.duration <= 0) return;
+                            const x = e.clientX - rect.left;
+                            const percent = Math.max(0, Math.min(1, x / rect.width));
+                            const time = percent * selectedFlow.duration;
+                            if (isFinite(time) && time >= 0 && time <= selectedFlow.duration) {
+                              videoRef.current.currentTime = time;
+                              setCurrentTime(time);
+                            }
+                          }}
+                        >
+                          <div className="trim-waveform" />
+                          {/* Selected area */}
+                          {selectedFlow.duration > 0 && isFinite(selectedFlow.duration) && (
+                            <>
+                              <div className="trim-selected-area" style={{
+                                left: `${Math.max(0, (selectedFlow.trimStart / selectedFlow.duration) * 100)}%`,
+                                width: `${Math.max(0, ((selectedFlow.trimEnd - selectedFlow.trimStart) / selectedFlow.duration) * 100)}%`
+                              }} />
+                              {/* Start handle with tooltip */}
+                              <div 
+                                className="trim-handle" 
+                                style={{ left: `calc(${Math.max(0, (selectedFlow.trimStart / selectedFlow.duration) * 100)}% - 7px)` }}
+                                onMouseDown={(e) => { e.stopPropagation(); handleTrimDrag(e, "start"); }} 
+                              >
+                                {isDraggingTrim === "start" && trimPreviewTime !== null && (
+                                  <div className="trim-time-tooltip">{formatDuration(trimPreviewTime)}</div>
+                                )}
+                              </div>
+                              {/* End handle with tooltip */}
+                              <div 
+                                className="trim-handle" 
+                                style={{ left: `calc(${Math.min(100, (selectedFlow.trimEnd / selectedFlow.duration) * 100)}% - 7px)` }}
+                                onMouseDown={(e) => { e.stopPropagation(); handleTrimDrag(e, "end"); }} 
+                              >
+                                {isDraggingTrim === "end" && trimPreviewTime !== null && (
+                                  <div className="trim-time-tooltip">{formatDuration(trimPreviewTime)}</div>
+                                )}
+                              </div>
+                              {/* Playhead */}
+                              <div className="trim-playhead" style={{ left: `${Math.min(100, (currentTime / selectedFlow.duration) * 100)}%` }} />
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => fileInputRef.current?.click()} className="btn-black flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"><Upload className="w-3.5 h-3.5" /> Upload New</button>
+                          <button onClick={startRecording} className="btn-black flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"><Monitor className="w-3.5 h-3.5" /> Record New</button>
+                        </div>
+                        <button onClick={applyTrim} className="btn-black flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs bg-[#FF6E3C]/20 text-[#FF6E3C] border border-[#FF6E3C]/30">
+                          <Check className="w-3.5 h-3.5" /> Apply Trim
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center bg-[#0a0a0a]">
+                    <div className="text-center">
+                      <EmptyState icon="logo" title="No video selected" subtitle="Record or upload a video first" />
+                      <div className="flex items-center justify-center gap-2 mt-4">
+                        <button onClick={() => fileInputRef.current?.click()} className="btn-black flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs"><Upload className="w-3.5 h-3.5" /> Upload</button>
+                        <button onClick={startRecording} className="btn-black flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs"><Monitor className="w-3.5 h-3.5" /> Record</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Global Floating Edit - Properly Centered */}
+            <AnimatePresence>
+              {showFloatingEdit && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }} 
+                  animate={{ opacity: 1, y: 0 }} 
+                  exit={{ opacity: 0, y: 20 }} 
+                  className="absolute bottom-6 left-0 right-0 flex justify-center z-50 px-6"
+                >
+                  <div className="w-full max-w-[500px] backdrop-blur-xl bg-[#0a0a0a]/95 border border-white/[0.04] rounded-2xl p-3 shadow-2xl">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles className="w-3.5 h-3.5 text-[#FF6E3C]" />
+                      <span className="text-xs text-white/50">
+                        {selectedArchNode ? (
+                          <>Editing <span className="at-tag">@{selectedArchNode}</span></>
+                        ) : "Describe your changes"}
+                      </span>
+                      <button onClick={() => { setShowFloatingEdit(false); setSelectedArchNode(null); setShowSuggestions(false); }} className="ml-auto p-1 hover:bg-white/5 rounded">
+                        <X className="w-3 h-3 text-white/20" />
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <div className="flex gap-2">
+                        <input 
+                          ref={editInputRef}
+                          type="text" 
+                          value={editInput} 
+                          onChange={(e) => setEditInput(e.target.value)} 
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && !showSuggestions) handleEdit();
+                            if (e.key === "Escape") { setShowFloatingEdit(false); setSelectedArchNode(null); }
+                          }}
+                          placeholder={selectedArchNode ? `Describe changes for @${selectedArchNode}...` : "Type @ to select a component..."} 
+                          className="flex-1 px-3 py-2.5 rounded-lg text-sm text-white/80 placeholder:text-white/20 bg-white/[0.03] border border-white/[0.04] focus:outline-none focus:border-white/10" 
+                          disabled={isEditing} 
+                          autoFocus 
+                        />
+                        <button onClick={handleEdit} disabled={!editInput.trim() || isEditing} className="btn-black px-4 rounded-lg flex items-center gap-2 disabled:opacity-50">
+                          {isEditing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                      
+                      {/* Suggestions dropdown */}
+                      <AnimatePresence>
+                        {showSuggestions && suggestions.length > 0 && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            className="suggestions-dropdown"
+                          >
+                            {suggestions.map(node => {
+                              const Icon = getNodeIcon(node.type);
+                              return (
+                                <div
+                                  key={node.id}
+                                  onClick={() => handleSuggestionClick(node.id)}
+                                  className="suggestion-item"
+                                >
+                                  <Icon className="w-3.5 h-3.5 icon" />
+                                  <div>
+                                    <span className="text-xs text-white/80">@{node.id}</span>
+                                    <span className="text-[10px] text-white/40 ml-2">{node.name}</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Node Detail Modal */}
+            <AnimatePresence>
+              {selectedNodeModal && (
+                <motion.div 
+                  initial={{ opacity: 0 }} 
+                  animate={{ opacity: 1 }} 
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center"
+                  onClick={() => setSelectedNodeModal(null)}
+                >
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        {(() => { const Icon = getNodeIcon(selectedNodeModal.type); return <Icon className="w-6 h-6 text-[#FF6E3C]" />; })()}
+                        <div>
+                          <h3 className="text-lg font-semibold text-white">{selectedNodeModal.name}</h3>
+                          <span className="text-xs text-white/40 uppercase">{selectedNodeModal.type}</span>
+                        </div>
+                      </div>
+                      <button onClick={() => setSelectedNodeModal(null)} className="p-1 hover:bg-white/5 rounded">
+                        <X className="w-5 h-5 text-white/40" />
+                      </button>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <span className="text-[10px] text-white/30 uppercase">Description</span>
+                        <p className="text-sm text-white/70 mt-1">{selectedNodeModal.description || "Component in the page structure"}</p>
+                      </div>
+                      
+                      <div>
+                        <span className="text-[10px] text-white/30 uppercase">User Flow</span>
+                        <p className="text-sm text-white/50 mt-1">
+                          {selectedNodeModal.type === "page" && "Root container for all page elements"}
+                          {selectedNodeModal.type === "component" && "Reusable UI component that can contain other elements"}
+                          {selectedNodeModal.type === "section" && "Major content section of the page"}
+                          {selectedNodeModal.type === "interactive" && "User can click, tap, or interact with this element"}
+                          {selectedNodeModal.type === "element" && "Visual or content element (text, image, etc.)"}
+                        </p>
+                      </div>
+                      
+                      {selectedNodeModal.connections && selectedNodeModal.connections.length > 0 && (
+                        <div>
+                          <span className="text-[10px] text-white/30 uppercase">Connected To</span>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {selectedNodeModal.connections.map(conn => (
+                              <span key={conn} className="px-2 py-1 bg-white/5 rounded text-xs text-white/60">@{conn}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <button 
+                        onClick={() => { 
+                          setEditInput(`@${selectedNodeModal.id} `); 
+                          setSelectedArchNode(selectedNodeModal.id);
+                          setShowFloatingEdit(true); 
+                          setSelectedNodeModal(null); 
+                        }}
+                        className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 bg-[#FF6E3C]/10 border border-[#FF6E3C]/20 rounded-xl text-sm text-[#FF6E3C] hover:bg-[#FF6E3C]/15 transition-colors"
+                      >
+                        <Sparkles className="w-4 h-4" /> Edit with AI
+                      </button>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+      
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => {
+          setShowAuthModal(false);
+          setPendingAction(null);
+        }}
+        title="Sign in to generate"
+        description="Your credits and projects are saved to your account."
+      />
+      
+      {/* Out of Credits Modal */}
+      <OutOfCreditsModal
+        isOpen={showOutOfCreditsModal}
+        onClose={() => setShowOutOfCreditsModal(false)}
+        requiredCredits={pendingAction === "generate" ? CREDIT_COSTS.VIDEO_GENERATE : CREDIT_COSTS.AI_EDIT}
+        availableCredits={userTotalCredits}
+      />
+    </div>
+  );
+}
