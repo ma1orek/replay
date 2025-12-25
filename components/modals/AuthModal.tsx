@@ -97,6 +97,7 @@ export default function AuthModal({
               {/* Replay Logo */}
               <div className="flex justify-center mb-6">
                 <Logo />
+              </div>
 
               {/* Content */}
               <div className="text-center mb-8">
@@ -150,7 +151,7 @@ export default function AuthModal({
                       <div className="w-full border-t border-white/10" />
                     </div>
                     <div className="relative flex justify-center text-xs">
-                      <span className="px-2 bg-[#0a0a0a] text-white/30">or</span>
+                      <span className="px-2 bg-[#111] text-white/30">or</span>
                     </div>
                   </div>
 
