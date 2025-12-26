@@ -158,12 +158,12 @@ export async function transmuteVideoToCode(
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     
-    // Use gemini-2.0-flash-exp for video processing (best video support)
-    console.log("Using gemini-2.0-flash-exp for video...");
+    // Use gemini-1.5-pro for video processing (best video understanding)
+    console.log("Using gemini-1.5-pro for video analysis...");
     console.log("Video URL:", request.videoUrl);
     
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-1.5-pro",
     });
 
     // Fetch video from Supabase Storage and convert to base64 for Gemini
@@ -279,7 +279,7 @@ export async function editCodeWithAI(
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-1.5-pro",
     });
 
     const prompt = `You are a code editor AI. You will receive HTML code and an edit request.
