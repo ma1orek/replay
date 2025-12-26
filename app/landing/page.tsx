@@ -23,11 +23,16 @@ import {
   Target,
   Copy,
   ExternalLink,
+  Building2,
+  Lightbulb,
+  Users,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import StyleInjector from "@/components/StyleInjector";
 import { cn } from "@/lib/utils";
 import { usePendingFlow } from "../providers";
+import { useAuth } from "@/lib/auth/context";
+import { useCredits } from "@/lib/credits/context";
 
 // ═══════════════════════════════════════════════════════════════
 // NAVIGATION
@@ -46,6 +51,8 @@ function Navigation() {
   const { scrollY } = useScroll();
   const headerBg = useTransform(scrollY, [0, 100], ["rgba(3,3,3,0)", "rgba(3,3,3,0.9)"]);
   const headerBorder = useTransform(scrollY, [0, 100], ["rgba(255,255,255,0)", "rgba(255,255,255,0.05)"]);
+  const { user, signInWithGoogle, isLoading: authLoading } = useAuth();
+  const { totalCredits } = useCredits();
 
   const scrollToSection = (href: string) => {
     setIsOpen(false);
@@ -80,6 +87,32 @@ function Navigation() {
           </nav>
 
           <div className="flex items-center gap-3">
+            {/* Auth Section */}
+            {user ? (
+              <>
+                <Link
+                  href="/settings"
+                  className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-white/60 bg-white/[0.03] border border-white/10 hover:border-white/20 transition-colors"
+                >
+                  <span>{totalCredits} credits</span>
+                </Link>
+                <Link
+                  href="/settings"
+                  className="w-8 h-8 rounded-full bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] flex items-center justify-center text-white text-sm font-medium"
+                >
+                  {user.email?.charAt(0).toUpperCase() || "U"}
+                </Link>
+              </>
+            ) : (
+              <button
+                onClick={signInWithGoogle}
+                disabled={authLoading}
+                className="hidden sm:flex px-4 py-2 rounded-xl text-sm text-white/70 border border-white/10 hover:border-white/20 hover:text-white transition-colors"
+              >
+                Sign in
+              </button>
+            )}
+            
             <Link
               href="/tool"
               className="hidden sm:flex px-4 py-2.5 rounded-xl text-sm font-medium bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white hover:opacity-90 transition-opacity"
@@ -116,6 +149,28 @@ function Navigation() {
                     {item.label}
                   </button>
                 ))}
+                
+                {/* Mobile Auth */}
+                {user ? (
+                  <Link
+                    href="/settings"
+                    className="flex items-center gap-3 py-3 text-sm text-white/60"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] flex items-center justify-center text-white text-xs font-medium">
+                      {user.email?.charAt(0).toUpperCase() || "U"}
+                    </div>
+                    <span>{totalCredits} credits</span>
+                  </Link>
+                ) : (
+                  <button
+                    onClick={signInWithGoogle}
+                    disabled={authLoading}
+                    className="block w-full text-left py-3 text-sm text-white/60 hover:text-white transition-colors"
+                  >
+                    Sign in
+                  </button>
+                )}
+                
                 <Link
                   href="/tool"
                   className="block w-full text-center py-3 mt-4 rounded-xl text-sm font-medium bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white"
@@ -364,10 +419,10 @@ function HeroInput({
         </div>
 
         {/* Context & Style */}
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-5 text-left">
           <div>
-            <label className="text-sm text-white/50 mb-2 flex items-center gap-2">
-              <MousePointer2 className="w-4 h-4 text-[#FF6E3C]" />
+            <label className="text-xs text-white/50 mb-2 flex items-center gap-2">
+              <MousePointer2 className="w-3.5 h-3.5 text-[#FF6E3C]" />
               Context <span className="text-white/30">(optional)</span>
             </label>
             <textarea
@@ -375,16 +430,16 @@ function HeroInput({
               onChange={(e) => setContext(e.target.value)}
               rows={2}
               placeholder="Add data logic, constraints or details. Replay works without it — context just sharpens the result."
-              className="w-full px-4 py-3 rounded-xl text-sm text-white/80 placeholder:text-white/25 bg-white/[0.03] border border-white/[0.06] focus:outline-none focus:border-[#FF6E3C]/20 focus:bg-white/[0.035] transition-colors duration-300 ease-out resize-none"
+              className="w-full px-4 py-3 rounded-xl text-xs text-white/80 placeholder:text-white/25 placeholder:text-xs bg-white/[0.03] border border-white/[0.06] focus:outline-none focus:border-[#FF6E3C]/20 focus:bg-white/[0.035] transition-colors duration-300 ease-out resize-none"
             />
           </div>
 
           <div>
-            <label className="text-sm text-white/50 mb-2 flex items-center gap-2">
-              <Palette className="w-4 h-4 text-[#FF6E3C]" />
+            <label className="text-xs text-white/50 mb-2 flex items-center gap-2">
+              <Palette className="w-3.5 h-3.5 text-[#FF6E3C]" />
               Style
             </label>
-            <p className="text-xs text-white/30 mb-2">Choose a visual system or override the original look.</p>
+            <p className="text-[10px] text-white/30 mb-2">Choose a visual system or override the original look.</p>
             <StyleInjector value={styleDirective} onChange={setStyleDirective} disabled={false} />
           </div>
 
@@ -530,12 +585,13 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
-            className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] mb-6"
+            className="text-3xl sm:text-5xl lg:text-7xl font-bold tracking-tight leading-[1.1] mb-6"
           >
-            <span className="bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-transparent whitespace-nowrap">
+            <span className="bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-transparent">
               Rebuild UI from Video.
-            </span>{" "}
-            <span className="bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] bg-clip-text text-transparent">
+            </span>
+            <br className="sm:hidden" />
+            <span className="sm:ml-3 bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] bg-clip-text text-transparent">
               Instantly.
             </span>
           </motion.h1>
@@ -574,7 +630,7 @@ export default function LandingPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1 }}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2"
+          className="absolute bottom-6 left-1/2 -translate-x-1/2"
         >
           <motion.div
             animate={{ y: [0, 8, 0] }}
@@ -763,7 +819,7 @@ function FeaturesBento() {
           transition={{ duration: 0.8 }}
           className="text-center mb-16"
         >
-          <p className="text-xs text-[#FF6E3C] uppercase tracking-[0.2em] mb-4">Why Replay</p>
+          <p className="text-xs text-[#FF6E3C] uppercase tracking-[0.2em] mb-4">The Difference</p>
           <h2 className="text-4xl sm:text-5xl font-bold">
             Why Replay
           </h2>
@@ -1040,19 +1096,46 @@ function UseCases() {
 
   const cases = [
     {
-      title: "For Founders",
-      desc: "Rebuild competitor UIs or old products fast. Get to a working UI without specs or mockups.",
+      title: "Founders",
+      tagline: "Turn existing products into your starting point.",
+      desc: "Rebuild competitor UIs, internal tools, or old products in days instead of weeks. Replay gives you a real, working UI without specs, mockups, or design files.",
+      highlight: "From idea → to something you can actually use.",
       icon: Zap,
     },
     {
-      title: "For Developers",
-      desc: "Skip layout and interaction boilerplate. Start from real structure, not a blank file.",
+      title: "Developers",
+      tagline: "Skip boilerplate. Start from reality.",
+      desc: "Replay reconstructs real layouts, states, and interactions — not screenshots. You get clean, predictable code so you can focus on logic, data, and performance.",
+      highlight: "Less scaffolding. More building.",
       icon: Code2,
     },
     {
-      title: "For Designers",
-      desc: "Turn references and demos into real code. No handoff friction.",
+      title: "Designers",
+      tagline: "From motion and flow to real code.",
+      desc: "Turn prototypes, demos, and recordings into production-ready UI. Interactions, transitions, and structure are preserved — not approximated.",
+      highlight: "What you design is what ships.",
       icon: Palette,
+    },
+    {
+      title: "Enterprises",
+      tagline: "Modernize without rewriting everything.",
+      desc: "Perfect for rebuilding internal tools, dashboards, and legacy software that exist only as running systems — without documentation or design files.",
+      highlight: "Your old software, rebuilt for today.",
+      icon: Building2,
+    },
+    {
+      title: "Non-technical Entrepreneurs",
+      tagline: "No Figma. No code. Just results.",
+      desc: "If you can record a screen or upload a video, you can create a new UI. Replay turns inspiration, demos, or existing apps into something you can edit and use.",
+      highlight: "If it exists on a screen, Replay can rebuild it.",
+      icon: Lightbulb,
+    },
+    {
+      title: "Agencies & Freelancers",
+      tagline: "Deliver faster. Scale effortlessly.",
+      desc: "Rebuild client products from demos or recordings. Generate multiple UI versions from one flow and instantly apply new styles.",
+      highlight: "Same behavior. Different vibe.",
+      icon: Users,
     },
   ];
 
@@ -1071,7 +1154,7 @@ function UseCases() {
           </h2>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {cases.map((c, i) => (
             <motion.div
               key={c.title}
@@ -1079,15 +1162,26 @@ function UseCases() {
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.8, delay: i * 0.1 }}
             >
-              <div className="h-full rounded-2xl border border-white/[0.06] bg-[#0a0a0a]/50 p-8 hover:border-white/[0.12] transition-all duration-300 group">
-                <c.icon className="w-8 h-8 text-[#FF6E3C] mb-6 group-hover:scale-110 transition-transform" />
+              <div className="h-full rounded-2xl border border-white/[0.06] bg-[#0a0a0a]/50 p-6 sm:p-8 hover:border-white/[0.12] transition-all duration-300 group">
+                <c.icon className="w-7 h-7 text-[#FF6E3C] mb-5 group-hover:scale-110 transition-transform" />
                 
-                <h3 className="text-xl font-semibold mb-3 text-white/90">{c.title}</h3>
-                <p className="text-white/50 leading-relaxed">{c.desc}</p>
+                <h3 className="text-lg font-semibold mb-1 text-white/90">{c.title}</h3>
+                <p className="text-sm text-[#FF6E3C]/80 mb-3">{c.tagline}</p>
+                <p className="text-sm text-white/50 leading-relaxed mb-4">{c.desc}</p>
+                <p className="text-xs text-white/70 italic border-t border-white/[0.06] pt-4">{c.highlight}</p>
               </div>
             </motion.div>
           ))}
         </div>
+        
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={isInView ? { opacity: 1 } : {}}
+          transition={{ duration: 0.8, delay: 0.6 }}
+          className="text-center mt-12 text-lg text-white/40 italic"
+        >
+          If software exists on a screen, Replay can rebuild it.
+        </motion.p>
       </div>
     </section>
   );
@@ -1262,11 +1356,6 @@ function PricingSection() {
                     : "border-white/10 bg-white/[0.02]"
                 )}
               >
-                {pkg.best && (
-                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-[#FF6E3C] text-[10px] font-medium text-white">
-                    Best value
-                  </span>
-                )}
                 <div className="text-lg font-bold text-white">{pkg.price}</div>
                 <div className="text-xs text-white/50">{pkg.credits} credits</div>
               </div>
@@ -1287,10 +1376,46 @@ function FAQSection() {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   const faqs = [
-    { q: "Does Replay work with mobile apps?", a: "Yes — any video that shows a UI can be used." },
-    { q: "Is the code really usable?", a: "Yes. Replay generates clean frontend code designed to be extended." },
-    { q: "Can I export to GitHub?", a: "Yes. Copy or export with one click." },
-    { q: "Do I need to describe the flow?", a: "No. The video is enough. Context is optional." },
+    { 
+      q: "Does Replay work with mobile apps?", 
+      a: "Yes — as long as the UI is visible on screen. Replay analyzes recorded UI behavior, not platform code. You can rebuild mobile app interfaces (iOS / Android) as responsive web UI or frontend prototypes. Native logic stays native. UI becomes reusable." 
+    },
+    { 
+      q: "Is the code really usable?", 
+      a: "Yes. This is production-ready frontend code. Replay generates clean, structured React + Tailwind code with real components, states, and interactions. No screenshots. No canvas exports. No throwaway markup. You can commit it, refactor it, and ship it." 
+    },
+    { 
+      q: "Can I export to GitHub?", 
+      a: "Yes. Export your project as code, push it to GitHub, or deploy it directly. Replay doesn't lock you into a proprietary format. You own the output." 
+    },
+    { 
+      q: "Do I need to describe the flow?", 
+      a: "No — but you can. Replay understands most flows directly from video. Adding context is optional and only helps with complex logic or edge cases. Video first. Instructions only when needed." 
+    },
+    { 
+      q: "What kind of videos work best?", 
+      a: "Screen recordings of real software. Product demos, internal tools, prototypes, legacy apps, even rough recordings. Replay analyzes structure, timing, and interaction — not just pixels. If it works on screen, Replay can rebuild it." 
+    },
+    { 
+      q: "Can I change the design or style?", 
+      a: "Yes. Behavior stays. Style changes. Apply different visual styles without re-recording the flow. Same interactions, new design system. One flow. Multiple looks." 
+    },
+    { 
+      q: "Is Replay just for developers?", 
+      a: "No. Replay is used by founders, designers, agencies, and non-technical teams. If you can record a screen, you can build UI. No Figma required." 
+    },
+    { 
+      q: "Can I rebuild legacy or internal software?", 
+      a: "That's one of the main use cases. Replay is designed for systems with no documentation, no design files, and no specs. Record how the software works. Replay reconstructs it in a modern frontend stack. Modernization without rewriting everything." 
+    },
+    { 
+      q: "Does Replay replace designers or developers?", 
+      a: "No. It removes busywork. Replay handles reconstruction and scaffolding. Humans still decide logic, product direction, and final polish. Less manual work. Better results." 
+    },
+    { 
+      q: "What doesn't Replay do?", 
+      a: "Replay does not: generate backend logic, reverse-engineer APIs, or clone proprietary business logic. It focuses on UI structure, interactions, and frontend code." 
+    },
   ];
 
   const [openIndex, setOpenIndex] = useState<number | null>(null);

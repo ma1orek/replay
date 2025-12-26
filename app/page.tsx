@@ -586,10 +586,12 @@ export default function ReplayTool() {
            (window.innerWidth <= 768);
   };
 
+  const [showMobileRecordingInfo, setShowMobileRecordingInfo] = useState(false);
+
   const startRecording = async () => {
-    // Check for mobile - show info message
+    // Check for mobile - show custom modal
     if (isMobileDevice()) {
-      alert("📱 Screen recording is not available on mobile browsers.\n\nTo record your phone screen:\n1. Use your phone's built-in screen recorder\n2. Upload the recording here\n\niOS: Control Center → Screen Recording\nAndroid: Quick Settings → Screen Record");
+      setShowMobileRecordingInfo(true);
       return;
     }
 
@@ -2454,6 +2456,55 @@ export default function ReplayTool() {
         isVisible={toast.isVisible}
         onClose={hideToast}
       />
+      
+      {/* Mobile Recording Info Modal */}
+      <AnimatePresence>
+        {showMobileRecordingInfo && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowMobileRecordingInfo(false)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className="w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl p-6 shadow-2xl">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-[#FF6E3C]/20 flex items-center justify-center">
+                    <Smartphone className="w-5 h-5 text-[#FF6E3C]" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-white">Screen recording is not available on mobile browsers.</h3>
+                </div>
+                
+                <div className="space-y-3 text-sm text-white/70">
+                  <p className="font-medium text-white">To record your phone screen:</p>
+                  <ol className="list-decimal list-inside space-y-1">
+                    <li>Use your phone's built-in screen recorder</li>
+                    <li>Upload the recording here</li>
+                  </ol>
+                  <div className="pt-2 space-y-1 text-xs text-white/50">
+                    <p><span className="text-white/70">iOS:</span> Control Center → Screen Recording</p>
+                    <p><span className="text-white/70">Android:</span> Quick Settings → Screen Record</p>
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => setShowMobileRecordingInfo(false)}
+                  className="w-full mt-6 py-2.5 rounded-xl bg-[#FF6E3C] text-white font-medium hover:bg-[#FF8F5C] transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

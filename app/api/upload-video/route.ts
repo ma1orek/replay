@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient, createAdminClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
+    // Use admin client for storage operations (bypass RLS)
+    const adminClient = createAdminClient();
     const supabase = await createServerSupabaseClient();
     
     // Get user (optional - allow anonymous uploads for now)
     const { data: { user } } = await supabase.auth.getUser();
-    const userId = user?.id || "anonymous";
+    const userId = user?.id || "anon";
 
     const formData = await request.formData();
     const file = formData.get("video") as File;
@@ -32,22 +34,32 @@ export async function POST(request: NextRequest) {
     const extension = file.name.split(".").pop() || "webm";
     const filename = `${userId}/${timestamp}.${extension}`;
 
-    // Upload to Supabase Storage
-    const { data, error } = await supabase.storage
+    // Convert File to ArrayBuffer for upload
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Upload to Supabase Storage using admin client
+    const { data, error } = await adminClient.storage
       .from("videos")
-      .upload(filename, file, {
+      .upload(filename, buffer, {
         cacheControl: "3600",
-        upsert: false,
+        upsert: true,
         contentType: file.type || "video/webm",
       });
 
     if (error) {
       console.error("Upload error:", error);
-      return NextResponse.json({ error: "Failed to upload video" }, { status: 500 });
+      // Check if bucket doesn't exist
+      if (error.message?.includes("not found") || error.message?.includes("Bucket")) {
+        return NextResponse.json({ 
+          error: "Storage not configured. Please create 'videos' bucket in Supabase." 
+        }, { status: 500 });
+      }
+      return NextResponse.json({ error: `Upload failed: ${error.message}` }, { status: 500 });
     }
 
     // Get public URL
-    const { data: { publicUrl } } = supabase.storage
+    const { data: { publicUrl } } = adminClient.storage
       .from("videos")
       .getPublicUrl(filename);
 
@@ -58,9 +70,9 @@ export async function POST(request: NextRequest) {
       size: file.size,
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Upload error:", error);
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Upload failed" }, { status: 500 });
   }
 }
 

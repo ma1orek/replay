@@ -452,11 +452,6 @@ function SettingsContent() {
                         : "border-white/10 bg-white/[0.02]"
                     )}
                   >
-                    {topup.best && (
-                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-[#FF6E3C] text-[10px] font-medium text-white">
-                        Best value
-                      </div>
-                    )}
                     {isCheckingOut === topup.amount.toString() ? (
                       <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                     ) : (
