@@ -144,7 +144,14 @@ export async function transmuteVideoToCode(
   }
   
   console.log("Using API key, length:", apiKey.length);
-  console.log("Received video base64, length:", request.videoBase64.length);
+  
+  // Check if we have video data
+  if (!request.videoBase64 && !request.videoUrl) {
+    return {
+      success: false,
+      error: "No video provided (neither base64 nor URL)",
+    };
+  }
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -156,20 +163,47 @@ export async function transmuteVideoToCode(
       model: "gemini-2.0-flash-exp",
     });
 
-    // Detect mime type from base64 header or default to webm
-    let mimeType = "video/webm";
-    if (request.videoBase64.startsWith("AAAA")) {
-      mimeType = "video/mp4";
-    } else if (request.videoBase64.startsWith("GkXf")) {
-      mimeType = "video/webm";
+    // Build video part based on input type
+    let videoPart: any;
+    
+    if (request.videoUrl) {
+      // Use URL (for larger videos uploaded to Supabase)
+      console.log("Using video URL:", request.videoUrl);
+      
+      // Fetch the video and convert to base64 (Gemini doesn't support URL directly in Node.js SDK)
+      const response = await fetch(request.videoUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch video: ${response.statusText}`);
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString("base64");
+      
+      // Detect mime type from URL or content-type header
+      const contentType = response.headers.get("content-type") || "video/webm";
+      
+      videoPart = {
+        inlineData: {
+          mimeType: contentType,
+          data: base64,
+        },
+      };
+    } else if (request.videoBase64) {
+      // Use base64 directly (for smaller videos)
+      console.log("Using video base64, length:", request.videoBase64.length);
+      
+      // Detect mime type from base64 header
+      let mimeType = "video/webm";
+      if (request.videoBase64.startsWith("AAAA")) {
+        mimeType = "video/mp4";
+      }
+      
+      videoPart = {
+        inlineData: {
+          mimeType,
+          data: request.videoBase64,
+        },
+      };
     }
-
-    const videoPart = {
-      inlineData: {
-        mimeType,
-        data: request.videoBase64,
-      },
-    };
 
     const userPrompt = `${SYSTEM_PROMPT}
 

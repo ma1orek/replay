@@ -111,7 +111,8 @@ export interface RecordingState {
 }
 
 export interface TransmuteRequest {
-  videoBase64: string;
+  videoBase64?: string;
+  videoUrl?: string;
   audioBase64?: string;
   styleDirective: string;
   additionalContext?: string;

@@ -1071,25 +1071,54 @@ export default function ReplayTool() {
     try {
       const flow = flows[0];
       
-      // Convert video to base64
-      const arrayBuffer = await flow.videoBlob.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-      
-      // Check size - Vercel has 4.5MB limit for serverless
-      const videoSizeMB = uint8Array.length / 1024 / 1024;
+      // Check video size
+      const videoSizeMB = flow.videoBlob.size / 1024 / 1024;
       console.log(`Video size: ${videoSizeMB.toFixed(2)} MB`);
       
-      if (videoSizeMB > 4) {
-        showToast("Video too large (max 4MB). Please use a shorter recording.", "error");
+      // Max 50MB
+      if (videoSizeMB > 50) {
+        showToast("Video too large (max 50MB). Please use a shorter recording.", "error");
         setIsProcessing(false);
         return;
       }
       
-      let binary = '';
-      for (let i = 0; i < uint8Array.length; i += 8192) {
-        binary += String.fromCharCode.apply(null, Array.from(uint8Array.slice(i, i + 8192)));
+      let videoBase64: string | undefined;
+      let videoUrl: string | undefined;
+      
+      // For small videos (<4MB), use base64 directly
+      // For larger videos, upload to Supabase Storage first
+      if (videoSizeMB < 4) {
+        // Small video - use base64
+        const arrayBuffer = await flow.videoBlob.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+        let binary = '';
+        for (let i = 0; i < uint8Array.length; i += 8192) {
+          binary += String.fromCharCode.apply(null, Array.from(uint8Array.slice(i, i + 8192)));
+        }
+        videoBase64 = btoa(binary);
+      } else {
+        // Large video - upload to Supabase Storage first
+        setStreamingMessage("Uploading video...");
+        
+        const formData = new FormData();
+        formData.append("video", flow.videoBlob, `recording-${Date.now()}.webm`);
+        
+        const uploadRes = await fetch("/api/upload-video", {
+          method: "POST",
+          body: formData,
+        });
+        
+        if (!uploadRes.ok) {
+          const errorData = await uploadRes.json().catch(() => ({}));
+          showToast(errorData.error || "Failed to upload video", "error");
+          setIsProcessing(false);
+          return;
+        }
+        
+        const uploadData = await uploadRes.json();
+        videoUrl = uploadData.url;
+        console.log("Video uploaded:", videoUrl);
       }
-      const videoBase64 = btoa(binary);
       
       // Build style directive with refinements and trim info
       let fullStyleDirective = styleDirective || "Modern, clean design with smooth animations";
@@ -1106,6 +1135,7 @@ export default function ReplayTool() {
       
       const result = await transmuteVideoToCode({
         videoBase64,
+        videoUrl,
         styleDirective: fullStyleDirective,
       });
       
