@@ -111,9 +111,7 @@ export interface RecordingState {
 }
 
 export interface TransmuteRequest {
-  videoBase64?: string;
-  videoUrl?: string;
-  audioBase64?: string;
+  videoUrl: string; // Always use URL (uploaded to Supabase Storage)
   styleDirective: string;
   additionalContext?: string;
 }

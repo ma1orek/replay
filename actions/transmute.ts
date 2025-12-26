@@ -145,11 +145,11 @@ export async function transmuteVideoToCode(
   
   console.log("Using API key, length:", apiKey.length);
   
-  // Check if we have video data
-  if (!request.videoBase64 && !request.videoUrl) {
+  // Validate video URL
+  if (!request.videoUrl) {
     return {
       success: false,
-      error: "No video provided (neither base64 nor URL)",
+      error: "No video URL provided",
     };
   }
 
@@ -158,52 +158,33 @@ export async function transmuteVideoToCode(
     
     // Use gemini-2.0-flash-exp for video processing (best video support)
     console.log("Using gemini-2.0-flash-exp for video...");
+    console.log("Video URL:", request.videoUrl);
     
     const model = genAI.getGenerativeModel({
       model: "gemini-2.0-flash-exp",
     });
 
-    // Build video part based on input type
-    let videoPart: any;
-    
-    if (request.videoUrl) {
-      // Use URL (for larger videos uploaded to Supabase)
-      console.log("Using video URL:", request.videoUrl);
-      
-      // Fetch the video and convert to base64 (Gemini doesn't support URL directly in Node.js SDK)
-      const response = await fetch(request.videoUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch video: ${response.statusText}`);
-      }
-      const arrayBuffer = await response.arrayBuffer();
-      const base64 = Buffer.from(arrayBuffer).toString("base64");
-      
-      // Detect mime type from URL or content-type header
-      const contentType = response.headers.get("content-type") || "video/webm";
-      
-      videoPart = {
-        inlineData: {
-          mimeType: contentType,
-          data: base64,
-        },
-      };
-    } else if (request.videoBase64) {
-      // Use base64 directly (for smaller videos)
-      console.log("Using video base64, length:", request.videoBase64.length);
-      
-      // Detect mime type from base64 header
-      let mimeType = "video/webm";
-      if (request.videoBase64.startsWith("AAAA")) {
-        mimeType = "video/mp4";
-      }
-      
-      videoPart = {
-        inlineData: {
-          mimeType,
-          data: request.videoBase64,
-        },
-      };
+    // Fetch video from Supabase Storage and convert to base64 for Gemini
+    console.log("Fetching video from Supabase Storage...");
+    const response = await fetch(request.videoUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch video from storage: ${response.statusText}`);
     }
+    
+    const arrayBuffer = await response.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString("base64");
+    console.log("Video fetched, base64 length:", base64.length);
+    
+    // Detect mime type from content-type header
+    const contentType = response.headers.get("content-type") || "video/webm";
+    console.log("Video content type:", contentType);
+    
+    const videoPart = {
+      inlineData: {
+        mimeType: contentType,
+        data: base64,
+      },
+    };
 
     const userPrompt = `${SYSTEM_PROMPT}
 

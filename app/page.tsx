@@ -1085,43 +1085,28 @@ export default function ReplayTool() {
         return;
       }
       
-      let videoBase64: string | undefined;
-      let videoUrl: string | undefined;
+      // ALWAYS upload to Supabase Storage first (to avoid Vercel's 4.5MB server action limit)
+      setStreamingMessage("Uploading video...");
       
-      // For small videos (<4MB), use base64 directly
-      // For larger videos, upload to Supabase Storage first
-      if (videoSizeMB < 4) {
-        // Small video - use base64
-        const arrayBuffer = await flow.videoBlob.arrayBuffer();
-        const uint8Array = new Uint8Array(arrayBuffer);
-        let binary = '';
-        for (let i = 0; i < uint8Array.length; i += 8192) {
-          binary += String.fromCharCode.apply(null, Array.from(uint8Array.slice(i, i + 8192)));
-        }
-        videoBase64 = btoa(binary);
-      } else {
-        // Large video - upload to Supabase Storage first
-        setStreamingMessage("Uploading video...");
-        
-        const formData = new FormData();
-        formData.append("video", flow.videoBlob, `recording-${Date.now()}.webm`);
-        
-        const uploadRes = await fetch("/api/upload-video", {
-          method: "POST",
-          body: formData,
-        });
-        
-        if (!uploadRes.ok) {
-          const errorData = await uploadRes.json().catch(() => ({}));
-          showToast(errorData.error || "Failed to upload video", "error");
-          setIsProcessing(false);
-          return;
-        }
-        
-        const uploadData = await uploadRes.json();
-        videoUrl = uploadData.url;
-        console.log("Video uploaded:", videoUrl);
+      const formData = new FormData();
+      formData.append("video", flow.videoBlob, `recording-${Date.now()}.webm`);
+      
+      const uploadRes = await fetch("/api/upload-video", {
+        method: "POST",
+        body: formData,
+      });
+      
+      if (!uploadRes.ok) {
+        const errorData = await uploadRes.json().catch(() => ({}));
+        console.error("Upload failed:", errorData);
+        showToast(errorData.error || "Failed to upload video. Please try again.", "error");
+        setIsProcessing(false);
+        return;
       }
+      
+      const uploadData = await uploadRes.json();
+      const videoUrl = uploadData.url;
+      console.log("Video uploaded to Supabase:", videoUrl);
       
       // Build style directive with refinements and trim info
       let fullStyleDirective = styleDirective || "Modern, clean design with smooth animations";
@@ -1137,7 +1122,6 @@ export default function ReplayTool() {
       }
       
       const result = await transmuteVideoToCode({
-        videoBase64,
         videoUrl,
         styleDirective: fullStyleDirective,
       });
