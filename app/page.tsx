@@ -153,8 +153,8 @@ export default function ReplayTool() {
   const [refinements, setRefinements] = useState("");
   const [analysisSection, setAnalysisSection] = useState<"style" | "layout" | "components">("style");
   
-  // Mobile state - flows visible by default
-  const [mobilePanel, setMobilePanel] = useState<"flows" | "preview" | "code" | null>("flows");
+  // Mobile state - input visible by default
+  const [mobilePanel, setMobilePanel] = useState<"input" | "preview" | "code" | "arch" | "style" | null>("input");
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   
   // Live analysis state for "Matrix" view
@@ -705,6 +705,7 @@ export default function ReplayTool() {
     video.src = url;
     video.muted = true;
     video.playsInline = true;
+    video.preload = "metadata";
     
     return new Promise<void>((resolve) => {
       let resolved = false;
@@ -720,7 +721,6 @@ export default function ReplayTool() {
           if (ctx && vw > 0 && vh > 0) {
             ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
             const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
-            // Check if thumbnail is not empty/black
             if (dataUrl.length > 1000) return dataUrl;
           }
         } catch (e) {
@@ -729,15 +729,24 @@ export default function ReplayTool() {
         return undefined;
       };
       
-      const finishCreation = (rawDuration: number, thumbnail?: string) => {
+      // Get valid duration - handle Infinity for webm
+      const getValidDuration = (): number => {
+        const d = video.duration;
+        if (d && isFinite(d) && !isNaN(d) && d > 0 && d < 7200) {
+          return Math.round(d);
+        }
+        if (recordingDuration > 0) return recordingDuration;
+        // Estimate from blob size (~500KB/s for screen recording)
+        const est = Math.max(5, Math.round(blob.size / 500000));
+        console.log("Estimated duration from blob size:", est);
+        return Math.min(est, 300);
+      };
+      
+      const finishCreation = (thumbnail?: string) => {
         if (resolved) return;
         resolved = true;
         
-        let duration = rawDuration;
-        if (!isFinite(duration) || isNaN(duration) || duration <= 0) {
-          duration = recordingDuration || 30;
-        }
-        
+        const duration = getValidDuration();
         const flowNum = flows.length + 1;
         const newFlow: FlowItem = {
           id: generateId(), 
@@ -749,46 +758,52 @@ export default function ReplayTool() {
           trimStart: 0, 
           trimEnd: duration,
         };
-        console.log("Flow added:", newFlow.name, "duration:", duration, "has thumbnail:", !!thumbnail);
+        console.log("Flow added:", newFlow.name, "duration:", duration, "blob size:", blob.size);
         setFlows(prev => [...prev, newFlow]);
         setSelectedFlowId(newFlow.id);
         resolve();
       };
       
-      // When video can play through, generate thumbnail
-      video.oncanplaythrough = () => {
-        if (resolved) return;
-        const duration = Math.round(video.duration) || recordingDuration || 10;
-        // Seek to 1 second or 25% of video
-        video.currentTime = Math.min(1, duration * 0.25);
+      // Handle webm Infinity duration - seek to end to get real duration
+      video.onloadedmetadata = () => {
+        console.log("Metadata loaded, raw duration:", video.duration);
+        if (!isFinite(video.duration) || video.duration <= 0) {
+          video.currentTime = 1e10; // Seek far to get real duration
+        } else {
+          video.currentTime = Math.min(1, video.duration * 0.25);
+        }
       };
       
       video.onseeked = () => {
         if (resolved) return;
-        const duration = Math.round(video.duration) || recordingDuration || 10;
-        // Wait a bit for frame to render
+        console.log("Seeked to:", video.currentTime, "duration now:", video.duration);
+        // If we seeked to get duration, now seek for thumbnail
+        if (video.currentTime > 100) {
+          video.currentTime = Math.min(1, getValidDuration() * 0.25);
+          return;
+        }
         requestAnimationFrame(() => {
           setTimeout(() => {
             if (resolved) return;
-            const thumbnail = generateThumbnail(video);
-            finishCreation(duration, thumbnail);
-          }, 50);
+            finishCreation(generateThumbnail(video));
+          }, 100);
         });
       };
       
       video.onerror = () => {
         console.error("Video load error");
-        finishCreation(recordingDuration || 10);
+        finishCreation();
       };
       
-      // Fallback
+      // Fallback timeout
       setTimeout(() => {
         if (!resolved) {
-          const duration = (video.duration && isFinite(video.duration)) ? Math.round(video.duration) : (recordingDuration || 10);
-          const thumbnail = generateThumbnail(video);
-          finishCreation(duration, thumbnail);
+          console.log("Timeout - using current data");
+          finishCreation(generateThumbnail(video));
         }
-      }, 2000);
+      }, 5000);
+      
+      video.load();
     });
   };
 
@@ -1445,8 +1460,8 @@ export default function ReplayTool() {
         </div>
       </header>
       
-      {/* Mobile Header */}
-      <header className="relative z-20 flex md:hidden items-center justify-between px-4 py-3 border-b border-white/5 bg-black/80 backdrop-blur-xl">
+      {/* Mobile Header - Fixed */}
+      <header className="fixed top-0 left-0 right-0 z-50 flex md:hidden items-center justify-between px-4 py-3 border-b border-white/5 bg-black/95 backdrop-blur-xl">
         <a href="/" className="hover:opacity-80 transition-opacity">
           <Logo />
         </a>
@@ -2287,10 +2302,10 @@ export default function ReplayTool() {
       <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-white/10 bg-[#111]/95 backdrop-blur-xl safe-area-pb">
         <div className="flex items-center justify-around py-2">
           <button 
-            onClick={() => setMobilePanel("flows")}
+            onClick={() => setMobilePanel("input")}
             className={cn(
-              "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-colors",
-              mobilePanel === "flows" ? "text-[#FF6E3C]" : "text-white/40"
+              "flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors",
+              mobilePanel === "input" ? "text-[#FF6E3C]" : "text-white/40"
             )}
           >
             <Film className="w-5 h-5" />
@@ -2300,7 +2315,7 @@ export default function ReplayTool() {
           <button 
             onClick={() => setMobilePanel("preview")}
             className={cn(
-              "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-colors",
+              "flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors",
               mobilePanel === "preview" ? "text-[#FF6E3C]" : "text-white/40"
             )}
           >
@@ -2309,22 +2324,9 @@ export default function ReplayTool() {
           </button>
           
           <button 
-            onClick={handleGenerate}
-            disabled={isProcessing || flows.length === 0}
-            className="flex flex-col items-center gap-1 px-5 py-2 -mt-4 rounded-2xl bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white shadow-lg shadow-[#FF6E3C]/30 disabled:opacity-50"
-          >
-            {isProcessing ? (
-              <Loader2 className="w-6 h-6 animate-spin" />
-            ) : (
-              <LogoIcon className="w-6 h-6" color="white" />
-            )}
-            <span className="text-[10px] font-semibold">{isProcessing ? "..." : "Generate"}</span>
-          </button>
-          
-          <button 
             onClick={() => setMobilePanel("code")}
             className={cn(
-              "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-colors",
+              "flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors",
               mobilePanel === "code" ? "text-[#FF6E3C]" : "text-white/40"
             )}
           >
@@ -2333,21 +2335,32 @@ export default function ReplayTool() {
           </button>
           
           <button 
-            onClick={() => setViewMode("architecture")}
+            onClick={() => setMobilePanel("arch")}
             className={cn(
-              "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-colors",
-              viewMode === "architecture" ? "text-[#FF6E3C]" : "text-white/40"
+              "flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors",
+              mobilePanel === "arch" ? "text-[#FF6E3C]" : "text-white/40"
             )}
           >
             <Boxes className="w-5 h-5" />
             <span className="text-[10px] font-medium">Arch</span>
           </button>
+          
+          <button 
+            onClick={() => setMobilePanel("style")}
+            className={cn(
+              "flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors",
+              mobilePanel === "style" ? "text-[#FF6E3C]" : "text-white/40"
+            )}
+          >
+            <Palette className="w-5 h-5" />
+            <span className="text-[10px] font-medium">Style</span>
+          </button>
         </div>
       </div>
       
-      {/* Mobile Flows Panel */}
+      {/* Mobile Input Panel */}
       <AnimatePresence>
-        {mobilePanel === "flows" && (
+        {mobilePanel === "input" && (
           <motion.div 
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
@@ -2388,7 +2401,7 @@ export default function ReplayTool() {
                 ) : flows.map((flow) => (
                   <div 
                     key={flow.id} 
-                    onClick={() => { setSelectedFlowId(flow.id); setMobilePanel("preview"); }}
+                    onClick={() => setSelectedFlowId(flow.id)}
                     className={cn(
                       "flex items-center gap-3 p-3 rounded-xl border transition-colors",
                       selectedFlowId === flow.id 
@@ -2435,9 +2448,157 @@ export default function ReplayTool() {
                     <label className="text-xs font-medium text-white/40 uppercase tracking-wider mb-2 block">Style</label>
                     <StyleInjector value={styleDirective} onChange={setStyleDirective} disabled={isProcessing} />
                   </div>
+                  
+                  {/* Generate Button */}
+                  <button 
+                    onClick={handleGenerate}
+                    disabled={isProcessing || flows.length === 0}
+                    className="w-full mt-4 py-4 rounded-xl bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white font-semibold shadow-lg shadow-[#FF6E3C]/30 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isProcessing ? (
+                      <><Loader2 className="w-5 h-5 animate-spin" /><span>Generating...</span></>
+                    ) : (
+                      <><LogoIcon className="w-5 h-5" color="white" /><span>Generate</span></>
+                    )}
+                  </button>
                 </>
               )}
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Mobile Preview Panel */}
+      <AnimatePresence>
+        {mobilePanel === "preview" && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-x-0 bottom-16 top-14 z-30 md:hidden bg-[#0a0a0a]"
+          >
+            {previewUrl ? (
+              <iframe src={previewUrl} className="w-full h-full border-0 bg-white" />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center mb-4">
+                  <Eye className="w-8 h-8 text-[#FF6E3C]/50" />
+                </div>
+                <p className="text-sm text-white/50 font-medium">No preview yet</p>
+                <p className="text-xs text-white/30 mt-1">Generate to see preview</p>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Mobile Code Panel */}
+      <AnimatePresence>
+        {mobilePanel === "code" && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-x-0 bottom-16 top-14 z-30 md:hidden bg-[#0a0a0a] overflow-auto"
+          >
+            {generatedCode ? (
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs text-white/50">Generated Code</span>
+                  <button onClick={copyCode} className="text-xs text-[#FF6E3C] flex items-center gap-1">
+                    <Copy className="w-3 h-3" /> Copy
+                  </button>
+                </div>
+                <pre className="text-[10px] text-white/70 bg-black/50 p-3 rounded-xl overflow-auto max-h-[70vh]">
+                  <code>{displayedCode || generatedCode}</code>
+                </pre>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center mb-4">
+                  <Code className="w-8 h-8 text-[#FF6E3C]/50" />
+                </div>
+                <p className="text-sm text-white/50 font-medium">No code yet</p>
+                <p className="text-xs text-white/30 mt-1">Generate to see code</p>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Mobile Architecture Panel */}
+      <AnimatePresence>
+        {mobilePanel === "arch" && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-x-0 bottom-16 top-14 z-30 md:hidden bg-[#0a0a0a] overflow-auto"
+          >
+            {architecture.length > 0 ? (
+              <div className="p-4 space-y-3">
+                <span className="text-xs text-white/50">Component Architecture</span>
+                {architecture.map(node => (
+                  <div key={node.id} className="p-3 rounded-xl bg-white/5 border border-white/10">
+                    <p className="text-sm font-medium text-white/80">{node.name}</p>
+                    <p className="text-xs text-white/40 mt-1">{node.description}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center mb-4">
+                  <Boxes className="w-8 h-8 text-[#FF6E3C]/50" />
+                </div>
+                <p className="text-sm text-white/50 font-medium">No architecture yet</p>
+                <p className="text-xs text-white/30 mt-1">Generate to see structure</p>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Mobile Style Panel */}
+      <AnimatePresence>
+        {mobilePanel === "style" && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-x-0 bottom-16 top-14 z-30 md:hidden bg-[#0a0a0a] overflow-auto"
+          >
+            {analysisPhase?.palette?.length ? (
+              <div className="p-4 space-y-4">
+                <div>
+                  <span className="text-xs text-white/50 block mb-2">Color Palette</span>
+                  <div className="flex gap-2">
+                    {analysisPhase.palette.map((color, i) => (
+                      <div key={i} className="w-10 h-10 rounded-lg" style={{ backgroundColor: color }} />
+                    ))}
+                  </div>
+                </div>
+                {analysisPhase.typography && (
+                  <div>
+                    <span className="text-xs text-white/50 block mb-1">Typography</span>
+                    <p className="text-sm text-white/70">{analysisPhase.typography}</p>
+                  </div>
+                )}
+                {analysisPhase.vibe && (
+                  <div>
+                    <span className="text-xs text-white/50 block mb-1">Style</span>
+                    <p className="text-sm text-white/70">{analysisPhase.vibe}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center mb-4">
+                  <Palette className="w-8 h-8 text-[#FF6E3C]/50" />
+                </div>
+                <p className="text-sm text-white/50 font-medium">No style analysis yet</p>
+                <p className="text-xs text-white/30 mt-1">Generate to see style</p>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
