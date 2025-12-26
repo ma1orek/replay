@@ -43,7 +43,8 @@ import {
   Smartphone,
   Crosshair,
   Clock,
-  Plus
+  Plus,
+  Copy
 } from "lucide-react";
 import { cn, generateId, formatDuration } from "@/lib/utils";
 import { transmuteVideoToCode, editCodeWithAI } from "@/actions/transmute";
