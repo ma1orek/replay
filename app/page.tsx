@@ -56,7 +56,6 @@ import AuthModal from "@/components/modals/AuthModal";
 import OutOfCreditsModal from "@/components/modals/OutOfCreditsModal";
 import CreditsBar from "@/components/CreditsBar";
 import { Toast, useToast } from "@/components/Toast";
-import { compressVideo, needsCompression, formatFileSize } from "@/lib/video-compress";
 import Link from "next/link";
 
 interface FlowItem {
@@ -1072,41 +1071,25 @@ export default function ReplayTool() {
     try {
       const flow = flows[0];
       
-      // Check if video needs compression (Vercel limit is ~4.5MB)
-      let videoBase64: string;
-      const maxSizeMB = 3; // Stay well under Vercel's limit
+      // Convert video to base64
+      const arrayBuffer = await flow.videoBlob.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
       
-      if (needsCompression(flow.videoBlob, maxSizeMB)) {
-        showToast(`Compressing video (${formatFileSize(flow.videoBlob.size)})...`, "info");
-        setStreamingMessage("Compressing video for upload...");
-        
-        try {
-          const compressed = await compressVideo(flow.videoBlob, { maxSizeMB, maxWidth: 854 });
-          videoBase64 = compressed.base64;
-          
-          console.log(`Video compressed: ${formatFileSize(compressed.originalSize)} → ${formatFileSize(compressed.compressedSize)} (${compressed.compressionRatio.toFixed(1)}x)`);
-          
-          if (compressed.compressedSize > maxSizeMB * 1024 * 1024) {
-            showToast("Video still too large after compression. Try a shorter clip.", "error");
-            setIsProcessing(false);
-            return;
-          }
-        } catch (compressError) {
-          console.error("Compression failed:", compressError);
-          showToast("Failed to compress video. Try a shorter clip.", "error");
-          setIsProcessing(false);
-          return;
-        }
-      } else {
-        // Video is small enough, use directly
-        const arrayBuffer = await flow.videoBlob.arrayBuffer();
-        const uint8Array = new Uint8Array(arrayBuffer);
-        let binary = '';
-        for (let i = 0; i < uint8Array.length; i += 8192) {
-          binary += String.fromCharCode.apply(null, Array.from(uint8Array.slice(i, i + 8192)));
-        }
-        videoBase64 = btoa(binary);
+      // Check size - Vercel has 4.5MB limit for serverless
+      const videoSizeMB = uint8Array.length / 1024 / 1024;
+      console.log(`Video size: ${videoSizeMB.toFixed(2)} MB`);
+      
+      if (videoSizeMB > 4) {
+        showToast("Video too large (max 4MB). Please use a shorter recording.", "error");
+        setIsProcessing(false);
+        return;
       }
+      
+      let binary = '';
+      for (let i = 0; i < uint8Array.length; i += 8192) {
+        binary += String.fromCharCode.apply(null, Array.from(uint8Array.slice(i, i + 8192)));
+      }
+      const videoBase64 = btoa(binary);
       
       // Build style directive with refinements and trim info
       let fullStyleDirective = styleDirective || "Modern, clean design with smooth animations";

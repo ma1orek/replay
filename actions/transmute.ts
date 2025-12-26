@@ -149,16 +149,24 @@ export async function transmuteVideoToCode(
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     
-    // ========== gemini-3-pro-preview ==========
-    console.log("Using gemini-3-pro-preview...");
+    // Use gemini-2.0-flash-exp for video processing (best video support)
+    console.log("Using gemini-2.0-flash-exp for video...");
     
     const model = genAI.getGenerativeModel({
-      model: "gemini-3-pro-preview",
+      model: "gemini-2.0-flash-exp",
     });
+
+    // Detect mime type from base64 header or default to webm
+    let mimeType = "video/webm";
+    if (request.videoBase64.startsWith("AAAA")) {
+      mimeType = "video/mp4";
+    } else if (request.videoBase64.startsWith("GkXf")) {
+      mimeType = "video/webm";
+    }
 
     const videoPart = {
       inlineData: {
-        mimeType: "video/webm",
+        mimeType,
         data: request.videoBase64,
       },
     };
