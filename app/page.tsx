@@ -2505,7 +2505,13 @@ export default function ReplayTool() {
               <div className="p-4">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs text-white/50">Generated Code</span>
-                  <button onClick={copyCode} className="text-xs text-[#FF6E3C] flex items-center gap-1">
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(generatedCode || "");
+                      showToast("Copied to clipboard!", "success");
+                    }} 
+                    className="text-xs text-[#FF6E3C] flex items-center gap-1"
+                  >
                     <Copy className="w-3 h-3" /> Copy
                   </button>
                 </div>
