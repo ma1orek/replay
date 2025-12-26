@@ -55,6 +55,7 @@ import { useCredits, CREDIT_COSTS } from "@/lib/credits/context";
 import AuthModal from "@/components/modals/AuthModal";
 import OutOfCreditsModal from "@/components/modals/OutOfCreditsModal";
 import CreditsBar from "@/components/CreditsBar";
+import { Toast, useToast } from "@/components/Toast";
 import Link from "next/link";
 
 interface FlowItem {
@@ -123,6 +124,7 @@ export default function ReplayTool() {
   const { pending, clearPending } = usePendingFlow();
   const { user, isLoading: authLoading } = useAuth();
   const { totalCredits: userTotalCredits, wallet, membership, canAfford, refreshCredits } = useCredits();
+  const { toast, showToast, hideToast } = useToast();
   
   const [flows, setFlows] = useState<FlowItem[]>([]);
   const [styleDirective, setStyleDirective] = useState("");
@@ -1096,7 +1098,7 @@ export default function ReplayTool() {
       
       console.log("Generation result:", result);
       
-      if (result.success && result.code) {
+      if (result && result.success && result.code) {
         setGeneratedCode(result.code);
         setIsStreamingCode(true);
         setViewMode("code");
@@ -1120,16 +1122,22 @@ export default function ReplayTool() {
           }
         } : prev);
         
-        // NOTE: generationComplete will be set in the streaming useEffect when streaming finishes
+        showToast("Generation complete!", "success");
       } else {
-        console.error("Generation failed:", result.error);
-        setAnalysisDescription(`Error: ${result.error || "Generation failed. Please try again."}`);
-        alert(`Generation failed: ${result.error || "Unknown error"}`);
+        const errorMsg = result?.error || "Generation failed. Please try again.";
+        console.error("Generation failed:", errorMsg);
+        setAnalysisDescription(`Error: ${errorMsg}`);
+        showToast(errorMsg, "error");
       }
     } catch (error: any) {
       console.error("Generation error:", error);
-      setAnalysisDescription(`Error: ${error.message || "Unknown error occurred"}`);
-      alert(`Error: ${error.message || "Unknown error"}`);
+      // Check for 413 payload too large
+      let errorMsg = error.message || "Unknown error occurred";
+      if (errorMsg.includes("413") || errorMsg.includes("payload") || errorMsg.includes("too large")) {
+        errorMsg = "Video is too large. Please use a shorter video (under 10 seconds) or compress it.";
+      }
+      setAnalysisDescription(`Error: ${errorMsg}`);
+      showToast(errorMsg, "error");
     } finally {
       setIsProcessing(false);
     }
@@ -2354,9 +2362,9 @@ export default function ReplayTool() {
                     <textarea
                       value={refinements}
                       onChange={(e) => setRefinements(e.target.value)}
-                      placeholder="Describe interactions or logic..."
+                      placeholder="Explain interactions, logic, or specific details (optional)"
                       rows={2}
-                      className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm text-white/70 placeholder:text-white/25 focus:outline-none focus:border-[#FF6E3C]/30"
+                      className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs text-white/70 placeholder:text-white/25 placeholder:text-[10px] focus:outline-none focus:border-[#FF6E3C]/30"
                     />
                   </div>
                   
@@ -2388,6 +2396,14 @@ export default function ReplayTool() {
         onClose={() => setShowOutOfCreditsModal(false)}
         requiredCredits={pendingAction === "generate" ? CREDIT_COSTS.VIDEO_GENERATE : CREDIT_COSTS.AI_EDIT}
         availableCredits={userTotalCredits}
+      />
+      
+      {/* Toast notifications */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
       />
     </div>
   );

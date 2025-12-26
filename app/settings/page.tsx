@@ -102,6 +102,7 @@ function SettingsContent() {
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "account");
   const [billingInterval, setBillingInterval] = useState<"monthly" | "yearly">("monthly");
   const [isCheckingOut, setIsCheckingOut] = useState<string | null>(null);
+  const [testMessage, setTestMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const { user, signOut } = useAuth();
   const { wallet, membership, totalCredits, isLoading } = useCredits();
@@ -478,6 +479,14 @@ function SettingsContent() {
               <p className="text-sm text-white/50 mb-4">
                 Add test credits for development. Remove this section before production.
               </p>
+              {testMessage && (
+                <div className={cn(
+                  "p-3 rounded-lg mb-4 text-sm font-medium",
+                  testMessage.type === "success" ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"
+                )}>
+                  {testMessage.type === "success" ? "✅" : "❌"} {testMessage.text}
+                </div>
+              )}
               <button
                 onClick={async () => {
                   setIsCheckingOut("test");
@@ -489,13 +498,13 @@ function SettingsContent() {
                     });
                     const data = await res.json();
                     if (data.success) {
-                      alert(`✅ Added 1000 test credits!`);
-                      window.location.reload();
+                      setTestMessage({ type: "success", text: "Added 1000 test credits!" });
+                      setTimeout(() => window.location.reload(), 1500);
                     } else {
-                      alert(`❌ Error: ${data.error}`);
+                      setTestMessage({ type: "error", text: `Error: ${data.error}` });
                     }
                   } catch (error) {
-                    alert("❌ Failed to add test credits");
+                    setTestMessage({ type: "error", text: "Failed to add test credits" });
                   } finally {
                     setIsCheckingOut(null);
                   }
