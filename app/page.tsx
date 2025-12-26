@@ -1172,7 +1172,7 @@ export default function ReplayTool() {
           }
         } : prev);
         
-        showToast("Generation complete!", "success");
+        // Generation complete - no toast needed, UI shows the result
       } else {
         const errorMsg = result?.error || "Generation failed. Please try again.";
         console.error("Generation failed:", errorMsg);

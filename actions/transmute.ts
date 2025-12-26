@@ -31,7 +31,9 @@ function getApiKey(): string | null {
 // Full Pro model prompt - BOTH eyes and brain
 const SYSTEM_PROMPT = `You are Replay, an expert UI Reverse-Engineering AI and code generator.
 
-**TASK:** Watch this screen recording and generate a STUNNING single HTML file that replicates what you see.
+**IMPORTANT:** You are receiving a VIDEO file, not a single image. You MUST analyze the ENTIRE video timeline, not just the first frame.
+
+**TASK:** Watch this ENTIRE screen recording from beginning to end, analyze ALL screens/states/transitions shown, and generate a STUNNING single HTML file that replicates EVERYTHING you observe throughout the video.
 
 **OUTPUT FORMAT:** A single, complete HTML file with:
 - Tailwind CSS via CDN for styling
@@ -190,7 +192,15 @@ export async function transmuteVideoToCode(
 
 **STYLE DIRECTIVE:** "${request.styleDirective}"
 
-Watch the video carefully, extract all visual information, and generate the complete HTML now.`;
+**CRITICAL VIDEO INSTRUCTIONS:**
+1. This is a VIDEO recording, NOT a single image - watch the ENTIRE video from start to finish
+2. Analyze ALL frames throughout the video duration to understand the full UI flow
+3. Look for: navigation changes, hover states, click interactions, scrolling content, modal dialogs, transitions
+4. The video may show multiple screens/states - include ALL of them in your generated code
+5. If you see animations or transitions in the video, replicate them with CSS/Alpine.js
+6. Extract text from ALL screens shown throughout the video
+
+Now watch the complete video carefully and generate the HTML that includes everything you observed.`;
 
     const result = await model.generateContent({
       contents: [
