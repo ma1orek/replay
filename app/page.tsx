@@ -27,6 +27,7 @@ import {
   X,
   GitBranch,
   Box,
+  Boxes,
   Layers,
   Layout,
   Type,
@@ -2274,18 +2275,18 @@ export default function ReplayTool() {
           <button 
             onClick={() => setMobilePanel("flows")}
             className={cn(
-              "flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors",
+              "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-colors",
               mobilePanel === "flows" ? "text-[#FF6E3C]" : "text-white/40"
             )}
           >
             <Film className="w-5 h-5" />
-            <span className="text-[10px] font-medium">Flows</span>
+            <span className="text-[10px] font-medium">Input</span>
           </button>
           
           <button 
             onClick={() => setMobilePanel("preview")}
             className={cn(
-              "flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors",
+              "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-colors",
               mobilePanel === "preview" ? "text-[#FF6E3C]" : "text-white/40"
             )}
           >
@@ -2301,7 +2302,7 @@ export default function ReplayTool() {
             {isProcessing ? (
               <Loader2 className="w-6 h-6 animate-spin" />
             ) : (
-              <Sparkles className="w-6 h-6" />
+              <LogoIcon className="w-6 h-6" color="white" />
             )}
             <span className="text-[10px] font-semibold">{isProcessing ? "..." : "Generate"}</span>
           </button>
@@ -2309,7 +2310,7 @@ export default function ReplayTool() {
           <button 
             onClick={() => setMobilePanel("code")}
             className={cn(
-              "flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors",
+              "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-colors",
               mobilePanel === "code" ? "text-[#FF6E3C]" : "text-white/40"
             )}
           >
@@ -2318,11 +2319,14 @@ export default function ReplayTool() {
           </button>
           
           <button 
-            onClick={() => setShowMobileMenu(true)}
-            className="flex flex-col items-center gap-1 px-4 py-2 rounded-xl text-white/40"
+            onClick={() => setViewMode("architecture")}
+            className={cn(
+              "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-colors",
+              viewMode === "architecture" ? "text-[#FF6E3C]" : "text-white/40"
+            )}
           >
-            <User className="w-5 h-5" />
-            <span className="text-[10px] font-medium">Menu</span>
+            <Boxes className="w-5 h-5" />
+            <span className="text-[10px] font-medium">Arch</span>
           </button>
         </div>
       </div>
@@ -2361,9 +2365,11 @@ export default function ReplayTool() {
               <div className="space-y-2">
                 {flows.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <Video className="w-10 h-10 text-white/10 mb-3" />
-                    <p className="text-sm text-white/30">No flows yet</p>
-                    <p className="text-xs text-white/20 mt-1">Record or upload a video to get started</p>
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center mb-4">
+                      <LogoIcon className="w-8 h-8" color="#FF6E3C" />
+                    </div>
+                    <p className="text-sm text-white/50 font-medium">No video yet</p>
+                    <p className="text-xs text-white/30 mt-1">Record or upload to get started</p>
                   </div>
                 ) : flows.map((flow) => (
                   <div 
