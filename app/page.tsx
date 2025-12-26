@@ -890,14 +890,16 @@ export default function ReplayTool() {
     if (!selectedFlow) return;
     
     const trimDuration = selectedFlow.trimEnd - selectedFlow.trimStart;
-    console.log(`Trim applied to ${selectedFlow.name}: ${selectedFlow.trimStart}s - ${selectedFlow.trimEnd}s (${trimDuration}s)`);
+    console.log(`Trim applied: ${selectedFlow.trimStart}s - ${selectedFlow.trimEnd}s (${trimDuration}s)`);
     
-    // Create a trimmed video blob using MediaSource and Canvas
-    // For now, we mark it as trimmed and the API will receive the full video
-    // with instructions to only consider the trimmed section
+    // Remove any previous trim info from name and add new one
+    // Match patterns like "(0s-30s)" or "(29s-30s)"
+    const baseName = selectedFlow.name.replace(/\s*\(\d+s-\d+s\)\s*/g, '').trim();
+    const newName = `${baseName} (${Math.round(selectedFlow.trimStart)}s-${Math.round(selectedFlow.trimEnd)}s)`;
+    
     setFlows(prev => prev.map(f => 
       f.id === selectedFlow.id 
-        ? { ...f, name: `${f.name} (${Math.round(selectedFlow.trimStart)}s-${Math.round(selectedFlow.trimEnd)}s)` }
+        ? { ...f, name: newName }
         : f
     ));
   };
@@ -1137,8 +1139,14 @@ export default function ReplayTool() {
       }
       
       // Add trim info if applicable
-      if (flow.trimStart > 0 || flow.trimEnd < flow.duration) {
+      const isTrimmed = flow.trimStart > 0 || flow.trimEnd < flow.duration;
+      console.log(`Flow: trimStart=${flow.trimStart}, trimEnd=${flow.trimEnd}, duration=${flow.duration}, isTrimmed=${isTrimmed}`);
+      
+      if (isTrimmed) {
         fullStyleDirective += `. CRITICAL: ONLY analyze video content between timestamps ${flow.trimStart.toFixed(1)}s and ${flow.trimEnd.toFixed(1)}s. Ignore ALL content before ${flow.trimStart.toFixed(1)}s and after ${flow.trimEnd.toFixed(1)}s.`;
+      } else {
+        // Full video selected - add explicit instruction to watch entire video
+        fullStyleDirective += `. This is a ${flow.duration} second video. Watch and analyze the ENTIRE video from 0:00 to ${formatDuration(flow.duration)}. Multiple screens or states may appear - include ALL of them.`;
       }
       
       const result = await transmuteVideoToCode({
