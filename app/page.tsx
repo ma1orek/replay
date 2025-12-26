@@ -1085,27 +1085,47 @@ export default function ReplayTool() {
         return;
       }
       
-      // ALWAYS upload to Supabase Storage first (to avoid Vercel's 4.5MB server action limit)
+      // Upload video to Supabase Storage using signed URL (bypasses Vercel's 4.5MB limit)
       setStreamingMessage("Uploading video...");
       
-      const formData = new FormData();
-      formData.append("video", flow.videoBlob, `recording-${Date.now()}.webm`);
-      
-      const uploadRes = await fetch("/api/upload-video", {
+      // Step 1: Get signed upload URL from our API
+      const urlRes = await fetch("/api/upload-video/get-url", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filename: `recording-${Date.now()}.webm`,
+          contentType: flow.videoBlob.type || "video/webm",
+        }),
       });
       
-      if (!uploadRes.ok) {
-        const errorData = await uploadRes.json().catch(() => ({}));
-        console.error("Upload failed:", errorData);
-        showToast(errorData.error || "Failed to upload video. Please try again.", "error");
+      if (!urlRes.ok) {
+        const errorData = await urlRes.json().catch(() => ({}));
+        console.error("Failed to get upload URL:", errorData);
+        showToast(errorData.error || "Failed to prepare upload. Please try again.", "error");
         setIsProcessing(false);
         return;
       }
       
-      const uploadData = await uploadRes.json();
-      const videoUrl = uploadData.url;
+      const { signedUrl, publicUrl } = await urlRes.json();
+      console.log("Got signed upload URL");
+      
+      // Step 2: Upload directly to Supabase Storage (bypasses Vercel limit)
+      const uploadRes = await fetch(signedUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": flow.videoBlob.type || "video/webm",
+        },
+        body: flow.videoBlob,
+      });
+      
+      if (!uploadRes.ok) {
+        console.error("Direct upload failed:", uploadRes.status, uploadRes.statusText);
+        showToast("Failed to upload video. Please try again.", "error");
+        setIsProcessing(false);
+        return;
+      }
+      
+      const videoUrl = publicUrl;
       console.log("Video uploaded to Supabase:", videoUrl);
       
       // Build style directive with refinements and trim info
