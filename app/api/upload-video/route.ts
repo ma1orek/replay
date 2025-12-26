@@ -8,11 +8,21 @@ export async function POST(request: NextRequest) {
   try {
     // Use admin client for storage operations (bypass RLS)
     const adminClient = createAdminClient();
+    
+    // Check if admin client is properly initialized
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error("SUPABASE_SERVICE_ROLE_KEY is not set!");
+      return NextResponse.json({ 
+        error: "Server configuration error: missing service role key" 
+      }, { status: 500 });
+    }
+    
     const supabase = await createServerSupabaseClient();
     
     // Get user (optional - allow anonymous uploads for now)
     const { data: { user } } = await supabase.auth.getUser();
     const userId = user?.id || "anon";
+    console.log("Uploading for user:", userId);
 
     const formData = await request.formData();
     const file = formData.get("video") as File;
@@ -48,15 +58,24 @@ export async function POST(request: NextRequest) {
       });
 
     if (error) {
-      console.error("Upload error:", error);
-      // Check if bucket doesn't exist
+      console.error("Supabase Storage upload error:", error);
+      console.error("Error details:", JSON.stringify(error, null, 2));
+      
+      // Check for specific error types
       if (error.message?.includes("not found") || error.message?.includes("Bucket")) {
         return NextResponse.json({ 
-          error: "Storage not configured. Please create 'videos' bucket in Supabase." 
+          error: "Storage bucket 'videos' not found. Please create it in Supabase Dashboard." 
+        }, { status: 500 });
+      }
+      if (error.message?.includes("policy") || error.message?.includes("403") || error.statusCode === "403") {
+        return NextResponse.json({ 
+          error: "Storage policy error. Check that 'videos' bucket allows uploads or service role key is correct." 
         }, { status: 500 });
       }
       return NextResponse.json({ error: `Upload failed: ${error.message}` }, { status: 500 });
     }
+    
+    console.log("Upload successful:", data.path);
 
     // Get public URL
     const { data: { publicUrl } } = adminClient.storage

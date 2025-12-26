@@ -1,4 +1,5 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
 // Mock client for build time when env vars aren't set
@@ -55,20 +56,21 @@ export async function createServerSupabaseClient() {
   });
 }
 
-// Admin client with service role key for server-side operations
+// Admin client with service role key for server-side operations (bypasses RLS)
 export function createAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   
   if (!supabaseUrl || !serviceRoleKey) {
+    console.error("Missing SUPABASE_SERVICE_ROLE_KEY for admin client");
     return mockClient;
   }
   
-  return createServerClient(supabaseUrl, serviceRoleKey, {
-    cookies: {
-      get() { return undefined; },
-      set() {},
-      remove() {},
+  // Use standard client with service role key (bypasses RLS)
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
     },
   });
 }
