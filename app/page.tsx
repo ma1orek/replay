@@ -80,6 +80,34 @@ interface ArchNode {
   connections?: string[];
 }
 
+// Flow represents user behavior/journey
+interface FlowNode {
+  id: string;
+  name: string;
+  type: "screen" | "section" | "modal" | "system"; // Screen, Section, Modal/Overlay, System State
+  description?: string;
+  entryCondition?: string;
+  exitAction?: string;
+  x: number;
+  y: number;
+}
+
+interface FlowEdge {
+  id: string;
+  from: string;
+  to: string;
+  trigger: "click" | "scroll" | "submit" | "hover" | "implicit";
+  triggerSource?: string; // e.g., "Primary CTA", "Nav Link"
+  result?: string; // e.g., "navigates to Checkout"
+}
+
+// UX Signals detected during analysis
+interface UXSignal {
+  type: "attention" | "imbalance" | "cta" | "navigation" | "mobile";
+  label: string;
+  value: string;
+}
+
 interface StyleInfo {
   colors: { name: string; value: string }[];
   fonts: { name: string; usage: string; weight: string; family: string }[];
@@ -88,7 +116,7 @@ interface StyleInfo {
   shadows: string;
 }
 
-type ViewMode = "preview" | "code" | "architecture" | "style" | "input";
+type ViewMode = "preview" | "code" | "flow" | "structure" | "style" | "input";
 
 const STREAMING_MESSAGES = [
   "Scanning video frames",
@@ -154,7 +182,7 @@ export default function ReplayTool() {
   const [analysisSection, setAnalysisSection] = useState<"style" | "layout" | "components">("style");
   
   // Mobile state - input visible by default
-  const [mobilePanel, setMobilePanel] = useState<"input" | "preview" | "code" | "arch" | "style" | null>("input");
+  const [mobilePanel, setMobilePanel] = useState<"input" | "preview" | "code" | "flow" | "structure" | "style" | null>("input");
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   
   // Live analysis state for "Matrix" view
@@ -167,8 +195,19 @@ export default function ReplayTool() {
     responsive: string;
     components: { name: string; status: "waiting" | "generating" | "done" }[];
     stats?: { tech: string; componentCount: number; imageCount: number; theme: string };
+    // UX Signals - subtle behavioral insights
+    uxSignals?: UXSignal[];
+    // Structure components (renamed from components for clarity)
+    structureItems?: { name: string; status: "waiting" | "generating" | "done" }[];
   }
   const [analysisPhase, setAnalysisPhase] = useState<AnalysisPhase | null>(null);
+  
+  // Flow state (user behavior/journey)
+  const [flowNodes, setFlowNodes] = useState<FlowNode[]>([]);
+  const [flowEdges, setFlowEdges] = useState<FlowEdge[]>([]);
+  const [flowBuilding, setFlowBuilding] = useState(false);
+  const [selectedFlowNode, setSelectedFlowNode] = useState<string | null>(null);
+  const [editingFlowNode, setEditingFlowNode] = useState<FlowNode | null>(null);
   const [generationComplete, setGenerationComplete] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showFloatingEdit, setShowFloatingEdit] = useState(false);
@@ -472,6 +511,177 @@ export default function ReplayTool() {
     setArchBuilding(false);
   };
 
+  // Build user flow (behavior journey) from code analysis
+  const buildFlowLive = async (code: string) => {
+    setFlowBuilding(true);
+    setFlowNodes([]);
+    setFlowEdges([]);
+    
+    const addFlowNode = async (node: FlowNode) => {
+      await new Promise(r => setTimeout(r, 100));
+      setFlowNodes(prev => [...prev, node]);
+    };
+    
+    const addFlowEdge = async (edge: FlowEdge) => {
+      await new Promise(r => setTimeout(r, 50));
+      setFlowEdges(prev => [...prev, edge]);
+    };
+    
+    const centerX = 400;
+    let currentY = 60;
+    const rowHeight = 140;
+    const colWidth = 200;
+    
+    // Analyze code for flow patterns
+    const hasNav = /<nav/i.test(code);
+    const hasHero = /hero|banner|jumbotron/i.test(code);
+    const hasForms = /<form/i.test(code);
+    const hasModal = /modal|dialog|overlay/i.test(code);
+    const hasCards = /card/gi.test(code);
+    const buttons = (code.match(/<button/gi) || []).length;
+    const links = (code.match(/<a /gi) || []).length;
+    
+    // Main screen - landing/home
+    await addFlowNode({ 
+      id: "main", 
+      name: hasHero ? "Landing" : "Home", 
+      type: "screen", 
+      description: "User enters the product here",
+      x: centerX, 
+      y: currentY 
+    });
+    
+    currentY += rowHeight;
+    
+    // Section nodes based on detected patterns
+    const sections: FlowNode[] = [];
+    
+    if (hasNav && links > 3) {
+      sections.push({ 
+        id: "nav-action", 
+        name: "Navigation", 
+        type: "section", 
+        description: "User browses menu options",
+        x: centerX - colWidth, 
+        y: currentY 
+      });
+    }
+    
+    if (hasHero && buttons > 0) {
+      sections.push({ 
+        id: "cta-action", 
+        name: "CTA Click", 
+        type: "section", 
+        description: "Primary action trigger",
+        x: centerX, 
+        y: currentY 
+      });
+    }
+    
+    if (hasCards) {
+      sections.push({ 
+        id: "browse", 
+        name: "Browse Content", 
+        type: "section", 
+        description: "User explores options",
+        x: centerX + colWidth, 
+        y: currentY 
+      });
+    }
+    
+    for (const section of sections) {
+      await addFlowNode(section);
+      await addFlowEdge({
+        id: `main-${section.id}`,
+        from: "main",
+        to: section.id,
+        trigger: section.id === "cta-action" ? "click" : section.id === "nav-action" ? "click" : "scroll",
+        triggerSource: section.id === "cta-action" ? "Primary CTA" : section.id === "nav-action" ? "Nav Link" : "Scroll",
+        result: section.description
+      });
+    }
+    
+    currentY += rowHeight;
+    
+    // Conversion/Action screens
+    if (hasForms) {
+      await addFlowNode({ 
+        id: "form", 
+        name: "Form Submit", 
+        type: "screen", 
+        description: "User provides information",
+        entryCondition: "After CTA click",
+        x: centerX - colWidth/2, 
+        y: currentY 
+      });
+      await addFlowEdge({
+        id: "cta-form",
+        from: sections.find(s => s.id === "cta-action")?.id || "main",
+        to: "form",
+        trigger: "click",
+        triggerSource: "Form Button",
+        result: "Opens form"
+      });
+    }
+    
+    if (hasModal) {
+      await addFlowNode({ 
+        id: "modal", 
+        name: "Modal", 
+        type: "modal", 
+        description: "Overlay action",
+        x: centerX + colWidth/2, 
+        y: currentY 
+      });
+      await addFlowEdge({
+        id: "trigger-modal",
+        from: sections[0]?.id || "main",
+        to: "modal",
+        trigger: "click",
+        triggerSource: "Trigger Button",
+        result: "Shows modal"
+      });
+    }
+    
+    currentY += rowHeight;
+    
+    // Success/Completion state
+    if (hasForms || hasModal) {
+      await addFlowNode({ 
+        id: "success", 
+        name: "Success", 
+        type: "system", 
+        description: "Completion state",
+        exitAction: "User journey complete",
+        x: centerX, 
+        y: currentY 
+      });
+      
+      if (hasForms) {
+        await addFlowEdge({
+          id: "form-success",
+          from: "form",
+          to: "success",
+          trigger: "submit",
+          triggerSource: "Submit Button",
+          result: "Form submitted"
+        });
+      }
+      if (hasModal) {
+        await addFlowEdge({
+          id: "modal-success",
+          from: "modal",
+          to: "success",
+          trigger: "click",
+          triggerSource: "Confirm Button",
+          result: "Action confirmed"
+        });
+      }
+    }
+    
+    setFlowBuilding(false);
+  };
+
   // Extract style info from code - with actual fonts and colors
   const extractStyleInfo = (code: string): StyleInfo => {
     const colors: { name: string; value: string }[] = [];
@@ -568,6 +778,7 @@ export default function ReplayTool() {
   useEffect(() => {
     if (generatedCode && !isStreamingCode) {
       buildArchitectureLive(generatedCode);
+      buildFlowLive(generatedCode);
       setStyleInfo(extractStyleInfo(generatedCode));
     }
   }, [generatedCode, isStreamingCode]);
@@ -1321,6 +1532,7 @@ export default function ReplayTool() {
         if (previewUrl) URL.revokeObjectURL(previewUrl);
         setPreviewUrl(URL.createObjectURL(new Blob([result.code], { type: "text/html" })));
         buildArchitectureLive(result.code);
+        buildFlowLive(result.code);
         setStyleInfo(extractStyleInfo(result.code));
       }
     } catch (error) {
@@ -1357,8 +1569,9 @@ export default function ReplayTool() {
     if (editableCode) {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
       setPreviewUrl(URL.createObjectURL(new Blob([editableCode], { type: "text/html" })));
-      // Rebuild architecture and style
+      // Rebuild architecture, flow and style
       buildArchitectureLive(editableCode);
+      buildFlowLive(editableCode);
       setStyleInfo(extractStyleInfo(editableCode));
     }
   };
@@ -1450,7 +1663,7 @@ export default function ReplayTool() {
                 <AnimatePresence>
                   {showUserMenu && (
                     <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }} className="absolute top-full right-0 mt-2 w-64 bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden shadow-2xl z-50">
-                      {/* Credits section like Lovable */}
+                      {/* Credits section */}
                       <Link href="/settings?tab=plans" className="block p-3 hover:bg-white/5 transition-colors border-b border-white/5">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm text-white">{userTotalCredits} credits available</span>
@@ -1458,7 +1671,7 @@ export default function ReplayTool() {
                         </div>
                         <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                           <div 
-                            className="h-full bg-gradient-to-r from-[#84cc16] to-[#a3e635] rounded-full transition-all"
+                            className="h-full bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] rounded-full transition-all"
                             style={{ width: `${Math.min(100, (userTotalCredits / 1000) * 100)}%` }}
                           />
                         </div>
@@ -1540,7 +1753,7 @@ export default function ReplayTool() {
               
               {user ? (
                 <>
-                  {/* Credits section like Lovable */}
+                  {/* Credits section */}
                   <Link 
                     href="/settings?tab=plans" 
                     onClick={() => setShowMobileMenu(false)}
@@ -1552,7 +1765,7 @@ export default function ReplayTool() {
                     </div>
                     <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-gradient-to-r from-[#84cc16] to-[#a3e635] rounded-full transition-all"
+                        className="h-full bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] rounded-full transition-all"
                         style={{ width: `${Math.min(100, (userTotalCredits / 1000) * 100)}%` }}
                       />
                     </div>
@@ -1687,30 +1900,41 @@ export default function ReplayTool() {
               {(isProcessing || isStreamingCode) && analysisPhase ? (
                 <div className="space-y-4">
                   {/* DECODING STYLE - Always visible when processing */}
+                  {/* UX SIGNALS - Live streaming of what AI observes */}
                   <motion.div 
                     initial={{ opacity: 0, y: 10 }} 
                     animate={{ opacity: 1, y: 0 }} 
                     className="analysis-section"
                   >
                     <div className="flex items-center gap-2 mb-2">
-                      <Palette className="w-3.5 h-3.5 text-[#FF6E3C]/60" />
-                      <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Decoding Style</span>
+                      <Activity className="w-3.5 h-3.5 text-[#FF6E3C]/60" />
+                      <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">UX Signals</span>
                       {analysisSection === "style" && <Loader2 className="w-3 h-3 animate-spin text-[#FF6E3C]/50 ml-auto" />}
-                      {analysisSection !== "style" && <Check className="w-3 h-3 text-green-500/50 ml-auto" />}
                     </div>
                     <div className="space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-white/30 w-14">Font:</span>
-                        <span className="text-[10px] text-white/60">{analysisPhase.typography}</span>
+                      {/* Live streaming UX observations */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-white/30">Attention density</span>
+                        <span className="text-[10px] text-white/50">{analysisPhase.layout?.includes("grid") ? "High" : "Moderate"}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-white/30 w-14">Vibe:</span>
-                        <span className="text-[10px] text-white/60">{analysisPhase.vibe}</span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-white/30">Navigation depth</span>
+                        <span className="text-[10px] text-white/50">{analysisPhase.components?.length > 6 ? "Deep" : "Shallow"}</span>
                       </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-white/30">CTA visibility</span>
+                        <span className="text-[10px] text-white/50">{analysisPhase.vibe?.includes("bold") || analysisPhase.palette?.length > 3 ? "Dominant" : "Subtle"}</span>
+                      </div>
+                      {analysisPhase.responsive && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-white/30">Mobile reachability</span>
+                          <span className="text-[10px] text-white/50">{analysisPhase.responsive}</span>
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                   
-                  {/* STRUCTURING LAYOUT - Visible after style phase */}
+                  {/* STRUCTURE & COMPONENTS - Visible after style phase */}
                   <AnimatePresence>
                     {(analysisSection === "layout" || analysisSection === "components") && (
                       <motion.div 
@@ -1720,41 +1944,10 @@ export default function ReplayTool() {
                         className="analysis-section"
                       >
                         <div className="flex items-center gap-2 mb-2">
-                          <Layout className="w-3.5 h-3.5 text-[#FF6E3C]/60" />
-                          <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Structuring Layout</span>
+                          <GitBranch className="w-3.5 h-3.5 text-[#FF6E3C]/60" />
+                          <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Structure & Components</span>
                           {analysisSection === "layout" && <Loader2 className="w-3 h-3 animate-spin text-[#FF6E3C]/50 ml-auto" />}
                           {analysisSection === "components" && <Check className="w-3 h-3 text-green-500/50 ml-auto" />}
-                        </div>
-                        <div className="space-y-1.5">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-white/30 w-14">Grid:</span>
-                            <span className="text-[10px] text-white/60">{analysisPhase.layout}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-white/30 w-14">Container:</span>
-                            <span className="text-[10px] text-white/60">{analysisPhase.container}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-white/30 w-14">Responsive:</span>
-                            <span className="text-[10px] text-white/60">{analysisPhase.responsive}</span>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                  
-                  {/* COMPONENT CHECKLIST - Visible after layout phase */}
-                  <AnimatePresence>
-                    {analysisSection === "components" && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 10 }} 
-                        animate={{ opacity: 1, y: 0 }} 
-                        exit={{ opacity: 0 }}
-                        className="analysis-section"
-                      >
-                        <div className="flex items-center gap-2 mb-2">
-                          <Box className="w-3.5 h-3.5 text-[#FF6E3C]/60" />
-                          <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Components</span>
                         </div>
                         <div className="space-y-1">
                           {analysisPhase.components.map((comp, i) => (
@@ -1767,7 +1960,7 @@ export default function ReplayTool() {
                                 <div className="w-3 h-3 rounded-full border border-white/10" />
                               )}
                               <span className={cn("text-[10px]", comp.status === "done" ? "text-white/60" : comp.status === "generating" ? "text-[#FF6E3C]/70" : "text-white/30")}>
-                                {comp.name} {comp.status === "generating" && "(Generating...)"}
+                                {comp.name}
                               </span>
                             </div>
                           ))}
@@ -1838,7 +2031,8 @@ export default function ReplayTool() {
               {[
                 { id: "preview", icon: Eye, label: "Preview" },
                 { id: "code", icon: Code, label: "Code" },
-                { id: "architecture", icon: GitBranch, label: "Architecture" },
+                { id: "flow", icon: Activity, label: "Flow" },
+                { id: "structure", icon: GitBranch, label: "Structure" },
                 { id: "style", icon: Paintbrush, label: "Style" },
                 { id: "input", icon: FileInput, label: "Input" },
               ].map((tab) => (
@@ -1848,7 +2042,7 @@ export default function ReplayTool() {
               ))}
             </div>
             <div className="flex items-center gap-2">
-              {viewMode === "architecture" && (
+              {(viewMode === "flow" || viewMode === "structure") && (
                 <div className="flex items-center gap-1 mr-2">
                   <button onClick={() => setArchZoom(z => Math.max(0.5, z - 0.1))} className="btn-black p-1.5 rounded-lg"><ZoomOut className="w-3.5 h-3.5" /></button>
                   <span className="text-xs text-white/40 w-12 text-center">{Math.round(archZoom * 100)}%</span>
@@ -1946,8 +2140,98 @@ export default function ReplayTool() {
               </div>
             )}
 
-            {/* Architecture - Full Grid Canvas with Drag Pan */}
-            {viewMode === "architecture" && (
+            {/* Flow - User behavior/journey canvas */}
+            {viewMode === "flow" && (
+              <div className="flex-1 overflow-hidden bg-[#080808] relative">
+                {flowNodes.length > 0 || flowBuilding ? (
+                  <div 
+                    ref={archCanvasRef}
+                    className={cn("arch-canvas w-full h-full", isPanning && "dragging")}
+                    onMouseDown={handleCanvasMouseDown}
+                    onMouseMove={handleCanvasMouseMove}
+                    onMouseUp={handleCanvasMouseUp}
+                    onMouseLeave={handleCanvasMouseUp}
+                  >
+                    <div 
+                      className="arch-canvas-inner" 
+                      style={{ 
+                        transform: `translate(${canvasPan.x}px, ${canvasPan.y}px) scale(${archZoom})`,
+                        transformOrigin: 'center center'
+                      }}
+                    >
+                      {/* Flow Edges with triggers */}
+                      <svg className="absolute inset-0 pointer-events-none" style={{ width: "2000px", height: "1500px" }}>
+                        {flowEdges.map(edge => {
+                          const fromNode = flowNodes.find(n => n.id === edge.from);
+                          const toNode = flowNodes.find(n => n.id === edge.to);
+                          if (!fromNode || !toNode) return null;
+                          const midX = (fromNode.x + toNode.x) / 2 + 80;
+                          const midY = (fromNode.y + toNode.y) / 2 + 20;
+                          return (
+                            <g key={edge.id}>
+                              <line x1={fromNode.x + 80} y1={fromNode.y + 50} x2={toNode.x + 80} y2={toNode.y} stroke="rgba(255, 110, 60, 0.4)" strokeWidth="2" markerEnd="url(#arrowhead)" />
+                              {edge.triggerSource && (
+                                <text x={midX} y={midY} fill="rgba(255,255,255,0.4)" fontSize="9" textAnchor="middle" className="font-mono">
+                                  {edge.trigger} → {edge.triggerSource}
+                                </text>
+                              )}
+                            </g>
+                          );
+                        })}
+                        <defs>
+                          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="rgba(255, 110, 60, 0.4)" />
+                          </marker>
+                        </defs>
+                      </svg>
+                      
+                      {/* Flow Nodes */}
+                      {flowNodes.map((node, idx) => {
+                        const typeIcons = { screen: Layout, section: Layers, modal: Box, system: Activity };
+                        const Icon = typeIcons[node.type] || Layout;
+                        const typeColors = { screen: "bg-[#FF6E3C]/20 border-[#FF6E3C]/30", section: "bg-blue-500/20 border-blue-500/30", modal: "bg-purple-500/20 border-purple-500/30", system: "bg-yellow-500/20 border-yellow-500/30" };
+                        return (
+                          <motion.div 
+                            key={node.id} 
+                            initial={{ opacity: 0, scale: 0.9 }} 
+                            animate={{ opacity: 1, scale: 1 }} 
+                            transition={{ delay: idx * 0.06 }}
+                            className={cn("absolute w-40 p-3 rounded-lg border cursor-pointer transition-all hover:scale-105", typeColors[node.type], selectedFlowNode === node.id && "ring-2 ring-[#FF6E3C]")}
+                            style={{ left: node.x, top: node.y }}
+                            onClick={() => setSelectedFlowNode(node.id)}
+                            onDoubleClick={() => setEditingFlowNode(node)}
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <Icon className="w-3.5 h-3.5 text-[#FF6E3C] flex-shrink-0" />
+                              <span className="text-xs font-medium text-white/80 truncate">{node.name}</span>
+                            </div>
+                            {node.description && <p className="text-[10px] text-white/40 line-clamp-2">{node.description}</p>}
+                            <div className="flex items-center gap-1 mt-2">
+                              <span className="text-[8px] px-1.5 py-0.5 rounded bg-white/5 text-white/30 capitalize">{node.type}</span>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                      
+                      {flowBuilding && <div className="absolute top-4 right-4 flex items-center gap-2 text-xs text-white/40"><Loader2 className="w-4 h-4 animate-spin text-[#FF6E3C]" /> Mapping flow...</div>}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-[#080808]">
+                    {isProcessing ? <LoadingState /> : (
+                      <div className="text-center">
+                        <Activity className="w-10 h-10 text-white/10 mx-auto mb-3" />
+                        <p className="text-sm text-white/40">No flow yet</p>
+                        <p className="text-xs text-white/25 mt-1">Flow shows how users move through the product</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Structure - Component hierarchy (formerly Architecture) */}
+            {viewMode === "structure" && (
               <div className="flex-1 overflow-hidden bg-[#080808] relative">
                 {architecture.length > 0 || archBuilding ? (
                   <div 
@@ -1978,7 +2262,7 @@ export default function ReplayTool() {
                         )}
                       </svg>
                       
-                      {/* Nodes */}
+                      {/* Structure Nodes */}
                       {architecture.map((node, idx) => {
                         const Icon = getNodeIcon(node.type);
                         return (
@@ -2001,11 +2285,19 @@ export default function ReplayTool() {
                         );
                       })}
                       
-                      {archBuilding && <div className="absolute top-4 right-4 flex items-center gap-2 text-xs text-white/40"><Loader2 className="w-4 h-4 animate-spin text-[#FF6E3C]" /> Building...</div>}
+                      {archBuilding && <div className="absolute top-4 right-4 flex items-center gap-2 text-xs text-white/40"><Loader2 className="w-4 h-4 animate-spin text-[#FF6E3C]" /> Building structure...</div>}
                     </div>
                   </div>
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-[#080808]">{isProcessing ? <LoadingState /> : <EmptyState icon="logo" title="No architecture yet" subtitle="Generate code to see the component structure" />}</div>
+                  <div className="w-full h-full flex items-center justify-center bg-[#080808]">
+                    {isProcessing ? <LoadingState /> : (
+                      <div className="text-center">
+                        <GitBranch className="w-10 h-10 text-white/10 mx-auto mb-3" />
+                        <p className="text-sm text-white/40">No structure yet</p>
+                        <p className="text-xs text-white/25 mt-1">Structure shows how the UI is built</p>
+                      </div>
+                    )}
+                  </div>
                 )}
                 {architecture.length > 0 && !archBuilding && !showFloatingEdit && (
                   <button onClick={() => setShowFloatingEdit(true)} className="floating-edit-btn flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium text-white/90">
@@ -2022,35 +2314,63 @@ export default function ReplayTool() {
                   <div className="max-w-3xl mx-auto space-y-6">
                     <div className="flex items-center gap-2 mb-6"><Paintbrush className="w-5 h-5 text-[#FF6E3C]/60" /><h3 className="text-sm font-medium text-white/70">Design System</h3></div>
                     
-                    {/* Colors */}
+                    {/* Colors with usage badges */}
                     <div className="style-card">
                       <div className="flex items-center gap-2 mb-4"><Droplet className="w-4 h-4 text-[#FF6E3C]/60" /><span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Colors</span></div>
-                      <div className="flex flex-wrap gap-4">
-                        {styleInfo.colors.map((color, i) => (
-                          <div key={i} className="flex items-center gap-3">
-                            <div className="color-swatch-large" style={{ backgroundColor: color.value }} />
-                            <div><p className="text-xs text-white/70">{color.name}</p><p className="text-[10px] text-white/40 font-mono">{color.value}</p></div>
-                          </div>
-                        ))}
+                      <div className="space-y-4">
+                        {styleInfo.colors.map((color, i) => {
+                          // Generate usage hints based on color role
+                          const usageHints: Record<string, string> = {
+                            "Primary": "Used in: Primary CTAs, Active states, Links",
+                            "Secondary": "Used in: Secondary buttons, Borders, Icons",
+                            "Accent": "Used in: Highlights, Badges, Alerts",
+                            "Background": "Used in: Page background, Cards",
+                            "Text": "Used in: Body text, Headings",
+                            "Border": "Used in: Dividers, Input borders"
+                          };
+                          return (
+                            <div key={i} className="flex items-start gap-3">
+                              <div className="color-swatch-large flex-shrink-0" style={{ backgroundColor: color.value }} />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-xs text-white/70">{color.name}</p>
+                                  <p className="text-[10px] text-white/40 font-mono">{color.value}</p>
+                                </div>
+                                <p className="text-[9px] text-white/30 mt-1">{usageHints[color.name] || "Used in: UI elements"}</p>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                     
-                    {/* Typography - with actual fonts */}
+                    {/* Typography with usage badges */}
                     <div className="style-card">
                       <div className="flex items-center gap-2 mb-4"><Type className="w-4 h-4 text-[#FF6E3C]/60" /><span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Typography</span></div>
-                      <div className="space-y-3">
-                        {styleInfo.fonts.map((font, i) => (
-                          <div key={i} className="font-preview flex items-center justify-between">
-                            <div>
-                              <p className="text-lg text-white/80" style={{ fontFamily: font.family }}>{font.name}</p>
-                              <p className="text-[10px] text-white/40">{font.usage}</p>
+                      <div className="space-y-4">
+                        {styleInfo.fonts.map((font, i) => {
+                          const fontUsageHints = [
+                            "Used in: Headers (H1–H3), Hero titles, CTAs",
+                            "Used in: Body text, Paragraphs, Forms",
+                            "Used in: Labels, Captions, Meta info",
+                            "Used in: Code blocks, Data displays"
+                          ];
+                          return (
+                            <div key={i} className="font-preview">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-lg text-white/80" style={{ fontFamily: font.family }}>{font.name}</p>
+                                  <p className="text-[10px] text-white/40">{font.usage}</p>
+                                </div>
+                                <div className="text-right">
+                                  <span className="text-xs text-white/30">{font.weight}</span>
+                                  <p className="text-[10px] text-white/20 font-mono mt-1">{font.family}</p>
+                                </div>
+                              </div>
+                              <p className="text-[9px] text-white/30 mt-1 pt-1 border-t border-white/5">{fontUsageHints[i] || "Used in: Various UI elements"}</p>
                             </div>
-                            <div className="text-right">
-                              <span className="text-xs text-white/30">{font.weight}</span>
-                              <p className="text-[10px] text-white/20 font-mono mt-1">{font.family}</p>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                     
@@ -2385,14 +2705,14 @@ export default function ReplayTool() {
           </button>
           
           <button 
-            onClick={() => setMobilePanel("arch")}
+            onClick={() => setMobilePanel("flow")}
             className={cn(
               "flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors",
-              mobilePanel === "arch" ? "text-[#FF6E3C]" : "text-white/40"
+              mobilePanel === "flow" ? "text-[#FF6E3C]" : "text-white/40"
             )}
           >
-            <Boxes className="w-5 h-5" />
-            <span className="text-[10px] font-medium">Arch</span>
+            <Activity className="w-5 h-5" />
+            <span className="text-[10px] font-medium">Flow</span>
           </button>
           
           <button 
@@ -2582,32 +2902,54 @@ export default function ReplayTool() {
         )}
       </AnimatePresence>
       
-      {/* Mobile Architecture Panel */}
+      {/* Mobile Flow Panel */}
       <AnimatePresence>
-        {mobilePanel === "arch" && (
+        {mobilePanel === "flow" && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-x-0 bottom-16 top-14 z-30 md:hidden bg-[#0a0a0a] overflow-auto"
           >
-            {architecture.length > 0 ? (
+            {flowNodes.length > 0 ? (
               <div className="p-4 space-y-3">
-                <span className="text-xs text-white/50">Component Architecture</span>
-                {architecture.map(node => (
-                  <div key={node.id} className="p-3 rounded-xl bg-white/5 border border-white/10">
-                    <p className="text-sm font-medium text-white/80">{node.name}</p>
-                    <p className="text-xs text-white/40 mt-1">{node.description}</p>
+                <span className="text-xs text-white/50">User Flow</span>
+                <p className="text-[10px] text-white/30 mb-3">How users move through the product</p>
+                {flowNodes.map(node => {
+                  const typeColors: Record<string, string> = { 
+                    screen: "border-[#FF6E3C]/30 bg-[#FF6E3C]/10", 
+                    section: "border-blue-500/30 bg-blue-500/10", 
+                    modal: "border-purple-500/30 bg-purple-500/10", 
+                    system: "border-yellow-500/30 bg-yellow-500/10" 
+                  };
+                  return (
+                    <div key={node.id} className={cn("p-3 rounded-xl border", typeColors[node.type])}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 text-white/40 uppercase">{node.type}</span>
+                        <p className="text-sm font-medium text-white/80">{node.name}</p>
+                      </div>
+                      {node.description && <p className="text-xs text-white/40">{node.description}</p>}
+                    </div>
+                  );
+                })}
+                {flowEdges.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-white/10">
+                    <span className="text-xs text-white/50 block mb-3">Transitions</span>
+                    {flowEdges.map(edge => (
+                      <div key={edge.id} className="text-[10px] text-white/40 py-1">
+                        <span className="text-white/60">{edge.trigger}</span> → {edge.triggerSource} → {edge.result}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center p-4">
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center mb-4">
-                  <Boxes className="w-8 h-8 text-[#FF6E3C]/50" />
+                  <Activity className="w-8 h-8 text-[#FF6E3C]/50" />
                 </div>
-                <p className="text-sm text-white/50 font-medium">No architecture yet</p>
-                <p className="text-xs text-white/30 mt-1">Generate to see structure</p>
+                <p className="text-sm text-white/50 font-medium">No flow yet</p>
+                <p className="text-xs text-white/30 mt-1">Flow shows how users move through the product</p>
               </div>
             )}
           </motion.div>
