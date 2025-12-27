@@ -80,19 +80,24 @@ interface ArchNode {
   connections?: string[];
 }
 
-// Flow represents user behavior/journey - LINEAR TIMELINE
-interface FlowStep {
+// Flow = PRODUCT MAP (not timeline) - what's possible, not what happened
+interface ProductFlowNode {
   id: string;
-  order: number; // Step order in the journey
-  action: string; // What user does: "User enters", "User scrolls", "User clicks"
-  target?: string; // What they interact with: "Primary CTA", "Navigation", "Form"
-  result?: string; // What happens: "Page scrolls", "Modal opens", "Form submits"
-  timestamp?: string; // Video timestamp reference
-  // Structure overlay data
-  structureRef?: {
-    component: string; // Component name: "Button", "Form", "Hero"
-    location: string; // Location: "Hero Section > CTA"
-  };
+  name: string; // View/state name: "Landing", "Pricing", "Checkout", "Dashboard"
+  type: "view" | "section" | "modal" | "state"; // Type of node
+  description?: string;
+  x: number;
+  y: number;
+  // Structure components (shown when toggle is ON)
+  components?: string[]; // ["Navigation", "Hero", "CTA", "Footer"]
+}
+
+interface ProductFlowEdge {
+  id: string;
+  from: string;
+  to: string;
+  label: string; // What triggers: "CTA click", "Nav link", "Form submit"
+  type: "navigation" | "action" | "scroll" | "auto";
 }
 
 // UX Signals detected during analysis
@@ -110,7 +115,7 @@ interface StyleInfo {
   shadows: string;
 }
 
-type ViewMode = "preview" | "code" | "flow" | "structure" | "style" | "input";
+type ViewMode = "preview" | "code" | "flow" | "design" | "input";
 
 const STREAMING_MESSAGES = [
   "Scanning video frames",
@@ -176,7 +181,7 @@ export default function ReplayTool() {
   const [analysisSection, setAnalysisSection] = useState<"style" | "layout" | "components">("style");
   
   // Mobile state - input visible by default
-  const [mobilePanel, setMobilePanel] = useState<"input" | "preview" | "code" | "flow" | "structure" | "style" | null>("input");
+  const [mobilePanel, setMobilePanel] = useState<"input" | "preview" | "code" | "flow" | "design" | null>("input");
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   
   // Live analysis state for "Matrix" view
@@ -196,11 +201,12 @@ export default function ReplayTool() {
   }
   const [analysisPhase, setAnalysisPhase] = useState<AnalysisPhase | null>(null);
   
-  // Flow state (user behavior/journey) - LINEAR TIMELINE
-  const [flowSteps, setFlowSteps] = useState<FlowStep[]>([]);
+  // Flow state = PRODUCT MAP (canvas with nodes/edges)
+  const [flowNodes, setFlowNodes] = useState<ProductFlowNode[]>([]);
+  const [flowEdges, setFlowEdges] = useState<ProductFlowEdge[]>([]);
   const [flowBuilding, setFlowBuilding] = useState(false);
-  const [selectedFlowStep, setSelectedFlowStep] = useState<string | null>(null);
-  const [showStructureOverlay, setShowStructureOverlay] = useState(false); // Toggle to show component info
+  const [selectedFlowNode, setSelectedFlowNode] = useState<string | null>(null);
+  const [showStructureInFlow, setShowStructureInFlow] = useState(false); // Toggle to show components under nodes
   const [generationComplete, setGenerationComplete] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showFloatingEdit, setShowFloatingEdit] = useState(false);
@@ -504,134 +510,173 @@ export default function ReplayTool() {
     setArchBuilding(false);
   };
 
-  // Build user flow (LINEAR behavior journey) from code analysis
+  // Build PRODUCT FLOW MAP from code analysis - NOT timeline, but what's POSSIBLE
   const buildFlowLive = async (code: string) => {
     setFlowBuilding(true);
-    setFlowSteps([]);
+    setFlowNodes([]);
+    setFlowEdges([]);
     
-    const addStep = async (step: FlowStep) => {
-      await new Promise(r => setTimeout(r, 150));
-      setFlowSteps(prev => [...prev, step]);
+    const addNode = async (node: ProductFlowNode) => {
+      await new Promise(r => setTimeout(r, 100));
+      setFlowNodes(prev => [...prev, node]);
     };
     
-    // Analyze code for behavior patterns
+    const addEdge = async (edge: ProductFlowEdge) => {
+      await new Promise(r => setTimeout(r, 50));
+      setFlowEdges(prev => [...prev, edge]);
+    };
+    
+    // Analyze code for product structure
     const hasNav = /<nav/i.test(code);
     const hasHero = /hero|banner|jumbotron/i.test(code);
     const hasForms = /<form/i.test(code);
     const hasModal = /modal|dialog|overlay/i.test(code);
     const hasCards = /card/gi.test(code);
+    const hasPricing = /pricing|plans?|tier/i.test(code);
     const hasFooter = /<footer/i.test(code);
-    const buttons = (code.match(/<button/gi) || []).length;
-    const inputs = (code.match(/<input/gi) || []).length;
+    const hasDashboard = /dashboard|admin|panel/i.test(code);
+    const hasCheckout = /checkout|payment|cart/i.test(code);
+    const links = (code.match(/<a /gi) || []).length;
     
-    let stepOrder = 1;
+    const centerX = 400;
+    let currentY = 60;
+    const rowHeight = 160;
+    const colWidth = 220;
     
-    // Step 1: User enters
-    await addStep({
-      id: generateId(),
-      order: stepOrder++,
-      action: "User enters page",
-      result: hasHero ? "Landing view loads" : "Page loads",
-      timestamp: "0:00",
-      structureRef: { component: "Document", location: "Root" }
+    // NODE: Landing / Home (always first)
+    const landingComponents: string[] = [];
+    if (hasNav) landingComponents.push("Navigation");
+    if (hasHero) landingComponents.push("Hero Section");
+    if (hasCards) landingComponents.push("Content Cards");
+    if (hasFooter) landingComponents.push("Footer");
+    
+    await addNode({
+      id: "landing",
+      name: hasHero ? "Landing" : "Home",
+      type: "view",
+      description: "Main entry point",
+      x: centerX,
+      y: currentY,
+      components: landingComponents.length > 0 ? landingComponents : ["Header", "Content", "Footer"]
     });
     
-    // Step 2: Initial viewing
-    if (hasHero) {
-      await addStep({
-        id: generateId(),
-        order: stepOrder++,
-        action: "User views hero",
-        target: "Hero section",
-        result: "Sees headline and CTA",
-        timestamp: "0:02",
-        structureRef: { component: "Hero", location: "Header > Hero Section" }
+    currentY += rowHeight;
+    
+    // Second row - main destinations
+    const destinations: { id: string; name: string; type: "view" | "section" | "modal"; desc: string; components: string[]; x: number }[] = [];
+    
+    if (hasPricing || links > 5) {
+      destinations.push({
+        id: "pricing",
+        name: "Pricing",
+        type: "view",
+        desc: "Plan selection",
+        components: ["Plan Cards", "Feature List", "CTA Buttons"],
+        x: centerX - colWidth
       });
     }
     
-    // Step 3: Scroll behavior
-    if (hasCards || hasForms) {
-      await addStep({
-        id: generateId(),
-        order: stepOrder++,
-        action: "User scrolls down",
-        result: hasCards ? "Content section reveals" : "Page content visible",
-        timestamp: "0:05",
-        structureRef: { component: "Content", location: "Main > Content Area" }
+    if (hasForms) {
+      destinations.push({
+        id: "signup",
+        name: hasDashboard ? "Signup" : "Contact",
+        type: "view",
+        desc: hasDashboard ? "Account creation" : "Get in touch",
+        components: ["Form Fields", "Submit Button", "Validation"],
+        x: centerX
       });
     }
     
-    // Step 4: Navigation interaction
-    if (hasNav) {
-      await addStep({
-        id: generateId(),
-        order: stepOrder++,
-        action: "User hovers navigation",
-        target: "Navigation menu",
-        result: "Menu items highlighted",
-        timestamp: "0:08",
-        structureRef: { component: "Navigation", location: "Header > Nav" }
+    if (hasModal) {
+      destinations.push({
+        id: "modal",
+        name: "Modal",
+        type: "modal",
+        desc: "Overlay action",
+        components: ["Modal Header", "Modal Content", "Action Buttons"],
+        x: centerX + colWidth
       });
     }
     
-    // Step 5: CTA interaction
-    if (buttons > 0) {
-      await addStep({
-        id: generateId(),
-        order: stepOrder++,
-        action: "User clicks CTA",
-        target: "Primary button",
-        result: hasForms ? "Form section focuses" : hasModal ? "Modal opens" : "Action triggered",
-        timestamp: "0:12",
-        structureRef: { component: "Button", location: hasHero ? "Hero > CTA Button" : "Content > Button" }
-      });
-    }
-    
-    // Step 6: Form interaction
-    if (hasForms && inputs > 0) {
-      await addStep({
-        id: generateId(),
-        order: stepOrder++,
-        action: "User fills form",
-        target: `${inputs} input fields`,
-        result: "Form data entered",
-        timestamp: "0:18",
-        structureRef: { component: "Form", location: "Content > Form Block" }
+    // Add destinations and edges
+    for (const dest of destinations) {
+      await addNode({
+        id: dest.id,
+        name: dest.name,
+        type: dest.type,
+        description: dest.desc,
+        x: dest.x,
+        y: currentY,
+        components: dest.components
       });
       
-      await addStep({
-        id: generateId(),
-        order: stepOrder++,
-        action: "User submits form",
-        target: "Submit button",
-        result: "Form submitted",
-        timestamp: "0:25",
-        structureRef: { component: "Button", location: "Form > Submit Button" }
+      // Edge from landing
+      await addEdge({
+        id: `landing-${dest.id}`,
+        from: "landing",
+        to: dest.id,
+        label: dest.type === "modal" ? "Trigger click" : dest.id === "pricing" ? "Nav link" : "CTA click",
+        type: dest.type === "modal" ? "action" : "navigation"
       });
     }
     
-    // Step 7: Modal interaction
-    if (hasModal) {
-      await addStep({
-        id: generateId(),
-        order: stepOrder++,
-        action: "User interacts with modal",
-        target: "Modal dialog",
-        result: "Modal action completed",
-        timestamp: "0:20",
-        structureRef: { component: "Modal", location: "Overlay > Modal" }
+    currentY += rowHeight;
+    
+    // Third row - conversion points
+    if (hasCheckout || (hasForms && hasPricing)) {
+      await addNode({
+        id: "checkout",
+        name: "Checkout",
+        type: "view",
+        description: "Complete purchase",
+        x: centerX - colWidth/2,
+        y: currentY,
+        components: ["Order Summary", "Payment Form", "Submit"]
       });
+      
+      if (destinations.find(d => d.id === "pricing")) {
+        await addEdge({
+          id: "pricing-checkout",
+          from: "pricing",
+          to: "checkout",
+          label: "Select plan",
+          type: "navigation"
+        });
+      }
     }
     
-    // Final step: Completion
-    await addStep({
-      id: generateId(),
-      order: stepOrder++,
-      action: "User journey complete",
-      result: hasForms ? "Success state shown" : hasFooter ? "Reached footer" : "Flow ends",
-      timestamp: "0:30",
-      structureRef: { component: "System", location: "End state" }
-    });
+    if (hasDashboard || (hasForms && !hasCheckout)) {
+      await addNode({
+        id: "success",
+        name: hasDashboard ? "Dashboard" : "Success",
+        type: hasDashboard ? "view" : "state",
+        description: hasDashboard ? "User dashboard" : "Completion state",
+        x: centerX + colWidth/2,
+        y: currentY,
+        components: hasDashboard ? ["Sidebar", "Main Content", "Stats"] : ["Success Message", "Next Steps"]
+      });
+      
+      const formNode = destinations.find(d => d.id === "signup");
+      if (formNode) {
+        await addEdge({
+          id: "signup-success",
+          from: "signup",
+          to: "success",
+          label: "Form submit",
+          type: "action"
+        });
+      }
+      
+      if (hasCheckout) {
+        await addEdge({
+          id: "checkout-success",
+          from: "checkout",
+          to: "success",
+          label: "Payment complete",
+          type: "action"
+        });
+      }
+    }
     
     setFlowBuilding(false);
   };
@@ -2000,8 +2045,7 @@ export default function ReplayTool() {
                 { id: "preview", icon: Eye, label: "Preview" },
                 { id: "code", icon: Code, label: "Code" },
                 { id: "flow", icon: Activity, label: "Flow" },
-                { id: "structure", icon: GitBranch, label: "Structure" },
-                { id: "style", icon: Paintbrush, label: "Style" },
+                { id: "design", icon: Paintbrush, label: "Design System" },
                 { id: "input", icon: FileInput, label: "Input" },
               ].map((tab) => (
                 <button key={tab.id} onClick={() => { setViewMode(tab.id as ViewMode); setShowFloatingEdit(false); }} className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors", viewMode === tab.id ? "bg-white/10 text-white" : "text-white/40 hover:text-white/60")}>
@@ -2010,7 +2054,7 @@ export default function ReplayTool() {
               ))}
             </div>
             <div className="flex items-center gap-2">
-              {viewMode === "structure" && (
+              {viewMode === "flow" && (
                 <div className="flex items-center gap-1 mr-2">
                   <button onClick={() => setArchZoom(z => Math.max(0.5, z - 0.1))} className="btn-black p-1.5 rounded-lg"><ZoomOut className="w-3.5 h-3.5" /></button>
                   <span className="text-xs text-white/40 w-12 text-center">{Math.round(archZoom * 100)}%</span>
@@ -2108,143 +2152,26 @@ export default function ReplayTool() {
               </div>
             )}
 
-            {/* Flow - LINEAR User Journey Timeline */}
+            {/* Flow - PRODUCT MAP (Canvas) - what's possible, not what happened */}
             {viewMode === "flow" && (
-              <div className="flex-1 overflow-auto bg-[#080808] relative">
-                {flowSteps.length > 0 || flowBuilding ? (
-                  <div className="max-w-2xl mx-auto py-8 px-6">
-                    {/* Header with toggle */}
-                    <div className="flex items-center justify-between mb-6">
-                      <div>
-                        <h3 className="text-sm font-medium text-white/70 flex items-center gap-2">
-                          <Activity className="w-4 h-4 text-[#FF6E3C]" />
-                          User Journey
-                        </h3>
-                        <p className="text-[10px] text-white/30 mt-1">What the user does, in order</p>
-                      </div>
-                      <button 
-                        onClick={() => setShowStructureOverlay(!showStructureOverlay)}
-                        className={cn(
-                          "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-colors",
-                          showStructureOverlay ? "bg-[#FF6E3C]/20 text-[#FF6E3C]" : "bg-white/5 text-white/50 hover:bg-white/10"
-                        )}
-                      >
-                        <GitBranch className="w-3.5 h-3.5" />
-                        {showStructureOverlay ? "Hide" : "Show"} Structure
-                      </button>
-                    </div>
-                    
-                    {/* Linear Timeline */}
-                    <div className="relative">
-                      {/* Timeline line */}
-                      <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#FF6E3C]/50 via-[#FF6E3C]/20 to-transparent" />
-                      
-                      {/* Steps */}
-                      <div className="space-y-1">
-                        {flowSteps.map((step, idx) => (
-                          <motion.div 
-                            key={step.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: idx * 0.1 }}
-                            className={cn(
-                              "relative pl-14 py-3 cursor-pointer group",
-                              selectedFlowStep === step.id && "bg-white/5 rounded-lg -mx-2 px-16"
-                            )}
-                            onClick={() => setSelectedFlowStep(step.id === selectedFlowStep ? null : step.id)}
-                          >
-                            {/* Step number circle */}
-                            <div className={cn(
-                              "absolute left-4 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors",
-                              idx === flowSteps.length - 1 
-                                ? "bg-green-500/20 text-green-400 border border-green-500/30" 
-                                : "bg-[#FF6E3C]/20 text-[#FF6E3C] border border-[#FF6E3C]/30"
-                            )}>
-                              {step.order}
-                            </div>
-                            
-                            {/* Step content */}
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm text-white/80 font-medium">{step.action}</p>
-                                {step.target && (
-                                  <p className="text-xs text-white/40 mt-0.5">
-                                    → {step.target}
-                                  </p>
-                                )}
-                                {step.result && (
-                                  <p className="text-[10px] text-white/30 mt-1">
-                                    Result: {step.result}
-                                  </p>
-                                )}
-                                
-                                {/* Structure overlay (when enabled) */}
-                                {showStructureOverlay && step.structureRef && (
-                                  <motion.div 
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: "auto" }}
-                                    className="mt-2 p-2 rounded-md bg-white/5 border border-white/10"
-                                  >
-                                    <div className="flex items-center gap-2 text-[10px]">
-                                      <GitBranch className="w-3 h-3 text-[#FF6E3C]/60" />
-                                      <span className="text-white/50">Component:</span>
-                                      <span className="text-white/70 font-mono">{step.structureRef.component}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-[10px] mt-1">
-                                      <Layers className="w-3 h-3 text-[#FF6E3C]/60" />
-                                      <span className="text-white/50">Location:</span>
-                                      <span className="text-white/70 font-mono">{step.structureRef.location}</span>
-                                    </div>
-                                  </motion.div>
-                                )}
-                              </div>
-                              
-                              {/* Timestamp */}
-                              {step.timestamp && (
-                                <span className="text-[10px] text-white/20 font-mono shrink-0">{step.timestamp}</span>
-                              )}
-                            </div>
-                            
-                            {/* Connector arrow (except last) */}
-                            {idx < flowSteps.length - 1 && (
-                              <div className="absolute left-[22px] -bottom-1 text-[#FF6E3C]/30">
-                                <ChevronDown className="w-3 h-3" />
-                              </div>
-                            )}
-                          </motion.div>
-                        ))}
-                      </div>
-                      
-                      {flowBuilding && (
-                        <motion.div 
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="flex items-center gap-2 pl-14 py-4 text-xs text-white/40"
-                        >
-                          <Loader2 className="w-4 h-4 animate-spin text-[#FF6E3C]" />
-                          Mapping user journey...
-                        </motion.div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-[#080808]">
-                    {isProcessing ? <LoadingState /> : (
-                      <div className="text-center">
-                        <Activity className="w-10 h-10 text-white/10 mx-auto mb-3" />
-                        <p className="text-sm text-white/40">No flow yet</p>
-                        <p className="text-xs text-white/25 mt-1">Flow shows how users move through the product</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-            
-            {/* Structure - Component hierarchy (formerly Architecture) */}
-            {viewMode === "structure" && (
               <div className="flex-1 overflow-hidden bg-[#080808] relative">
-                {architecture.length > 0 || archBuilding ? (
+                {/* Structure toggle button - top right */}
+                <div className="absolute top-4 right-4 z-20">
+                  <button 
+                    onClick={() => setShowStructureInFlow(!showStructureInFlow)}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-lg",
+                      showStructureInFlow 
+                        ? "bg-[#FF6E3C] text-white" 
+                        : "bg-[#1a1a1a] border border-white/10 text-white/60 hover:border-white/20"
+                    )}
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                    {showStructureInFlow ? "Hide" : "Show"} Structure
+                  </button>
+                </div>
+                
+                {flowNodes.length > 0 || flowBuilding ? (
                   <div 
                     ref={archCanvasRef}
                     className={cn("arch-canvas w-full h-full", isPanning && "dragging")}
@@ -2260,66 +2187,139 @@ export default function ReplayTool() {
                         transformOrigin: 'center center'
                       }}
                     >
-                      {/* Connection Lines */}
+                      {/* Edge lines with labels */}
                       <svg className="absolute inset-0 pointer-events-none" style={{ width: "2000px", height: "1500px" }}>
-                        {architecture.map(node => 
-                          node.connections?.map(connId => {
-                            const target = architecture.find(n => n.id === connId);
-                            if (!target) return null;
-                            return (
-                              <line key={`${node.id}-${connId}`} x1={target.x + 80} y1={target.y + 40} x2={node.x + 80} y2={node.y} stroke="rgba(255, 110, 60, 0.25)" strokeWidth="2" strokeDasharray="6 4" />
-                            );
-                          })
-                        )}
+                        <defs>
+                          <marker id="flow-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="rgba(255, 110, 60, 0.6)" />
+                          </marker>
+                        </defs>
+                        {flowEdges.map(edge => {
+                          const fromNode = flowNodes.find(n => n.id === edge.from);
+                          const toNode = flowNodes.find(n => n.id === edge.to);
+                          if (!fromNode || !toNode) return null;
+                          const x1 = fromNode.x + 90;
+                          const y1 = fromNode.y + (showStructureInFlow ? 100 : 60);
+                          const x2 = toNode.x + 90;
+                          const y2 = toNode.y;
+                          const midX = (x1 + x2) / 2;
+                          const midY = (y1 + y2) / 2;
+                          return (
+                            <g key={edge.id}>
+                              <path 
+                                d={`M ${x1} ${y1} Q ${x1} ${midY} ${midX} ${midY} Q ${x2} ${midY} ${x2} ${y2}`}
+                                stroke="rgba(255, 110, 60, 0.4)" 
+                                strokeWidth="2" 
+                                fill="none"
+                                markerEnd="url(#flow-arrow)"
+                              />
+                              <rect x={midX - 40} y={midY - 10} width="80" height="20" rx="4" fill="#0a0a0a" />
+                              <text x={midX} y={midY + 4} fill="rgba(255,255,255,0.5)" fontSize="10" textAnchor="middle" className="font-medium">
+                                {edge.label}
+                              </text>
+                            </g>
+                          );
+                        })}
                       </svg>
                       
-                      {/* Structure Nodes */}
-                      {architecture.map((node, idx) => {
-                        const Icon = getNodeIcon(node.type);
+                      {/* Flow Nodes */}
+                      {flowNodes.map((node, idx) => {
+                        const typeColors: Record<string, string> = {
+                          view: "border-[#FF6E3C]/40 bg-gradient-to-br from-[#FF6E3C]/10 to-transparent",
+                          section: "border-blue-500/40 bg-gradient-to-br from-blue-500/10 to-transparent",
+                          modal: "border-purple-500/40 bg-gradient-to-br from-purple-500/10 to-transparent",
+                          state: "border-green-500/40 bg-gradient-to-br from-green-500/10 to-transparent"
+                        };
+                        const typeIcons: Record<string, any> = { view: Layout, section: Layers, modal: Box, state: CheckCircle };
+                        const Icon = typeIcons[node.type] || Layout;
+                        
                         return (
                           <motion.div 
-                            key={node.id} 
-                            initial={{ opacity: 0, scale: 0.9 }} 
-                            animate={{ opacity: 1, scale: 1 }} 
-                            transition={{ delay: idx * 0.06 }}
-                            className={cn("arch-node-card", selectedArchNode === node.id && "selected")}
+                            key={node.id}
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: idx * 0.08 }}
+                            className={cn(
+                              "absolute w-44 rounded-xl border backdrop-blur-sm cursor-pointer transition-all hover:scale-[1.02]",
+                              typeColors[node.type],
+                              selectedFlowNode === node.id && "ring-2 ring-[#FF6E3C] ring-offset-2 ring-offset-[#080808]"
+                            )}
                             style={{ left: node.x, top: node.y }}
-                            onClick={() => handleArchNodeClick(node.id)}
-                            onDoubleClick={() => setSelectedNodeModal(node)}
+                            onClick={() => setSelectedFlowNode(node.id === selectedFlowNode ? null : node.id)}
                           >
-                            <div className="flex items-center gap-2">
-                              <Icon className="w-3.5 h-3.5 text-[#FF6E3C] flex-shrink-0" />
-                              <span className="node-name">{node.name}</span>
+                            {/* Node header */}
+                            <div className="p-3 border-b border-white/5">
+                              <div className="flex items-center gap-2">
+                                <Icon className="w-4 h-4 text-[#FF6E3C]" />
+                                <span className="text-sm font-semibold text-white/90">{node.name}</span>
+                              </div>
+                              {node.description && (
+                                <p className="text-[10px] text-white/40 mt-1">{node.description}</p>
+                              )}
                             </div>
-                            {node.description && <p className="node-desc">{node.description}</p>}
+                            
+                            {/* Structure overlay (when toggle is ON) */}
+                            <AnimatePresence>
+                              {showStructureInFlow && node.components && node.components.length > 0 && (
+                                <motion.div 
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: "auto", opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="p-2 bg-white/[0.02]">
+                                    <div className="flex items-center gap-1.5 mb-1.5">
+                                      <GitBranch className="w-3 h-3 text-white/30" />
+                                      <span className="text-[9px] text-white/30 uppercase tracking-wider">Components</span>
+                                    </div>
+                                    <div className="space-y-1">
+                                      {node.components.map((comp, i) => (
+                                        <div key={i} className="flex items-center gap-1.5 text-[10px] text-white/50">
+                                          <div className="w-1 h-1 rounded-full bg-[#FF6E3C]/50" />
+                                          {comp}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                            
+                            {/* Type badge */}
+                            <div className="absolute -top-2 -right-2">
+                              <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-[#0a0a0a] border border-white/10 text-white/40 capitalize">
+                                {node.type}
+                              </span>
+                            </div>
                           </motion.div>
                         );
                       })}
                       
-                      {archBuilding && <div className="absolute top-4 right-4 flex items-center gap-2 text-xs text-white/40"><Loader2 className="w-4 h-4 animate-spin text-[#FF6E3C]" /> Building structure...</div>}
+                      {flowBuilding && (
+                        <div className="absolute top-4 left-4 flex items-center gap-2 text-xs text-white/40 bg-black/50 px-3 py-2 rounded-lg">
+                          <Loader2 className="w-4 h-4 animate-spin text-[#FF6E3C]" />
+                          Building product map...
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-[#080808]">
                     {isProcessing ? <LoadingState /> : (
                       <div className="text-center">
-                        <GitBranch className="w-10 h-10 text-white/10 mx-auto mb-3" />
-                        <p className="text-sm text-white/40">No structure yet</p>
-                        <p className="text-xs text-white/25 mt-1">Structure shows how the UI is built</p>
+                        <Activity className="w-10 h-10 text-white/10 mx-auto mb-3" />
+                        <p className="text-sm text-white/40">No product flow yet</p>
+                        <p className="text-xs text-white/25 mt-1">Flow shows what's possible - views, states, and transitions</p>
                       </div>
                     )}
                   </div>
                 )}
-                {architecture.length > 0 && !archBuilding && !showFloatingEdit && (
-                  <button onClick={() => setShowFloatingEdit(true)} className="floating-edit-btn flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium text-white/90">
-                    <Sparkles className="w-4 h-4 text-[#FF6E3C]" /> Edit with AI
-                  </button>
-                )}
               </div>
             )}
+            
 
-            {/* Style */}
-            {viewMode === "style" && (
+            {/* Design System */}
+            {viewMode === "design" && (
               <div className="flex-1 overflow-auto p-6 bg-[#080808] relative">
                 {styleInfo ? (
                   <div className="max-w-3xl mx-auto space-y-6">
@@ -2727,14 +2727,14 @@ export default function ReplayTool() {
           </button>
           
           <button 
-            onClick={() => setMobilePanel("style")}
+            onClick={() => setMobilePanel("design")}
             className={cn(
               "flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors",
-              mobilePanel === "style" ? "text-[#FF6E3C]" : "text-white/40"
+              mobilePanel === "design" ? "text-[#FF6E3C]" : "text-white/40"
             )}
           >
             <Palette className="w-5 h-5" />
-            <span className="text-[10px] font-medium">Style</span>
+            <span className="text-[10px] font-medium">Design</span>
           </button>
         </div>
       </div>
@@ -2913,7 +2913,7 @@ export default function ReplayTool() {
         )}
       </AnimatePresence>
       
-      {/* Mobile Flow Panel - Linear Timeline */}
+      {/* Mobile Flow Panel - Product Map */}
       <AnimatePresence>
         {mobilePanel === "flow" && (
           <motion.div 
@@ -2922,57 +2922,92 @@ export default function ReplayTool() {
             exit={{ opacity: 0 }}
             className="fixed inset-x-0 bottom-16 top-14 z-30 md:hidden bg-[#0a0a0a] overflow-auto"
           >
-            {flowSteps.length > 0 ? (
+            {flowNodes.length > 0 ? (
               <div className="p-4">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <span className="text-xs text-white/50 flex items-center gap-1.5">
                       <Activity className="w-3.5 h-3.5 text-[#FF6E3C]" />
-                      User Journey
+                      Product Flow
                     </span>
-                    <p className="text-[10px] text-white/30 mt-0.5">What the user does, in order</p>
+                    <p className="text-[10px] text-white/30 mt-0.5">Views, states, and what's possible</p>
                   </div>
+                  <button 
+                    onClick={() => setShowStructureInFlow(!showStructureInFlow)}
+                    className={cn(
+                      "text-[10px] px-2 py-1 rounded-lg",
+                      showStructureInFlow ? "bg-[#FF6E3C]/20 text-[#FF6E3C]" : "bg-white/5 text-white/40"
+                    )}
+                  >
+                    {showStructureInFlow ? "Hide" : "Show"} Structure
+                  </button>
                 </div>
                 
-                {/* Timeline */}
-                <div className="relative pl-6">
-                  <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#FF6E3C]/50 via-[#FF6E3C]/20 to-transparent" />
-                  
-                  {flowSteps.map((step, idx) => (
-                    <div key={step.id} className="relative pb-4">
-                      <div className={cn(
-                        "absolute left-0 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold",
-                        idx === flowSteps.length - 1 
-                          ? "bg-green-500/20 text-green-400 border border-green-500/30" 
-                          : "bg-[#FF6E3C]/20 text-[#FF6E3C] border border-[#FF6E3C]/30"
-                      )}>
-                        {step.order}
+                {/* Flow nodes list */}
+                <div className="space-y-3">
+                  {flowNodes.map(node => {
+                    const typeColors: Record<string, string> = {
+                      view: "border-[#FF6E3C]/30 bg-[#FF6E3C]/10",
+                      section: "border-blue-500/30 bg-blue-500/10",
+                      modal: "border-purple-500/30 bg-purple-500/10",
+                      state: "border-green-500/30 bg-green-500/10"
+                    };
+                    return (
+                      <div key={node.id} className={cn("p-3 rounded-xl border", typeColors[node.type])}>
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-sm font-medium text-white/80">{node.name}</p>
+                          <span className="text-[8px] px-1.5 py-0.5 rounded bg-white/10 text-white/40 uppercase">{node.type}</span>
+                        </div>
+                        {node.description && <p className="text-xs text-white/40">{node.description}</p>}
+                        
+                        {/* Structure components (when toggle is ON) */}
+                        {showStructureInFlow && node.components && (
+                          <div className="mt-2 pt-2 border-t border-white/10">
+                            <span className="text-[9px] text-white/30 uppercase">Components:</span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {node.components.map((comp, i) => (
+                                <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/50">{comp}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <div className="pl-6">
-                        <p className="text-sm text-white/80 font-medium">{step.action}</p>
-                        {step.target && <p className="text-xs text-white/40">→ {step.target}</p>}
-                        {step.result && <p className="text-[10px] text-white/30 mt-0.5">{step.result}</p>}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
+                
+                {/* Transitions */}
+                {flowEdges.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-white/10">
+                    <span className="text-xs text-white/50 block mb-2">Transitions</span>
+                    {flowEdges.map(edge => {
+                      const fromNode = flowNodes.find(n => n.id === edge.from);
+                      const toNode = flowNodes.find(n => n.id === edge.to);
+                      return (
+                        <div key={edge.id} className="text-[10px] text-white/40 py-1">
+                          {fromNode?.name} → <span className="text-[#FF6E3C]">{edge.label}</span> → {toNode?.name}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center p-4">
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center mb-4">
                   <Activity className="w-8 h-8 text-[#FF6E3C]/50" />
                 </div>
-                <p className="text-sm text-white/50 font-medium">No flow yet</p>
-                <p className="text-xs text-white/30 mt-1">Flow shows how users move through the product</p>
+                <p className="text-sm text-white/50 font-medium">No product flow yet</p>
+                <p className="text-xs text-white/30 mt-1">Flow shows what's possible in the product</p>
               </div>
             )}
           </motion.div>
         )}
       </AnimatePresence>
       
-      {/* Mobile Style Panel */}
+      {/* Mobile Design System Panel */}
       <AnimatePresence>
-        {mobilePanel === "style" && (
+        {mobilePanel === "design" && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
