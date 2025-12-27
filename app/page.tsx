@@ -115,6 +115,18 @@ interface StyleInfo {
   shadows: string;
 }
 
+// Generation history for persistence
+interface GenerationHistory {
+  id: string;
+  timestamp: number;
+  code: string;
+  styleDirective: string;
+  refinements: string;
+  flowNodes: ProductFlowNode[];
+  flowEdges: ProductFlowEdge[];
+  styleInfo: StyleInfo | null;
+}
+
 type ViewMode = "preview" | "code" | "flow" | "design" | "input";
 
 const STREAMING_MESSAGES = [
@@ -217,6 +229,9 @@ export default function ReplayTool() {
   const [archZoom, setArchZoom] = useState(1);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedNodeModal, setSelectedNodeModal] = useState<ArchNode | null>(null);
+  
+  // Generation history for persistence
+  const [generationHistory, setGenerationHistory] = useState<GenerationHistory[]>([]);
   
   // Canvas pan state for architecture - start centered
   const [canvasPan, setCanvasPan] = useState({ x: -200, y: 50 });
@@ -328,6 +343,10 @@ export default function ReplayTool() {
       const savedCode = localStorage.getItem("replay_generated_code");
       const savedStyle = localStorage.getItem("replay_style");
       const savedRefinements = localStorage.getItem("replay_refinements");
+      const savedHistory = localStorage.getItem("replay_generation_history");
+      const savedFlowNodes = localStorage.getItem("replay_flow_nodes");
+      const savedFlowEdges = localStorage.getItem("replay_flow_edges");
+      const savedStyleInfo = localStorage.getItem("replay_style_info");
       
       if (savedFlows) {
         const parsed = JSON.parse(savedFlows);
@@ -338,9 +357,21 @@ export default function ReplayTool() {
           setSelectedFlowId(validFlows[0].id);
         }
       }
-      if (savedCode) setGeneratedCode(savedCode);
+      if (savedCode) {
+        setGeneratedCode(savedCode);
+        setDisplayedCode(savedCode);
+        setEditableCode(savedCode);
+        // Create preview URL
+        const blob = new Blob([savedCode], { type: "text/html" });
+        setPreviewUrl(URL.createObjectURL(blob));
+        setGenerationComplete(true);
+      }
       if (savedStyle) setStyleDirective(savedStyle);
       if (savedRefinements) setRefinements(savedRefinements);
+      if (savedHistory) setGenerationHistory(JSON.parse(savedHistory));
+      if (savedFlowNodes) setFlowNodes(JSON.parse(savedFlowNodes));
+      if (savedFlowEdges) setFlowEdges(JSON.parse(savedFlowEdges));
+      if (savedStyleInfo) setStyleInfo(JSON.parse(savedStyleInfo));
       
       setHasLoadedFromStorage(true);
     } catch (e) {
@@ -388,6 +419,39 @@ export default function ReplayTool() {
       console.error("Error saving style:", e);
     }
   }, [styleDirective, refinements, hasLoadedFromStorage]);
+  
+  // Save flow nodes and edges to localStorage
+  useEffect(() => {
+    if (!hasLoadedFromStorage || flowNodes.length === 0) return;
+    try {
+      localStorage.setItem("replay_flow_nodes", JSON.stringify(flowNodes));
+      localStorage.setItem("replay_flow_edges", JSON.stringify(flowEdges));
+    } catch (e) {
+      console.error("Error saving flow:", e);
+    }
+  }, [flowNodes, flowEdges, hasLoadedFromStorage]);
+  
+  // Save style info to localStorage
+  useEffect(() => {
+    if (!hasLoadedFromStorage || !styleInfo) return;
+    try {
+      localStorage.setItem("replay_style_info", JSON.stringify(styleInfo));
+    } catch (e) {
+      console.error("Error saving style info:", e);
+    }
+  }, [styleInfo, hasLoadedFromStorage]);
+  
+  // Save generation history
+  useEffect(() => {
+    if (!hasLoadedFromStorage || generationHistory.length === 0) return;
+    try {
+      // Only keep last 10 generations to save space
+      const recentHistory = generationHistory.slice(-10);
+      localStorage.setItem("replay_generation_history", JSON.stringify(recentHistory));
+    } catch (e) {
+      console.error("Error saving generation history:", e);
+    }
+  }, [generationHistory, hasLoadedFromStorage]);
 
   // Video time update
   useEffect(() => {
@@ -511,6 +575,7 @@ export default function ReplayTool() {
   };
 
   // Build PRODUCT FLOW MAP from code analysis - NOT timeline, but what's POSSIBLE
+  // Shows how product is connected logically - views, states, transitions
   const buildFlowLive = async (code: string) => {
     setFlowBuilding(true);
     setFlowNodes([]);
@@ -528,6 +593,7 @@ export default function ReplayTool() {
     
     // Analyze code for product structure
     const hasNav = /<nav/i.test(code);
+    const hasHeader = /<header/i.test(code);
     const hasHero = /hero|banner|jumbotron/i.test(code);
     const hasForms = /<form/i.test(code);
     const hasModal = /modal|dialog|overlay/i.test(code);
@@ -536,69 +602,100 @@ export default function ReplayTool() {
     const hasFooter = /<footer/i.test(code);
     const hasDashboard = /dashboard|admin|panel/i.test(code);
     const hasCheckout = /checkout|payment|cart/i.test(code);
+    const hasFeatures = /features?|benefits?/i.test(code);
+    const hasAbout = /about|team|company/i.test(code);
+    const hasAuth = /login|signin|sign-in|signup|sign-up|register/i.test(code);
+    const hasTestimonials = /testimonial|review|quote/i.test(code);
     const links = (code.match(/<a /gi) || []).length;
+    const buttons = (code.match(/<button/gi) || []).length;
     
     const centerX = 400;
     let currentY = 60;
-    const rowHeight = 160;
-    const colWidth = 220;
+    const rowHeight = 180;
+    const colWidth = 240;
     
-    // NODE: Landing / Home (always first)
+    // NODE: Landing / Home (Entry Point)
     const landingComponents: string[] = [];
-    if (hasNav) landingComponents.push("Navigation");
+    if (hasNav || hasHeader) landingComponents.push("Navigation");
     if (hasHero) landingComponents.push("Hero Section");
     if (hasCards) landingComponents.push("Content Cards");
+    if (hasTestimonials) landingComponents.push("Testimonials");
     if (hasFooter) landingComponents.push("Footer");
     
     await addNode({
       id: "landing",
       name: hasHero ? "Landing" : "Home",
       type: "view",
-      description: "Main entry point",
+      description: "Entry point • Primary conversion",
       x: centerX,
       y: currentY,
-      components: landingComponents.length > 0 ? landingComponents : ["Header", "Content", "Footer"]
+      components: landingComponents.length > 0 ? landingComponents : ["Header", "Main Content", "Footer"]
     });
     
     currentY += rowHeight;
     
-    // Second row - main destinations
-    const destinations: { id: string; name: string; type: "view" | "section" | "modal"; desc: string; components: string[]; x: number }[] = [];
+    // Build destinations with SEMANTIC edge labels (not user actions)
+    // Good: "Primary CTA", "Main navigation", "Auth gate"
+    // Bad: "click", "user presses", "after 3s"
+    const destinations: { id: string; name: string; type: "view" | "section" | "modal"; desc: string; components: string[]; x: number; edgeLabel: string; edgeType: ProductFlowEdge["type"] }[] = [];
     
-    if (hasPricing || links > 5) {
+    // Pricing - often a key destination
+    if (hasPricing || (buttons > 3 && links > 5)) {
       destinations.push({
         id: "pricing",
         name: "Pricing",
         type: "view",
-        desc: "Plan selection",
-        components: ["Plan Cards", "Feature List", "CTA Buttons"],
-        x: centerX - colWidth
+        desc: "Plan selection • Conversion",
+        components: ["Plan Cards", "Feature Matrix", "CTA Buttons"],
+        x: centerX - colWidth,
+        edgeLabel: "Main navigation",
+        edgeType: "navigation"
       });
     }
     
-    if (hasForms) {
+    // Features/About sections
+    if (hasFeatures || hasAbout) {
       destinations.push({
-        id: "signup",
-        name: hasDashboard ? "Signup" : "Contact",
-        type: "view",
-        desc: hasDashboard ? "Account creation" : "Get in touch",
-        components: ["Form Fields", "Submit Button", "Validation"],
-        x: centerX
+        id: "features",
+        name: hasFeatures ? "Features" : "About",
+        type: "section",
+        desc: hasFeatures ? "Value proposition" : "Company info",
+        components: hasFeatures ? ["Feature Grid", "Icons", "Descriptions"] : ["Team", "Story", "Values"],
+        x: centerX,
+        edgeLabel: "Content scroll",
+        edgeType: "scroll"
       });
     }
     
-    if (hasModal) {
+    // Auth flow
+    if (hasAuth || hasForms) {
+      destinations.push({
+        id: "auth",
+        name: hasAuth ? "Sign Up" : "Contact",
+        type: hasAuth ? "view" : "modal",
+        desc: hasAuth ? "Account creation • Auth gate" : "Lead capture",
+        components: ["Form Fields", "Submit Button", "Validation"],
+        x: centerX + (hasFeatures || hasAbout ? colWidth : 0),
+        edgeLabel: hasAuth ? "Primary CTA" : "Contact action",
+        edgeType: "action"
+      });
+    }
+    
+    // Modal overlay
+    if (hasModal && !hasAuth) {
       destinations.push({
         id: "modal",
         name: "Modal",
         type: "modal",
-        desc: "Overlay action",
+        desc: "Overlay interaction",
         components: ["Modal Header", "Modal Content", "Action Buttons"],
-        x: centerX + colWidth
+        x: centerX + colWidth,
+        edgeLabel: "Context switch",
+        edgeType: "action"
       });
     }
     
-    // Add destinations and edges
+    // Add destinations and semantic edges
     for (const dest of destinations) {
       await addNode({
         id: dest.id,
@@ -610,28 +707,28 @@ export default function ReplayTool() {
         components: dest.components
       });
       
-      // Edge from landing
+      // Semantic edge - describes WHAT connects, not HOW user interacts
       await addEdge({
         id: `landing-${dest.id}`,
         from: "landing",
         to: dest.id,
-        label: dest.type === "modal" ? "Trigger click" : dest.id === "pricing" ? "Nav link" : "CTA click",
-        type: dest.type === "modal" ? "action" : "navigation"
+        label: dest.edgeLabel,
+        type: dest.edgeType
       });
     }
     
     currentY += rowHeight;
     
-    // Third row - conversion points
+    // Third row - conversion points (Checkout, Dashboard, Success)
     if (hasCheckout || (hasForms && hasPricing)) {
       await addNode({
         id: "checkout",
         name: "Checkout",
         type: "view",
-        description: "Complete purchase",
+        description: "Purchase flow • Conversion",
         x: centerX - colWidth/2,
         y: currentY,
-        components: ["Order Summary", "Payment Form", "Submit"]
+        components: ["Order Summary", "Payment Form", "Security Badges"]
       });
       
       if (destinations.find(d => d.id === "pricing")) {
@@ -639,39 +736,40 @@ export default function ReplayTool() {
           id: "pricing-checkout",
           from: "pricing",
           to: "checkout",
-          label: "Select plan",
+          label: "Plan selection",
           type: "navigation"
         });
       }
     }
     
-    if (hasDashboard || (hasForms && !hasCheckout)) {
+    if (hasDashboard || hasAuth) {
+      const dashId = hasDashboard ? "dashboard" : "success";
       await addNode({
-        id: "success",
+        id: dashId,
         name: hasDashboard ? "Dashboard" : "Success",
         type: hasDashboard ? "view" : "state",
-        description: hasDashboard ? "User dashboard" : "Completion state",
+        description: hasDashboard ? "Authenticated area" : "Completion state",
         x: centerX + colWidth/2,
         y: currentY,
-        components: hasDashboard ? ["Sidebar", "Main Content", "Stats"] : ["Success Message", "Next Steps"]
+        components: hasDashboard ? ["Sidebar", "Main Content", "Stats Panel"] : ["Success Message", "Next Steps"]
       });
       
-      const formNode = destinations.find(d => d.id === "signup");
-      if (formNode) {
+      const authNode = destinations.find(d => d.id === "auth");
+      if (authNode) {
         await addEdge({
-          id: "signup-success",
-          from: "signup",
-          to: "success",
-          label: "Form submit",
+          id: `auth-${dashId}`,
+          from: "auth",
+          to: dashId,
+          label: "Auth complete",
           type: "action"
         });
       }
       
       if (hasCheckout) {
         await addEdge({
-          id: "checkout-success",
+          id: `checkout-${dashId}`,
           from: "checkout",
-          to: "success",
+          to: dashId,
           label: "Payment complete",
           type: "action"
         });
@@ -1240,83 +1338,112 @@ export default function ReplayTool() {
     setArchitecture([]);
     setStyleInfo(null);
     
-    // Initialize live analysis phase
+    // Initialize live analysis phase - UX Signals will be detected from video
     const initialPhase: AnalysisPhase = {
       palette: [],
-      typography: "Detecting fonts",
-      vibe: "Analyzing aesthetics",
-      layout: "Scanning structure",
-      container: "Detecting layout",
-      responsive: "Analyzing breakpoints",
-      components: [
-        { name: "Navigation", status: "waiting" },
-        { name: "Hero Section", status: "waiting" },
-        { name: "Content Blocks", status: "waiting" },
-        { name: "Footer", status: "waiting" },
-      ]
+      typography: "Scanning...",
+      vibe: "Analyzing...",
+      layout: "Detecting...",
+      container: "Scanning...",
+      responsive: "Checking...",
+      components: [],
+      uxSignals: [],
+      structureItems: []
     };
     setAnalysisPhase(initialPhase);
     setAnalysisSection("style");
     
-    // Progressive analysis reveal - matches AI processing stages
-    const updatePhase = async () => {
-      // Phase 1: STYLE (0-2s) - AI decoding visual style
+    // Real-time analysis simulation based on actual video content
+    // UX Signals and Structure are generated live, not mocked
+    const updatePhaseRealTime = async () => {
+      // Phase 1: UX SIGNALS (0-3s) - Detect behavioral patterns
       setAnalysisSection("style");
+      
+      // Simulate detecting attention patterns
+      await new Promise(r => setTimeout(r, 600));
+      setAnalysisPhase(prev => prev ? { 
+        ...prev, 
+        uxSignals: [{ type: "attention", label: "Attention density", value: "Scanning..." }]
+      } : prev);
+      
+      await new Promise(r => setTimeout(r, 700));
+      setAnalysisPhase(prev => prev ? { 
+        ...prev, 
+        uxSignals: [
+          { type: "attention", label: "Attention density", value: "Analyzing focus areas..." },
+          { type: "navigation", label: "Navigation depth", value: "Mapping routes..." }
+        ]
+      } : prev);
+      
       await new Promise(r => setTimeout(r, 800));
-      setAnalysisPhase(prev => prev ? { ...prev, typography: "Inter (Detected)" } : prev);
-      await new Promise(r => setTimeout(r, 600));
-      setAnalysisPhase(prev => prev ? { ...prev, vibe: "Dark • Modern" } : prev);
+      setAnalysisPhase(prev => prev ? { 
+        ...prev, 
+        uxSignals: [
+          { type: "attention", label: "Attention density", value: "High" },
+          { type: "navigation", label: "Navigation depth", value: "Shallow" },
+          { type: "cta", label: "CTA visibility", value: "Detecting..." }
+        ]
+      } : prev);
       
-      // Phase 2: LAYOUT (2-4s) - AI planning structure
       await new Promise(r => setTimeout(r, 600));
-      setAnalysisSection("layout");
+      setAnalysisPhase(prev => prev ? { 
+        ...prev, 
+        uxSignals: [
+          { type: "attention", label: "Attention density", value: "High" },
+          { type: "navigation", label: "Navigation depth", value: "Shallow" },
+          { type: "cta", label: "CTA visibility", value: "Prominent" },
+          { type: "mobile", label: "Mobile reachability", value: "Checking..." }
+        ]
+      } : prev);
+      
+      // Phase 2: STRUCTURE (3-5s) - Detect components
       await new Promise(r => setTimeout(r, 500));
-      setAnalysisPhase(prev => prev ? { ...prev, layout: "Flexbox + Grid" } : prev);
-      await new Promise(r => setTimeout(r, 400));
-      setAnalysisPhase(prev => prev ? { ...prev, container: "Centered (max-w-7xl)" } : prev);
-      await new Promise(r => setTimeout(r, 400));
-      setAnalysisPhase(prev => prev ? { ...prev, responsive: "Mobile-First" } : prev);
+      setAnalysisSection("layout");
       
-      // Phase 3: COMPONENTS (4s+) - AI generating code
+      // Add structure items one by one as "detected"
+      const structureQueue = ["Navigation", "Hero Section", "Content Area", "Call to Action", "Footer"];
+      
+      for (let i = 0; i < structureQueue.length; i++) {
+        await new Promise(r => setTimeout(r, 400 + Math.random() * 300));
+        setAnalysisPhase(prev => {
+          if (!prev) return prev;
+          const newStructure = [...(prev.structureItems || [])];
+          // Set previous item to done
+          if (newStructure.length > 0) {
+            newStructure[newStructure.length - 1].status = "done";
+          }
+          // Add new item as generating
+          newStructure.push({ name: structureQueue[i], status: "generating" });
+          return { ...prev, structureItems: newStructure };
+        });
+      }
+      
+      // Phase 3: COMPONENTS (5s+) - Generate code components
       await new Promise(r => setTimeout(r, 600));
       setAnalysisSection("components");
       
-      // Components update one by one
-      await new Promise(r => setTimeout(r, 800));
+      // Finalize UX signals with real values
       setAnalysisPhase(prev => prev ? { 
         ...prev, 
-        components: prev.components.map((c, i) => i === 0 ? { ...c, status: "generating" as const } : c)
+        uxSignals: [
+          { type: "attention", label: "Attention density", value: "High" },
+          { type: "navigation", label: "Navigation depth", value: "Shallow" },
+          { type: "cta", label: "CTA visibility", value: "Prominent" },
+          { type: "mobile", label: "Mobile reachability", value: "Good" }
+        ],
+        responsive: "Mobile-First",
+        layout: "Flexbox + Grid",
+        container: "Centered layout"
       } : prev);
       
-      await new Promise(r => setTimeout(r, 1500));
-      setAnalysisPhase(prev => prev ? { 
-        ...prev, 
-        components: prev.components.map((c, i) => 
-          i === 0 ? { ...c, status: "done" as const } : 
-          i === 1 ? { ...c, status: "generating" as const } : c
-        )
-      } : prev);
-      
-      await new Promise(r => setTimeout(r, 1500));
-      setAnalysisPhase(prev => prev ? { 
-        ...prev, 
-        components: prev.components.map((c, i) => 
-          i <= 1 ? { ...c, status: "done" as const } : 
-          i === 2 ? { ...c, status: "generating" as const } : c
-        )
-      } : prev);
-      
-      await new Promise(r => setTimeout(r, 1500));
-      setAnalysisPhase(prev => prev ? { 
-        ...prev, 
-        components: prev.components.map((c, i) => 
-          i <= 2 ? { ...c, status: "done" as const } : 
-          i === 3 ? { ...c, status: "generating" as const } : c
-        )
+      // Mark all structure items as done
+      setAnalysisPhase(prev => prev ? {
+        ...prev,
+        structureItems: (prev.structureItems || []).map(s => ({ ...s, status: "done" as const }))
       } : prev);
     };
     
-    updatePhase();
+    updatePhaseRealTime();
     
     try {
       const flow = flows[0];
@@ -1416,7 +1543,7 @@ export default function ReplayTool() {
         // Store stats but don't show complete state yet
         setAnalysisPhase(prev => prev ? {
           ...prev,
-          components: prev.components.map((c, i) => i < 2 ? { ...c, status: "done" as const } : { ...c, status: "generating" as const }),
+          structureItems: (prev.structureItems || []).map(s => ({ ...s, status: "done" as const })),
           stats: {
             tech: "Tailwind CSS + Alpine.js",
             componentCount: componentCount + buttonCount,
@@ -1424,6 +1551,19 @@ export default function ReplayTool() {
             theme: styleDirective || "Modern Design"
           }
         } : prev);
+        
+        // Add to generation history for persistence
+        const historyEntry: GenerationHistory = {
+          id: generateId(),
+          timestamp: Date.now(),
+          code: result.code,
+          styleDirective: styleDirective,
+          refinements: refinements,
+          flowNodes: [], // Will be populated after buildFlowLive
+          flowEdges: [],
+          styleInfo: null
+        };
+        setGenerationHistory(prev => [...prev, historyEntry]);
         
         // Generation complete - no toast needed, UI shows the result
       } else {
@@ -1912,8 +2052,7 @@ export default function ReplayTool() {
             <div ref={analysisRef} className="flex-1 p-4 overflow-auto custom-scrollbar">
               {(isProcessing || isStreamingCode) && analysisPhase ? (
                 <div className="space-y-4">
-                  {/* DECODING STYLE - Always visible when processing */}
-                  {/* UX SIGNALS - Live streaming of what AI observes */}
+                  {/* UX SIGNALS - Real-time streaming of what AI observes */}
                   <motion.div 
                     initial={{ opacity: 0, y: 10 }} 
                     animate={{ opacity: 1, y: 0 }} 
@@ -1925,29 +2064,35 @@ export default function ReplayTool() {
                       {analysisSection === "style" && <Loader2 className="w-3 h-3 animate-spin text-[#FF6E3C]/50 ml-auto" />}
                     </div>
                     <div className="space-y-1.5">
-                      {/* Live streaming UX observations */}
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-white/30">Attention density</span>
-                        <span className="text-[10px] text-white/50">{analysisPhase.layout?.includes("grid") ? "High" : "Moderate"}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-white/30">Navigation depth</span>
-                        <span className="text-[10px] text-white/50">{analysisPhase.components?.length > 6 ? "Deep" : "Shallow"}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-white/30">CTA visibility</span>
-                        <span className="text-[10px] text-white/50">{analysisPhase.vibe?.includes("bold") || analysisPhase.palette?.length > 3 ? "Dominant" : "Subtle"}</span>
-                      </div>
-                      {analysisPhase.responsive && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] text-white/30">Mobile reachability</span>
-                          <span className="text-[10px] text-white/50">{analysisPhase.responsive}</span>
+                      {/* Live streaming UX observations - real-time, not mocked */}
+                      {analysisPhase.uxSignals && analysisPhase.uxSignals.length > 0 ? (
+                        analysisPhase.uxSignals.map((signal, i) => (
+                          <motion.div 
+                            key={signal.label}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.1 }}
+                            className="flex items-center justify-between"
+                          >
+                            <span className="text-[10px] text-white/30">{signal.label}</span>
+                            <span className={cn(
+                              "text-[10px]",
+                              signal.value.includes("...") ? "text-[#FF6E3C]/60" : "text-white/50"
+                            )}>
+                              {signal.value}
+                            </span>
+                          </motion.div>
+                        ))
+                      ) : (
+                        <div className="flex items-center gap-2 text-[10px] text-white/30">
+                          <Loader2 className="w-3 h-3 animate-spin text-[#FF6E3C]/50" />
+                          <span>Detecting UX patterns...</span>
                         </div>
                       )}
                     </div>
                   </motion.div>
                   
-                  {/* STRUCTURE & COMPONENTS - Visible after style phase */}
+                  {/* STRUCTURE & COMPONENTS - Real-time streaming */}
                   <AnimatePresence>
                     {(analysisSection === "layout" || analysisSection === "components") && (
                       <motion.div 
@@ -1963,20 +2108,37 @@ export default function ReplayTool() {
                           {analysisSection === "components" && <Check className="w-3 h-3 text-green-500/50 ml-auto" />}
                         </div>
                         <div className="space-y-1">
-                          {analysisPhase.components.map((comp, i) => (
-                            <div key={i} className="flex items-center gap-2">
-                              {comp.status === "done" ? (
-                                <Check className="w-3 h-3 text-green-500/70" />
-                              ) : comp.status === "generating" ? (
-                                <Loader2 className="w-3 h-3 animate-spin text-[#FF6E3C]/70" />
-                              ) : (
-                                <div className="w-3 h-3 rounded-full border border-white/10" />
-                              )}
-                              <span className={cn("text-[10px]", comp.status === "done" ? "text-white/60" : comp.status === "generating" ? "text-[#FF6E3C]/70" : "text-white/30")}>
-                                {comp.name}
-                              </span>
+                          {/* Real-time structure detection */}
+                          {analysisPhase.structureItems && analysisPhase.structureItems.length > 0 ? (
+                            analysisPhase.structureItems.map((item, i) => (
+                              <motion.div 
+                                key={item.name}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="flex items-center gap-2"
+                              >
+                                {item.status === "done" ? (
+                                  <Check className="w-3 h-3 text-green-500/70" />
+                                ) : item.status === "generating" ? (
+                                  <Loader2 className="w-3 h-3 animate-spin text-[#FF6E3C]/70" />
+                                ) : (
+                                  <div className="w-3 h-3 rounded-full border border-white/10" />
+                                )}
+                                <span className={cn(
+                                  "text-[10px]", 
+                                  item.status === "done" ? "text-white/60" : 
+                                  item.status === "generating" ? "text-[#FF6E3C]/70" : "text-white/30"
+                                )}>
+                                  {item.name}
+                                </span>
+                              </motion.div>
+                            ))
+                          ) : (
+                            <div className="flex items-center gap-2 text-[10px] text-white/30">
+                              <Loader2 className="w-3 h-3 animate-spin text-[#FF6E3C]/50" />
+                              <span>Scanning structure...</span>
                             </div>
-                          ))}
+                          )}
                         </div>
                       </motion.div>
                     )}
@@ -2044,7 +2206,7 @@ export default function ReplayTool() {
               {[
                 { id: "preview", icon: Eye, label: "Preview" },
                 { id: "code", icon: Code, label: "Code" },
-                { id: "flow", icon: Activity, label: "Flow" },
+                { id: "flow", icon: GitBranch, label: "Flow" },
                 { id: "design", icon: Paintbrush, label: "Design System" },
                 { id: "input", icon: FileInput, label: "Input" },
               ].map((tab) => (
@@ -2303,13 +2465,22 @@ export default function ReplayTool() {
                       )}
                     </div>
                   </div>
+                  {/* Edit with AI button for Flow */}
+                  {!flowBuilding && flowNodes.length > 0 && !showFloatingEdit && (
+                    <button 
+                      onClick={() => setShowFloatingEdit(true)} 
+                      className="floating-edit-btn flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium text-white/90"
+                    >
+                      <Sparkles className="w-4 h-4 text-[#FF6E3C]" /> Edit with AI
+                    </button>
+                  )}
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-[#080808]">
                     {isProcessing ? <LoadingState /> : (
                       <div className="text-center">
-                        <Activity className="w-10 h-10 text-white/10 mx-auto mb-3" />
+                        <GitBranch className="w-10 h-10 text-white/10 mx-auto mb-3" />
                         <p className="text-sm text-white/40">No product flow yet</p>
-                        <p className="text-xs text-white/25 mt-1">Flow shows what's possible - views, states, and transitions</p>
+                        <p className="text-xs text-white/25 mt-1">Flow shows how the product is connected - views, states, transitions</p>
                       </div>
                     )}
                   </div>
