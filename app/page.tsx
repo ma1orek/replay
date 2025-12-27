@@ -2465,15 +2465,6 @@ export default function ReplayTool() {
                       )}
                     </div>
                   </div>
-                  {/* Edit with AI button for Flow */}
-                  {!flowBuilding && flowNodes.length > 0 && !showFloatingEdit && (
-                    <button 
-                      onClick={() => setShowFloatingEdit(true)} 
-                      className="floating-edit-btn flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium text-white/90"
-                    >
-                      <Sparkles className="w-4 h-4 text-[#FF6E3C]" /> Edit with AI
-                    </button>
-                  )}
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-[#080808]">
                     {isProcessing ? <LoadingState /> : (
@@ -2484,6 +2475,16 @@ export default function ReplayTool() {
                       </div>
                     )}
                   </div>
+                )}
+                
+                {/* Edit with AI button for Flow */}
+                {!flowBuilding && flowNodes.length > 0 && !showFloatingEdit && (
+                  <button 
+                    onClick={() => setShowFloatingEdit(true)} 
+                    className="floating-edit-btn flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium text-white/90"
+                  >
+                    <Sparkles className="w-4 h-4 text-[#FF6E3C]" /> Edit with AI
+                  </button>
                 )}
               </div>
             )}
