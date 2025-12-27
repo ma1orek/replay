@@ -92,12 +92,6 @@ function Navigation() {
               <>
                 <Link
                   href="/settings"
-                  className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-white/60 bg-white/[0.03] border border-white/10 hover:border-white/20 transition-colors"
-                >
-                  <span>{totalCredits} credits</span>
-                </Link>
-                <Link
-                  href="/settings"
                   className="w-8 h-8 rounded-full bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] flex items-center justify-center text-white text-sm font-medium"
                 >
                   {user.email?.charAt(0).toUpperCase() || "U"}
@@ -159,7 +153,7 @@ function Navigation() {
                     <div className="w-7 h-7 rounded-full bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] flex items-center justify-center text-white text-xs font-medium">
                       {user.email?.charAt(0).toUpperCase() || "U"}
                     </div>
-                    <span>{totalCredits} credits</span>
+                    <span>My Account</span>
                   </Link>
                 ) : (
                   <button

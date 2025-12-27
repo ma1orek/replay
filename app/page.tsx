@@ -80,25 +80,19 @@ interface ArchNode {
   connections?: string[];
 }
 
-// Flow represents user behavior/journey
-interface FlowNode {
+// Flow represents user behavior/journey - LINEAR TIMELINE
+interface FlowStep {
   id: string;
-  name: string;
-  type: "screen" | "section" | "modal" | "system"; // Screen, Section, Modal/Overlay, System State
-  description?: string;
-  entryCondition?: string;
-  exitAction?: string;
-  x: number;
-  y: number;
-}
-
-interface FlowEdge {
-  id: string;
-  from: string;
-  to: string;
-  trigger: "click" | "scroll" | "submit" | "hover" | "implicit";
-  triggerSource?: string; // e.g., "Primary CTA", "Nav Link"
-  result?: string; // e.g., "navigates to Checkout"
+  order: number; // Step order in the journey
+  action: string; // What user does: "User enters", "User scrolls", "User clicks"
+  target?: string; // What they interact with: "Primary CTA", "Navigation", "Form"
+  result?: string; // What happens: "Page scrolls", "Modal opens", "Form submits"
+  timestamp?: string; // Video timestamp reference
+  // Structure overlay data
+  structureRef?: {
+    component: string; // Component name: "Button", "Form", "Hero"
+    location: string; // Location: "Hero Section > CTA"
+  };
 }
 
 // UX Signals detected during analysis
@@ -202,12 +196,11 @@ export default function ReplayTool() {
   }
   const [analysisPhase, setAnalysisPhase] = useState<AnalysisPhase | null>(null);
   
-  // Flow state (user behavior/journey)
-  const [flowNodes, setFlowNodes] = useState<FlowNode[]>([]);
-  const [flowEdges, setFlowEdges] = useState<FlowEdge[]>([]);
+  // Flow state (user behavior/journey) - LINEAR TIMELINE
+  const [flowSteps, setFlowSteps] = useState<FlowStep[]>([]);
   const [flowBuilding, setFlowBuilding] = useState(false);
-  const [selectedFlowNode, setSelectedFlowNode] = useState<string | null>(null);
-  const [editingFlowNode, setEditingFlowNode] = useState<FlowNode | null>(null);
+  const [selectedFlowStep, setSelectedFlowStep] = useState<string | null>(null);
+  const [showStructureOverlay, setShowStructureOverlay] = useState(false); // Toggle to show component info
   const [generationComplete, setGenerationComplete] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showFloatingEdit, setShowFloatingEdit] = useState(false);
@@ -511,173 +504,134 @@ export default function ReplayTool() {
     setArchBuilding(false);
   };
 
-  // Build user flow (behavior journey) from code analysis
+  // Build user flow (LINEAR behavior journey) from code analysis
   const buildFlowLive = async (code: string) => {
     setFlowBuilding(true);
-    setFlowNodes([]);
-    setFlowEdges([]);
+    setFlowSteps([]);
     
-    const addFlowNode = async (node: FlowNode) => {
-      await new Promise(r => setTimeout(r, 100));
-      setFlowNodes(prev => [...prev, node]);
+    const addStep = async (step: FlowStep) => {
+      await new Promise(r => setTimeout(r, 150));
+      setFlowSteps(prev => [...prev, step]);
     };
     
-    const addFlowEdge = async (edge: FlowEdge) => {
-      await new Promise(r => setTimeout(r, 50));
-      setFlowEdges(prev => [...prev, edge]);
-    };
-    
-    const centerX = 400;
-    let currentY = 60;
-    const rowHeight = 140;
-    const colWidth = 200;
-    
-    // Analyze code for flow patterns
+    // Analyze code for behavior patterns
     const hasNav = /<nav/i.test(code);
     const hasHero = /hero|banner|jumbotron/i.test(code);
     const hasForms = /<form/i.test(code);
     const hasModal = /modal|dialog|overlay/i.test(code);
     const hasCards = /card/gi.test(code);
+    const hasFooter = /<footer/i.test(code);
     const buttons = (code.match(/<button/gi) || []).length;
-    const links = (code.match(/<a /gi) || []).length;
+    const inputs = (code.match(/<input/gi) || []).length;
     
-    // Main screen - landing/home
-    await addFlowNode({ 
-      id: "main", 
-      name: hasHero ? "Landing" : "Home", 
-      type: "screen", 
-      description: "User enters the product here",
-      x: centerX, 
-      y: currentY 
+    let stepOrder = 1;
+    
+    // Step 1: User enters
+    await addStep({
+      id: generateId(),
+      order: stepOrder++,
+      action: "User enters page",
+      result: hasHero ? "Landing view loads" : "Page loads",
+      timestamp: "0:00",
+      structureRef: { component: "Document", location: "Root" }
     });
     
-    currentY += rowHeight;
-    
-    // Section nodes based on detected patterns
-    const sections: FlowNode[] = [];
-    
-    if (hasNav && links > 3) {
-      sections.push({ 
-        id: "nav-action", 
-        name: "Navigation", 
-        type: "section", 
-        description: "User browses menu options",
-        x: centerX - colWidth, 
-        y: currentY 
+    // Step 2: Initial viewing
+    if (hasHero) {
+      await addStep({
+        id: generateId(),
+        order: stepOrder++,
+        action: "User views hero",
+        target: "Hero section",
+        result: "Sees headline and CTA",
+        timestamp: "0:02",
+        structureRef: { component: "Hero", location: "Header > Hero Section" }
       });
     }
     
-    if (hasHero && buttons > 0) {
-      sections.push({ 
-        id: "cta-action", 
-        name: "CTA Click", 
-        type: "section", 
-        description: "Primary action trigger",
-        x: centerX, 
-        y: currentY 
+    // Step 3: Scroll behavior
+    if (hasCards || hasForms) {
+      await addStep({
+        id: generateId(),
+        order: stepOrder++,
+        action: "User scrolls down",
+        result: hasCards ? "Content section reveals" : "Page content visible",
+        timestamp: "0:05",
+        structureRef: { component: "Content", location: "Main > Content Area" }
       });
     }
     
-    if (hasCards) {
-      sections.push({ 
-        id: "browse", 
-        name: "Browse Content", 
-        type: "section", 
-        description: "User explores options",
-        x: centerX + colWidth, 
-        y: currentY 
+    // Step 4: Navigation interaction
+    if (hasNav) {
+      await addStep({
+        id: generateId(),
+        order: stepOrder++,
+        action: "User hovers navigation",
+        target: "Navigation menu",
+        result: "Menu items highlighted",
+        timestamp: "0:08",
+        structureRef: { component: "Navigation", location: "Header > Nav" }
       });
     }
     
-    for (const section of sections) {
-      await addFlowNode(section);
-      await addFlowEdge({
-        id: `main-${section.id}`,
-        from: "main",
-        to: section.id,
-        trigger: section.id === "cta-action" ? "click" : section.id === "nav-action" ? "click" : "scroll",
-        triggerSource: section.id === "cta-action" ? "Primary CTA" : section.id === "nav-action" ? "Nav Link" : "Scroll",
-        result: section.description
+    // Step 5: CTA interaction
+    if (buttons > 0) {
+      await addStep({
+        id: generateId(),
+        order: stepOrder++,
+        action: "User clicks CTA",
+        target: "Primary button",
+        result: hasForms ? "Form section focuses" : hasModal ? "Modal opens" : "Action triggered",
+        timestamp: "0:12",
+        structureRef: { component: "Button", location: hasHero ? "Hero > CTA Button" : "Content > Button" }
       });
     }
     
-    currentY += rowHeight;
-    
-    // Conversion/Action screens
-    if (hasForms) {
-      await addFlowNode({ 
-        id: "form", 
-        name: "Form Submit", 
-        type: "screen", 
-        description: "User provides information",
-        entryCondition: "After CTA click",
-        x: centerX - colWidth/2, 
-        y: currentY 
-      });
-      await addFlowEdge({
-        id: "cta-form",
-        from: sections.find(s => s.id === "cta-action")?.id || "main",
-        to: "form",
-        trigger: "click",
-        triggerSource: "Form Button",
-        result: "Opens form"
-      });
-    }
-    
-    if (hasModal) {
-      await addFlowNode({ 
-        id: "modal", 
-        name: "Modal", 
-        type: "modal", 
-        description: "Overlay action",
-        x: centerX + colWidth/2, 
-        y: currentY 
-      });
-      await addFlowEdge({
-        id: "trigger-modal",
-        from: sections[0]?.id || "main",
-        to: "modal",
-        trigger: "click",
-        triggerSource: "Trigger Button",
-        result: "Shows modal"
-      });
-    }
-    
-    currentY += rowHeight;
-    
-    // Success/Completion state
-    if (hasForms || hasModal) {
-      await addFlowNode({ 
-        id: "success", 
-        name: "Success", 
-        type: "system", 
-        description: "Completion state",
-        exitAction: "User journey complete",
-        x: centerX, 
-        y: currentY 
+    // Step 6: Form interaction
+    if (hasForms && inputs > 0) {
+      await addStep({
+        id: generateId(),
+        order: stepOrder++,
+        action: "User fills form",
+        target: `${inputs} input fields`,
+        result: "Form data entered",
+        timestamp: "0:18",
+        structureRef: { component: "Form", location: "Content > Form Block" }
       });
       
-      if (hasForms) {
-        await addFlowEdge({
-          id: "form-success",
-          from: "form",
-          to: "success",
-          trigger: "submit",
-          triggerSource: "Submit Button",
-          result: "Form submitted"
-        });
-      }
-      if (hasModal) {
-        await addFlowEdge({
-          id: "modal-success",
-          from: "modal",
-          to: "success",
-          trigger: "click",
-          triggerSource: "Confirm Button",
-          result: "Action confirmed"
-        });
-      }
+      await addStep({
+        id: generateId(),
+        order: stepOrder++,
+        action: "User submits form",
+        target: "Submit button",
+        result: "Form submitted",
+        timestamp: "0:25",
+        structureRef: { component: "Button", location: "Form > Submit Button" }
+      });
     }
+    
+    // Step 7: Modal interaction
+    if (hasModal) {
+      await addStep({
+        id: generateId(),
+        order: stepOrder++,
+        action: "User interacts with modal",
+        target: "Modal dialog",
+        result: "Modal action completed",
+        timestamp: "0:20",
+        structureRef: { component: "Modal", location: "Overlay > Modal" }
+      });
+    }
+    
+    // Final step: Completion
+    await addStep({
+      id: generateId(),
+      order: stepOrder++,
+      action: "User journey complete",
+      result: hasForms ? "Success state shown" : hasFooter ? "Reached footer" : "Flow ends",
+      timestamp: "0:30",
+      structureRef: { component: "System", location: "End state" }
+    });
     
     setFlowBuilding(false);
   };
@@ -1664,22 +1618,29 @@ export default function ReplayTool() {
                   {showUserMenu && (
                     <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }} className="absolute top-full right-0 mt-2 w-64 bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden shadow-2xl z-50">
                       {/* Credits section */}
-                      <Link href="/settings?tab=plans" className="block p-3 hover:bg-white/5 transition-colors border-b border-white/5">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm text-white">{userTotalCredits} credits available</span>
-                          <ChevronRight className="w-4 h-4 text-white/40" />
-                        </div>
-                        <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] rounded-full transition-all"
-                            style={{ width: `${Math.min(100, (userTotalCredits / 1000) * 100)}%` }}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between mt-2">
-                          <span className="text-xs text-white/40 capitalize">{membership?.plan || "Free"} Plan</span>
-                          <span className="text-xs text-[#FF6E3C] font-medium">Upgrade</span>
-                        </div>
-                      </Link>
+                      {(() => {
+                        const plan = membership?.plan || "free";
+                        const maxCredits = plan === "agency" ? 10000 : plan === "pro" ? 3000 : 150;
+                        const percentage = Math.min(100, (userTotalCredits / maxCredits) * 100);
+                        return (
+                          <Link href="/settings?tab=plans" className="block p-3 hover:bg-white/5 transition-colors border-b border-white/5">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm text-white">{userTotalCredits} credits available</span>
+                              <ChevronRight className="w-4 h-4 text-white/40" />
+                            </div>
+                            <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] rounded-full transition-all"
+                                style={{ width: `${percentage}%` }}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between mt-2">
+                              <span className="text-xs text-white/40 capitalize">{plan} Plan</span>
+                              <span className="text-xs text-[#FF6E3C] font-medium">Upgrade</span>
+                            </div>
+                          </Link>
+                        );
+                      })()}
                       
                       <div className="p-1.5">
                         <Link href="/settings" className="w-full dropdown-item text-left text-sm text-white/80 flex items-center gap-2">
@@ -1754,26 +1715,33 @@ export default function ReplayTool() {
               {user ? (
                 <>
                   {/* Credits section */}
-                  <Link 
-                    href="/settings?tab=plans" 
-                    onClick={() => setShowMobileMenu(false)}
-                    className="block p-4 hover:bg-white/5 transition-colors border-b border-white/5"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-white">{userTotalCredits} credits available</span>
-                      <ChevronRight className="w-4 h-4 text-white/40" />
-                    </div>
-                    <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] rounded-full transition-all"
-                        style={{ width: `${Math.min(100, (userTotalCredits / 1000) * 100)}%` }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-xs text-white/40 capitalize">{membership?.plan || "Free"} Plan</span>
-                      <span className="text-xs text-[#FF6E3C] font-medium">Upgrade</span>
-                    </div>
-                  </Link>
+                  {(() => {
+                    const plan = membership?.plan || "free";
+                    const maxCredits = plan === "agency" ? 10000 : plan === "pro" ? 3000 : 150;
+                    const percentage = Math.min(100, (userTotalCredits / maxCredits) * 100);
+                    return (
+                      <Link 
+                        href="/settings?tab=plans" 
+                        onClick={() => setShowMobileMenu(false)}
+                        className="block p-4 hover:bg-white/5 transition-colors border-b border-white/5"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm text-white">{userTotalCredits} credits available</span>
+                          <ChevronRight className="w-4 h-4 text-white/40" />
+                        </div>
+                        <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] rounded-full transition-all"
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-xs text-white/40 capitalize">{plan} Plan</span>
+                          <span className="text-xs text-[#FF6E3C] font-medium">Upgrade</span>
+                        </div>
+                      </Link>
+                    );
+                  })()}
                   
                   <div className="p-2 space-y-1">
                     <Link 
@@ -2042,7 +2010,7 @@ export default function ReplayTool() {
               ))}
             </div>
             <div className="flex items-center gap-2">
-              {(viewMode === "flow" || viewMode === "structure") && (
+              {viewMode === "structure" && (
                 <div className="flex items-center gap-1 mr-2">
                   <button onClick={() => setArchZoom(z => Math.max(0.5, z - 0.1))} className="btn-black p-1.5 rounded-lg"><ZoomOut className="w-3.5 h-3.5" /></button>
                   <span className="text-xs text-white/40 w-12 text-center">{Math.round(archZoom * 100)}%</span>
@@ -2140,80 +2108,123 @@ export default function ReplayTool() {
               </div>
             )}
 
-            {/* Flow - User behavior/journey canvas */}
+            {/* Flow - LINEAR User Journey Timeline */}
             {viewMode === "flow" && (
-              <div className="flex-1 overflow-hidden bg-[#080808] relative">
-                {flowNodes.length > 0 || flowBuilding ? (
-                  <div 
-                    ref={archCanvasRef}
-                    className={cn("arch-canvas w-full h-full", isPanning && "dragging")}
-                    onMouseDown={handleCanvasMouseDown}
-                    onMouseMove={handleCanvasMouseMove}
-                    onMouseUp={handleCanvasMouseUp}
-                    onMouseLeave={handleCanvasMouseUp}
-                  >
-                    <div 
-                      className="arch-canvas-inner" 
-                      style={{ 
-                        transform: `translate(${canvasPan.x}px, ${canvasPan.y}px) scale(${archZoom})`,
-                        transformOrigin: 'center center'
-                      }}
-                    >
-                      {/* Flow Edges with triggers */}
-                      <svg className="absolute inset-0 pointer-events-none" style={{ width: "2000px", height: "1500px" }}>
-                        {flowEdges.map(edge => {
-                          const fromNode = flowNodes.find(n => n.id === edge.from);
-                          const toNode = flowNodes.find(n => n.id === edge.to);
-                          if (!fromNode || !toNode) return null;
-                          const midX = (fromNode.x + toNode.x) / 2 + 80;
-                          const midY = (fromNode.y + toNode.y) / 2 + 20;
-                          return (
-                            <g key={edge.id}>
-                              <line x1={fromNode.x + 80} y1={fromNode.y + 50} x2={toNode.x + 80} y2={toNode.y} stroke="rgba(255, 110, 60, 0.4)" strokeWidth="2" markerEnd="url(#arrowhead)" />
-                              {edge.triggerSource && (
-                                <text x={midX} y={midY} fill="rgba(255,255,255,0.4)" fontSize="9" textAnchor="middle" className="font-mono">
-                                  {edge.trigger} → {edge.triggerSource}
-                                </text>
-                              )}
-                            </g>
-                          );
-                        })}
-                        <defs>
-                          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                            <polygon points="0 0, 10 3.5, 0 7" fill="rgba(255, 110, 60, 0.4)" />
-                          </marker>
-                        </defs>
-                      </svg>
+              <div className="flex-1 overflow-auto bg-[#080808] relative">
+                {flowSteps.length > 0 || flowBuilding ? (
+                  <div className="max-w-2xl mx-auto py-8 px-6">
+                    {/* Header with toggle */}
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h3 className="text-sm font-medium text-white/70 flex items-center gap-2">
+                          <Activity className="w-4 h-4 text-[#FF6E3C]" />
+                          User Journey
+                        </h3>
+                        <p className="text-[10px] text-white/30 mt-1">What the user does, in order</p>
+                      </div>
+                      <button 
+                        onClick={() => setShowStructureOverlay(!showStructureOverlay)}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-colors",
+                          showStructureOverlay ? "bg-[#FF6E3C]/20 text-[#FF6E3C]" : "bg-white/5 text-white/50 hover:bg-white/10"
+                        )}
+                      >
+                        <GitBranch className="w-3.5 h-3.5" />
+                        {showStructureOverlay ? "Hide" : "Show"} Structure
+                      </button>
+                    </div>
+                    
+                    {/* Linear Timeline */}
+                    <div className="relative">
+                      {/* Timeline line */}
+                      <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#FF6E3C]/50 via-[#FF6E3C]/20 to-transparent" />
                       
-                      {/* Flow Nodes */}
-                      {flowNodes.map((node, idx) => {
-                        const typeIcons = { screen: Layout, section: Layers, modal: Box, system: Activity };
-                        const Icon = typeIcons[node.type] || Layout;
-                        const typeColors = { screen: "bg-[#FF6E3C]/20 border-[#FF6E3C]/30", section: "bg-blue-500/20 border-blue-500/30", modal: "bg-purple-500/20 border-purple-500/30", system: "bg-yellow-500/20 border-yellow-500/30" };
-                        return (
+                      {/* Steps */}
+                      <div className="space-y-1">
+                        {flowSteps.map((step, idx) => (
                           <motion.div 
-                            key={node.id} 
-                            initial={{ opacity: 0, scale: 0.9 }} 
-                            animate={{ opacity: 1, scale: 1 }} 
-                            transition={{ delay: idx * 0.06 }}
-                            className={cn("absolute w-40 p-3 rounded-lg border cursor-pointer transition-all hover:scale-105", typeColors[node.type], selectedFlowNode === node.id && "ring-2 ring-[#FF6E3C]")}
-                            style={{ left: node.x, top: node.y }}
-                            onClick={() => setSelectedFlowNode(node.id)}
-                            onDoubleClick={() => setEditingFlowNode(node)}
+                            key={step.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: idx * 0.1 }}
+                            className={cn(
+                              "relative pl-14 py-3 cursor-pointer group",
+                              selectedFlowStep === step.id && "bg-white/5 rounded-lg -mx-2 px-16"
+                            )}
+                            onClick={() => setSelectedFlowStep(step.id === selectedFlowStep ? null : step.id)}
                           >
-                            <div className="flex items-center gap-2 mb-1">
-                              <Icon className="w-3.5 h-3.5 text-[#FF6E3C] flex-shrink-0" />
-                              <span className="text-xs font-medium text-white/80 truncate">{node.name}</span>
+                            {/* Step number circle */}
+                            <div className={cn(
+                              "absolute left-4 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors",
+                              idx === flowSteps.length - 1 
+                                ? "bg-green-500/20 text-green-400 border border-green-500/30" 
+                                : "bg-[#FF6E3C]/20 text-[#FF6E3C] border border-[#FF6E3C]/30"
+                            )}>
+                              {step.order}
                             </div>
-                            {node.description && <p className="text-[10px] text-white/40 line-clamp-2">{node.description}</p>}
-                            <div className="flex items-center gap-1 mt-2">
-                              <span className="text-[8px] px-1.5 py-0.5 rounded bg-white/5 text-white/30 capitalize">{node.type}</span>
+                            
+                            {/* Step content */}
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-white/80 font-medium">{step.action}</p>
+                                {step.target && (
+                                  <p className="text-xs text-white/40 mt-0.5">
+                                    → {step.target}
+                                  </p>
+                                )}
+                                {step.result && (
+                                  <p className="text-[10px] text-white/30 mt-1">
+                                    Result: {step.result}
+                                  </p>
+                                )}
+                                
+                                {/* Structure overlay (when enabled) */}
+                                {showStructureOverlay && step.structureRef && (
+                                  <motion.div 
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: "auto" }}
+                                    className="mt-2 p-2 rounded-md bg-white/5 border border-white/10"
+                                  >
+                                    <div className="flex items-center gap-2 text-[10px]">
+                                      <GitBranch className="w-3 h-3 text-[#FF6E3C]/60" />
+                                      <span className="text-white/50">Component:</span>
+                                      <span className="text-white/70 font-mono">{step.structureRef.component}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-[10px] mt-1">
+                                      <Layers className="w-3 h-3 text-[#FF6E3C]/60" />
+                                      <span className="text-white/50">Location:</span>
+                                      <span className="text-white/70 font-mono">{step.structureRef.location}</span>
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </div>
+                              
+                              {/* Timestamp */}
+                              {step.timestamp && (
+                                <span className="text-[10px] text-white/20 font-mono shrink-0">{step.timestamp}</span>
+                              )}
                             </div>
+                            
+                            {/* Connector arrow (except last) */}
+                            {idx < flowSteps.length - 1 && (
+                              <div className="absolute left-[22px] -bottom-1 text-[#FF6E3C]/30">
+                                <ChevronDown className="w-3 h-3" />
+                              </div>
+                            )}
                           </motion.div>
-                        );
-                      })}
+                        ))}
+                      </div>
                       
-                      {flowBuilding && <div className="absolute top-4 right-4 flex items-center gap-2 text-xs text-white/40"><Loader2 className="w-4 h-4 animate-spin text-[#FF6E3C]" /> Mapping flow...</div>}
+                      {flowBuilding && (
+                        <motion.div 
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="flex items-center gap-2 pl-14 py-4 text-xs text-white/40"
+                        >
+                          <Loader2 className="w-4 h-4 animate-spin text-[#FF6E3C]" />
+                          Mapping user journey...
+                        </motion.div>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -2902,7 +2913,7 @@ export default function ReplayTool() {
         )}
       </AnimatePresence>
       
-      {/* Mobile Flow Panel */}
+      {/* Mobile Flow Panel - Linear Timeline */}
       <AnimatePresence>
         {mobilePanel === "flow" && (
           <motion.div 
@@ -2911,37 +2922,40 @@ export default function ReplayTool() {
             exit={{ opacity: 0 }}
             className="fixed inset-x-0 bottom-16 top-14 z-30 md:hidden bg-[#0a0a0a] overflow-auto"
           >
-            {flowNodes.length > 0 ? (
-              <div className="p-4 space-y-3">
-                <span className="text-xs text-white/50">User Flow</span>
-                <p className="text-[10px] text-white/30 mb-3">How users move through the product</p>
-                {flowNodes.map(node => {
-                  const typeColors: Record<string, string> = { 
-                    screen: "border-[#FF6E3C]/30 bg-[#FF6E3C]/10", 
-                    section: "border-blue-500/30 bg-blue-500/10", 
-                    modal: "border-purple-500/30 bg-purple-500/10", 
-                    system: "border-yellow-500/30 bg-yellow-500/10" 
-                  };
-                  return (
-                    <div key={node.id} className={cn("p-3 rounded-xl border", typeColors[node.type])}>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 text-white/40 uppercase">{node.type}</span>
-                        <p className="text-sm font-medium text-white/80">{node.name}</p>
-                      </div>
-                      {node.description && <p className="text-xs text-white/40">{node.description}</p>}
-                    </div>
-                  );
-                })}
-                {flowEdges.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-white/10">
-                    <span className="text-xs text-white/50 block mb-3">Transitions</span>
-                    {flowEdges.map(edge => (
-                      <div key={edge.id} className="text-[10px] text-white/40 py-1">
-                        <span className="text-white/60">{edge.trigger}</span> → {edge.triggerSource} → {edge.result}
-                      </div>
-                    ))}
+            {flowSteps.length > 0 ? (
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <span className="text-xs text-white/50 flex items-center gap-1.5">
+                      <Activity className="w-3.5 h-3.5 text-[#FF6E3C]" />
+                      User Journey
+                    </span>
+                    <p className="text-[10px] text-white/30 mt-0.5">What the user does, in order</p>
                   </div>
-                )}
+                </div>
+                
+                {/* Timeline */}
+                <div className="relative pl-6">
+                  <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#FF6E3C]/50 via-[#FF6E3C]/20 to-transparent" />
+                  
+                  {flowSteps.map((step, idx) => (
+                    <div key={step.id} className="relative pb-4">
+                      <div className={cn(
+                        "absolute left-0 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold",
+                        idx === flowSteps.length - 1 
+                          ? "bg-green-500/20 text-green-400 border border-green-500/30" 
+                          : "bg-[#FF6E3C]/20 text-[#FF6E3C] border border-[#FF6E3C]/30"
+                      )}>
+                        {step.order}
+                      </div>
+                      <div className="pl-6">
+                        <p className="text-sm text-white/80 font-medium">{step.action}</p>
+                        {step.target && <p className="text-xs text-white/40">→ {step.target}</p>}
+                        {step.result && <p className="text-[10px] text-white/30 mt-0.5">{step.result}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center p-4">
