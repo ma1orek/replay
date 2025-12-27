@@ -68,7 +68,7 @@ export function Toast({ message, type = "info", duration = 4000, onClose, isVisi
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -20, scale: 0.95 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-          className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] max-w-md w-full px-4"
+          className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] max-w-[calc(100vw-2rem)] sm:max-w-md w-full px-4"
         >
           <div
             className={cn(
@@ -78,7 +78,7 @@ export function Toast({ message, type = "info", duration = 4000, onClose, isVisi
             )}
           >
             <Icon className={cn("w-5 h-5 shrink-0 mt-0.5", color.icon)} />
-            <p className={cn("flex-1 text-sm font-medium", color.text)}>{message}</p>
+            <p className={cn("flex-1 text-sm font-medium break-words", color.text)}>{message}</p>
             <button
               onClick={onClose}
               className="p-1 rounded-lg hover:bg-white/10 transition-colors"
@@ -116,4 +116,5 @@ export function useToast() {
 
   return { toast, showToast, hideToast };
 }
+
 

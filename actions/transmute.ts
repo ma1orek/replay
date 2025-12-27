@@ -255,9 +255,23 @@ Now watch the complete video carefully and generate the HTML that includes every
     };
   } catch (error: any) {
     console.error("Transmute error:", error);
+    
+    // Better error messages
+    let errorMessage = error.message || "Unknown error occurred";
+    
+    if (errorMessage.includes("400") || errorMessage.includes("Bad Request")) {
+      errorMessage = "Model error: The video format may not be supported or the request is invalid. Please try recording again.";
+    } else if (errorMessage.includes("429") || errorMessage.includes("quota")) {
+      errorMessage = "Rate limit exceeded. Please wait a moment and try again.";
+    } else if (errorMessage.includes("403") || errorMessage.includes("Forbidden")) {
+      errorMessage = "API access denied. Please check the API key.";
+    } else if (errorMessage.includes("error encountered")) {
+      errorMessage = "Model error: Please try again. If the issue persists, try with a shorter video.";
+    }
+    
     return {
       success: false,
-      error: error.message || "Unknown error occurred",
+      error: errorMessage,
     };
   }
 }

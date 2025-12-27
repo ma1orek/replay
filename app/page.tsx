@@ -56,7 +56,6 @@ import { useAuth } from "@/lib/auth/context";
 import { useCredits, CREDIT_COSTS } from "@/lib/credits/context";
 import AuthModal from "@/components/modals/AuthModal";
 import OutOfCreditsModal from "@/components/modals/OutOfCreditsModal";
-import CreditsBar from "@/components/CreditsBar";
 import { Toast, useToast } from "@/components/Toast";
 import Link from "next/link";
 
@@ -643,7 +642,7 @@ export default function ReplayTool() {
           console.log("Created blob, size:", blob.size, "bytes");
           
           try {
-            await addVideoToFlows(blob, `Recording ${Date.now()}`);
+            await addVideoToFlows(blob, "");
             console.log("Flow added successfully");
           } catch (e) {
             console.error("Error adding flow:", e);
@@ -748,20 +747,40 @@ export default function ReplayTool() {
         resolved = true;
         
         const duration = getValidDuration();
-        const flowNum = flows.length + 1;
-        const newFlow: FlowItem = {
-          id: generateId(), 
-          name: `Recording ${flowNum}`, 
-          videoBlob: blob, 
-          videoUrl: url, 
-          thumbnail: thumbnail || "",
-          duration, 
-          trimStart: 0, 
-          trimEnd: duration,
-        };
-        console.log("Flow added:", newFlow.name, "duration:", duration, "blob size:", blob.size);
-        setFlows(prev => [...prev, newFlow]);
-        setSelectedFlowId(newFlow.id);
+        const flowId = generateId();
+        
+        // Generate name - use file name if provided, otherwise create unique recording name
+        let baseName = name && name.trim() ? name.trim() : "";
+        
+        setFlows(prev => {
+          // If no name provided, generate based on count
+          if (!baseName) {
+            baseName = `Recording ${prev.length + 1}`;
+          }
+          
+          // Ensure unique name by checking existing flows
+          const existingNames = prev.map(f => f.name);
+          let finalName = baseName;
+          let counter = 1;
+          while (existingNames.includes(finalName)) {
+            counter++;
+            finalName = `${baseName} (${counter})`;
+          }
+          
+          const newFlow: FlowItem = {
+            id: flowId, 
+            name: finalName, 
+            videoBlob: blob, 
+            videoUrl: url, 
+            thumbnail: thumbnail || "",
+            duration, 
+            trimStart: 0, 
+            trimEnd: duration,
+          };
+          console.log("Flow added:", newFlow.name, "duration:", duration, "blob size:", blob.size);
+          return [...prev, newFlow];
+        });
+        setSelectedFlowId(flowId);
         resolve();
       };
       
@@ -1419,8 +1438,6 @@ export default function ReplayTool() {
           <Logo />
         </a>
         <div className="flex items-center gap-4">
-          {user && <CreditsBar />}
-          
           <div className="relative">
             {user ? (
               <>
@@ -1432,17 +1449,31 @@ export default function ReplayTool() {
                 </button>
                 <AnimatePresence>
                   {showUserMenu && (
-                    <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }} className="absolute top-full right-0 mt-2 w-56 bg-[#111] border border-white/10 rounded-xl overflow-hidden shadow-2xl z-50">
-                      <div className="p-3 border-b border-white/5">
-                        <div className="text-sm font-medium text-white truncate">{user.email}</div>
-                        <div className="text-xs text-white/40 mt-1 capitalize">{membership?.plan || "Free"} Plan</div>
-                      </div>
+                    <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }} className="absolute top-full right-0 mt-2 w-64 bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden shadow-2xl z-50">
+                      {/* Credits section like Lovable */}
+                      <Link href="/settings?tab=plans" className="block p-3 hover:bg-white/5 transition-colors border-b border-white/5">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm text-white">{userTotalCredits} credits available</span>
+                          <ChevronRight className="w-4 h-4 text-white/40" />
+                        </div>
+                        <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-[#84cc16] to-[#a3e635] rounded-full transition-all"
+                            style={{ width: `${Math.min(100, (userTotalCredits / 1000) * 100)}%` }}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-xs text-white/40 capitalize">{membership?.plan || "Free"} Plan</span>
+                          <span className="text-xs text-[#FF6E3C] font-medium">Upgrade</span>
+                        </div>
+                      </Link>
+                      
                       <div className="p-1.5">
                         <Link href="/settings" className="w-full dropdown-item text-left text-sm text-white/80 flex items-center gap-2">
-                          <User className="w-4 h-4 opacity-50" /> Settings
+                          <User className="w-4 h-4 opacity-50" /> View profile
                         </Link>
-                        <Link href="/settings?tab=plans" className="w-full dropdown-item text-left text-sm text-[#FF6E3C] flex items-center gap-2">
-                          <Sparkles className="w-4 h-4" /> Upgrade plan
+                        <Link href="/settings" className="w-full dropdown-item text-left text-sm text-white/80 flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 opacity-50" /> Manage account
                         </Link>
                       </div>
                     </motion.div>
@@ -1466,25 +1497,18 @@ export default function ReplayTool() {
         <a href="/" className="hover:opacity-80 transition-opacity">
           <Logo />
         </a>
-        <div className="flex items-center gap-2">
-          {user && (
-            <div className="px-2 py-1 rounded-lg bg-white/5 text-xs text-white/60">
-              {userTotalCredits} <span className="text-white/30">credits</span>
+        <button 
+          onClick={() => setShowMobileMenu(!showMobileMenu)}
+          className="p-2 rounded-lg hover:bg-white/5 transition-colors"
+        >
+          {user ? (
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#FF6E3C] to-[#FF8F5C] flex items-center justify-center text-white text-xs font-medium">
+              {user.email?.[0]?.toUpperCase() || "U"}
             </div>
+          ) : (
+            <User className="w-5 h-5 text-white/60" />
           )}
-          <button 
-            onClick={() => setShowMobileMenu(!showMobileMenu)}
-            className="p-2 rounded-lg hover:bg-white/5 transition-colors"
-          >
-            {user ? (
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#FF6E3C] to-[#FF8F5C] flex items-center justify-center text-white text-xs font-medium">
-                {user.email?.[0]?.toUpperCase() || "U"}
-              </div>
-            ) : (
-              <User className="w-5 h-5 text-white/60" />
-            )}
-          </button>
-        </div>
+        </button>
       </header>
       
       {/* Mobile Menu Overlay */}
@@ -1516,17 +1540,42 @@ export default function ReplayTool() {
               
               {user ? (
                 <>
-                  <div className="p-4 border-b border-white/5">
-                    <div className="text-sm text-white truncate">{user.email}</div>
-                    <div className="text-xs text-white/40 mt-1 capitalize">{membership?.plan || "Free"} Plan</div>
-                    <div className="text-xs text-[#FF6E3C] mt-2">{userTotalCredits} credits remaining</div>
-                  </div>
-                  <div className="p-2">
-                    <Link href="/settings" className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 text-white/80">
-                      <User className="w-4 h-4 opacity-50" /> Settings
+                  {/* Credits section like Lovable */}
+                  <Link 
+                    href="/settings?tab=plans" 
+                    onClick={() => setShowMobileMenu(false)}
+                    className="block p-4 hover:bg-white/5 transition-colors border-b border-white/5"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-white">{userTotalCredits} credits available</span>
+                      <ChevronRight className="w-4 h-4 text-white/40" />
+                    </div>
+                    <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-[#84cc16] to-[#a3e635] rounded-full transition-all"
+                        style={{ width: `${Math.min(100, (userTotalCredits / 1000) * 100)}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-xs text-white/40 capitalize">{membership?.plan || "Free"} Plan</span>
+                      <span className="text-xs text-[#FF6E3C] font-medium">Upgrade</span>
+                    </div>
+                  </Link>
+                  
+                  <div className="p-2 space-y-1">
+                    <Link 
+                      href="/settings" 
+                      onClick={() => setShowMobileMenu(false)}
+                      className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 text-white/80"
+                    >
+                      <User className="w-4 h-4 opacity-50" /> View profile
                     </Link>
-                    <Link href="/settings?tab=plans" className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 text-[#FF6E3C]">
-                      <Sparkles className="w-4 h-4" /> Upgrade Plan
+                    <Link 
+                      href="/settings" 
+                      onClick={() => setShowMobileMenu(false)}
+                      className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 text-white/80"
+                    >
+                      <Sparkles className="w-4 h-4 opacity-50" /> Manage account
                     </Link>
                   </div>
                 </>
