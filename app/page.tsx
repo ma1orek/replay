@@ -8,6 +8,7 @@ import {
   Upload,
   Download,
   ChevronRight,
+  ChevronLeft,
   Film,
   CheckCircle,
   ExternalLink,
@@ -44,7 +45,11 @@ import {
   Crosshair,
   Clock,
   Plus,
-  Copy
+  Copy,
+  History,
+  Lock,
+  MoreVertical,
+  GripVertical
 } from "lucide-react";
 import { cn, generateId, formatDuration } from "@/lib/utils";
 import { transmuteVideoToCode, editCodeWithAI } from "@/actions/transmute";
@@ -96,8 +101,12 @@ interface ProductFlowEdge {
   id: string;
   from: string;
   to: string;
-  label: string; // What triggers: "CTA click", "Nav link", "Form submit"
-  type: "navigation" | "action" | "scroll" | "auto";
+  label: string; // Semantic: "Primary CTA", "Main navigation", "Auth gate"
+  type: "navigation" | "action" | "scroll" | "gated"; // Type determines visual style
+  // navigation = thick solid line (route change)
+  // scroll = thin line (in-page)
+  // gated = dashed line with lock (auth/paywall required)
+  // action = medium line (user action)
 }
 
 // UX Signals detected during analysis
@@ -115,16 +124,21 @@ interface StyleInfo {
   shadows: string;
 }
 
-// Generation history for persistence
-interface GenerationHistory {
+// Generation history for persistence (saved to Supabase)
+interface GenerationRecord {
   id: string;
+  title: string;
+  autoTitle: boolean;
   timestamp: number;
-  code: string;
+  status: "running" | "complete" | "failed";
+  code: string | null;
   styleDirective: string;
   refinements: string;
   flowNodes: ProductFlowNode[];
   flowEdges: ProductFlowEdge[];
   styleInfo: StyleInfo | null;
+  videoUrl?: string;
+  thumbnailUrl?: string;
 }
 
 type ViewMode = "preview" | "code" | "flow" | "design" | "input";
@@ -230,8 +244,15 @@ export default function ReplayTool() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedNodeModal, setSelectedNodeModal] = useState<ArchNode | null>(null);
   
-  // Generation history for persistence
-  const [generationHistory, setGenerationHistory] = useState<GenerationHistory[]>([]);
+  // Generation history for persistence  
+  const [generations, setGenerations] = useState<GenerationRecord[]>([]);
+  const [activeGeneration, setActiveGeneration] = useState<GenerationRecord | null>(null);
+  const [generationTitle, setGenerationTitle] = useState<string>("Untitled Project");
+  const [showHistoryMode, setShowHistoryMode] = useState(false);
+  
+  // Dragging state for flow nodes
+  const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
+  const dragStartPos = useRef({ x: 0, y: 0, nodeX: 0, nodeY: 0 });
   
   // Canvas pan state for architecture - start centered
   const [canvasPan, setCanvasPan] = useState({ x: -200, y: 50 });
@@ -368,7 +389,7 @@ export default function ReplayTool() {
       }
       if (savedStyle) setStyleDirective(savedStyle);
       if (savedRefinements) setRefinements(savedRefinements);
-      if (savedHistory) setGenerationHistory(JSON.parse(savedHistory));
+      if (savedHistory) setGenerations(JSON.parse(savedHistory));
       if (savedFlowNodes) setFlowNodes(JSON.parse(savedFlowNodes));
       if (savedFlowEdges) setFlowEdges(JSON.parse(savedFlowEdges));
       if (savedStyleInfo) setStyleInfo(JSON.parse(savedStyleInfo));
@@ -443,15 +464,15 @@ export default function ReplayTool() {
   
   // Save generation history
   useEffect(() => {
-    if (!hasLoadedFromStorage || generationHistory.length === 0) return;
+    if (!hasLoadedFromStorage || generations.length === 0) return;
     try {
-      // Only keep last 10 generations to save space
-      const recentHistory = generationHistory.slice(-10);
+      // Only keep last 20 generations to save space
+      const recentHistory = generations.slice(-20);
       localStorage.setItem("replay_generation_history", JSON.stringify(recentHistory));
     } catch (e) {
       console.error("Error saving generation history:", e);
     }
-  }, [generationHistory, hasLoadedFromStorage]);
+  }, [generations, hasLoadedFromStorage]);
 
   // Video time update
   useEffect(() => {
@@ -677,7 +698,7 @@ export default function ReplayTool() {
         components: ["Form Fields", "Submit Button", "Validation"],
         x: centerX + (hasFeatures || hasAbout ? colWidth : 0),
         edgeLabel: hasAuth ? "Primary CTA" : "Contact action",
-        edgeType: "action"
+        edgeType: hasAuth ? "action" : "action"
       });
     }
     
@@ -760,8 +781,8 @@ export default function ReplayTool() {
           id: `auth-${dashId}`,
           from: "auth",
           to: dashId,
-          label: "Auth complete",
-          type: "action"
+          label: "Auth required",
+          type: "gated" // Dashed line with lock icon
         });
       }
       
@@ -1553,17 +1574,30 @@ export default function ReplayTool() {
         } : prev);
         
         // Add to generation history for persistence
-        const historyEntry: GenerationHistory = {
+        // Auto-generate title from context/style
+        const autoTitle = refinements.trim() 
+          ? refinements.slice(0, 40).split(' ').slice(0, -1).join(' ') || refinements.slice(0, 40)
+          : styleDirective 
+            ? `${styleDirective.slice(0, 25)} Design`
+            : `Generation ${new Date().toLocaleDateString()}`;
+        
+        const newGeneration: GenerationRecord = {
           id: generateId(),
+          title: autoTitle,
+          autoTitle: true,
           timestamp: Date.now(),
+          status: "complete",
           code: result.code,
           styleDirective: styleDirective,
           refinements: refinements,
           flowNodes: [], // Will be populated after buildFlowLive
           flowEdges: [],
-          styleInfo: null
+          styleInfo: null,
+          videoUrl: videoUrl
         };
-        setGenerationHistory(prev => [...prev, historyEntry]);
+        setGenerations(prev => [...prev, newGeneration]);
+        setActiveGeneration(newGeneration);
+        setGenerationTitle(autoTitle);
         
         // Generation complete - no toast needed, UI shows the result
       } else {
@@ -1963,93 +1997,215 @@ export default function ReplayTool() {
       <div className="flex-1 flex overflow-hidden relative z-10">
         {/* Left Panel - Hidden on mobile */}
         <div className="hidden md:flex w-[340px] border-r border-white/5 bg-black/40 backdrop-blur-sm flex-col">
-          <div className="p-4 border-b border-white/5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Film className="w-4 h-4 text-white/40" />
-                <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Flows</span>
-                {flows.length > 0 && <span className="px-1.5 py-0.5 bg-white/5 rounded text-[10px] text-white/40">{flows.length}</span>}
-              </div>
-              <div className="flex gap-1.5">
-                {isRecording ? (
-                  <button onClick={stopRecording} className="btn-black flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs">
-                    <Square className="w-3 h-3 fill-red-500 text-red-500" />{formatDuration(recordingDuration)}
-                  </button>
-                ) : (
-                  <button onClick={startRecording} className="btn-black flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs"><Monitor className="w-3.5 h-3.5" /> Record</button>
-                )}
-                <button onClick={() => fileInputRef.current?.click()} className="btn-black flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs"><Upload className="w-3.5 h-3.5" /> Upload</button>
-              </div>
-              <input ref={fileInputRef} type="file" accept="video/*" multiple onChange={handleFileInput} className="hidden" />
-            </div>
-            <div className="space-y-2 max-h-[160px] overflow-auto custom-scrollbar">
-              {flows.length === 0 ? (
-                <div onClick={() => fileInputRef.current?.click()} className="drop-zone flex flex-col items-center justify-center py-8 rounded-xl cursor-pointer transition-colors">
-                  <Video className="w-6 h-6 text-white/15 mb-2" />
-                  <p className="text-xs text-white/25 text-center px-4">Drop or record video. Get code.</p>
-                  <p className="text-[10px] text-white/15 text-center px-4 mt-1">We analyze the flow, map interactions, and export clean code.</p>
-                </div>
-              ) : flows.map((flow) => (
-                <div key={flow.id} onClick={() => setSelectedFlowId(flow.id)} className={cn("flow-item flex items-center gap-2.5 p-2 cursor-pointer group", selectedFlowId === flow.id && "selected")}>
-                  <div className="w-14 h-8 rounded overflow-hidden bg-white/5 flex-shrink-0 flex items-center justify-center">
-                    {flow.thumbnail ? <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" /> : <Film className="w-3 h-3 text-white/20" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white/80 truncate">{flow.name}</p>
-                    <p className="text-xs text-white/40">
-                      {formatDuration(flow.trimEnd - flow.trimStart)} / {formatDuration(flow.duration)}
-                    </p>
-                  </div>
-                  <button onClick={(e) => { e.stopPropagation(); removeFlow(flow.id); }} className="p-1 opacity-0 group-hover:opacity-100 hover:bg-white/10 rounded"><Trash2 className="w-3 h-3 text-white/40" /></button>
-                </div>
-              ))}
-              
-              {/* Add next flow button */}
-              {flows.length > 0 && (
+          
+          {/* HISTORY MODE */}
+          {showHistoryMode ? (
+            <div className="flex-1 flex flex-col">
+              {/* History Header */}
+              <div className="p-4 border-b border-white/5">
                 <button 
-                  onClick={() => fileInputRef.current?.click()} 
-                  className="w-full mt-2 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs text-white/40 hover:text-white/60 hover:bg-white/5 border border-dashed border-white/10 hover:border-white/20 transition-colors"
+                  onClick={() => setShowHistoryMode(false)}
+                  className="flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors"
                 >
-                  <Plus className="w-3 h-3" />
-                  <span>Add next flow</span>
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Back</span>
                 </button>
-              )}
+              </div>
+              
+              <div className="p-4 border-b border-white/5">
+                <div className="flex items-center gap-2">
+                  <History className="w-4 h-4 text-white/40" />
+                  <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">History</span>
+                </div>
+              </div>
+              
+              {/* Generation List */}
+              <div className="flex-1 overflow-auto custom-scrollbar p-2">
+                {generations.length === 0 ? (
+                  <div className="text-center py-12">
+                    <History className="w-8 h-8 text-white/10 mx-auto mb-3" />
+                    <p className="text-sm text-white/40">No generations yet</p>
+                    <p className="text-xs text-white/25 mt-1">Your generation history will appear here</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {generations.slice().reverse().map((gen) => (
+                      <div 
+                        key={gen.id}
+                        className={cn(
+                          "group relative p-3 rounded-lg cursor-pointer transition-colors hover:bg-white/5",
+                          activeGeneration?.id === gen.id && "bg-[#FF6E3C]/10 border border-[#FF6E3C]/20"
+                        )}
+                        onClick={() => {
+                          // Load this generation
+                          setActiveGeneration(gen);
+                          setGenerationTitle(gen.title);
+                          if (gen.code) {
+                            setGeneratedCode(gen.code);
+                            setDisplayedCode(gen.code);
+                            setEditableCode(gen.code);
+                            const blob = new Blob([gen.code], { type: "text/html" });
+                            setPreviewUrl(URL.createObjectURL(blob));
+                          }
+                          if (gen.flowNodes) setFlowNodes(gen.flowNodes);
+                          if (gen.flowEdges) setFlowEdges(gen.flowEdges);
+                          if (gen.styleInfo) setStyleInfo(gen.styleInfo);
+                          setStyleDirective(gen.styleDirective);
+                          setRefinements(gen.refinements);
+                          setShowHistoryMode(false);
+                          setGenerationComplete(true);
+                        }}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              {/* Status dot */}
+                              <div className={cn(
+                                "w-2 h-2 rounded-full",
+                                gen.status === "complete" ? "bg-green-500" :
+                                gen.status === "running" ? "bg-[#FF6E3C] animate-pulse" :
+                                "bg-red-500"
+                              )} />
+                              <p className="text-sm font-medium text-white/80 truncate">{gen.title}</p>
+                            </div>
+                            <p className="text-[10px] text-white/30 mt-1">
+                              {new Date(gen.timestamp).toLocaleDateString()} • {new Date(gen.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                          
+                          {/* Actions menu */}
+                          <div className="relative">
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); }}
+                              className="p-1.5 rounded hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <MoreVertical className="w-4 h-4 text-white/40" />
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {/* Style hint */}
+                        {gen.styleDirective && (
+                          <p className="text-[10px] text-white/20 mt-1 truncate">{gen.styleDirective}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          ) : (
+            /* ACTIVE GENERATION MODE */
+            <>
+              {/* Generation Title Header */}
+              <div className="p-4 border-b border-white/5">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <input 
+                      type="text"
+                      value={generationTitle}
+                      onChange={(e) => setGenerationTitle(e.target.value)}
+                      className="text-sm font-medium text-white/80 bg-transparent border-none focus:outline-none w-full truncate hover:text-white transition-colors cursor-text"
+                      placeholder="Untitled Project"
+                    />
+                    <p className="text-[10px] text-white/30 mt-0.5">Generation</p>
+                  </div>
+                  <button 
+                    onClick={() => setShowHistoryMode(true)}
+                    className="p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                    title="View history"
+                  >
+                    <History className="w-4 h-4 text-white/40 group-hover:text-white/60" />
+                  </button>
+                </div>
+              </div>
+              
+              {/* Videos Section */}
+              <div className="p-4 border-b border-white/5">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Video className="w-4 h-4 text-white/40" />
+                    <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Videos</span>
+                    {flows.length > 0 && <span className="px-1.5 py-0.5 bg-white/5 rounded text-[10px] text-white/40">{flows.length}</span>}
+                  </div>
+                  <div className="flex gap-1.5">
+                    {isRecording ? (
+                      <button onClick={stopRecording} className="btn-black flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs">
+                        <Square className="w-3 h-3 fill-red-500 text-red-500" />{formatDuration(recordingDuration)}
+                      </button>
+                    ) : (
+                      <button onClick={startRecording} className="btn-black flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs"><Monitor className="w-3.5 h-3.5" /> Record</button>
+                    )}
+                    <button onClick={() => fileInputRef.current?.click()} className="btn-black flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs"><Upload className="w-3.5 h-3.5" /> Upload</button>
+                  </div>
+                  <input ref={fileInputRef} type="file" accept="video/*" multiple onChange={handleFileInput} className="hidden" />
+                </div>
+                <div className="space-y-2 max-h-[140px] overflow-auto custom-scrollbar">
+                  {flows.length === 0 ? (
+                    <div onClick={() => fileInputRef.current?.click()} className="drop-zone flex flex-col items-center justify-center py-6 rounded-xl cursor-pointer transition-colors">
+                      <Video className="w-6 h-6 text-white/15 mb-2" />
+                      <p className="text-xs text-white/25 text-center px-4">Drop or record video</p>
+                    </div>
+                  ) : flows.map((flow) => (
+                    <div key={flow.id} onClick={() => setSelectedFlowId(flow.id)} className={cn("flow-item flex items-center gap-2.5 p-2 cursor-pointer group", selectedFlowId === flow.id && "selected")}>
+                      <div className="w-14 h-8 rounded overflow-hidden bg-white/5 flex-shrink-0 flex items-center justify-center">
+                        {flow.thumbnail ? <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" /> : <Film className="w-3 h-3 text-white/20" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white/80 truncate">{flow.name}</p>
+                        <p className="text-xs text-white/40">
+                          {formatDuration(flow.trimEnd - flow.trimStart)} / {formatDuration(flow.duration)}
+                        </p>
+                      </div>
+                      <button onClick={(e) => { e.stopPropagation(); removeFlow(flow.id); }} className="p-1 opacity-0 group-hover:opacity-100 hover:bg-white/10 rounded"><Trash2 className="w-3 h-3 text-white/40" /></button>
+                    </div>
+                  ))}
+                  
+                  {/* Add video button */}
+                  {flows.length > 0 && (
+                    <button 
+                      onClick={() => fileInputRef.current?.click()} 
+                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs text-white/40 hover:text-white/60 hover:bg-white/5 border border-dashed border-white/10 hover:border-white/20 transition-colors"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Add video</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+              {/* CONTEXT Section - Above Style */}
+              <div className="p-4 border-b border-white/5">
+                <div className="flex items-center gap-2 mb-3"><Sparkles className="w-4 h-4 text-white/40" /><span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Context</span></div>
+                <textarea
+                  value={refinements}
+                  onChange={(e) => setRefinements(e.target.value)}
+                  placeholder="Explain interactions, logic, or specific details for the code (optional)"
+                  disabled={isProcessing}
+                  rows={3}
+                  className={cn(
+                    "w-full px-3 py-2.5 rounded-lg text-xs text-white/70 placeholder:text-white/25 transition-colors focus:outline-none textarea-grow input-subtle min-h-[72px]",
+                    isProcessing && "opacity-50 cursor-not-allowed"
+                  )}
+                />
+              </div>
 
-          {/* CONTEXT Section - Above Style */}
-          <div className="p-4 border-b border-white/5">
-            <div className="flex items-center gap-2 mb-3"><Sparkles className="w-4 h-4 text-white/40" /><span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Context</span></div>
-            <textarea
-              value={refinements}
-              onChange={(e) => setRefinements(e.target.value)}
-              placeholder="Explain interactions, logic, or specific details for the code (optional)"
-              disabled={isProcessing}
-              rows={3}
-              className={cn(
-                "w-full px-3 py-2.5 rounded-lg text-xs text-white/70 placeholder:text-white/25 transition-colors focus:outline-none textarea-grow input-subtle min-h-[72px]",
-                isProcessing && "opacity-50 cursor-not-allowed"
-              )}
-            />
-          </div>
+              <div className="p-4 border-b border-white/5">
+                <div className="flex items-center gap-2 mb-3"><Palette className="w-4 h-4 text-white/40" /><span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Style</span></div>
+                <StyleInjector value={styleDirective} onChange={setStyleDirective} disabled={isProcessing} />
+              </div>
 
-          <div className="p-4 border-b border-white/5">
-            <div className="flex items-center gap-2 mb-3"><Palette className="w-4 h-4 text-white/40" /><span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Style</span></div>
-            <StyleInjector value={styleDirective} onChange={setStyleDirective} disabled={isProcessing} />
-          </div>
+              <div className="p-4 border-b border-white/5">
+                <button onClick={handleGenerate} disabled={isProcessing || flows.length === 0} className={cn("w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl font-semibold text-sm transition-all btn-generate", isProcessing && "processing")}>
+                  <div className="btn-generate-grain" />
+                  <span className="relative z-10 flex items-center gap-2.5">
+                    {isProcessing ? (<><Loader2 className="w-4 h-4 animate-spin" /><span className="generating-text">Generating...</span></>) : (<><LogoIcon className="btn-logo-icon" color="#FF6E3C" /><span>Generate</span><ChevronRight className="w-4 h-4" /></>)}
+                  </span>
+                </button>
+              </div>
 
-          <div className="p-4 border-b border-white/5">
-            <button onClick={handleGenerate} disabled={isProcessing || flows.length === 0} className={cn("w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl font-semibold text-sm transition-all btn-generate", isProcessing && "processing")}>
-              <div className="btn-generate-grain" />
-              <span className="relative z-10 flex items-center gap-2.5">
-                {isProcessing ? (<><Loader2 className="w-4 h-4 animate-spin" /><span className="generating-text">Generating...</span></>) : (<><LogoIcon className="btn-logo-icon" color="#FF6E3C" /><span>Generate</span><ChevronRight className="w-4 h-4" /></>)}
-              </span>
-            </button>
-          </div>
-
-          <div className="flex-1 flex flex-col min-h-0">
-            <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2"><Activity className="w-4 h-4 text-white/40" /><span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Analysis</span></div>
-            <div ref={analysisRef} className="flex-1 p-4 overflow-auto custom-scrollbar">
+              <div className="flex-1 flex flex-col min-h-0">
+                <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2"><Activity className="w-4 h-4 text-white/40" /><span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Analysis</span></div>
+                <div ref={analysisRef} className="flex-1 p-4 overflow-auto custom-scrollbar">
               {(isProcessing || isStreamingCode) && analysisPhase ? (
                 <div className="space-y-4">
                   {/* UX SIGNALS - Real-time streaming of what AI observes */}
@@ -2194,8 +2350,10 @@ export default function ReplayTool() {
                   <p className="text-xs text-white/25 leading-relaxed">Live analysis logs will display here once generation starts.</p>
                 </div>
               )}
-            </div>
-          </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Main Content */}
@@ -2317,168 +2475,255 @@ export default function ReplayTool() {
             {/* Flow - PRODUCT MAP (Canvas) - what's possible, not what happened */}
             {viewMode === "flow" && (
               <div className="flex-1 overflow-hidden bg-[#080808] relative">
-                {/* Structure toggle button - top right */}
-                <div className="absolute top-4 right-4 z-20">
-                  <button 
-                    onClick={() => setShowStructureInFlow(!showStructureInFlow)}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-lg",
-                      showStructureInFlow 
-                        ? "bg-[#FF6E3C] text-white" 
-                        : "bg-[#1a1a1a] border border-white/10 text-white/60 hover:border-white/20"
-                    )}
-                  >
-                    <Layers className="w-3.5 h-3.5" />
-                    {showStructureInFlow ? "Hide" : "Show"} Structure
-                  </button>
-                </div>
-                
-                {flowNodes.length > 0 || flowBuilding ? (
-                  <div 
-                    ref={archCanvasRef}
-                    className={cn("arch-canvas w-full h-full", isPanning && "dragging")}
-                    onMouseDown={handleCanvasMouseDown}
-                    onMouseMove={handleCanvasMouseMove}
-                    onMouseUp={handleCanvasMouseUp}
-                    onMouseLeave={handleCanvasMouseUp}
-                  >
+                {/* Show loader when processing (same as other views) */}
+                {isProcessing && flowNodes.length === 0 ? (
+                  <div className="w-full h-full flex items-center justify-center bg-[#080808]">
+                    <LoadingState />
+                  </div>
+                ) : flowNodes.length > 0 || flowBuilding ? (
+                  <>
+                    {/* Structure toggle button - top right */}
+                    <div className="absolute top-4 right-4 z-20">
+                      <button 
+                        onClick={() => setShowStructureInFlow(!showStructureInFlow)}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-lg",
+                          showStructureInFlow 
+                            ? "bg-[#FF6E3C] text-white" 
+                            : "bg-[#1a1a1a] border border-white/10 text-white/60 hover:border-white/20"
+                        )}
+                      >
+                        <Layers className="w-3.5 h-3.5" />
+                        {showStructureInFlow ? "Hide" : "Show"} Structure
+                      </button>
+                    </div>
+                    
                     <div 
-                      className="arch-canvas-inner" 
-                      style={{ 
-                        transform: `translate(${canvasPan.x}px, ${canvasPan.y}px) scale(${archZoom})`,
-                        transformOrigin: 'center center'
+                      ref={archCanvasRef}
+                      className={cn("arch-canvas w-full h-full", isPanning && !draggingNodeId && "dragging")}
+                      onMouseDown={(e) => {
+                        if (!draggingNodeId) handleCanvasMouseDown(e);
+                      }}
+                      onMouseMove={(e) => {
+                        if (draggingNodeId) {
+                          // Dragging a node
+                          const dx = (e.clientX - dragStartPos.current.x) / archZoom;
+                          const dy = (e.clientY - dragStartPos.current.y) / archZoom;
+                          setFlowNodes(prev => prev.map(n => 
+                            n.id === draggingNodeId 
+                              ? { ...n, x: dragStartPos.current.nodeX + dx, y: dragStartPos.current.nodeY + dy }
+                              : n
+                          ));
+                        } else {
+                          handleCanvasMouseMove(e);
+                        }
+                      }}
+                      onMouseUp={() => {
+                        if (draggingNodeId) {
+                          setDraggingNodeId(null);
+                        } else {
+                          handleCanvasMouseUp();
+                        }
+                      }}
+                      onMouseLeave={() => {
+                        setDraggingNodeId(null);
+                        handleCanvasMouseUp();
                       }}
                     >
-                      {/* Edge lines with labels */}
-                      <svg className="absolute inset-0 pointer-events-none" style={{ width: "2000px", height: "1500px" }}>
-                        <defs>
-                          <marker id="flow-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                            <polygon points="0 0, 10 3.5, 0 7" fill="rgba(255, 110, 60, 0.6)" />
-                          </marker>
-                        </defs>
-                        {flowEdges.map(edge => {
-                          const fromNode = flowNodes.find(n => n.id === edge.from);
-                          const toNode = flowNodes.find(n => n.id === edge.to);
-                          if (!fromNode || !toNode) return null;
-                          const x1 = fromNode.x + 90;
-                          const y1 = fromNode.y + (showStructureInFlow ? 100 : 60);
-                          const x2 = toNode.x + 90;
-                          const y2 = toNode.y;
-                          const midX = (x1 + x2) / 2;
-                          const midY = (y1 + y2) / 2;
+                      <div 
+                        className="arch-canvas-inner" 
+                        style={{ 
+                          transform: `translate(${canvasPan.x}px, ${canvasPan.y}px) scale(${archZoom})`,
+                          transformOrigin: 'center center'
+                        }}
+                      >
+                        {/* Edge lines with semantic styling */}
+                        <svg className="absolute inset-0 pointer-events-none" style={{ width: "2000px", height: "1500px" }}>
+                          <defs>
+                            <marker id="flow-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                              <polygon points="0 0, 10 3.5, 0 7" fill="rgba(255, 110, 60, 0.6)" />
+                            </marker>
+                            <marker id="flow-arrow-nav" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                              <polygon points="0 0, 10 3.5, 0 7" fill="rgba(99, 102, 241, 0.8)" />
+                            </marker>
+                            <marker id="flow-arrow-gated" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                              <polygon points="0 0, 10 3.5, 0 7" fill="rgba(245, 158, 11, 0.8)" />
+                            </marker>
+                          </defs>
+                          {flowEdges.map(edge => {
+                            const fromNode = flowNodes.find(n => n.id === edge.from);
+                            const toNode = flowNodes.find(n => n.id === edge.to);
+                            if (!fromNode || !toNode) return null;
+                            const x1 = fromNode.x + 90;
+                            const y1 = fromNode.y + (showStructureInFlow ? 100 : 60);
+                            const x2 = toNode.x + 90;
+                            const y2 = toNode.y;
+                            const midX = (x1 + x2) / 2;
+                            const midY = (y1 + y2) / 2;
+                            
+                            // Different styles based on edge type
+                            const edgeStyles: Record<string, { stroke: string; width: number; dash?: string; marker: string }> = {
+                              navigation: { stroke: "rgba(99, 102, 241, 0.6)", width: 3, marker: "url(#flow-arrow-nav)" },
+                              action: { stroke: "rgba(255, 110, 60, 0.5)", width: 2, marker: "url(#flow-arrow)" },
+                              scroll: { stroke: "rgba(255, 255, 255, 0.2)", width: 1, marker: "url(#flow-arrow)" },
+                              gated: { stroke: "rgba(245, 158, 11, 0.6)", width: 2, dash: "6 4", marker: "url(#flow-arrow-gated)" }
+                            };
+                            const style = edgeStyles[edge.type] || edgeStyles.action;
+                            
+                            return (
+                              <g key={edge.id}>
+                                <path 
+                                  d={`M ${x1} ${y1} Q ${x1} ${midY} ${midX} ${midY} Q ${x2} ${midY} ${x2} ${y2}`}
+                                  stroke={style.stroke}
+                                  strokeWidth={style.width}
+                                  strokeDasharray={style.dash}
+                                  fill="none"
+                                  markerEnd={style.marker}
+                                />
+                                {/* Label background */}
+                                <rect 
+                                  x={midX - 50} 
+                                  y={midY - 11} 
+                                  width="100" 
+                                  height="22" 
+                                  rx="4" 
+                                  fill="#0a0a0a" 
+                                  stroke={style.stroke}
+                                  strokeWidth="1"
+                                />
+                                {/* Lock icon for gated edges */}
+                                {edge.type === "gated" && (
+                                  <text x={midX - 38} y={midY + 4} fill="rgba(245, 158, 11, 0.8)" fontSize="10">🔒</text>
+                                )}
+                                <text 
+                                  x={edge.type === "gated" ? midX + 2 : midX} 
+                                  y={midY + 4} 
+                                  fill="rgba(255,255,255,0.6)" 
+                                  fontSize="10" 
+                                  textAnchor="middle" 
+                                  className="font-medium"
+                                >
+                                  {edge.label}
+                                </text>
+                              </g>
+                            );
+                          })}
+                        </svg>
+                        
+                        {/* Flow Nodes - Draggable */}
+                        {flowNodes.map((node, idx) => {
+                          const typeColors: Record<string, string> = {
+                            view: "border-[#FF6E3C]/40 bg-gradient-to-br from-[#FF6E3C]/10 to-transparent",
+                            section: "border-blue-500/40 bg-gradient-to-br from-blue-500/10 to-transparent",
+                            modal: "border-purple-500/40 bg-gradient-to-br from-purple-500/10 to-transparent",
+                            state: "border-green-500/40 bg-gradient-to-br from-green-500/10 to-transparent"
+                          };
+                          const typeIcons: Record<string, any> = { view: Layout, section: Layers, modal: Box, state: CheckCircle };
+                          const Icon = typeIcons[node.type] || Layout;
+                          
                           return (
-                            <g key={edge.id}>
-                              <path 
-                                d={`M ${x1} ${y1} Q ${x1} ${midY} ${midX} ${midY} Q ${x2} ${midY} ${x2} ${y2}`}
-                                stroke="rgba(255, 110, 60, 0.4)" 
-                                strokeWidth="2" 
-                                fill="none"
-                                markerEnd="url(#flow-arrow)"
-                              />
-                              <rect x={midX - 40} y={midY - 10} width="80" height="20" rx="4" fill="#0a0a0a" />
-                              <text x={midX} y={midY + 4} fill="rgba(255,255,255,0.5)" fontSize="10" textAnchor="middle" className="font-medium">
-                                {edge.label}
-                              </text>
-                            </g>
+                            <motion.div 
+                              key={node.id}
+                              initial={{ opacity: 0, scale: 0.9 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: idx * 0.08 }}
+                              className={cn(
+                                "absolute w-44 rounded-xl border backdrop-blur-sm transition-all arch-node-card",
+                                typeColors[node.type],
+                                selectedFlowNode === node.id && "ring-2 ring-[#FF6E3C] ring-offset-2 ring-offset-[#080808]",
+                                draggingNodeId === node.id && "cursor-grabbing scale-105 shadow-2xl z-50"
+                              )}
+                              style={{ left: node.x, top: node.y }}
+                            >
+                              {/* Drag handle */}
+                              <div 
+                                className="absolute -left-1 top-1/2 -translate-y-1/2 p-1 cursor-grab active:cursor-grabbing opacity-0 hover:opacity-100 transition-opacity"
+                                onMouseDown={(e) => {
+                                  e.stopPropagation();
+                                  setDraggingNodeId(node.id);
+                                  dragStartPos.current = { 
+                                    x: e.clientX, 
+                                    y: e.clientY, 
+                                    nodeX: node.x, 
+                                    nodeY: node.y 
+                                  };
+                                }}
+                              >
+                                <GripVertical className="w-4 h-4 text-white/30" />
+                              </div>
+                              
+                              {/* Node header */}
+                              <div 
+                                className="p-3 border-b border-white/5 cursor-pointer"
+                                onClick={() => setSelectedFlowNode(node.id === selectedFlowNode ? null : node.id)}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Icon className="w-4 h-4 text-[#FF6E3C]" />
+                                  <span className="text-sm font-semibold text-white/90">{node.name}</span>
+                                </div>
+                                {node.description && (
+                                  <p className="text-[10px] text-white/40 mt-1">{node.description}</p>
+                                )}
+                              </div>
+                              
+                              {/* Structure overlay (when toggle is ON) */}
+                              <AnimatePresence>
+                                {showStructureInFlow && node.components && node.components.length > 0 && (
+                                  <motion.div 
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className="overflow-hidden"
+                                  >
+                                    <div className="p-2 bg-white/[0.02]">
+                                      <div className="flex items-center gap-1.5 mb-1.5">
+                                        <GitBranch className="w-3 h-3 text-white/30" />
+                                        <span className="text-[9px] text-white/30 uppercase tracking-wider">Components</span>
+                                      </div>
+                                      <div className="space-y-1">
+                                        {node.components.map((comp, i) => (
+                                          <div key={i} className="flex items-center gap-1.5 text-[10px] text-white/50">
+                                            <div className="w-1 h-1 rounded-full bg-[#FF6E3C]/50" />
+                                            {comp}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                              
+                              {/* Type badge */}
+                              <div className="absolute -top-2 -right-2">
+                                <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-[#0a0a0a] border border-white/10 text-white/40 capitalize">
+                                  {node.type}
+                                </span>
+                              </div>
+                            </motion.div>
                           );
                         })}
-                      </svg>
-                      
-                      {/* Flow Nodes */}
-                      {flowNodes.map((node, idx) => {
-                        const typeColors: Record<string, string> = {
-                          view: "border-[#FF6E3C]/40 bg-gradient-to-br from-[#FF6E3C]/10 to-transparent",
-                          section: "border-blue-500/40 bg-gradient-to-br from-blue-500/10 to-transparent",
-                          modal: "border-purple-500/40 bg-gradient-to-br from-purple-500/10 to-transparent",
-                          state: "border-green-500/40 bg-gradient-to-br from-green-500/10 to-transparent"
-                        };
-                        const typeIcons: Record<string, any> = { view: Layout, section: Layers, modal: Box, state: CheckCircle };
-                        const Icon = typeIcons[node.type] || Layout;
                         
-                        return (
-                          <motion.div 
-                            key={node.id}
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: idx * 0.08 }}
-                            className={cn(
-                              "absolute w-44 rounded-xl border backdrop-blur-sm cursor-pointer transition-all hover:scale-[1.02]",
-                              typeColors[node.type],
-                              selectedFlowNode === node.id && "ring-2 ring-[#FF6E3C] ring-offset-2 ring-offset-[#080808]"
-                            )}
-                            style={{ left: node.x, top: node.y }}
-                            onClick={() => setSelectedFlowNode(node.id === selectedFlowNode ? null : node.id)}
-                          >
-                            {/* Node header */}
-                            <div className="p-3 border-b border-white/5">
-                              <div className="flex items-center gap-2">
-                                <Icon className="w-4 h-4 text-[#FF6E3C]" />
-                                <span className="text-sm font-semibold text-white/90">{node.name}</span>
-                              </div>
-                              {node.description && (
-                                <p className="text-[10px] text-white/40 mt-1">{node.description}</p>
-                              )}
-                            </div>
-                            
-                            {/* Structure overlay (when toggle is ON) */}
-                            <AnimatePresence>
-                              {showStructureInFlow && node.components && node.components.length > 0 && (
-                                <motion.div 
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: "auto", opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  className="overflow-hidden"
-                                >
-                                  <div className="p-2 bg-white/[0.02]">
-                                    <div className="flex items-center gap-1.5 mb-1.5">
-                                      <GitBranch className="w-3 h-3 text-white/30" />
-                                      <span className="text-[9px] text-white/30 uppercase tracking-wider">Components</span>
-                                    </div>
-                                    <div className="space-y-1">
-                                      {node.components.map((comp, i) => (
-                                        <div key={i} className="flex items-center gap-1.5 text-[10px] text-white/50">
-                                          <div className="w-1 h-1 rounded-full bg-[#FF6E3C]/50" />
-                                          {comp}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                            
-                            {/* Type badge */}
-                            <div className="absolute -top-2 -right-2">
-                              <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-[#0a0a0a] border border-white/10 text-white/40 capitalize">
-                                {node.type}
-                              </span>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                      
-                      {flowBuilding && (
-                        <div className="absolute top-4 left-4 flex items-center gap-2 text-xs text-white/40 bg-black/50 px-3 py-2 rounded-lg">
-                          <Loader2 className="w-4 h-4 animate-spin text-[#FF6E3C]" />
-                          Building product map...
-                        </div>
-                      )}
+                        {flowBuilding && (
+                          <div className="absolute top-4 left-4 flex items-center gap-2 text-xs text-white/40 bg-black/50 px-3 py-2 rounded-lg">
+                            <Loader2 className="w-4 h-4 animate-spin text-[#FF6E3C]" />
+                            Building product map...
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  </>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-[#080808]">
-                    {isProcessing ? <LoadingState /> : (
-                      <div className="text-center">
-                        <GitBranch className="w-10 h-10 text-white/10 mx-auto mb-3" />
-                        <p className="text-sm text-white/40">No product flow yet</p>
-                        <p className="text-xs text-white/25 mt-1">Flow shows how the product is connected - views, states, transitions</p>
-                      </div>
-                    )}
+                    <div className="text-center">
+                      <GitBranch className="w-10 h-10 text-white/10 mx-auto mb-3" />
+                      <p className="text-sm text-white/40">No product flow yet</p>
+                      <p className="text-xs text-white/25 mt-1">Flow shows how the product is connected - views, states, transitions</p>
+                    </div>
                   </div>
                 )}
                 
                 {/* Edit with AI button for Flow */}
-                {!flowBuilding && flowNodes.length > 0 && !showFloatingEdit && (
+                {!flowBuilding && flowNodes.length > 0 && !showFloatingEdit && !isProcessing && (
                   <button 
                     onClick={() => setShowFloatingEdit(true)} 
                     className="floating-edit-btn flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium text-white/90"
