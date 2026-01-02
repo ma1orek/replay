@@ -56,7 +56,8 @@ import {
   Search,
   Settings,
   Image as ImageIcon,
-  Paperclip
+  Paperclip,
+  LogOut
 } from "lucide-react";
 import { cn, generateId, formatDuration } from "@/lib/utils";
 import { transmuteVideoToCode, editCodeWithAI } from "@/actions/transmute";
@@ -413,7 +414,7 @@ const getNodeIcon = (type: string) => {
 
 export default function ReplayTool() {
   const { pending, clearPending } = usePendingFlow();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, signOut } = useAuth();
   const { totalCredits: userTotalCredits, wallet, membership, canAfford, refreshCredits } = useCredits();
   const { profile } = useProfile();
   const { toast, showToast, hideToast } = useToast();
@@ -4457,6 +4458,14 @@ export const shadows = {
                           <Settings className="w-4 h-4 opacity-50" /> Settings
                         </Link>
                       </div>
+                      <div className="p-1.5 border-t border-white/5">
+                        <button
+                          onClick={() => { setShowUserMenu(false); signOut(); }}
+                          className="w-full dropdown-item text-left text-sm text-red-400 hover:text-red-300 flex items-center gap-2"
+                        >
+                          <LogOut className="w-4 h-4 opacity-70" /> Sign out
+                        </button>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -4560,6 +4569,14 @@ export const shadows = {
                     >
                       <Settings className="w-4 h-4 opacity-50" /> Settings
                     </Link>
+                  </div>
+                  <div className="p-2 border-t border-white/5">
+                    <button 
+                      onClick={() => { setShowMobileMenu(false); signOut(); }}
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-red-500/10 text-red-400"
+                    >
+                      <LogOut className="w-4 h-4 opacity-70" /> Sign out
+                    </button>
                   </div>
                 </>
               ) : (
@@ -5949,7 +5966,7 @@ export const shadows = {
                               
                               {/* Action buttons - CTAs based on status */}
                               <div className="flex items-center gap-1 p-2 border-t border-white/5">
-                                {isObserved ? (
+                                {(isObserved || isAdded) ? (
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
