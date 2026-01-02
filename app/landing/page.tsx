@@ -919,6 +919,8 @@ function HowItWorks() {
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
       setDuration(videoRef.current.duration);
+      // Start from 1 second to show logo instead of black frame
+      videoRef.current.currentTime = 1;
     }
   };
 
@@ -1043,7 +1045,7 @@ function HowItWorks() {
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
             onClick={togglePlay}
-            src="/ShowcaseReplay.mp4"
+            src="/ShowcaseReplay.mp4#t=1"
           />
           <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[#030303]/70 via-transparent to-[#030303]/30" />
           
