@@ -2110,11 +2110,29 @@ export async function editCodeWithAI(
         modifiedCode = modifiedCode + newPageSection;
       }
       
-      // Check if nav button for this page already exists
+      // Check if nav link/button for this page already exists
+      // Support both Alpine.js @click navigation AND regular <a href=""> links
       const navButtonExists = new RegExp(`@click\\s*=\\s*["']currentPage\\s*=\\s*['"]${pageNameLower}['"]`, 'i').test(modifiedCode);
+      const navLinkExists = new RegExp(`<a[^>]*href\\s*=\\s*["'][^"']*${pageNameLower}[^"']*["'][^>]*>`, 'i').test(modifiedCode);
       
-      if (!navButtonExists) {
-        // Inject nav button - find </nav> or look for navigation patterns
+      if (navLinkExists && !navButtonExists) {
+        // Navigation link exists but needs to be converted to Alpine.js @click
+        // Find and update existing nav links like <a href="#about">About</a> or <a href="about.html">
+        console.log(`[editCodeWithAI] Found existing nav link for '${pageNameLower}', converting to @click`);
+        
+        // Pattern to find links to this page in navigation
+        const linkPatterns = [
+          new RegExp(`(<a[^>]*)href\\s*=\\s*["']#${pageNameLower}["']([^>]*>)`, 'gi'),
+          new RegExp(`(<a[^>]*)href\\s*=\\s*["']${pageNameLower}\\.html["']([^>]*>)`, 'gi'),
+          new RegExp(`(<a[^>]*)href\\s*=\\s*["']/${pageNameLower}["']([^>]*>)`, 'gi'),
+        ];
+        
+        for (const pattern of linkPatterns) {
+          modifiedCode = modifiedCode.replace(pattern, `$1href="#" @click.prevent="currentPage = '${pageNameLower}'"$2`);
+        }
+        console.log(`[editCodeWithAI] Converted existing nav links to @click handlers`);
+      } else if (!navButtonExists && !navLinkExists) {
+        // No nav link exists, inject new nav button
         const navCloseIndex = modifiedCode.lastIndexOf('</nav>');
         console.log(`[editCodeWithAI] </nav> index: ${navCloseIndex}`);
         

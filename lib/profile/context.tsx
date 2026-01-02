@@ -102,46 +102,30 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     if (!user) return { success: false, error: "Not authenticated" };
 
     try {
-      const supabase = createClient();
-      
-      // Create unique file name
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      // Use Cloudinary via our API
+      const formData = new FormData();
+      formData.append("file", file);
 
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(filePath, file, {
-          cacheControl: "3600",
-          upsert: true,
-        });
+      const response = await fetch("/api/upload-avatar", {
+        method: "POST",
+        body: formData,
+      });
 
-      if (uploadError) {
-        console.error("Upload error:", uploadError);
-        return { success: false, error: uploadError.message };
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: data.error || "Upload failed" };
       }
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from("avatars")
-        .getPublicUrl(filePath);
-
-      const avatarUrl = urlData.publicUrl;
-
-      // Update profile with new avatar URL
-      const result = await updateProfile({ avatar_url: avatarUrl });
+      // Refresh profile to get new avatar URL
+      await refreshProfile();
       
-      if (result.success) {
-        return { success: true, url: avatarUrl };
-      } else {
-        return { success: false, error: result.error };
-      }
+      return { success: true, url: data.url };
     } catch (err: any) {
       console.error("Avatar upload error:", err);
       return { success: false, error: err.message };
     }
-  }, [user, updateProfile]);
+  }, [user, refreshProfile]);
 
   return (
     <ProfileContext.Provider value={{ profile, isLoading, refreshProfile, updateProfile, uploadAvatar }}>
