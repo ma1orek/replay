@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     const adminClient = createAdminClient();
     
     // Check if admin client is properly initialized
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    if (!adminClient) {
       console.error("SUPABASE_SERVICE_ROLE_KEY is not set!");
       return NextResponse.json({ 
         error: "Server configuration error: missing service role key" 
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
           error: "Storage bucket 'videos' not found. Please create it in Supabase Dashboard." 
         }, { status: 500 });
       }
-      if (error.message?.includes("policy") || error.message?.includes("403") || error.statusCode === "403") {
+      if (error.message?.includes("policy") || error.message?.includes("403") || (error as any).statusCode === "403") {
         return NextResponse.json({ 
           error: "Storage policy error. Check that 'videos' bucket allows uploads or service role key is correct." 
         }, { status: 500 });

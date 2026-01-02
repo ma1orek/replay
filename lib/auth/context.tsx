@@ -9,7 +9,9 @@ interface AuthContextType {
   session: Session | null;
   isLoading: boolean;
   signInWithGoogle: () => Promise<void>;
+  signInWithGitHub: () => Promise<void>;
   signInWithEmail: (email: string) => Promise<{ error: string | null }>;
+  verifyOtp: (email: string, token: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
 }
@@ -65,15 +67,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [supabase.auth]);
 
+  const signInWithGitHub = useCallback(async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "github",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) {
+      console.error("GitHub sign in error:", error);
+      throw error;
+    }
+  }, [supabase.auth]);
+
   const signInWithEmail = useCallback(async (email: string) => {
+    // Use OTP code (not magic link) for more reliable login
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        // Don't use redirect - we'll verify the code in the app
+        shouldCreateUser: true,
       },
     });
     if (error) {
       return { error: error.message };
+    }
+    return { error: null };
+  }, [supabase.auth]);
+
+  const verifyOtp = useCallback(async (email: string, token: string) => {
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'email',
+    });
+    if (error) {
+      return { error: error.message };
+    }
+    // Update session and user
+    if (data.session) {
+      setSession(data.session);
+      setUser(data.session.user);
     }
     return { error: null };
   }, [supabase.auth]);
@@ -97,7 +131,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         session,
         isLoading,
         signInWithGoogle,
+        signInWithGitHub,
         signInWithEmail,
+        verifyOtp,
         signOut,
         refreshSession,
       }}

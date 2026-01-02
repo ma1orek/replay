@@ -19,11 +19,53 @@
 
 * {
   box-sizing: border-box;
+  /* Firefox ultra-thin scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.05) transparent;
+}
+
+/* Global WebKit scrollbar - applies to ALL elements */
+*::-webkit-scrollbar {
+  width: 3px !important;
+  height: 3px !important;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-radius: 100px !important;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.02) !important;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+
+/* Utility: Hide scrollbar completely */
+.scrollbar-none {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Hide ALL scrollbar arrows/buttons */
+*::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 html {
-  scrollbar-width: thin;
-  scrollbar-color: #2a2a2a #0a0a0a;
   scroll-behavior: smooth;
 }
 
@@ -35,18 +77,74 @@ body {
   overflow-x: hidden;
 }
 
-/* Custom scrollbar for dropdowns */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
+/* Additional specificity for stubborn elements */
+.custom-scrollbar::-webkit-scrollbar,
+div::-webkit-scrollbar,
+aside::-webkit-scrollbar,
+section::-webkit-scrollbar,
+textarea::-webkit-scrollbar,
+input::-webkit-scrollbar,
+ul::-webkit-scrollbar,
+ol::-webkit-scrollbar,
+nav::-webkit-scrollbar,
+main::-webkit-scrollbar {
+  width: 3px !important;
+  height: 3px !important;
 }
 
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+.custom-scrollbar::-webkit-scrollbar-track,
+div::-webkit-scrollbar-track,
+aside::-webkit-scrollbar-track,
+section::-webkit-scrollbar-track,
+textarea::-webkit-scrollbar-track,
+input::-webkit-scrollbar-track,
+ul::-webkit-scrollbar-track,
+ol::-webkit-scrollbar-track,
+nav::-webkit-scrollbar-track,
+main::-webkit-scrollbar-track {
+  background: transparent !important;
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 2px;
+.custom-scrollbar::-webkit-scrollbar-thumb,
+div::-webkit-scrollbar-thumb,
+aside::-webkit-scrollbar-thumb,
+section::-webkit-scrollbar-thumb,
+textarea::-webkit-scrollbar-thumb,
+input::-webkit-scrollbar-thumb,
+ul::-webkit-scrollbar-thumb,
+ol::-webkit-scrollbar-thumb,
+nav::-webkit-scrollbar-thumb,
+main::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-radius: 100px !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover,
+div::-webkit-scrollbar-thumb:hover,
+aside::-webkit-scrollbar-thumb:hover,
+section::-webkit-scrollbar-thumb:hover,
+textarea::-webkit-scrollbar-thumb:hover,
+input::-webkit-scrollbar-thumb:hover,
+ul::-webkit-scrollbar-thumb:hover,
+ol::-webkit-scrollbar-thumb:hover,
+nav::-webkit-scrollbar-thumb:hover,
+main::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.02) !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar-button,
+div::-webkit-scrollbar-button,
+aside::-webkit-scrollbar-button,
+section::-webkit-scrollbar-button,
+textarea::-webkit-scrollbar-button,
+input::-webkit-scrollbar-button,
+ul::-webkit-scrollbar-button,
+ol::-webkit-scrollbar-button,
+nav::-webkit-scrollbar-button,
+main::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* ===== VIBRANT GRADIENT BACKGROUND ===== */
@@ -138,21 +236,6 @@ body {
   background: radial-gradient(ellipse at center, transparent 30%, rgba(0, 0, 0, 0.5) 100%);
   pointer-events: none;
   z-index: 3;
-}
-
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-
-::-webkit-scrollbar-track {
-  background: #0a0a0a;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 3px;
 }
 
 ::selection {
@@ -1093,9 +1176,16 @@ select:focus-visible {
     padding-bottom: 80px;
   }
   
-  /* Hide desktop scrollbars on mobile */
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 2px;
+  /* Ultra-thin scrollbars on mobile */
+  *::-webkit-scrollbar {
+    width: 2px !important;
+    height: 2px !important;
+  }
+  
+  *::-webkit-scrollbar-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
   }
   
   /* Touch-friendly buttons */

@@ -41,16 +41,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (type === "subscription") {
-      // Subscription checkout
-      let priceId: string;
-      
-      if (plan === "pro") {
-        priceId = interval === "yearly" ? STRIPE_PRICES.PRO_YEARLY : STRIPE_PRICES.PRO_MONTHLY;
-      } else if (plan === "agency") {
-        priceId = interval === "yearly" ? STRIPE_PRICES.AGENCY_YEARLY : STRIPE_PRICES.AGENCY_MONTHLY;
-      } else {
+      // Subscription checkout - only Pro plan now
+      if (plan !== "pro") {
         return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
       }
+      
+      const priceId = interval === "yearly" ? STRIPE_PRICES.PRO_YEARLY : STRIPE_PRICES.PRO_MONTHLY;
 
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
@@ -59,19 +55,26 @@ export async function POST(request: NextRequest) {
         success_url: `${origin}/settings?tab=plans&success=true`,
         cancel_url: `${origin}/settings?tab=plans&canceled=true`,
         metadata: { user_id: user.id, plan },
+        subscription_data: {
+          metadata: { supabase_user_id: user.id, plan },
+        },
       });
 
       return NextResponse.json({ url: session.url });
     } else if (type === "topup") {
       // Top-up checkout
       let priceId: string;
+      let credits: number;
       
       if (topupAmount === 20) {
-        priceId = STRIPE_PRICES.TOPUP_20;
+        priceId = STRIPE_PRICES.CREDITS_2000;
+        credits = 2000;
       } else if (topupAmount === 50) {
-        priceId = STRIPE_PRICES.TOPUP_50;
+        priceId = STRIPE_PRICES.CREDITS_5500;
+        credits = 5500;
       } else if (topupAmount === 100) {
-        priceId = STRIPE_PRICES.TOPUP_100;
+        priceId = STRIPE_PRICES.CREDITS_12000;
+        credits = 12000;
       } else {
         return NextResponse.json({ error: "Invalid top-up amount" }, { status: 400 });
       }
@@ -82,7 +85,12 @@ export async function POST(request: NextRequest) {
         line_items: [{ price: priceId, quantity: 1 }],
         success_url: `${origin}/settings?tab=credits&success=true`,
         cancel_url: `${origin}/settings?tab=credits&canceled=true`,
-        metadata: { user_id: user.id, type: "topup", amount: topupAmount },
+        metadata: { 
+          user_id: user.id, 
+          supabase_user_id: user.id, 
+          type: "topup", 
+          credits_amount: credits.toString(),
+        },
       });
 
       return NextResponse.json({ url: session.url });
@@ -94,4 +102,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to create checkout session" }, { status: 500 });
   }
 }
-

@@ -101,26 +101,19 @@ export default function OutOfCreditsModal({
                 <p className="text-xs text-white/30 text-center mb-3">Quick buy</p>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { price: "$20", credits: "2,000" },
-                    { price: "$50", credits: "5,500", best: true },
-                    { price: "$100", credits: "12,000" },
+                    { price: "$20", credits: "2,000", amount: 20 },
+                    { price: "$50", credits: "5,500", amount: 50 },
+                    { price: "$100", credits: "12,000", amount: 100 },
                   ].map((pkg) => (
-                    <button
+                    <Link
                       key={pkg.price}
-                      className={`relative p-3 rounded-lg border transition-colors ${
-                        pkg.best 
-                          ? "border-[#FF6E3C]/50 bg-[#FF6E3C]/10 hover:bg-[#FF6E3C]/20" 
-                          : "border-white/10 hover:border-white/20 hover:bg-white/5"
-                      }`}
+                      href={`/settings?tab=credits&buy=${pkg.amount}`}
+                      onClick={onClose}
+                      className="relative p-3 rounded-lg border border-white/10 hover:border-white/20 hover:bg-white/5 transition-all"
                     >
-                      {pkg.best && (
-                        <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-[#FF6E3C] text-[10px] font-medium text-white">
-                          Best
-                        </span>
-                      )}
                       <div className="text-sm font-semibold text-white">{pkg.price}</div>
                       <div className="text-xs text-white/50">{pkg.credits}</div>
-                    </button>
+                    </Link>
                   ))}
                 </div>
               </div>

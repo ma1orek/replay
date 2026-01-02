@@ -21,6 +21,10 @@ export async function POST(request: NextRequest) {
     // Use admin client for atomic spend
     const adminClient = createAdminClient();
     
+    if (!adminClient) {
+      return NextResponse.json({ error: "Server configuration error" }, { status: 503 });
+    }
+    
     const { data, error } = await adminClient.rpc("spend_credits", {
       p_user_id: user.id,
       p_cost: cost,

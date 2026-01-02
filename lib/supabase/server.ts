@@ -62,8 +62,10 @@ export function createAdminClient() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   
   if (!supabaseUrl || !serviceRoleKey) {
-    console.error("Missing SUPABASE_SERVICE_ROLE_KEY for admin client");
-    return mockClient;
+    console.error("CRITICAL: Missing SUPABASE_SERVICE_ROLE_KEY - generations will not save!");
+    console.error("Add SUPABASE_SERVICE_ROLE_KEY to Vercel env vars (from Supabase → Settings → API → service_role)");
+    // Return null so callers can check
+    return null;
   }
   
   // Use standard client with service role key (bypasses RLS)
@@ -73,5 +75,10 @@ export function createAdminClient() {
       persistSession: false,
     },
   });
+}
+
+// Check if admin client is available
+export function isAdminClientAvailable(): boolean {
+  return !!process.env.SUPABASE_SERVICE_ROLE_KEY;
 }
 

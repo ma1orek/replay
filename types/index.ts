@@ -119,6 +119,12 @@ export interface TransmuteRequest {
 export interface TransmuteResponse {
   success: boolean;
   code?: string;
+  codeLength?: number;
+  tokenUsage?: {
+    promptTokens: number;
+    candidatesTokens: number;
+    totalTokens: number;
+  };
   analysis?: {
     interactions: string[];
     components: string[];
@@ -135,6 +141,58 @@ export type StylePreset = {
   prompt: string;
   preview: string;
 };
+
+// ============================================
+// Code Generation Types
+// ============================================
+
+export type CodeMode = "single-file" | "componentized";
+
+export interface FileNode {
+  path: string;
+  name: string;
+  content: string;
+  type: "page" | "component" | "style" | "type" | "stub";
+  language: "tsx" | "ts" | "css" | "html";
+  sourceNodeId?: string; // Maps to Flow/Structure node
+  isStub?: boolean; // Generated placeholder for possible paths
+  lineCount: number;
+}
+
+export interface CodeReferenceMap {
+  nodeId: string;
+  filePath: string;
+  symbolName: string;
+  startLine: number;
+  endLine: number;
+}
+
+export interface GenerationSnapshot {
+  id: string;
+  createdAt: number;
+  codeModeDefault: CodeMode;
+  singleFileOutput: FileNode[];
+  componentizedOutput: FileNode[];
+  codeReferenceMap: CodeReferenceMap[];
+  sourceVideoUrl?: string;
+}
+
+export interface FileTreeFolder {
+  name: string;
+  path: string;
+  type: "folder";
+  children: (FileTreeFolder | FileTreeFile)[];
+  expanded?: boolean;
+}
+
+export interface FileTreeFile {
+  name: string;
+  path: string;
+  type: "file";
+  fileType: FileNode["type"];
+  isStub?: boolean;
+  sourceNodeId?: string;
+}
 
 export const STYLE_PRESETS: StylePreset[] = [
   {

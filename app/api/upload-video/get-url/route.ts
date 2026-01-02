@@ -8,6 +8,10 @@ export async function POST(request: NextRequest) {
     const adminClient = createAdminClient();
     const supabase = await createServerSupabaseClient();
     
+    if (!adminClient) {
+      return NextResponse.json({ error: "Server configuration error" }, { status: 503 });
+    }
+    
     // Get user
     const { data: { user } } = await supabase.auth.getUser();
     const userId = user?.id || "anon";

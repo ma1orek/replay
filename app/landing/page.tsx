@@ -26,9 +26,15 @@ import {
   Building2,
   Lightbulb,
   Users,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import StyleInjector from "@/components/StyleInjector";
+import Avatar from "@/components/Avatar";
+import AuthModal from "@/components/modals/AuthModal";
 import { cn } from "@/lib/utils";
 import { usePendingFlow } from "../providers";
 import { useAuth } from "@/lib/auth/context";
@@ -48,10 +54,11 @@ const NAV_ITEMS = [
 
 function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const { scrollY } = useScroll();
   const headerBg = useTransform(scrollY, [0, 100], ["rgba(3,3,3,0)", "rgba(3,3,3,0.9)"]);
   const headerBorder = useTransform(scrollY, [0, 100], ["rgba(255,255,255,0)", "rgba(255,255,255,0.05)"]);
-  const { user, signInWithGoogle, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { totalCredits } = useCredits();
 
   const scrollToSection = (href: string) => {
@@ -90,16 +97,16 @@ function Navigation() {
             {/* Auth Section */}
             {user ? (
               <>
-                <Link
-                  href="/settings"
-                  className="w-8 h-8 rounded-full bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] flex items-center justify-center text-white text-sm font-medium"
-                >
-                  {user.email?.charAt(0).toUpperCase() || "U"}
+                <Link href="/settings">
+                  <Avatar 
+                    fallback={user.email?.charAt(0).toUpperCase() || "U"} 
+                    size={32}
+                  />
                 </Link>
               </>
             ) : (
               <button
-                onClick={signInWithGoogle}
+                onClick={() => setShowAuthModal(true)}
                 disabled={authLoading}
                 className="hidden sm:flex px-4 py-2 rounded-xl text-sm text-white/70 border border-white/10 hover:border-white/20 hover:text-white transition-colors"
               >
@@ -150,14 +157,15 @@ function Navigation() {
                     href="/settings"
                     className="flex items-center gap-3 py-3 text-sm text-white/60"
                   >
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] flex items-center justify-center text-white text-xs font-medium">
-                      {user.email?.charAt(0).toUpperCase() || "U"}
-                    </div>
+                    <Avatar 
+                      fallback={user.email?.charAt(0).toUpperCase() || "U"} 
+                      size={28}
+                    />
                     <span>My Account</span>
                   </Link>
                 ) : (
                   <button
-                    onClick={signInWithGoogle}
+                    onClick={() => { setIsOpen(false); setShowAuthModal(true); }}
                     disabled={authLoading}
                     className="block w-full text-left py-3 text-sm text-white/60 hover:text-white transition-colors"
                   >
@@ -176,6 +184,12 @@ function Navigation() {
           )}
         </AnimatePresence>
       </motion.header>
+      
+      {/* Auth Modal */}
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
+      />
     </>
   );
 }
@@ -288,6 +302,9 @@ function HeroInput({
   fileInputRef,
   onBrowse,
   onFile,
+  contextImages,
+  onAddContextImage,
+  onRemoveContextImage,
 }: {
   onSend: () => void;
   canSend: boolean;
@@ -302,8 +319,12 @@ function HeroInput({
   fileInputRef: React.RefObject<HTMLInputElement>;
   onBrowse: () => void;
   onFile: (f: File) => void;
+  contextImages: { id: string; url: string; name: string }[];
+  onAddContextImage: (files: FileList | null) => void;
+  onRemoveContextImage: (id: string) => void;
 }) {
   const [isDragging, setIsDragging] = useState(false);
+  const contextImageInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <motion.div
@@ -419,13 +440,53 @@ function HeroInput({
               <MousePointer2 className="w-3.5 h-3.5 text-[#FF6E3C]" />
               Context <span className="text-white/30">(optional)</span>
             </label>
-            <textarea
-              value={context}
-              onChange={(e) => setContext(e.target.value)}
-              rows={2}
-              placeholder="Add data logic, constraints or details. Replay works without it — context just sharpens the result."
-              className="w-full px-4 py-3 rounded-xl text-xs text-white/80 placeholder:text-white/25 placeholder:text-xs bg-white/[0.03] border border-white/[0.06] focus:outline-none focus:border-[#FF6E3C]/20 focus:bg-white/[0.035] transition-colors duration-300 ease-out resize-none"
-            />
+            
+            {/* Context Images */}
+            {contextImages.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {contextImages.map(img => (
+                  <div key={img.id} className="relative group">
+                    <img 
+                      src={img.url} 
+                      alt={img.name}
+                      className="w-14 h-14 object-cover rounded-lg border border-white/10"
+                    />
+                    <button
+                      onClick={() => onRemoveContextImage(img.id)}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {/* Textarea with attach button */}
+            <div className="relative">
+              <textarea
+                value={context}
+                onChange={(e) => setContext(e.target.value)}
+                rows={3}
+                placeholder="Add data logic, constraints or details. Replay works without it — context just sharpens the result."
+                className="w-full pl-4 pr-12 py-3 rounded-xl text-xs text-white/80 placeholder:text-white/25 placeholder:text-xs bg-white/[0.03] border border-white/[0.06] focus:outline-none focus:border-[#FF6E3C]/20 focus:bg-white/[0.035] transition-colors duration-300 ease-out resize-none min-h-[72px]"
+              />
+              <button
+                onClick={() => contextImageInputRef.current?.click()}
+                className="absolute right-3 top-3 w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-colors group"
+                title="Attach file"
+              >
+                <Upload className="w-3.5 h-3.5 text-white/40 group-hover:text-white/60" />
+              </button>
+              <input
+                ref={contextImageInputRef}
+                type="file"
+                accept="image/*,.pdf,.doc,.docx,.txt,.json,.csv"
+                multiple
+                onChange={(e) => onAddContextImage(e.target.files)}
+                className="hidden"
+              />
+            </div>
           </div>
 
           <div>
@@ -455,8 +516,8 @@ function HeroInput({
             </span>
           </motion.button>
           
-          <p className="text-center text-xs text-white/30">
-            No setup. No specs.
+          <p className="text-center text-xs text-white/40">
+            Early Access users get <span className="text-[#FF6E3C] font-semibold">2 free generations</span>
           </p>
         </div>
       </div>
@@ -490,6 +551,7 @@ function useSupportedRecorderMime() {
 export default function LandingPage() {
   const router = useRouter();
   const { setPending } = usePendingFlow();
+  const { user, isLoading: authLoading } = useAuth();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -504,6 +566,29 @@ export default function LandingPage() {
   const [context, setContext] = useState("");
   const [styleDirective, setStyleDirective] = useState("Custom");
   const [isRecording, setIsRecording] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingRedirect, setPendingRedirect] = useState(false);
+  const [contextImages, setContextImages] = useState<{ id: string; url: string; name: string }[]>([]);
+
+  const handleAddContextImage = useCallback((files: FileList | null) => {
+    if (files) {
+      for (const file of Array.from(files)) {
+        if (file.type.startsWith("image/")) {
+          const url = URL.createObjectURL(file);
+          const id = `ctx-img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+          setContextImages(prev => [...prev, { id, url, name: file.name }]);
+        }
+      }
+    }
+  }, []);
+
+  const handleRemoveContextImage = useCallback((id: string) => {
+    setContextImages(prev => {
+      const img = prev.find(i => i.id === id);
+      if (img) URL.revokeObjectURL(img.url);
+      return prev.filter(i => i.id !== id);
+    });
+  }, []);
 
   const setFlowBlob = useCallback((blob: Blob, name: string) => {
     const url = URL.createObjectURL(blob);
@@ -550,17 +635,35 @@ export default function LandingPage() {
 
   const canSend = !!heroFlow.blob;
 
-  const onSend = useCallback(() => {
+  const onSend = useCallback(async () => {
     if (!heroFlow.blob) return;
-    setPending({
+    
+    // Save pending flow (persists to localStorage via provider)
+    await setPending({
       blob: heroFlow.blob,
       name: heroFlow.name || "Flow",
       context: context.trim(),
       styleDirective: styleDirective?.trim() || "Custom",
       createdAt: Date.now(),
     });
-    router.push("/tool");
-  }, [context, heroFlow.blob, heroFlow.name, router, setPending, styleDirective]);
+    
+    // If user is logged in, go directly to tool
+    if (user) {
+      router.push("/tool");
+    } else {
+      // Show auth modal - after login, user will be redirected
+      setPendingRedirect(true);
+      setShowAuthModal(true);
+    }
+  }, [context, heroFlow.blob, heroFlow.name, router, setPending, styleDirective, user]);
+
+  // After successful login, redirect to tool
+  useEffect(() => {
+    if (user && pendingRedirect) {
+      setPendingRedirect(false);
+      router.push("/tool");
+    }
+  }, [user, pendingRedirect, router]);
 
   return (
     <div className="min-h-screen bg-[#030303] text-white font-poppins overflow-x-hidden">
@@ -575,6 +678,17 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════════ */}
       <section className="relative z-10 min-h-screen flex items-center justify-center pt-20">
         <div className="mx-auto max-w-5xl px-6 py-20 w-full text-center">
+          {/* Early Access Badge */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#FF6E3C]/10 border border-[#FF6E3C]/20 mb-6"
+          >
+            <span className="w-2 h-2 rounded-full bg-[#FF6E3C] animate-pulse" />
+            <span className="text-xs font-medium text-[#FF6E3C]">Early Access</span>
+          </motion.div>
+          
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -582,10 +696,10 @@ export default function LandingPage() {
             className="text-3xl sm:text-5xl lg:text-7xl font-bold tracking-tight leading-[1.1] mb-6"
           >
             <span className="bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-transparent">
-              Rebuild UI from Video.
+              Rebuild real UI behavior from video.
             </span>
-            <br className="sm:hidden" />
-            <span className="sm:ml-3 bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] bg-clip-text text-transparent">
+            <br />
+            <span className="bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] bg-clip-text text-transparent">
               Instantly.
             </span>
           </motion.h1>
@@ -596,9 +710,7 @@ export default function LandingPage() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="text-lg sm:text-xl text-white/50 max-w-2xl mx-auto leading-relaxed mb-12"
           >
-            Turn any video into a clean, production-ready UI.
-            <br />
-            Code, structure, interactions and style — rebuilt directly from what's on screen.
+            Code, structure, interactions and style — rebuilt from what actually happens on screen.
           </motion.p>
 
           <HeroInput
@@ -615,6 +727,9 @@ export default function LandingPage() {
             fileInputRef={fileInputRef as any}
             onBrowse={onBrowse}
             onFile={onFile}
+            contextImages={contextImages}
+            onAddContextImage={handleAddContextImage}
+            onRemoveContextImage={handleRemoveContextImage}
           />
 
         </div>
@@ -680,14 +795,14 @@ export default function LandingPage() {
       <HowItWorks />
 
       {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* THE MAGIC - Before/After Demo */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      <TheMagicSection />
+
+      {/* ═══════════════════════════════════════════════════════════════ */}
       {/* FEATURES */}
       {/* ═══════════════════════════════════════════════════════════════ */}
       <FeaturesBento />
-
-      {/* ═══════════════════════════════════════════════════════════════ */}
-      {/* SHOWCASE */}
-      {/* ═══════════════════════════════════════════════════════════════ */}
-      <ShowcaseSection />
 
       {/* ═══════════════════════════════════════════════════════════════ */}
       {/* USE CASES */}
@@ -716,12 +831,28 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl px-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <Logo />
-            <p className="text-xs text-white/30">
-              © 2025 Replay · replay.build
-            </p>
+            <div className="flex items-center gap-6">
+              <Link href="/privacy" className="text-xs text-white/30 hover:text-white/50 transition-colors">
+                Privacy Policy
+              </Link>
+              <Link href="/terms" className="text-xs text-white/30 hover:text-white/50 transition-colors">
+                Terms of Service
+              </Link>
+              <p className="text-xs text-white/30">
+                © 2025 Replay
+              </p>
+            </div>
           </div>
         </div>
       </footer>
+
+      {/* Auth Modal for recording/upload flow */}
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)}
+        title="Sign in to continue"
+        description="Sign in to generate code from your video recording."
+      />
     </div>
   );
 }
@@ -732,7 +863,22 @@ export default function LandingPage() {
 
 function HowItWorks() {
   const ref = useRef(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const progressBarRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const [isPlaying, setIsPlaying] = useState(false); // Start paused
+  const [isMuted, setIsMuted] = useState(false); // Sound on when playing
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
 
   const steps = [
     {
@@ -752,6 +898,93 @@ function HowItWorks() {
     },
   ];
 
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (videoRef.current && !isDragging) {
+      setCurrentTime(videoRef.current.currentTime);
+      setProgress((videoRef.current.currentTime / videoRef.current.duration) * 100);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (videoRef.current) {
+      setDuration(videoRef.current.duration);
+    }
+  };
+
+  // Seek to position based on clientX
+  const seekToPosition = (clientX: number) => {
+    if (videoRef.current && progressBarRef.current) {
+      const rect = progressBarRef.current.getBoundingClientRect();
+      const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      const newTime = pos * videoRef.current.duration;
+      videoRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+      setProgress(pos * 100);
+    }
+  };
+
+  // Mouse events for desktop dragging
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+    seekToPosition(e.clientX);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        seekToPosition(e.clientX);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
+
+  // Touch events for mobile dragging
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    setIsDragging(true);
+    seekToPosition(e.touches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (isDragging) {
+      seekToPosition(e.touches[0].clientX);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+  };
+
+  const formatTime = (time: number) => {
+    const mins = Math.floor(time / 60);
+    const secs = Math.floor(time % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
     <section id="how-it-works" ref={ref} className="relative z-10 py-32">
       <div className="mx-auto max-w-7xl px-6">
@@ -768,7 +1001,7 @@ function HowItWorks() {
           <p className="text-white/50 text-lg">Video → Context → UI</p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-3 gap-6 mb-16">
           {steps.map((step, i) => (
             <motion.div
               key={step.title}
@@ -790,6 +1023,282 @@ function HowItWorks() {
               </div>
             </motion.div>
           ))}
+        </div>
+
+        {/* Demo Video with Controls */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.8, delay: 0.5 }}
+          className="relative rounded-2xl border border-white/[0.08] overflow-hidden bg-black group"
+        >
+          <video 
+            ref={videoRef}
+            className="w-full h-auto cursor-pointer object-cover"
+            style={{ aspectRatio: "16/9" }}
+            loop 
+            playsInline
+            preload="metadata"
+            poster="/demo-poster.jpg"
+            onTimeUpdate={handleTimeUpdate}
+            onLoadedMetadata={handleLoadedMetadata}
+            onClick={togglePlay}
+            src="/ShowcaseReplay.mp4"
+          />
+          <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[#030303]/70 via-transparent to-[#030303]/30" />
+          
+          {/* Center Play Button - shows when paused */}
+          {!isPlaying && (
+            <div 
+              className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer z-10"
+              onClick={togglePlay}
+            >
+              <div className="w-20 h-20 rounded-full bg-[#FF6E3C] flex items-center justify-center shadow-lg shadow-[#FF6E3C]/30 hover:scale-110 transition-transform">
+                <Play className="w-8 h-8 text-white ml-1" fill="white" />
+              </div>
+              <span className="mt-4 text-white/80 text-sm font-medium tracking-wide">Watch Replay Showcase</span>
+            </div>
+          )}
+          
+          {/* Video Controls */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            {/* Progress Bar - clickable and draggable for seeking */}
+            <div 
+              ref={progressBarRef}
+              className={`h-3 bg-white/20 rounded-full mb-3 cursor-pointer group/progress transition-[height] ${isDragging ? 'h-4' : 'hover:h-4'}`}
+              onMouseDown={handleMouseDown}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              <div 
+                className="h-full bg-[#FF6E3C] rounded-full relative pointer-events-none"
+                style={{ width: `${progress}%` }}
+              >
+                <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-5 h-5 bg-white rounded-full shadow-lg transition-opacity pointer-events-none ${isDragging ? 'opacity-100 scale-110' : 'opacity-0 group-hover/progress:opacity-100'}`} />
+              </div>
+            </div>
+            
+            {/* Controls Row */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={togglePlay}
+                  className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                >
+                  {isPlaying ? (
+                    <Pause className="w-5 h-5 text-white" />
+                  ) : (
+                    <Play className="w-5 h-5 text-white ml-0.5" />
+                  )}
+                </button>
+                <button 
+                  onClick={toggleMute}
+                  className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                >
+                  {isMuted ? (
+                    <VolumeX className="w-5 h-5 text-white" />
+                  ) : (
+                    <Volume2 className="w-5 h-5 text-white" />
+                  )}
+                </button>
+                <span className="text-sm text-white/60 font-mono">
+                  {formatTime(currentTime)} / {formatTime(duration)}
+                </span>
+              </div>
+              <span className="text-xs text-white/40 uppercase tracking-wider">Replay Demo</span>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// THE MAGIC - Before/After Demo Slider
+// ═══════════════════════════════════════════════════════════════
+
+function TheMagicSection() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+
+  const examples = [
+    { name: "Y Combinator", before: "/yvbefore.mp4", after: "/AFTERYC.mp4" },
+    { name: "Microsoft", before: "/microbefore.mp4", after: "/microafter.mp4" },
+    { name: "Craigslist", before: "/craiglistbefore.mp4", after: "/craigafter.mp4" },
+    { name: "Eleven Labs", before: "/elevenbefore.mp4", after: "/elevenafter.mp4" },
+  ];
+
+  const inputTags = ["cursor movement", "clicks", "scrolling", "hover states", "logic"];
+  const outputFeatures = ["New responsive UI", "Componentized production code", "Full flow map with possible paths", "Design system"];
+
+  // Auto-advance slider every 8 seconds (when not paused)
+  useEffect(() => {
+    if (!isAutoPlaying) return;
+    const interval = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % examples.length);
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [examples.length, isAutoPlaying]);
+
+  return (
+    <section ref={ref} className="relative z-10 py-32 border-t border-white/[0.03]">
+      <div className="mx-auto max-w-7xl px-6">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.8 }}
+          className="text-center mb-16"
+        >
+          <p className="text-xs text-[#FF6E3C] uppercase tracking-[0.2em] mb-4">The Magic</p>
+          <h2 className="text-4xl sm:text-5xl font-bold mb-4">Watch. Drop. Ship.</h2>
+          <p className="text-white/50 text-lg">Seconds of video replace hours of work.</p>
+        </motion.div>
+
+        {/* Before/After Grid */}
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* INPUT - Before */}
+          <motion.div
+            initial={{ opacity: 0, x: -40 }}
+            animate={isInView ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="space-y-6"
+          >
+            <div className="flex items-center gap-3">
+              <div className="px-3 py-1 rounded-full bg-white/[0.05] border border-white/[0.08]">
+                <span className="text-xs font-medium text-white/60 uppercase tracking-wider">Input</span>
+              </div>
+              <span className="text-sm text-white/30">before</span>
+            </div>
+
+            <div className="relative rounded-2xl border border-white/[0.08] overflow-hidden bg-[#0a0a0a]">
+              <AnimatePresence mode="wait">
+                <motion.video
+                  key={`before-${activeSlide}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="w-full"
+                  style={{ aspectRatio: "1920/940" }}
+                  autoPlay muted loop playsInline
+                  src={examples[activeSlide].before}
+                />
+              </AnimatePresence>
+              <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[#030303]/30 via-transparent to-transparent" />
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-sm text-white/50">Replay watches the UI over time.</p>
+              <div className="flex flex-wrap gap-2">
+                {inputTags.map((tag, i) => (
+                  <span key={tag} className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs text-white/40">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              <p className="text-xs text-white/30 italic">Video is treated as the source of truth.</p>
+            </div>
+          </motion.div>
+
+          {/* OUTPUT - After */}
+          <motion.div
+            initial={{ opacity: 0, x: 40 }}
+            animate={isInView ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="space-y-6"
+          >
+            <div className="flex items-center gap-3">
+              <div className="px-3 py-1 rounded-full bg-[#FF6E3C]/10 border border-[#FF6E3C]/20">
+                <span className="text-xs font-medium text-[#FF6E3C] uppercase tracking-wider">Output</span>
+              </div>
+              <span className="text-sm text-white/30">after</span>
+            </div>
+
+            <div className="relative rounded-2xl border border-[#FF6E3C]/20 overflow-hidden bg-[#0a0a0a]">
+              <AnimatePresence mode="wait">
+                <motion.video
+                  key={`after-${activeSlide}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="w-full"
+                  style={{ aspectRatio: "1920/940" }}
+                  autoPlay muted loop playsInline
+                  src={examples[activeSlide].after}
+                />
+              </AnimatePresence>
+              <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[#030303]/30 via-transparent to-transparent" />
+              <div className="absolute inset-0 pointer-events-none rounded-2xl ring-1 ring-inset ring-[#FF6E3C]/10" />
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-sm text-white/50">You get:</p>
+              <div className="space-y-2">
+                {outputFeatures.map((feature) => (
+                  <div key={feature} className="flex items-center gap-2">
+                    <div className="w-1 h-1 rounded-full bg-[#FF6E3C]" />
+                    <span className="text-sm text-white/60">{feature}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-[#FF6E3C]/60 font-medium mt-4">Everything stays editable. With AI.</p>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Slider Controls */}
+        <div className="flex items-center justify-center gap-4 mt-12">
+          {/* Stop/Play Button */}
+          <button
+            onClick={() => setIsAutoPlaying(!isAutoPlaying)}
+            className={cn(
+              "p-2 rounded-full transition-all duration-300",
+              isAutoPlaying 
+                ? "bg-white/10 hover:bg-white/20" 
+                : "bg-[#FF6E3C]/20 hover:bg-[#FF6E3C]/30"
+            )}
+            title={isAutoPlaying ? "Pause autoplay" : "Resume autoplay"}
+          >
+            {isAutoPlaying ? (
+              <svg className="w-4 h-4 text-white/60" fill="currentColor" viewBox="0 0 24 24">
+                <rect x="6" y="4" width="4" height="16" rx="1" />
+                <rect x="14" y="4" width="4" height="16" rx="1" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4 text-[#FF6E3C]" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            )}
+          </button>
+          
+          {/* Slider Dots */}
+          <div className="flex items-center gap-3">
+            {examples.map((ex, i) => (
+              <button
+                key={ex.name}
+                onClick={() => setActiveSlide(i)}
+                className={cn(
+                  "relative w-3 h-3 rounded-full transition-all duration-300",
+                  activeSlide === i 
+                    ? "bg-[#FF6E3C] scale-110" 
+                    : "bg-white/20 hover:bg-white/40"
+                )}
+              >
+                {activeSlide === i && (
+                  <motion.div
+                    layoutId="activeSlide"
+                    className="absolute inset-0 rounded-full ring-2 ring-[#FF6E3C]/30"
+                  />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -920,167 +1429,6 @@ function FeaturesBento() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SHOWCASE SECTION (The Magic)
-// ═══════════════════════════════════════════════════════════════
-
-function ShowcaseSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-  return (
-    <section ref={ref} className="relative z-10 py-32">
-      <div className="mx-auto max-w-7xl px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-16"
-        >
-          <p className="text-xs text-[#FF6E3C] uppercase tracking-[0.2em] mb-4">The Magic</p>
-          <h2 className="text-4xl sm:text-5xl font-bold mb-4">
-            Watch. Drop. Ship.
-          </h2>
-          <p className="text-white/50 max-w-2xl mx-auto text-lg">
-            Seconds of video replace hours of UI work.
-          </p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="grid md:grid-cols-2 gap-6"
-        >
-          {/* Input side */}
-          <div className="rounded-2xl border border-white/[0.06] bg-[#0a0a0a]/50 p-6 overflow-hidden">
-            <div className="flex items-center gap-2 mb-4">
-              <Video className="w-4 h-4 text-[#FF6E3C]" />
-              <span className="text-xs text-white/40 uppercase tracking-wider">Input</span>
-            </div>
-            
-            <div className="rounded-xl border border-white/[0.06] bg-[#080808] p-6 relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#FF6E3C]/5 to-transparent" />
-              
-              <div className="relative space-y-4">
-                <motion.div
-                  className="flex items-center gap-3"
-                  animate={{ opacity: [0.5, 1, 0.5] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                >
-                  <div className="w-3 h-3 rounded-full bg-[#FF6E3C]" />
-                  <span className="text-sm text-white/50">Video showing:</span>
-                </motion.div>
-                
-                <div className="h-32 rounded-lg bg-white/[0.02] border border-white/[0.04] flex items-center justify-center">
-                  <motion.div
-                    className="w-4 h-4 rounded-full bg-[#FF6E3C]/30"
-                    animate={{ 
-                      x: [0, 60, 0, -40, 0],
-                      y: [0, 20, -10, 30, 0],
-                    }}
-                    transition={{ duration: 4, repeat: Infinity }}
-                  />
-                </div>
-                
-                <div className="text-xs text-white/30 space-y-1">
-                  <div>• cursor movement</div>
-                  <div>• clicks</div>
-                  <div>• scrolling</div>
-                  <div>• hover states</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Output side */}
-          <div className="rounded-2xl border border-white/[0.06] bg-[#0a0a0a]/50 p-6 overflow-hidden">
-            <div className="flex items-center gap-2 mb-4">
-              <Code2 className="w-4 h-4 text-[#FF6E3C]" />
-              <span className="text-xs text-white/40 uppercase tracking-wider">Output</span>
-            </div>
-            
-            <div className="rounded-xl border border-white/[0.06] bg-[#080808] p-6">
-              <div className="font-mono text-xs leading-relaxed space-y-1">
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={isInView ? { opacity: 1, x: 0 } : {}}
-                  transition={{ delay: 0.5 }}
-                >
-                  <span className="text-[#FF6E3C]">&lt;header</span>
-                  <span className="text-white/40"> className=</span>
-                  <span className="text-green-400/70">"sticky top-0 z-50"</span>
-                  <span className="text-[#FF6E3C]">&gt;</span>
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={isInView ? { opacity: 1, x: 0 } : {}}
-                  transition={{ delay: 0.7 }}
-                  className="pl-4 text-white/30"
-                >
-                  {"// Navigation with hover states"}
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={isInView ? { opacity: 1, x: 0 } : {}}
-                  transition={{ delay: 0.9 }}
-                >
-                  <span className="text-[#FF6E3C]">&lt;/header&gt;</span>
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={isInView ? { opacity: 1, x: 0 } : {}}
-                  transition={{ delay: 1.1 }}
-                >
-                  <span className="text-[#FF6E3C]">&lt;main</span>
-                  <span className="text-white/40"> className=</span>
-                  <span className="text-green-400/70">"max-w-7xl mx-auto"</span>
-                  <span className="text-[#FF6E3C]">&gt;</span>
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={isInView ? { opacity: 1, x: 0 } : {}}
-                  transition={{ delay: 1.3 }}
-                  className="pl-4 text-white/30"
-                >
-                  {"// Hero, features, pricing..."}
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={isInView ? { opacity: 1, x: 0 } : {}}
-                  transition={{ delay: 1.5 }}
-                >
-                  <span className="text-[#FF6E3C]">&lt;/main&gt;</span>
-                </motion.div>
-              </div>
-              
-              <div className="mt-6 pt-4 border-t border-white/[0.06]">
-                <p className="text-xs text-white/40 mb-3">Clean. Predictable. Production-ready.</p>
-                <div className="flex items-center gap-3 text-xs">
-                  <button className="flex items-center gap-1.5 text-[#FF6E3C] hover:text-[#FF8F5C] transition-colors">
-                    <Copy className="w-3 h-3" />
-                    Copy
-                  </button>
-                  <span className="text-white/20">→</span>
-                  <button className="flex items-center gap-1.5 text-[#FF6E3C] hover:text-[#FF8F5C] transition-colors">
-                    <ExternalLink className="w-3 h-3" />
-                    Export
-                  </button>
-                  <span className="text-white/20">→</span>
-                  <button className="flex items-center gap-1.5 text-[#FF6E3C] hover:text-[#FF8F5C] transition-colors">
-                    <Zap className="w-3 h-3" />
-                    Deploy
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
 // USE CASES
 // ═══════════════════════════════════════════════════════════════
 
@@ -1189,6 +1537,40 @@ function PricingSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
   const [isYearly, setIsYearly] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState<string | null>(null);
+  const { user } = useAuth();
+
+  const handleBuyCredits = async (amount: number) => {
+    // If not logged in, show auth modal
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    setIsCheckingOut(amount.toString());
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "topup", topupAmount: amount }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error("Checkout error:", error);
+    } finally {
+      setIsCheckingOut(null);
+    }
+  };
+
+  const TOPUPS = [
+    { amount: 20, price: "$20", credits: "2,000" },
+    { amount: 50, price: "$50", credits: "5,500" },
+    { amount: 100, price: "$100", credits: "12,000" },
+  ];
 
   const plans = [
     { 
@@ -1197,8 +1579,8 @@ function PricingSection() {
       priceYearly: "$0",
       tagline: "For getting started", 
       features: [
-        "150 credits / month",
-        "~2 rebuilds / month",
+        "150 credits (one-time)",
+        "~2 rebuilds",
         "Live preview",
         "Public projects",
         "Basic export",
@@ -1208,7 +1590,7 @@ function PricingSection() {
     { 
       name: "Pro", 
       price: "$35",
-      priceYearly: "$315",
+      priceYearly: "$378",
       tagline: "For creators", 
       features: [
         "3,000 credits / month",
@@ -1222,18 +1604,19 @@ function PricingSection() {
       cta: "Upgrade",
     },
     { 
-      name: "Agency", 
-      price: "$99",
-      priceYearly: "$891",
-      tagline: "For power users", 
+      name: "Enterprise", 
+      price: "Custom",
+      priceYearly: "Custom",
+      tagline: "For teams & orgs", 
       features: [
-        "10,000 credits / month",
-        "Team access (3 seats)",
+        "Custom credit allocation",
+        "Team seats (custom)",
         "Priority processing",
+        "SSO / SAML (coming soon)",
+        "Dedicated support & SLA",
         "API access (coming soon)",
-        "Rollover up to 2,000 credits",
       ],
-      cta: "Upgrade",
+      cta: "Contact sales",
     },
   ];
 
@@ -1246,11 +1629,15 @@ function PricingSection() {
           transition={{ duration: 0.8 }}
           className="text-center mb-12"
         >
-          <p className="text-xs text-[#FF6E3C] uppercase tracking-[0.2em] mb-4">Pricing</p>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#FF6E3C]/10 border border-[#FF6E3C]/20 mb-4">
+            <span className="w-2 h-2 rounded-full bg-[#FF6E3C] animate-pulse" />
+            <span className="text-xs font-medium text-[#FF6E3C]">Early Access Pricing</span>
+          </div>
           <h2 className="text-4xl sm:text-5xl font-bold mb-4">
             Start for free. Upgrade as you go.
           </h2>
-          <p className="text-white/50">Pay only for what you generate.</p>
+          <p className="text-white/50 mb-2">Pay only for what you generate.</p>
+          <p className="text-xs text-white/30">Credits are consumed per reconstruction — not per prompt. One run = flow + structure + code + design system.</p>
         </motion.div>
 
         {/* Billing toggle */}
@@ -1312,17 +1699,26 @@ function PricingSection() {
                 ))}
               </div>
               
-              <Link
-                href="/tool"
-                className={cn(
-                  "block w-full text-center py-3.5 rounded-xl text-sm font-medium transition-all",
-                  plan.popular
-                    ? "bg-[#FF6E3C] text-white hover:bg-[#FF8F5C]"
-                    : "bg-white/[0.05] text-white/70 hover:bg-white/[0.08] border border-white/[0.08]"
-                )}
-              >
-                {plan.cta}
-              </Link>
+              {plan.name === "Enterprise" ? (
+                <Link
+                  href="/settings?tab=plans"
+                  className="block w-full text-center py-3.5 rounded-xl text-sm font-medium transition-all bg-white/[0.05] text-white/70 hover:bg-white/[0.08] border border-white/[0.08]"
+                >
+                  {plan.cta}
+                </Link>
+              ) : (
+                <Link
+                  href="/tool"
+                  className={cn(
+                    "block w-full text-center py-3.5 rounded-xl text-sm font-medium transition-all",
+                    plan.popular
+                      ? "bg-[#FF6E3C] text-white hover:bg-[#FF8F5C]"
+                      : "bg-white/[0.05] text-white/70 hover:bg-white/[0.08] border border-white/[0.08]"
+                  )}
+                >
+                  {plan.cta}
+                </Link>
+              )}
             </motion.div>
           ))}
         </div>
@@ -1336,26 +1732,48 @@ function PricingSection() {
         >
           <p className="text-sm text-white/50 mb-4">Buy credits anytime</p>
           <div className="flex items-center justify-center gap-4">
-            {[
-              { price: "$20", credits: "2,000" },
-              { price: "$50", credits: "5,500", best: true },
-              { price: "$100", credits: "12,000" },
-            ].map((pkg) => (
-              <div
-                key={pkg.price}
-                className={cn(
-                  "relative px-6 py-4 rounded-xl border transition-colors",
-                  pkg.best 
-                    ? "border-[#FF6E3C]/50 bg-[#FF6E3C]/10" 
-                    : "border-white/10 bg-white/[0.02]"
-                )}
+            {TOPUPS.map((pkg) => (
+              <button
+                key={pkg.amount}
+                onClick={() => handleBuyCredits(pkg.amount)}
+                disabled={isCheckingOut === pkg.amount.toString()}
+                className="relative px-6 py-4 rounded-xl border border-white/10 bg-white/[0.02] transition-all hover:border-white/20 hover:bg-white/[0.04] disabled:opacity-50"
               >
-                <div className="text-lg font-bold text-white">{pkg.price}</div>
-                <div className="text-xs text-white/50">{pkg.credits} credits</div>
-              </div>
+                {isCheckingOut === pkg.amount.toString() ? (
+                  <div className="flex items-center justify-center">
+                    <div className="w-5 h-5 border-2 border-white/20 border-t-white/80 rounded-full animate-spin" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-lg font-bold text-white">{pkg.price}</div>
+                    <div className="text-xs text-white/50">{pkg.credits} credits</div>
+                  </>
+                )}
+              </button>
             ))}
           </div>
         </motion.div>
+
+        {/* Auth Modal for credits purchase */}
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          title="Sign in to buy credits"
+          description="You need to be signed in to purchase credits."
+        />
+        
+        {/* Terms disclaimer */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={isInView ? { opacity: 1 } : {}}
+          transition={{ delay: 0.6 }}
+          className="text-xs text-white/30 text-center mt-8"
+        >
+          By subscribing, you agree to our{" "}
+          <Link href="/terms" className="text-white/50 hover:text-white/70 underline">Terms of Service</Link>
+          {" "}and{" "}
+          <Link href="/privacy" className="text-white/50 hover:text-white/70 underline">Privacy Policy</Link>.
+        </motion.p>
       </div>
     </section>
   );
@@ -1371,44 +1789,44 @@ function FAQSection() {
 
   const faqs = [
     { 
-      q: "Does Replay work with mobile apps?", 
-      a: "Yes — as long as the UI is visible on screen. Replay analyzes recorded UI behavior, not platform code. You can rebuild mobile app interfaces (iOS / Android) as responsive web UI or frontend prototypes. Native logic stays native. UI becomes reusable." 
+      q: "How does Replay work?", 
+      a: "Upload or record a screen recording of any UI. Replay analyzes the video to understand layout, components, interactions, and navigation flow. It then generates clean, production-ready React + Tailwind CSS code that matches what was shown in the video." 
     },
     { 
-      q: "Is the code really usable?", 
-      a: "Yes. This is production-ready frontend code. Replay generates clean, structured React + Tailwind code with real components, states, and interactions. No screenshots. No canvas exports. No throwaway markup. You can commit it, refactor it, and ship it." 
+      q: "What video formats are supported?", 
+      a: "Replay supports most common video formats including MP4, WebM, and MOV. You can upload a file or record directly in the browser. For best results, use clear screen recordings at reasonable resolution — even phone recordings work." 
     },
     { 
-      q: "Can I export to GitHub?", 
-      a: "Yes. Export your project as code, push it to GitHub, or deploy it directly. Replay doesn't lock you into a proprietary format. You own the output." 
+      q: "How many credits does a generation cost?", 
+      a: "Each video-to-code generation costs 75 credits. AI edits and refinements cost 25 credits each. Free accounts get 150 credits/month (~2 generations). Pro accounts get 3,000 credits/month (~40 generations). You can also buy credits anytime." 
     },
     { 
-      q: "Do I need to describe the flow?", 
-      a: "No — but you can. Replay understands most flows directly from video. Adding context is optional and only helps with complex logic or edge cases. Video first. Instructions only when needed." 
+      q: "What are the style presets?", 
+      a: "Replay offers 30+ visual styles like Glassmorphism, Neubrutalism, Kinetic Brutalism, Retro Terminal, and more. Each style transforms the generated UI with a unique aesthetic while keeping the same layout and functionality. You can also add custom style instructions." 
     },
     { 
-      q: "What kind of videos work best?", 
-      a: "Screen recordings of real software. Product demos, internal tools, prototypes, legacy apps, even rough recordings. Replay analyzes structure, timing, and interaction — not just pixels. If it works on screen, Replay can rebuild it." 
+      q: "Can I edit the generated code?", 
+      a: "Yes. Use the 'Edit with AI' feature to refine the output — change colors, add components, fix layouts, or adjust behavior. Each AI edit costs 25 credits. You can also download the code and edit it manually in your own editor." 
     },
     { 
-      q: "Can I change the design or style?", 
-      a: "Yes. Behavior stays. Style changes. Apply different visual styles without re-recording the flow. Same interactions, new design system. One flow. Multiple looks." 
+      q: "What code format do I get?", 
+      a: "Replay generates React components with Tailwind CSS. The code includes proper component structure, responsive design, and animations where applicable. You can download as HTML or copy the React code directly." 
     },
     { 
-      q: "Is Replay just for developers?", 
-      a: "No. Replay is used by founders, designers, agencies, and non-technical teams. If you can record a screen, you can build UI. No Figma required." 
+      q: "Does Replay work with mobile app recordings?", 
+      a: "Yes — if the UI is visible on screen, Replay can analyze it. Mobile app recordings get rebuilt as responsive web UI. Native platform logic isn't included, but the visual structure and interactions are preserved." 
     },
     { 
-      q: "Can I rebuild legacy or internal software?", 
-      a: "That's one of the main use cases. Replay is designed for systems with no documentation, no design files, and no specs. Record how the software works. Replay reconstructs it in a modern frontend stack. Modernization without rewriting everything." 
+      q: "What's the difference between Free and Pro?", 
+      a: "Free: 150 credits/month, basic features. Pro ($35/month): 3,000 credits/month, all export formats, rollover credits (up to 600), and priority processing. Both plans include all 30+ style presets and AI editing." 
     },
     { 
-      q: "Does Replay replace designers or developers?", 
-      a: "No. It removes busywork. Replay handles reconstruction and scaffolding. Humans still decide logic, product direction, and final polish. Less manual work. Better results." 
+      q: "Can I cancel my subscription anytime?", 
+      a: "Yes. Cancel anytime from Settings → Plans → Manage. You'll keep access until the end of your billing period. Unused monthly credits don't carry over after cancellation, but purchased top-up credits never expire." 
     },
     { 
       q: "What doesn't Replay do?", 
-      a: "Replay does not: generate backend logic, reverse-engineer APIs, or clone proprietary business logic. It focuses on UI structure, interactions, and frontend code." 
+      a: "Replay focuses on frontend UI reconstruction. It doesn't generate backend logic, API integrations, database schemas, or authentication systems. It rebuilds what's visible — structure, styling, and interactions — not what's behind the scenes." 
     },
   ];
 
@@ -1508,6 +1926,13 @@ function FinalCTA() {
               Get Started
               <ArrowRight className="w-5 h-5" />
             </Link>
+            
+            {/* Early Access note */}
+            <p className="mt-6 text-sm text-white/40">
+              You're joining Replay Early Access.
+              <br />
+              <span className="text-white/30">Some features are experimental.</span>
+            </p>
           </div>
         </motion.div>
       </div>

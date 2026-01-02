@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle, XCircle, Info, AlertTriangle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -24,41 +24,45 @@ const icons = {
 
 const colors = {
   success: {
-    bg: "bg-emerald-500/10",
-    border: "border-emerald-500/30",
-    icon: "text-emerald-500",
-    text: "text-emerald-100",
+    bg: "bg-[#0a0a0a]",
+    border: "border-white/10",
+    icon: "text-emerald-400",
+    text: "text-white/70",
   },
   error: {
-    bg: "bg-red-500/10",
-    border: "border-red-500/30",
-    icon: "text-red-500",
-    text: "text-red-100",
+    bg: "bg-[#0a0a0a]",
+    border: "border-white/10",
+    icon: "text-red-400",
+    text: "text-white/70",
   },
   info: {
-    bg: "bg-blue-500/10",
-    border: "border-blue-500/30",
-    icon: "text-blue-500",
-    text: "text-blue-100",
+    bg: "bg-[#0a0a0a]",
+    border: "border-white/10",
+    icon: "text-blue-400",
+    text: "text-white/70",
   },
   warning: {
-    bg: "bg-yellow-500/10",
-    border: "border-yellow-500/30",
-    icon: "text-yellow-500",
-    text: "text-yellow-100",
+    bg: "bg-[#0a0a0a]",
+    border: "border-white/10",
+    icon: "text-yellow-400",
+    text: "text-white/70",
   },
 };
 
-export function Toast({ message, type = "info", duration = 4000, onClose, isVisible }: ToastProps) {
+export function Toast({ message, type = "info", duration = 3000, onClose, isVisible }: ToastProps) {
   const Icon = icons[type];
   const color = colors[type];
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (isVisible && duration > 0) {
-      const timer = setTimeout(onClose, duration);
+      const timer = setTimeout(() => {
+        onCloseRef.current();
+      }, duration);
       return () => clearTimeout(timer);
     }
-  }, [isVisible, duration, onClose]);
+  }, [isVisible, duration, message]); // message change resets timer
 
   return (
     <AnimatePresence>
@@ -68,22 +72,22 @@ export function Toast({ message, type = "info", duration = 4000, onClose, isVisi
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -20, scale: 0.95 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-          className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] max-w-[calc(100vw-2rem)] sm:max-w-md w-full px-4"
+          className="fixed top-4 left-0 right-0 z-[100] flex justify-center px-4"
         >
           <div
             className={cn(
-              "flex items-start gap-3 p-4 rounded-xl border backdrop-blur-xl shadow-2xl",
+              "flex items-center gap-2.5 px-4 py-3 rounded-lg border backdrop-blur-xl shadow-xl max-w-sm w-full",
               color.bg,
               color.border
             )}
           >
-            <Icon className={cn("w-5 h-5 shrink-0 mt-0.5", color.icon)} />
-            <p className={cn("flex-1 text-sm font-medium break-words", color.text)}>{message}</p>
+            <Icon className={cn("w-4 h-4 shrink-0", color.icon)} />
+            <p className={cn("flex-1 text-xs break-words", color.text)}>{message}</p>
             <button
               onClick={onClose}
-              className="p-1 rounded-lg hover:bg-white/10 transition-colors"
+              className="p-0.5 rounded hover:bg-white/5 transition-colors ml-1"
             >
-              <X className="w-4 h-4 text-white/50" />
+              <X className="w-3.5 h-3.5 text-white/40" />
             </button>
           </div>
         </motion.div>
@@ -106,13 +110,13 @@ export function useToast() {
     isVisible: false,
   });
 
-  const showToast = (message: string, type: ToastType = "info") => {
+  const showToast = useCallback((message: string, type: ToastType = "info") => {
     setToast({ message, type, isVisible: true });
-  };
+  }, []);
 
-  const hideToast = () => {
+  const hideToast = useCallback(() => {
     setToast((prev) => ({ ...prev, isVisible: false }));
-  };
+  }, []);
 
   return { toast, showToast, hideToast };
 }

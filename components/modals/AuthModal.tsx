@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Mail, Loader2 } from "lucide-react";
+import { X, Mail, Loader2, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/lib/auth/context";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
@@ -20,15 +20,19 @@ export default function AuthModal({
   title = "Sign in to generate",
   description = "Your credits and projects are saved to your account.",
 }: AuthModalProps) {
-  const { signInWithGoogle, signInWithEmail } = useAuth();
+  const { signInWithGoogle, signInWithGitHub, signInWithEmail, verifyOtp } = useAuth();
   const [email, setEmail] = useState("");
+  const [otpCode, setOtpCode] = useState(["", "", "", "", "", ""]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState<"google" | "github" | "email" | "verify" | null>(null);
   const [showEmailInput, setShowEmailInput] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
+  const [showOtpInput, setShowOtpInput] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
+    setLoadingProvider("google");
     setError(null);
     try {
       await signInWithGoogle();
@@ -36,6 +40,21 @@ export default function AuthModal({
       setError("Failed to sign in with Google");
     } finally {
       setIsLoading(false);
+      setLoadingProvider(null);
+    }
+  };
+
+  const handleGitHubSignIn = async () => {
+    setIsLoading(true);
+    setLoadingProvider("github");
+    setError(null);
+    try {
+      await signInWithGitHub();
+    } catch (err) {
+      setError("Failed to sign in with GitHub");
+    } finally {
+      setIsLoading(false);
+      setLoadingProvider(null);
     }
   };
 
@@ -43,6 +62,7 @@ export default function AuthModal({
     if (!email.trim()) return;
     
     setIsLoading(true);
+    setLoadingProvider("email");
     setError(null);
     
     const result = await signInWithEmail(email.trim());
@@ -50,16 +70,85 @@ export default function AuthModal({
     if (result.error) {
       setError(result.error);
     } else {
-      setEmailSent(true);
+      setShowOtpInput(true);
+      setOtpCode(["", "", "", "", "", ""]);
+      // Focus first OTP input after render
+      setTimeout(() => otpRefs.current[0]?.focus(), 100);
     }
     
     setIsLoading(false);
+    setLoadingProvider(null);
+  };
+
+  const handleOtpChange = (index: number, value: string) => {
+    // Only allow digits
+    if (value && !/^\d$/.test(value)) return;
+    
+    const newOtp = [...otpCode];
+    newOtp[index] = value;
+    setOtpCode(newOtp);
+    
+    // Auto-focus next input
+    if (value && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+    
+    // Auto-submit when all digits entered
+    if (value && index === 5 && newOtp.every(d => d !== "")) {
+      handleVerifyOtp(newOtp.join(""));
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !otpCode[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+    if (e.key === "Enter" && otpCode.every(d => d !== "")) {
+      handleVerifyOtp(otpCode.join(""));
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (pasted.length === 6) {
+      const newOtp = pasted.split("");
+      setOtpCode(newOtp);
+      handleVerifyOtp(pasted);
+    }
+  };
+
+  const handleVerifyOtp = async (code: string) => {
+    setIsLoading(true);
+    setLoadingProvider("verify");
+    setError(null);
+    
+    const result = await verifyOtp(email.trim(), code);
+    
+    if (result.error) {
+      setError(result.error);
+      setOtpCode(["", "", "", "", "", ""]);
+      otpRefs.current[0]?.focus();
+    } else {
+      // Success! Close modal
+      handleClose();
+    }
+    
+    setIsLoading(false);
+    setLoadingProvider(null);
+  };
+
+  const handleBackToEmail = () => {
+    setShowOtpInput(false);
+    setOtpCode(["", "", "", "", "", ""]);
+    setError(null);
   };
 
   const handleClose = () => {
     setEmail("");
     setShowEmailInput(false);
-    setEmailSent(false);
+    setShowOtpInput(false);
+    setOtpCode(["", "", "", "", "", ""]);
     setError(null);
     onClose();
   };
@@ -105,23 +194,58 @@ export default function AuthModal({
                 <p className="text-sm text-white/50">{description}</p>
               </div>
 
-              {emailSent ? (
-                <div className="text-center py-6">
+              {showOtpInput ? (
+                <div className="text-center py-4">
+                  <button
+                    onClick={handleBackToEmail}
+                    className="absolute left-3 top-3 md:left-4 md:top-4 p-2 rounded-lg hover:bg-white/5 transition-colors"
+                  >
+                    <ArrowLeft className="w-5 h-5 text-white/40" />
+                  </button>
+                  
                   <div className="w-16 h-16 rounded-full bg-[#FF6E3C]/20 flex items-center justify-center mx-auto mb-4">
                     <Mail className="w-8 h-8 text-[#FF6E3C]" />
                   </div>
-                  <h3 className="text-lg font-medium text-white mb-2">Check your email</h3>
-                  <p className="text-sm text-white/50">
-                    We sent a magic link to <span className="text-white">{email}</span>
+                  <h3 className="text-lg font-medium text-white mb-2">Enter verification code</h3>
+                  <p className="text-sm text-white/50 mb-6">
+                    We sent a 6-digit code to <span className="text-white">{email}</span>
                   </p>
+                  
+                  {/* OTP Input */}
+                  <div className="flex justify-center gap-2 mb-4" onPaste={handleOtpPaste}>
+                    {otpCode.map((digit, index) => (
+                      <input
+                        key={index}
+                        ref={(el) => { otpRefs.current[index] = el; }}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleOtpChange(index, e.target.value)}
+                        onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                        disabled={isLoading}
+                        className="w-11 h-14 text-center text-2xl font-bold rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-[#FF6E3C] transition-colors disabled:opacity-50"
+                      />
+                    ))}
+                  </div>
+                  
+                  {loadingProvider === "verify" && (
+                    <div className="flex items-center justify-center gap-2 text-white/50">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-sm">Verifying...</span>
+                    </div>
+                  )}
+                  
+                  {error && (
+                    <p className="text-sm text-red-400 mt-2">{error}</p>
+                  )}
+                  
                   <button
-                    onClick={() => {
-                      setEmailSent(false);
-                      setEmail("");
-                    }}
-                    className="mt-4 text-sm text-[#FF6E3C] hover:text-[#FF8F5C] transition-colors"
+                    onClick={handleEmailSignIn}
+                    disabled={isLoading}
+                    className="mt-4 text-sm text-[#FF6E3C] hover:text-[#FF8F5C] transition-colors disabled:opacity-50"
                   >
-                    Use a different email
+                    Resend code
                   </button>
                 </div>
               ) : (
@@ -132,7 +256,7 @@ export default function AuthModal({
                     disabled={isLoading}
                     className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white text-black font-medium hover:bg-white/90 transition-colors disabled:opacity-50"
                   >
-                    {isLoading ? (
+                    {loadingProvider === "google" ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
                       <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -143,6 +267,22 @@ export default function AuthModal({
                       </svg>
                     )}
                     Continue with Google
+                  </button>
+
+                  {/* GitHub Button */}
+                  <button
+                    onClick={handleGitHubSignIn}
+                    disabled={isLoading}
+                    className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-[#24292e] text-white font-medium hover:bg-[#2f363d] transition-colors disabled:opacity-50"
+                  >
+                    {loadingProvider === "github" ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                      </svg>
+                    )}
+                    Continue with GitHub
                   </button>
 
                   {/* Divider */}
@@ -172,12 +312,12 @@ export default function AuthModal({
                         disabled={isLoading || !email.trim()}
                         className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#FF6E3C] text-white font-medium hover:bg-[#FF8F5C] transition-colors disabled:opacity-50"
                       >
-                        {isLoading ? (
+                        {loadingProvider === "email" ? (
                           <Loader2 className="w-5 h-5 animate-spin" />
                         ) : (
                           <>
                             <Mail className="w-5 h-5" />
-                            Send magic link
+                            Send verification code
                           </>
                         )}
                       </button>

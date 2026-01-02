@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { ChevronDown } from "lucide-react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { ChevronDown, Search, Info, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface StyleInjectorProps {
   value: string;
@@ -16,79 +17,439 @@ const PLACEHOLDER_EXAMPLES = [
   "Colorful gradients like Stripe's landing page",
   "Minimalist Notion-style with clean typography",
   "Glassmorphism with vibrant mesh backgrounds",
-  "Neubrutalist with bold borders and shadows",
-  "Vercel-dark with high contrast black & white",
+];
+
+// Style preview component - renders CSS-based visual thumbnail
+const StylePreview = ({ styleId }: { styleId: string }) => {
+  const previewStyles: Record<string, React.ReactNode> = {
+    custom: (
+      <div className="w-full h-full bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF6E3C]/5 flex items-center justify-center">
+        <span className="text-[8px] text-[#FF6E3C]">✨</span>
+      </div>
+    ),
+    original: (
+      <div className="w-full h-full bg-[#1a1a1a] flex items-center justify-center gap-0.5">
+        <div className="w-2 h-3 bg-white/20 rounded-[1px]" />
+        <div className="w-2 h-3 bg-white/20 rounded-[1px]" />
+      </div>
+    ),
+    "aura-glass": (
+      <div className="w-full h-full bg-[#050505] relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/30 via-transparent to-cyan-500/20" />
+        <div className="absolute inset-1 rounded-sm bg-white/5 backdrop-blur-sm border border-white/10" />
+      </div>
+    ),
+    "void-spotlight": (
+      <div className="w-full h-full bg-[#050505] relative overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-4 h-6 bg-gradient-to-b from-white/20 via-white/5 to-transparent rounded-full blur-sm" />
+        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-4 h-2 rounded-sm bg-white/10 border border-white/5" />
+      </div>
+    ),
+    "dark-cosmos": (
+      <div className="w-full h-full bg-[#030303] relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-3 h-3 bg-purple-500/40 rounded-full blur-md" />
+        <div className="absolute bottom-0 left-0 w-2 h-2 bg-cyan-500/40 rounded-full blur-md" />
+        <div className="absolute inset-1 rounded-sm bg-white/5 backdrop-blur-sm" />
+      </div>
+    ),
+    linear: (
+      <div className="w-full h-full bg-[#0a0a0a] p-1">
+        <div className="w-full h-full rounded-[2px] border border-white/10 bg-white/[0.02]" />
+      </div>
+    ),
+    "spatial-glass": (
+      <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 p-1 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent" />
+        <div className="absolute inset-1.5 rounded-lg bg-white/40 backdrop-blur-xl border border-white/60" style={{ boxShadow: '0 4px 30px rgba(0,0,0,0.1)' }} />
+      </div>
+    ),
+    "kinetic-brutalism": (
+      <div className="w-full h-full bg-[#E5FF00] flex items-center justify-center overflow-hidden">
+        <div className="text-[12px] font-black text-black tracking-tighter">AB</div>
+      </div>
+    ),
+    "gravity-physics": (
+      <div className="w-full h-full bg-white p-1 relative">
+        <div className="absolute bottom-1 left-1 w-2 h-2 rounded-full bg-blue-500" />
+        <div className="absolute bottom-1 left-3 w-1.5 h-1.5 rounded-full bg-pink-500" />
+        <div className="absolute bottom-2 right-1 w-2.5 h-2.5 rounded-full bg-green-500" />
+        <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-yellow-500" />
+      </div>
+    ),
+    "neo-retro-os": (
+      <div className="w-full h-full bg-[#008080] p-0.5 relative">
+        <div className="w-full h-full bg-[#C0C0C0] border-2 border-t-white border-l-white border-b-[#808080] border-r-[#808080]">
+          <div className="h-2 bg-gradient-to-r from-[#000080] to-[#1084d0]" />
+        </div>
+      </div>
+    ),
+    "soft-clay-pop": (
+      <div className="w-full h-full bg-[#FFF5F0] p-1 flex items-center justify-center">
+        <div className="w-5 h-4 rounded-xl bg-[#E8B4FF]" style={{ boxShadow: 'inset 4px 4px 8px rgba(255,255,255,0.5), inset -4px -4px 8px rgba(0,0,0,0.05)' }} />
+      </div>
+    ),
+    "deconstructed-editorial": (
+      <div className="w-full h-full bg-white relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-4 h-6 bg-neutral-200" />
+        <div className="absolute top-1 right-0 text-[8px] font-serif text-black rotate-90 origin-right">Aa</div>
+        <div className="absolute bottom-0 right-1 w-2 h-3 bg-black" />
+      </div>
+    ),
+    "cinematic-product": (
+      <div className="w-full h-full bg-black flex items-center justify-center relative">
+        <div className="w-4 h-4 rounded-full border-2 border-white/30" style={{ transform: 'perspective(50px) rotateY(20deg)' }} />
+        <div className="absolute inset-x-0 bottom-1 text-center text-[4px] text-white/40">scroll</div>
+      </div>
+    ),
+    // === 10 NEW CREATIVE STYLES ===
+    "particle-brain": (
+      <div className="w-full h-full bg-black relative overflow-hidden">
+        <motion.div
+          className="absolute w-1 h-1 bg-cyan-400 rounded-full"
+          style={{ top: '30%', left: '40%' }}
+          animate={{ y: [0, -2, 0], opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute w-0.5 h-0.5 bg-cyan-300 rounded-full"
+          style={{ top: '50%', left: '55%' }}
+          animate={{ y: [0, 2, 0], opacity: [0.4, 0.9, 0.4] }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
+        />
+        <motion.div
+          className="absolute w-0.5 h-0.5 bg-cyan-500 rounded-full"
+          style={{ top: '60%', left: '35%' }}
+          animate={{ y: [0, -1.5, 0], opacity: [0.6, 1, 0.6] }}
+          transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
+        />
+        <motion.div
+          className="absolute w-[3px] h-[3px] bg-cyan-400/50 rounded-full blur-[1px]"
+          style={{ top: '40%', left: '45%' }}
+          animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.6, 0.3] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </div>
+    ),
+    "old-money": (
+      <div className="w-full h-full bg-[#F5F5DC] p-1 relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-200/20 to-transparent" />
+        <div className="w-full h-full border border-[#8B7355]/30 flex items-center justify-center">
+          <span className="text-[8px] font-serif text-[#5D4E37]">Aa</span>
+        </div>
+      </div>
+    ),
+    "tactical-hud": (
+      <div className="w-full h-full bg-[#0a0a0a] relative overflow-hidden font-mono">
+        <div className="absolute top-0.5 left-0.5 text-[4px] text-cyan-400">[</div>
+        <div className="absolute top-0.5 right-0.5 text-[4px] text-cyan-400">]</div>
+        <div className="absolute bottom-0.5 left-0.5 text-[4px] text-cyan-400">[</div>
+        <div className="absolute bottom-0.5 right-0.5 text-[4px] text-cyan-400">]</div>
+        <div className="absolute inset-1 border border-cyan-500/30" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full border border-cyan-500/50" />
+      </div>
+    ),
+    "urban-grunge": (
+      <div className="w-full h-full bg-[#3a3a3a] relative overflow-hidden">
+        <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 4 4\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Crect width=\'1\' height=\'1\' fill=\'%23666\'/%3E%3C/svg%3E")', backgroundSize: '4px 4px' }} />
+        <div className="absolute bottom-1 left-1 text-[8px] font-black text-white/80 tracking-tighter">X</div>
+      </div>
+    ),
+    "ink-zen": (
+      <div className="w-full h-full bg-[#FAF8F5] relative overflow-hidden">
+        <div className="absolute top-1 bottom-1 right-2 w-[1px] bg-black/60" />
+        <div className="absolute top-2 left-1 w-3 h-3 rounded-full bg-black/10 blur-sm" />
+      </div>
+    ),
+    "infinite-tunnel": (
+      <div className="w-full h-full bg-black relative overflow-hidden flex items-center justify-center">
+        <div className="absolute w-6 h-6 border border-white/10 rounded-sm" />
+        <div className="absolute w-4 h-4 border border-white/20 rounded-sm" />
+        <div className="absolute w-2 h-2 border border-white/40 rounded-sm" />
+        <div className="absolute w-1 h-1 bg-white/60 rounded-sm" />
+      </div>
+    ),
+    "frosted-acrylic": (
+      <div className="w-full h-full bg-gradient-to-br from-blue-200 to-pink-200 p-1 relative">
+        <div className="absolute inset-1 rounded-md bg-white/70 backdrop-blur-xl border-2 border-white/50" style={{ boxShadow: '0 4px 20px rgba(100,100,255,0.2)' }} />
+      </div>
+    ),
+    "datamosh": (
+      <div className="w-full h-full bg-black relative overflow-hidden">
+        <div className="absolute inset-0 flex">
+          <div className="w-1/3 h-full bg-red-500/30" />
+          <div className="w-1/3 h-full bg-green-500/30" />
+          <div className="w-1/3 h-full bg-blue-500/30" />
+        </div>
+        <div className="absolute top-1 left-1 right-2 h-2 bg-gradient-to-r from-transparent via-white/20 to-transparent" style={{ transform: 'skewX(-10deg)' }} />
+      </div>
+    ),
+    "origami-fold": (
+      <div className="w-full h-full bg-white relative overflow-hidden" style={{ perspective: '50px' }}>
+        <div className="absolute top-0 left-0 right-0 h-1/3 bg-gray-100 origin-bottom" style={{ transform: 'rotateX(-10deg)' }} />
+        <div className="absolute top-1/3 left-0 right-0 h-1/3 bg-white" />
+        <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gray-50 origin-top" style={{ transform: 'rotateX(10deg)' }} />
+        <div className="absolute top-1/3 left-0 right-0 h-[1px] bg-black/10" />
+        <div className="absolute top-2/3 left-0 right-0 h-[1px] bg-black/10" />
+      </div>
+    ),
+    // === OTHER STYLES ===
+    "biomimetic-organic": (
+      <div className="w-full h-full bg-[#E8E4DC] relative overflow-hidden">
+        <div className="absolute top-0 left-1 w-3 h-3 rounded-full bg-[#7C9070]/30 blur-sm" />
+        <div className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-[#C4A77D]/40 blur-sm" />
+        <div className="absolute inset-2 rounded-[40%_60%_70%_30%/60%_30%_70%_40%] bg-white/40 backdrop-blur-sm" />
+      </div>
+    ),
+    "silent-luxury": (
+      <div className="w-full h-full bg-white flex items-center justify-center">
+        <div className="w-1 h-1 rounded-full bg-black" />
+      </div>
+    ),
+    "generative-ascii": (
+      <div className="w-full h-full bg-black flex items-center justify-center font-mono">
+        <span className="text-[6px] text-white/80">@#*.</span>
+      </div>
+    ),
+    "liquid-chrome": (
+      <div className="w-full h-full bg-black relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-gray-400/20 to-white/30" />
+        <div className="absolute inset-2 rounded-full bg-gradient-to-br from-gray-300 via-white to-gray-400" style={{ boxShadow: '0 0 8px rgba(255,255,255,0.5)' }} />
+      </div>
+    ),
+    "cinematic-portals": (
+      <div className="w-full h-full bg-black relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/50 to-purple-900/50" />
+        <div className="absolute inset-2 border border-white/20 flex items-center justify-center">
+          <span className="text-[8px] font-bold text-white/60">PLAY</span>
+        </div>
+      </div>
+    ),
+    "digital-collage": (
+      <div className="w-full h-full bg-[#EBEBEB] relative overflow-hidden">
+        <div className="absolute top-0 left-1 w-3 h-4 bg-pink-300 rotate-[-5deg]" style={{ clipPath: 'polygon(5% 0%, 100% 10%, 95% 100%, 0% 90%)' }} />
+        <div className="absolute bottom-0 right-0 w-4 h-3 bg-yellow-300 rotate-[3deg]" />
+        <div className="absolute top-2 right-1 text-[6px] font-handwriting text-black">Hi!</div>
+      </div>
+    ),
+    "ethereal-mesh": (
+      <div className="w-full h-full bg-white relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-4 h-4 bg-violet-400/40 rounded-full blur-xl" />
+        <div className="absolute bottom-0 right-0 w-3 h-3 bg-cyan-400/40 rounded-full blur-xl" />
+        <div className="absolute inset-1.5 rounded-lg bg-white/60 backdrop-blur-xl border border-white/80" />
+      </div>
+    ),
+    "isometric-city": (
+      <div className="w-full h-full bg-[#1a1a2e] flex items-center justify-center" style={{ perspective: '100px' }}>
+        <div className="w-4 h-4 bg-gradient-to-br from-blue-400 to-blue-600" style={{ transform: 'rotateX(60deg) rotateZ(-45deg)' }} />
+      </div>
+    ),
+    "typographic-architecture": (
+      <div className="w-full h-full bg-white flex items-center justify-center overflow-hidden">
+        <span className="text-[16px] font-black text-transparent bg-clip-text bg-gradient-to-br from-blue-500 to-purple-500">A</span>
+      </div>
+    ),
+    "xray-blueprint": (
+      <div className="w-full h-full bg-[#0a1628] relative overflow-hidden">
+        <div className="absolute inset-1 border border-cyan-500/30 rounded-sm" />
+        <div className="absolute top-2 left-2 right-2 h-[1px] bg-cyan-500/20" />
+        <div className="absolute bottom-2 left-2 right-2 h-[1px] bg-cyan-500/20" />
+        <div className="absolute top-2 bottom-2 left-2 w-[1px] bg-cyan-500/20" />
+      </div>
+    ),
+    // === EXISTING STYLES ===
+    "swiss-grid": (
+      <div className="w-full h-full bg-white p-0.5">
+        <div className="w-full h-full grid grid-cols-2 gap-[1px]">
+          <div className="bg-black/5 border-r border-b border-black/20" />
+          <div className="bg-black/5 border-b border-black/20" />
+          <div className="bg-black/5 border-r border-black/20" />
+          <div className="bg-black/5" />
+        </div>
+      </div>
+    ),
+    neubrutalism: (
+      <div className="w-full h-full bg-[#FFE566] p-1">
+        <div className="w-full h-full bg-white border-2 border-black rounded-sm" style={{ boxShadow: '2px 2px 0 black' }} />
+      </div>
+    ),
+    "soft-organic": (
+      <div className="w-full h-full bg-[#FFF5F5] relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-4 h-4 bg-pink-300/50 rounded-full blur-md" />
+        <div className="absolute bottom-0 left-0 w-3 h-3 bg-blue-300/50 rounded-full blur-md" />
+        <div className="absolute inset-1 rounded-xl bg-white/60 backdrop-blur-sm" />
+      </div>
+    ),
+    glassmorphism: (
+      <div className="w-full h-full bg-gradient-to-br from-purple-500/30 to-pink-500/30 p-1">
+        <div className="w-full h-full rounded-md bg-white/20 backdrop-blur-sm border border-white/30" />
+      </div>
+    ),
+    apple: (
+      <div className="w-full h-full bg-[#1d1d1f] flex items-center justify-center">
+        <div className="w-4 h-3 rounded-md bg-white/10 backdrop-blur-sm border border-white/20" />
+      </div>
+    ),
+    stripe: (
+      <div className="w-full h-full bg-gradient-to-br from-[#635BFF] to-[#A960EE] flex items-center justify-center">
+        <div className="w-4 h-2 rounded-full bg-white/90" />
+      </div>
+    ),
+    vercel: (
+      <div className="w-full h-full bg-black flex items-center justify-center">
+        <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-b-[7px] border-l-transparent border-r-transparent border-b-white" />
+      </div>
+    ),
+  };
+
+  return (
+    <div className="w-8 h-8 rounded-md overflow-hidden border border-white/10 flex-shrink-0">
+      {previewStyles[styleId] || (
+        <div className="w-full h-full bg-gradient-to-br from-white/10 to-white/5" />
+      )}
+    </div>
+  );
+};
+
+// Style categories for organization
+const STYLE_CATEGORIES = [
+  { id: "creative", name: "Creative & Experimental", color: "text-orange-400" },
+  { id: "dark", name: "Dark Premium", color: "text-purple-400" },
+  { id: "light", name: "Light & Clean", color: "text-blue-400" },
+  { id: "motion", name: "Motion & 3D", color: "text-cyan-400" },
+  { id: "brand", name: "Brand Inspired", color: "text-green-400" },
 ];
 
 const STYLE_PRESETS = [
-  { id: "custom", name: "Custom", desc: "Describe your own style • Full creative control", fullDesc: "" },
-  { id: "original", name: "Original", desc: "1:1 Copy • Exact Match • Pixel Perfect", fullDesc: "Recreates the exact design from the video with pixel-perfect accuracy. No style changes applied." },
-  { id: "apple", name: "Apple Style", desc: "Frosted Glass • Clear Depth • Soft Blur • Dark Glass", fullDesc: "Clean SF Pro typography, subtle glassmorphism, generous whitespace, and refined micro-interactions." },
-  { id: "material-you", name: "Material You", desc: "Dynamic Color • Playful Rounding • Surface Tones • Ripple Effect", fullDesc: "Google's expressive design with dynamic color extraction, rounded shapes, and layered surfaces." },
-  { id: "fluent", name: "Microsoft Fluent", desc: "Mica Texture • Acrylic Layer • Segoe Clean • Elevation Depth", fullDesc: "Modern Windows aesthetic with translucent materials, depth hierarchy, and clean Segoe UI." },
-  { id: "linear", name: "Linear Dark", desc: "Midnight Blur • Subtle Glow • Micro Borders • Precision Dark", fullDesc: "Technical precision with dark backgrounds, subtle borders, and refined hover states." },
-  { id: "cyberpunk", name: "Cyberpunk Neon", desc: "Neon Glitch • Matrix Black • Electric Blue • Acid Green", fullDesc: "Futuristic aesthetics with glowing neon accents, dark backgrounds, and tech-inspired elements." },
-  { id: "obsidian", name: "Obsidian Minimal", desc: "Pure Void • Monochrome • High Contrast • Sharp Edges", fullDesc: "Deep blacks with minimal colors, focusing on typography and content hierarchy." },
-  { id: "neubrutalism", name: "Neubrutalism", desc: "Hard Edge • Bold Stroke • Neo-Pop • Stark Shadow", fullDesc: "Bold borders, stark shadows, and playful colors inspired by 90s web aesthetics." },
-  { id: "bento", name: "Bento Grid", desc: "Modular Blocks • Soft Corners • Organized Flow • Card Layout", fullDesc: "Japanese-inspired modular design with organized card layouts and soft rounded corners." },
-  { id: "glassmorphism", name: "Glassmorphism Pure", desc: "Crystal Layer • Vivid Mesh • Ice Texture • Translucent", fullDesc: "Frosted glass panels with vivid gradient backgrounds and translucent layers." },
-  { id: "dribbble", name: "Dribbble Candy", desc: "Pastel Gradient • Deep Shadow • Pill Shapes • Candy Pop", fullDesc: "Playful pastels, large shadows, pill-shaped buttons, and cheerful aesthetic." },
-  { id: "swiss", name: "Swiss International", desc: "Heavy Type • Absolute White • Grid Focus • Helvetica", fullDesc: "Typography-first design with strong grid alignment and classic Swiss style." },
-  { id: "enterprise", name: "Enterprise Trust", desc: "Clean Trust • Crisp Whites • Soft Shadow • Vibrant Blue", fullDesc: "Professional SaaS aesthetic with trust-building blues and clean white spaces." },
-  { id: "spotify", name: "Spotify Dark", desc: "Deep Black • Green Accent • Card Overflow • Music Vibe", fullDesc: "Dark theme with vibrant green accents and card-based content organization." },
-  { id: "notion", name: "Notion Style", desc: "Paper White • Content First • Minimal Icons • Soft Gray", fullDesc: "Clean document-style interface with focus on readability and minimal distractions." },
-  { id: "stripe", name: "Stripe Design", desc: "Premium Gradient • Trust Blue • Clean Forms • Smooth Flow", fullDesc: "Premium gradient backgrounds, smooth animations, and trust-building blue accents." },
-  { id: "vercel", name: "Vercel Dark", desc: "Pure Black • White Type • Zero Color • Maximum Contrast", fullDesc: "Pure black and white with maximum contrast and no color distractions." },
-  { id: "tailwind", name: "Tailwind UI", desc: "Utility Modern • Indigo Accent • Component Ready • Responsive", fullDesc: "Modern utility-first components with indigo accents and responsive design." },
+  { id: "custom", name: "Custom", desc: "Describe your own style", fullDesc: "", category: null },
+  { id: "original", name: "Original", desc: "1:1 Copy • Exact Match", fullDesc: "Recreates the exact design from the video with pixel-perfect accuracy.", category: null },
+  
+  // === CREATIVE & EXPERIMENTAL ===
+  { id: "particle-brain", name: "Particle Brain", desc: "AI Cloud • 50k Points • WebGL", fullDesc: "3D point cloud aesthetic. Objects made of thousands of particles. Particles scatter on hover, morph on scroll.", category: "creative" },
+  { id: "old-money", name: "Old Money Heritage", desc: "Cream • Gold Serif • Classic", fullDesc: "Heritage luxury. Cream backgrounds, gold accents, Playfair Display serif. Subtle grain texture. Very slow fades.", category: "creative" },
+  { id: "tactical-hud", name: "Tactical HUD", desc: "Sci-Fi Game • Brackets • Scanning", fullDesc: "Gaming HUD interface. Corner brackets, connecting lines, monospace labels. Glitchy text, blinking cursors.", category: "creative" },
+  { id: "urban-grunge", name: "Urban Grunge", desc: "Concrete • Spray Paint • Street", fullDesc: "Streetwear brutalism. Concrete texture background, distorted fonts, mix-blend-mode effects. Stop-motion animation.", category: "creative" },
+  { id: "ink-zen", name: "Ink & Zen", desc: "Japanese • Vertical • Sumi-e", fullDesc: "Eastern minimalism. Vertical text, ink drop reveals, calligraphic fonts. Black ink on rice paper aesthetic.", category: "creative" },
+  { id: "infinite-tunnel", name: "Infinite Tunnel", desc: "Z-Axis • Fly Through • Warp", fullDesc: "Content flies toward camera on scroll. Elements scale from 0 to 10, passing the viewer. Warp speed feel.", category: "creative" },
+  { id: "frosted-acrylic", name: "Frosted Acrylic", desc: "Thick Glass • Solid • Glow Through", fullDesc: "Solid acrylic blocks, not thin glass. High opacity, extreme blur, colored shadows glowing through.", category: "creative" },
+  { id: "datamosh", name: "Datamosh Glitch", desc: "Pixel Sort • Melt • RGB Split", fullDesc: "Video compression artifacts. Pixel sorting, RGB split shadows, melting effects on hover.", category: "creative" },
+  { id: "origami-fold", name: "Origami Fold", desc: "Paper 3D • Unfold • Envelope", fullDesc: "Interface folds/unfolds like paper. 3D CSS transforms, crease shadows. Sections unfold on scroll.", category: "creative" },
+  
+  { id: "spatial-glass", name: "Spatial Glass", desc: "Vision Pro • 3D Tilt • Light", fullDesc: "Spatial Design like Apple Vision Pro. Thick glass with reflections. Cards tilt with mouse parallax.", category: "creative" },
+  { id: "kinetic-brutalism", name: "Kinetic Brutalism", desc: "15vw Type • Acid Yellow • Bold", fullDesc: "AGGRESSIVE design. Massive text-[15vw] typography. Acid Yellow #E5FF00 on black. Headers move with scroll velocity.", category: "creative" },
+  { id: "gravity-physics", name: "Gravity Physics", desc: "Falling Tags • Drag & Throw • Bounce", fullDesc: "Physics playground. Elements fall with gravity, bounce off walls, can be dragged and thrown.", category: "creative" },
+  { id: "neo-retro-os", name: "Neo-Retro OS", desc: "Windows 95 • Draggable • Vaporwave", fullDesc: "Y2K meets Cyberpunk. Windows 95 draggable windows with beveled borders. Glitch on entry.", category: "creative" },
+  { id: "soft-clay-pop", name: "Soft Clay Pop", desc: "Claymorphism • Pastel • Bouncy", fullDesc: "Soft tactile interface like plasticine. Pastel colors. Double shadows for 3D volume.", category: "creative" },
+  { id: "deconstructed-editorial", name: "Deconstructed Editorial", desc: "Fashion • Vertical Text • Chaos", fullDesc: "Avant-Garde fashion magazine. Overlapping elements. Vertical text. Parallax scroll.", category: "creative" },
+  { id: "cinematic-product", name: "Cinematic Product", desc: "Apple Page • Scroll-Driven 3D", fullDesc: "Apple-style scrollytelling. Product sticky center, rotates with scroll. Ghost text fades.", category: "creative" },
+  
+  // === DARK PREMIUM ===
+  { id: "aura-glass", name: "High-End Dark Glass", desc: "Aurora Glow • Spotlight • Premium", fullDesc: "Dark mode glassmorphism with aurora glows, spotlight effects. Pure black base.", category: "dark" },
+  { id: "void-spotlight", name: "Void Spotlight", desc: "Deep Void • Mouse Glow • Heavy", fullDesc: "Classic Aura. Invisible borders reveal gradient on hover tracking mouse.", category: "dark" },
+  { id: "dark-cosmos", name: "Dark Cosmos", desc: "Purple/Cyan Glow • Glass • Float", fullDesc: "Deep black with vivid gradient glows. Heavy backdrop-blur, ethereal animations.", category: "dark" },
+  { id: "liquid-chrome", name: "Liquid Chrome", desc: "Metallic • Y2K • Reflections", fullDesc: "Molten silver/chrome on black. Metallic text with moving reflections.", category: "dark" },
+  
+  // === LIGHT & CLEAN ===
+  { id: "swiss-grid", name: "Swiss Grid", desc: "Visible Grid • Massive Type • Sharp", fullDesc: "Pure white/black, visible 1px grid lines, massive typography.", category: "light" },
+  { id: "silent-luxury", name: "Silent Luxury", desc: "Radical Minimal • White Void", fullDesc: "Maximum whitespace. Pure white background, pure black text. Tiny cursor. Ultra-slow reveals.", category: "light" },
+  { id: "soft-organic", name: "Soft Organic", desc: "Blobs • Pastel • Underwater", fullDesc: "Creamy backgrounds with moving pastel blobs. Frosted glass.", category: "light" },
+  { id: "ethereal-mesh", name: "Ethereal Mesh", desc: "Aurora Blobs • Soft SaaS • Modern", fullDesc: "Soft dreamy gradients. Moving color blobs with blur. Frosted glass cards.", category: "light" },
+  { id: "neubrutalism", name: "Neo-Brutalism", desc: "Hard Shadow • Thick Border • Bouncy", fullDesc: "High contrast pastels, thick black outlines, hard shadows.", category: "light" },
+  
+  // === MOTION & 3D ===
+  { id: "isometric-city", name: "Isometric City", desc: "3D CSS • Voxel Blocks • Hover Lift", fullDesc: "Pure CSS isometric 3D. Blocks viewed from 45deg angle with shadows.", category: "motion" },
+  { id: "xray-blueprint", name: "X-Ray Blueprint", desc: "Wireframe Reveal • Scanner • Technical", fullDesc: "Technical blueprint. Wireframe reveals solid on mouse. Line draw animations.", category: "motion" },
+  { id: "digital-collage", name: "Digital Collage", desc: "Scrapbook • Stickers • Draggable", fullDesc: "Mixed media scrapbook. Paper texture, cutout shapes, stickers with shadows.", category: "motion" },
+  
+  // === BRAND INSPIRED ===
+  { id: "apple", name: "Apple Style", desc: "Frosted Glass • Clean • SF Pro", fullDesc: "Clean SF Pro typography, subtle glassmorphism, generous whitespace.", category: "brand" },
+  { id: "stripe", name: "Stripe Design", desc: "Premium Gradient • Trust Blue", fullDesc: "Premium gradient backgrounds, smooth animations.", category: "brand" },
+  { id: "spotify", name: "Spotify Dark", desc: "#121212 • Green Accent • Cards", fullDesc: "Deep black with vibrant green. Horizontal card carousels.", category: "brand" },
 ];
 
 export default function StyleInjector({ value, onChange, disabled }: StyleInjectorProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showInfo, setShowInfo] = useState<string | null>(null);
   const [animatedPlaceholder, setAnimatedPlaceholder] = useState("");
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [isTyping, setIsTyping] = useState(true);
   const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Find preset - check if value starts with any preset name
-  const selectedPreset = STYLE_PRESETS.find(p => value === p.name || value.startsWith(p.name + "."));
+  // Find preset - default to "original" when no style selected
+  const selectedPreset = STYLE_PRESETS.find(p => value === p.name || value.startsWith(p.name + ".")) 
+    || (!value ? STYLE_PRESETS.find(p => p.id === "original") : undefined);
   
-  // Extract custom instructions from value
-  const customInstructions = selectedPreset 
-    ? value.slice(selectedPreset.name.length).replace(/^\.\s*/, '').trim()
-    : "";
+  // Extract custom instructions
+  const customInstructions = (() => {
+    if (!selectedPreset) return "";
+    const afterName = value.slice(selectedPreset.name.length).replace(/^\.\s*/, '');
+    if (selectedPreset.fullDesc && afterName.startsWith(selectedPreset.fullDesc)) {
+      return afterName.slice(selectedPreset.fullDesc.length).replace(/^\.\s*/, '');
+    }
+    return afterName;
+  })();
+
+  // Filter presets by search
+  const filteredPresets = useMemo(() => {
+    if (!searchQuery.trim()) return STYLE_PRESETS;
+    const q = searchQuery.toLowerCase();
+    return STYLE_PRESETS.filter(p => 
+      p.name.toLowerCase().includes(q) || 
+      p.desc.toLowerCase().includes(q) ||
+      p.fullDesc.toLowerCase().includes(q)
+    );
+  }, [searchQuery]);
+
+  // Group by category
+  const groupedPresets = useMemo(() => {
+    const groups: Record<string, typeof STYLE_PRESETS> = { none: [] };
+    STYLE_CATEGORIES.forEach(c => groups[c.id] = []);
+    
+    filteredPresets.forEach(p => {
+      if (p.category) {
+        groups[p.category]?.push(p);
+      } else {
+        groups.none.push(p);
+      }
+    });
+    return groups;
+  }, [filteredPresets]);
 
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = Math.max(72, Math.min(textareaRef.current.scrollHeight, 150)) + 'px';
+      textareaRef.current.style.height = Math.max(52, Math.min(textareaRef.current.scrollHeight, 150)) + 'px';
     }
   }, [value]);
 
-  // Animated typing placeholder effect
+  // Focus search when panel opens
   useEffect(() => {
-    if (isFocused) return; // Don't animate when focused
-    
+    if (isOpen && searchInputRef.current) {
+      setTimeout(() => searchInputRef.current?.focus(), 100);
+    }
+  }, [isOpen]);
+
+  // Animated placeholder
+  useEffect(() => {
+    if (isFocused) return;
     const currentText = PLACEHOLDER_EXAMPLES[placeholderIndex];
     let charIndex = 0;
     let timeoutId: NodeJS.Timeout;
     
     if (isTyping) {
-      // Type out the text
       const typeChar = () => {
         if (charIndex <= currentText.length) {
           setAnimatedPlaceholder(currentText.slice(0, charIndex));
           charIndex++;
           timeoutId = setTimeout(typeChar, 40 + Math.random() * 30);
         } else {
-          // Pause at end, then start erasing
           timeoutId = setTimeout(() => setIsTyping(false), 2000);
         }
       };
       typeChar();
     } else {
-      // Erase the text
       let eraseIndex = currentText.length;
       const eraseChar = () => {
         if (eraseIndex >= 0) {
@@ -96,106 +457,232 @@ export default function StyleInjector({ value, onChange, disabled }: StyleInject
           eraseIndex--;
           timeoutId = setTimeout(eraseChar, 20);
         } else {
-          // Move to next placeholder
           setPlaceholderIndex(prev => (prev + 1) % PLACEHOLDER_EXAMPLES.length);
           setIsTyping(true);
         }
       };
       eraseChar();
     }
-    
     return () => clearTimeout(timeoutId);
   }, [placeholderIndex, isTyping, isFocused]);
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const handleSelectPreset = (preset: typeof STYLE_PRESETS[0]) => {
+    if (preset.id === "custom") {
+      onChange("");
+    } else {
+      // Set name + fullDesc for the backend
+      onChange(preset.fullDesc ? `${preset.name}. ${preset.fullDesc}` : preset.name);
+    }
+    setIsOpen(false);
+    setSearchQuery("");
+  };
 
   return (
     <div className="space-y-2">
-      {/* Dropdown */}
-      <div className="relative" ref={dropdownRef}>
-        <button
-          onClick={() => !disabled && setIsOpen(!isOpen)}
-          disabled={disabled}
-          className={cn(
-            "w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-colors duration-300 ease-out bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.08]",
-            isOpen && "border-[#FF6E3C]/20",
-            disabled && "opacity-50 cursor-not-allowed"
-          )}
-        >
-          <span className={cn("text-xs", selectedPreset ? "text-white/80" : "text-white/40")}>
+      {/* Toggle Button */}
+      <button
+        type="button"
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        disabled={disabled}
+        className={cn(
+          "w-full flex items-center gap-2 px-2 py-2 rounded-lg text-left transition-colors bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.1]",
+          isOpen && "border-[#FF6E3C]/30 bg-white/[0.05]",
+          disabled && "opacity-50 cursor-not-allowed"
+        )}
+      >
+        {selectedPreset && <StylePreview styleId={selectedPreset.id} />}
+        <div className="flex-1 min-w-0">
+          <span className={cn("text-xs block", selectedPreset ? "text-white/80" : "text-white/40")}>
             {selectedPreset ? selectedPreset.name : "Select a style..."}
           </span>
-          <ChevronDown className={cn("w-3.5 h-3.5 text-white/40 transition-transform duration-200", isOpen && "rotate-180")} />
-        </button>
+          {selectedPreset && (
+            <span className="text-[9px] text-white/30 truncate block">{selectedPreset.desc}</span>
+          )}
+        </div>
+        <ChevronDown className={cn("w-3.5 h-3.5 text-white/40 transition-transform flex-shrink-0", isOpen && "rotate-180")} />
+      </button>
 
+      {/* Collapsible Panel */}
+      <AnimatePresence>
         {isOpen && !disabled && (
-          <div className="absolute bottom-full left-0 right-0 mb-2 bg-[#0a0a0a] border border-white/[0.08] rounded-xl overflow-hidden shadow-[0_-20px_60px_-15px_rgba(0,0,0,0.8)] z-50">
-            <div className="max-h-[320px] overflow-y-auto custom-scrollbar">
-              {STYLE_PRESETS.map((preset) => (
-                <button
-                  key={preset.id}
-                  onClick={() => {
-                    // Keep custom instructions when changing preset
-                    onChange(customInstructions ? `${preset.name}. ${customInstructions}` : preset.name);
-                    setIsOpen(false);
-                  }}
-                  className={cn(
-                    "w-full px-3 py-2.5 text-left transition-colors duration-150 hover:bg-white/[0.05]",
-                    selectedPreset?.id === preset.id && "bg-[#FF6E3C]/10 border-l-2 border-[#FF6E3C]"
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="border border-white/[0.08] rounded-xl bg-[#0a0a0a]/95 backdrop-blur-xl">
+              {/* Search */}
+              <div className="p-2 border-b border-white/[0.06]">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search styles..."
+                    className="w-full pl-8 pr-3 py-2 text-xs bg-white/[0.03] border border-white/[0.06] rounded-lg text-white placeholder:text-white/30 focus:outline-none focus:border-white/[0.12]"
+                  />
+                  {searchQuery && (
+                    <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2">
+                      <X className="w-3 h-3 text-white/30 hover:text-white/50" />
+                    </button>
                   )}
-                >
-                  <div className="text-xs text-white/80">{preset.name}</div>
-                  <div className="text-[10px] text-white/40 truncate">{preset.desc}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+                </div>
+              </div>
 
-      {/* Textarea for custom additions - always enabled */}
+              {/* Style List */}
+              <div className="max-h-[280px] md:max-h-[320px] overflow-y-auto p-1.5 space-y-2">
+                {/* Uncategorized (Custom, Original) */}
+                {groupedPresets.none.length > 0 && (
+                  <div className="space-y-0.5">
+                    {groupedPresets.none.map(preset => (
+                      <StyleItem 
+                        key={preset.id} 
+                        preset={preset} 
+                        isSelected={selectedPreset?.id === preset.id}
+                        showInfo={showInfo}
+                        setShowInfo={setShowInfo}
+                        onSelect={() => handleSelectPreset(preset)}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* Categorized */}
+                {STYLE_CATEGORIES.map(category => {
+                  const presets = groupedPresets[category.id];
+                  if (!presets || presets.length === 0) return null;
+                  
+                  return (
+                    <div key={category.id}>
+                      <div className={cn("text-[9px] font-medium px-2 py-1", category.color)}>
+                        {category.name}
+                      </div>
+                      <div className="space-y-0.5">
+                        {presets.map(preset => (
+                          <StyleItem 
+                            key={preset.id} 
+                            preset={preset} 
+                            isSelected={selectedPreset?.id === preset.id}
+                            showInfo={showInfo}
+                            setShowInfo={setShowInfo}
+                            onSelect={() => handleSelectPreset(preset)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {filteredPresets.length === 0 && (
+                  <div className="text-center py-6 text-white/30 text-xs">
+                    No styles found for "{searchQuery}"
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Custom Instructions */}
       <div className="relative">
         <textarea
           ref={textareaRef}
-          value={selectedPreset?.id === "custom" ? value.replace("Custom. ", "").replace("Custom", "") : (selectedPreset ? customInstructions : value)}
+          value={selectedPreset ? customInstructions : value}
           onChange={(e) => {
-            if (selectedPreset?.id === "custom") {
-              // For Custom, save directly without prefix
-              onChange(e.target.value ? `Custom. ${e.target.value}` : "Custom");
-            } else if (selectedPreset) {
-              // Keep preset and update custom instructions (preserve spaces while typing)
-              const customText = e.target.value;
-              onChange(customText ? `${selectedPreset.name}. ${customText}` : selectedPreset.name);
+            if (selectedPreset && selectedPreset.id !== "custom") {
+              const newValue = `${selectedPreset.name}. ${selectedPreset.fullDesc}${e.target.value ? `. ${e.target.value}` : ''}`;
+              onChange(newValue);
             } else {
               onChange(e.target.value);
             }
           }}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          placeholder={selectedPreset && selectedPreset.id !== "custom" ? "Add custom instructions (optional)" : (isFocused ? "Describe your target design system..." : "")}
+          placeholder={isFocused ? "Add custom instructions..." : animatedPlaceholder}
           disabled={disabled}
-          rows={3}
+          rows={2}
           className={cn(
-            "w-full px-3 py-2.5 rounded-lg text-xs text-white/70 placeholder:text-white/25 transition-colors duration-300 ease-out focus:outline-none textarea-grow bg-white/[0.03] border border-white/[0.06] focus:border-[#FF6E3C]/20 focus:bg-white/[0.035] min-h-[72px]",
+            "w-full px-3 py-2.5 text-xs text-white/80 placeholder:text-white/20 placeholder:text-[11px] bg-white/[0.03] border border-white/[0.06] rounded-lg resize-none focus:outline-none focus:border-white/[0.12] transition-colors min-h-[52px]",
             disabled && "opacity-50 cursor-not-allowed"
           )}
         />
-        {((!customInstructions && selectedPreset?.id === "custom") || (!value && !selectedPreset)) && !isFocused && (
-          <div className="absolute inset-0 px-3 py-2.5 pointer-events-none flex items-start">
-            <span className="text-xs text-white/25">{animatedPlaceholder}</span>
-            <span className="inline-block w-[2px] h-3 bg-[#FF6E3C]/50 ml-0.5 animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
+// Style Item Component
+function StyleItem({ 
+  preset, 
+  isSelected, 
+  showInfo, 
+  setShowInfo, 
+  onSelect 
+}: { 
+  preset: typeof STYLE_PRESETS[0];
+  isSelected: boolean;
+  showInfo: string | null;
+  setShowInfo: (id: string | null) => void;
+  onSelect: () => void;
+}) {
+  const isInfoOpen = showInfo === preset.id;
+
+  return (
+    <div className={cn(
+      "rounded-lg transition-colors",
+      isSelected ? "bg-[#FF6E3C]/10 border border-[#FF6E3C]/30" : "hover:bg-white/[0.03]"
+    )}>
+      <div className="flex items-center gap-2 p-1.5 cursor-pointer" onClick={onSelect}>
+        <StylePreview styleId={preset.id} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1">
+            <span className={cn("text-xs font-medium", isSelected ? "text-[#FF6E3C]" : "text-white/80")}>
+              {preset.name}
+            </span>
+            {isSelected && (
+              <span className="text-[8px] px-1 py-0.5 rounded bg-[#FF6E3C]/20 text-[#FF6E3C]">Active</span>
+            )}
           </div>
+          <span className="text-[9px] text-white/40 truncate block">{preset.desc}</span>
+        </div>
+        {preset.fullDesc && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowInfo(isInfoOpen ? null : preset.id);
+            }}
+            className={cn(
+              "p-1 rounded transition-colors flex-shrink-0",
+              isInfoOpen ? "bg-white/10 text-white/60" : "text-white/20 hover:text-white/40 hover:bg-white/5"
+            )}
+          >
+            <Info className="w-3 h-3" />
+          </button>
         )}
       </div>
+
+      {/* Info Tooltip */}
+      <AnimatePresence>
+        {isInfoOpen && preset.fullDesc && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="px-2 pb-2 pt-0">
+              <div className="text-[10px] text-white/50 leading-relaxed p-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                {preset.fullDesc}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

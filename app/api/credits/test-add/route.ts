@@ -15,6 +15,10 @@ export async function POST(request: NextRequest) {
     const amount = body.amount || 1000;
 
     const adminClient = createAdminClient();
+    
+    if (!adminClient) {
+      return NextResponse.json({ error: "Server configuration error" }, { status: 503 });
+    }
 
     // Check if wallet exists
     const { data: wallet } = await adminClient
