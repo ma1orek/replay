@@ -1006,7 +1006,21 @@ export default function ReplayTool() {
     }
   }, [styleDirective, refinements, hasLoadedFromStorage]);
   
-  // Check Supabase connection status - checks project-specific secrets
+  // Validate Supabase credentials format
+  const isValidSupabaseUrl = (url: string): boolean => {
+    if (!url || url.trim().length === 0) return false;
+    // Must be https://*.supabase.co format
+    const pattern = /^https:\/\/[a-zA-Z0-9-]+\.supabase\.co\/?$/;
+    return pattern.test(url.trim());
+  };
+  
+  const isValidSupabaseKey = (key: string): boolean => {
+    if (!key || key.trim().length === 0) return false;
+    // JWT tokens start with eyJ (base64 encoded {"alg":...)
+    return key.trim().startsWith('eyJ') && key.trim().length > 100;
+  };
+
+  // Check Supabase connection status - validates format
   useEffect(() => {
     if (typeof window === "undefined") return;
     const checkSupabase = () => {
@@ -1018,9 +1032,8 @@ export default function ReplayTool() {
           const stored = localStorage.getItem(`replay_secrets_${activeGeneration.id}`);
           if (stored) {
             const secrets = JSON.parse(stored);
-            if (secrets.supabaseUrl && secrets.supabaseAnonKey && 
-                secrets.supabaseUrl.trim().length > 0 && 
-                secrets.supabaseAnonKey.trim().length > 0) {
+            // Validate URL format (https://xxx.supabase.co) and Key format (JWT starting with eyJ)
+            if (isValidSupabaseUrl(secrets.supabaseUrl) && isValidSupabaseKey(secrets.supabaseAnonKey)) {
               connected = true;
             }
           }
@@ -1031,7 +1044,7 @@ export default function ReplayTool() {
       if (!connected) {
         const url = localStorage.getItem("replay_supabase_url");
         const key = localStorage.getItem("replay_supabase_key");
-        if (url && key && url.trim().length > 0 && key.trim().length > 0) {
+        if (isValidSupabaseUrl(url || '') && isValidSupabaseKey(key || '')) {
           connected = true;
         }
       }

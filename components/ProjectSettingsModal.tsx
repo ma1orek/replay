@@ -491,7 +491,13 @@ export default function ProjectSettingsModal({
                           value={supabaseUrl}
                           onChange={(e) => setSupabaseUrl(e.target.value)}
                           placeholder="https://xxxxx.supabase.co"
-                          className="w-full px-4 py-3 pr-12 rounded-xl bg-white/5 border border-white/10 text-white font-mono text-sm focus:outline-none focus:border-[#FF6E3C]/50"
+                          className={`w-full px-4 py-3 pr-12 rounded-xl bg-white/5 border text-white font-mono text-sm focus:outline-none transition-colors ${
+                            supabaseUrl && !supabaseUrl.match(/^https:\/\/[a-zA-Z0-9-]+\.supabase\.co\/?$/)
+                              ? "border-red-500/50 focus:border-red-500"
+                              : supabaseUrl && supabaseUrl.match(/^https:\/\/[a-zA-Z0-9-]+\.supabase\.co\/?$/)
+                              ? "border-green-500/50 focus:border-green-500"
+                              : "border-white/10 focus:border-[#FF6E3C]/50"
+                          }`}
                         />
                         <button
                           onClick={() => setShowUrl(!showUrl)}
@@ -504,6 +510,9 @@ export default function ProjectSettingsModal({
                           )}
                         </button>
                       </div>
+                      {supabaseUrl && !supabaseUrl.match(/^https:\/\/[a-zA-Z0-9-]+\.supabase\.co\/?$/) && (
+                        <p className="text-xs text-red-400 mt-1.5">Must be: https://xxxxx.supabase.co</p>
+                      )}
                     </div>
 
                     {/* Supabase Anon Key */}
@@ -517,7 +526,13 @@ export default function ProjectSettingsModal({
                           value={supabaseAnonKey}
                           onChange={(e) => setSupabaseAnonKey(e.target.value)}
                           placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                          className="w-full px-4 py-3 pr-12 rounded-xl bg-white/5 border border-white/10 text-white font-mono text-sm focus:outline-none focus:border-[#FF6E3C]/50"
+                          className={`w-full px-4 py-3 pr-12 rounded-xl bg-white/5 border text-white font-mono text-sm focus:outline-none transition-colors ${
+                            supabaseAnonKey && (!supabaseAnonKey.startsWith('eyJ') || supabaseAnonKey.length < 100)
+                              ? "border-red-500/50 focus:border-red-500"
+                              : supabaseAnonKey && supabaseAnonKey.startsWith('eyJ') && supabaseAnonKey.length >= 100
+                              ? "border-green-500/50 focus:border-green-500"
+                              : "border-white/10 focus:border-[#FF6E3C]/50"
+                          }`}
                         />
                         <button
                           onClick={() => setShowKey(!showKey)}
@@ -530,13 +545,16 @@ export default function ProjectSettingsModal({
                           )}
                         </button>
                       </div>
+                      {supabaseAnonKey && (!supabaseAnonKey.startsWith('eyJ') || supabaseAnonKey.length < 100) && (
+                        <p className="text-xs text-red-400 mt-1.5">Must be a valid JWT token (starts with eyJ...)</p>
+                      )}
                     </div>
 
                     {/* Save Button */}
                     <button
                       onClick={handleSaveSecrets}
-                      disabled={isSavingSecrets}
-                      className="w-full py-3 rounded-xl bg-[#FF6E3C] text-white font-medium hover:bg-[#FF8F5C] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                      disabled={isSavingSecrets || (supabaseUrl && !supabaseUrl.match(/^https:\/\/[a-zA-Z0-9-]+\.supabase\.co\/?$/)) || (supabaseAnonKey && (!supabaseAnonKey.startsWith('eyJ') || supabaseAnonKey.length < 100))}
+                      className="w-full py-3 rounded-xl bg-[#FF6E3C] text-white font-medium hover:bg-[#FF8F5C] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                       {isSavingSecrets ? (
                         <>
