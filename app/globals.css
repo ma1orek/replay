@@ -101,6 +101,37 @@ body {
   scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
 }
 
+/* Force scrollbar on ALL overflow elements */
+[class*="overflow-y-auto"]::-webkit-scrollbar,
+[class*="overflow-auto"]::-webkit-scrollbar,
+[class*="overflow-x-auto"]::-webkit-scrollbar {
+  width: 3px !important;
+  height: 3px !important;
+  background-color: transparent !important;
+}
+
+[class*="overflow-y-auto"]::-webkit-scrollbar-thumb,
+[class*="overflow-auto"]::-webkit-scrollbar-thumb,
+[class*="overflow-x-auto"]::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border-radius: 10px !important;
+}
+
+[class*="overflow-y-auto"]::-webkit-scrollbar-thumb:hover,
+[class*="overflow-auto"]::-webkit-scrollbar-thumb:hover,
+[class*="overflow-x-auto"]::-webkit-scrollbar-thumb:hover,
+[class*="overflow-y-auto"]::-webkit-scrollbar-thumb:active,
+[class*="overflow-auto"]::-webkit-scrollbar-thumb:active,
+[class*="overflow-x-auto"]::-webkit-scrollbar-thumb:active {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[class*="overflow-y-auto"]::-webkit-scrollbar-track,
+[class*="overflow-auto"]::-webkit-scrollbar-track,
+[class*="overflow-x-auto"]::-webkit-scrollbar-track {
+  background-color: transparent !important;
+}
+
 /* ===== VIBRANT GRADIENT BACKGROUND ===== */
 
 .gradient-bg {
