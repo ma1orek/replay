@@ -1745,35 +1745,59 @@ export default function ReplayTool() {
     }
     
     // Extract navigation items (links and buttons) from nav areas
+    // More comprehensive patterns to catch ALL sidebar items
     const navItemPatterns = [
-      /<a[^>]*href\s*=\s*["'][^"']*["'][^>]*>([^<]{2,40})<\/a>/gi,
-      /<a[^>]*>([^<]{2,40})<\/a>/gi, // Links without href
-      /<button[^>]*>([^<]{2,40})<\/button>/gi,
-      /<button[^>]*>(?:<[^>]*>)*([^<]{2,40})/gi, // Buttons with nested elements
-      /<span[^>]*>([^<]{2,40})<\/span>/gi, // Spans in nav
-      /<li[^>]*>(?:<[^>]*>)*([^<]{2,40})/gi, // List items in nav
+      /<a[^>]*href\s*=\s*["'][^"']*["'][^>]*>([^<]{2,50})<\/a>/gi,
+      /<a[^>]*>([^<]{2,50})<\/a>/gi, // Links without href
+      /<button[^>]*>([^<]{2,50})<\/button>/gi,
+      /<button[^>]*>(?:<[^>]*>)*([^<]{2,50})/gi, // Buttons with nested elements
+      /<span[^>]*class\s*=\s*["'][^"']*(?:nav|menu|link|item)[^"']*["'][^>]*>([^<]{2,50})<\/span>/gi, // Spans with nav classes
+      /<span[^>]*font-bold[^>]*>([^<]{2,50})<\/span>/gi, // Bold spans often used for nav
+      /<li[^>]*>(?:<[^>]*>)*([^<]{2,50})/gi, // List items in nav
+      /<div[^>]*class\s*=\s*["'][^"']*(?:nav-item|menu-item|sidebar-item)[^"']*["'][^>]*>([^<]{2,50})/gi,
+      // Also look for text content between tags in nav
+      />([A-ZŁŻŹĆŃ][A-ZŁŻŹĆŃ\s]{3,45})</gi, // Uppercase Polish text (likely nav items like SALDA BIEŻĄCE)
     ];
+    
+    // ALSO search the entire code for any Alpine.js click handlers that navigate
+    const globalAlpineNavRegex = /@click\s*=\s*["'][^"']*(?:currentPage|page|activeTab)\s*=\s*['"]([^'"]+)['"]/gi;
+    while ((match = globalAlpineNavRegex.exec(code)) !== null) {
+      const pageId = match[1].trim();
+      if (pageId && !processedIds.has(pageId.toLowerCase())) {
+        const id = pageId.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        processedIds.add(id);
+        detectedPages.push({
+          id,
+          name: pageId.charAt(0).toUpperCase() + pageId.slice(1).replace(/-/g, ' '),
+          isConfirmed: false,
+          hasContent: false
+        });
+      }
+    }
     
     for (const pattern of navItemPatterns) {
       pattern.lastIndex = 0;
       while ((match = pattern.exec(navAreas)) !== null) {
-        const text = match[1].trim();
+        let text = match[1].trim();
         
-        // Filter out non-navigation items
+        // Clean up text - remove extra whitespace
+        text = text.replace(/\s+/g, ' ').trim();
+        
+        // Filter out non-navigation items (less aggressive filtering)
         if (
           text.length < 2 ||
-          text.length > 35 ||                // Too long = probably content
+          text.length > 50 ||                // Allow longer Polish text
           /^\d+:\d+/.test(text) ||           // Time format "12:34"
           /^\d+\s*(tys|mln|K|M)/i.test(text) || // View counts
-          /[!?]$/.test(text) ||              // Titles with punctuation
           /\.\.\.$/.test(text) ||            // Truncated text
-          /^(więcej|more|less|mniej|see all|view all)$/i.test(text) || // Expansion buttons
-          /^(pokaż|show|hide|ukryj|close|submit|send|search)$/i.test(text) || // Action buttons
+          /^(więcej|more|less|mniej|see all|view all|expand|collapse)$/i.test(text) ||
+          /^(submit|send|search|login|logout|wyloguj|zaloguj)$/i.test(text) ||
           /^\d+$/.test(text) ||              // Just numbers
-          /^[\s\W]+$/.test(text)             // Only whitespace/symbols
+          /^[\s\W]+$/.test(text) ||          // Only whitespace/symbols
+          /^[<>\/]/.test(text)               // HTML artifacts
         ) continue;
         
-        const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        const id = text.toLowerCase().replace(/[^a-z0-9ąęłńóśźżć]+/g, '-').replace(/^-|-$/g, '');
         if (!id || id.length < 2 || processedIds.has(id)) continue;
         processedIds.add(id);
         
@@ -1785,6 +1809,8 @@ export default function ReplayTool() {
         });
       }
     }
+    
+    console.log('[buildFlowLive] Total detected pages after nav extraction:', detectedPages.length);
     
     // ═══════════════════════════════════════════════════════════════════════════
     // STEP 3: Check for POSSIBLE comments in code
@@ -1903,12 +1929,15 @@ export default function ReplayTool() {
     // Add POSSIBLE pages (navigation items not shown in video)
     // Use wider spacing to prevent overlap - nodes are ~200px wide
     if (possiblePages.length > 0) {
-      const displayItems = possiblePages.slice(0, 8); // Limit for clarity
-      const nodeSpacing = 220; // Width of node + gap (prevents overlap)
+      // Show ALL possible pages, not just 8 - user wants full detection
+      const displayItems = possiblePages.slice(0, 24); // Allow up to 24 items
+      const nodeSpacing = 240; // Width of node + gap (prevents overlap)
       
-      // Calculate how many can fit per row (max 4 per row for readability)
-      const nodesPerRow = Math.min(4, displayItems.length);
+      // Calculate how many can fit per row (max 5 per row for wider displays)
+      const nodesPerRow = Math.min(5, Math.max(3, Math.ceil(displayItems.length / 4)));
       const totalRows = Math.ceil(displayItems.length / nodesPerRow);
+      
+      console.log('[buildFlowLive] Displaying', displayItems.length, 'possible pages in', totalRows, 'rows');
       
       for (let row = 0; row < totalRows; row++) {
         const rowItems = displayItems.slice(row * nodesPerRow, (row + 1) * nodesPerRow);
@@ -1917,7 +1946,7 @@ export default function ReplayTool() {
         for (let i = 0; i < rowItems.length; i++) {
           const page = rowItems[i];
           const x = rowStartX + i * nodeSpacing;
-          const y = currentY + row * (rowHeight * 0.8);
+          const y = currentY + row * rowHeight;
           
           await addNode({
             id: page.id,
@@ -1942,7 +1971,7 @@ export default function ReplayTool() {
       }
       
       // Update currentY for any future nodes
-      currentY += totalRows * (rowHeight * 0.8);
+      currentY += totalRows * rowHeight;
     }
     
     setFlowBuilding(false);
@@ -2463,34 +2492,74 @@ ${extractedStyles}
     return files;
   }, []);
   
-  // Helper: Convert HTML to JSX (basic conversion)
+  // Helper: Convert HTML to JSX (comprehensive conversion)
   const htmlToJsx = (html: string): string => {
     return html
-      // Convert class to className
+      // STEP 1: Remove Vue/Alpine template wrappers - replace with content
+      .replace(/<template\s+:key="[^"]*">\s*/gi, '{/* ')
+      .replace(/<template\s+v-for="[^"]*">\s*/gi, '{/* ')
+      .replace(/<template>\s*/gi, '')
+      .replace(/\s*<\/template>/gi, ' */}')
+      // STEP 2: Convert Vue :key to React key
+      .replace(/:key=/g, 'key=')
+      // STEP 3: Convert Vue :className to className (dynamic)
+      .replace(/:className="([^"]*)"/g, 'className={$1}')
+      // STEP 4: Convert Vue :class to className (dynamic)
+      .replace(/:class="([^"]*)"/g, 'className={$1}')
+      // STEP 5: Convert regular class to className
       .replace(/\bclass=/g, 'className=')
-      // Convert for to htmlFor
+      // STEP 6: Convert for to htmlFor
       .replace(/\bfor=/g, 'htmlFor=')
-      // Self-closing tags
-      .replace(/<(img|input|br|hr)([^>]*)(?<!\/)>/gi, '<$1$2 />')
-      // Convert style strings to objects (basic)
+      // STEP 7: Self-closing tags
+      .replace(/<(img|input|br|hr|meta|link)([^>]*)(?<!\/)>/gi, '<$1$2 />')
+      // STEP 8: Convert inline style strings to objects
       .replace(/style="([^"]*)"/g, (match, style) => {
+        if (!style.trim()) return 'style={{}}';
         const jsStyle = style.split(';')
           .filter((s: string) => s.trim())
           .map((s: string) => {
-            const [prop, val] = s.split(':').map((x: string) => x.trim());
+            const colonIndex = s.indexOf(':');
+            if (colonIndex === -1) return '';
+            const prop = s.substring(0, colonIndex).trim();
+            const val = s.substring(colonIndex + 1).trim();
             const camelProp = prop.replace(/-([a-z])/g, (g: string) => g[1].toUpperCase());
-            return `${camelProp}: '${val}'`;
+            // Handle numeric values
+            const isNumeric = !isNaN(parseFloat(val)) && !val.includes('px') && !val.includes('%') && !val.includes('em');
+            const formattedVal = isNumeric ? val : `'${val.replace(/'/g, "\\'")}'`;
+            return `${camelProp}: ${formattedVal}`;
           })
+          .filter(Boolean)
           .join(', ');
         return `style={{ ${jsStyle} }}`;
       })
-      // Remove Alpine.js attributes
+      // STEP 9: Remove Alpine.js x-* attributes
       .replace(/\s*x-[a-z-]+="[^"]*"/gi, '')
-      .replace(/\s*@[a-z]+="[^"]*"/gi, '')
-      // Remove onclick etc for now
+      .replace(/\s*x-[a-z-]+/gi, '')
+      // STEP 10: Remove Alpine @ event handlers
+      .replace(/\s*@[a-z.]+="[^"]*"/gi, '')
+      // STEP 11: Remove Vue v-* directives
+      .replace(/\s*v-[a-z-]+="[^"]*"/gi, '')
+      .replace(/\s*v-[a-z-]+/gi, '')
+      // STEP 12: Remove inline onclick/onmouseover etc
       .replace(/\s*on[a-z]+="[^"]*"/gi, '')
-      // Clean up escaped characters
+      // STEP 13: Convert tabindex to tabIndex
+      .replace(/\btabindex=/gi, 'tabIndex=')
+      // STEP 14: Convert colspan/rowspan
+      .replace(/\bcolspan=/gi, 'colSpan=')
+      .replace(/\browspan=/gi, 'rowSpan=')
+      // STEP 15: Convert maxlength, minlength
+      .replace(/\bmaxlength=/gi, 'maxLength=')
+      .replace(/\bminlength=/gi, 'minLength=')
+      // STEP 16: Convert autocomplete
+      .replace(/\bautocomplete=/gi, 'autoComplete=')
+      // STEP 17: Convert autofocus
+      .replace(/\bautofocus/gi, 'autoFocus')
+      // STEP 18: Clean up escaped characters
       .replace(/`/g, "'")
+      // STEP 19: Remove HTML comments
+      .replace(/<!--[\s\S]*?-->/g, '')
+      // STEP 20: Remove any remaining :attr Vue syntax
+      .replace(/\s*:[a-z-]+="[^"]*"/gi, '')
       .trim();
   };
 
