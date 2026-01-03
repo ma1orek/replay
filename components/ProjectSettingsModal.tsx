@@ -553,7 +553,7 @@ export default function ProjectSettingsModal({
                     {/* Save Button */}
                     <button
                       onClick={handleSaveSecrets}
-                      disabled={isSavingSecrets || (supabaseUrl && !supabaseUrl.match(/^https:\/\/[a-zA-Z0-9-]+\.supabase\.co\/?$/)) || (supabaseAnonKey && (!supabaseAnonKey.startsWith('eyJ') || supabaseAnonKey.length < 100))}
+                      disabled={isSavingSecrets || !!(supabaseUrl && !supabaseUrl.match(/^https:\/\/[a-zA-Z0-9-]+\.supabase\.co\/?$/)) || !!(supabaseAnonKey && (!supabaseAnonKey.startsWith('eyJ') || supabaseAnonKey.length < 100))}
                       className="w-full py-3 rounded-xl bg-[#FF6E3C] text-white font-medium hover:bg-[#FF8F5C] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                       {isSavingSecrets ? (

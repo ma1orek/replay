@@ -6397,7 +6397,8 @@ export const shadows = {
                       <video 
                         ref={videoRef} 
                         src={selectedFlow.videoUrl} 
-                        className="max-w-full max-h-full rounded-lg" 
+                        preload="auto"
+                        className="max-w-full max-h-full rounded-lg bg-black" 
                         onPlay={() => setIsPlaying(true)} 
                         onPause={() => setIsPlaying(false)}
                         onLoadedMetadata={(e) => {
