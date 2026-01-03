@@ -6685,15 +6685,21 @@ export const shadows = {
 
             {/* Input - Custom Video Player with better trim */}
             {viewMode === "input" && (
-              <div className="flex-1 bg-[#0a0a0a] flex flex-col overflow-hidden">
+              <div className="flex-1 bg-black flex flex-col overflow-hidden">
                 {selectedFlow ? (
                   <>
-                    <div className="flex-1 flex items-center justify-center p-4 min-h-0 bg-black">
+                    <div className="flex-1 flex items-center justify-center min-h-0 bg-black">
                       <video 
                         ref={videoRef} 
                         src={selectedFlow.videoUrl} 
                         preload="auto"
-                        className="max-w-full max-h-full rounded-lg bg-black" 
+                        playsInline
+                        className="w-full h-full object-contain" 
+                        style={{ 
+                          maxWidth: '100%', 
+                          maxHeight: '100%',
+                          imageRendering: 'auto'
+                        }}
                         onPlay={() => setIsPlaying(true)} 
                         onPause={() => setIsPlaying(false)}
                         onLoadedMetadata={(e) => {
