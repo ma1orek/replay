@@ -6692,8 +6692,9 @@ export const shadows = {
                       <video 
                         ref={videoRef} 
                         src={selectedFlow.videoUrl} 
-                        preload="auto"
+                        preload="metadata"
                         playsInline
+                        muted={false}
                         className="w-full h-full object-contain" 
                         style={{ 
                           maxWidth: '100%', 
@@ -6714,6 +6715,13 @@ export const shadows = {
                                   : f
                               ));
                             }
+                          }
+                        }}
+                        onLoadedData={(e) => {
+                          // Seek to start (0.001s) to show first frame clearly
+                          const video = e.currentTarget;
+                          if (video.currentTime === 0) {
+                            video.currentTime = 0.001;
                           }
                         }}
                         onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
