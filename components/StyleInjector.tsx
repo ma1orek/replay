@@ -25,8 +25,10 @@ const PLACEHOLDER_EXAMPLES = [
 const StylePreview = ({ styleId }: { styleId: string }) => {
   const previewStyles: Record<string, React.ReactNode> = {
     custom: (
-      <div className="w-full h-full bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF6E3C]/5 flex items-center justify-center">
-        <span className="text-[8px] text-[#FF6E3C]">✨</span>
+      <div className="w-full h-full bg-gradient-to-br from-[#FF6E3C]/20 via-[#FF6E3C]/10 to-transparent relative overflow-hidden">
+        <div className="absolute inset-1 rounded-sm border border-dashed border-[#FF6E3C]/40" />
+        <div className="absolute top-1.5 left-1.5 w-1.5 h-1.5 rounded-full bg-[#FF6E3C]/60" />
+        <div className="absolute bottom-1.5 right-1.5 w-2 h-1 rounded-sm bg-[#FF6E3C]/40" />
       </div>
     ),
     original: (
