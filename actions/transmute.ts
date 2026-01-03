@@ -101,20 +101,29 @@ const SYSTEM_PROMPT = `You are Replay, an elite UI Reverse-Engineering AI that c
 
 **CRITICAL: Include ALL navigation items you see in the video sidebar/menu/header!**
 
-**FONT CHOICES BY STYLE** (pick appropriate fonts from Google Fonts based on style):
-- Apple/Minimal: SF Pro Display (or Outfit), system-ui
-- Material You: Google Sans (or Poppins), Roboto
-- Cyberpunk: Orbitron, Share Tech Mono
-- Glassmorphism: Plus Jakarta Sans, DM Sans
-- Dribbble/Candy: Nunito, Quicksand
-- Enterprise: Source Sans 3, IBM Plex Sans
-- Swiss: Helvetica Neue (or Figtree), Inter
-- Brutalist: Bebas Neue, Archivo Black
-- Linear/SaaS: Satoshi (or Manrope), Inter
-- Spotify: Circular (or Montserrat), system-ui
-- Notion: system-ui, Charter
-- Dark Mode Premium: Space Grotesk, Inter
-- Default: Inter, Space Grotesk
+**INTELLIGENT FONT SELECTION** (MUST pick fonts that match the detected UI style - DO NOT always use Inter/Space Grotesk):
+
+ANALYZE the video UI and select appropriate fonts:
+
+| UI Style Detected | Headings Font | Body Font | Why |
+|-------------------|---------------|-----------|-----|
+| SaaS/Dashboard | Satoshi, General Sans | DM Sans, Be Vietnam Pro | Clean, professional |
+| Landing Page/Marketing | Cabinet Grotesk, Clash Display | Plus Jakarta Sans, Outfit | Bold, impactful |
+| E-commerce/Retail | Syne, Unbounded | Work Sans, Nunito Sans | Friendly, modern |
+| Portfolio/Creative | Clash Display, Syne | Switzer, Satoshi | Distinctive, artistic |
+| Minimalist/Apple-like | SF Pro (Geist), Outfit | system-ui, Inter | Subtle, clean |
+| Tech/Developer | JetBrains Mono, Fira Code | IBM Plex Sans, Source Sans 3 | Technical feel |
+| Finance/Enterprise | Figtree, Lexend | IBM Plex Sans, Work Sans | Trustworthy, stable |
+| Gaming/Bold | Bebas Neue, Archivo Black | Exo 2, Rajdhani | Energetic, strong |
+| Health/Wellness | Fraunces, Lora | Nunito, Karla | Warm, approachable |
+| News/Editorial | Playfair Display, Merriweather | Source Serif 4, Lora | Classic, readable |
+
+**FONT RULES:**
+1. NEVER default to Inter + Space Grotesk for everything
+2. Pick 1 heading font + 1 body font that MATCH the UI vibe
+3. Import from Google Fonts: https://fonts.googleapis.com/css2?family=FONTNAME:wght@400;500;600;700&display=swap
+4. If video shows specific font styling, try to match it
+5. Ensure good contrast between heading and body fonts
 
 **TEMPLATE TO USE:**
 <!DOCTYPE html>
@@ -161,11 +170,12 @@ const SYSTEM_PROMPT = `You are Replay, an elite UI Reverse-Engineering AI that c
     }
   </script>
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&family=Manrope:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- FONT IMPORTS: Replace with fonts matching the detected UI style! -->
+  <link href="https://fonts.googleapis.com/css2?family=HEADING_FONT:wght@400;500;600;700&family=BODY_FONT:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    /* Premium font stack */
-    * { font-family: 'Inter', system-ui, sans-serif; }
-    h1, h2, h3, h4 { font-family: 'Space Grotesk', 'Manrope', sans-serif; font-weight: 700; letter-spacing: -0.02em; }
+    /* CUSTOMIZE FONTS based on detected UI style - DO NOT use Inter/Space Grotesk by default */
+    * { font-family: 'BODY_FONT', system-ui, sans-serif; }
+    h1, h2, h3, h4 { font-family: 'HEADING_FONT', sans-serif; font-weight: 700; letter-spacing: -0.02em; }
     
     /* Ultra-thin scrollbar - dark mode friendly */
     * { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; }

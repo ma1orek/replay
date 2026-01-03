@@ -488,6 +488,7 @@ export default function ReplayTool() {
     dataPatterns?: { pattern: string; component: string; suggestedTable?: string }[];
   }
   const [analysisPhase, setAnalysisPhase] = useState<AnalysisPhase | null>(null);
+  const [isSupabaseConnected, setIsSupabaseConnected] = useState(false);
   
   // Flow state = PRODUCT MAP (canvas with nodes/edges)
   const [flowNodes, setFlowNodes] = useState<ProductFlowNode[]>([]);
@@ -1004,6 +1005,20 @@ export default function ReplayTool() {
       console.error("Error saving style:", e);
     }
   }, [styleDirective, refinements, hasLoadedFromStorage]);
+  
+  // Check Supabase connection status
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const checkSupabase = () => {
+      const url = localStorage.getItem("replay_supabase_url");
+      const key = localStorage.getItem("replay_supabase_key");
+      setIsSupabaseConnected(!!url && !!key && url.length > 0 && key.length > 0);
+    };
+    checkSupabase();
+    // Re-check when activeGeneration changes (user might have updated settings)
+    window.addEventListener("storage", checkSupabase);
+    return () => window.removeEventListener("storage", checkSupabase);
+  }, [activeGeneration?.id]);
   
   // Save flow nodes and edges to localStorage
   useEffect(() => {
@@ -5354,22 +5369,25 @@ export const shadows = {
                           >
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-1.5">
-                                <Database className="w-3 h-3 text-green-500/60" />
+                                <Database className={cn("w-3 h-3", isSupabaseConnected ? "text-green-500/60" : "text-white/20")} />
                                 <span className="text-[9px] text-white/30 uppercase tracking-wide">Data Patterns</span>
                               </div>
-                              {/* Supabase indicator - shows if project has DB settings */}
-                              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-green-500/10 border border-green-500/20">
-                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                <span className="text-[8px] text-green-500/80 font-medium uppercase tracking-wide">
-                                  Supabase Ready
-                                </span>
-                              </div>
+                              {/* Supabase connection status - simple text */}
+                              <span className={cn(
+                                "text-[9px]",
+                                isSupabaseConnected ? "text-green-500" : "text-white/30"
+                              )}>
+                                {isSupabaseConnected ? "Supabase Connected" : "Supabase Not Connected"}
+                              </span>
                             </div>
                             {analysisPhase.dataPatterns.map((pattern, i) => (
                               <div key={i} className="flex items-center gap-2 text-[9px] py-0.5">
                                 <span className="text-white/50">{pattern.pattern}</span>
                                 <span className="text-white/20">→</span>
-                                <code className="text-green-400/80 font-mono bg-green-500/5 px-1 rounded">{pattern.suggestedTable || pattern.component}</code>
+                                <code className={cn(
+                                  "font-mono px-1 rounded",
+                                  isSupabaseConnected ? "text-green-400/80 bg-green-500/5" : "text-white/40 bg-white/5"
+                                )}>{pattern.suggestedTable || pattern.component}</code>
                               </div>
                             ))}
                           </motion.div>
