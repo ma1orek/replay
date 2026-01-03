@@ -6694,6 +6694,7 @@ export const shadows = {
                         src={selectedFlow.videoUrl} 
                         preload="auto"
                         playsInline
+                        poster=""
                         className="w-full h-full object-contain" 
                         style={{ 
                           maxWidth: '100%', 
@@ -6706,7 +6707,6 @@ export const shadows = {
                           const video = e.currentTarget;
                           if (video.duration && isFinite(video.duration) && video.duration > 0) {
                             const newDuration = Math.round(video.duration);
-                            // Update flow duration if it was invalid
                             if (!selectedFlow.duration || !isFinite(selectedFlow.duration) || selectedFlow.duration <= 0) {
                               setFlows(prev => prev.map(f => 
                                 f.id === selectedFlow.id 
@@ -6715,9 +6715,12 @@ export const shadows = {
                               ));
                             }
                           }
-                          // Force display first frame by seeking slightly
-                          if (video.currentTime === 0) {
-                            video.currentTime = 0.01;
+                        }}
+                        onCanPlay={(e) => {
+                          // Force first frame display when video data is ready
+                          const video = e.currentTarget;
+                          if (video.currentTime === 0 && video.paused) {
+                            video.currentTime = 0.001;
                           }
                         }}
                         onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
