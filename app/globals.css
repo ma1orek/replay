@@ -21,56 +21,67 @@
   box-sizing: border-box;
   /* Firefox scrollbar - ultra thin */
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.04) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.05) transparent;
 }
 
 /* ============================================
-   GLOBAL SCROLLBAR - ULTRA THIN, NO WHITE HOVER
+   GLOBAL SCROLLBAR - ULTRA THIN, DARK MODE
+   NO WHITE HOVER, NO ARROWS
    ============================================ */
 
-/* Base scrollbar */
-::-webkit-scrollbar {
-  width: 2px;
-  height: 2px;
-  background-color: transparent;
+/* Scrollbar base - 2px thin */
+*::-webkit-scrollbar {
+  width: 3px !important;
+  height: 3px !important;
+  background: transparent !important;
 }
 
-/* Track */
-::-webkit-scrollbar-track {
-  background-color: transparent;
+/* Track - invisible */
+*::-webkit-scrollbar-track {
+  background: transparent !important;
+  border: none !important;
+  margin: 0 !important;
 }
 
-/* Thumb - the draggable part */
-::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.04);
-  border-radius: 10px;
+*::-webkit-scrollbar-track-piece {
+  background: transparent !important;
 }
 
-/* Thumb hover - SAME COLOR, no change */
-::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.04);
+/* Thumb - subtle white */
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-radius: 10px !important;
+  border: none !important;
 }
 
-/* Thumb active - SAME COLOR, no change */
-::-webkit-scrollbar-thumb:active {
-  background-color: rgba(255, 255, 255, 0.04);
+/* HOVER & ACTIVE - SAME COLOR, NO WHITE! */
+*::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:active,
+*::-webkit-scrollbar-thumb:focus {
+  background: rgba(255, 255, 255, 0.08) !important;
 }
 
-/* Corner */
-::-webkit-scrollbar-corner {
-  background-color: transparent;
+/* Corner - hide */
+*::-webkit-scrollbar-corner {
+  background: transparent !important;
+  display: none !important;
 }
 
-/* Remove ALL buttons/arrows */
-::-webkit-scrollbar-button {
-  display: none;
-  height: 0;
-  width: 0;
+/* Buttons/Arrows - REMOVE COMPLETELY */
+*::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+*::-webkit-scrollbar-button:single-button {
+  display: none !important;
 }
 
 /* Resizer */
-::-webkit-resizer {
-  background-color: transparent;
+*::-webkit-resizer {
+  background: transparent !important;
 }
 
 /* Utility: Hide scrollbar completely */
@@ -96,63 +107,10 @@ body {
   overflow-x: hidden;
 }
 
-/* Force scrollbar styles with high specificity */
-*::-webkit-scrollbar,
-.custom-scrollbar::-webkit-scrollbar,
-div::-webkit-scrollbar,
-aside::-webkit-scrollbar,
-section::-webkit-scrollbar,
-textarea::-webkit-scrollbar,
-main::-webkit-scrollbar {
-  width: 2px !important;
-  height: 2px !important;
-  background-color: transparent !important;
-}
-
-*::-webkit-scrollbar-track,
-.custom-scrollbar::-webkit-scrollbar-track,
-div::-webkit-scrollbar-track,
-aside::-webkit-scrollbar-track,
-section::-webkit-scrollbar-track,
-textarea::-webkit-scrollbar-track,
-main::-webkit-scrollbar-track {
-  background-color: transparent !important;
-}
-
-*::-webkit-scrollbar-thumb,
-.custom-scrollbar::-webkit-scrollbar-thumb,
-div::-webkit-scrollbar-thumb,
-aside::-webkit-scrollbar-thumb,
-section::-webkit-scrollbar-thumb,
-textarea::-webkit-scrollbar-thumb,
-main::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.04) !important;
-  border-radius: 10px !important;
-}
-
-/* CRITICAL: NO WHITE ON HOVER - force same color */
-*::-webkit-scrollbar-thumb:hover,
-.custom-scrollbar::-webkit-scrollbar-thumb:hover,
-div::-webkit-scrollbar-thumb:hover,
-aside::-webkit-scrollbar-thumb:hover,
-section::-webkit-scrollbar-thumb:hover,
-textarea::-webkit-scrollbar-thumb:hover,
-main::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.04) !important;
-}
-
-*::-webkit-scrollbar-thumb:active,
-.custom-scrollbar::-webkit-scrollbar-thumb:active,
-div::-webkit-scrollbar-thumb:active {
-  background-color: rgba(255, 255, 255, 0.04) !important;
-}
-
-*::-webkit-scrollbar-button,
-.custom-scrollbar::-webkit-scrollbar-button,
-div::-webkit-scrollbar-button {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
+/* Custom scrollbar class - same as global */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
 }
 
 /* ===== VIBRANT GRADIENT BACKGROUND ===== */
@@ -1184,30 +1142,19 @@ select:focus-visible {
     padding-bottom: 80px;
   }
   
-  /* Ultra-thin scrollbars on mobile */
+  /* Ultra-thin scrollbars on mobile - same as desktop */
   *::-webkit-scrollbar {
-    width: 2px !important;
-    height: 2px !important;
-    background: transparent !important;
-  }
-  
-  *::-webkit-scrollbar-track {
-    background: transparent !important;
-    margin: 0 !important;
+    width: 3px !important;
+    height: 3px !important;
   }
   
   *::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.04) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
   }
   
-  *::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.04) !important;
-  }
-  
-  *::-webkit-scrollbar-button {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
+  *::-webkit-scrollbar-thumb:hover,
+  *::-webkit-scrollbar-thumb:active {
+    background: rgba(255, 255, 255, 0.08) !important;
   }
   
   /* Touch-friendly buttons */

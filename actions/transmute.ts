@@ -167,6 +167,14 @@ const SYSTEM_PROMPT = `You are Replay, an elite UI Reverse-Engineering AI that c
     * { font-family: 'Inter', system-ui, sans-serif; }
     h1, h2, h3, h4 { font-family: 'Space Grotesk', 'Manrope', sans-serif; font-weight: 700; letter-spacing: -0.02em; }
     
+    /* Ultra-thin scrollbar - dark mode friendly */
+    * { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; }
+    *::-webkit-scrollbar { width: 4px; height: 4px; background: transparent; }
+    *::-webkit-scrollbar-track { background: transparent; }
+    *::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+    *::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.1); }
+    *::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+    
     /* Smooth transitions on everything */
     *, *::before, *::after {
       transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform, filter;
