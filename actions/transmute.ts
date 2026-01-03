@@ -800,59 +800,6 @@ Copy CONTENT from the video but apply ETHEREAL MESH aesthetics:
 
 ${request.styleDirective}`;
     }
-    // ISOMETRIC CITY - Pure CSS 3D
-    else if (styleName.includes("isometric") || styleName.includes("voxel") || styleName.includes("3d css")) {
-      console.log("[transmute] >>> MATCHED: ISOMETRIC CITY <<<");
-      expandedStyleDirective = `${GLOBAL_STANDARDS}
-
-**STYLE: ISOMETRIC CITY (Pure CSS 3D)**
-
-⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
-Copy CONTENT from the video but apply ISOMETRIC 3D aesthetics:
-
-**REQUIRED VISUAL CHANGES (Non-Negotiable):**
-1. View: MUST use isometric perspective (rotateX(60deg) rotateZ(-45deg))
-2. Elements: MUST appear as 3D blocks with depth
-3. Colors: Use monochromatic Blue or Purple palette
-4. Hover: Blocks MUST lift on Z-axis
-
-**EXAMPLE OUTPUT:**
-\`\`\`html
-<div class="min-h-screen bg-slate-900 flex items-center justify-center" style="perspective: 1000px">
-  <div class="grid grid-cols-3 gap-4" style="transform: rotateX(60deg) rotateZ(-45deg); transform-style: preserve-3d;">
-    <div class="w-24 h-24 bg-blue-500 relative" style="transform-style: preserve-3d;">
-      <div class="absolute inset-0 bg-blue-400" style="transform: translateZ(20px)"></div>
-      <div class="absolute w-full h-5 bg-blue-600 origin-top" style="transform: rotateX(-90deg) translateZ(20px)"></div>
-      <div class="absolute w-5 h-full bg-blue-700 origin-left" style="transform: rotateY(90deg) translateZ(20px)"></div>
-    </div>
-  </div>
-</div>
-\`\`\`
-
-**3D BLOCK PATTERN:**
-\`\`\`css
-.iso-block {
-  position: relative;
-  transform-style: preserve-3d;
-  transform: rotateX(60deg) rotateZ(-45deg);
-}
-.iso-block::before { /* Left face */
-  content: '';
-  position: absolute;
-  width: 100%;
-  height: 20px;
-  background: rgba(0,0,0,0.2);
-  transform: rotateX(-90deg) translateZ(10px);
-}
-\`\`\`
-
-**COMPONENTS:**
-1. IsometricContainer - Perspective wrapper
-2. IsoBlock - 3D block with faces
-3. ProcessStep - Connected blocks showing flow
-
-${request.styleDirective}`;
-    }
     // X-RAY BLUEPRINT - Wireframe reveal
     else if (styleName.includes("x-ray") || styleName.includes("blueprint") || styleName.includes("wireframe reveal")) {
       console.log("[transmute] >>> MATCHED: X-RAY BLUEPRINT <<<");

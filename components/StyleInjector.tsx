@@ -247,11 +247,6 @@ const StylePreview = ({ styleId }: { styleId: string }) => {
         <div className="absolute inset-1.5 rounded-lg bg-white/60 backdrop-blur-xl border border-white/80" />
       </div>
     ),
-    "isometric-city": (
-      <div className="w-full h-full bg-[#1a1a2e] flex items-center justify-center" style={{ perspective: '100px' }}>
-        <div className="w-4 h-4 bg-gradient-to-br from-blue-400 to-blue-600" style={{ transform: 'rotateX(60deg) rotateZ(-45deg)' }} />
-      </div>
-    ),
     "typographic-architecture": (
       <div className="w-full h-full bg-white flex items-center justify-center overflow-hidden">
         <span className="text-[16px] font-black text-transparent bg-clip-text bg-gradient-to-br from-blue-500 to-purple-500">A</span>
@@ -366,7 +361,6 @@ const STYLE_PRESETS = [
   { id: "neubrutalism", name: "Neo-Brutalism", desc: "Hard Shadow • Thick Border • Bouncy", fullDesc: "High contrast pastels, thick black outlines, hard shadows.", category: "light" },
   
   // === MOTION & 3D ===
-  { id: "isometric-city", name: "Isometric City", desc: "3D CSS • Voxel Blocks • Hover Lift", fullDesc: "Pure CSS isometric 3D. Blocks viewed from 45deg angle with shadows.", category: "motion" },
   { id: "xray-blueprint", name: "X-Ray Blueprint", desc: "Wireframe Reveal • Scanner • Technical", fullDesc: "Technical blueprint. Wireframe reveals solid on mouse. Line draw animations.", category: "motion" },
   { id: "digital-collage", name: "Digital Collage", desc: "Scrapbook • Stickers • Draggable", fullDesc: "Mixed media scrapbook. Paper texture, cutout shapes, stickers with shadows.", category: "motion" },
   
