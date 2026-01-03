@@ -6694,25 +6694,13 @@ export const shadows = {
                         src={selectedFlow.videoUrl} 
                         preload="auto"
                         playsInline
-                        muted
-                        autoPlay
                         className="w-full h-full object-contain" 
                         style={{ 
                           maxWidth: '100%', 
                           maxHeight: '100%',
                           imageRendering: 'auto'
                         }}
-                        onPlay={() => {
-                          // Immediately pause after autoplay to show first frame
-                          const video = videoRef.current;
-                          if (video && video.currentTime < 0.1) {
-                            video.pause();
-                            video.muted = false;
-                            setIsPlaying(false);
-                          } else {
-                            setIsPlaying(true);
-                          }
-                        }} 
+                        onPlay={() => setIsPlaying(true)} 
                         onPause={() => setIsPlaying(false)}
                         onLoadedMetadata={(e) => {
                           const video = e.currentTarget;
@@ -6726,6 +6714,10 @@ export const shadows = {
                                   : f
                               ));
                             }
+                          }
+                          // Force display first frame by seeking slightly
+                          if (video.currentTime === 0) {
+                            video.currentTime = 0.01;
                           }
                         }}
                         onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
