@@ -19,69 +19,57 @@
 
 * {
   box-sizing: border-box;
-  /* Firefox scrollbar - ultra thin */
+  /* Firefox */
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.05) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
 }
 
 /* ============================================
-   GLOBAL SCROLLBAR - ULTRA THIN, DARK MODE
-   NO WHITE HOVER, NO ARROWS
+   WEBKIT SCROLLBAR - FORCE NO WHITE HOVER
    ============================================ */
 
-/* Scrollbar base - 2px thin */
-*::-webkit-scrollbar {
+*::-webkit-scrollbar,
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+div::-webkit-scrollbar {
   width: 3px !important;
   height: 3px !important;
-  background: transparent !important;
+  background-color: transparent !important;
 }
 
-/* Track - invisible */
-*::-webkit-scrollbar-track {
-  background: transparent !important;
-  border: none !important;
-  margin: 0 !important;
+*::-webkit-scrollbar-track,
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track,
+div::-webkit-scrollbar-track {
+  background-color: transparent !important;
 }
 
-*::-webkit-scrollbar-track-piece {
-  background: transparent !important;
-}
-
-/* Thumb - subtle white */
-*::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08) !important;
+*::-webkit-scrollbar-thumb,
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb,
+div::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.08) !important;
   border-radius: 10px !important;
-  border: none !important;
 }
 
-/* HOVER & ACTIVE - SAME COLOR, NO WHITE! */
+/* FORCE SAME COLOR ON HOVER - NO WHITE */
 *::-webkit-scrollbar-thumb:hover,
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover,
+div::-webkit-scrollbar-thumb:hover,
 *::-webkit-scrollbar-thumb:active,
-*::-webkit-scrollbar-thumb:focus {
-  background: rgba(255, 255, 255, 0.08) !important;
+html::-webkit-scrollbar-thumb:active,
+body::-webkit-scrollbar-thumb:active,
+div::-webkit-scrollbar-thumb:active {
+  background-color: rgba(255, 255, 255, 0.08) !important;
 }
 
-/* Corner - hide */
-*::-webkit-scrollbar-corner {
-  background: transparent !important;
-  display: none !important;
-}
-
-/* Buttons/Arrows - REMOVE COMPLETELY */
+*::-webkit-scrollbar-corner,
 *::-webkit-scrollbar-button {
   display: none !important;
+  background-color: transparent !important;
   width: 0 !important;
   height: 0 !important;
-  background: transparent !important;
-}
-
-*::-webkit-scrollbar-button:single-button {
-  display: none !important;
-}
-
-/* Resizer */
-*::-webkit-resizer {
-  background: transparent !important;
 }
 
 /* Utility: Hide scrollbar completely */
