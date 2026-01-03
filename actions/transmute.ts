@@ -426,20 +426,47 @@ export async function transmuteVideoToCode(
         if (styleImagePart) {
           styleReferenceInstruction = `
 
-**STYLE REFERENCE IMAGE PROVIDED:**
-You have been given a reference image for styling. CRITICALLY IMPORTANT:
-- Extract the COLOR PALETTE from the image (primary, secondary, accent colors, backgrounds)
-- Extract the TYPOGRAPHY style (font weights, sizes, letter spacing feel)
-- Extract the SPACING patterns (padding, margins, gaps between elements)
-- Extract BORDER-RADIUS values (sharp corners, rounded, pill shapes)
-- Extract any SHADOWS, GRADIENTS, or EFFECTS used
-- Apply ALL of these extracted styles to the UI you're generating from the video
+**STYLE REFERENCE IMAGE PROVIDED - FULL DESIGN SYSTEM EXTRACTION:**
+You have been given a reference image. Extract and apply its COMPLETE visual design system:
+
+**COLORS (Extract ALL):**
+- Primary color (buttons, links, accents)
+- Secondary colors
+- Background colors (main, cards, sections)
+- Text colors (headings, body, muted)
+- Border colors
+- Use Tailwind arbitrary values: bg-[#HEX], text-[#HEX]
+
+**TYPOGRAPHY:**
+- Font family feel (serif, sans-serif, mono, display)
+- Font weights hierarchy (headings vs body)
+- Font sizes (approximate the scale)
+- Letter spacing (tight, normal, wide)
+- Line heights
+
+**BORDER-RADIUS:**
+- Buttons (rounded-none, rounded-md, rounded-full?)
+- Cards (sharp corners, slightly rounded, very rounded?)
+- Input fields
+- Images/avatars
+
+**SPACING & LAYOUT:**
+- Padding inside components
+- Margins between elements
+- Gap sizes in grids/flexbox
+- Section padding (compact vs generous)
+
+**EFFECTS & POLISH:**
+- Shadows (none, subtle, heavy, colored?)
+- Gradients (if any)
+- Borders (thickness, style)
+- Hover states aesthetic
+- Glassmorphism/blur effects
 
 The VIDEO shows WHAT to build (structure, content, layout).
-The REFERENCE IMAGE shows HOW it should look (colors, fonts, spacing, aesthetic).
+The REFERENCE IMAGE shows HOW it should look (apply its ENTIRE design system).
 
-DO NOT copy the content or layout from the style reference image.
-ONLY copy its visual style and apply it to the video content.`;
+DO NOT copy content from the reference image - ONLY its visual style.`;
         }
       } catch (error) {
         console.error("Error fetching style reference image:", error);
@@ -1891,6 +1918,47 @@ Copy CONTENT from the video but apply ORIGAMI FOLD aesthetics:
   </div>
 </div>
 \`\`\`
+
+${request.styleDirective}`;
+    }
+    // ORIGINAL - Faithful 1:1 reconstruction from video
+    else if (styleName === "original" || styleName.includes("1:1 copy") || styleName.includes("exact match")) {
+      console.log("[transmute] >>> MATCHED: ORIGINAL (1:1 Reconstruction) <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: ORIGINAL - FAITHFUL VIDEO RECONSTRUCTION**
+
+This is "Extract & Apply" mode. Your goal is REVERSE ENGINEERING the design from the video.
+DO NOT invent a new style. Create a faithful reconstruction of the video's visual design system.
+
+**STRUCTURE:** 1:1 match - Everything you see in the video MUST be in the code.
+
+**COLORS - Sample directly from video:**
+- Extract the exact primary, secondary, and background colors you observe
+- Use Tailwind arbitrary values (bg-[#1a1a1a]) or closest standard palette (bg-slate-900)
+- Match the color hierarchy exactly as shown
+
+**TYPOGRAPHY:**
+- Identify the font family feel (e.g., "Looks like Inter, SF Pro, or Helvetica" = font-sans)
+- Match the weight hierarchy (headings heavier than body)
+- Match the sizing scale observed in the video
+
+**BORDER-RADIUS - Estimate visually:**
+- Sharp corners = rounded-none
+- Slightly rounded = rounded-md
+- Very rounded = rounded-xl or rounded-2xl
+- Pills/circles = rounded-full
+
+**SPACING - Estimate visually:**
+- Tight spacing = smaller padding/margins
+- Generous spacing = larger padding/margins
+- Match the proportions you see
+
+**SHADOWS & EFFECTS:**
+- Observe if elements have shadows (subtle, heavy, or none)
+- Match any gradients, borders, or special effects
+
+**OUTPUT:** Your generated code should look like a screenshot of the original video.
 
 ${request.styleDirective}`;
     }
