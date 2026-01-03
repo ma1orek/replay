@@ -1019,7 +1019,7 @@ function HowItWorks() {
               }
             }}
             onClick={togglePlay}
-            src="/ShowcaseReplay.mp4"
+            src="/Showcase%20Replay.mp4"
           />
           <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[#030303]/70 via-transparent to-[#030303]/30" />
           
