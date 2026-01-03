@@ -115,6 +115,7 @@ export interface TransmuteRequest {
   styleDirective: string;
   additionalContext?: string;
   databaseContext?: string; // Schema from user's connected Supabase
+  styleReferenceImage?: { url: string; name: string }; // Image to extract style from (colors, fonts, spacing)
 }
 
 export interface TransmuteResponse {

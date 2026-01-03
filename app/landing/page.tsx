@@ -474,7 +474,7 @@ function HeroInput({
               <Palette className="w-3.5 h-3.5 text-[#FF6E3C]" />
               Style
             </label>
-            <p className="text-[10px] text-white/30 mb-2">Choose a visual system or drop a reference image.</p>
+            <p className="text-[10px] text-white/30 mb-2">Choose a preset style or use "Style Reference" to apply styles from an image.</p>
             <StyleInjector 
               value={styleDirective} 
               onChange={setStyleDirective} 

@@ -385,6 +385,68 @@ export async function transmuteVideoToCode(
       },
     };
 
+    // Handle Style Reference Image if provided
+    let styleImagePart: { inlineData: { mimeType: string; data: string } } | null = null;
+    let styleReferenceInstruction = "";
+    
+    if (request.styleReferenceImage?.url) {
+      console.log("Fetching style reference image:", request.styleReferenceImage.url);
+      try {
+        // Check if it's a base64 data URL or a regular URL
+        if (request.styleReferenceImage.url.startsWith('data:')) {
+          // Extract base64 from data URL
+          const matches = request.styleReferenceImage.url.match(/^data:([^;]+);base64,(.+)$/);
+          if (matches) {
+            styleImagePart = {
+              inlineData: {
+                mimeType: matches[1],
+                data: matches[2],
+              },
+            };
+            console.log("Style reference image loaded from data URL, type:", matches[1]);
+          }
+        } else {
+          // Fetch from URL
+          const imgResponse = await fetch(request.styleReferenceImage.url);
+          if (imgResponse.ok) {
+            const imgArrayBuffer = await imgResponse.arrayBuffer();
+            const imgBase64 = Buffer.from(imgArrayBuffer).toString("base64");
+            const imgMimeType = imgResponse.headers.get("content-type") || "image/jpeg";
+            
+            styleImagePart = {
+              inlineData: {
+                mimeType: imgMimeType,
+                data: imgBase64,
+              },
+            };
+            console.log("Style reference image fetched, type:", imgMimeType, "size:", imgArrayBuffer.byteLength);
+          }
+        }
+        
+        if (styleImagePart) {
+          styleReferenceInstruction = `
+
+**STYLE REFERENCE IMAGE PROVIDED:**
+You have been given a reference image for styling. CRITICALLY IMPORTANT:
+- Extract the COLOR PALETTE from the image (primary, secondary, accent colors, backgrounds)
+- Extract the TYPOGRAPHY style (font weights, sizes, letter spacing feel)
+- Extract the SPACING patterns (padding, margins, gaps between elements)
+- Extract BORDER-RADIUS values (sharp corners, rounded, pill shapes)
+- Extract any SHADOWS, GRADIENTS, or EFFECTS used
+- Apply ALL of these extracted styles to the UI you're generating from the video
+
+The VIDEO shows WHAT to build (structure, content, layout).
+The REFERENCE IMAGE shows HOW it should look (colors, fonts, spacing, aesthetic).
+
+DO NOT copy the content or layout from the style reference image.
+ONLY copy its visual style and apply it to the video content.`;
+        }
+      } catch (error) {
+        console.error("Error fetching style reference image:", error);
+        // Continue without the style image
+      }
+    }
+
     // COMPREHENSIVE STYLE EXPANSION SYSTEM
     // Each style gets detailed animation physics, visual DNA, and component structure
     let expandedStyleDirective = request.styleDirective;
@@ -1860,6 +1922,7 @@ Generate proper data fetching code that works with the user's real database.
     const userPrompt = `${SYSTEM_PROMPT}
 
 **STYLE DIRECTIVE:** "${expandedStyleDirective}"
+${styleReferenceInstruction}
 ${databaseSection}
 **CRITICAL VIDEO ANALYSIS INSTRUCTIONS:**
 1. This is a VIDEO recording - watch from start to finish, analyzing EVERY frame
@@ -1894,14 +1957,18 @@ ${databaseSection}
 
 Generate the complete HTML now, including EVERYTHING from the video.`;
 
+    // Build parts array - video first, then style reference image if provided, then prompt
+    const contentParts: any[] = [videoPart];
+    if (styleImagePart) {
+      contentParts.push(styleImagePart);
+    }
+    contentParts.push({ text: userPrompt });
+    
     const result = await model.generateContent({
       contents: [
         {
           role: "user",
-          parts: [
-            videoPart,
-            { text: userPrompt },
-          ],
+          parts: contentParts,
         },
       ],
       generationConfig: {

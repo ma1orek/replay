@@ -35,6 +35,11 @@ const StylePreview = ({ styleId }: { styleId: string }) => {
         <div className="w-2 h-3 bg-white/20 rounded-[1px]" />
       </div>
     ),
+    "style-reference": (
+      <div className="w-full h-full bg-gradient-to-br from-[#FF6E3C]/20 to-purple-500/20 flex items-center justify-center">
+        <ImagePlus className="w-3.5 h-3.5 text-[#FF6E3C]/80" />
+      </div>
+    ),
     "aura-glass": (
       <div className="w-full h-full bg-[#050505] relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-purple-500/30 via-transparent to-cyan-500/20" />
@@ -324,6 +329,7 @@ const STYLE_CATEGORIES = [
 const STYLE_PRESETS = [
   { id: "custom", name: "Custom", desc: "Describe your own style", fullDesc: "", category: null },
   { id: "original", name: "Original", desc: "1:1 Copy • Exact Match", fullDesc: "Recreates the exact design from the video with pixel-perfect accuracy.", category: null },
+  { id: "style-reference", name: "Style Reference", desc: "Upload image • Copy its style", fullDesc: "Apply the visual style from the reference image: use its color palette, typography, spacing, border-radius, and overall aesthetic.", category: null },
   
   // === CREATIVE & EXPERIMENTAL ===
   { id: "particle-brain", name: "Particle Brain", desc: "AI Cloud • 50k Points • WebGL", fullDesc: "3D point cloud aesthetic. Objects made of thousands of particles. Particles scatter on hover, morph on scroll.", category: "creative" },
@@ -473,15 +479,22 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
   const handleSelectPreset = (preset: typeof STYLE_PRESETS[0]) => {
     if (preset.id === "custom") {
       onChange("");
+      // Clear reference image when switching away from style-reference
+      onReferenceImageChange?.(null);
+    } else if (preset.id === "style-reference") {
+      // Set the style reference mode - fullDesc will be sent with the image
+      onChange(preset.fullDesc ? `${preset.name}. ${preset.fullDesc}` : preset.name);
     } else {
       // Set name + fullDesc for the backend
       onChange(preset.fullDesc ? `${preset.name}. ${preset.fullDesc}` : preset.name);
+      // Clear reference image when switching to other presets
+      onReferenceImageChange?.(null);
     }
     setIsOpen(false);
     setSearchQuery("");
   };
 
-  // Handle reference image upload
+  // Handle reference image upload - only for Style Reference mode
   const handleImageUpload = (file: File) => {
     if (!file.type.startsWith('image/')) return;
     
@@ -489,8 +502,7 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
     reader.onload = (e) => {
       const url = e.target?.result as string;
       onReferenceImageChange?.({ url, name: file.name });
-      // Auto-set to Custom style when image is uploaded
-      onChange("Custom. Apply the visual style from the reference image: use its color palette, typography, spacing, border-radius, and overall aesthetic.");
+      // Keep the Style Reference prompt - the image will be sent alongside
     };
     reader.readAsDataURL(file);
   };
@@ -622,8 +634,8 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
         )}
       </AnimatePresence>
 
-      {/* Reference Image Dropzone */}
-      {onReferenceImageChange && (
+      {/* Reference Image Dropzone - ONLY for Style Reference mode */}
+      {onReferenceImageChange && selectedPreset?.id === "style-reference" && (
         <div
           onDrop={handleDrop}
           onDragOver={handleDragOver}
@@ -647,13 +659,12 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
               />
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-white/80 truncate">{referenceImage.name}</p>
-                <p className="text-[10px] text-[#FF6E3C]">Style reference active</p>
+                <p className="text-[10px] text-[#FF6E3C]">AI will use colors, fonts & spacing from this image</p>
               </div>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onReferenceImageChange(null);
-                  onChange("");
                 }}
                 className="w-6 h-6 rounded-full bg-white/5 hover:bg-red-500/20 flex items-center justify-center transition-colors"
               >
@@ -662,12 +673,12 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
             </div>
           ) : (
             <div className="p-4 text-center">
-              <ImagePlus className="w-5 h-5 text-white/30 mx-auto mb-2" />
-              <p className="text-[10px] text-white/40">
-                Drop reference image here
+              <ImagePlus className="w-5 h-5 text-[#FF6E3C]/50 mx-auto mb-2" />
+              <p className="text-[10px] text-white/50">
+                Drop or click to add style reference
               </p>
-              <p className="text-[9px] text-white/25 mt-1">
-                "Make it look like this screenshot"
+              <p className="text-[9px] text-white/30 mt-1">
+                AI will extract colors, fonts, spacing & aesthetic
               </p>
             </div>
           )}
@@ -684,30 +695,32 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
         </div>
       )}
 
-      {/* Custom Instructions */}
-      <div className="relative">
-        <textarea
-          ref={textareaRef}
-          value={selectedPreset ? customInstructions : value}
-          onChange={(e) => {
-            if (selectedPreset && selectedPreset.id !== "custom") {
-              const newValue = `${selectedPreset.name}. ${selectedPreset.fullDesc}${e.target.value ? `. ${e.target.value}` : ''}`;
-              onChange(newValue);
-            } else {
-              onChange(e.target.value);
-            }
-          }}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          placeholder={isFocused ? "Add custom instructions..." : animatedPlaceholder}
-          disabled={disabled}
-          rows={2}
-          className={cn(
-            "w-full px-3 py-2.5 text-xs text-white/80 placeholder:text-white/20 placeholder:text-[11px] bg-white/[0.03] border border-white/[0.06] rounded-lg resize-none focus:outline-none focus:border-white/[0.12] transition-colors min-h-[52px]",
-            disabled && "opacity-50 cursor-not-allowed"
-          )}
-        />
-      </div>
+      {/* Custom Instructions - Hidden for Style Reference mode */}
+      {selectedPreset?.id !== "style-reference" && (
+        <div className="relative">
+          <textarea
+            ref={textareaRef}
+            value={selectedPreset ? customInstructions : value}
+            onChange={(e) => {
+              if (selectedPreset && selectedPreset.id !== "custom") {
+                const newValue = `${selectedPreset.name}. ${selectedPreset.fullDesc}${e.target.value ? `. ${e.target.value}` : ''}`;
+                onChange(newValue);
+              } else {
+                onChange(e.target.value);
+              }
+            }}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            placeholder={isFocused ? "Add custom instructions..." : animatedPlaceholder}
+            disabled={disabled}
+            rows={2}
+            className={cn(
+              "w-full px-3 py-2.5 text-xs text-white/80 placeholder:text-white/20 placeholder:text-[11px] bg-white/[0.03] border border-white/[0.06] rounded-lg resize-none focus:outline-none focus:border-white/[0.12] transition-colors min-h-[52px]",
+              disabled && "opacity-50 cursor-not-allowed"
+            )}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -3737,6 +3737,7 @@ export const shadows = {
         videoUrl,
         styleDirective: fullStyleDirective,
         databaseContext: databaseContextStr || undefined,
+        styleReferenceImage: styleReferenceImage || undefined,
       });
       
       console.log("Generation result:", result);
