@@ -1703,19 +1703,26 @@ export default function ReplayTool() {
     }
     
     // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 2: Detect navigation items from sidebar/header/nav (POSSIBLE paths)
+    // STEP 2: Detect navigation items from sidebar/header/nav/tabs (POSSIBLE paths)
     // ═══════════════════════════════════════════════════════════════════════════
     
-    // Get navigation areas - look for nav, header, aside, sidebar sections
+    // Get navigation areas - look for nav, header, aside, sidebar, tabs sections
     const navAreaMatches = [
       ...(code.match(/<aside[^>]*>[\s\S]*?<\/aside>/gi) || []),
       ...(code.match(/<nav[^>]*>[\s\S]*?<\/nav>/gi) || []),
       ...(code.match(/<header[^>]*>[\s\S]*?<\/header>/gi) || []),
       ...(code.match(/<footer[^>]*>[\s\S]*?<\/footer>/gi) || []), // Footer often has nav links
-      ...(code.match(/<div[^>]*class\s*=\s*["'][^"']*(?:sidebar|menu|navigation|nav-|topbar)[^"']*["'][^>]*>[\s\S]*?<\/div>/gi) || []),
-      ...(code.match(/<ul[^>]*class\s*=\s*["'][^"']*(?:nav|menu)[^"']*["'][^>]*>[\s\S]*?<\/ul>/gi) || [])
+      ...(code.match(/<div[^>]*class\s*=\s*["'][^"']*(?:sidebar|menu|navigation|nav-|topbar|tabs?|tab-)[^"']*["'][^>]*>[\s\S]*?<\/div>/gi) || []),
+      ...(code.match(/<ul[^>]*class\s*=\s*["'][^"']*(?:nav|menu|tabs?)[^"']*["'][^>]*>[\s\S]*?<\/ul>/gi) || []),
+      // Also match role="tablist" and similar
+      ...(code.match(/<[^>]*role\s*=\s*["'](?:tablist|navigation|menu)['""][^>]*>[\s\S]*?<\/[^>]+>/gi) || []),
     ];
     const navAreas = navAreaMatches.join(' ');
+    
+    // Also detect tabs/panels that might be page-like
+    const tabPanelRegex = /(?:role\s*=\s*["']tabpanel["']|class\s*=\s*["'][^"']*tab-(?:panel|content|pane)[^"']*["'])[^>]*>/gi;
+    const tabPanels = code.match(tabPanelRegex) || [];
+    console.log('[buildFlowLive] Found tab panels:', tabPanels.length);
     
     // ALSO look in the ENTIRE code for @click navigation buttons
     // This catches Alpine.js navigation buttons anywhere in the page
@@ -1894,36 +1901,48 @@ export default function ReplayTool() {
     }
     
     // Add POSSIBLE pages (navigation items not shown in video)
+    // Use wider spacing to prevent overlap - nodes are ~200px wide
     if (possiblePages.length > 0) {
-      const displayItems = possiblePages.slice(0, 12); // Limit for clarity
-      // Calculate startX but ensure it's never negative (minimum 50px from left edge)
-      const rawStartX = centerX - ((displayItems.length - 1) * (colWidth * 0.85)) / 2;
-      const startX = Math.max(50, rawStartX);
+      const displayItems = possiblePages.slice(0, 8); // Limit for clarity
+      const nodeSpacing = 220; // Width of node + gap (prevents overlap)
       
-      for (let i = 0; i < displayItems.length; i++) {
-        const page = displayItems[i];
-        const x = startX + i * (colWidth * 0.85);
+      // Calculate how many can fit per row (max 4 per row for readability)
+      const nodesPerRow = Math.min(4, displayItems.length);
+      const totalRows = Math.ceil(displayItems.length / nodesPerRow);
+      
+      for (let row = 0; row < totalRows; row++) {
+        const rowItems = displayItems.slice(row * nodesPerRow, (row + 1) * nodesPerRow);
+        const rowStartX = centerX - ((rowItems.length - 1) * nodeSpacing) / 2;
         
-        await addNode({
-          id: page.id,
-          name: page.name,
-          type: "view",
-          description: "Present in navigation, but not shown in video",
-          x: x,
-          y: currentY,
-          components: [],
-          status: "detected",
-          confidence: "medium"
-        });
-        
-        await addEdge({
-          id: `${entryPage.id}-${page.id}`,
-          from: entryPage.id,
-          to: page.id,
-          label: "Possible",
-          type: "possible"
-        });
+        for (let i = 0; i < rowItems.length; i++) {
+          const page = rowItems[i];
+          const x = rowStartX + i * nodeSpacing;
+          const y = currentY + row * (rowHeight * 0.8);
+          
+          await addNode({
+            id: page.id,
+            name: page.name,
+            type: "view",
+            description: "Present in navigation, but not shown in video",
+            x: x,
+            y: y,
+            components: [],
+            status: "detected",
+            confidence: "medium"
+          });
+          
+          await addEdge({
+            id: `${entryPage.id}-${page.id}`,
+            from: entryPage.id,
+            to: page.id,
+            label: "Possible",
+            type: "possible"
+          });
+        }
       }
+      
+      // Update currentY for any future nodes
+      currentY += totalRows * (rowHeight * 0.8);
     }
     
     setFlowBuilding(false);
