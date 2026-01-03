@@ -1971,17 +1971,21 @@ Copy CONTENT from the video but apply PHANTOM BORDER UI aesthetics:
 5. Physics: Duration MUST be 0 (instant response) - lag destroys illusion
 6. All content cards/sections MUST have invisible borders that glow on proximity
 
-**ANIMATION LOGIC:**
-- Track mouse X/Y on parent container
-- Apply: background: radial-gradient(600px circle at var(--mouse-x) var(--mouse-y), rgba(255,255,255,0.15), transparent 40%)
-- Grid cells have subtle border that glows only near cursor
-
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
 <div class="min-h-screen bg-[#0a0a0a] relative" x-data="{ mouseX: '50%', mouseY: '50%' }" @mousemove="mouseX = $event.clientX + 'px'; mouseY = $event.clientY + 'px'">
+  <!-- Radial gradient glow following mouse -->
   <div class="absolute inset-0 pointer-events-none" :style="'background: radial-gradient(600px circle at ' + mouseX + ' ' + mouseY + ', rgba(255,255,255,0.06), transparent 40%)'"></div>
+  <!-- Grid with invisible borders that glow on proximity -->
   <div class="grid grid-cols-4 gap-px p-8">
-    <div class="bg-white/[0.02] p-8 border border-white/[0.03] hover:border-white/10 transition-colors">Content</div>
+    <div class="bg-white/[0.02] p-8 border border-white/[0.03] hover:border-white/10 transition-colors duration-0">
+      <h2 class="text-white text-xl">Section 1</h2>
+      <p class="text-white/50">Content from video</p>
+    </div>
+    <div class="bg-white/[0.02] p-8 border border-white/[0.03] hover:border-white/10 transition-colors duration-0">
+      <h2 class="text-white text-xl">Section 2</h2>
+      <p class="text-white/50">Content from video</p>
+    </div>
   </div>
 </div>
 \`\`\`
@@ -2019,19 +2023,24 @@ Copy CONTENT from the video but apply OPPOSING SCROLL STREAMS aesthetics:
 - 4x text duplication for infinite loop
 - Hover on row: Pause (velocity 0), fill text white
 
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
-<div class="overflow-hidden py-20 bg-black">
-  <div class="animate-marquee whitespace-nowrap text-8xl font-bold text-white/10">
+<div class="min-h-screen overflow-hidden py-20 bg-black">
+  <div class="animate-marquee whitespace-nowrap text-8xl font-bold text-white/10 hover:text-white transition-colors">
     <span class="mx-4">REPLAY</span><span class="mx-4">•</span><span class="mx-4">BUILD</span><span class="mx-4">•</span>
     <span class="mx-4">REPLAY</span><span class="mx-4">•</span><span class="mx-4">BUILD</span><span class="mx-4">•</span>
   </div>
-  <div class="animate-marquee-reverse whitespace-nowrap text-8xl font-bold text-white/10 mt-4">
+  <div class="animate-marquee-reverse whitespace-nowrap text-8xl font-bold text-white/10 hover:text-white transition-colors mt-4">
     <span class="mx-4">CREATE</span><span class="mx-4">•</span><span class="mx-4">DESIGN</span><span class="mx-4">•</span>
     <span class="mx-4">CREATE</span><span class="mx-4">•</span><span class="mx-4">DESIGN</span><span class="mx-4">•</span>
   </div>
 </div>
-<!-- Keyframes: marquee 0% translateX(0) 100% translateX(-50%), marquee-reverse 0% translateX(-50%) 100% translateX(0) -->
+<style>
+@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+@keyframes marquee-reverse { 0% { transform: translateX(-50%); } 100% { transform: translateX(0); } }
+.animate-marquee { animation: marquee 20s linear infinite; }
+.animate-marquee-reverse { animation: marquee-reverse 20s linear infinite; }
+</style>
 \`\`\`
 
 ${request.styleDirective}`;
@@ -2117,7 +2126,7 @@ Copy CONTENT from the video but apply LIVE DASHBOARD aesthetics:
 - Indicators: Blinking status dots (w-2 h-2 rounded-full bg-green-500 animate-pulse)
 - Font: font-variant-numeric: tabular-nums (prevents layout shift)
 
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
 <div class="min-h-screen bg-neutral-900 p-4 font-mono">
   <div class="grid grid-cols-4 gap-px bg-neutral-800 rounded-lg overflow-hidden">
@@ -2160,7 +2169,7 @@ Copy CONTENT from the video but apply SILK SMOKE aesthetics:
 - Animation: Very slow (20s duration) animating seed/baseFrequency
 - Layer: Fixed inset-0 -z-10 container
 
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
 <div class="min-h-screen relative overflow-hidden">
   <!-- Smoke background -->
@@ -2214,7 +2223,7 @@ Copy CONTENT from the video but apply SLICED SHUTTER aesthetics. All images/sect
 - Orchestration: delay = index * 0.1s
 - Easing: cubic-bezier(0.76, 0, 0.24, 1) - fluid waterfall
 
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
 <div class="relative w-full h-[500px] overflow-hidden">
   <div class="absolute inset-y-0 left-[0%] w-[20%] bg-cover animate-slide-up" style="background-image: url(img.jpg); background-position: 0% center; animation-delay: 0s;"></div>
@@ -2251,7 +2260,7 @@ When card goes UP:
 
 **SPRING:** type: spring, stiffness: 400, damping: 25 (Heavy, magnetic feel)
 
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
 <div class="relative group cursor-pointer" x-data="{ hovered: false }" @mouseenter="hovered = true" @mouseleave="hovered = false">
   <!-- Shadow element -->
@@ -2286,7 +2295,7 @@ Copy CONTENT from the video but apply STACKED CARD DECK aesthetics. Cards MUST s
 - Inactive cards: scale 1 - index*0.05, translateY -index*20px, brightness 1 - index*0.2
 - Scroll maps to active card index
 
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
 <div class="h-[400vh]">
   <div class="sticky top-0 h-screen flex items-center justify-center overflow-hidden">
@@ -2322,7 +2331,7 @@ Copy CONTENT from the video but apply STICKY SECTION HEADERS aesthetics. Section
 - Header: sticky top-0 z-10 mix-blend-difference
 - Content: relative z-0 with parallax
 
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
 <section class="relative min-h-screen">
   <h2 class="sticky top-0 z-10 text-8xl font-black text-white mix-blend-difference px-8 py-4">
@@ -2365,7 +2374,7 @@ Copy CONTENT from the video but apply MORPHING NAV aesthetics. Navigation elemen
 
 **PHYSICS:** Spring stiffness 500, damping 30 (Apple-like snappy)
 
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
 <div class="fixed top-4 left-1/2 -translate-x-1/2 z-50" x-data="{ state: 'idle' }">
   <div class="bg-black rounded-full transition-all duration-300 ease-out overflow-hidden flex items-center justify-center"
@@ -2409,7 +2418,7 @@ Copy CONTENT from the video but apply INVERTED LENS aesthetics. Cursor MUST act 
 - div.hidden-layer: White text on black (exact same position)
 - div.cursor-mask: Circle mask following cursor
 
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
 <div class="relative min-h-screen overflow-hidden" x-data="{ x: 0, y: 0 }" @mousemove="x = $event.clientX; y = $event.clientY">
   <!-- Main layer -->
@@ -2435,18 +2444,18 @@ ${request.styleDirective}`;
 **STYLE: CRT SIGNAL NOISE (Retro Monitor)**
 
 ⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
-Copy CONTENT from the video but apply CRT SIGNAL NOISE aesthetics. Screen MUST have scanlines, RGB text-shadow shift, vignette corners, and rapid opacity flicker.
+Copy CONTENT from the video but apply CRT SIGNAL NOISE aesthetics:
 
-**CORE MECHANIC:** Old monitor signal simulation.
+**REQUIRED VISUAL CHANGES (Non-Negotiable):**
+1. Background: MUST be pure black #0a0a0a
+2. Scanlines: MUST have repeating-linear-gradient overlay on ENTIRE screen
+3. RGB Shift: ALL text MUST have text-shadow: 2px 0 red, -2px 0 cyan
+4. Vignette: MUST have box-shadow inset for curved CRT effect
+5. Colors: MUST use green/amber terminal colors
+6. Font: MUST be monospace font-family
+7. Flicker: MUST have subtle opacity animation
 
-**VISUAL EFFECTS:**
-- Scanlines: repeating-linear-gradient background-size: 100% 4px
-- RGB Shift: text-shadow: 2px 0 red, -2px 0 blue
-- Curvature: Vignette box-shadow inset
-- Flicker: Keyframe opacity 0.9 to 1.0 rapidly
-- Chroma: mix-blend-mode: color-dodge on scanlines
-
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
 <div class="min-h-screen bg-[#0a0a0a] relative overflow-hidden font-mono">
   <!-- Scanlines overlay -->
@@ -2487,7 +2496,7 @@ Copy CONTENT from the video but apply PARALLAX CURTAIN FOOTER aesthetics. Footer
 - Heavy box-shadow on main bottom edge
 - Footer scales 0.9 → 1.0 as revealed
 
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
 <main class="relative z-10 bg-white" style="margin-bottom: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
   <!-- All page content here -->
@@ -2524,7 +2533,7 @@ Copy CONTENT from the video but apply MAGNETIC ATTRACTION aesthetics. All intera
 - Inner text moves more (0.5 strength) for parallax
 - On mouse leave: Spring back (stiffness 150, damping 15)
 
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
 <button class="relative px-8 py-4 bg-white rounded-full text-black font-bold group transition-transform duration-200"
         x-data="{ x: 0, y: 0 }"
@@ -2558,7 +2567,7 @@ Copy CONTENT from the video but apply FLASHLIGHT MASK aesthetics. Screen MUST be
 - div.content: Full color UI (hidden)
 - div.overlay: Full black z-50 with mask
 
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
 <div class="relative min-h-screen overflow-hidden" x-data="{ x: '50%', y: '50%', size: 150 }" 
      @mousemove="x = $event.clientX + 'px'; y = $event.clientY + 'px'"
@@ -2594,7 +2603,7 @@ Copy CONTENT from the video but apply ELASTIC SIDEBAR aesthetics. Sidebar MUST s
 - Drag updates: d="M0,0 Q{dragX},{mouseY} 0,100"
 - On release: Elastic spring back (damping 15, stiffness 400) with wobble
 
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
 <nav class="fixed left-0 top-0 h-screen w-64 bg-black z-50" x-data="{ drag: 0, open: false }">
   <svg class="absolute right-0 top-0 h-full w-8 translate-x-full" viewBox="0 0 40 100" preserveAspectRatio="none">
@@ -2667,7 +2676,7 @@ Copy CONTENT from the video but apply PIXELATED DISSOLVE aesthetics. Images MUST
 - image-rendering: pixelated during transition
 - Wave pattern for dissolve order
 
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
 <div class="relative w-64 h-64 overflow-hidden" style="image-rendering: pixelated;">
   <img src="image.jpg" class="w-full h-full object-cover" />
@@ -2703,7 +2712,7 @@ Copy CONTENT from the video but apply CYCLIC ROTATION GALLERY aesthetics. Items 
 - Scroll maps to rotation offset
 - Items counter-rotate to stay upright
 
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
 <div class="h-[300vh]">
   <div class="sticky top-0 h-screen flex items-center justify-center overflow-hidden">
@@ -2741,7 +2750,7 @@ Copy CONTENT from the video but apply 3D ACCORDION FOLD aesthetics. Sections MUS
 - Odd slices: transform-origin: bottom
 - Animation: rotateX(-90deg) → rotateX(0deg)
 
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
 <div class="max-w-2xl mx-auto py-20" style="perspective: 1200px;">
   <div style="transform-style: preserve-3d;">
@@ -2780,7 +2789,7 @@ Copy CONTENT from the video but apply SKEUOMORPHIC SWITCH aesthetics. Toggles MU
 - Shadow: Changes size based on state (distance from plate)
 - Texture: Subtle noise texture on plastic surface
 
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
 <div class="min-h-screen bg-[#2a2a2a] p-20" style="background-image: url('data:image/svg+xml,...noise...');">
   <div class="inline-block p-1 bg-gradient-to-b from-gray-700 to-gray-800 rounded-lg" style="box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">
@@ -2818,7 +2827,7 @@ Copy CONTENT from the video but apply SPLIT CURTAIN REVEAL aesthetics. Screen MU
 - Right: translateX(100%)
 - Easing: [0.8, 0, 0.1, 1] (slow start, instant finish)
 
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
 <div class="relative min-h-screen overflow-hidden" x-data="{ open: false }" x-init="setTimeout(() => open = true, 500)">
   <!-- Content behind -->
@@ -2860,7 +2869,7 @@ Copy CONTENT from the video but apply DRAGGABLE MASONRY aesthetics. Grid items M
 - Cards are draggable
 - On release: Snap to nearest grid slot with spring
 
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
 <div class="min-h-screen bg-gray-100 p-8">
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-[200px]">
@@ -2900,7 +2909,7 @@ Copy CONTENT from the video but apply HORIZONTAL INERTIA GALLERY aesthetics. Ver
 - Calculate velocity from scroll speed
 - Apply skewX based on velocity: fast scroll = tilted images
 
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
 <div class="h-[300vh]">
   <div class="sticky top-0 h-screen overflow-hidden">
@@ -2940,7 +2949,7 @@ Copy CONTENT from the video but apply LIQUID TEXT MASK aesthetics. Text MUST act
 - Video as background
 - Optional SVG goo filter for liquid edges
 
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
 <div class="min-h-screen bg-black flex items-center justify-center overflow-hidden">
   <div class="relative">
@@ -2976,7 +2985,7 @@ Copy CONTENT from the video but apply DYNAMIC NOISE GRADIENT aesthetics. Backgro
 - Dithering for smooth transitions
 - Aurora/TV static feel
 
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
 <div class="min-h-screen relative overflow-hidden">
   <!-- Animated gradient base -->
@@ -3115,7 +3124,7 @@ Copy CONTENT from the video but apply HELIX TYPOGRAPHY aesthetics. Text MUST wra
 - translateZ for radius
 - Back-facing letters dimmer via cos(angle) opacity
 
-**EXAMPLE:**
+**EXAMPLE OUTPUT:**
 \`\`\`html
 <div class="h-[200vh]">
   <div class="sticky top-0 h-screen flex items-center justify-center" style="perspective: 1000px;">
