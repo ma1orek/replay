@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { ChevronDown, Search, Info, X } from "lucide-react";
+import { ChevronDown, Search, Info, X, ImagePlus, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -9,6 +9,8 @@ interface StyleInjectorProps {
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
+  referenceImage?: { url: string; name: string } | null;
+  onReferenceImageChange?: (image: { url: string; name: string } | null) => void;
 }
 
 const PLACEHOLDER_EXAMPLES = [
@@ -366,7 +368,7 @@ const STYLE_PRESETS = [
   { id: "spotify", name: "Spotify Dark", desc: "#121212 • Green Accent • Cards", fullDesc: "Deep black with vibrant green. Horizontal card carousels.", category: "brand" },
 ];
 
-export default function StyleInjector({ value, onChange, disabled }: StyleInjectorProps) {
+export default function StyleInjector({ value, onChange, disabled, referenceImage, onReferenceImageChange }: StyleInjectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showInfo, setShowInfo] = useState<string | null>(null);
@@ -374,12 +376,14 @@ export default function StyleInjector({ value, onChange, disabled }: StyleInject
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [isTyping, setIsTyping] = useState(true);
   const [isFocused, setIsFocused] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Find preset - default to "original" when no style selected
+  // Find preset - default to "custom" when no style selected
   const selectedPreset = STYLE_PRESETS.find(p => value === p.name || value.startsWith(p.name + ".")) 
-    || (!value ? STYLE_PRESETS.find(p => p.id === "original") : undefined);
+    || (!value ? STYLE_PRESETS.find(p => p.id === "custom") : undefined);
   
   // Extract custom instructions
   const customInstructions = (() => {
@@ -475,6 +479,36 @@ export default function StyleInjector({ value, onChange, disabled }: StyleInject
     }
     setIsOpen(false);
     setSearchQuery("");
+  };
+
+  // Handle reference image upload
+  const handleImageUpload = (file: File) => {
+    if (!file.type.startsWith('image/')) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const url = e.target?.result as string;
+      onReferenceImageChange?.({ url, name: file.name });
+      // Auto-set to Custom style when image is uploaded
+      onChange("Custom. Apply the visual style from the reference image: use its color palette, typography, spacing, border-radius, and overall aesthetic.");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleImageUpload(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
   };
 
   return (
@@ -587,6 +621,68 @@ export default function StyleInjector({ value, onChange, disabled }: StyleInject
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Reference Image Dropzone */}
+      {onReferenceImageChange && (
+        <div
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onClick={() => fileInputRef.current?.click()}
+          className={cn(
+            "relative rounded-xl border-2 border-dashed transition-all cursor-pointer",
+            isDragging 
+              ? "border-[#FF6E3C] bg-[#FF6E3C]/10" 
+              : referenceImage 
+                ? "border-[#FF6E3C]/30 bg-white/[0.02]" 
+                : "border-white/[0.08] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.03]"
+          )}
+        >
+          {referenceImage ? (
+            <div className="p-3 flex items-center gap-3">
+              <img 
+                src={referenceImage.url} 
+                alt={referenceImage.name}
+                className="w-12 h-12 object-cover rounded-lg border border-white/10"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-white/80 truncate">{referenceImage.name}</p>
+                <p className="text-[10px] text-[#FF6E3C]">Style reference active</p>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onReferenceImageChange(null);
+                  onChange("");
+                }}
+                className="w-6 h-6 rounded-full bg-white/5 hover:bg-red-500/20 flex items-center justify-center transition-colors"
+              >
+                <X className="w-3 h-3 text-white/40 hover:text-red-400" />
+              </button>
+            </div>
+          ) : (
+            <div className="p-4 text-center">
+              <ImagePlus className="w-5 h-5 text-white/30 mx-auto mb-2" />
+              <p className="text-[10px] text-white/40">
+                Drop reference image here
+              </p>
+              <p className="text-[9px] text-white/25 mt-1">
+                "Make it look like this screenshot"
+              </p>
+            </div>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleImageUpload(file);
+            }}
+            className="hidden"
+          />
+        </div>
+      )}
 
       {/* Custom Instructions */}
       <div className="relative">

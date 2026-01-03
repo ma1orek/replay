@@ -50,6 +50,7 @@ const NAV_ITEMS = [
   { label: "Use Cases", href: "#use-cases" },
   { label: "Pricing", href: "#pricing" },
   { label: "FAQ", href: "#faq" },
+  { label: "Docs", href: "/docs" },
 ];
 
 function Navigation() {
@@ -83,13 +84,23 @@ function Navigation() {
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8">
             {NAV_ITEMS.map((item) => (
-              <button
-                key={item.href}
-                onClick={() => scrollToSection(item.href)}
-                className="text-sm text-white/50 hover:text-white transition-colors"
-              >
-                {item.label}
-              </button>
+              item.href.startsWith('/') ? (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="text-sm text-white/50 hover:text-white transition-colors"
+                >
+                  {item.label}
+                </Link>
+              ) : (
+                <button
+                  key={item.href}
+                  onClick={() => scrollToSection(item.href)}
+                  className="text-sm text-white/50 hover:text-white transition-colors"
+                >
+                  {item.label}
+                </button>
+              )
             ))}
           </nav>
 
@@ -142,13 +153,23 @@ function Navigation() {
             >
               <div className="px-6 py-4 space-y-2">
                 {NAV_ITEMS.map((item) => (
-                  <button
-                    key={item.href}
-                    onClick={() => scrollToSection(item.href)}
-                    className="block w-full text-left py-3 text-sm text-white/60 hover:text-white transition-colors"
-                  >
-                    {item.label}
-                  </button>
+                  item.href.startsWith('/') ? (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="block w-full text-left py-3 text-sm text-white/60 hover:text-white transition-colors"
+                    >
+                      {item.label}
+                    </Link>
+                  ) : (
+                    <button
+                      key={item.href}
+                      onClick={() => scrollToSection(item.href)}
+                      className="block w-full text-left py-3 text-sm text-white/60 hover:text-white transition-colors"
+                    >
+                      {item.label}
+                    </button>
+                  )
                 ))}
                 
                 {/* Mobile Auth */}
@@ -302,9 +323,8 @@ function HeroInput({
   fileInputRef,
   onBrowse,
   onFile,
-  contextImages,
-  onAddContextImage,
-  onRemoveContextImage,
+  styleReferenceImage,
+  onStyleReferenceImageChange,
 }: {
   onSend: () => void;
   canSend: boolean;
@@ -319,12 +339,10 @@ function HeroInput({
   fileInputRef: React.RefObject<HTMLInputElement>;
   onBrowse: () => void;
   onFile: (f: File) => void;
-  contextImages: { id: string; url: string; name: string }[];
-  onAddContextImage: (files: FileList | null) => void;
-  onRemoveContextImage: (id: string) => void;
+  styleReferenceImage: { url: string; name: string } | null;
+  onStyleReferenceImageChange: (image: { url: string; name: string } | null) => void;
 }) {
   const [isDragging, setIsDragging] = useState(false);
-  const contextImageInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <motion.div
@@ -441,52 +459,14 @@ function HeroInput({
               Context <span className="text-white/30">(optional)</span>
             </label>
             
-            {/* Context Images */}
-            {contextImages.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-3">
-                {contextImages.map(img => (
-                  <div key={img.id} className="relative group">
-                    <img 
-                      src={img.url} 
-                      alt={img.name}
-                      className="w-14 h-14 object-cover rounded-lg border border-white/10"
-                    />
-                    <button
-                      onClick={() => onRemoveContextImage(img.id)}
-                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            {/* Textarea with attach button */}
-            <div className="relative">
-              <textarea
-                value={context}
-                onChange={(e) => setContext(e.target.value)}
-                rows={3}
-                placeholder="Add data logic, constraints or details. Replay works without it — context just sharpens the result."
-                className="w-full pl-4 pr-12 py-3 rounded-xl text-xs text-white/80 placeholder:text-white/25 placeholder:text-xs bg-white/[0.03] border border-white/[0.06] focus:outline-none focus:border-[#FF6E3C]/20 focus:bg-white/[0.035] transition-colors duration-300 ease-out resize-none min-h-[72px]"
-              />
-              <button
-                onClick={() => contextImageInputRef.current?.click()}
-                className="absolute right-3 top-3 w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-colors group"
-                title="Attach file"
-              >
-                <Upload className="w-3.5 h-3.5 text-white/40 group-hover:text-white/60" />
-              </button>
-              <input
-                ref={contextImageInputRef}
-                type="file"
-                accept="image/*,.pdf,.doc,.docx,.txt,.json,.csv"
-                multiple
-                onChange={(e) => onAddContextImage(e.target.files)}
-                className="hidden"
-              />
-            </div>
+            {/* Textarea only - no attach button */}
+            <textarea
+              value={context}
+              onChange={(e) => setContext(e.target.value)}
+              rows={3}
+              placeholder="Add data logic, constraints or details. Replay works without it — context just sharpens the result."
+              className="w-full px-4 py-3 rounded-xl text-xs text-white/80 placeholder:text-white/25 placeholder:text-xs bg-white/[0.03] border border-white/[0.06] focus:outline-none focus:border-[#FF6E3C]/20 focus:bg-white/[0.035] transition-colors duration-300 ease-out resize-none min-h-[72px]"
+            />
           </div>
 
           <div>
@@ -494,8 +474,14 @@ function HeroInput({
               <Palette className="w-3.5 h-3.5 text-[#FF6E3C]" />
               Style
             </label>
-            <p className="text-[10px] text-white/30 mb-2">Choose a visual system or override the original look.</p>
-            <StyleInjector value={styleDirective} onChange={setStyleDirective} disabled={false} />
+            <p className="text-[10px] text-white/30 mb-2">Choose a visual system or drop a reference image.</p>
+            <StyleInjector 
+              value={styleDirective} 
+              onChange={setStyleDirective} 
+              disabled={false}
+              referenceImage={styleReferenceImage}
+              onReferenceImageChange={onStyleReferenceImageChange}
+            />
           </div>
 
           <motion.button
@@ -568,27 +554,7 @@ export default function LandingPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pendingRedirect, setPendingRedirect] = useState(false);
-  const [contextImages, setContextImages] = useState<{ id: string; url: string; name: string }[]>([]);
-
-  const handleAddContextImage = useCallback((files: FileList | null) => {
-    if (files) {
-      for (const file of Array.from(files)) {
-        if (file.type.startsWith("image/")) {
-          const url = URL.createObjectURL(file);
-          const id = `ctx-img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-          setContextImages(prev => [...prev, { id, url, name: file.name }]);
-        }
-      }
-    }
-  }, []);
-
-  const handleRemoveContextImage = useCallback((id: string) => {
-    setContextImages(prev => {
-      const img = prev.find(i => i.id === id);
-      if (img) URL.revokeObjectURL(img.url);
-      return prev.filter(i => i.id !== id);
-    });
-  }, []);
+  const [styleReferenceImage, setStyleReferenceImage] = useState<{ url: string; name: string } | null>(null);
 
   const setFlowBlob = useCallback((blob: Blob, name: string) => {
     const url = URL.createObjectURL(blob);
@@ -727,9 +693,8 @@ export default function LandingPage() {
             fileInputRef={fileInputRef as any}
             onBrowse={onBrowse}
             onFile={onFile}
-            contextImages={contextImages}
-            onAddContextImage={handleAddContextImage}
-            onRemoveContextImage={handleRemoveContextImage}
+            styleReferenceImage={styleReferenceImage}
+            onStyleReferenceImageChange={setStyleReferenceImage}
           />
 
         </div>
@@ -903,6 +868,9 @@ function HowItWorks() {
       if (isPlaying) {
         videoRef.current.pause();
       } else {
+        // Unmute and play
+        videoRef.current.muted = false;
+        setIsMuted(false);
         videoRef.current.play();
       }
       setIsPlaying(!isPlaying);
@@ -919,8 +887,8 @@ function HowItWorks() {
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
       setDuration(videoRef.current.duration);
-      // Start from 1 second to show logo instead of black frame
-      videoRef.current.currentTime = 1;
+      // Set thumbnail to 2 seconds (shows logo instead of black)
+      videoRef.current.currentTime = 2;
     }
   };
 
@@ -1040,12 +1008,18 @@ function HowItWorks() {
             style={{ aspectRatio: "16/9" }}
             loop 
             playsInline
-            preload="metadata"
-            poster="/demo-poster.jpg"
+            muted
+            preload="auto"
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
+            onCanPlay={() => {
+              // Ensure we're at 2 seconds for thumbnail
+              if (videoRef.current && videoRef.current.currentTime < 1) {
+                videoRef.current.currentTime = 2;
+              }
+            }}
             onClick={togglePlay}
-            src="/ShowcaseReplay.mp4#t=1"
+            src="/ShowcaseReplay.mp4"
           />
           <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[#030303]/70 via-transparent to-[#030303]/30" />
           

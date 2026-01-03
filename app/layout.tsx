@@ -16,11 +16,20 @@ export const metadata: Metadata = {
     description: "Turn any video into a clean, production-ready UI. Code, structure, interactions and style — rebuilt directly from what's on screen.",
     type: "website",
     siteName: "Replay",
+    images: [
+      {
+        url: "https://www.replay.build/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Replay - Rebuild UI from Video",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Replay: Rebuild UI from Video. Instantly.",
     description: "Turn any video into a clean, production-ready UI. Code, structure, interactions and style.",
+    images: ["https://www.replay.build/og-image.png"],
   },
 };
 

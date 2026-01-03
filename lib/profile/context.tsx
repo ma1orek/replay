@@ -102,25 +102,33 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     if (!user) return { success: false, error: "Not authenticated" };
 
     try {
-      // Use Cloudinary via our API
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const response = await fetch("/api/upload-avatar", {
-        method: "POST",
-        body: formData,
+      // Convert file to base64 data URL (simpler than Storage)
+      const reader = new FileReader();
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
       });
 
-      const data = await response.json();
+      // Update profile with data URL
+      const supabase = createClient();
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ 
+          avatar_url: dataUrl,
+          updated_at: new Date().toISOString() 
+        })
+        .eq("id", user.id);
 
-      if (!response.ok) {
-        return { success: false, error: data.error || "Upload failed" };
+      if (updateError) {
+        console.error("Profile update error:", updateError);
+        return { success: false, error: updateError.message };
       }
 
-      // Refresh profile to get new avatar URL
+      // Refresh profile
       await refreshProfile();
       
-      return { success: true, url: data.url };
+      return { success: true, url: dataUrl };
     } catch (err: any) {
       console.error("Avatar upload error:", err);
       return { success: false, error: err.message };

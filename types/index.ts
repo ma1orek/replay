@@ -114,6 +114,7 @@ export interface TransmuteRequest {
   videoUrl: string; // Always use URL (uploaded to Supabase Storage)
   styleDirective: string;
   additionalContext?: string;
+  databaseContext?: string; // Schema from user's connected Supabase
 }
 
 export interface TransmuteResponse {

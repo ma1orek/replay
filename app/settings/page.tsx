@@ -122,6 +122,12 @@ function SettingsContent() {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isSavingName, setIsSavingName] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  
+  // Avatar crop modal
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [originalFile, setOriginalFile] = useState<File | null>(null);
+  const cropCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const { user, signOut } = useAuth();
   const { wallet, membership, totalCredits, isLoading, refreshCredits } = useCredits();
@@ -353,21 +359,20 @@ function SettingsContent() {
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={async (e) => {
+                    onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
                       
-                      setIsUploadingAvatar(true);
-                      const result = await uploadAvatar(file);
-                      setIsUploadingAvatar(false);
+                      // Open crop modal
+                      setOriginalFile(file);
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        setCropImageSrc(reader.result as string);
+                        setShowCropModal(true);
+                      };
+                      reader.readAsDataURL(file);
                       
-                      if (result.success) {
-                        setTestMessage({ type: "success", text: "Avatar updated!" });
-                      } else {
-                        setTestMessage({ type: "error", text: result.error || "Failed to upload avatar" });
-                      }
-                      
-                      // Clear input
+                      // Clear input for next selection
                       e.target.value = "";
                     }}
                   />
@@ -769,6 +774,112 @@ function SettingsContent() {
       {/* Enterprise Contact Modal */}
       {showEnterpriseModal && (
         <EnterpriseModal onClose={() => setShowEnterpriseModal(false)} />
+      )}
+
+      {/* Avatar Crop Modal */}
+      {showCropModal && cropImageSrc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-md bg-[#0a0a0a] rounded-2xl border border-white/10 p-6"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Crop Avatar</h2>
+              <button 
+                onClick={() => {
+                  setShowCropModal(false);
+                  setCropImageSrc(null);
+                  setOriginalFile(null);
+                }}
+                className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                <X className="w-5 h-5 text-white/60" />
+              </button>
+            </div>
+            
+            {/* Image preview - square crop */}
+            <div className="relative w-64 h-64 mx-auto mb-6 rounded-full overflow-hidden border-2 border-white/20">
+              <img 
+                src={cropImageSrc} 
+                alt="Crop preview"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            
+            <p className="text-sm text-white/50 text-center mb-6">
+              Image will be cropped to a circle
+            </p>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowCropModal(false);
+                  setCropImageSrc(null);
+                  setOriginalFile(null);
+                }}
+                className="flex-1 py-3 rounded-xl bg-white/10 text-white font-medium hover:bg-white/20 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!originalFile) return;
+                  
+                  setIsUploadingAvatar(true);
+                  setShowCropModal(false);
+                  
+                  // Create canvas for cropping to square
+                  const img = document.createElement('img');
+                  img.src = cropImageSrc;
+                  
+                  await new Promise(resolve => img.onload = resolve);
+                  
+                  const canvas = document.createElement('canvas');
+                  const size = Math.min(img.width, img.height);
+                  canvas.width = 256;
+                  canvas.height = 256;
+                  
+                  const ctx = canvas.getContext('2d');
+                  if (ctx) {
+                    // Draw centered crop
+                    const sx = (img.width - size) / 2;
+                    const sy = (img.height - size) / 2;
+                    ctx.drawImage(img, sx, sy, size, size, 0, 0, 256, 256);
+                    
+                    // Convert to blob
+                    canvas.toBlob(async (blob) => {
+                      if (blob) {
+                        const croppedFile = new File([blob], originalFile.name, { type: 'image/jpeg' });
+                        const result = await uploadAvatar(croppedFile);
+                        
+                        if (result.success) {
+                          setTestMessage({ type: "success", text: "Avatar updated!" });
+                        } else {
+                          setTestMessage({ type: "error", text: result.error || "Failed to upload avatar" });
+                        }
+                      }
+                      setIsUploadingAvatar(false);
+                      setCropImageSrc(null);
+                      setOriginalFile(null);
+                    }, 'image/jpeg', 0.9);
+                  }
+                }}
+                disabled={isUploadingAvatar}
+                className="flex-1 py-3 rounded-xl bg-[#FF6E3C] text-white font-medium hover:bg-[#FF8F5C] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isUploadingAvatar ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  'Save Avatar'
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
       )}
     </div>
   );

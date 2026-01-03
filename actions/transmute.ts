@@ -5,8 +5,15 @@ import { resolve } from "path";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { TransmuteRequest, TransmuteResponse } from "@/types";
 
-// Load API key from .env or .env.local
+// Load API key from environment
 function getApiKey(): string | null {
+  // First check process.env (works on Vercel)
+  if (process.env.GEMINI_API_KEY) {
+    console.log("Found GEMINI_API_KEY in process.env");
+    return process.env.GEMINI_API_KEY;
+  }
+  
+  // Fallback: check .env files (local dev)
   const envFiles = [".env.local", ".env"];
   
   for (const file of envFiles) {
@@ -1840,10 +1847,20 @@ ${request.styleDirective}
 - Mobile-responsive with touch-friendly targets`;
     }
 
+    // Add database context if user has connected Supabase
+    const databaseSection = request.databaseContext ? `
+
+**DATABASE INTEGRATION (USER HAS CONNECTED SUPABASE):**
+${request.databaseContext}
+
+When generating code, use the exact table and column names from the schema above.
+Generate proper data fetching code that works with the user's real database.
+` : '';
+
     const userPrompt = `${SYSTEM_PROMPT}
 
 **STYLE DIRECTIVE:** "${expandedStyleDirective}"
-
+${databaseSection}
 **CRITICAL VIDEO ANALYSIS INSTRUCTIONS:**
 1. This is a VIDEO recording - watch from start to finish, analyzing EVERY frame
 2. Identify the NAVIGATION STRUCTURE (sidebar, header menu, tabs, etc.)
@@ -1980,7 +1997,8 @@ Generate the complete HTML now, including EVERYTHING from the video.`;
 export async function editCodeWithAI(
   currentCode: string,
   editRequest: string,
-  images?: { base64?: string; url?: string; mimeType: string; name: string }[]
+  images?: { base64?: string; url?: string; mimeType: string; name: string }[],
+  databaseContext?: string
 ): Promise<TransmuteResponse> {
   const apiKey = getApiKey();
   
@@ -2038,10 +2056,10 @@ export async function editCodeWithAI(
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
+      model: "gemini-3-pro-preview", // Same model as video analysis - best quality
       generationConfig: {
-        temperature: 0.7, // Higher temperature for more creative responses
-        maxOutputTokens: 65536, // Allow longer outputs
+        temperature: 0.8,
+        maxOutputTokens: 100000,
       },
     });
 
@@ -2061,184 +2079,147 @@ export async function editCodeWithAI(
     let prompt: string;
     
     if (isNewPageRequest && newPageName) {
-      // SPECIAL HANDLING FOR CREATING NEW PAGES
-      console.log(`[editCodeWithAI] Creating new page: ${newPageName}, content: ${pageContent?.substring(0, 100)}`);
+      // FULL AI APPROACH - AI does everything intelligently
+      console.log(`[editCodeWithAI] Creating new page with AI: ${newPageName}`);
       
       const pageNameLower = newPageName.toLowerCase();
       
-      // Find existing pages
-      const existingPages: string[] = [];
-      const pageMatches = currentCode.matchAll(/x-show\s*=\s*["']currentPage\s*===\s*['"]([^'"]+)['"]/gi);
-      for (const match of pageMatches) {
-        if (!existingPages.includes(match[1])) {
-          existingPages.push(match[1]);
-        }
-      }
-      console.log(`[editCodeWithAI] Existing pages: ${existingPages.join(', ')}`);
+      // Extract key parts for context (not full code - too long)
+      const navMatch = currentCode.match(/<nav[^>]*>[\s\S]*?<\/nav>/i);
+      const headerMatch = currentCode.match(/<header[^>]*>[\s\S]*?<\/header>/i);
+      const mainMatch = currentCode.match(/<main[^>]*x-show[^>]*home[^>]*>[\s\S]*?<\/main>/i);
+      const footerMatch = currentCode.match(/<footer[^>]*>[\s\S]*?<\/footer>/i);
+      const headMatch = currentCode.match(/<head[^>]*>[\s\S]*?<\/head>/i);
       
-      // Check if this page already exists - if so, skip injection
-      if (existingPages.includes(pageNameLower)) {
-        console.log(`[editCodeWithAI] Page '${pageNameLower}' already exists, skipping injection`);
-        return { success: true, code: currentCode, codeLength: currentCode.length };
-      }
+      const navHtml = navMatch?.[0] || headerMatch?.[0] || '';
+      const mainHtml = mainMatch?.[0]?.slice(0, 5000) || '';
+      const footerHtml = footerMatch?.[0]?.slice(0, 1000) || '';
+      const headHtml = headMatch?.[0] || '';
       
-      // Inject new page section BEFORE </body>
-      let modifiedCode = currentCode;
-      const newPageSection = `
-    <!-- ========== ${newPageName.toUpperCase()} PAGE ========== -->
-    <main x-show="currentPage === '${pageNameLower}'" x-cloak class="min-h-screen pt-20 px-6">
-      <div class="max-w-4xl mx-auto py-12">
-        <h1 class="text-4xl font-bold mb-8">${newPageName}</h1>
-        <p class="text-lg opacity-70 mb-8">Welcome to the ${newPageName} page.</p>
-        <div class="space-y-6">
-          <p>This is the ${newPageName} section of the website.</p>
-        </div>
-      </div>
-    </main>
-
-`;
-      
-      const bodyCloseIndex = modifiedCode.lastIndexOf('</body>');
-      console.log(`[editCodeWithAI] </body> index: ${bodyCloseIndex}`);
-      
-      if (bodyCloseIndex !== -1) {
-        modifiedCode = modifiedCode.slice(0, bodyCloseIndex) + newPageSection + modifiedCode.slice(bodyCloseIndex);
-        console.log(`[editCodeWithAI] Injected page section before </body>`);
-      } else {
-        // Fallback: append to end of code
-        console.log(`[editCodeWithAI] No </body> found, appending page section to end`);
-        modifiedCode = modifiedCode + newPageSection;
-      }
-      
-      // Check if nav link/button for this page already exists
-      // Support both Alpine.js @click navigation AND regular <a href=""> links
-      const navButtonExists = new RegExp(`@click\\s*=\\s*["']currentPage\\s*=\\s*['"]${pageNameLower}['"]`, 'i').test(modifiedCode);
-      const navLinkExists = new RegExp(`<a[^>]*href\\s*=\\s*["'][^"']*${pageNameLower}[^"']*["'][^>]*>`, 'i').test(modifiedCode);
-      
-      if (navLinkExists && !navButtonExists) {
-        // Navigation link exists but needs to be converted to Alpine.js @click
-        // Find and update existing nav links like <a href="#about">About</a> or <a href="about.html">
-        console.log(`[editCodeWithAI] Found existing nav link for '${pageNameLower}', converting to @click`);
-        
-        // Pattern to find links to this page in navigation
-        const linkPatterns = [
-          new RegExp(`(<a[^>]*)href\\s*=\\s*["']#${pageNameLower}["']([^>]*>)`, 'gi'),
-          new RegExp(`(<a[^>]*)href\\s*=\\s*["']${pageNameLower}\\.html["']([^>]*>)`, 'gi'),
-          new RegExp(`(<a[^>]*)href\\s*=\\s*["']/${pageNameLower}["']([^>]*>)`, 'gi'),
-        ];
-        
-        for (const pattern of linkPatterns) {
-          modifiedCode = modifiedCode.replace(pattern, `$1href="#" @click.prevent="currentPage = '${pageNameLower}'"$2`);
-        }
-        console.log(`[editCodeWithAI] Converted existing nav links to @click handlers`);
-      } else if (!navButtonExists && !navLinkExists) {
-        // No nav link exists, inject new nav button
-        const navCloseIndex = modifiedCode.lastIndexOf('</nav>');
-        console.log(`[editCodeWithAI] </nav> index: ${navCloseIndex}`);
-        
-        if (navCloseIndex !== -1) {
-          const navButton = `<button @click="currentPage = '${pageNameLower}'" class="hover:text-white transition-colors">${newPageName}</button>\n            `;
-          modifiedCode = modifiedCode.slice(0, navCloseIndex) + navButton + modifiedCode.slice(navCloseIndex);
-          console.log(`[editCodeWithAI] Injected nav button before </nav>`);
-        } else {
-          // Try to find navigation area by looking for other nav buttons
-          const navButtonMatch = modifiedCode.match(/@click\s*=\s*["']currentPage\s*=\s*['"][^'"]+['"]/);
-          if (navButtonMatch && navButtonMatch.index !== undefined) {
-            // Find the closing tag of this button's container
-            const searchStart = navButtonMatch.index + navButtonMatch[0].length;
-            const nextButtonOrClose = modifiedCode.slice(searchStart).search(/<\/(?:button|a|div)>/i);
-            if (nextButtonOrClose !== -1) {
-              const insertPos = searchStart + nextButtonOrClose + modifiedCode.slice(searchStart).match(/<\/(?:button|a|div)>/i)![0].length;
-              const navButton = `\n            <button @click="currentPage = '${pageNameLower}'" class="hover:text-white transition-colors">${newPageName}</button>`;
-              modifiedCode = modifiedCode.slice(0, insertPos) + navButton + modifiedCode.slice(insertPos);
-              console.log(`[editCodeWithAI] Injected nav button after existing nav button`);
-            }
-          } else {
-            console.log(`[editCodeWithAI] Could not find navigation area to inject button`);
-          }
-        }
-      } else {
-        console.log(`[editCodeWithAI] Nav button for '${pageNameLower}' already exists, skipping`);
-      }
-      
-      console.log(`[editCodeWithAI] Code length: ${currentCode.length} -> ${modifiedCode.length}`);
-      
-      // Generate ONLY the page content with AI, then inject it
-      console.log(`[editCodeWithAI] Generating content for ${newPageName} using AI (content-only approach)`);
-      
-      // Extract context from existing pages
-      const homeMatch = currentCode.match(/<main[^>]*x-show[^>]*home[^>]*>([\s\S]*?)<\/main>/i);
-      const homeContent = homeMatch ? homeMatch[1] : '';
-      const jobsMatch = currentCode.match(/<main[^>]*x-show[^>]*jobs[^>]*>([\s\S]*?)<\/main>/i);
-      const jobsContent = jobsMatch ? jobsMatch[1] : '';
+      // Extract colors
       const colorMatches = currentCode.match(/(?:bg|text|border)-\[#[a-fA-F0-9]+\]/g) || [];
-      const colors = [...new Set(colorMatches)].slice(0, 10);
+      const colors = [...new Set(colorMatches)].slice(0, 8);
       
-      // Generate ONLY the inner content for the new page
-      const contentPrompt = `Generate the INNER HTML content for a "${newPageName}" page on a website.
+      // Check if Alpine.js is used
+      const usesAlpine = currentCode.includes('x-data') || currentCode.includes('x-show');
+      
+      const fullPrompt = `You are an expert web developer. Your task: ADD a new "${newPageName}" page to this website.
 
-EXISTING SITE CONTEXT (copy this style EXACTLY):
-Colors used: ${colors.join(', ')}
-User request: ${pageContent || `Create a ${newPageName} page`}
+USER REQUEST: ${pageContent || `Create a ${newPageName} page`}
 
-EXAMPLE - Home page content (MATCH THIS STYLE):
-${homeContent.slice(0, 3000)}
+SITE CONTEXT:
+- Colors: ${colors.join(', ')}
+- Uses Alpine.js: ${usesAlpine}
 
-${jobsContent ? `EXAMPLE - Jobs page content:
-${jobsContent.slice(0, 2000)}` : ''}
+NAVIGATION (find "${newPageName}" link and add @click handler):
+${navHtml}
 
-GENERATE HTML CONTENT FOR "${newPageName.toUpperCase()}" PAGE:
-- Use the SAME Tailwind classes as the examples
-- Use the SAME color scheme (${colors.slice(0, 5).join(', ')})
-- Include: hero section, feature cards, stats, call-to-action
-- Make it look PROFESSIONAL like the examples
-- Content should be relevant to "${newPageName}"
+EXAMPLE PAGE STYLE (match this):
+${mainHtml.slice(0, 3000)}
 
-RETURN ONLY THE INNER HTML (what goes INSIDE <main>...</main>).
-NO <main> tags, NO <html>, NO markdown - JUST the content div.
-Start with a container div like: <div class="max-w-7xl mx-auto px-4 py-20">`;
+=== YOUR TASK ===
+
+1. Return COMPLETE HTML document (keep everything, add new page)
+
+2. ADD this new <main> section BEFORE <footer>:
+<main x-show="currentPage === '${pageNameLower}'" x-cloak
+      x-transition:enter="transition ease-out duration-500"
+      x-transition:enter-start="opacity-0 transform translate-y-10"
+      x-transition:enter-end="opacity-100 transform translate-y-0"
+      class="pt-32 pb-20 px-4 md:px-8 max-w-7xl mx-auto space-y-24">
+  
+  <!-- HERO SECTION - Big title, description, image -->
+  <section class="grid lg:grid-cols-2 gap-12 items-center">
+    <div class="space-y-8">
+      <h1 class="text-5xl md:text-7xl font-bold">${newPageName} Title Here</h1>
+      <p class="text-xl text-slate-600">Description paragraph here...</p>
+      <button class="...">CTA Button</button>
+    </div>
+    <div>
+      <img src="https://picsum.photos/seed/${pageNameLower}hero/800/600" class="rounded-3xl w-full" />
+    </div>
+  </section>
+
+  <!-- FEATURES - 3-4 cards with images -->
+  <section class="grid md:grid-cols-3 gap-8">
+    <!-- Card 1 -->
+    <div class="...">
+      <img src="https://picsum.photos/seed/${pageNameLower}1/400/300" />
+      <h3>Feature 1</h3>
+      <p>Description</p>
+    </div>
+    <!-- Card 2, 3, 4... -->
+  </section>
+
+  <!-- STATS SECTION -->
+  <section class="grid grid-cols-2 md:grid-cols-4 gap-8">
+    <div><span class="text-4xl font-bold">10K+</span><p>Users</p></div>
+    <!-- More stats... -->
+  </section>
+
+  <!-- CTA SECTION -->
+  <section class="text-center py-20 bg-gradient-to-r ... rounded-3xl">
+    <h2>Call to Action</h2>
+    <button>Get Started</button>
+  </section>
+</main>
+
+3. NAVIGATION: Find <a ...>${newPageName}</a> and change to:
+   <a href="#" @click.prevent="currentPage = '${pageNameLower}'">${newPageName}</a>
+
+4. Use REAL images: https://picsum.photos/seed/[unique-keyword]/800/600
+
+5. Generate AT LEAST 150 lines of HTML for the new page content!
+${databaseContext ? `
+DATABASE INTEGRATION (USER HAS CONNECTED SUPABASE):
+${databaseContext}
+Use these exact table/column names when generating data fetching code.
+` : ''}
+CURRENT FULL CODE:
+${currentCode}
+
+Return ONLY complete HTML. No markdown, no explanations.`;
 
       try {
-        const result = await model.generateContent([{ text: contentPrompt }]);
-        let pageInnerContent = result.response.text();
-        pageInnerContent = pageInnerContent.replace(/^```html?\n?/gm, "").replace(/```$/gm, "").trim();
+        const result = await model.generateContent([{ text: fullPrompt }]);
+        let generatedCode = result.response.text();
+        generatedCode = generatedCode.replace(/^```html?\n?/gm, "").replace(/```$/gm, "").trim();
         
-        // Remove any accidental <main> wrappers
-        pageInnerContent = pageInnerContent.replace(/^<main[^>]*>/i, '').replace(/<\/main>$/i, '').trim();
+        console.log(`[editCodeWithAI] AI response length: ${generatedCode.length}, original: ${currentCode.length}`);
         
-        console.log(`[editCodeWithAI] AI generated content length: ${pageInnerContent.length}`);
+        // Validate - must have DOCTYPE and new page
+        const hasDoctype = generatedCode.includes('<!DOCTYPE') || generatedCode.includes('<!doctype');
+        const hasNewPage = generatedCode.toLowerCase().includes(`currentpage === '${pageNameLower}'`);
+        const isLongEnough = generatedCode.length > currentCode.length * 0.9;
         
-        // Check if we got real content
-        if (pageInnerContent.length > 300 && !pageInnerContent.includes('Welcome to the') && pageInnerContent.includes('<div')) {
-          // Replace the placeholder content in modifiedCode with AI content
-          const placeholderRegex = new RegExp(
-            `(<main[^>]*x-show\\s*=\\s*["']currentPage\\s*===\\s*['"]${pageNameLower}['"][^>]*>)[\\s\\S]*?(</main>)`,
-            'i'
-          );
-          
-          const newMainContent = `$1
-      ${pageInnerContent}
-    $2`;
-          
-          const finalCode = modifiedCode.replace(placeholderRegex, newMainContent);
-          
-          if (finalCode !== modifiedCode && finalCode.length > modifiedCode.length) {
-            console.log(`[editCodeWithAI] Successfully injected AI content! Length: ${modifiedCode.length} -> ${finalCode.length}`);
-            return { success: true, code: finalCode, codeLength: finalCode.length };
-          }
+        console.log(`[editCodeWithAI] Validation: DOCTYPE=${hasDoctype}, newPage=${hasNewPage}, length=${isLongEnough}`);
+        
+        if (hasDoctype && hasNewPage && isLongEnough) {
+          console.log(`[editCodeWithAI] AI SUCCESS! Returning generated code`);
+          return { success: true, code: generatedCode, codeLength: generatedCode.length };
         }
         
-        console.log(`[editCodeWithAI] AI content not suitable, using placeholder`);
+        // If AI returned something but validation failed, try to salvage
+        if (generatedCode.length > 1000 && hasNewPage) {
+          console.log(`[editCodeWithAI] Partial success - using AI response anyway`);
+          return { success: true, code: generatedCode, codeLength: generatedCode.length };
+        }
+        
+        console.log(`[editCodeWithAI] AI validation failed, will return error`);
       } catch (e) {
-        console.error(`[editCodeWithAI] AI content generation failed:`, e);
+        console.error(`[editCodeWithAI] AI error:`, e);
       }
       
-      // Fallback: Return placeholder
-      console.log(`[editCodeWithAI] Using fallback with placeholder content`);
-      return { success: true, code: modifiedCode, codeLength: modifiedCode.length };
+      // Return error instead of fallback - user wants AI or nothing
+      return { 
+        success: false, 
+        error: `AI failed to generate ${newPageName} page. Please try again.`,
+        code: currentCode,
+        codeLength: currentCode.length 
+      };
     } else {
       // STANDARD EDIT PROMPT
-      prompt = `You are an HTML editor. Modify this code based on the request.
+      prompt = `You are an expert HTML/JavaScript developer. Modify this code based on the request.
 
 REQUEST: ${editRequest}
 
@@ -2248,7 +2229,40 @@ ${processedImages.map((img, i) => `Image ${i+1}: "${img.name}" - Use this in you
 CRITICAL: I am showing you the actual image data. When user asks to add/use/replace with these images, embed them using:
 <img src="${imageDataUrls[0] || 'IMAGE_URL'}" alt="${processedImages[0]?.name || 'image'}" class="..." />
 ` : ''}
+${databaseContext ? `
+🔥 DATABASE CONNECTION ACTIVE - USER HAS SUPABASE CONNECTED! 🔥
+${databaseContext}
 
+CRITICAL INSTRUCTIONS FOR DATABASE:
+1. DO NOT use mock/fake data! Generate REAL JavaScript code to fetch from Supabase
+2. Add this script in <head> BEFORE any other scripts:
+   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+3. Initialize Supabase in a <script> tag:
+   const SUPABASE_URL = localStorage.getItem('replay_supabase_url') || '';
+   const SUPABASE_KEY = localStorage.getItem('replay_supabase_key') || '';
+   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+4. Fetch data using Alpine.js x-data with async init:
+   x-data="{
+     items: [],
+     loading: true,
+     async init() {
+       const { data } = await supabase.from('TABLE_NAME').select('*');
+       this.items = data || [];
+       this.loading = false;
+     }
+   }"
+
+5. Use x-for to loop through real data:
+   <template x-for="item in items" :key="item.id">
+     <div x-text="item.column_name"></div>
+   </template>
+
+6. Show loading state: <div x-show="loading">Loading...</div>
+
+USE THE EXACT TABLE AND COLUMN NAMES FROM THE SCHEMA ABOVE!
+` : ''}
 CURRENT CODE:
 ${currentCode}
 
@@ -2256,7 +2270,8 @@ RULES:
 1. Return COMPLETE HTML starting with <!DOCTYPE html>
 2. Keep ALL existing content
 3. Match existing styling
-4. NO markdown, NO explanations - ONLY HTML code`;
+${databaseContext ? '4. MUST use real Supabase fetch code - NO mock data!' : ''}
+5. NO markdown, NO explanations - ONLY HTML code`;
     }
 
     // Build content parts for Gemini

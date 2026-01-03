@@ -59,8 +59,9 @@ import {
   Paperclip,
   LogOut
 } from "lucide-react";
-import { cn, generateId, formatDuration } from "@/lib/utils";
+import { cn, generateId, formatDuration, updateProjectAnalytics } from "@/lib/utils";
 import { transmuteVideoToCode, editCodeWithAI } from "@/actions/transmute";
+import { getDatabaseContext, formatDatabaseContextForPrompt } from "@/lib/supabase/schema";
 import Logo from "@/components/Logo";
 import StyleInjector from "@/components/StyleInjector";
 import { Highlight, themes } from "prism-react-renderer";
@@ -73,6 +74,7 @@ import Avatar from "@/components/Avatar";
 import AuthModal from "@/components/modals/AuthModal";
 import OutOfCreditsModal from "@/components/modals/OutOfCreditsModal";
 import FeedbackGateModal from "@/components/modals/FeedbackGateModal";
+import ProjectSettingsModal from "@/components/ProjectSettingsModal";
 import { Toast, useToast } from "@/components/Toast";
 import Link from "next/link";
 import type { CodeMode, FileNode, FileTreeFolder, FileTreeFile, CodeReferenceMap } from "@/types";
@@ -420,7 +422,8 @@ export default function ReplayTool() {
   const { toast, showToast, hideToast } = useToast();
   
   const [flows, setFlows] = useState<FlowItem[]>([]);
-  const [styleDirective, setStyleDirective] = useState("");
+  const [styleDirective, setStyleDirective] = useState("Custom");
+  const [styleReferenceImage, setStyleReferenceImage] = useState<{ url: string; name: string } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false);
@@ -495,6 +498,7 @@ export default function ReplayTool() {
   const [activeGeneration, setActiveGeneration] = useState<GenerationRecord | null>(null);
   const [generationTitle, setGenerationTitle] = useState<string>("Untitled Project");
   const [showHistoryMode, setShowHistoryMode] = useState(false);
+  const [showProjectSettings, setShowProjectSettings] = useState(false);
   const [historyMenuOpen, setHistoryMenuOpen] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -1007,15 +1011,39 @@ export default function ReplayTool() {
     }
   }, [styleInfo, hasLoadedFromStorage]);
   
-  // Save generation history to localStorage
+  // Save generation history to localStorage - with size limits
   useEffect(() => {
     if (!hasLoadedFromStorage || generations.length === 0) return;
     try {
-      // Only keep last 20 generations to save space
-      const recentHistory = generations.slice(-20);
+      // Only keep last 5 generations to prevent QuotaExceededError
+      // Each generation with code can be 50-100KB
+      const recentHistory = generations.slice(-5).map(gen => ({
+        ...gen,
+        // Limit code size in localStorage to prevent quota issues
+        code: gen.code?.substring(0, 50000) || '', // Max 50KB per generation
+        versions: gen.versions?.slice(-3).map(v => ({
+          ...v,
+          code: v.code?.substring(0, 30000) || '', // Max 30KB per version
+        })) || [],
+      }));
       localStorage.setItem("replay_generation_history", JSON.stringify(recentHistory));
     } catch (e) {
       console.error("Error saving generation history:", e);
+      // If quota exceeded, try to clear old data
+      try {
+        localStorage.removeItem("replay_generation_history");
+        const minimalHistory = generations.slice(-2).map(gen => ({
+          id: gen.id,
+          title: gen.title,
+          timestamp: gen.timestamp,
+          publishedSlug: gen.publishedSlug,
+          code: '', // Don't save code
+          versions: [],
+        }));
+        localStorage.setItem("replay_generation_history", JSON.stringify(minimalHistory));
+      } catch (e2) {
+        console.error("Failed to save even minimal history:", e2);
+      }
     }
   }, [generations, hasLoadedFromStorage]);
   
@@ -3288,8 +3316,19 @@ export const shadows = {
       setIsEditing(true);
       showToast("Updating project with your changes...", "info");
       
+      // Get database context if connected
+      let dbContextStr: string | undefined;
+      if (activeGeneration) {
+        try {
+          const dbCtx = await getDatabaseContext(activeGeneration.id);
+          if (dbCtx.isConnected) {
+            dbContextStr = formatDatabaseContextForPrompt(dbCtx);
+          }
+        } catch {}
+      }
+      
       try {
-        const result = await editCodeWithAI(generatedCode, editPrompt);
+        const result = await editCodeWithAI(generatedCode, editPrompt, undefined, dbContextStr);
         if (result.success && result.code) {
           // Save current state as a version before applying changes
           const versionLabel = `Context update: ${refinements.slice(0, 30)}${refinements.length > 30 ? '...' : ''}`;
@@ -3682,14 +3721,30 @@ export const shadows = {
         fullStyleDirective += `. This is a ${flow.duration} second video. Watch and analyze the ENTIRE video from 0:00 to ${formatDuration(flow.duration)}. Multiple screens or states may appear - include ALL of them.`;
       }
       
+      // Check for Supabase integration
+      let databaseContextStr = "";
+      try {
+        const dbContext = await getDatabaseContext(flow.id);
+        if (dbContext.isConnected && dbContext.schemaText) {
+          databaseContextStr = formatDatabaseContextForPrompt(dbContext);
+          console.log("[Generate] Database context found:", dbContext.tables);
+        }
+      } catch (err) {
+        console.log("[Generate] No database context:", err);
+      }
+      
       const result = await transmuteVideoToCode({
         videoUrl,
         styleDirective: fullStyleDirective,
+        databaseContext: databaseContextStr || undefined,
       });
       
       console.log("Generation result:", result);
       
       if (result && result.success && result.code) {
+        // Track analytics
+        updateProjectAnalytics(flow.id, "generation", result.tokenUsage?.totalTokens);
+        
         // Set code and preview URL
         setGeneratedCode(result.code);
         const blob = new Blob([result.code], { type: "text/html" });
@@ -3958,7 +4013,19 @@ export const shadows = {
       console.log('[handleEdit] Calling editCodeWithAI with prompt:', prompt.substring(0, 100));
       console.log('[handleEdit] Images to send:', imageData.length);
       
-      const result = await editCodeWithAI(editableCode, prompt, imageData.length > 0 ? imageData : undefined);
+      // Get database context if connected
+      let editDbContext: string | undefined;
+      if (activeGeneration) {
+        try {
+          const dbCtx = await getDatabaseContext(activeGeneration.id);
+          if (dbCtx.isConnected) {
+            editDbContext = formatDatabaseContextForPrompt(dbCtx);
+            console.log('[handleEdit] Database context loaded:', dbCtx.tables);
+          }
+        } catch {}
+      }
+      
+      const result = await editCodeWithAI(editableCode, prompt, imageData.length > 0 ? imageData : undefined, editDbContext);
       
       console.log('[handleEdit] Full result:', JSON.stringify({ success: result.success, error: result.error, codeLength: result.code?.length }));
       console.log('[handleEdit] Result code exists:', !!result.code);
@@ -3966,6 +4033,11 @@ export const shadows = {
       
       if (result.success && result.code && result.code.length > 0) {
         console.log('[handleEdit] SUCCESS - Applying code changes...');
+        
+        // Track analytics
+        if (activeGeneration) {
+          updateProjectAnalytics(activeGeneration.id, "edit");
+        }
         
         // Save current state as a version before applying changes
         if (activeGeneration && generatedCode) {
@@ -4168,6 +4240,11 @@ export const shadows = {
           } catch (e) {
             console.error("Error saving slug to localStorage:", e);
           }
+        }
+        
+        // Track export analytics
+        if (activeGeneration && !data.updated) {
+          updateProjectAnalytics(activeGeneration.id, "export");
         }
         
         showToast(data.updated ? "Project updated!" : "Project published!", "success");
@@ -4951,6 +5028,13 @@ export const shadows = {
                       <History className="w-4 h-4 text-white/40 group-hover:text-white/60" />
                     </button>
                   )}
+                  <button 
+                    onClick={() => setShowProjectSettings(true)}
+                    className="p-1.5 rounded-lg hover:bg-white/5 transition-colors group"
+                    title="Project settings"
+                  >
+                    <Settings className="w-4 h-4 text-white/40 group-hover:text-white/60" />
+                  </button>
                 </div>
               </div>
               
@@ -4975,9 +5059,19 @@ export const shadows = {
                 </div>
                 <div className="space-y-2 max-h-[140px] overflow-auto custom-scrollbar">
                   {flows.length === 0 ? (
-                    <div onClick={() => fileInputRef.current?.click()} className="drop-zone flex flex-col items-center justify-center py-6 rounded-xl cursor-pointer transition-colors">
-                      <Video className="w-6 h-6 text-white/15 mb-2" />
-                      <p className="text-xs text-white/25 text-center px-4">Drop or record video</p>
+                    <div 
+                      onClick={() => fileInputRef.current?.click()} 
+                      className="relative rounded-xl border-2 border-dashed border-white/[0.08] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.03] transition-all cursor-pointer"
+                    >
+                      <div className="p-5 text-center">
+                        <Video className="w-5 h-5 text-white/30 mx-auto mb-2" />
+                        <p className="text-[10px] text-white/40">
+                          Drop your video here
+                        </p>
+                        <p className="text-[9px] text-white/25 mt-1">
+                          Screen recording, product demo, or UI walkthrough
+                        </p>
+                      </div>
                     </div>
                   ) : flows.map((flow) => (
                     <div key={flow.id} onClick={() => setSelectedFlowId(flow.id)} className={cn("flow-item flex items-center gap-2.5 p-2 cursor-pointer group", selectedFlowId === flow.id && "selected")}>
@@ -5013,73 +5107,29 @@ export const shadows = {
                   <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Context</span>
                 </div>
                 
-                {/* Context Images/Files */}
-                {contextImages.length > 0 && (
-                  <div className="flex flex-wrap gap-3 mb-3">
-                    {contextImages.map(img => (
-                      <div key={img.id} className="relative group flex flex-col items-center" style={{ width: '56px' }}>
-                        <div className="relative">
-                          {img.name.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i) ? (
-                            <img 
-                              src={img.url} 
-                              alt={img.name}
-                              className="w-14 h-14 object-cover rounded-lg border border-white/10"
-                            />
-                          ) : (
-                            <div className="w-14 h-14 rounded-lg border border-white/10 bg-white/5 flex flex-col items-center justify-center">
-                              <FileCode className="w-5 h-5 text-white/30" />
-                              <span className="text-[8px] text-white/30 mt-1 truncate max-w-[48px]">{img.name.split('.').pop()}</span>
-                            </div>
-                          )}
-                          <button
-                            onClick={() => removeContextImage(img.id)}
-                            className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                        <span className="mt-1 text-[8px] text-white/40 truncate w-full text-center">{img.name.length > 10 ? img.name.slice(0, 8) + '...' : img.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                {/* Textarea with attach button inside */}
-                <div className="relative">
-                  <textarea
-                    value={refinements}
-                    onChange={(e) => setRefinements(e.target.value)}
-                    placeholder="Describe what you observed (optional)"
-                    disabled={isProcessing}
-                    rows={4}
-                    className={cn(
-                      "w-full pl-3 pr-20 pb-3 pt-3 rounded-lg text-xs text-white/70 placeholder:text-white/30 placeholder:text-[11px] transition-colors focus:outline-none textarea-grow input-subtle min-h-[100px]",
-                      isProcessing && "opacity-50 cursor-not-allowed"
-                    )}
-                  />
-                  <button
-                    onClick={() => contextImageInputRef.current?.click()}
-                    disabled={isProcessing}
-                    className="absolute right-3 bottom-3 flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/10 hover:bg-white/15 border border-white/10 transition-colors group"
-                    title="Attach file"
-                  >
-                    <Paperclip className="w-3 h-3 text-white/40 group-hover:text-white/60" />
-                    <span className="text-[10px] text-white/40 group-hover:text-white/60">Attach</span>
-                  </button>
-                  <input
-                    ref={contextImageInputRef}
-                    type="file"
-                    accept="image/*,.pdf,.doc,.docx,.txt,.json,.csv,.md,.html,.css,.js,.ts,.tsx,.jsx"
-                    multiple
-                    onChange={handleContextImageUpload}
-                    className="hidden"
-                  />
-                </div>
+                {/* Textarea only */}
+                <textarea
+                  value={refinements}
+                  onChange={(e) => setRefinements(e.target.value)}
+                  placeholder="Describe what you observed (optional)"
+                  disabled={isProcessing}
+                  rows={3}
+                  className={cn(
+                    "w-full px-3 py-3 rounded-lg text-xs text-white/70 placeholder:text-white/30 placeholder:text-[11px] transition-colors focus:outline-none textarea-grow input-subtle min-h-[80px]",
+                    isProcessing && "opacity-50 cursor-not-allowed"
+                  )}
+                />
               </div>
 
               <div className="p-4 border-b border-white/5">
                 <div className="flex items-center gap-2 mb-3"><Palette className="w-4 h-4 text-white/40" /><span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Style</span></div>
-                <StyleInjector value={styleDirective} onChange={setStyleDirective} disabled={isProcessing} />
+                <StyleInjector 
+                  value={styleDirective} 
+                  onChange={setStyleDirective} 
+                  disabled={isProcessing}
+                  referenceImage={styleReferenceImage}
+                  onReferenceImageChange={setStyleReferenceImage}
+                />
               </div>
 
               {/* Generate Button */}
@@ -6898,9 +6948,19 @@ export const shadows = {
                 
                 <div className="space-y-2 max-h-[140px] overflow-auto">
                   {flows.length === 0 ? (
-                    <div onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center justify-center py-6 rounded-xl border border-dashed border-white/10 cursor-pointer">
-                      <Video className="w-6 h-6 text-white/15 mb-2" />
-                      <p className="text-xs text-white/25">Drop or record video</p>
+                    <div 
+                      onClick={() => fileInputRef.current?.click()} 
+                      className="relative rounded-xl border-2 border-dashed border-white/[0.08] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.03] transition-all cursor-pointer"
+                    >
+                      <div className="p-5 text-center">
+                        <Video className="w-5 h-5 text-white/30 mx-auto mb-2" />
+                        <p className="text-[10px] text-white/40">
+                          Drop your video here
+                        </p>
+                        <p className="text-[9px] text-white/25 mt-1">
+                          Screen recording, product demo, or UI walkthrough
+                        </p>
+                      </div>
                     </div>
                   ) : flows.map((flow) => (
                     <div 
@@ -6932,50 +6992,15 @@ export const shadows = {
                   <Sparkles className="w-4 h-4 text-white/40" />
                   <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Context</span>
                 </div>
-                {contextImages.length > 0 && (
-                  <div className="flex flex-wrap gap-3 mb-3">
-                    {contextImages.map(img => (
-                      <div key={img.id} className="flex flex-col items-center" style={{ width: '48px' }}>
-                        <div className="relative">
-                          {img.name.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i) ? (
-                            <img src={img.url} alt={img.name} className="w-12 h-12 object-cover rounded-lg border border-white/10" />
-                          ) : (
-                            <div className="w-12 h-12 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center">
-                              <FileCode className="w-5 h-5 text-white/30" />
-                            </div>
-                          )}
-                          <button
-                            onClick={() => removeContextImage(img.id)}
-                            className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500/90 text-white flex items-center justify-center"
-                          >
-                            <X className="w-2.5 h-2.5" />
-                          </button>
-                        </div>
-                        <span className="mt-1 text-[7px] text-white/40 truncate w-full text-center">{img.name.length > 8 ? img.name.slice(0, 6) + '..' : img.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {/* Textarea with attach button */}
-                <div className="relative">
-                  <textarea
-                    value={refinements}
-                    onChange={(e) => setRefinements(e.target.value)}
-                    placeholder="Describe what you observed (optional)"
-                    disabled={isProcessing}
-                    rows={3}
-                    className="w-full pl-3 pr-20 pb-3 pt-3 rounded-lg text-xs text-white/70 placeholder:text-white/30 placeholder:text-[11px] bg-white/[0.03] border border-white/[0.06] focus:outline-none focus:border-[#FF6E3C]/20 min-h-[80px]"
-                  />
-                  <button
-                    onClick={() => contextImageInputRef.current?.click()}
-                    disabled={isProcessing}
-                    className="absolute right-3 bottom-3 flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/10 hover:bg-white/15 border border-white/10 transition-colors"
-                    title="Attach file"
-                  >
-                    <Paperclip className="w-3 h-3 text-white/40" />
-                    <span className="text-[10px] text-white/40">Attach</span>
-                  </button>
-                </div>
+                {/* Textarea only */}
+                <textarea
+                  value={refinements}
+                  onChange={(e) => setRefinements(e.target.value)}
+                  placeholder="Describe what you observed (optional)"
+                  disabled={isProcessing}
+                  rows={3}
+                  className="w-full px-3 py-3 rounded-lg text-xs text-white/70 placeholder:text-white/30 placeholder:text-[11px] bg-white/[0.03] border border-white/[0.06] focus:outline-none focus:border-[#FF6E3C]/20 min-h-[80px]"
+                />
               </div>
 
               {/* Style Section */}
@@ -6984,7 +7009,13 @@ export const shadows = {
                   <Palette className="w-4 h-4 text-white/40" />
                   <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Style</span>
                 </div>
-                <StyleInjector value={styleDirective} onChange={setStyleDirective} disabled={isProcessing} />
+                <StyleInjector 
+                  value={styleDirective} 
+                  onChange={setStyleDirective} 
+                  disabled={isProcessing}
+                  referenceImage={styleReferenceImage}
+                  onReferenceImageChange={setStyleReferenceImage}
+                />
               </div>
 
               {/* Generate Button */}
@@ -7677,6 +7708,36 @@ export const shadows = {
         onClose={() => setShowFeedbackModal(false)}
         generationId={activeGeneration?.id}
         userId={user?.id}
+      />
+      
+      {/* Project Settings Modal */}
+      <ProjectSettingsModal
+        isOpen={showProjectSettings}
+        onClose={() => setShowProjectSettings(false)}
+        project={{
+          id: activeGeneration?.id || `project_${Date.now()}`,
+          name: generationTitle || "Untitled Project",
+          createdAt: new Date().toISOString(),
+        }}
+        onDelete={(id) => {
+          // Delete project from generations
+          setGenerations(prev => prev.filter(g => g.id !== id));
+          if (activeGeneration?.id === id) {
+            setActiveGeneration(null);
+            setGeneratedCode(null);
+            setDisplayedCode("");
+            setEditableCode("");
+            setPreviewUrl(null);
+            setGenerationTitle("Untitled Project");
+          }
+        }}
+        onRename={(id, newName) => {
+          setGenerationTitle(newName);
+          if (activeGeneration?.id === id) {
+            setActiveGeneration(prev => prev ? { ...prev, title: newName } : null);
+          }
+          setGenerations(prev => prev.map(g => g.id === id ? { ...g, title: newName } : g));
+        }}
       />
       
       {/* Global file input for video upload - accessible from both mobile and desktop */}
