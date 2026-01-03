@@ -6691,8 +6691,8 @@ export const shadows = {
                     <div className="flex-1 flex items-center justify-center min-h-0 bg-black">
                       <video 
                         ref={videoRef} 
-                        src={selectedFlow.videoUrl} 
-                        preload="metadata"
+                        src={selectedFlow.videoUrl + "#t=0.001"} 
+                        preload="auto"
                         playsInline
                         muted={false}
                         className="w-full h-full object-contain" 
@@ -6717,10 +6717,10 @@ export const shadows = {
                             }
                           }
                         }}
-                        onLoadedData={(e) => {
-                          // Seek to start (0.001s) to show first frame clearly
+                        onCanPlay={(e) => {
+                          // Force display first frame in high quality
                           const video = e.currentTarget;
-                          if (video.currentTime === 0) {
+                          if (video.currentTime < 0.01 && video.paused) {
                             video.currentTime = 0.001;
                           }
                         }}
