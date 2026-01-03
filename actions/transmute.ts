@@ -1949,6 +1949,1134 @@ Copy CONTENT from the video but apply ORIGAMI FOLD aesthetics:
 
 ${request.styleDirective}`;
     }
+    // ══════════════════════════════════════════════════════════════════════
+    // NEW ADVANCED STYLES - KINETIC, INTERACTIVE, SHADER, PHYSICS
+    // ══════════════════════════════════════════════════════════════════════
+    
+    // PHANTOM BORDER UI - Invisible grid with cursor proximity glow
+    else if (styleName.includes("phantom") || styleName.includes("phantom-border") || styleName.includes("invisible grid")) {
+      console.log("[transmute] >>> MATCHED: PHANTOM BORDER UI <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: PHANTOM BORDER UI (Cursor Proximity Grid)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY PHANTOM GRID EFFECT:**
+
+**CORE MECHANIC:** Invisible grid that only reveals borders via cursor proximity.
+
+**REQUIRED VISUAL CHANGES (Non-Negotiable):**
+1. Background: Pure black or very dark (#0a0a0a)
+2. Grid: CSS Grid with transparent cells
+3. Reveal Effect: Radial gradient follows mouse, masked by grid gaps
+4. CSS Variables: --mouse-x, --mouse-y updated via Alpine.js
+5. Physics: Duration 0 (instant response) - lag destroys illusion
+
+**ANIMATION LOGIC:**
+- Track mouse X/Y on parent container
+- Apply: background: radial-gradient(600px circle at var(--mouse-x) var(--mouse-y), rgba(255,255,255,0.15), transparent 40%)
+- Grid cells have subtle border that glows only near cursor
+
+**EXAMPLE:**
+\`\`\`html
+<div class="min-h-screen bg-[#0a0a0a] relative" x-data="{ mouseX: '50%', mouseY: '50%' }" @mousemove="mouseX = $event.clientX + 'px'; mouseY = $event.clientY + 'px'">
+  <div class="absolute inset-0 pointer-events-none" :style="'background: radial-gradient(600px circle at ' + mouseX + ' ' + mouseY + ', rgba(255,255,255,0.06), transparent 40%)'"></div>
+  <div class="grid grid-cols-4 gap-px p-8">
+    <div class="bg-white/[0.02] p-8 border border-white/[0.03] hover:border-white/10 transition-colors">Content</div>
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // OPPOSING SCROLL STREAMS - Bi-directional marquee with velocity
+    else if (styleName.includes("opposing") || styleName.includes("scroll stream") || styleName.includes("bi-directional")) {
+      console.log("[transmute] >>> MATCHED: OPPOSING SCROLL STREAMS <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: OPPOSING SCROLL STREAMS (Kinetic Parallax Marquee)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY OPPOSING SCROLL:**
+
+**CORE MECHANIC:** Rows of text moving in opposite directions driven by scroll velocity.
+
+**PHYSICS CONFIG:**
+- Base velocity: 5px per frame
+- Scroll velocity multiplier affects speed
+- Smooth spring: damping 50, stiffness 400
+
+**ANIMATION LOGIC:**
+- Row 1 (odd rows): Move LEFT on scroll down
+- Row 2 (even rows): Move RIGHT on scroll down
+- 4x text duplication for infinite loop
+- Hover on row: Pause (velocity 0), fill text white
+
+**EXAMPLE:**
+\`\`\`html
+<div class="overflow-hidden py-20 bg-black">
+  <div class="animate-marquee whitespace-nowrap text-8xl font-bold text-white/10">
+    <span class="mx-4">REPLAY</span><span class="mx-4">•</span><span class="mx-4">BUILD</span><span class="mx-4">•</span>
+    <span class="mx-4">REPLAY</span><span class="mx-4">•</span><span class="mx-4">BUILD</span><span class="mx-4">•</span>
+  </div>
+  <div class="animate-marquee-reverse whitespace-nowrap text-8xl font-bold text-white/10 mt-4">
+    <span class="mx-4">CREATE</span><span class="mx-4">•</span><span class="mx-4">DESIGN</span><span class="mx-4">•</span>
+    <span class="mx-4">CREATE</span><span class="mx-4">•</span><span class="mx-4">DESIGN</span><span class="mx-4">•</span>
+  </div>
+</div>
+<!-- Keyframes: marquee 0% translateX(0) 100% translateX(-50%), marquee-reverse 0% translateX(-50%) 100% translateX(0) -->
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // CHROMATIC DISPERSION - RGB split shader effect
+    else if (styleName.includes("chromatic") || styleName.includes("rgb split") || styleName.includes("dispersion")) {
+      console.log("[transmute] >>> MATCHED: CHROMATIC DISPERSION <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: CHROMATIC DISPERSION (RGB Shader Effect)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY RGB SPLIT:**
+
+**CORE MECHANIC:** Colors split based on scroll/movement speed.
+
+**VISUAL LOGIC (CSS-based, no WebGL needed):**
+- Red channel: offset +2px right
+- Green channel: stable (center)
+- Blue channel: offset -2px left
+- Effect intensity increases with scroll velocity
+
+**CSS IMPLEMENTATION:**
+\`\`\`html
+<div class="min-h-screen bg-black">
+  <div class="relative group">
+    <img src="image.jpg" class="relative z-10" />
+    <!-- Red channel -->
+    <img src="image.jpg" class="absolute inset-0 opacity-50 mix-blend-screen" style="filter: url(#red-channel); transform: translateX(2px);" />
+    <!-- Blue channel -->
+    <img src="image.jpg" class="absolute inset-0 opacity-50 mix-blend-screen" style="filter: url(#blue-channel); transform: translateX(-2px);" />
+  </div>
+</div>
+\`\`\`
+
+**TEXT VERSION:**
+\`\`\`html
+<h1 class="text-6xl font-bold text-white relative">
+  <span class="absolute text-red-500/50" style="transform: translateX(2px);">TEXT</span>
+  <span class="absolute text-blue-500/50" style="transform: translateX(-2px);">TEXT</span>
+  <span class="relative">TEXT</span>
+</h1>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // LIVE DASHBOARD DENSITY - Data heavy micro-animations
+    else if (styleName.includes("live dashboard") || styleName.includes("dashboard density") || styleName.includes("data heavy")) {
+      console.log("[transmute] >>> MATCHED: LIVE DASHBOARD DENSITY <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: LIVE DASHBOARD DENSITY (Data Heavy Interface)**
+
+⚠️ **MANDATORY OVERRIDE - HIGH DENSITY METRICS:**
+
+**CORE MECHANIC:** High density, micro-animations, "Alive" dashboard feel.
+
+**DOM STRUCTURE:**
+- Use display: grid with gap-px and bg-neutral-800 (creates borders)
+- Cells have bg-black
+- Status indicators with animate-pulse
+
+**ANIMATION LOGIC:**
+- Scanner: Invisible gradient line moves vertically through cells
+- Ticker: Numbers scramble/animate on load
+- Indicators: Blinking status dots (w-2 h-2 rounded-full bg-green-500 animate-pulse)
+- Font: font-variant-numeric: tabular-nums (prevents layout shift)
+
+**EXAMPLE:**
+\`\`\`html
+<div class="min-h-screen bg-neutral-900 p-4 font-mono">
+  <div class="grid grid-cols-4 gap-px bg-neutral-800 rounded-lg overflow-hidden">
+    <div class="bg-black p-4">
+      <div class="flex items-center gap-2">
+        <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+        <span class="text-xs text-white/50">ACTIVE</span>
+      </div>
+      <div class="text-2xl font-bold text-white mt-2" style="font-variant-numeric: tabular-nums;">1,247</div>
+      <div class="text-xs text-green-400">↑ 12%</div>
+    </div>
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // SILK SMOKE - SVG turbulence background
+    else if (styleName.includes("silk") || styleName.includes("smoke") || styleName.includes("turbulence")) {
+      console.log("[transmute] >>> MATCHED: SILK SMOKE <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: SILK SMOKE (Procedural Turbulence)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY SILK SMOKE:**
+
+**CORE MECHANIC:** Slow, elegant procedural noise simulating flowing fabric/smoke.
+
+**VISUAL ENGINE:**
+- SVG Filter: feTurbulence type="fractalNoise" baseFrequency="0.01"
+- Displacement: feDisplacementMap warps gradient background
+- Animation: Very slow (20s duration) animating seed/baseFrequency
+- Layer: Fixed inset-0 -z-10 container
+
+**EXAMPLE:**
+\`\`\`html
+<div class="min-h-screen relative overflow-hidden">
+  <!-- Smoke background -->
+  <div class="fixed inset-0 -z-10">
+    <svg class="w-full h-full">
+      <filter id="smoke">
+        <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" seed="1">
+          <animate attributeName="seed" values="1;10;1" dur="20s" repeatCount="indefinite" />
+        </feTurbulence>
+        <feDisplacementMap in="SourceGraphic" scale="50" />
+      </filter>
+      <rect width="100%" height="100%" fill="url(#gradient)" filter="url(#smoke)" />
+      <defs>
+        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#1a1a2e" />
+          <stop offset="100%" stop-color="#16213e" />
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+  <!-- Sharp white text contrast -->
+  <div class="relative z-10 p-20">
+    <h1 class="text-6xl font-bold text-white">Content</h1>
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // SLICED SHUTTER REVEAL - 5 vertical strips animation
+    else if (styleName.includes("sliced") || styleName.includes("shutter") || styleName.includes("strips")) {
+      console.log("[transmute] >>> MATCHED: SLICED SHUTTER REVEAL <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: SLICED SHUTTER REVEAL (Vertical Strips Animation)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY SLICED REVEAL:**
+
+**CORE MECHANIC:** Image enters as 5 vertical strips with staggered animation.
+
+**DOM STRUCTURE:**
+- Wrapper: relative w-full h-[500px]
+- Slices: 5 divs (absolute h-full w-[20%])
+- Image: Same background image with shifted background-position
+
+**ANIMATION LOGIC:**
+- Initial: translateY(100%) - hidden below
+- Animate: translateY(0)
+- Orchestration: delay = index * 0.1s
+- Easing: cubic-bezier(0.76, 0, 0.24, 1) - fluid waterfall
+
+**EXAMPLE:**
+\`\`\`html
+<div class="relative w-full h-[500px] overflow-hidden">
+  <div class="absolute inset-y-0 left-[0%] w-[20%] bg-cover animate-slide-up" style="background-image: url(img.jpg); background-position: 0% center; animation-delay: 0s;"></div>
+  <div class="absolute inset-y-0 left-[20%] w-[20%] bg-cover animate-slide-up" style="background-image: url(img.jpg); background-position: 25% center; animation-delay: 0.1s;"></div>
+  <div class="absolute inset-y-0 left-[40%] w-[20%] bg-cover animate-slide-up" style="background-image: url(img.jpg); background-position: 50% center; animation-delay: 0.2s;"></div>
+  <div class="absolute inset-y-0 left-[60%] w-[20%] bg-cover animate-slide-up" style="background-image: url(img.jpg); background-position: 75% center; animation-delay: 0.3s;"></div>
+  <div class="absolute inset-y-0 left-[80%] w-[20%] bg-cover animate-slide-up" style="background-image: url(img.jpg); background-position: 100% center; animation-delay: 0.4s;"></div>
+</div>
+<!-- Keyframe: slide-up from translateY(100%) to translateY(0), duration 0.8s, cubic-bezier(0.76, 0, 0.24, 1) -->
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // GYROSCOPIC LEVITATION - Physics shadow card
+    else if (styleName.includes("gyroscopic") || styleName.includes("levitation") || styleName.includes("physics shadow")) {
+      console.log("[transmute] >>> MATCHED: GYROSCOPIC LEVITATION <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: GYROSCOPIC LEVITATION (Shadow Physics Card)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY LEVITATION PHYSICS:**
+
+**CORE MECHANIC:** Realistic lift physics where shadow behaves inversely to height.
+
+**SHADOW PHYSICS (Crucial):**
+When card goes UP:
+- Shadow gets SMALLER (scale 0.95)
+- Shadow gets SHARPER (blur 2px from 10px)
+- Shadow gets DARKER (opacity 0.8)
+
+**GYRO TILT:** Subtle rotateX/rotateY based on mouse position relative to card center.
+
+**SPRING:** type: spring, stiffness: 400, damping: 25 (Heavy, magnetic feel)
+
+**EXAMPLE:**
+\`\`\`html
+<div class="relative group cursor-pointer" x-data="{ hovered: false }" @mouseenter="hovered = true" @mouseleave="hovered = false">
+  <!-- Shadow element -->
+  <div class="absolute inset-0 bg-black/20 rounded-2xl blur-xl transition-all duration-300"
+       :class="hovered ? 'scale-95 blur-sm opacity-80 translate-y-1' : 'scale-100 blur-xl opacity-50 translate-y-4'"></div>
+  <!-- Card element -->
+  <div class="relative bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-8 transition-all duration-300"
+       :class="hovered ? '-translate-y-4' : 'translate-y-0'"
+       :style="hovered ? 'transform: translateY(-15px) perspective(1000px) rotateX(-5deg) rotateY(5deg)' : ''">
+    <h3 class="text-xl font-bold text-white">Levitating Card</h3>
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // STACKED CARD DECK - iOS Safari tabs style
+    else if (styleName.includes("stacked") || styleName.includes("card deck") || styleName.includes("ios tabs")) {
+      console.log("[transmute] >>> MATCHED: STACKED CARD DECK <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: STACKED CARD DECK (iOS Safari Tabs)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY STACKED CARDS:**
+
+**CORE MECHANIC:** Cards stack on top scaling down, simulating depth like iOS Safari tabs.
+
+**ANIMATION LOGIC:**
+- Active card: scale 1, translateY 0
+- Inactive cards: scale 1 - index*0.05, translateY -index*20px, brightness 1 - index*0.2
+- Scroll maps to active card index
+
+**EXAMPLE:**
+\`\`\`html
+<div class="h-[400vh]">
+  <div class="sticky top-0 h-screen flex items-center justify-center overflow-hidden">
+    <div class="relative w-80">
+      <div class="absolute inset-0 bg-blue-500 rounded-2xl p-6" style="transform: scale(0.85) translateY(-60px); filter: brightness(0.6);"></div>
+      <div class="absolute inset-0 bg-purple-500 rounded-2xl p-6" style="transform: scale(0.9) translateY(-40px); filter: brightness(0.7);"></div>
+      <div class="absolute inset-0 bg-pink-500 rounded-2xl p-6" style="transform: scale(0.95) translateY(-20px); filter: brightness(0.85);"></div>
+      <div class="relative bg-white rounded-2xl p-6 shadow-2xl">
+        <h3 class="text-xl font-bold">Active Card</h3>
+      </div>
+    </div>
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // STICKY SECTION HEADERS - Editorial mix-blend
+    else if (styleName.includes("sticky header") || styleName.includes("sticky section") || styleName.includes("editorial")) {
+      console.log("[transmute] >>> MATCHED: STICKY SECTION HEADERS <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: STICKY SECTION HEADERS (Editorial Layout)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY STICKY HEADERS:**
+
+**CORE MECHANIC:** Section titles stick to top while content slides underneath.
+
+**DOM STRUCTURE:**
+- Section: relative min-h-screen
+- Header: sticky top-0 z-10 mix-blend-difference
+- Content: relative z-0 with parallax
+
+**EXAMPLE:**
+\`\`\`html
+<section class="relative min-h-screen">
+  <h2 class="sticky top-0 z-10 text-8xl font-black text-white mix-blend-difference px-8 py-4">
+    01. INTRODUCTION
+  </h2>
+  <div class="relative z-0 pt-32 px-8">
+    <img src="hero.jpg" class="w-full rounded-2xl" />
+    <p class="text-xl text-gray-600 mt-8 max-w-2xl">Content slides under the sticky header...</p>
+  </div>
+</section>
+<section class="relative min-h-screen">
+  <h2 class="sticky top-0 z-10 text-8xl font-black text-white mix-blend-difference px-8 py-4">
+    02. FEATURES
+  </h2>
+  <div class="relative z-0 pt-32 px-8">
+    <!-- More content -->
+  </div>
+</section>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // MORPHING FLUID NAV - Dynamic Island style
+    else if (styleName.includes("morphing") || styleName.includes("fluid nav") || styleName.includes("dynamic island")) {
+      console.log("[transmute] >>> MATCHED: MORPHING FLUID NAV <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: MORPHING FLUID NAV (Dynamic Island)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY MORPHING NAV:**
+
+**CORE MECHANIC:** Navigation morphs width/height based on state like Apple's Dynamic Island.
+
+**STATES:**
+- Idle: Small pill (w-12 h-12)
+- Hover: Medium pill with text (w-auto h-12)
+- Active/Open: Large rectangle (w-[300px] h-[400px])
+
+**PHYSICS:** Spring stiffness 500, damping 30 (Apple-like snappy)
+
+**EXAMPLE:**
+\`\`\`html
+<div class="fixed top-4 left-1/2 -translate-x-1/2 z-50" x-data="{ state: 'idle' }">
+  <div class="bg-black rounded-full transition-all duration-300 ease-out overflow-hidden flex items-center justify-center"
+       :class="state === 'idle' ? 'w-12 h-12' : state === 'hover' ? 'w-40 h-12 px-4' : 'w-80 h-96 rounded-3xl'"
+       @mouseenter="state = 'hover'" @mouseleave="state !== 'active' && (state = 'idle')" @click="state = state === 'active' ? 'idle' : 'active'">
+    <template x-if="state === 'idle'">
+      <div class="w-2 h-2 bg-white rounded-full"></div>
+    </template>
+    <template x-if="state === 'hover'">
+      <span class="text-white text-sm font-medium">Menu</span>
+    </template>
+    <template x-if="state === 'active'">
+      <div class="p-6 text-white">
+        <nav class="space-y-4">
+          <a href="#" class="block text-lg">Home</a>
+          <a href="#" class="block text-lg">About</a>
+        </nav>
+      </div>
+    </template>
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // INVERTED LENS CURSOR - Window mask reveal
+    else if (styleName.includes("inverted lens") || styleName.includes("lens cursor") || styleName.includes("cursor mask")) {
+      console.log("[transmute] >>> MATCHED: INVERTED LENS CURSOR <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: INVERTED LENS CURSOR (Mask Reveal)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY INVERTED LENS:**
+
+**CORE MECHANIC:** Cursor is a window revealing hidden layer.
+
+**DOM STRUCTURE:**
+- div.main-content: Black text on white background
+- div.hidden-layer: White text on black (exact same position)
+- div.cursor-mask: Circle mask following cursor
+
+**EXAMPLE:**
+\`\`\`html
+<div class="relative min-h-screen overflow-hidden" x-data="{ x: 0, y: 0 }" @mousemove="x = $event.clientX; y = $event.clientY">
+  <!-- Main layer -->
+  <div class="absolute inset-0 bg-white text-black flex items-center justify-center">
+    <h1 class="text-8xl font-black">DISCOVER</h1>
+  </div>
+  <!-- Hidden inverted layer with mask -->
+  <div class="absolute inset-0 bg-black text-white flex items-center justify-center"
+       :style="'clip-path: circle(150px at ' + x + 'px ' + y + 'px)'">
+    <h1 class="text-8xl font-black">DISCOVER</h1>
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // CRT SIGNAL NOISE - Retro monitor effect
+    else if (styleName.includes("crt") || styleName.includes("scanline") || styleName.includes("analog")) {
+      console.log("[transmute] >>> MATCHED: CRT SIGNAL NOISE <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: CRT SIGNAL NOISE (Retro Monitor)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY CRT EFFECT:**
+
+**CORE MECHANIC:** Old monitor signal simulation.
+
+**VISUAL EFFECTS:**
+- Scanlines: repeating-linear-gradient background-size: 100% 4px
+- RGB Shift: text-shadow: 2px 0 red, -2px 0 blue
+- Curvature: Vignette box-shadow inset
+- Flicker: Keyframe opacity 0.9 to 1.0 rapidly
+- Chroma: mix-blend-mode: color-dodge on scanlines
+
+**EXAMPLE:**
+\`\`\`html
+<div class="min-h-screen bg-[#0a0a0a] relative overflow-hidden font-mono">
+  <!-- Scanlines overlay -->
+  <div class="absolute inset-0 pointer-events-none z-50 animate-flicker"
+       style="background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px, transparent 1px, transparent 2px); mix-blend-mode: color-dodge;"></div>
+  <!-- CRT curvature vignette -->
+  <div class="absolute inset-0 pointer-events-none" style="box-shadow: inset 0 0 150px rgba(0,0,0,0.8);"></div>
+  <!-- Content with RGB shift -->
+  <div class="relative z-10 p-12">
+    <h1 class="text-6xl font-bold text-green-400" style="text-shadow: 2px 0 #ff0000, -2px 0 #00ffff;">
+      SYSTEM ONLINE
+    </h1>
+    <p class="text-green-400/70 mt-4 animate-pulse">_ Ready for input</p>
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // PARALLAX CURTAIN FOOTER - Fixed reveal
+    else if (styleName.includes("curtain footer") || styleName.includes("parallax curtain") || styleName.includes("reveal footer")) {
+      console.log("[transmute] >>> MATCHED: PARALLAX CURTAIN FOOTER <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: PARALLAX CURTAIN FOOTER (Fixed Reveal)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY CURTAIN FOOTER:**
+
+**CORE MECHANIC:** Footer fixed behind content, content slides up to reveal it.
+
+**DOM STRUCTURE:**
+- main: relative z-10 bg-white mb-[500px] (margin = footer height)
+- footer: fixed bottom-0 w-full h-[500px] z-0
+
+**ANIMATION:**
+- Heavy box-shadow on main bottom edge
+- Footer scales 0.9 → 1.0 as revealed
+
+**EXAMPLE:**
+\`\`\`html
+<main class="relative z-10 bg-white" style="margin-bottom: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+  <!-- All page content here -->
+  <section class="min-h-screen p-20">
+    <h1 class="text-6xl font-bold">Page Content</h1>
+  </section>
+</main>
+<footer class="fixed bottom-0 left-0 right-0 h-[500px] z-0 bg-black flex items-center justify-center">
+  <div class="text-center">
+    <h2 class="text-5xl font-bold text-white">Get in Touch</h2>
+    <p class="text-white/60 mt-4">The footer reveals as you scroll</p>
+  </div>
+</footer>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // MAGNETIC ATTRACTION - Sticky cursor button
+    else if (styleName.includes("magnetic attraction") || styleName.includes("magnetic button") || styleName.includes("sticky cursor")) {
+      console.log("[transmute] >>> MATCHED: MAGNETIC ATTRACTION <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: MAGNETIC ATTRACTION (Cursor Magnet)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY MAGNETIC EFFECT:**
+
+**CORE MECHANIC:** Elements physically stick to cursor within proximity radius.
+
+**LOGIC:**
+- Track mouse position relative to button center
+- If distance < 100px: Apply transform = mousePos * 0.3
+- Inner text moves more (0.5 strength) for parallax
+- On mouse leave: Spring back (stiffness 150, damping 15)
+
+**EXAMPLE:**
+\`\`\`html
+<button class="relative px-8 py-4 bg-white rounded-full text-black font-bold group transition-transform duration-200"
+        x-data="{ x: 0, y: 0 }"
+        @mousemove="x = ($event.offsetX - $el.offsetWidth/2) * 0.3; y = ($event.offsetY - $el.offsetHeight/2) * 0.3"
+        @mouseleave="x = 0; y = 0"
+        :style="'transform: translate(' + x + 'px, ' + y + 'px)'">
+  <span class="relative z-10 transition-transform duration-100"
+        :style="'transform: translate(' + (x * 0.5) + 'px, ' + (y * 0.5) + 'px)'">
+    Hover Me
+  </span>
+  <div class="absolute inset-0 rounded-full border border-white/20 group-hover:border-white/40 transition-colors"></div>
+</button>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // FLASHLIGHT MASK - Dark screen cursor reveal
+    else if (styleName.includes("flashlight") || styleName.includes("explorer mask") || styleName.includes("light cursor")) {
+      console.log("[transmute] >>> MATCHED: FLASHLIGHT MASK <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: INVERTED FLASHLIGHT (Explorer Mask)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY FLASHLIGHT:**
+
+**CORE MECHANIC:** Screen is dark, cursor acts as light source revealing UI.
+
+**DOM STRUCTURE:**
+- div.content: Full color UI (hidden)
+- div.overlay: Full black z-50 with mask
+
+**EXAMPLE:**
+\`\`\`html
+<div class="relative min-h-screen overflow-hidden" x-data="{ x: '50%', y: '50%', size: 150 }" 
+     @mousemove="x = $event.clientX + 'px'; y = $event.clientY + 'px'"
+     @mousedown="size = 400" @mouseup="size = 150">
+  <!-- Full content layer -->
+  <div class="absolute inset-0 bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
+    <h1 class="text-8xl font-black text-white">HIDDEN</h1>
+  </div>
+  <!-- Dark overlay with flashlight hole -->
+  <div class="absolute inset-0 bg-black pointer-events-none transition-all duration-100"
+       :style="'mask-image: radial-gradient(circle ' + size + 'px at ' + x + ' ' + y + ', transparent 0%, black 100%); -webkit-mask-image: radial-gradient(circle ' + size + 'px at ' + x + ' ' + y + ', transparent 0%, black 100%)'">
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // ELASTIC SIDEBAR - Rubber band drag
+    else if (styleName.includes("elastic sidebar") || styleName.includes("rubber band") || styleName.includes("elastic drag")) {
+      console.log("[transmute] >>> MATCHED: ELASTIC SIDEBAR <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: ELASTIC SIDEBAR DRAG (Rubber Band Menu)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY ELASTIC SIDEBAR:**
+
+**CORE MECHANIC:** Sidebar behaves like stretched rubber band when dragged.
+
+**SVG PATH MORPHING:**
+- Curve defined by bezier point Q
+- Drag updates: d="M0,0 Q{dragX},{mouseY} 0,100"
+- On release: Elastic spring back (damping 15, stiffness 400) with wobble
+
+**EXAMPLE:**
+\`\`\`html
+<nav class="fixed left-0 top-0 h-screen w-64 bg-black z-50" x-data="{ drag: 0, open: false }">
+  <svg class="absolute right-0 top-0 h-full w-8 translate-x-full" viewBox="0 0 40 100" preserveAspectRatio="none">
+    <path :d="'M0,0 Q' + drag + ',50 0,100'" fill="black" class="transition-all duration-300" />
+  </svg>
+  <div class="p-6 text-white">
+    <a href="#" class="block py-2">Home</a>
+    <a href="#" class="block py-2">About</a>
+  </div>
+  <!-- Drag handle -->
+  <div class="absolute right-0 top-0 bottom-0 w-8 cursor-ew-resize"
+       @mousedown="/* start drag */" @mousemove="drag = $event.movementX * 0.5" @mouseup="drag = 0"></div>
+</nav>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // MATTER.JS GRAVITY - Physics falling tags
+    else if (styleName.includes("matter") || styleName.includes("gravity playground") || styleName.includes("falling tags")) {
+      console.log("[transmute] >>> MATCHED: MATTER.JS GRAVITY <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: MATTER.JS GRAVITY (Physics Playground)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY PHYSICS GRAVITY:**
+
+**CORE MECHANIC:** Elements fall with gravity and collide.
+
+**NOTE:** Full physics requires matter-js library. For CSS-only approximation:
+
+**CSS APPROXIMATION:**
+\`\`\`html
+<div class="min-h-screen bg-white relative overflow-hidden">
+  <!-- Floor -->
+  <div class="absolute bottom-0 left-0 right-0 h-1 bg-black/10"></div>
+  
+  <!-- Falling tags with staggered animation -->
+  <div class="absolute animate-fall" style="top: -50px; left: 20%; animation-delay: 0s;">
+    <span class="px-4 py-2 bg-red-500 text-white rounded-full font-medium">React</span>
+  </div>
+  <div class="absolute animate-fall" style="top: -50px; left: 40%; animation-delay: 0.2s;">
+    <span class="px-4 py-2 bg-blue-500 text-white rounded-full font-medium">TypeScript</span>
+  </div>
+  <div class="absolute animate-fall" style="top: -50px; left: 60%; animation-delay: 0.4s;">
+    <span class="px-4 py-2 bg-green-500 text-white rounded-full font-medium">Node.js</span>
+  </div>
+</div>
+<!-- Keyframe: fall from top:-50px to bottom:20px with bounce easing -->
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // PIXELATED DISSOLVE - 8-bit transition
+    else if (styleName.includes("pixelated") || styleName.includes("dissolve") || styleName.includes("8-bit")) {
+      console.log("[transmute] >>> MATCHED: PIXELATED DISSOLVE <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: PIXELATED DISSOLVE (Retro Transition)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY PIXEL DISSOLVE:**
+
+**CORE MECHANIC:** Images dissolve into/from large pixel blocks.
+
+**VISUAL:**
+- Grid of squares with staggered opacity animation
+- image-rendering: pixelated during transition
+- Wave pattern for dissolve order
+
+**EXAMPLE:**
+\`\`\`html
+<div class="relative w-64 h-64 overflow-hidden" style="image-rendering: pixelated;">
+  <img src="image.jpg" class="w-full h-full object-cover" />
+  <div class="absolute inset-0 grid grid-cols-8 grid-rows-8">
+    <!-- 64 pixel blocks with staggered opacity -->
+    <div class="bg-black animate-pixel-fade" style="animation-delay: 0ms;"></div>
+    <div class="bg-black animate-pixel-fade" style="animation-delay: 50ms;"></div>
+    <div class="bg-black animate-pixel-fade" style="animation-delay: 100ms;"></div>
+    <!-- ... 64 total blocks with increasing delays -->
+  </div>
+</div>
+<!-- Keyframe: pixel-fade from opacity-1 to opacity-0 -->
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // CYCLIC GALLERY - Fortune wheel rotation
+    else if (styleName.includes("cyclic") || styleName.includes("fortune wheel") || styleName.includes("circular gallery")) {
+      console.log("[transmute] >>> MATCHED: CYCLIC ROTATION GALLERY <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: CYCLIC ROTATION GALLERY (Fortune Wheel)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY CYCLIC GALLERY:**
+
+**CORE MECHANIC:** Items arranged on giant invisible circle, scroll rotates wheel.
+
+**MATH:**
+- Radius: 1500px (large, positioned off-screen)
+- Position: x = radius * cos(angle), y = radius * sin(angle)
+- Scroll maps to rotation offset
+- Items counter-rotate to stay upright
+
+**EXAMPLE:**
+\`\`\`html
+<div class="h-[300vh]">
+  <div class="sticky top-0 h-screen flex items-center justify-center overflow-hidden">
+    <div class="relative" style="width: 100%; height: 100%;">
+      <div class="absolute" style="left: 50%; top: 50%; transform: translate(-50%, 200%) rotate(0deg);">
+        <img src="1.jpg" class="w-48 h-64 object-cover rounded-lg" style="transform: rotate(0deg);" />
+      </div>
+      <div class="absolute" style="left: 50%; top: 50%; transform: translate(-50%, 200%) rotate(72deg);">
+        <img src="2.jpg" class="w-48 h-64 object-cover rounded-lg" style="transform: rotate(-72deg);" />
+      </div>
+      <!-- More items at 144deg, 216deg, 288deg -->
+    </div>
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // ACCORDION FOLD 3D - Paper unfold
+    else if (styleName.includes("accordion") || styleName.includes("fold 3d") || styleName.includes("paper fold")) {
+      console.log("[transmute] >>> MATCHED: ACCORDION FOLD 3D <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: ACCORDION FOLD 3D (Paper Map Unfold)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY ACCORDION FOLD:**
+
+**CORE MECHANIC:** Content unfolds vertically like paper accordion.
+
+**CSS 3D:**
+- Slices: 4 horizontal stripes
+- Even slices: transform-origin: top
+- Odd slices: transform-origin: bottom
+- Animation: rotateX(-90deg) → rotateX(0deg)
+
+**EXAMPLE:**
+\`\`\`html
+<div class="max-w-2xl mx-auto py-20" style="perspective: 1200px;">
+  <div style="transform-style: preserve-3d;">
+    <div class="bg-gray-100 p-8 origin-bottom transition-all duration-700 hover:rotate-x-0" style="transform: rotateX(-20deg);">
+      <div class="absolute inset-0 bg-black/10 pointer-events-none"></div>
+      <h2 class="text-2xl font-bold">Panel 1</h2>
+    </div>
+    <div class="bg-white p-8 origin-top transition-all duration-700">
+      <h2 class="text-2xl font-bold">Panel 2</h2>
+    </div>
+    <div class="bg-gray-50 p-8 origin-bottom transition-all duration-700" style="transform: rotateX(20deg);">
+      <h2 class="text-2xl font-bold">Panel 3</h2>
+    </div>
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // SKEUOMORPHIC CONTROLS - Physical switches
+    else if (styleName.includes("skeuomorphic") || styleName.includes("physical switch") || styleName.includes("rocker")) {
+      console.log("[transmute] >>> MATCHED: SKEUOMORPHIC CONTROLS <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: SKEUOMORPHIC CONTROLS (Physical Switches)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY SKEUOMORPHIC:**
+
+**CORE MECHANIC:** UI elements look/feel like physical plastic/metal switches.
+
+**3D CSS:**
+- Toggle: rotateX(15deg) OFF, rotateX(-15deg) ON
+- Lighting: Top inner shadow for depth
+- Shadow: Changes size based on state (distance from plate)
+- Texture: Subtle noise texture on plastic surface
+
+**EXAMPLE:**
+\`\`\`html
+<div class="min-h-screen bg-[#2a2a2a] p-20" style="background-image: url('data:image/svg+xml,...noise...');">
+  <div class="inline-block p-1 bg-gradient-to-b from-gray-700 to-gray-800 rounded-lg" style="box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">
+    <button class="relative w-16 h-20 rounded-md transition-transform duration-100 cursor-pointer"
+            x-data="{ on: false }" @click="on = !on"
+            :style="on ? 'transform: perspective(200px) rotateX(-15deg); background: linear-gradient(to bottom, #4ade80, #22c55e);' : 'transform: perspective(200px) rotateX(15deg); background: linear-gradient(to bottom, #6b7280, #4b5563);'"
+            style="box-shadow: inset 0 2px 0 rgba(255,255,255,0.3), 0 4px 8px rgba(0,0,0,0.3);">
+    </button>
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // SPLIT CURTAIN REVEAL - Dual panel theater
+    else if (styleName.includes("split curtain") || styleName.includes("dual panel") || styleName.includes("theater")) {
+      console.log("[transmute] >>> MATCHED: SPLIT CURTAIN REVEAL <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: SPLIT CURTAIN REVEAL (Theater Entrance)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY SPLIT CURTAIN:**
+
+**CORE MECHANIC:** Screen splits Left/Right to reveal content.
+
+**DOM STRUCTURE:**
+- div.left-panel: width 50%, left 0
+- div.right-panel: width 50%, right 0
+- div.content-behind: z-0, fixed
+
+**ANIMATION:**
+- Left: translateX(-100%)
+- Right: translateX(100%)
+- Easing: [0.8, 0, 0.1, 1] (slow start, instant finish)
+
+**EXAMPLE:**
+\`\`\`html
+<div class="relative min-h-screen overflow-hidden" x-data="{ open: false }" x-init="setTimeout(() => open = true, 500)">
+  <!-- Content behind -->
+  <div class="fixed inset-0 z-0 bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
+    <h1 class="text-8xl font-black text-white">WELCOME</h1>
+  </div>
+  <!-- Left curtain -->
+  <div class="fixed inset-y-0 left-0 w-1/2 bg-black z-10 transition-transform duration-1000"
+       :class="open ? '-translate-x-full' : 'translate-x-0'"
+       style="transition-timing-function: cubic-bezier(0.8, 0, 0.1, 1);">
+    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-6xl font-black text-white/20">WEL</span>
+  </div>
+  <!-- Right curtain -->
+  <div class="fixed inset-y-0 right-0 w-1/2 bg-black z-10 transition-transform duration-1000"
+       :class="open ? 'translate-x-full' : 'translate-x-0'"
+       style="transition-timing-function: cubic-bezier(0.8, 0, 0.1, 1);">
+    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-6xl font-black text-white/20">COME</span>
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // DRAGGABLE MASONRY - Physics grid
+    else if (styleName.includes("draggable masonry") || styleName.includes("physics grid") || styleName.includes("drag masonry")) {
+      console.log("[transmute] >>> MATCHED: DRAGGABLE MASONRY <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: DRAGGABLE MASONRY (Physics Grid)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY DRAGGABLE GRID:**
+
+**CORE MECHANIC:** Asymmetric grid where elements can be dragged/thrown.
+
+**CSS Grid + Drag:**
+- grid-template-columns: repeat(auto-fill, minmax(250px, 1fr))
+- Cards are draggable
+- On release: Snap to nearest grid slot with spring
+
+**EXAMPLE:**
+\`\`\`html
+<div class="min-h-screen bg-gray-100 p-8">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-[200px]">
+    <div class="bg-pink-400 rounded-xl p-6 cursor-grab active:cursor-grabbing hover:scale-105 transition-transform row-span-2"
+         draggable="true">
+      <h3 class="text-xl font-bold text-white">Card 1</h3>
+    </div>
+    <div class="bg-blue-400 rounded-xl p-6 cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
+         draggable="true">
+      <h3 class="text-xl font-bold text-white">Card 2</h3>
+    </div>
+    <div class="bg-yellow-400 rounded-xl p-6 cursor-grab active:cursor-grabbing hover:scale-105 transition-transform col-span-2"
+         draggable="true">
+      <h3 class="text-xl font-bold text-white">Card 3</h3>
+    </div>
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // HORIZONTAL INERTIA GALLERY - Skew scroll
+    else if (styleName.includes("horizontal inertia") || styleName.includes("skew scroll") || styleName.includes("inertia gallery")) {
+      console.log("[transmute] >>> MATCHED: HORIZONTAL INERTIA GALLERY <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: HORIZONTAL INERTIA GALLERY (Skew Scroll)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY HORIZONTAL INERTIA:**
+
+**CORE MECHANIC:** Vertical scroll drives horizontal movement with velocity-based skew.
+
+**LOGIC:**
+- Map scrollYProgress to horizontal X position
+- Calculate velocity from scroll speed
+- Apply skewX based on velocity: fast scroll = tilted images
+
+**EXAMPLE:**
+\`\`\`html
+<div class="h-[300vh]">
+  <div class="sticky top-0 h-screen overflow-hidden">
+    <div class="flex items-center h-full gap-8 px-8 transition-transform duration-300"
+         x-data="{ x: 0, skew: 0 }"
+         :style="'transform: translateX(' + x + '%) skewX(' + skew + 'deg)'">
+      <div class="flex-shrink-0 w-[400px] h-[500px] rounded-2xl overflow-hidden">
+        <img src="1.jpg" class="w-full h-full object-cover" />
+      </div>
+      <div class="flex-shrink-0 w-[400px] h-[500px] rounded-2xl overflow-hidden">
+        <img src="2.jpg" class="w-full h-full object-cover" />
+      </div>
+      <!-- More images -->
+    </div>
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // LIQUID TEXT MASK - Video in typography
+    else if (styleName.includes("liquid text") || styleName.includes("video text") || styleName.includes("text mask video")) {
+      console.log("[transmute] >>> MATCHED: LIQUID TEXT MASKING <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: LIQUID TEXT MASKING (Video in Typography)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY VIDEO TEXT MASK:**
+
+**CORE MECHANIC:** Giant typography acts as window to video.
+
+**VISUAL:**
+- background-clip: text
+- -webkit-text-fill-color: transparent
+- Video as background
+- Optional SVG goo filter for liquid edges
+
+**EXAMPLE:**
+\`\`\`html
+<div class="min-h-screen bg-black flex items-center justify-center overflow-hidden">
+  <div class="relative">
+    <video autoplay loop muted playsinline class="absolute inset-0 w-full h-full object-cover">
+      <source src="video.mp4" type="video/mp4" />
+    </video>
+    <h1 class="relative text-[20vw] font-black leading-none"
+        style="background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-image: linear-gradient(to right, white, white);">
+      LIQUID
+    </h1>
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // NOISE GRADIENT - Canvas grain
+    else if (styleName.includes("noise gradient") || styleName.includes("canvas grain") || styleName.includes("perlin")) {
+      console.log("[transmute] >>> MATCHED: DYNAMIC NOISE GRADIENT <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: DYNAMIC NOISE GRADIENT (Canvas Grain)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY NOISE GRADIENT:**
+
+**CORE MECHANIC:** Perlin noise mixing with colors in real-time.
+
+**VISUAL:**
+- Gradient base with multiple color points
+- Noise overlay (SVG filter or canvas)
+- Dithering for smooth transitions
+- Aurora/TV static feel
+
+**EXAMPLE:**
+\`\`\`html
+<div class="min-h-screen relative overflow-hidden">
+  <!-- Animated gradient base -->
+  <div class="absolute inset-0 bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 animate-gradient"></div>
+  <!-- Noise overlay -->
+  <div class="absolute inset-0 opacity-30 mix-blend-overlay"
+       style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.7%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E');"></div>
+  <!-- Content -->
+  <div class="relative z-10 p-20">
+    <h1 class="text-6xl font-bold text-white">Aurora Noise</h1>
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // GLOBE DATA - 3D points sphere
+    else if (styleName.includes("globe") || styleName.includes("data globe") || styleName.includes("3d sphere")) {
+      console.log("[transmute] >>> MATCHED: GLOBE DATA <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: INTERACTIVE GLOBE DATA (WebGL Points)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY GLOBE VISUAL:**
+
+**NOTE:** Full 3D requires Three.js/R3F. CSS approximation:
+
+**CSS APPROXIMATION:**
+\`\`\`html
+<div class="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+  <div class="relative w-64 h-64">
+    <!-- Globe circle -->
+    <div class="absolute inset-0 rounded-full border border-cyan-500/20 animate-spin-slow"
+         style="animation-duration: 20s;"></div>
+    <div class="absolute inset-4 rounded-full border border-cyan-500/10 animate-spin-slow"
+         style="animation-duration: 15s; animation-direction: reverse;"></div>
+    <!-- Data points -->
+    <div class="absolute w-2 h-2 bg-cyan-400 rounded-full animate-pulse" style="top: 20%; left: 30%;"></div>
+    <div class="absolute w-2 h-2 bg-cyan-400 rounded-full animate-pulse" style="top: 40%; left: 60%; animation-delay: 0.5s;"></div>
+    <div class="absolute w-2 h-2 bg-cyan-400 rounded-full animate-pulse" style="top: 70%; left: 40%; animation-delay: 1s;"></div>
+    <!-- Arc lines -->
+    <svg class="absolute inset-0" viewBox="0 0 100 100">
+      <path d="M30,20 Q50,50 60,40" fill="none" stroke="cyan" stroke-width="0.5" stroke-opacity="0.3" />
+    </svg>
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // VISCOUS HOVER - Displacement goo
+    else if (styleName.includes("viscous") || styleName.includes("displacement") || styleName.includes("gooey")) {
+      console.log("[transmute] >>> MATCHED: VISCOUS HOVER <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: VISCOUS HOVER (Displacement Goo)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY VISCOUS EFFECT:**
+
+**CORE MECHANIC:** Images behave like liquid when touched.
+
+**SVG GOO FILTER:**
+\`\`\`html
+<svg class="hidden">
+  <defs>
+    <filter id="goo">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
+      <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo" />
+    </filter>
+  </defs>
+</svg>
+
+<div class="flex gap-4" style="filter: url(#goo);">
+  <div class="w-32 h-32 bg-pink-500 rounded-full hover:scale-110 transition-transform"></div>
+  <div class="w-32 h-32 bg-purple-500 rounded-full hover:scale-110 transition-transform"></div>
+  <!-- When circles overlap/touch, they merge like liquid -->
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // EXPLODED VIEW - 3D disassembly
+    else if (styleName.includes("exploded") || styleName.includes("disassembly") || styleName.includes("3d parts")) {
+      console.log("[transmute] >>> MATCHED: EXPLODED VIEW <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: EXPLODED VIEW SCROLL (3D Disassembly)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY EXPLODED VIEW:**
+
+**CORE MECHANIC:** Parts separate on Z-axis based on scroll.
+
+**CSS 3D APPROXIMATION:**
+\`\`\`html
+<div class="h-[300vh]">
+  <div class="sticky top-0 h-screen flex items-center justify-center" style="perspective: 1000px;">
+    <div class="relative" style="transform-style: preserve-3d;">
+      <!-- Base layer -->
+      <div class="w-64 h-40 bg-gray-800 rounded-lg" style="transform: translateZ(0px);"></div>
+      <!-- Middle layer -->
+      <div class="absolute inset-x-4 top-4 h-32 bg-gray-600 rounded" style="transform: translateZ(30px);"></div>
+      <!-- Top layer -->
+      <div class="absolute inset-x-8 top-8 h-24 bg-gray-400 rounded" style="transform: translateZ(60px);"></div>
+      <!-- Label -->
+      <div class="absolute -right-32 top-0 text-sm text-white/60" style="transform: translateZ(60px);">
+        ← Top Cover
+      </div>
+    </div>
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // HELIX TYPOGRAPHY - DNA cylinder text
+    else if (styleName.includes("helix") || styleName.includes("dna") || styleName.includes("cylinder text")) {
+      console.log("[transmute] >>> MATCHED: HELIX TYPOGRAPHY <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: HELIX TYPOGRAPHY (DNA Scroll)**
+
+⚠️ **MANDATORY OVERRIDE - APPLY HELIX TEXT:**
+
+**CORE MECHANIC:** Text rotates around 3D cylinder axis.
+
+**CSS 3D:**
+- Each character: rotateY(index * (360/total))
+- translateZ for radius
+- Back-facing letters dimmer via cos(angle) opacity
+
+**EXAMPLE:**
+\`\`\`html
+<div class="h-[200vh]">
+  <div class="sticky top-0 h-screen flex items-center justify-center" style="perspective: 1000px;">
+    <div class="relative" style="transform-style: preserve-3d; animation: spin 10s linear infinite;">
+      <span class="absolute text-6xl font-bold text-white" style="transform: rotateY(0deg) translateZ(200px);">R</span>
+      <span class="absolute text-6xl font-bold text-white/70" style="transform: rotateY(45deg) translateZ(200px);">E</span>
+      <span class="absolute text-6xl font-bold text-white/40" style="transform: rotateY(90deg) translateZ(200px);">P</span>
+      <span class="absolute text-6xl font-bold text-white/20" style="transform: rotateY(135deg) translateZ(200px);">L</span>
+      <!-- More letters continuing around -->
+    </div>
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
     // ORIGINAL - Faithful 1:1 reconstruction from video
     else if (styleName === "original" || styleName.includes("1:1 copy") || styleName.includes("exact match")) {
       console.log("[transmute] >>> MATCHED: ORIGINAL (1:1 Reconstruction) <<<");

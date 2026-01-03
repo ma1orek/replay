@@ -303,6 +303,220 @@ const StylePreview = ({ styleId }: { styleId: string }) => {
         <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-b-[7px] border-l-transparent border-r-transparent border-b-white" />
       </div>
     ),
+    // === NEW ADVANCED STYLES ===
+    "phantom-border": (
+      <div className="w-full h-full bg-[#0a0a0a] relative overflow-hidden">
+        <div className="absolute inset-1 grid grid-cols-2 gap-[1px]">
+          <div className="bg-white/[0.02]" />
+          <div className="bg-white/[0.02]" />
+          <div className="bg-white/[0.02]" />
+          <div className="bg-white/[0.02]" />
+        </div>
+        <div className="absolute top-1 left-2 w-3 h-3 bg-gradient-radial from-white/20 to-transparent rounded-full blur-[2px]" />
+      </div>
+    ),
+    "opposing-scroll": (
+      <div className="w-full h-full bg-black overflow-hidden flex flex-col justify-center gap-0.5">
+        <div className="text-[5px] text-white/40 whitespace-nowrap animate-marquee">TEXT ・ TEXT ・ TEXT ・</div>
+        <div className="text-[5px] text-white/40 whitespace-nowrap animate-marquee-reverse">TEXT ・ TEXT ・ TEXT ・</div>
+      </div>
+    ),
+    "chromatic-dispersion": (
+      <div className="w-full h-full bg-black relative overflow-hidden flex items-center justify-center">
+        <div className="w-4 h-4 bg-white/60 rounded-sm relative">
+          <div className="absolute inset-0 bg-red-500/40 translate-x-[1px]" />
+          <div className="absolute inset-0 bg-blue-500/40 -translate-x-[1px]" />
+        </div>
+      </div>
+    ),
+    "live-dashboard": (
+      <div className="w-full h-full bg-[#0a0a0a] p-0.5 grid grid-cols-3 gap-px">
+        <div className="bg-neutral-900 flex items-center justify-center"><div className="w-1 h-1 rounded-full bg-green-500 animate-pulse" /></div>
+        <div className="bg-neutral-900 text-[4px] text-white/50 flex items-center justify-center font-mono">47</div>
+        <div className="bg-neutral-900" />
+        <div className="bg-neutral-900" />
+        <div className="bg-neutral-900 text-[4px] text-cyan-400/50 flex items-center justify-center">↑</div>
+        <div className="bg-neutral-900" />
+      </div>
+    ),
+    "silk-smoke": (
+      <div className="w-full h-full bg-[#1a1a1a] relative overflow-hidden">
+        <div className="absolute inset-0 opacity-30" style={{ filter: 'url(#turbulence)', background: 'linear-gradient(45deg, purple, cyan)' }} />
+        <svg className="absolute inset-0 w-0 h-0">
+          <filter id="turbulence"><feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" /></filter>
+        </svg>
+      </div>
+    ),
+    "sliced-shutter": (
+      <div className="w-full h-full bg-black flex overflow-hidden">
+        <div className="w-1/5 h-full bg-gradient-to-b from-purple-500/60 to-pink-500/60" style={{ transform: 'translateY(20%)' }} />
+        <div className="w-1/5 h-full bg-gradient-to-b from-purple-500/60 to-pink-500/60" style={{ transform: 'translateY(40%)' }} />
+        <div className="w-1/5 h-full bg-gradient-to-b from-purple-500/60 to-pink-500/60" style={{ transform: 'translateY(60%)' }} />
+        <div className="w-1/5 h-full bg-gradient-to-b from-purple-500/60 to-pink-500/60" style={{ transform: 'translateY(40%)' }} />
+        <div className="w-1/5 h-full bg-gradient-to-b from-purple-500/60 to-pink-500/60" style={{ transform: 'translateY(20%)' }} />
+      </div>
+    ),
+    "gyroscopic-levitation": (
+      <div className="w-full h-full bg-white flex items-center justify-center relative">
+        <div className="absolute w-5 h-3 bg-black/10 rounded-full blur-sm translate-y-1" />
+        <div className="w-5 h-3 rounded-md bg-gradient-to-br from-blue-500 to-purple-500 -translate-y-0.5" style={{ transform: 'perspective(50px) rotateX(-5deg) rotateY(5deg)' }} />
+      </div>
+    ),
+    "stacked-cards": (
+      <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center relative">
+        <div className="absolute w-5 h-3 rounded-sm bg-white/10 translate-y-1 scale-90" />
+        <div className="absolute w-5 h-3 rounded-sm bg-white/20 translate-y-0.5 scale-95" />
+        <div className="absolute w-5 h-3 rounded-sm bg-white/30" />
+      </div>
+    ),
+    "sticky-headers": (
+      <div className="w-full h-full bg-white relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-2 bg-black text-[4px] text-white flex items-center px-1 font-bold">01</div>
+        <div className="absolute top-3 left-0 right-0 h-2 bg-gray-200" />
+        <div className="absolute top-5 left-0 right-0 h-2 bg-gray-300" />
+      </div>
+    ),
+    "morphing-nav": (
+      <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center">
+        <div className="w-3 h-3 rounded-full bg-white/20 border border-white/30" />
+      </div>
+    ),
+    "exploded-view": (
+      <div className="w-full h-full bg-black flex items-center justify-center relative" style={{ perspective: '50px' }}>
+        <div className="absolute w-4 h-1 bg-blue-500/50 rounded-sm" style={{ transform: 'translateZ(0px)' }} />
+        <div className="absolute w-3 h-0.5 bg-cyan-500/50 rounded-sm" style={{ transform: 'translateZ(5px) translateY(-3px)' }} />
+        <div className="absolute w-2 h-0.5 bg-purple-500/50 rounded-sm" style={{ transform: 'translateZ(10px) translateY(-5px)' }} />
+      </div>
+    ),
+    "helix-typography": (
+      <div className="w-full h-full bg-black flex items-center justify-center overflow-hidden" style={{ perspective: '100px' }}>
+        <div className="text-[6px] text-white/60 font-bold" style={{ transform: 'rotateY(30deg)' }}>ABC</div>
+      </div>
+    ),
+    "inverted-lens": (
+      <div className="w-full h-full bg-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-black text-white text-[6px] flex items-center justify-center">TEXT</div>
+        <div className="absolute top-1 left-2 w-3 h-3 rounded-full bg-white" style={{ mixBlendMode: 'difference' }} />
+      </div>
+    ),
+    "draggable-masonry": (
+      <div className="w-full h-full bg-[#f5f5f5] p-0.5 grid grid-cols-3 gap-0.5">
+        <div className="bg-pink-400 rounded-sm h-3" />
+        <div className="bg-blue-400 rounded-sm h-4 row-span-2" />
+        <div className="bg-yellow-400 rounded-sm h-3" />
+        <div className="bg-green-400 rounded-sm h-2" />
+        <div className="bg-purple-400 rounded-sm h-2" />
+      </div>
+    ),
+    "crt-noise": (
+      <div className="w-full h-full bg-[#0a0a0a] relative overflow-hidden">
+        <div className="absolute inset-0" style={{ background: 'repeating-linear-gradient(0deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 2px)' }} />
+        <div className="absolute inset-0 flex items-center justify-center text-[6px] font-mono" style={{ textShadow: '1px 0 red, -1px 0 cyan' }}>CRT</div>
+      </div>
+    ),
+    "parallax-curtain": (
+      <div className="w-full h-full bg-black relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-white to-gray-200" style={{ clipPath: 'inset(0 0 40% 0)' }} />
+        <div className="absolute bottom-0 left-0 right-0 h-2/5 bg-black flex items-center justify-center text-[5px] text-white/40">FOOTER</div>
+      </div>
+    ),
+    "viscous-hover": (
+      <div className="w-full h-full bg-black flex items-center justify-center">
+        <div className="w-5 h-4 bg-gradient-to-br from-pink-500 to-orange-500 rounded-sm" style={{ filter: 'url(#goo)' }} />
+      </div>
+    ),
+    "elastic-sidebar": (
+      <div className="w-full h-full bg-[#0a0a0a] relative overflow-hidden">
+        <svg className="absolute left-0 top-0 h-full w-3" viewBox="0 0 20 100">
+          <path d="M0,0 Q10,50 0,100" fill="white" fillOpacity="0.1" />
+        </svg>
+      </div>
+    ),
+    "globe-data": (
+      <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center">
+        <div className="w-5 h-5 rounded-full border border-cyan-500/30 relative">
+          <div className="absolute w-0.5 h-0.5 bg-cyan-400 rounded-full top-1 left-2" />
+          <div className="absolute w-0.5 h-0.5 bg-cyan-400 rounded-full top-2 right-1" />
+          <div className="absolute w-0.5 h-0.5 bg-cyan-400 rounded-full bottom-1 left-1" />
+        </div>
+      </div>
+    ),
+    "horizontal-inertia": (
+      <div className="w-full h-full bg-black flex items-center gap-1 px-1 overflow-hidden">
+        <div className="w-4 h-5 bg-white/20 rounded-sm flex-shrink-0" style={{ transform: 'skewX(-5deg)' }} />
+        <div className="w-4 h-5 bg-white/20 rounded-sm flex-shrink-0" style={{ transform: 'skewX(-5deg)' }} />
+      </div>
+    ),
+    "liquid-text-mask": (
+      <div className="w-full h-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
+        <span className="text-[12px] font-black text-transparent bg-clip-text bg-gradient-to-r from-white/80 to-white/40">Aa</span>
+      </div>
+    ),
+    "skeuomorphic": (
+      <div className="w-full h-full bg-[#2a2a2a] flex items-center justify-center gap-1 p-1">
+        <div className="w-2 h-3 rounded-sm bg-gradient-to-b from-gray-400 to-gray-600 border border-gray-700" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)' }} />
+        <div className="w-2 h-3 rounded-sm bg-gradient-to-b from-green-400 to-green-600 border border-green-700" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)' }} />
+      </div>
+    ),
+    "noise-gradient": (
+      <div className="w-full h-full relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500" />
+        <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.7\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")' }} />
+      </div>
+    ),
+    "split-curtain": (
+      <div className="w-full h-full bg-gradient-to-br from-cyan-500 to-purple-500 relative overflow-hidden">
+        <div className="absolute left-0 top-0 bottom-0 w-1/2 bg-black" style={{ transform: 'translateX(-30%)' }} />
+        <div className="absolute right-0 top-0 bottom-0 w-1/2 bg-black" style={{ transform: 'translateX(30%)' }} />
+      </div>
+    ),
+    "matter-gravity": (
+      <div className="w-full h-full bg-white relative overflow-hidden">
+        <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-black/20" />
+        <div className="absolute bottom-1 left-1 w-2 h-2 rounded-full bg-red-500" />
+        <div className="absolute bottom-1 left-3 w-1.5 h-1.5 rounded-full bg-blue-500" />
+        <div className="absolute bottom-1 right-1 w-2.5 h-2.5 rounded-full bg-yellow-500" />
+        <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-green-500" />
+      </div>
+    ),
+    "magnetic-button": (
+      <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center">
+        <div className="w-5 h-3 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
+          <div className="w-1 h-1 rounded-full bg-white/60" />
+        </div>
+      </div>
+    ),
+    "pixelated-dissolve": (
+      <div className="w-full h-full bg-black grid grid-cols-4 grid-rows-4 gap-px p-0.5">
+        <div className="bg-purple-500/80" /><div className="bg-purple-500/60" /><div className="bg-purple-500/20" /><div className="bg-transparent" />
+        <div className="bg-purple-500/90" /><div className="bg-purple-500/70" /><div className="bg-purple-500/40" /><div className="bg-purple-500/10" />
+        <div className="bg-purple-500" /><div className="bg-purple-500/80" /><div className="bg-purple-500/50" /><div className="bg-purple-500/20" />
+        <div className="bg-purple-500" /><div className="bg-purple-500/90" /><div className="bg-purple-500/60" /><div className="bg-purple-500/30" />
+      </div>
+    ),
+    "cyclic-gallery": (
+      <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center overflow-hidden">
+        <div className="relative w-6 h-6">
+          <div className="absolute w-2 h-3 bg-white/30 rounded-sm" style={{ transform: 'rotate(0deg) translateY(-8px)' }} />
+          <div className="absolute w-2 h-3 bg-white/20 rounded-sm" style={{ transform: 'rotate(72deg) translateY(-8px)' }} />
+          <div className="absolute w-2 h-3 bg-white/10 rounded-sm" style={{ transform: 'rotate(144deg) translateY(-8px)' }} />
+        </div>
+      </div>
+    ),
+    "accordion-fold": (
+      <div className="w-full h-full bg-white relative overflow-hidden" style={{ perspective: '50px' }}>
+        <div className="absolute top-0 left-0 right-0 h-1/4 bg-gray-100 origin-bottom" style={{ transform: 'rotateX(-15deg)' }} />
+        <div className="absolute top-1/4 left-0 right-0 h-1/4 bg-white" />
+        <div className="absolute top-2/4 left-0 right-0 h-1/4 bg-gray-50 origin-top" style={{ transform: 'rotateX(15deg)' }} />
+        <div className="absolute top-3/4 left-0 right-0 h-1/4 bg-gray-100 origin-bottom" style={{ transform: 'rotateX(-10deg)' }} />
+      </div>
+    ),
+    "flashlight-mask": (
+      <div className="w-full h-full bg-black relative overflow-hidden">
+        <div className="absolute inset-0 bg-white flex items-center justify-center text-[6px] font-bold">HIDDEN</div>
+        <div className="absolute inset-0 bg-black" style={{ maskImage: 'radial-gradient(circle 10px at 60% 40%, transparent, black 100%)' }} />
+      </div>
+    ),
   };
 
   return (
@@ -319,7 +533,10 @@ const STYLE_CATEGORIES = [
   { id: "creative", name: "Creative & Experimental", color: "text-orange-400" },
   { id: "dark", name: "Dark Premium", color: "text-purple-400" },
   { id: "light", name: "Light & Clean", color: "text-blue-400" },
-  { id: "motion", name: "Motion & 3D", color: "text-cyan-400" },
+  { id: "motion", name: "Motion & Scroll", color: "text-cyan-400" },
+  { id: "interactive", name: "Interactive & Cursor", color: "text-pink-400" },
+  { id: "shader", name: "WebGL & Shaders", color: "text-emerald-400" },
+  { id: "physics", name: "Physics & 3D", color: "text-amber-400" },
   { id: "brand", name: "Brand Inspired", color: "text-green-400" },
 ];
 
@@ -360,9 +577,47 @@ const STYLE_PRESETS = [
   { id: "ethereal-mesh", name: "Ethereal Mesh", desc: "Aurora Blobs • Soft SaaS • Modern", fullDesc: "Soft dreamy gradients. Moving color blobs with blur. Frosted glass cards.", category: "light" },
   { id: "neubrutalism", name: "Neo-Brutalism", desc: "Hard Shadow • Thick Border • Bouncy", fullDesc: "High contrast pastels, thick black outlines, hard shadows.", category: "light" },
   
-  // === MOTION & 3D ===
+  // === MOTION & SCROLL ===
   { id: "xray-blueprint", name: "X-Ray Blueprint", desc: "Wireframe Reveal • Scanner • Technical", fullDesc: "Technical blueprint. Wireframe reveals solid on mouse. Line draw animations.", category: "motion" },
   { id: "digital-collage", name: "Digital Collage", desc: "Scrapbook • Stickers • Draggable", fullDesc: "Mixed media scrapbook. Paper texture, cutout shapes, stickers with shadows.", category: "motion" },
+  { id: "opposing-scroll", name: "Opposing Scroll Streams", desc: "Bi-Directional • Velocity • Marquee", fullDesc: "Rows of text moving in opposite directions driven by scroll velocity. Row 1 moves left, Row 2 moves right. Velocity-based speed. Hover pauses row.", category: "motion" },
+  { id: "sliced-shutter", name: "Sliced Shutter Reveal", desc: "5 Strips • Waterfall • Assembly", fullDesc: "Image enters as 5 vertical strips. Same image with shifted background-position. Staggered delay creating fluid waterfall assembly.", category: "motion" },
+  { id: "stacked-cards", name: "Stacked Card Deck", desc: "iOS Tabs • Depth • Scale", fullDesc: "Cards stack on top scaling down simulating depth. Like iOS Safari tabs. Scroll drives card transitions with brightness changes.", category: "motion" },
+  { id: "sticky-headers", name: "Sticky Section Headers", desc: "Editorial • Mix-Blend • Parallax", fullDesc: "Section titles stick to top while content slides underneath. Headers use mix-blend-difference. Content has subtle parallax.", category: "motion" },
+  { id: "horizontal-inertia", name: "Horizontal Inertia Gallery", desc: "Skew • Velocity • Spring", fullDesc: "Vertical scroll drives horizontal movement with velocity-based skew distortion. Images lean/tilt in movement direction. Spring physics.", category: "motion" },
+  { id: "parallax-curtain", name: "Parallax Curtain Footer", desc: "Fixed Behind • Reveal • Scale", fullDesc: "Footer fixed behind content. Content slides up to reveal it. Footer scales from 0.9 to 1.0 as revealed. Heavy shadow on content edge.", category: "motion" },
+  { id: "split-curtain", name: "Split Curtain Reveal", desc: "Dual Panel • Theater • Typography Split", fullDesc: "Screen splits Left/Right to reveal content behind. Typography splits apart too - half word goes left, half goes right. Dramatic reveal.", category: "motion" },
+  { id: "helix-typography", name: "Helix Typography", desc: "DNA Scroll • 3D Cylinder • Rotate", fullDesc: "Text rotates around 3D cylinder axis. Letters positioned with rotateY. Scroll rotates the entire container. Back-facing letters dimmer.", category: "motion" },
+  { id: "cyclic-gallery", name: "Cyclic Rotation Gallery", desc: "Fortune Wheel • Circle • Scroll Rotate", fullDesc: "Items arranged on giant invisible circle. Scrolling rotates the wheel. Items counter-rotate to stay upright/readable.", category: "motion" },
+  
+  // === INTERACTIVE & CURSOR ===
+  { id: "phantom-border", name: "Phantom Border UI", desc: "Invisible Grid • Cursor Proximity • Glow", fullDesc: "Invisible grid that only exists via cursor proximity. Radial gradient follows mouse, masked by grid lines. Duration: 0 for instant response.", category: "interactive" },
+  { id: "inverted-lens", name: "Inverted Lens Cursor", desc: "Window Mask • Hidden Layer • Reveal", fullDesc: "Cursor is a window revealing hidden layer. Main content black on white, hidden layer white on black. Mask follows cursor with lag.", category: "interactive" },
+  { id: "magnetic-button", name: "Magnetic Attraction", desc: "Sticky Cursor • Proximity • Wobble", fullDesc: "Elements physically stick to cursor within proximity radius. Text inside moves more than background. Elastic wobble on mouse leave.", category: "interactive" },
+  { id: "flashlight-mask", name: "Inverted Flashlight", desc: "Dark Screen • Light Cursor • Reveal", fullDesc: "Screen is dark. Cursor acts as light source revealing UI underneath. Click/hold expands flashlight radius. Heavy cursor lag for weight.", category: "interactive" },
+  { id: "elastic-sidebar", name: "Elastic Sidebar Drag", desc: "Rubber Band • SVG Curve • Wobble", fullDesc: "Sidebar behaves like stretched rubber band when dragged. SVG path morphs with drag. Highly elastic spring on release with wobble.", category: "interactive" },
+  { id: "draggable-masonry", name: "Draggable Masonry", desc: "Physics Grid • Throw • Snap", fullDesc: "Asymmetric grid where elements can be thrown around. Dragging causes layout shift. Snap to nearest grid slot with spring on release.", category: "interactive" },
+  { id: "morphing-nav", name: "Morphing Fluid Nav", desc: "Dynamic Island • Apple Physics • Morph", fullDesc: "Navigation bar morphs width/height based on state. Idle: small pill. Hover: medium with text. Active: large rectangle. Very snappy spring.", category: "interactive" },
+  
+  // === WEBGL & SHADERS ===
+  { id: "chromatic-dispersion", name: "Chromatic Dispersion", desc: "RGB Split • Movement Speed • Shader", fullDesc: "Colors split based on movement speed. Red channel offset positive, Blue negative, Green stable. Static looks normal, scrolling creates 3D glasses effect.", category: "shader" },
+  { id: "viscous-hover", name: "Viscous Hover", desc: "Displacement Map • Liquid • Gooey", fullDesc: "Images behave like liquid when touched. Displacement map texture pushed by mouse creates gooey trail effect.", category: "shader" },
+  { id: "silk-smoke", name: "Silk Smoke", desc: "SVG Turbulence • Slow Flow • Fabric", fullDesc: "Slow elegant procedural noise. SVG feTurbulence with feDisplacementMap. Animates seed slowly simulating flowing fabric/smoke.", category: "shader" },
+  { id: "globe-data", name: "Interactive Globe Data", desc: "3D Sphere • Points • Data Arcs", fullDesc: "3D sphere made of glowing data points. Bezier curves connect points simulating data transfer. Hover explodes points outward.", category: "shader" },
+  { id: "liquid-text-mask", name: "Liquid Text Masking", desc: "Video in Text • Drip • SVG Goo", fullDesc: "Giant typography acts as window to video. Edges that melt using SVG goo filter. Letters drip downwards on hover.", category: "shader" },
+  { id: "noise-gradient", name: "Dynamic Noise Gradient", desc: "Canvas Grain • Perlin • Aurora", fullDesc: "High-performance Perlin noise mixing with colors in real-time. Dithering for smooth transitions. TV Static meets Aurora feel.", category: "shader" },
+  
+  // === PHYSICS & 3D ===
+  { id: "gyroscopic-levitation", name: "Gyroscopic Levitation", desc: "Shadow Physics • Lift • Tilt", fullDesc: "Realistic lift physics. When card goes UP, shadow gets smaller, sharper, darker. Gyro tilt based on mouse position. Heavy magnetic feel.", category: "physics" },
+  { id: "exploded-view", name: "Exploded View Scroll", desc: "3D Disassembly • Parts Separate • Labels", fullDesc: "3D Model parts separate on Z-axis based on scroll. Meshes move at different speeds. HTML annotations fade in when fully separated.", category: "physics" },
+  { id: "matter-gravity", name: "Matter.js Gravity", desc: "Falling Tags • Collision • Throw", fullDesc: "Elements fall from top and collide with physical rules. Mouse can grab, throw, smash elements. Spawn at random X with angular velocity.", category: "physics" },
+  { id: "accordion-fold", name: "Accordion Fold 3D", desc: "Paper Map • Unfold • Crease Shadow", fullDesc: "Content unfolds vertically like paper accordion. Even slices origin top, odd slices origin bottom. Black overlay animates for crease shadow.", category: "physics" },
+  { id: "skeuomorphic", name: "Skeuomorphic Controls", desc: "Physical Switches • Plastic • 3D", fullDesc: "UI elements look/feel like physical plastic/metal switches. rotateX simulates rocker switch. Noise texture on plastic surface. Sound on click.", category: "physics" },
+  
+  // === DATA & DASHBOARD ===
+  { id: "live-dashboard", name: "Live Dashboard Density", desc: "Data Heavy • Micro-Animations • Alive", fullDesc: "High density metrics grid. Scanner line moves through cells. Ticker numbers scramble on load. Blinking status dots. tabular-nums font.", category: "creative" },
+  { id: "crt-noise", name: "CRT Signal Noise", desc: "Scanlines • RGB Shift • Flicker", fullDesc: "Old monitor signal simulation. Repeated scanlines, RGB text-shadow shift, vignette for curved glass, rapid opacity flicker.", category: "creative" },
+  { id: "pixelated-dissolve", name: "Pixelated Dissolve", desc: "8-bit • Block Transition • Retro", fullDesc: "Images enter/exit dissolving into large pixel blocks. Grid of squares with animated opacity in wave pattern. image-rendering: pixelated.", category: "creative" },
   
   // === BRAND INSPIRED ===
   { id: "apple", name: "Apple Style", desc: "Frosted Glass • Clean • SF Pro", fullDesc: "Clean SF Pro typography, subtle glassmorphism, generous whitespace.", category: "brand" },
