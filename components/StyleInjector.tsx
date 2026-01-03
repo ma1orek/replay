@@ -644,12 +644,12 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
           onDragLeave={handleDragLeave}
           onClick={() => fileInputRef.current?.click()}
           className={cn(
-            "relative rounded-xl border-2 border-dashed transition-all cursor-pointer",
+            "relative rounded-xl transition-all cursor-pointer",
             isDragging 
-              ? "border-[#FF6E3C] bg-[#FF6E3C]/10" 
+              ? "border border-[#FF6E3C] bg-[#FF6E3C]/10" 
               : referenceImage 
-                ? "border-[#FF6E3C]/30 bg-white/[0.02]" 
-                : "border-white/[0.08] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.03]"
+                ? "border border-[#FF6E3C]/40 bg-white/[0.02]" 
+                : "border border-dashed border-white/[0.08] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.03]"
           )}
         >
           {referenceImage ? (
@@ -661,7 +661,7 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
               />
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-white/80 truncate">{referenceImage.name}</p>
-                <p className="text-[10px] text-[#FF6E3C]">AI will use colors, fonts & spacing from this image</p>
+                <p className="text-[10px] text-[#FF6E3C]">Replay will use this image as style reference</p>
               </div>
               <button
                 onClick={(e) => {
