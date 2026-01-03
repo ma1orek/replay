@@ -4708,7 +4708,10 @@ export const shadows = {
               </div>
               
               {/* Generation List - sorted newest first */}
-              <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-2">
+              <div 
+                className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-2"
+                style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
+              >
                 {generations.length === 0 ? (
                   <div className="text-center py-12">
                     <History className="w-8 h-8 text-white/10 mx-auto mb-3" />
@@ -4970,7 +4973,13 @@ export const shadows = {
             </div>
           ) : (
             /* ACTIVE GENERATION MODE */
-            <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar">
+            <div 
+              className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar"
+              style={{ 
+                scrollbarWidth: 'thin', 
+                scrollbarColor: 'rgba(255,255,255,0.08) transparent' 
+              }}
+            >
               {/* Generation Title Header - One line: Title + New + History */}
               <div className="p-4 border-b border-white/5">
                 <div className="flex items-center gap-2">
@@ -5058,7 +5067,10 @@ export const shadows = {
                     <button onClick={() => fileInputRef.current?.click()} className="btn-black flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs"><Upload className="w-3.5 h-3.5" /> Upload</button>
                   </div>
                 </div>
-                <div className="space-y-2 max-h-[140px] overflow-auto custom-scrollbar">
+                <div 
+                  className="space-y-2 max-h-[140px] overflow-auto custom-scrollbar"
+                  style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
+                >
                   {flows.length === 0 ? (
                     <div 
                       onClick={() => fileInputRef.current?.click()} 
