@@ -129,7 +129,7 @@ function Navigation() {
               href="/tool"
               className="hidden sm:flex px-4 py-2.5 rounded-xl text-sm font-medium bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white hover:opacity-90 transition-opacity"
             >
-              Reconstruct
+              Launch App
             </Link>
             
             {/* Mobile menu button */}
