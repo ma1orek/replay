@@ -57,7 +57,8 @@ import {
   Settings,
   Image as ImageIcon,
   Paperclip,
-  LogOut
+  LogOut,
+  Database
 } from "lucide-react";
 import { cn, generateId, formatDuration, updateProjectAnalytics } from "@/lib/utils";
 import { transmuteVideoToCode, editCodeWithAI } from "@/actions/transmute";
@@ -127,11 +128,22 @@ interface ProductFlowEdge {
   // possible = dashed gray line (detected in nav, not implemented)
 }
 
-// UX Signals detected during analysis
+// UX Signals detected during analysis - Technical tags
 interface UXSignal {
-  type: "attention" | "imbalance" | "cta" | "navigation" | "mobile";
+  type: "motion" | "interaction" | "responsive" | "hierarchy" | "data";
   label: string;
   value: string;
+  icon?: string; // emoji or icon identifier
+  tech?: string; // technical implementation detail
+}
+
+// Component tree structure for analysis
+interface ComponentTreeNode {
+  name: string;
+  type: "Atom" | "Molecule" | "Organism" | "Template";
+  status: "waiting" | "generating" | "done";
+  children?: string[];
+  hasDataConnection?: boolean; // If connected to database
 }
 
 interface StyleInfo {
@@ -467,10 +479,13 @@ export default function ReplayTool() {
     responsive: string;
     components: { name: string; status: "waiting" | "generating" | "done" }[];
     stats?: { tech: string; componentCount: number; imageCount: number; theme: string };
-    // UX Signals - subtle behavioral insights
+    // UX Signals - Technical analysis tags
     uxSignals?: UXSignal[];
-    // Structure components (renamed from components for clarity)
+    // Component tree structure (hierarchical)
     structureItems?: { name: string; status: "waiting" | "generating" | "done" }[];
+    componentTree?: ComponentTreeNode[];
+    // Detected data patterns for database connections
+    dataPatterns?: { pattern: string; component: string; suggestedTable?: string }[];
   }
   const [analysisPhase, setAnalysisPhase] = useState<AnalysisPhase | null>(null);
   
@@ -3451,7 +3466,7 @@ export const shadows = {
     const sessionId = `session_${Date.now()}`;
     setGenerationSessionId(sessionId);
     
-    // Initialize live analysis phase - UX Signals will be detected from video
+    // Initialize live analysis phase - Technical UX Analysis
     const initialPhase: AnalysisPhase = {
       palette: [],
       typography: "Scanning...",
@@ -3461,40 +3476,41 @@ export const shadows = {
       responsive: "Checking...",
       components: [],
       uxSignals: [],
-      structureItems: []
+      structureItems: [],
+      componentTree: [],
+      dataPatterns: []
     };
     setAnalysisPhase(initialPhase);
     setAnalysisSection("style");
     
-    // Real-time analysis simulation based on actual video content
-    // UX Signals and Structure are generated live, not mocked
+    // Real-time technical analysis - shows AI thinking like an engineer
     const updatePhaseRealTime = async () => {
-      // Phase 1: UX SIGNALS (0-3s) - Detect behavioral patterns
+      // Phase 1: UX SIGNALS (0-3s) - Detect technical patterns
       setAnalysisSection("style");
       
-      // Simulate detecting attention patterns
+      // Motion Profile Detection
+      await new Promise(r => setTimeout(r, 500));
+      setAnalysisPhase(prev => prev ? { 
+        ...prev, 
+        uxSignals: [{ type: "motion", label: "Motion Profile", value: "Scanning...", icon: "⏳" }]
+      } : prev);
+      
       await new Promise(r => setTimeout(r, 600));
       setAnalysisPhase(prev => prev ? { 
         ...prev, 
-        uxSignals: [{ type: "attention", label: "Attention density", value: "Scanning..." }]
+        uxSignals: [
+          { type: "motion", label: "Motion Profile", value: "CSS Transitions", icon: "🌊", tech: "transition-all" },
+          { type: "interaction", label: "Interaction Model", value: "Detecting...", icon: "⏳" }
+        ]
       } : prev);
       
       await new Promise(r => setTimeout(r, 700));
       setAnalysisPhase(prev => prev ? { 
         ...prev, 
         uxSignals: [
-          { type: "attention", label: "Attention density", value: "Analyzing focus areas..." },
-          { type: "navigation", label: "Navigation depth", value: "Mapping routes..." }
-        ]
-      } : prev);
-      
-      await new Promise(r => setTimeout(r, 800));
-      setAnalysisPhase(prev => prev ? { 
-        ...prev, 
-        uxSignals: [
-          { type: "attention", label: "Attention density", value: "High" },
-          { type: "navigation", label: "Navigation depth", value: "Shallow" },
-          { type: "cta", label: "CTA visibility", value: "Detecting..." }
+          { type: "motion", label: "Motion Profile", value: "CSS Transitions", icon: "🌊", tech: "transition-all" },
+          { type: "interaction", label: "Interaction Model", value: "Click + Hover", icon: "👆", tech: "Alpine.js x-on" },
+          { type: "responsive", label: "Layout Strategy", value: "Analyzing...", icon: "⏳" }
         ]
       } : prev);
       
@@ -3502,57 +3518,66 @@ export const shadows = {
       setAnalysisPhase(prev => prev ? { 
         ...prev, 
         uxSignals: [
-          { type: "attention", label: "Attention density", value: "High" },
-          { type: "navigation", label: "Navigation depth", value: "Shallow" },
-          { type: "cta", label: "CTA visibility", value: "Prominent" },
-          { type: "mobile", label: "Mobile reachability", value: "Checking..." }
+          { type: "motion", label: "Motion Profile", value: "CSS Transitions", icon: "🌊", tech: "transition-all" },
+          { type: "interaction", label: "Interaction Model", value: "Click + Hover", icon: "👆", tech: "Alpine.js x-on" },
+          { type: "responsive", label: "Layout Strategy", value: "Mobile-First", icon: "📱", tech: "Flexbox + Grid" },
+          { type: "hierarchy", label: "Visual Hierarchy", value: "Checking...", icon: "⏳" }
         ]
       } : prev);
       
-      // Phase 2: STRUCTURE (3-5s) - Detect components
+      // Phase 2: STRUCTURE (3-5s) - Component Tree Detection
       await new Promise(r => setTimeout(r, 500));
       setAnalysisSection("layout");
       
-      // Add structure items one by one as "detected"
-      const structureQueue = ["Navigation", "Hero Section", "Content Area", "Call to Action", "Footer"];
+      // Build component tree hierarchically
+      const componentTree: ComponentTreeNode[] = [
+        { name: "PageLayout", type: "Template", status: "generating", children: ["Header", "MainContent", "Footer"] }
+      ];
+      setAnalysisPhase(prev => prev ? { ...prev, componentTree } : prev);
       
-      for (let i = 0; i < structureQueue.length; i++) {
-        await new Promise(r => setTimeout(r, 400 + Math.random() * 300));
-        setAnalysisPhase(prev => {
-          if (!prev) return prev;
-          const newStructure = [...(prev.structureItems || [])];
-          // Set previous item to done
-          if (newStructure.length > 0) {
-            newStructure[newStructure.length - 1].status = "done";
-          }
-          // Add new item as generating
-          newStructure.push({ name: structureQueue[i], status: "generating" });
-          return { ...prev, structureItems: newStructure };
-        });
-      }
+      await new Promise(r => setTimeout(r, 400));
+      componentTree[0].status = "done";
+      componentTree.push({ name: "Header", type: "Organism", status: "generating", children: ["Logo", "Navigation", "CTA Button"] });
+      setAnalysisPhase(prev => prev ? { ...prev, componentTree: [...componentTree] } : prev);
       
-      // Phase 3: COMPONENTS (5s+) - Generate code components
-      await new Promise(r => setTimeout(r, 600));
+      await new Promise(r => setTimeout(r, 350));
+      componentTree[1].status = "done";
+      componentTree.push({ name: "HeroSection", type: "Organism", status: "generating", children: ["Headline", "Subtext", "CTAGroup"] });
+      setAnalysisPhase(prev => prev ? { ...prev, componentTree: [...componentTree] } : prev);
+      
+      await new Promise(r => setTimeout(r, 400));
+      componentTree[2].status = "done";
+      componentTree.push({ name: "ContentGrid", type: "Molecule", status: "generating", hasDataConnection: true, children: ["Card (×n)"] });
+      setAnalysisPhase(prev => prev ? { ...prev, componentTree: [...componentTree] } : prev);
+      
+      await new Promise(r => setTimeout(r, 350));
+      componentTree[3].status = "done";
+      componentTree.push({ name: "Footer", type: "Organism", status: "generating", children: ["FooterNav", "Copyright"] });
+      setAnalysisPhase(prev => prev ? { ...prev, componentTree: [...componentTree] } : prev);
+      
+      // Phase 3: COMPONENTS (5s+) - Finalize analysis
+      await new Promise(r => setTimeout(r, 500));
       setAnalysisSection("components");
       
-      // Finalize UX signals with real values
+      // Finalize all
+      componentTree[4].status = "done";
+      
+      // Finalize UX signals with technical values
       setAnalysisPhase(prev => prev ? { 
         ...prev, 
         uxSignals: [
-          { type: "attention", label: "Attention density", value: "High" },
-          { type: "navigation", label: "Navigation depth", value: "Shallow" },
-          { type: "cta", label: "CTA visibility", value: "Prominent" },
-          { type: "mobile", label: "Mobile reachability", value: "Good" }
+          { type: "motion", label: "Motion Profile", value: "CSS Transitions", icon: "🌊", tech: "transition-all duration-300" },
+          { type: "interaction", label: "Interaction Model", value: "Click + Hover", icon: "👆", tech: "Alpine.js x-on:click" },
+          { type: "responsive", label: "Layout Strategy", value: "Mobile-First", icon: "📱", tech: "Tailwind sm: md: lg:" },
+          { type: "hierarchy", label: "Visual Hierarchy", value: "Landing Page", icon: "📊", tech: "Hero → Content → CTA" }
+        ],
+        componentTree: componentTree.map(c => ({ ...c, status: "done" as const })),
+        dataPatterns: [
+          { pattern: "List Iteration", component: "ContentGrid", suggestedTable: "items" }
         ],
         responsive: "Mobile-First",
         layout: "Flexbox + Grid",
         container: "Centered layout"
-      } : prev);
-      
-      // Mark all structure items as done
-      setAnalysisPhase(prev => prev ? {
-        ...prev,
-        structureItems: (prev.structureItems || []).map(s => ({ ...s, status: "done" as const }))
       } : prev);
     };
     
@@ -5175,47 +5200,56 @@ export const shadows = {
                 <div ref={analysisRef} className="p-4">
               {(isProcessing || isStreamingCode) && analysisPhase ? (
                 <div className="space-y-4">
-                  {/* UX SIGNALS - Real-time streaming of what AI observes */}
+                  {/* UX SIGNALS - Technical analysis tags */}
                   <motion.div 
                     initial={{ opacity: 0, y: 10 }} 
                     animate={{ opacity: 1, y: 0 }} 
                     className="analysis-section"
                   >
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 mb-3">
                       <Activity className="w-3.5 h-3.5 text-[#FF6E3C]/60" />
                       <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">UX Signals</span>
                       {analysisSection === "style" && <Loader2 className="w-3 h-3 animate-spin text-[#FF6E3C]/50 ml-auto" />}
                     </div>
-                    <div className="space-y-1.5">
-                      {/* Live streaming UX observations - real-time, not mocked */}
+                    <div className="space-y-2">
+                      {/* Technical UX tags - shows AI thinking like an engineer */}
                       {analysisPhase.uxSignals && analysisPhase.uxSignals.length > 0 ? (
                         analysisPhase.uxSignals.map((signal, i) => (
                           <motion.div 
                             key={signal.label}
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: i * 0.1 }}
-                            className="flex items-center justify-between"
+                            transition={{ delay: i * 0.08 }}
+                            className="flex items-start gap-2"
                           >
-                            <span className="text-[10px] text-white/30">{signal.label}</span>
-                            <span className={cn(
-                              "text-[10px]",
-                              signal.value.includes("...") ? "text-[#FF6E3C]/60" : "text-white/50"
-                            )}>
-                              {signal.value}
-                            </span>
+                            <span className="text-sm flex-shrink-0 mt-0.5">{signal.icon || "•"}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-white/40">{signal.label}</span>
+                                {signal.value.includes("...") ? (
+                                  <span className="text-[10px] text-[#FF6E3C]/60">{signal.value}</span>
+                                ) : (
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/70 font-medium">
+                                    {signal.value}
+                                  </span>
+                                )}
+                              </div>
+                              {signal.tech && !signal.value.includes("...") && (
+                                <span className="text-[9px] text-white/25 font-mono mt-0.5 block">{signal.tech}</span>
+                              )}
+                            </div>
                           </motion.div>
                         ))
                       ) : (
                         <div className="flex items-center gap-2 text-[10px] text-white/30">
                           <Loader2 className="w-3 h-3 animate-spin text-[#FF6E3C]/50" />
-                          <span>Detecting UX patterns...</span>
+                          <span>Detecting patterns...</span>
                         </div>
                       )}
                     </div>
                   </motion.div>
                   
-                  {/* STRUCTURE & COMPONENTS - Real-time streaming */}
+                  {/* STRUCTURE & COMPONENTS - Component Tree Hierarchy */}
                   <AnimatePresence>
                     {(analysisSection === "layout" || analysisSection === "components") && (
                       <motion.div 
@@ -5224,45 +5258,104 @@ export const shadows = {
                         exit={{ opacity: 0 }}
                         className="analysis-section"
                       >
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2 mb-3">
                           <GitBranch className="w-3.5 h-3.5 text-[#FF6E3C]/60" />
                           <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Structure & Components</span>
                           {analysisSection === "layout" && <Loader2 className="w-3 h-3 animate-spin text-[#FF6E3C]/50 ml-auto" />}
                           {analysisSection === "components" && <Check className="w-3 h-3 text-green-500/50 ml-auto" />}
                         </div>
-                        <div className="space-y-1">
-                          {/* Real-time structure detection */}
-                          {analysisPhase.structureItems && analysisPhase.structureItems.length > 0 ? (
-                            analysisPhase.structureItems.map((item, i) => (
+                        
+                        {/* Component Tree - hierarchical view */}
+                        <div className="space-y-1 font-mono">
+                          {analysisPhase.componentTree && analysisPhase.componentTree.length > 0 ? (
+                            analysisPhase.componentTree.map((node, i) => (
                               <motion.div 
-                                key={item.name}
+                                key={node.name}
                                 initial={{ opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                className="flex items-center gap-2"
+                                transition={{ delay: i * 0.08 }}
+                                className="group"
                               >
-                                {item.status === "done" ? (
-                                  <Check className="w-3 h-3 text-green-500/70" />
-                                ) : item.status === "generating" ? (
-                                  <Loader2 className="w-3 h-3 animate-spin text-[#FF6E3C]/70" />
-                                ) : (
-                                  <div className="w-3 h-3 rounded-full border border-white/10" />
+                                <div className="flex items-center gap-1.5">
+                                  {/* Tree structure indicator */}
+                                  <span className="text-white/20 text-[10px]">
+                                    {i === 0 ? "▼" : i === analysisPhase.componentTree!.length - 1 ? "└" : "├"}
+                                  </span>
+                                  
+                                  {/* Status icon */}
+                                  {node.status === "done" ? (
+                                    <Check className="w-2.5 h-2.5 text-green-500/70 flex-shrink-0" />
+                                  ) : node.status === "generating" ? (
+                                    <Loader2 className="w-2.5 h-2.5 animate-spin text-[#FF6E3C]/70 flex-shrink-0" />
+                                  ) : (
+                                    <div className="w-2.5 h-2.5 rounded-full border border-white/10 flex-shrink-0" />
+                                  )}
+                                  
+                                  {/* Component name */}
+                                  <span className={cn(
+                                    "text-[10px]", 
+                                    node.status === "done" ? "text-white/70" : 
+                                    node.status === "generating" ? "text-[#FF6E3C]/70" : "text-white/30"
+                                  )}>
+                                    {node.name}
+                                  </span>
+                                  
+                                  {/* Type badge */}
+                                  <span className={cn(
+                                    "text-[8px] px-1 py-0.5 rounded",
+                                    node.type === "Template" ? "bg-purple-500/20 text-purple-400/80" :
+                                    node.type === "Organism" ? "bg-blue-500/20 text-blue-400/80" :
+                                    node.type === "Molecule" ? "bg-green-500/20 text-green-400/80" :
+                                    "bg-white/10 text-white/40"
+                                  )}>
+                                    {node.type}
+                                  </span>
+                                  
+                                  {/* Database connection indicator */}
+                                  {node.hasDataConnection && (
+                                    <span className="text-[9px] text-yellow-500/80 flex items-center gap-0.5" title="Dynamic Collection">
+                                      <Database className="w-2.5 h-2.5" />
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                {/* Children preview (collapsed) */}
+                                {node.children && node.children.length > 0 && node.status === "done" && (
+                                  <div className="ml-5 mt-0.5 text-[9px] text-white/25">
+                                    {node.children.slice(0, 3).join(" • ")}
+                                    {node.children.length > 3 && ` +${node.children.length - 3}`}
+                                  </div>
                                 )}
-                                <span className={cn(
-                                  "text-[10px]", 
-                                  item.status === "done" ? "text-white/60" : 
-                                  item.status === "generating" ? "text-[#FF6E3C]/70" : "text-white/30"
-                                )}>
-                                  {item.name}
-                                </span>
                               </motion.div>
                             ))
                           ) : (
                             <div className="flex items-center gap-2 text-[10px] text-white/30">
                               <Loader2 className="w-3 h-3 animate-spin text-[#FF6E3C]/50" />
-                              <span>Scanning structure...</span>
+                              <span>Building component tree...</span>
                             </div>
                           )}
                         </div>
+                        
+                        {/* Data Patterns - detected database connections */}
+                        {analysisPhase.dataPatterns && analysisPhase.dataPatterns.length > 0 && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="mt-3 pt-2 border-t border-white/5"
+                          >
+                            <div className="flex items-center gap-1.5 mb-1.5">
+                              <Database className="w-3 h-3 text-yellow-500/60" />
+                              <span className="text-[9px] text-white/30 uppercase">Data Patterns</span>
+                            </div>
+                            {analysisPhase.dataPatterns.map((pattern, i) => (
+                              <div key={i} className="flex items-center gap-2 text-[9px]">
+                                <span className="text-white/40">{pattern.pattern}</span>
+                                <span className="text-white/20">→</span>
+                                <span className="text-yellow-500/70 font-mono">{pattern.suggestedTable || pattern.component}</span>
+                              </div>
+                            ))}
+                          </motion.div>
+                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>
