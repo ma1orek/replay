@@ -3492,15 +3492,15 @@ export const shadows = {
       await new Promise(r => setTimeout(r, 500));
       setAnalysisPhase(prev => prev ? { 
         ...prev, 
-        uxSignals: [{ type: "motion", label: "Motion Profile", value: "Scanning...", icon: "⏳" }]
+        uxSignals: [{ type: "motion", label: "Motion Profile", value: "Scanning..." }]
       } : prev);
       
       await new Promise(r => setTimeout(r, 600));
       setAnalysisPhase(prev => prev ? { 
         ...prev, 
         uxSignals: [
-          { type: "motion", label: "Motion Profile", value: "CSS Transitions", icon: "🌊", tech: "transition-all" },
-          { type: "interaction", label: "Interaction Model", value: "Detecting...", icon: "⏳" }
+          { type: "motion", label: "Motion Profile", value: "CSS Transitions", tech: "transition-all" },
+          { type: "interaction", label: "Interaction Model", value: "Detecting..." }
         ]
       } : prev);
       
@@ -3508,9 +3508,9 @@ export const shadows = {
       setAnalysisPhase(prev => prev ? { 
         ...prev, 
         uxSignals: [
-          { type: "motion", label: "Motion Profile", value: "CSS Transitions", icon: "🌊", tech: "transition-all" },
-          { type: "interaction", label: "Interaction Model", value: "Click + Hover", icon: "👆", tech: "Alpine.js x-on" },
-          { type: "responsive", label: "Layout Strategy", value: "Analyzing...", icon: "⏳" }
+          { type: "motion", label: "Motion Profile", value: "CSS Transitions", tech: "transition-all" },
+          { type: "interaction", label: "Interaction Model", value: "Click + Hover", tech: "Alpine.js x-on" },
+          { type: "responsive", label: "Layout Strategy", value: "Analyzing..." }
         ]
       } : prev);
       
@@ -3518,10 +3518,10 @@ export const shadows = {
       setAnalysisPhase(prev => prev ? { 
         ...prev, 
         uxSignals: [
-          { type: "motion", label: "Motion Profile", value: "CSS Transitions", icon: "🌊", tech: "transition-all" },
-          { type: "interaction", label: "Interaction Model", value: "Click + Hover", icon: "👆", tech: "Alpine.js x-on" },
-          { type: "responsive", label: "Layout Strategy", value: "Mobile-First", icon: "📱", tech: "Flexbox + Grid" },
-          { type: "hierarchy", label: "Visual Hierarchy", value: "Checking...", icon: "⏳" }
+          { type: "motion", label: "Motion Profile", value: "CSS Transitions", tech: "transition-all" },
+          { type: "interaction", label: "Interaction Model", value: "Click + Hover", tech: "Alpine.js x-on" },
+          { type: "responsive", label: "Layout Strategy", value: "Mobile-First", tech: "Flexbox + Grid" },
+          { type: "hierarchy", label: "Visual Hierarchy", value: "Checking..." }
         ]
       } : prev);
       
@@ -3566,10 +3566,10 @@ export const shadows = {
       setAnalysisPhase(prev => prev ? { 
         ...prev, 
         uxSignals: [
-          { type: "motion", label: "Motion Profile", value: "CSS Transitions", icon: "🌊", tech: "transition-all duration-300" },
-          { type: "interaction", label: "Interaction Model", value: "Click + Hover", icon: "👆", tech: "Alpine.js x-on:click" },
-          { type: "responsive", label: "Layout Strategy", value: "Mobile-First", icon: "📱", tech: "Tailwind sm: md: lg:" },
-          { type: "hierarchy", label: "Visual Hierarchy", value: "Landing Page", icon: "📊", tech: "Hero → Content → CTA" }
+          { type: "motion", label: "Motion Profile", value: "CSS Transitions", tech: "transition-all duration-300" },
+          { type: "interaction", label: "Interaction Model", value: "Click + Hover", tech: "Alpine.js x-on:click" },
+          { type: "responsive", label: "Layout Strategy", value: "Mobile-First", tech: "Tailwind sm: md: lg:" },
+          { type: "hierarchy", label: "Visual Hierarchy", value: "Landing Page", tech: "Hero → Content → CTA" }
         ],
         componentTree: componentTree.map(c => ({ ...c, status: "done" as const })),
         dataPatterns: [
@@ -5207,12 +5207,12 @@ export const shadows = {
                     className="analysis-section"
                   >
                     <div className="flex items-center gap-2 mb-3">
-                      <Activity className="w-3.5 h-3.5 text-[#FF6E3C]/60" />
+                      <Crosshair className="w-3.5 h-3.5 text-[#FF6E3C]/60" />
                       <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">UX Signals</span>
                       {analysisSection === "style" && <Loader2 className="w-3 h-3 animate-spin text-[#FF6E3C]/50 ml-auto" />}
                     </div>
-                    <div className="space-y-2">
-                      {/* Technical UX tags - shows AI thinking like an engineer */}
+                    <div className="space-y-2.5">
+                      {/* Technical UX tags with Lucide icons */}
                       {analysisPhase.uxSignals && analysisPhase.uxSignals.length > 0 ? (
                         analysisPhase.uxSignals.map((signal, i) => (
                           <motion.div 
@@ -5220,22 +5220,31 @@ export const shadows = {
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: i * 0.08 }}
-                            className="flex items-start gap-2"
+                            className="flex items-start gap-2.5"
                           >
-                            <span className="text-sm flex-shrink-0 mt-0.5">{signal.icon || "•"}</span>
+                            {/* Lucide icon based on signal type */}
+                            <div className={cn(
+                              "w-5 h-5 rounded flex items-center justify-center flex-shrink-0",
+                              signal.value.includes("...") ? "bg-white/5" : "bg-white/[0.03]"
+                            )}>
+                              {signal.type === "motion" && <RefreshCw className={cn("w-3 h-3", signal.value.includes("...") ? "text-white/30 animate-spin" : "text-cyan-400/70")} />}
+                              {signal.type === "interaction" && <MousePointer className={cn("w-3 h-3", signal.value.includes("...") ? "text-white/30" : "text-amber-400/70")} />}
+                              {signal.type === "responsive" && <Smartphone className={cn("w-3 h-3", signal.value.includes("...") ? "text-white/30" : "text-green-400/70")} />}
+                              {signal.type === "hierarchy" && <Layers className={cn("w-3 h-3", signal.value.includes("...") ? "text-white/30" : "text-purple-400/70")} />}
+                            </div>
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] text-white/40">{signal.label}</span>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-[10px] text-white/50">{signal.label}</span>
                                 {signal.value.includes("...") ? (
-                                  <span className="text-[10px] text-[#FF6E3C]/60">{signal.value}</span>
+                                  <span className="text-[10px] text-[#FF6E3C]/60 italic">{signal.value}</span>
                                 ) : (
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/70 font-medium">
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/80 font-medium border border-white/5">
                                     {signal.value}
                                   </span>
                                 )}
                               </div>
                               {signal.tech && !signal.value.includes("...") && (
-                                <span className="text-[9px] text-white/25 font-mono mt-0.5 block">{signal.tech}</span>
+                                <code className="text-[9px] text-white/30 mt-0.5 block font-mono">{signal.tech}</code>
                               )}
                             </div>
                           </motion.div>
@@ -5336,22 +5345,31 @@ export const shadows = {
                           )}
                         </div>
                         
-                        {/* Data Patterns - detected database connections */}
+                        {/* Data Patterns - detected database connections + Supabase status */}
                         {analysisPhase.dataPatterns && analysisPhase.dataPatterns.length > 0 && (
                           <motion.div 
                             initial={{ opacity: 0, y: 5 }}
                             animate={{ opacity: 1, y: 0 }}
                             className="mt-3 pt-2 border-t border-white/5"
                           >
-                            <div className="flex items-center gap-1.5 mb-1.5">
-                              <Database className="w-3 h-3 text-yellow-500/60" />
-                              <span className="text-[9px] text-white/30 uppercase">Data Patterns</span>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-1.5">
+                                <Database className="w-3 h-3 text-green-500/60" />
+                                <span className="text-[9px] text-white/30 uppercase tracking-wide">Data Patterns</span>
+                              </div>
+                              {/* Supabase indicator - shows if project has DB settings */}
+                              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-green-500/10 border border-green-500/20">
+                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                <span className="text-[8px] text-green-500/80 font-medium uppercase tracking-wide">
+                                  Supabase Ready
+                                </span>
+                              </div>
                             </div>
                             {analysisPhase.dataPatterns.map((pattern, i) => (
-                              <div key={i} className="flex items-center gap-2 text-[9px]">
-                                <span className="text-white/40">{pattern.pattern}</span>
+                              <div key={i} className="flex items-center gap-2 text-[9px] py-0.5">
+                                <span className="text-white/50">{pattern.pattern}</span>
                                 <span className="text-white/20">→</span>
-                                <span className="text-yellow-500/70 font-mono">{pattern.suggestedTable || pattern.component}</span>
+                                <code className="text-green-400/80 font-mono bg-green-500/5 px-1 rounded">{pattern.suggestedTable || pattern.component}</code>
                               </div>
                             ))}
                           </motion.div>
