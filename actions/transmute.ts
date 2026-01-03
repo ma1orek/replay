@@ -1960,16 +1960,16 @@ ${request.styleDirective}`;
 
 **STYLE: PHANTOM BORDER UI (Cursor Proximity Grid)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY PHANTOM GRID EFFECT:**
-
-**CORE MECHANIC:** Invisible grid that only reveals borders via cursor proximity.
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply PHANTOM BORDER UI aesthetics:
 
 **REQUIRED VISUAL CHANGES (Non-Negotiable):**
-1. Background: Pure black or very dark (#0a0a0a)
-2. Grid: CSS Grid with transparent cells
-3. Reveal Effect: Radial gradient follows mouse, masked by grid gaps
-4. CSS Variables: --mouse-x, --mouse-y updated via Alpine.js
-5. Physics: Duration 0 (instant response) - lag destroys illusion
+1. Background: MUST be pure black or very dark (#0a0a0a)
+2. Grid: MUST use CSS Grid with transparent cells
+3. Reveal Effect: MUST have radial gradient following mouse, masked by grid gaps
+4. CSS Variables: MUST use --mouse-x, --mouse-y updated via Alpine.js
+5. Physics: Duration MUST be 0 (instant response) - lag destroys illusion
+6. All content cards/sections MUST have invisible borders that glow on proximity
 
 **ANIMATION LOGIC:**
 - Track mouse X/Y on parent container
@@ -1996,7 +1996,15 @@ ${request.styleDirective}`;
 
 **STYLE: OPPOSING SCROLL STREAMS (Kinetic Parallax Marquee)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY OPPOSING SCROLL:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply OPPOSING SCROLL STREAMS aesthetics:
+
+**REQUIRED VISUAL CHANGES (Non-Negotiable):**
+1. Background: MUST be dark/black
+2. Typography: MUST have massive text rows moving in opposite directions
+3. Animation: Row 1 MUST move LEFT, Row 2 MUST move RIGHT on scroll
+4. Speed: MUST be driven by scroll velocity
+5. Hover: MUST pause row and fill text white
 
 **CORE MECHANIC:** Rows of text moving in opposite directions driven by scroll velocity.
 
@@ -2036,7 +2044,15 @@ ${request.styleDirective}`;
 
 **STYLE: CHROMATIC DISPERSION (RGB Shader Effect)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY RGB SPLIT:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply CHROMATIC DISPERSION aesthetics:
+
+**REQUIRED VISUAL CHANGES (Non-Negotiable):**
+1. Background: MUST be dark/black
+2. All images/text: MUST have RGB split effect
+3. Red channel: MUST offset +2px right
+4. Blue channel: MUST offset -2px left
+5. Effect intensity: MUST increase with scroll velocity
 
 **CORE MECHANIC:** Colors split based on scroll/movement speed.
 
@@ -2078,7 +2094,15 @@ ${request.styleDirective}`;
 
 **STYLE: LIVE DASHBOARD DENSITY (Data Heavy Interface)**
 
-⚠️ **MANDATORY OVERRIDE - HIGH DENSITY METRICS:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply LIVE DASHBOARD aesthetics:
+
+**REQUIRED VISUAL CHANGES (Non-Negotiable):**
+1. Background: MUST be dark (neutral-900/black)
+2. Layout: MUST use high-density grid with gap-px borders
+3. Animations: MUST have scanner line, ticker numbers, blinking status dots
+4. Typography: MUST use font-mono and tabular-nums
+5. All data MUST feel "alive" with micro-animations
 
 **CORE MECHANIC:** High density, micro-animations, "Alive" dashboard feel.
 
@@ -2119,7 +2143,14 @@ ${request.styleDirective}`;
 
 **STYLE: SILK SMOKE (Procedural Turbulence)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY SILK SMOKE:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply SILK SMOKE aesthetics:
+
+**REQUIRED VISUAL CHANGES (Non-Negotiable):**
+1. Background: MUST have SVG turbulence filter simulating flowing smoke/silk
+2. Colors: MUST use dark moody gradients (#1a1a2e to #16213e)
+3. Animation: MUST be very slow (20s duration) for elegant feel
+4. Text: MUST be sharp white contrasting with soft background
 
 **CORE MECHANIC:** Slow, elegant procedural noise simulating flowing fabric/smoke.
 
@@ -2167,7 +2198,8 @@ ${request.styleDirective}`;
 
 **STYLE: SLICED SHUTTER REVEAL (Vertical Strips Animation)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY SLICED REVEAL:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply SLICED SHUTTER aesthetics. All images/sections MUST enter as 5 vertical strips with staggered animation.
 
 **CORE MECHANIC:** Image enters as 5 vertical strips with staggered animation.
 
@@ -2204,7 +2236,8 @@ ${request.styleDirective}`;
 
 **STYLE: GYROSCOPIC LEVITATION (Shadow Physics Card)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY LEVITATION PHYSICS:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply GYROSCOPIC LEVITATION aesthetics. All cards MUST float with shadow parallax based on device orientation/mouse.
 
 **CORE MECHANIC:** Realistic lift physics where shadow behaves inversely to height.
 
@@ -2243,7 +2276,8 @@ ${request.styleDirective}`;
 
 **STYLE: STACKED CARD DECK (iOS Safari Tabs)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY STACKED CARDS:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply STACKED CARD DECK aesthetics. Cards MUST stack on top simulating depth like iOS Safari tabs.
 
 **CORE MECHANIC:** Cards stack on top scaling down, simulating depth like iOS Safari tabs.
 
@@ -2278,7 +2312,8 @@ ${request.styleDirective}`;
 
 **STYLE: STICKY SECTION HEADERS (Editorial Layout)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY STICKY HEADERS:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply STICKY SECTION HEADERS aesthetics. Section titles MUST stick to top with mix-blend-difference while content slides underneath.
 
 **CORE MECHANIC:** Section titles stick to top while content slides underneath.
 
@@ -2318,7 +2353,8 @@ ${request.styleDirective}`;
 
 **STYLE: MORPHING FLUID NAV (Dynamic Island)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY MORPHING NAV:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply MORPHING NAV aesthetics. Navigation elements MUST morph and reshape like Dynamic Island with spring physics.
 
 **CORE MECHANIC:** Navigation morphs width/height based on state like Apple's Dynamic Island.
 
@@ -2363,7 +2399,8 @@ ${request.styleDirective}`;
 
 **STYLE: INVERTED LENS CURSOR (Mask Reveal)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY INVERTED LENS:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply INVERTED LENS aesthetics. Cursor MUST act as window revealing hidden inverted layer underneath. Black on white becomes white on black.
 
 **CORE MECHANIC:** Cursor is a window revealing hidden layer.
 
@@ -2397,7 +2434,8 @@ ${request.styleDirective}`;
 
 **STYLE: CRT SIGNAL NOISE (Retro Monitor)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY CRT EFFECT:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply CRT SIGNAL NOISE aesthetics. Screen MUST have scanlines, RGB text-shadow shift, vignette corners, and rapid opacity flicker.
 
 **CORE MECHANIC:** Old monitor signal simulation.
 
@@ -2436,7 +2474,8 @@ ${request.styleDirective}`;
 
 **STYLE: PARALLAX CURTAIN FOOTER (Fixed Reveal)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY CURTAIN FOOTER:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply PARALLAX CURTAIN FOOTER aesthetics. Footer MUST be fixed behind content, revealed as content slides up. Scale from 0.9 to 1.0.
 
 **CORE MECHANIC:** Footer fixed behind content, content slides up to reveal it.
 
@@ -2474,7 +2513,8 @@ ${request.styleDirective}`;
 
 **STYLE: MAGNETIC ATTRACTION (Cursor Magnet)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY MAGNETIC EFFECT:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply MAGNETIC ATTRACTION aesthetics. All interactive elements MUST stick to cursor within proximity radius with elastic wobble on mouse leave.
 
 **CORE MECHANIC:** Elements physically stick to cursor within proximity radius.
 
@@ -2509,7 +2549,8 @@ ${request.styleDirective}`;
 
 **STYLE: INVERTED FLASHLIGHT (Explorer Mask)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY FLASHLIGHT:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply FLASHLIGHT MASK aesthetics. Screen MUST be dark with cursor acting as light source revealing UI underneath. Heavy cursor lag for weight.
 
 **CORE MECHANIC:** Screen is dark, cursor acts as light source revealing UI.
 
@@ -2543,7 +2584,8 @@ ${request.styleDirective}`;
 
 **STYLE: ELASTIC SIDEBAR DRAG (Rubber Band Menu)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY ELASTIC SIDEBAR:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply ELASTIC SIDEBAR aesthetics. Sidebar MUST stretch/follow when dragged past edge, snap back with elastic spring animation.
 
 **CORE MECHANIC:** Sidebar behaves like stretched rubber band when dragged.
 
@@ -2578,7 +2620,8 @@ ${request.styleDirective}`;
 
 **STYLE: MATTER.JS GRAVITY (Physics Playground)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY PHYSICS GRAVITY:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply PHYSICS GRAVITY aesthetics. Elements MUST fall with gravity, bounce off walls, be draggable and throwable with matter.js physics.
 
 **CORE MECHANIC:** Elements fall with gravity and collide.
 
@@ -2614,7 +2657,8 @@ ${request.styleDirective}`;
 
 **STYLE: PIXELATED DISSOLVE (Retro Transition)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY PIXEL DISSOLVE:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply PIXELATED DISSOLVE aesthetics. Images MUST enter/exit dissolving into large pixel blocks with animated opacity wave pattern.
 
 **CORE MECHANIC:** Images dissolve into/from large pixel blocks.
 
@@ -2648,7 +2692,8 @@ ${request.styleDirective}`;
 
 **STYLE: CYCLIC ROTATION GALLERY (Fortune Wheel)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY CYCLIC GALLERY:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply CYCLIC ROTATION GALLERY aesthetics. Items MUST be arranged on invisible circle, scroll rotates the wheel, items counter-rotate to stay upright.
 
 **CORE MECHANIC:** Items arranged on giant invisible circle, scroll rotates wheel.
 
@@ -2685,7 +2730,8 @@ ${request.styleDirective}`;
 
 **STYLE: ACCORDION FOLD 3D (Paper Map Unfold)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY ACCORDION FOLD:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply 3D ACCORDION FOLD aesthetics. Sections MUST fold/unfold like paper with CSS 3D transforms, crease shadows, and depth.
 
 **CORE MECHANIC:** Content unfolds vertically like paper accordion.
 
@@ -2723,7 +2769,8 @@ ${request.styleDirective}`;
 
 **STYLE: SKEUOMORPHIC CONTROLS (Physical Switches)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY SKEUOMORPHIC:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply SKEUOMORPHIC SWITCH aesthetics. Toggles MUST look like physical switches with realistic depth, lighting, and spring animation.
 
 **CORE MECHANIC:** UI elements look/feel like physical plastic/metal switches.
 
@@ -2756,7 +2803,8 @@ ${request.styleDirective}`;
 
 **STYLE: SPLIT CURTAIN REVEAL (Theater Entrance)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY SPLIT CURTAIN:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply SPLIT CURTAIN REVEAL aesthetics. Screen MUST split Left/Right to reveal content, typography splits apart dramatically.
 
 **CORE MECHANIC:** Screen splits Left/Right to reveal content.
 
@@ -2802,7 +2850,8 @@ ${request.styleDirective}`;
 
 **STYLE: DRAGGABLE MASONRY (Physics Grid)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY DRAGGABLE GRID:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply DRAGGABLE MASONRY aesthetics. Grid items MUST be draggable with physics, other items push/settle around moved item.
 
 **CORE MECHANIC:** Asymmetric grid where elements can be dragged/thrown.
 
@@ -2841,7 +2890,8 @@ ${request.styleDirective}`;
 
 **STYLE: HORIZONTAL INERTIA GALLERY (Skew Scroll)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY HORIZONTAL INERTIA:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply HORIZONTAL INERTIA GALLERY aesthetics. Vertical scroll MUST drive horizontal movement with velocity-based skew distortion.
 
 **CORE MECHANIC:** Vertical scroll drives horizontal movement with velocity-based skew.
 
@@ -2879,7 +2929,8 @@ ${request.styleDirective}`;
 
 **STYLE: LIQUID TEXT MASKING (Video in Typography)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY VIDEO TEXT MASK:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply LIQUID TEXT MASK aesthetics. Text MUST act as mask revealing video/animated gradient underneath via background-clip: text.
 
 **CORE MECHANIC:** Giant typography acts as window to video.
 
@@ -2914,7 +2965,8 @@ ${request.styleDirective}`;
 
 **STYLE: DYNAMIC NOISE GRADIENT (Canvas Grain)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY NOISE GRADIENT:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply DYNAMIC NOISE GRADIENT aesthetics. Background MUST have animated gradient with SVG noise/dithering overlay for aurora feel.
 
 **CORE MECHANIC:** Perlin noise mixing with colors in real-time.
 
@@ -2949,7 +3001,8 @@ ${request.styleDirective}`;
 
 **STYLE: INTERACTIVE GLOBE DATA (WebGL Points)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY GLOBE VISUAL:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply INTERACTIVE GLOBE aesthetics. MUST have 3D globe made of points/arcs that rotates, with mouse interaction highlighting regions.
 
 **NOTE:** Full 3D requires Three.js/R3F. CSS approximation:
 
@@ -2984,7 +3037,8 @@ ${request.styleDirective}`;
 
 **STYLE: VISCOUS HOVER (Displacement Goo)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY VISCOUS EFFECT:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply VISCOUS DISPLACEMENT aesthetics. Elements MUST warp/bulge with gooey SVG filter effect, merging and separating fluidly.
 
 **CORE MECHANIC:** Images behave like liquid when touched.
 
@@ -3016,7 +3070,8 @@ ${request.styleDirective}`;
 
 **STYLE: EXPLODED VIEW SCROLL (3D Disassembly)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY EXPLODED VIEW:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply EXPLODED PRODUCT VIEW aesthetics. Product/UI MUST disassemble into 3D parts on scroll, each part floating in space.
 
 **CORE MECHANIC:** Parts separate on Z-axis based on scroll.
 
@@ -3050,7 +3105,8 @@ ${request.styleDirective}`;
 
 **STYLE: HELIX TYPOGRAPHY (DNA Scroll)**
 
-⚠️ **MANDATORY OVERRIDE - APPLY HELIX TEXT:**
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply HELIX TYPOGRAPHY aesthetics. Text MUST wrap around invisible 3D cylinder, scroll rotates container, back-facing letters dimmer.
 
 **CORE MECHANIC:** Text rotates around 3D cylinder axis.
 

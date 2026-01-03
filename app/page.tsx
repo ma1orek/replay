@@ -6691,17 +6691,28 @@ export const shadows = {
                     <div className="flex-1 flex items-center justify-center min-h-0 bg-black">
                       <video 
                         ref={videoRef} 
-                        src={selectedFlow.videoUrl + "#t=0.001"} 
+                        src={selectedFlow.videoUrl} 
                         preload="auto"
                         playsInline
-                        muted={false}
+                        muted
+                        autoPlay
                         className="w-full h-full object-contain" 
                         style={{ 
                           maxWidth: '100%', 
                           maxHeight: '100%',
                           imageRendering: 'auto'
                         }}
-                        onPlay={() => setIsPlaying(true)} 
+                        onPlay={() => {
+                          // Immediately pause after autoplay to show first frame
+                          const video = videoRef.current;
+                          if (video && video.currentTime < 0.1) {
+                            video.pause();
+                            video.muted = false;
+                            setIsPlaying(false);
+                          } else {
+                            setIsPlaying(true);
+                          }
+                        }} 
                         onPause={() => setIsPlaying(false)}
                         onLoadedMetadata={(e) => {
                           const video = e.currentTarget;
@@ -6715,13 +6726,6 @@ export const shadows = {
                                   : f
                               ));
                             }
-                          }
-                        }}
-                        onCanPlay={(e) => {
-                          // Force display first frame in high quality
-                          const video = e.currentTarget;
-                          if (video.currentTime < 0.01 && video.paused) {
-                            video.currentTime = 0.001;
                           }
                         }}
                         onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
