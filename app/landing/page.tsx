@@ -644,17 +644,6 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════════ */}
       <section className="relative z-10 min-h-screen flex items-center justify-center pt-20">
         <div className="mx-auto max-w-5xl px-6 py-20 w-full text-center">
-          {/* Early Access Badge */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#FF6E3C]/10 border border-[#FF6E3C]/20 mb-6"
-          >
-            <span className="w-2 h-2 rounded-full bg-[#FF6E3C] animate-pulse" />
-            <span className="text-xs font-medium text-[#FF6E3C]">Early Access</span>
-          </motion.div>
-          
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
