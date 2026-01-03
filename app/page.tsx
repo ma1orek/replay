@@ -5164,7 +5164,7 @@ export const shadows = {
                 <textarea
                   value={refinements}
                   onChange={(e) => setRefinements(e.target.value)}
-                  placeholder="Describe logic, edge cases, or specific data requirements..."
+                  placeholder="Add data logic, constraints or details. Replay works without it — context just sharpens the result (optional)"
                   disabled={isProcessing}
                   rows={3}
                   className={cn(
@@ -7138,7 +7138,7 @@ export const shadows = {
                 <textarea
                   value={refinements}
                   onChange={(e) => setRefinements(e.target.value)}
-                  placeholder="Describe logic, edge cases, or specific data requirements..."
+                  placeholder="Add data logic, constraints or details. Replay works without it — context just sharpens the result (optional)"
                   disabled={isProcessing}
                   rows={3}
                   className="w-full px-3 py-3 rounded-lg text-xs text-white/70 placeholder:text-white/30 placeholder:text-[11px] bg-white/[0.03] border border-white/[0.06] focus:outline-none focus:border-[#FF6E3C]/20 min-h-[80px]"

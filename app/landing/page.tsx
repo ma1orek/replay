@@ -129,7 +129,7 @@ function Navigation() {
               href="/tool"
               className="hidden sm:flex px-4 py-2.5 rounded-xl text-sm font-medium bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white hover:opacity-90 transition-opacity"
             >
-              Start Building
+              Reconstruct
             </Link>
             
             {/* Mobile menu button */}
@@ -497,7 +497,7 @@ function HeroInput({
             )}
           >
             <span className="relative z-10 flex items-center justify-center gap-2">
-              Start Building
+              Reconstruct
               <ArrowRight className="w-5 h-5" />
             </span>
           </motion.button>
@@ -1881,7 +1881,7 @@ function FinalCTA() {
               Turn any video into a working UI.
             </h2>
             <p className="text-2xl sm:text-3xl font-bold mb-8 bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] bg-clip-text text-transparent">
-              Start building.
+              Start reconstructing.
             </p>
             
             <Link
