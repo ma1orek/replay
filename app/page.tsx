@@ -1020,42 +1020,90 @@ export default function ReplayTool() {
     return key.trim().startsWith('eyJ') && key.trim().length > 100;
   };
 
-  // Check Supabase connection status - validates format
+  // Clean up invalid/legacy Supabase data on mount
   useEffect(() => {
     if (typeof window === "undefined") return;
+    
+    // Remove global fallback keys (legacy) - we only use project-specific now
+    localStorage.removeItem("replay_supabase_url");
+    localStorage.removeItem("replay_supabase_key");
+    
+    console.log("[Supabase Cleanup] Removed legacy global keys");
+  }, []);
+
+  // Check Supabase connection status - validates format strictly
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    
     const checkSupabase = () => {
       let connected = false;
+      const projectId = activeGeneration?.id;
       
-      // First check project-specific secrets (most reliable)
-      if (activeGeneration?.id) {
+      console.log("[Supabase Check] Starting check for project:", projectId);
+      
+      // ONLY check project-specific secrets - require BOTH valid URL and Key
+      if (projectId) {
         try {
-          const stored = localStorage.getItem(`replay_secrets_${activeGeneration.id}`);
+          const stored = localStorage.getItem(`replay_secrets_${projectId}`);
+          console.log("[Supabase Check] Raw stored data:", stored);
+          
           if (stored) {
             const secrets = JSON.parse(stored);
-            // Validate URL format (https://xxx.supabase.co) and Key format (JWT starting with eyJ)
-            if (isValidSupabaseUrl(secrets.supabaseUrl) && isValidSupabaseKey(secrets.supabaseAnonKey)) {
+            const url = secrets.supabaseUrl || '';
+            const key = secrets.supabaseAnonKey || '';
+            
+            // Strict URL validation: must be https://[project-id].supabase.co
+            const urlValid = url && 
+              typeof url === 'string' &&
+              url.trim().length > 0 && 
+              /^https:\/\/[a-zA-Z0-9-]+\.supabase\.co\/?$/.test(url.trim());
+            
+            // Strict Key validation: must start with eyJ and be 100+ chars (JWT format)
+            const keyValid = key && 
+              typeof key === 'string' &&
+              key.trim().length >= 100 && 
+              key.trim().startsWith('eyJ');
+            
+            console.log("[Supabase Check] URL:", url?.substring(0, 30) + "...", "-> Valid:", urlValid);
+            console.log("[Supabase Check] Key length:", key?.length, "starts eyJ:", key?.startsWith?.('eyJ'), "-> Valid:", keyValid);
+            
+            // BOTH must be valid - if not, show NOT CONNECTED
+            if (urlValid && keyValid) {
               connected = true;
+              console.log("[Supabase Check] ✅ CONNECTED - Both credentials valid");
+            } else {
+              connected = false;
+              console.log("[Supabase Check] ❌ NOT CONNECTED - Missing or invalid credentials");
+              // If data exists but is invalid, clear it
+              if (url || key) {
+                console.log("[Supabase Check] Clearing invalid stored credentials");
+                localStorage.removeItem(`replay_secrets_${projectId}`);
+              }
             }
+          } else {
+            console.log("[Supabase Check] ❌ No secrets stored for this project");
           }
-        } catch {}
-      }
-      
-      // Fallback: check global keys (for iframe preview)
-      if (!connected) {
-        const url = localStorage.getItem("replay_supabase_url");
-        const key = localStorage.getItem("replay_supabase_key");
-        if (isValidSupabaseUrl(url || '') && isValidSupabaseKey(key || '')) {
-          connected = true;
+        } catch (e) {
+          console.error("[Supabase Check] Error parsing secrets:", e);
+          // Clear corrupted data
+          if (projectId) {
+            localStorage.removeItem(`replay_secrets_${projectId}`);
+          }
         }
+      } else {
+        console.log("[Supabase Check] ❌ No active project ID");
       }
       
       setIsSupabaseConnected(connected);
     };
     
+    // Initial check
     checkSupabase();
-    // Re-check on storage changes and when settings modal might close
+    
+    // Re-check on storage changes and periodically
     window.addEventListener("storage", checkSupabase);
-    const interval = setInterval(checkSupabase, 2000); // Check every 2s in case modal saves
+    const interval = setInterval(checkSupabase, 2000); // Check every 2s
+    
     return () => {
       window.removeEventListener("storage", checkSupabase);
       clearInterval(interval);

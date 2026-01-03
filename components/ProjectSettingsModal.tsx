@@ -153,49 +153,87 @@ export default function ProjectSettingsModal({
     }
   }, [project.id]);
 
-  // Load secrets on mount
+  // Load secrets on mount - with STRICT validation
   useEffect(() => {
     const secrets = getProjectSecrets(project.id);
     if (secrets) {
-      setSupabaseUrl(secrets.supabaseUrl);
-      setSupabaseAnonKey(secrets.supabaseAnonKey);
-      setIsConnected(true);
+      setSupabaseUrl(secrets.supabaseUrl || '');
+      setSupabaseAnonKey(secrets.supabaseAnonKey || '');
+      
+      // Only set connected if BOTH credentials are valid
+      const url = secrets.supabaseUrl || '';
+      const key = secrets.supabaseAnonKey || '';
+      const urlRegex = /^https:\/\/[a-zA-Z0-9-]+\.supabase\.co\/?$/;
+      const urlValid = url.length > 0 && urlRegex.test(url.trim());
+      const keyValid = key.length >= 100 && key.startsWith('eyJ');
+      
+      setIsConnected(urlValid && keyValid);
+      console.log("[Modal Load] URL valid:", urlValid, "Key valid:", keyValid, "Connected:", urlValid && keyValid);
+    } else {
+      setIsConnected(false);
     }
   }, [project.id]);
 
-  // Save secrets
+  // Save secrets - STRICT validation required
   const handleSaveSecrets = async () => {
     setIsSavingSecrets(true);
     setDbError(null); // Clear any previous errors
     
-    // Validate URL format - only if URL is provided
-    if (supabaseUrl && supabaseUrl.trim().length > 0) {
-      const trimmedUrl = supabaseUrl.trim();
-      if (!trimmedUrl.startsWith("https://")) {
-        setDbError("Supabase URL must start with https://");
-        setIsSavingSecrets(false);
-        return;
-      }
-      // Also validate it looks like a Supabase URL
-      if (!trimmedUrl.includes(".supabase.co")) {
-        setDbError("Please enter a valid Supabase URL (e.g., https://xxx.supabase.co)");
-        setIsSavingSecrets(false);
-        return;
-      }
+    const trimmedUrl = supabaseUrl.trim();
+    const trimmedKey = supabaseAnonKey.trim();
+    
+    // STRICT URL validation: must be https://[project-id].supabase.co
+    const urlRegex = /^https:\/\/[a-zA-Z0-9-]+\.supabase\.co\/?$/;
+    const urlValid = trimmedUrl.length > 0 && urlRegex.test(trimmedUrl);
+    
+    // STRICT Key validation: must start with eyJ and be 100+ chars (JWT format)
+    const keyValid = trimmedKey.length >= 100 && trimmedKey.startsWith('eyJ');
+    
+    // If URL provided but invalid
+    if (trimmedUrl.length > 0 && !urlValid) {
+      setDbError("URL must be format: https://your-project.supabase.co");
+      setIsSavingSecrets(false);
+      return;
+    }
+    
+    // If Key provided but invalid
+    if (trimmedKey.length > 0 && !keyValid) {
+      setDbError("API Key must be a valid JWT (starts with eyJ, 100+ characters)");
+      setIsSavingSecrets(false);
+      return;
+    }
+    
+    // Only save if BOTH are valid OR BOTH are empty (clearing)
+    const bothValid = urlValid && keyValid;
+    const bothEmpty = trimmedUrl.length === 0 && trimmedKey.length === 0;
+    
+    if (!bothValid && !bothEmpty) {
+      setDbError("Both URL and API Key are required and must be valid");
+      setIsSavingSecrets(false);
+      return;
     }
 
-    // Save to localStorage
-    saveProjectSecrets(project.id, {
-      supabaseUrl: supabaseUrl.trim(),
-      supabaseAnonKey: supabaseAnonKey.trim(),
-    });
+    // Save to localStorage (or clear if both empty)
+    if (bothEmpty) {
+      // Clear secrets
+      localStorage.removeItem(`replay_secrets_${project.id}`);
+      localStorage.removeItem('replay_supabase_url');
+      localStorage.removeItem('replay_supabase_key');
+      console.log("[Secrets] Cleared all Supabase credentials");
+    } else {
+      saveProjectSecrets(project.id, {
+        supabaseUrl: trimmedUrl,
+        supabaseAnonKey: trimmedKey,
+      });
+      console.log("[Secrets] Saved valid Supabase credentials");
+    }
 
     // Small delay for UX
     await new Promise((r) => setTimeout(r, 500));
     
     setIsSavingSecrets(false);
     setSecretsSaved(true);
-    setIsConnected(supabaseUrl.trim().length > 0 && supabaseAnonKey.trim().length > 0);
+    setIsConnected(bothValid); // Only connected if BOTH are valid
     
     setTimeout(() => setSecretsSaved(false), 2000);
   };
