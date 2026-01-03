@@ -1006,18 +1006,47 @@ export default function ReplayTool() {
     }
   }, [styleDirective, refinements, hasLoadedFromStorage]);
   
-  // Check Supabase connection status
+  // Check Supabase connection status - checks project-specific secrets
   useEffect(() => {
     if (typeof window === "undefined") return;
     const checkSupabase = () => {
-      const url = localStorage.getItem("replay_supabase_url");
-      const key = localStorage.getItem("replay_supabase_key");
-      setIsSupabaseConnected(!!url && !!key && url.length > 0 && key.length > 0);
+      let connected = false;
+      
+      // First check project-specific secrets (most reliable)
+      if (activeGeneration?.id) {
+        try {
+          const stored = localStorage.getItem(`replay_secrets_${activeGeneration.id}`);
+          if (stored) {
+            const secrets = JSON.parse(stored);
+            if (secrets.supabaseUrl && secrets.supabaseAnonKey && 
+                secrets.supabaseUrl.trim().length > 0 && 
+                secrets.supabaseAnonKey.trim().length > 0) {
+              connected = true;
+            }
+          }
+        } catch {}
+      }
+      
+      // Fallback: check global keys (for iframe preview)
+      if (!connected) {
+        const url = localStorage.getItem("replay_supabase_url");
+        const key = localStorage.getItem("replay_supabase_key");
+        if (url && key && url.trim().length > 0 && key.trim().length > 0) {
+          connected = true;
+        }
+      }
+      
+      setIsSupabaseConnected(connected);
     };
+    
     checkSupabase();
-    // Re-check when activeGeneration changes (user might have updated settings)
+    // Re-check on storage changes and when settings modal might close
     window.addEventListener("storage", checkSupabase);
-    return () => window.removeEventListener("storage", checkSupabase);
+    const interval = setInterval(checkSupabase, 2000); // Check every 2s in case modal saves
+    return () => {
+      window.removeEventListener("storage", checkSupabase);
+      clearInterval(interval);
+    };
   }, [activeGeneration?.id]);
   
   // Save flow nodes and edges to localStorage
