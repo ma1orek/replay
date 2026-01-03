@@ -240,9 +240,28 @@ export default function ProjectSettingsModal({
 
   // Fetch tables from user's Supabase using probing (information_schema not available via REST)
   const fetchTables = useCallback(async () => {
-    const secrets = getProjectSecrets(project.id);
-    if (!secrets?.supabaseUrl || !secrets?.supabaseAnonKey) {
+    // Try multiple sources for credentials
+    let url = supabaseUrl; // Use current state first
+    let key = supabaseAnonKey;
+    
+    // If not in state, try localStorage
+    if (!url || !key) {
+      const secrets = getProjectSecrets(project.id);
+      url = secrets?.supabaseUrl || '';
+      key = secrets?.supabaseAnonKey || '';
+    }
+    
+    // Also try global localStorage as fallback
+    if (!url || !key) {
+      url = url || localStorage.getItem('replay_supabase_url') || '';
+      key = key || localStorage.getItem('replay_supabase_key') || '';
+    }
+    
+    console.log('[fetchTables] URL:', url?.substring(0, 30), 'Key length:', key?.length);
+    
+    if (!url || !key) {
       setDbError("Please add your Supabase credentials in the Secrets tab first");
+      setActiveTab("secrets"); // Auto-switch to secrets tab
       return;
     }
 
@@ -252,17 +271,17 @@ export default function ProjectSettingsModal({
 
     try {
       // First, validate the URL format
-      if (!secrets.supabaseUrl.includes('.supabase.co')) {
+      if (!url.includes('.supabase.co')) {
         throw new Error("Invalid Supabase URL. Must be like: https://xxxxx.supabase.co");
       }
 
       // Test actual connection by making a request to the Supabase REST API
-      const testUrl = `${secrets.supabaseUrl}/rest/v1/`;
+      const testUrl = `${url}/rest/v1/`;
       const testResponse = await fetch(testUrl, {
         method: 'GET',
         headers: {
-          'apikey': secrets.supabaseAnonKey,
-          'Authorization': `Bearer ${secrets.supabaseAnonKey}`,
+          'apikey': key,
+          'Authorization': `Bearer ${key}`,
         },
       });
 
@@ -274,7 +293,7 @@ export default function ProjectSettingsModal({
         throw new Error(`Connection failed: ${testResponse.status} ${testResponse.statusText}`);
       }
 
-      const supabase = createClient(secrets.supabaseUrl, secrets.supabaseAnonKey);
+      const supabase = createClient(url, key);
       const foundTables: TableInfo[] = [];
 
       // Common tables to probe
