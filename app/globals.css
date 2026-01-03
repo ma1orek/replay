@@ -21,13 +21,13 @@
   box-sizing: border-box;
   /* Firefox ultra-thin scrollbar */
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.05) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.03) transparent;
 }
 
-/* Global WebKit scrollbar - applies to ALL elements */
+/* Global WebKit scrollbar - ultra thin, nearly invisible */
 *::-webkit-scrollbar {
-  width: 3px !important;
-  height: 3px !important;
+  width: 2px !important;
+  height: 2px !important;
 }
 
 *::-webkit-scrollbar-track {
@@ -35,15 +35,23 @@
 }
 
 *::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.06) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
   border-radius: 100px !important;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.02) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
 }
 
 *::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+
+/* Hide ALL scrollbar arrows/buttons */
+*::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
   background: transparent !important;
 }
 
@@ -53,13 +61,6 @@
   scrollbar-width: none !important;
 }
 .scrollbar-none::-webkit-scrollbar {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-}
-
-/* Hide ALL scrollbar arrows/buttons */
-*::-webkit-scrollbar-button {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
@@ -88,8 +89,8 @@ ul::-webkit-scrollbar,
 ol::-webkit-scrollbar,
 nav::-webkit-scrollbar,
 main::-webkit-scrollbar {
-  width: 3px !important;
-  height: 3px !important;
+  width: 2px !important;
+  height: 2px !important;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track,
@@ -115,7 +116,7 @@ ul::-webkit-scrollbar-thumb,
 ol::-webkit-scrollbar-thumb,
 nav::-webkit-scrollbar-thumb,
 main::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.06) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
   border-radius: 100px !important;
 }
 
@@ -129,7 +130,7 @@ ul::-webkit-scrollbar-thumb:hover,
 ol::-webkit-scrollbar-thumb:hover,
 nav::-webkit-scrollbar-thumb:hover,
 main::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.02) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
 }
 
 .custom-scrollbar::-webkit-scrollbar-button,
@@ -145,6 +146,7 @@ main::-webkit-scrollbar-button {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
+  background: transparent !important;
 }
 
 /* ===== VIBRANT GRADIENT BACKGROUND ===== */
