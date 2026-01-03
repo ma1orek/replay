@@ -2159,23 +2159,30 @@ ${page.content}`,
         });
       });
     } else {
-      // Componentized mode: split into REAL components extracted from HTML
-      const homeNode = nodes.find(n => n.id === "home");
+      // Componentized mode: Create proper Next.js pages from detected Alpine.js pages
+      const homeNode = nodes.find(n => n.id === "home" || n.id === "dashboard");
       const components = homeNode?.components || [];
       const componentFiles: FileNode[] = [];
       
+      // Extract body content from full HTML
+      const bodyMatch = code.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+      const fullBodyContent = bodyMatch ? bodyMatch[1] : code;
+      
       // Also detect all Alpine.js pages in the code
-      const alpinePageRegex = /x-show="(?:currentPage|page|activeTab)\s*===?\s*['\"]([^'\"]+)['\"]"[^>]*>([\s\S]*?)(?=<(?:main|div|section)[^>]*x-show|<\/body>)/gi;
+      const alpinePageRegex = /x-show\s*=\s*["'](?:currentPage|page|activeTab|activeView)\s*===?\s*['"]([^'"]+)['"][^>]*>([\s\S]*?)(?=<(?:main|div|section)[^>]*x-show\s*=|<\/body>)/gi;
       const detectedAlpinePages: { id: string; name: string; content: string }[] = [];
       let alpineMatch;
       while ((alpineMatch = alpinePageRegex.exec(code)) !== null) {
         const pageId = alpineMatch[1].toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        const pageName = alpineMatch[1].replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const pageName = alpineMatch[1].replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         const content = alpineMatch[0];
-        if (content.length > 200 && !content.includes('POSSIBLE:')) {
+        // Include pages with actual content
+        if (content.length > 100 && !content.includes('POSSIBLE:') && !content.includes('not shown in video')) {
           detectedAlpinePages.push({ id: pageId, name: pageName, content });
         }
       }
+      
+      console.log('[generateFileStructure] Detected Alpine pages:', detectedAlpinePages.map(p => p.id));
       
       // Better extraction patterns for actual HTML sections
       const extractComponent = (compName: string): string => {
@@ -2286,22 +2293,26 @@ ${page.content}`,
         });
       });
       
-      // Main page file that imports components
-      const mainPageContent = generateMainPageFile(components);
+      // Main page file - use first detected page or full body content
+      const mainPageId = detectedAlpinePages.length > 0 ? detectedAlpinePages[0].id : 'home';
+      const mainPageContent = detectedAlpinePages.length > 0 
+        ? wrapAsReactComponent(detectedAlpinePages[0].name, detectedAlpinePages[0].content)
+        : generateMainPageFile(components, fullBodyContent);
+      
       files.push({
         path: "/pages/index.tsx",
         name: "index.tsx",
         content: mainPageContent,
         type: "page",
         language: "tsx",
-        sourceNodeId: "home",
+        sourceNodeId: mainPageId,
         lineCount: mainPageContent.split('\n').length
       });
       
-      // Add page files for all detected Alpine.js pages
-      detectedAlpinePages.forEach(page => {
+      // Add page files for all detected Alpine.js pages (skip first one as it's index)
+      detectedAlpinePages.slice(1).forEach(page => {
         // Skip home/main/index as we already have that
-        if (page.id === 'home' || page.id === 'glowna' || page.id === 'main') return;
+        if (page.id === 'home' || page.id === 'glowna' || page.id === 'main' || page.id === 'index') return;
         
         const pageComponent = wrapAsReactComponent(page.name, page.content);
         files.push({
@@ -2316,15 +2327,37 @@ ${page.content}`,
       });
       
       // Also add pages from flow nodes that are observed
-      nodes.filter(n => n.status === "observed" && n.id !== "home" && n.type === "view")
+      nodes.filter(n => n.status === "observed" && n.type === "view")
         .forEach(node => {
           // Skip if we already have this page
           if (files.some(f => f.sourceNodeId === node.id)) return;
+          // Skip generic home/index
+          if (node.id === 'home' || node.id === 'index' || node.id === 'main') return;
           
-          // Try to extract content for this page from the code
-          const pageContentRegex = new RegExp(`x-show="[^"]*${node.id}[^"]*"[^>]*>([\\s\\S]*?)(?=<(?:main|div|section)[^>]*x-show|<\\/body>)`, 'i');
-          const contentMatch = code.match(pageContentRegex);
-          const content = contentMatch ? contentMatch[0] : `<div class="p-8"><h1>${node.name}</h1></div>`;
+          // Try to extract content for this page from the code using multiple patterns
+          const patterns = [
+            new RegExp(`x-show\\s*=\\s*["'][^"']*${node.id}[^"']*["'][^>]*>([\\s\\S]*?)(?=<(?:main|div|section)[^>]*x-show|<\\/body>)`, 'i'),
+            new RegExp(`x-show\\s*=\\s*["']currentPage\\s*===?\\s*['"]${node.id}["'][^>]*>([\\s\\S]*?)(?=<(?:main|div|section)[^>]*x-show|<\\/body>)`, 'i'),
+          ];
+          
+          let content = '';
+          for (const pattern of patterns) {
+            const match = code.match(pattern);
+            if (match && match[0].length > 100) {
+              content = match[0];
+              break;
+            }
+          }
+          
+          // If no content found, create a proper placeholder
+          if (!content || content.length < 100) {
+            content = `<main className="min-h-screen bg-gray-50">
+              <div className="container mx-auto px-4 py-16">
+                <h1 className="text-4xl font-bold mb-8">${node.name}</h1>
+                <p className="text-gray-600">This page content was not captured in the video.</p>
+              </div>
+            </main>`;
+          }
           
           const pageComponent = wrapAsReactComponent(node.name, content);
           files.push({
@@ -2338,7 +2371,63 @@ ${page.content}`,
           });
         });
       
+      // Extract and add layout components (Header, Sidebar, Navigation, Footer)
+      const layoutComponents: { name: string; selector: RegExp; path: string }[] = [
+        { name: 'Header', selector: /<header[^>]*>[\s\S]*?<\/header>/i, path: '/components/layout/Header.tsx' },
+        { name: 'Sidebar', selector: /<aside[^>]*>[\s\S]*?<\/aside>/i, path: '/components/layout/Sidebar.tsx' },
+        { name: 'Navigation', selector: /<nav[^>]*>[\s\S]*?<\/nav>/i, path: '/components/layout/Navigation.tsx' },
+        { name: 'Footer', selector: /<footer[^>]*>[\s\S]*?<\/footer>/i, path: '/components/layout/Footer.tsx' },
+      ];
+      
+      layoutComponents.forEach(({ name, selector, path }) => {
+        const match = code.match(selector);
+        if (match && match[0].length > 50) {
+          const componentContent = wrapAsReactComponent(name, match[0]);
+          files.push({
+            path,
+            name: `${name}.tsx`,
+            content: componentContent,
+            type: "component",
+            language: "tsx",
+            sourceNodeId: "layout",
+            lineCount: componentContent.split('\n').length
+          });
+        }
+      });
+      
       files.push(...componentFiles);
+      
+      // Add layout wrapper for Next.js App Router
+      const layoutContent = `// Next.js App Router Layout
+import './globals.css';
+
+export const metadata = {
+  title: 'Generated App',
+  description: 'Generated by Replay from video',
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body>
+        {children}
+      </body>
+    </html>
+  );
+}`;
+      
+      files.push({
+        path: "/app/layout.tsx",
+        name: "layout.tsx",
+        content: layoutContent,
+        type: "component",
+        language: "tsx",
+        lineCount: layoutContent.split('\n').length
+      });
       
       // Add tokens file
       const tokensContent = generateTokensFile(extractStyleInfo(code));
@@ -2350,58 +2439,128 @@ ${page.content}`,
         language: "ts",
         lineCount: tokensContent.split('\n').length
       });
+      
+      // Add globals.css with extracted styles
+      const styleMatch = code.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+      const extractedStyles = styleMatch ? styleMatch[1] : '';
+      const globalsCss = `/* Generated styles from video analysis */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+${extractedStyles}
+`;
+      files.push({
+        path: "/app/globals.css",
+        name: "globals.css",
+        content: globalsCss,
+        type: "style",
+        language: "css",
+        lineCount: globalsCss.split('\n').length
+      });
     }
     
     return files;
   }, []);
   
-  // Helper: Wrap HTML content as React component
+  // Helper: Convert HTML to JSX (basic conversion)
+  const htmlToJsx = (html: string): string => {
+    return html
+      // Convert class to className
+      .replace(/\bclass=/g, 'className=')
+      // Convert for to htmlFor
+      .replace(/\bfor=/g, 'htmlFor=')
+      // Self-closing tags
+      .replace(/<(img|input|br|hr)([^>]*)(?<!\/)>/gi, '<$1$2 />')
+      // Convert style strings to objects (basic)
+      .replace(/style="([^"]*)"/g, (match, style) => {
+        const jsStyle = style.split(';')
+          .filter((s: string) => s.trim())
+          .map((s: string) => {
+            const [prop, val] = s.split(':').map((x: string) => x.trim());
+            const camelProp = prop.replace(/-([a-z])/g, (g: string) => g[1].toUpperCase());
+            return `${camelProp}: '${val}'`;
+          })
+          .join(', ');
+        return `style={{ ${jsStyle} }}`;
+      })
+      // Remove Alpine.js attributes
+      .replace(/\s*x-[a-z-]+="[^"]*"/gi, '')
+      .replace(/\s*@[a-z]+="[^"]*"/gi, '')
+      // Remove onclick etc for now
+      .replace(/\s*on[a-z]+="[^"]*"/gi, '')
+      // Clean up escaped characters
+      .replace(/`/g, "'")
+      .trim();
+  };
+
+  // Helper: Wrap HTML content as React component (proper JSX)
   const wrapAsReactComponent = (name: string, htmlContent: string): string => {
     const componentName = name.replace(/[^a-zA-Z0-9]/g, '');
     
-    // Clean up the HTML content for embedding
-    const cleanedHtml = htmlContent
-      .replace(/`/g, '\\`')
-      .replace(/\${/g, '\\${')
-      .trim();
+    // Convert HTML to JSX
+    const jsxContent = htmlToJsx(htmlContent);
     
     // If content is just a comment (not extracted), create a placeholder
-    if (cleanedHtml.startsWith('<!--') && cleanedHtml.length < 100) {
-      return `import React from 'react';
-
-interface ${componentName}Props {
-  className?: string;
-}
-
-export default function ${componentName}({ className }: ${componentName}Props) {
+    if (jsxContent.startsWith('<!--') && jsxContent.length < 100) {
+      return `export default function ${componentName}Page() {
   return (
-    <section className={\`\${className || ''} py-16\`}>
-      <div className="container mx-auto px-4">
-        <h2 className="text-3xl font-bold mb-8">${name}</h2>
-        {/* TODO: Add ${name} content */}
+    <main className="min-h-screen bg-white">
+      <div className="container mx-auto px-4 py-16">
+        <h1 className="text-4xl font-bold mb-8">${name}</h1>
+        {/* Content will be generated here */}
       </div>
-    </section>
+    </main>
   );
 }`;
     }
     
-    return `import React from 'react';
-
-interface ${componentName}Props {
-  className?: string;
-}
-
-export default function ${componentName}({ className }: ${componentName}Props) {
+    // For pages with actual content, wrap properly
+    return `export default function ${componentName}Page() {
   return (
-    <div className={className} dangerouslySetInnerHTML={{ __html: \`
-${cleanedHtml}
-    \` }} />
+    <>
+      ${jsxContent}
+    </>
   );
 }`;
   };
   
-  // Helper: Generate main page file with imports
-  const generateMainPageFile = (components: string[]): string => {
+  // Helper: Generate main page file for Next.js App Router
+  const generateMainPageFile = (components: string[], fullHtmlContent?: string): string => {
+    // If we have full HTML content, convert it to JSX for the main page
+    if (fullHtmlContent) {
+      const jsxContent = htmlToJsx(fullHtmlContent);
+      
+      // Extract body content only (between <body> and </body>)
+      const bodyMatch = jsxContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+      const bodyContent = bodyMatch ? bodyMatch[1].trim() : jsxContent;
+      
+      return `// Next.js App Router Page
+// Generated by Replay from video analysis
+
+export default function HomePage() {
+  return (
+    <>
+      ${bodyContent}
+    </>
+  );
+}`;
+    }
+    
+    // Fallback: Generate with component imports
+    if (components.length === 0) {
+      return `// Next.js App Router Page
+// Generated by Replay
+
+export default function HomePage() {
+  return (
+    <main className="min-h-screen">
+      {/* Page content - switch to Single-file view to see full HTML */}
+    </main>
+  );
+}`;
+    }
+    
     const imports = components.map(comp => {
       const compName = comp.replace(/\s+/g, '');
       const compId = comp.toLowerCase().replace(/\s+/g, '-');
@@ -2416,7 +2575,7 @@ ${cleanedHtml}
       return `      <${compName} />`;
     }).join('\n');
     
-    return `import React from 'react';
+    return `// Next.js App Router Page
 ${imports}
 
 export default function HomePage() {
