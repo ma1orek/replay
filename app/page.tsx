@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, Suspense, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Loader2, 
@@ -58,11 +59,79 @@ import {
   Image as ImageIcon,
   Paperclip,
   LogOut,
-  Database
+  Database,
+  MessageSquare,
+  ArrowRight,
+  MousePointer2
 } from "lucide-react";
 import { cn, generateId, formatDuration, updateProjectAnalytics } from "@/lib/utils";
-import { transmuteVideoToCode, editCodeWithAI } from "@/actions/transmute";
+import { transmuteVideoToCode } from "@/actions/transmute";
 import { getDatabaseContext, formatDatabaseContextForPrompt } from "@/lib/supabase/schema";
+// Demo is now loaded from /api/demo/[id] endpoint
+
+// Global abort controller for canceling AI requests
+let currentAbortController: AbortController | null = null;
+
+// Client-side wrapper for editCodeWithAI that uses API route with extended timeout
+async function editCodeWithAI(
+  currentCode: string,
+  editRequest: string,
+  images?: { base64?: string; url?: string; mimeType: string; name: string }[],
+  databaseContext?: string,
+  isPlanMode?: boolean,
+  chatHistory?: { role: string; content: string }[]
+): Promise<{ success: boolean; code?: string; error?: string; cancelled?: boolean }> {
+  // Cancel any existing request
+  if (currentAbortController) {
+    currentAbortController.abort();
+  }
+  
+  // Create new abort controller
+  currentAbortController = new AbortController();
+  
+  try {
+    const response = await fetch('/api/edit-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        currentCode,
+        editRequest,
+        images,
+        databaseContext,
+        isPlanMode,
+        chatHistory,
+      }),
+      signal: currentAbortController.signal,
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[editCodeWithAI] API error:', response.status, errorText);
+      return { success: false, error: `API error: ${response.status}` };
+    }
+    
+    return await response.json();
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.log('[editCodeWithAI] Request cancelled by user');
+      return { success: false, cancelled: true, error: 'Request cancelled' };
+    }
+    console.error('[editCodeWithAI] Fetch error:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Network error' };
+  } finally {
+    currentAbortController = null;
+  }
+}
+
+// Function to cancel ongoing AI request
+function cancelAIRequest() {
+  if (currentAbortController) {
+    currentAbortController.abort();
+    currentAbortController = null;
+    return true;
+  }
+  return false;
+}
 import Logo from "@/components/Logo";
 import StyleInjector from "@/components/StyleInjector";
 import { Highlight, themes } from "prism-react-renderer";
@@ -75,10 +144,56 @@ import Avatar from "@/components/Avatar";
 import AuthModal from "@/components/modals/AuthModal";
 import OutOfCreditsModal from "@/components/modals/OutOfCreditsModal";
 import FeedbackGateModal from "@/components/modals/FeedbackGateModal";
+import UpgradeModal from "@/components/modals/UpgradeModal";
 import ProjectSettingsModal from "@/components/ProjectSettingsModal";
 import { Toast, useToast } from "@/components/Toast";
 import Link from "next/link";
 import type { CodeMode, FileNode, FileTreeFolder, FileTreeFile, CodeReferenceMap } from "@/types";
+import { trackViewContent, trackStartGeneration } from "@/lib/fb-tracking";
+
+// Generate smart version label from user input (like Bolt/Lovable)
+function generateVersionLabel(userInput: string): string {
+  // Clean up the input
+  let label = userInput.trim();
+  
+  // Remove common prefixes
+  label = label.replace(/^(please\s+|can you\s+|could you\s+|i want to\s+|i need to\s+)/i, '');
+  
+  // Capitalize first letter
+  label = label.charAt(0).toUpperCase() + label.slice(1);
+  
+  // If it starts with a verb, keep it as is
+  const actionVerbs = ['add', 'remove', 'update', 'change', 'fix', 'make', 'create', 'delete', 'modify', 'adjust', 'improve', 'refactor', 'style', 'align', 'center', 'move', 'replace', 'translate', 'convert', 'expand', 'collapse', 'show', 'hide', 'enable', 'disable'];
+  const startsWithVerb = actionVerbs.some(v => label.toLowerCase().startsWith(v));
+  
+  // If it doesn't start with a verb and is a request, try to extract action
+  if (!startsWithVerb) {
+    // Look for verbs in the text
+    for (const verb of actionVerbs) {
+      const verbIndex = label.toLowerCase().indexOf(verb);
+      if (verbIndex > 0 && verbIndex < 20) {
+        // Found verb, restructure
+        label = label.substring(verbIndex);
+        label = label.charAt(0).toUpperCase() + label.slice(1);
+        break;
+      }
+    }
+  }
+  
+  // Truncate to reasonable length (50 chars) at word boundary
+  if (label.length > 50) {
+    label = label.substring(0, 50);
+    const lastSpace = label.lastIndexOf(' ');
+    if (lastSpace > 30) {
+      label = label.substring(0, lastSpace);
+    }
+  }
+  
+  // Remove trailing punctuation except for meaningful ones
+  label = label.replace(/[,;:]+$/, '');
+  
+  return label || 'Code update';
+}
 
 interface FlowItem {
   id: string;
@@ -181,6 +296,7 @@ interface GenerationRecord {
   thumbnailUrl?: string;
   versions?: GenerationVersion[]; // Version history
   publishedSlug?: string; // Persistent publish URL slug
+  chatMessages?: ChatMessage[]; // Chat history per project
   tokenUsage?: {
     promptTokens: number;
     candidatesTokens: number;
@@ -189,7 +305,23 @@ interface GenerationRecord {
   costCredits?: number;
 }
 
+// Chat message for Agentic Sidebar
+interface ChatMessage {
+  id: string;
+  role: "assistant" | "user";
+  content: string;
+  timestamp: number;
+  attachments?: {
+    type: "element" | "image" | "video";
+    label: string;
+    selector?: string;
+  }[];
+  quickActions?: string[];
+}
+
 type ViewMode = "preview" | "code" | "flow" | "design" | "input";
+type SidebarMode = "config" | "chat";
+type SidebarTab = "chat" | "tree" | "style";
 
 // Different loading messages for each tab - extended for longer generations
 const STREAMING_MESSAGES_PREVIEW = [
@@ -426,15 +558,109 @@ const getNodeIcon = (type: string) => {
   }
 };
 
-export default function ReplayTool() {
+// Function to analyze what changed between two code versions - HUMAN STYLE
+const analyzeCodeChanges = (oldCode: string, newCode: string, userRequest: string): string => {
+  const insights: string[] = [];
+  const requestLower = userRequest.toLowerCase();
+  
+  // Detect the TYPE of change and respond appropriately
+  const isAnimation = requestLower.includes('animat') || requestLower.includes('transition') || requestLower.includes('smooth') || requestLower.includes('fade');
+  const isResponsive = requestLower.includes('mobile') || requestLower.includes('responsive') || requestLower.includes('tablet') || requestLower.includes('breakpoint');
+  const isLayout = requestLower.includes('layout') || requestLower.includes('grid') || requestLower.includes('flex') || requestLower.includes('spacing') || requestLower.includes('padding') || requestLower.includes('margin');
+  const isColors = requestLower.includes('color') || requestLower.includes('theme') || requestLower.includes('dark') || requestLower.includes('light') || requestLower.includes('palette');
+  const isButtons = requestLower.includes('button') || requestLower.includes('cta') || requestLower.includes('click');
+  const isNav = requestLower.includes('nav') || requestLower.includes('menu') || requestLower.includes('header') || requestLower.includes('sidebar');
+  const isFix = requestLower.includes('fix') || requestLower.includes('bug') || requestLower.includes('broken') || requestLower.includes('wrong') || requestLower.includes('issue');
+  const isAdd = requestLower.includes('add') || requestLower.includes('missing') || requestLower.includes('include') || requestLower.includes('need');
+  
+  // Check for specific technical changes
+  const addedTailwind = (newCode.match(/class="[^"]*(?:flex|grid|gap-|p-|m-|text-|bg-|rounded)/g) || []).length > (oldCode.match(/class="[^"]*(?:flex|grid|gap-|p-|m-|text-|bg-|rounded)/g) || []).length;
+  const addedAnimations = (newCode.match(/@keyframes|animation:|transition:|animate-/g) || []).length > (oldCode.match(/@keyframes|animation:|transition:|animate-/g) || []).length;
+  const addedAlpine = (newCode.match(/x-data|x-show|x-on:|@click/g) || []).length > (oldCode.match(/x-data|x-show|x-on:|@click/g) || []).length;
+  const addedMedia = (newCode.match(/@media|sm:|md:|lg:|xl:/g) || []).length > (oldCode.match(/@media|sm:|md:|lg:|xl:/g) || []).length;
+  const addedBackdrop = newCode.includes('backdrop-blur') && !oldCode.includes('backdrop-blur');
+  const addedGradient = (newCode.match(/gradient/g) || []).length > (oldCode.match(/gradient/g) || []).length;
+  
+  // Build conversational response based on context
+  if (isAnimation && addedAnimations) {
+    insights.push("Smoothed out the animations. ✨ Switched to a subtle transition with proper easing - should feel much more premium now.");
+  } else if (isAnimation) {
+    insights.push("Tweaked the motion. Used `cubic-bezier` for smoother easing and adjusted timing to feel less jarring.");
+  }
+  
+  if (isResponsive || addedMedia) {
+    insights.push("Made it responsive. 📱 Added breakpoints using Tailwind's `sm:`, `md:`, `lg:` utilities so it stacks properly on mobile.");
+  }
+  
+  if (isLayout && addedTailwind) {
+    insights.push("Fixed the layout. Swapped to a proper `flex` / `grid` structure with `gap-*` for consistent spacing.");
+  }
+  
+  if (isColors || addedGradient) {
+    insights.push("Updated the color scheme. 🎨 Adjusted the palette to match the reference - using CSS variables for consistency.");
+  }
+  
+  if (isButtons) {
+    insights.push("Improved the buttons. Added hover states, proper padding, and made sure they're accessible.");
+  }
+  
+  if (isNav) {
+    insights.push("Expanded the navigation. All menu items are now wired up with Alpine.js `@click` handlers.");
+  }
+  
+  if (addedAlpine && !isNav) {
+    insights.push("Added interactivity. Wired up the state logic using Alpine.js - clicking elements will now update the view.");
+  }
+  
+  if (addedBackdrop) {
+    insights.push("Added glassmorphism. Using `backdrop-blur-xl` with subtle borders for that frosted glass effect.");
+  }
+  
+  if (isFix) {
+    insights.push("Good catch - fixed that. 🔧 The issue was in the CSS specificity. Should work correctly now.");
+  }
+  
+  if (isAdd && insights.length === 0) {
+    insights.push("Added the missing elements. Pulled them from the video reference and matched the styling.");
+  }
+  
+  // If no specific insights, provide a generic but still human response
+  if (insights.length === 0) {
+    insights.push("Applied your changes. Kept the existing structure but tweaked the parts you mentioned.");
+  }
+  
+  // Always add "Preview updated" with a human touch
+  insights.push("Preview updated - take a look! 👀");
+  
+  // Build the response
+  let response = `**Done!** \n\n`;
+  insights.forEach(insight => {
+    response += `• ${insight}\n`;
+  });
+  
+  return response;
+};
+
+function ReplayToolContent() {
+  const searchParams = useSearchParams();
   const { pending, clearPending } = usePendingFlow();
   const { user, isLoading: authLoading, signOut } = useAuth();
   const { totalCredits: userTotalCredits, wallet, membership, canAfford, refreshCredits } = useCredits();
   const { profile } = useProfile();
   const { toast, showToast, hideToast } = useToast();
   
+  // Demo mode state - for cached demo results
+  const [isDemoMode, setIsDemoMode] = useState(false);
+  
+  // Demo project IDs that should NOT be saved to user's account
+  const DEMO_PROJECT_IDS = useMemo(() => new Set([
+    "flow_1767827812458_823lpezg8", // dashboard - UBOLD Premium Admin
+    "flow_1767826711350_55giwb69y", // yc - Y Combinator
+    "flow_1767812494307_4c540djzy", // landing - Flooks
+  ]), []);
+  
   const [flows, setFlows] = useState<FlowItem[]>([]);
-  const [styleDirective, setStyleDirective] = useState("Custom");
+  const [styleDirective, setStyleDirective] = useState(""); // Empty = Auto-Detect from video
   const [styleReferenceImage, setStyleReferenceImage] = useState<{ url: string; name: string } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
@@ -455,6 +681,21 @@ export default function ReplayTool() {
   const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [hasShownFeedback, setHasShownFeedback] = useState(false);
+  
+  // Flow node edit/delete modal
+  const [flowNodeModal, setFlowNodeModal] = useState<{
+    type: "rename" | "delete";
+    nodeId: string;
+    nodeName: string;
+  } | null>(null);
+  const [flowNodeRenameValue, setFlowNodeRenameValue] = useState("");
+  
+  // Upgrade modal for FREE users
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeFeature, setUpgradeFeature] = useState<"code" | "download" | "publish" | "supabase" | "general">("general");
+  
+  // Check if user has paid plan (PRO or higher)
+  const isPaidPlan = membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise";
   const [pendingAction, setPendingAction] = useState<"generate" | "edit" | null>(null);
   const [analysisDescription, setAnalysisDescription] = useState<string>("");
   const [editInput, setEditInput] = useState("");
@@ -465,8 +706,8 @@ export default function ReplayTool() {
   const [analysisSection, setAnalysisSection] = useState<"style" | "layout" | "components">("style");
   const contextImageInputRef = useRef<HTMLInputElement>(null);
   
-  // Mobile state - input visible by default
-  const [mobilePanel, setMobilePanel] = useState<"input" | "preview" | "code" | "flow" | "design" | null>("input");
+  // Mobile state - input visible by default, chat after generation
+  const [mobilePanel, setMobilePanel] = useState<"input" | "preview" | "code" | "flow" | "design" | "chat" | null>("input");
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   
   // Live analysis state for "Matrix" view
@@ -521,10 +762,24 @@ export default function ReplayTool() {
   const [historySearch, setHistorySearch] = useState("");
   const [expandedVersions, setExpandedVersions] = useState<string | null>(null); // Which generation's versions are shown
   
+  // Agentic Chat Sidebar
+  const [sidebarMode, setSidebarMode] = useState<SidebarMode>("config");
+  const [sidebarTab, setSidebarTab] = useState<SidebarTab>("chat");
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [selectedElement, setSelectedElement] = useState<string | null>(null);
+  const [isSelectingElement, setIsSelectingElement] = useState(false);
+  const [isPlanMode, setIsPlanMode] = useState(false); // Plan mode - discuss without executing
+  
   // Publishing state
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [showPublishModal, setShowPublishModal] = useState(false);
+  
+  // Delete confirmation modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [deleteTargetTitle, setDeleteTargetTitle] = useState<string>("");
   
   // Dragging state for flow nodes
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
@@ -547,7 +802,6 @@ export default function ReplayTool() {
   const editInputRef = useRef<HTMLInputElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
-  const [selectedElement, setSelectedElement] = useState<string | null>(null);
   
   // Video player state
   const [isPlaying, setIsPlaying] = useState(false);
@@ -669,6 +923,9 @@ export default function ReplayTool() {
     
     console.log("Completing generation - showing result immediately");
     
+    // Track successful generation (FB Pixel + CAPI)
+    trackViewContent("Generation Complete", user?.id);
+    
     setDisplayedCode(code);
     setEditableCode(code);
     setIsStreamingCode(false);
@@ -694,6 +951,46 @@ export default function ReplayTool() {
     // Update preview URL
     const blob = new Blob([code], { type: "text/html" });
     setPreviewUrl(URL.createObjectURL(blob));
+    
+    // 🚀 TRANSFORM SIDEBAR TO AGENTIC CHAT
+    setSidebarMode("chat");
+    setSidebarTab("chat");
+    setMobilePanel("chat"); // Also switch mobile to chat
+    
+    // Generate AI summary message
+    const componentCount = (code.match(/<(?:div|section|header|footer|nav|aside|main|article)[^>]*>/gi) || []).length;
+    const hasNav = /<nav/i.test(code);
+    const hasHeader = /<header/i.test(code);
+    const hasFooter = /<footer/i.test(code);
+    const hasForms = /<form/i.test(code);
+    const hasCards = /card/gi.test(code);
+    
+    const features: string[] = [];
+    if (hasNav) features.push("Navigation");
+    if (hasHeader) features.push("Header");
+    if (hasFooter) features.push("Footer");
+    if (hasForms) features.push("Forms");
+    if (hasCards) features.push("Cards");
+    
+    // Build a more human description of what was built
+    const techStack: string[] = ["Tailwind CSS"];
+    if (hasNav) techStack.push("Alpine.js navigation");
+    if (hasForms) techStack.push("form components");
+    if (hasCards) techStack.push("card layouts");
+    
+    const summaryMessage: ChatMessage = {
+      id: generateId(),
+      role: "assistant",
+      content: `**Boom. UI Reconstructed.** 🚀\n\nI focused on matching the exact layout and feel from your video. Used ${techStack.slice(0, 3).join(", ")} to keep it clean and maintainable.\n\n${features.length > 0 ? `**Key sections:** ${features.join(" • ")}\n\n` : ""}Ready to refine? Just tell me what to tweak.`,
+      timestamp: Date.now(),
+      quickActions: [
+        "Make it mobile-friendly",
+        "Tweak the colors",
+        "Add hover effects",
+        "Improve the spacing"
+      ]
+    };
+    setChatMessages([summaryMessage]);
   }, [styleDirective]);
   
   // Reset stuck generation
@@ -758,6 +1055,130 @@ export default function ReplayTool() {
     
     return () => clearInterval(checkInterval);
   }, [isProcessing, resetStuckGeneration]);
+
+  // Load demo from API if ?demo= parameter is present (instant load, no AI cost!)
+  useEffect(() => {
+    const demoId = searchParams.get('demo');
+    if (demoId && !hasLoadedFromStorage) {
+      console.log("Loading demo from API:", demoId);
+      
+      // Fetch demo data from API
+      fetch(`/api/demo/${demoId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.generation) {
+            const gen = data.generation;
+            console.log("Demo loaded successfully:", gen.title);
+            
+            setIsDemoMode(true);
+            setGeneratedCode(gen.code);
+            setDisplayedCode(gen.code);
+            setEditableCode(gen.code);
+            setGenerationTitle(gen.title);
+            setGenerationComplete(true);
+            setSidebarMode("chat");
+            
+            // Load flow data
+            if (gen.flowNodes?.length > 0) {
+              setFlowNodes(gen.flowNodes);
+            }
+            if (gen.flowEdges?.length > 0) {
+              setFlowEdges(gen.flowEdges);
+            }
+            
+            // Load design system / style info
+            if (gen.styleInfo) {
+              setStyleInfo(gen.styleInfo);
+            }
+            
+            // Load style directive
+            if (gen.styleDirective) {
+              setStyleDirective(gen.styleDirective);
+            }
+            
+            // Load video input to show in sidebar and Input tab
+            if (gen.videoUrl) {
+              const demoFlowId = `demo_${demoId}`;
+              // Create a demo flow item to show video was used
+              setFlows([{
+                id: demoFlowId,
+                name: gen.title || "Demo Video",
+                videoBlob: new Blob(), // Empty blob for demo
+                videoUrl: gen.videoUrl,
+                thumbnail: undefined,
+                duration: 30, // Approximate
+                trimStart: 0,
+                trimEnd: 30,
+              }]);
+              setSelectedFlowId(demoFlowId);
+              
+              // Generate thumbnail from video URL
+              regenerateThumbnail(demoFlowId, gen.videoUrl);
+            }
+            
+            // Set activeGeneration so edits can be saved (for authenticated owners)
+            const demoGeneration: GenerationRecord = {
+              id: gen.id,
+              title: gen.title,
+              autoTitle: false,
+              timestamp: gen.timestamp || Date.now(),
+              status: "complete",
+              code: gen.code,
+              styleDirective: gen.styleDirective || "",
+              refinements: gen.refinements || "",
+              flowNodes: gen.flowNodes || [],
+              flowEdges: gen.flowEdges || [],
+              styleInfo: gen.styleInfo,
+              videoUrl: gen.videoUrl,
+              versions: gen.versions || [],
+              publishedSlug: gen.publishedSlug,
+            };
+            setActiveGeneration(demoGeneration);
+            setGenerations([demoGeneration]);
+            
+            // Add welcome message in chat explaining this is a real demo
+            setChatMessages([{
+              id: `demo_welcome_${Date.now()}`,
+              role: "assistant",
+              content: `🎬 **This is a real Replay generation!**
+
+This UI was reconstructed entirely from a screen recording using Replay's AI.
+
+**What you're seeing:**
+• Pixel-perfect layout extracted from video
+• All text content via OCR
+• Interactive components with Alpine.js
+• Responsive design with Tailwind CSS
+• Flow map showing detected navigation
+
+**Try it yourself:**
+1. Click tabs above to explore Code, Flow, Design System
+2. Sign up free to upload your own video
+3. Get 2 free generations - no credit card required!
+
+*Ready to reconstruct your own interfaces?*`,
+              timestamp: Date.now()
+            }]);
+            
+            // Create blob URL for preview
+            const blob = new Blob([gen.code], { type: "text/html" });
+            setPreviewUrl(URL.createObjectURL(blob));
+            
+            // Show toast - better formatted
+            showToast("Demo loaded!\nSign up free to generate your own projects.", "info");
+            
+            setHasLoadedFromStorage(true);
+          } else {
+            console.error("Failed to load demo:", data.error);
+            showToast("Demo not available yet. Try generating your own!", "error");
+          }
+        })
+        .catch(err => {
+          console.error("Error loading demo:", err);
+          showToast("Failed to load demo.", "error");
+        });
+    }
+  }, [searchParams, hasLoadedFromStorage, showToast, regenerateThumbnail]);
 
   // When new code arrives, either stream it or mark as pending
   useEffect(() => {
@@ -838,119 +1259,35 @@ export default function ReplayTool() {
     };
   }, []);
 
-  // Load flows from localStorage on mount
+  // Load on mount - Supabase is primary, localStorage is quick cache
   useEffect(() => {
-    try {
-      const savedFlows = localStorage.getItem("replay_flows");
-      const savedCode = localStorage.getItem("replay_generated_code");
-      const savedStyle = localStorage.getItem("replay_style");
-      const savedRefinements = localStorage.getItem("replay_refinements");
-      const savedHistory = localStorage.getItem("replay_generation_history");
-      const savedFlowNodes = localStorage.getItem("replay_flow_nodes");
-      const savedFlowEdges = localStorage.getItem("replay_flow_edges");
-      const savedStyleInfo = localStorage.getItem("replay_style_info");
-      const savedTitle = localStorage.getItem("replay_generation_title");
-      const savedAnalysis = localStorage.getItem("replay_analysis_phase");
-      const savedAnalysisDesc = localStorage.getItem("replay_analysis_description");
-      const savedFeedbackShown = localStorage.getItem("replay_feedback_shown");
-      
-      if (savedFeedbackShown === "true") {
-        setHasShownFeedback(true);
-      }
-      
-      if (savedFlows) {
-        const parsed = JSON.parse(savedFlows);
-        console.log("Loaded flows from localStorage:", parsed.map((f: FlowItem) => ({
-          id: f.id,
-          name: f.name,
-          hasVideoUrl: !!f.videoUrl,
-          videoUrlStart: f.videoUrl?.substring(0, 50),
-          hasThumbnail: !!f.thumbnail,
-          thumbnailLength: f.thumbnail?.length || 0
-        })));
-        
-        // Filter out any flows with invalid video URLs (blob URLs don't persist)
-        const validFlows = parsed.filter((f: FlowItem) => f.videoUrl && !f.videoUrl.startsWith("blob:"));
-        if (validFlows.length > 0) {
-          // Restore flows with their thumbnails, regenerate if missing
-          const flowsWithThumbnails = validFlows.map((f: FlowItem) => {
-            // Create a new videoBlob placeholder (we can't restore the actual blob)
-            const restoredFlow = {
-              ...f,
-              videoBlob: new Blob(), // Placeholder - actual video will be fetched from URL if needed
-            };
-            
-            // Only regenerate thumbnail if it's missing
-            if (!f.thumbnail && f.videoUrl) {
-              console.log("Regenerating thumbnail for flow:", f.name);
-              regenerateThumbnail(f.id, f.videoUrl);
-            }
-            return restoredFlow;
-          });
-          setFlows(flowsWithThumbnails);
-          setSelectedFlowId(validFlows[0].id);
+    const loadData = async () => {
+      try {
+        const savedFeedbackShown = localStorage.getItem("replay_feedback_shown");
+        if (savedFeedbackShown === "true") {
+          setHasShownFeedback(true);
         }
-      }
-      
-      // Also try to restore flow from the most recent generation if no valid flows
-      if (savedHistory) {
-        const history: GenerationRecord[] = JSON.parse(savedHistory);
-        const mostRecent = history.find(g => g.videoUrl && g.status === "complete");
-        if (mostRecent && mostRecent.videoUrl) {
-          // Check if we already have this flow
-          const savedFlowsParsed = savedFlows ? JSON.parse(savedFlows) : [];
-          const alreadyHaveFlow = savedFlowsParsed.some((f: FlowItem) => f.videoUrl === mostRecent.videoUrl);
-          
-          if (!alreadyHaveFlow) {
-            const restoredFlow: FlowItem = {
-              id: generateId(),
-              name: mostRecent.title || "Recording",
-              videoBlob: new Blob(),
-              videoUrl: mostRecent.videoUrl,
-              thumbnail: mostRecent.thumbnailUrl || "",
-              duration: 30,
-              trimStart: 0,
-              trimEnd: 30,
-            };
-            setFlows(prev => prev.length > 0 ? prev : [restoredFlow]);
-            setSelectedFlowId(prev => prev || restoredFlow.id);
+        
+        // Quick cache: load minimal index from localStorage for instant History display
+        const cachedIndex = localStorage.getItem("replay_generation_index");
+        if (cachedIndex) {
+          try {
+            const index = JSON.parse(cachedIndex);
+            // Set minimal generations for History list while Supabase loads
+            setGenerations(index.map((g: any) => ({ ...g, code: '' })));
+          } catch (e) {
+            // Ignore cache parse errors
           }
         }
-      }
-      if (savedCode) {
-        setGeneratedCode(savedCode);
-        setDisplayedCode(savedCode);
-        setEditableCode(savedCode);
-        // Create preview URL
-        const blob = new Blob([savedCode], { type: "text/html" });
-        setPreviewUrl(URL.createObjectURL(blob));
-        setGenerationComplete(true);
-      }
-      if (savedStyle) setStyleDirective(savedStyle);
-      if (savedRefinements) setRefinements(savedRefinements);
-      if (savedHistory) {
-        const parsedHistory: GenerationRecord[] = JSON.parse(savedHistory);
-        setGenerations(parsedHistory);
         
-        // Find and set active generation (most recent with code)
-        const mostRecent = parsedHistory.find(g => g.code && g.status === "complete");
-        if (mostRecent) {
-          setActiveGeneration(mostRecent);
-          console.log('[localStorage] Restored activeGeneration:', mostRecent.id, 'publishedSlug:', mostRecent.publishedSlug);
-        }
+        setHasLoadedFromStorage(true);
+      } catch (e) {
+        console.error("Error loading initial data:", e);
+        setHasLoadedFromStorage(true);
       }
-      if (savedFlowNodes) setFlowNodes(JSON.parse(savedFlowNodes));
-      if (savedFlowEdges) setFlowEdges(JSON.parse(savedFlowEdges));
-      if (savedStyleInfo) setStyleInfo(JSON.parse(savedStyleInfo));
-      if (savedTitle) setGenerationTitle(savedTitle);
-      if (savedAnalysis) setAnalysisPhase(JSON.parse(savedAnalysis));
-      if (savedAnalysisDesc) setAnalysisDescription(savedAnalysisDesc);
-      
-      setHasLoadedFromStorage(true);
-    } catch (e) {
-      console.error("Error loading from localStorage:", e);
-      setHasLoadedFromStorage(true);
-    }
+    };
+    
+    loadData();
   }, []);
 
   // Save flows to localStorage (but not blob URLs - they don't persist)
@@ -1006,6 +1343,48 @@ export default function ReplayTool() {
     }
   }, [styleDirective, refinements, hasLoadedFromStorage]);
   
+  // Save chat state to activeGeneration (per-project chat)
+  // Using useRef to track the last saved state and debounce saves
+  const lastSavedChatRef = useRef<string>("");
+  const lastProjectIdRef = useRef<string | null>(null);
+  const chatSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Reset chat ref when switching projects
+  useEffect(() => {
+    if (activeGeneration?.id !== lastProjectIdRef.current) {
+      lastSavedChatRef.current = "";
+      lastProjectIdRef.current = activeGeneration?.id || null;
+    }
+  }, [activeGeneration?.id]);
+  
+  // Debounced chat save - only save after 500ms of no changes
+  useEffect(() => {
+    if (!hasLoadedFromStorage || !activeGeneration) return;
+    
+    const currentChatHash = JSON.stringify(chatMessages.map(m => m.id));
+    if (currentChatHash === lastSavedChatRef.current) return;
+    
+    // Clear previous timeout
+    if (chatSaveTimeoutRef.current) {
+      clearTimeout(chatSaveTimeoutRef.current);
+    }
+    
+    // Debounce save by 500ms
+    chatSaveTimeoutRef.current = setTimeout(() => {
+      setGenerations(prev => prev.map(g => 
+        g.id === activeGeneration.id ? { ...g, chatMessages } : g
+      ));
+      lastSavedChatRef.current = currentChatHash;
+      localStorage.setItem("replay_sidebar_mode", sidebarMode);
+    }, 500);
+    
+    return () => {
+      if (chatSaveTimeoutRef.current) {
+        clearTimeout(chatSaveTimeoutRef.current);
+      }
+    };
+  }, [chatMessages, sidebarMode, hasLoadedFromStorage, activeGeneration?.id]);
+  
   // Validate Supabase credentials format
   const isValidSupabaseUrl = (url: string): boolean => {
     if (!url || url.trim().length === 0) return false;
@@ -1032,82 +1411,35 @@ export default function ReplayTool() {
   }, []);
 
   // Check Supabase connection status - validates format strictly
+  // Only check once on project change, not continuously
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !activeGeneration?.id) {
+      setIsSupabaseConnected(false);
+      return;
+    }
     
-    const checkSupabase = () => {
-      let connected = false;
-      const projectId = activeGeneration?.id;
+    const projectId = activeGeneration.id;
+    let connected = false;
+    
+    try {
+      const stored = localStorage.getItem(`replay_secrets_${projectId}`);
       
-      console.log("[Supabase Check] Starting check for project:", projectId);
-      
-      // ONLY check project-specific secrets - require BOTH valid URL and Key
-      if (projectId) {
-        try {
-          const stored = localStorage.getItem(`replay_secrets_${projectId}`);
-          console.log("[Supabase Check] Raw stored data:", stored);
-          
-          if (stored) {
-            const secrets = JSON.parse(stored);
-            const url = secrets.supabaseUrl || '';
-            const key = secrets.supabaseAnonKey || '';
-            
-            // Strict URL validation: must be https://[project-id].supabase.co
-            const urlValid = url && 
-              typeof url === 'string' &&
-              url.trim().length > 0 && 
-              /^https:\/\/[a-zA-Z0-9-]+\.supabase\.co\/?$/.test(url.trim());
-            
-            // Strict Key validation: must start with eyJ and be 100+ chars (JWT format)
-            const keyValid = key && 
-              typeof key === 'string' &&
-              key.trim().length >= 100 && 
-              key.trim().startsWith('eyJ');
-            
-            console.log("[Supabase Check] URL:", url?.substring(0, 30) + "...", "-> Valid:", urlValid);
-            console.log("[Supabase Check] Key length:", key?.length, "starts eyJ:", key?.startsWith?.('eyJ'), "-> Valid:", keyValid);
-            
-            // BOTH must be valid - if not, show NOT CONNECTED
-            if (urlValid && keyValid) {
-              connected = true;
-              console.log("[Supabase Check] ✅ CONNECTED - Both credentials valid");
-            } else {
-              connected = false;
-              console.log("[Supabase Check] ❌ NOT CONNECTED - Missing or invalid credentials");
-              // If data exists but is invalid, clear it
-              if (url || key) {
-                console.log("[Supabase Check] Clearing invalid stored credentials");
-                localStorage.removeItem(`replay_secrets_${projectId}`);
-              }
-            }
-          } else {
-            console.log("[Supabase Check] ❌ No secrets stored for this project");
-          }
-        } catch (e) {
-          console.error("[Supabase Check] Error parsing secrets:", e);
-          // Clear corrupted data
-          if (projectId) {
-            localStorage.removeItem(`replay_secrets_${projectId}`);
-          }
-        }
-      } else {
-        console.log("[Supabase Check] ❌ No active project ID");
+      if (stored) {
+        const secrets = JSON.parse(stored);
+        const url = secrets.supabaseUrl || '';
+        const key = secrets.supabaseAnonKey || '';
+        
+        // Strict validation
+        const urlValid = url && /^https:\/\/[a-zA-Z0-9-]+\.supabase\.co\/?$/.test(url.trim());
+        const keyValid = key && key.trim().length >= 100 && key.trim().startsWith('eyJ');
+        
+        connected = urlValid && keyValid;
       }
-      
-      setIsSupabaseConnected(connected);
-    };
+    } catch (e) {
+      // Silent fail - no connection
+    }
     
-    // Initial check
-    checkSupabase();
-    
-    // Re-check on storage changes and periodically
-    window.addEventListener("storage", checkSupabase);
-    const interval = setInterval(checkSupabase, 2000); // Check every 2s
-    
-    return () => {
-      window.removeEventListener("storage", checkSupabase);
-      clearInterval(interval);
-    };
+    setIsSupabaseConnected(connected);
   }, [activeGeneration?.id]);
   
   // Save flow nodes and edges to localStorage
@@ -1131,129 +1463,184 @@ export default function ReplayTool() {
     }
   }, [styleInfo, hasLoadedFromStorage]);
   
-  // Save generation history to localStorage - with size limits
+  // Save generation history - PRIMARY: Supabase, SECONDARY: minimal localStorage cache
+  const lastSavedGenerationsRef = useRef<string>("");
+  const generationsSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isLoadingProjectRef = useRef(false); // Flag to prevent saves during project load
+  
   useEffect(() => {
     if (!hasLoadedFromStorage || generations.length === 0) return;
-    try {
-      // Only keep last 5 generations to prevent QuotaExceededError
-      // Each generation with code can be 50-100KB
-      const recentHistory = generations.slice(-5).map(gen => ({
-        ...gen,
-        // Limit code size in localStorage to prevent quota issues
-        code: gen.code?.substring(0, 50000) || '', // Max 50KB per generation
-        versions: gen.versions?.slice(-3).map(v => ({
-          ...v,
-          code: v.code?.substring(0, 30000) || '', // Max 30KB per version
-        })) || [],
-      }));
-      localStorage.setItem("replay_generation_history", JSON.stringify(recentHistory));
-    } catch (e) {
-      console.error("Error saving generation history:", e);
-      // If quota exceeded, try to clear old data
+    
+    // Skip save if we're just loading a project (not editing)
+    if (isLoadingProjectRef.current) {
+      isLoadingProjectRef.current = false;
+      return;
+    }
+    
+    // Create a simple hash to detect real changes (includes title for rename detection!)
+    const currentHash = generations.map(g => `${g.id}:${g.title}:${g.chatMessages?.length || 0}:${g.versions?.length || 0}`).join('|');
+    if (currentHash === lastSavedGenerationsRef.current) return;
+    
+    // Clear previous timeout
+    if (generationsSaveTimeoutRef.current) {
+      clearTimeout(generationsSaveTimeoutRef.current);
+    }
+    
+    // Debounce save by 2 seconds
+    generationsSaveTimeoutRef.current = setTimeout(async () => {
+      lastSavedGenerationsRef.current = currentHash;
+      
+      // PRIMARY: Save to Supabase (if logged in) - full data, no limits
+      if (user) {
+        for (const gen of generations) {
+          if (gen.status === "complete" && gen.code) {
+            try {
+              await fetch("/api/generations", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  id: gen.id,
+                  title: gen.title,
+                  code: gen.code, // Full code - no limit
+                  timestamp: gen.timestamp,
+                  publishedSlug: gen.publishedSlug,
+                  chatMessages: gen.chatMessages, // Full chat history
+                  versions: gen.versions, // All versions
+                  status: gen.status,
+                  videoUrl: gen.videoUrl,
+                  thumbnailUrl: gen.thumbnailUrl,
+                }),
+              });
+            } catch (e) {
+              console.error("Error saving to Supabase:", e);
+            }
+          }
+        }
+      }
+      
+      // SECONDARY: Save ONLY index to localStorage (cache for quick History list)
       try {
-        localStorage.removeItem("replay_generation_history");
-        const minimalHistory = generations.slice(-2).map(gen => ({
+        const historyIndex = generations.slice(-100).map(gen => ({
           id: gen.id,
           title: gen.title,
           timestamp: gen.timestamp,
-          publishedSlug: gen.publishedSlug,
-          code: '', // Don't save code
-          versions: [],
+          status: gen.status,
+          thumbnailUrl: gen.thumbnailUrl?.substring(0, 200) || '',
         }));
-        localStorage.setItem("replay_generation_history", JSON.stringify(minimalHistory));
-      } catch (e2) {
-        console.error("Failed to save even minimal history:", e2);
+        localStorage.setItem("replay_generation_index", JSON.stringify(historyIndex));
+      } catch (e) {
+        // Ignore localStorage errors - Supabase is primary
+        console.log("localStorage cache skipped (quota)");
       }
-    }
-  }, [generations, hasLoadedFromStorage]);
+    }, 2000);
+    
+    return () => {
+      if (generationsSaveTimeoutRef.current) {
+        clearTimeout(generationsSaveTimeoutRef.current);
+      }
+    };
+  }, [generations, hasLoadedFromStorage, user]);
   
-  // Sync generations with Supabase when user is logged in - Supabase is source of truth
+  // Fetch lock to prevent multiple simultaneous requests
+  const isFetchingRef = useRef(false);
+  const lastFetchTimeRef = useRef(0);
+  
+  // PRIMARY DATA SOURCE: Supabase - load full history when user logs in
   useEffect(() => {
     if (!user || !hasLoadedFromStorage) return;
     
-    // Fetch generations from Supabase - Supabase is the primary source of truth
-    const fetchFromSupabase = async () => {
+    const fetchFromSupabase = async (force = false) => {
+      // Prevent concurrent fetches
+      if (isFetchingRef.current) {
+        console.log("[Supabase] Fetch already in progress, skipping");
+        return;
+      }
+      
+      // Don't fetch more than once every 10 seconds (unless forced)
+      const now = Date.now();
+      if (!force && now - lastFetchTimeRef.current < 10000) {
+        console.log("[Supabase] Debounced, last fetch was", Math.round((now - lastFetchTimeRef.current) / 1000), "s ago");
+        return;
+      }
+      
+      isFetchingRef.current = true;
+      lastFetchTimeRef.current = now;
+      
       try {
-        const response = await fetch("/api/generations");
+        // Fetch minimal data for history list (much faster) - increased limit to 500
+        const response = await fetch("/api/generations?minimal=true&limit=500");
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.generations) {
-            // Supabase is the source of truth - just use it directly
-            const supabaseGenerations = data.generations;
-            
-            // Get current local generations to check for any that aren't synced yet
-            const localStorageData = localStorage.getItem("replay_generation_history");
-            const localGenerations: GenerationRecord[] = localStorageData ? JSON.parse(localStorageData) : [];
-            
-            // Create map of local generations for quick lookup
-            const localGenMap = new Map(localGenerations.map(g => [g.id, g]));
-            
-            // Find local generations that aren't in Supabase yet (just created)
-            const supabaseIds = new Set(supabaseGenerations.map((g: GenerationRecord) => g.id));
-            const unsyncedLocal = localGenerations.filter(g => !supabaseIds.has(g.id) && g.status === "complete");
-            
-            // Merge Supabase data with local data - preserve local publishedSlug if Supabase doesn't have it
-            const mergedSupabase = supabaseGenerations.map((supGen: GenerationRecord) => {
-              const localGen = localGenMap.get(supGen.id);
-              // If local has publishedSlug but Supabase doesn't, keep the local one
-              if (localGen?.publishedSlug && !supGen.publishedSlug) {
-                return { ...supGen, publishedSlug: localGen.publishedSlug };
+            // Merge with existing generations to preserve full data for current session
+            setGenerations(prev => {
+              const supabaseMap = new Map<string, GenerationRecord>(
+                data.generations.map((g: GenerationRecord) => [g.id, g])
+              );
+              const merged: GenerationRecord[] = [];
+              
+              // Keep full data from previous state for existing generations
+              for (const prevGen of prev) {
+                const newGen = supabaseMap.get(prevGen.id);
+                if (newGen) {
+                  // Merge: keep code/versions from prev if not in new (minimal fetch)
+                  merged.push({
+                    ...newGen,
+                    code: prevGen.code || newGen.code,
+                    versions: prevGen.versions || newGen.versions,
+                    flowNodes: prevGen.flowNodes || newGen.flowNodes,
+                    flowEdges: prevGen.flowEdges || newGen.flowEdges,
+                    styleInfo: prevGen.styleInfo || newGen.styleInfo,
+                    styleDirective: prevGen.styleDirective || newGen.styleDirective || '',
+                    refinements: prevGen.refinements || newGen.refinements || '',
+                  } as GenerationRecord);
+                  supabaseMap.delete(prevGen.id);
+                } else {
+                  // Keep local-only generations (not yet synced)
+                  merged.push(prevGen);
+                }
               }
-              return supGen;
+              
+              // Add any new generations from Supabase
+              for (const newGen of supabaseMap.values()) {
+                merged.push(newGen);
+              }
+              
+              // Sort by timestamp (newest first)
+              return merged.sort((a, b) => b.timestamp - a.timestamp);
             });
-            
-            // Merge: Supabase data (with local slugs preserved) + unsynced local, limit to 50
-            const merged = [...mergedSupabase, ...unsyncedLocal]
-              .sort((a, b) => b.timestamp - a.timestamp)
-              .slice(0, 50);
-            
-            // Always update to ensure sync
-            setGenerations(merged);
-            localStorage.setItem("replay_generation_history", JSON.stringify(merged));
-            
-            // Push any unsynced local generations to Supabase
-            for (const gen of unsyncedLocal) {
-              try {
-                await fetch("/api/generations", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(gen),
-                });
-              } catch (e) {
-                console.error("Error pushing local generation to Supabase:", e);
-              }
-            }
+            console.log(`[Supabase] Synced ${data.generations.length} generations (total: ${data.total})`);
           }
         }
       } catch (e) {
         console.error("Error syncing with Supabase:", e);
+      } finally {
+        isFetchingRef.current = false;
       }
     };
     
     // Initial fetch
-    fetchFromSupabase();
+    fetchFromSupabase(true);
     
-    // Set up periodic sync (every 15 seconds) and on visibility change
-    const intervalId = setInterval(fetchFromSupabase, 15000);
+    // Set up periodic sync (every 60 seconds - reduced from 15s to prevent DB overload)
+    const intervalId = setInterval(() => fetchFromSupabase(false), 60000);
     
-    // Sync when tab becomes visible again (user switches back from mobile to PC or vice versa)
+    // Sync when tab becomes visible (but debounced)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        fetchFromSupabase();
+        fetchFromSupabase(false);
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
-    // Sync on window focus
-    const handleFocus = () => fetchFromSupabase();
-    window.addEventListener('focus', handleFocus);
+    // Don't sync on every focus - removed to reduce DB load
     
     return () => {
       clearInterval(intervalId);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
     };
   }, [user, hasLoadedFromStorage]);
+  
   
   // Save active generation to Supabase when complete
   // Track failed saves to prevent spam
@@ -1261,13 +1648,24 @@ export default function ReplayTool() {
   
   const saveGenerationToSupabase = useCallback(async (gen: GenerationRecord) => {
     if (!user) {
+      console.log("[Save] Skipping - no user logged in");
+      return;
+    }
+    
+    // Only skip demo saves if in demo mode (user came via ?demo= URL, not logged in as owner)
+    // The owner CAN save changes to demo projects when loaded from their history
+    if (isDemoMode && DEMO_PROJECT_IDS.has(gen.id)) {
+      console.log("[Save] Skipping demo project in demo mode:", gen.id);
       return;
     }
     
     // Don't retry if already failed for this generation
     if (failedSavesRef.current.has(gen.id)) {
+      console.log("[Save] Skipping - previously failed:", gen.id);
       return;
     }
+    
+    console.log("[Save] Saving to Supabase:", gen.id, "title:", gen.title);
     
     try {
       const response = await fetch("/api/generations", {
@@ -1286,7 +1684,37 @@ export default function ReplayTool() {
       console.error("Error saving to Supabase:", e);
       failedSavesRef.current.add(gen.id);
     }
-  }, [user]);
+  }, [user, isDemoMode, DEMO_PROJECT_IDS]);
+  
+  // Lazy load full generation data (called when user selects from history)
+  const loadFullGeneration = useCallback(async (genId: string): Promise<GenerationRecord | null> => {
+    try {
+      // Check if this is a demo project - use demo API instead
+      const isDemo = DEMO_PROJECT_IDS.has(genId);
+      const endpoint = isDemo 
+        ? `/api/demo/${genId}` 
+        : `/api/generations?id=${genId}`;
+      
+      console.log(`[History] Loading ${isDemo ? 'demo' : 'user'} generation: ${genId}`);
+      
+      const response = await fetch(endpoint);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.generation) {
+          // Update in generations list
+          const fullGen = data.generation as GenerationRecord;
+          setGenerations(prev => prev.map(g => g.id === genId ? fullGen : g));
+          console.log(`[History] Loaded full data for generation ${genId}`);
+          return fullGen;
+        }
+      } else {
+        console.error(`[History] Failed to load generation ${genId}:`, response.status);
+      }
+    } catch (e) {
+      console.error("Error loading full generation:", e);
+    }
+    return null;
+  }, [DEMO_PROJECT_IDS]);
   
   // Save generation title to localStorage
   useEffect(() => {
@@ -3400,13 +3828,17 @@ export const shadows = {
   const renameGeneration = (id: string, newTitle: string) => {
     const updatedGen = generations.find(g => g.id === id);
     if (updatedGen) {
-      const renamedGen = { ...updatedGen, title: newTitle, autoTitle: false };
+      // Ensure title is not empty - fallback to current title if empty
+      const finalTitle = newTitle.trim() || updatedGen.title || "Untitled Project";
+      console.log("[Rename] Renaming generation", id, "to:", finalTitle);
+      
+      const renamedGen = { ...updatedGen, title: finalTitle, autoTitle: false };
       setGenerations(prev => prev.map(g => g.id === id ? renamedGen : g));
       if (activeGeneration?.id === id) {
-        setActiveGeneration(prev => prev ? { ...prev, title: newTitle, autoTitle: false } : null);
-        setGenerationTitle(newTitle);
+        setActiveGeneration(prev => prev ? { ...prev, title: finalTitle, autoTitle: false } : null);
+        setGenerationTitle(finalTitle);
       }
-      // Sync rename to Supabase
+      // Sync rename to Supabase immediately
       saveGenerationToSupabase(renamedGen);
     }
     setRenamingId(null);
@@ -3451,9 +3883,10 @@ export const shadows = {
     const gen = generations.find(g => g.id === genId);
     if (!gen) return;
     
-    // Save current state as a version before restoring
-    if (activeGeneration?.id === genId && generatedCode) {
-      saveVersion("Before restore");
+    // Save current state as a version before restoring (with descriptive name)
+    if (activeGeneration?.id === genId && generatedCode && generatedCode !== version.code) {
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      saveVersion(`Snapshot @ ${timeStr} (before "${version.label.slice(0, 20)}${version.label.length > 20 ? '...' : ''}")`);
     }
     
     // Restore the version
@@ -3472,21 +3905,44 @@ export const shadows = {
     setExpandedVersions(null);
   }, [generations, activeGeneration, generatedCode, saveVersion]);
   
-  const duplicateGeneration = (gen: GenerationRecord) => {
+  const duplicateGeneration = async (gen: GenerationRecord) => {
+    setHistoryMenuOpen(null);
+    
+    // If generation doesn't have code, load full data first
+    let fullGen = gen;
+    if (!gen.code) {
+      showToast("Loading project data...", "info");
+      const loaded = await loadFullGeneration(gen.id);
+      if (!loaded || !loaded.code) {
+        showToast("Failed to load project data", "error");
+        return;
+      }
+      fullGen = loaded;
+    }
+    
     const newGen: GenerationRecord = {
-      ...gen,
+      ...fullGen,
       id: generateId(),
-      title: `${gen.title} (Copy)`,
+      title: `${fullGen.title} (Copy)`,
       timestamp: Date.now(),
-      autoTitle: false
+      autoTitle: false,
+      publishedSlug: undefined, // Don't copy published slug
     };
     setGenerations(prev => [...prev, newGen]);
-    setHistoryMenuOpen(null);
     // Save duplicated generation to Supabase
     saveGenerationToSupabase(newGen);
-    showToast("Generation duplicated", "success");
+    showToast("Project duplicated!", "success");
   };
   
+  // Open delete confirmation modal
+  const confirmDeleteGeneration = (id: string, title: string) => {
+    setDeleteTargetId(id);
+    setDeleteTargetTitle(title || "Untitled Project");
+    setShowDeleteModal(true);
+    setHistoryMenuOpen(null);
+  };
+  
+  // Actually delete after confirmation
   const deleteGeneration = async (id: string) => {
     setGenerations(prev => prev.filter(g => g.id !== id));
     if (activeGeneration?.id === id) {
@@ -3503,7 +3959,9 @@ export const shadows = {
       setGenerationComplete(false);
     }
     setHistoryMenuOpen(null);
-    showToast("Generation deleted", "info");
+    setShowDeleteModal(false);
+    setDeleteTargetId(null);
+    showToast("Project deleted", "info");
     
     // Sync deletion to Supabase
     if (user) {
@@ -3642,15 +4100,46 @@ export const shadows = {
       return;
     }
     
+    // Track generation start (FB Pixel + CAPI)
+    trackStartGeneration(user.id);
+    
+    // FREE PLAN RESTRICTIONS
+    if (!isPaidPlan) {
+      // Check video duration - max 30s for FREE
+      const flow = flows.find(f => f.id === selectedFlowId) || flows[0];
+      if (flow && flow.duration && flow.duration > 30) {
+        showToast("Video too long for Free Plan. Free plan supports videos up to 30 seconds. Upgrade to PRO for videos up to 5 minutes.", "error");
+        return;
+      }
+      
+      // Check context length - max 2000 chars for FREE
+      if (refinements && refinements.length > 2000) {
+        showToast(`Context too long for Free Plan. Maximum ${2000} characters allowed. You have ${refinements.length}. Upgrade to PRO for up to 20,000 characters.`, "error");
+        return;
+      }
+    } else {
+      // PRO plan limits
+      const flow = flows.find(f => f.id === selectedFlowId) || flows[0];
+      if (flow && flow.duration && flow.duration > 300) {
+        showToast("Video too long. Maximum 5 minutes allowed.", "error");
+        return;
+      }
+      
+      if (refinements && refinements.length > 20000) {
+        showToast(`Context too long. Maximum 20,000 characters allowed. You have ${refinements.length}.`, "error");
+        return;
+      }
+    }
+    
     // SMART EDIT MODE: If we already have generated code, and context has changed,
     // use AI edit instead of regenerating from scratch
     const hasExistingProject = activeGeneration && generatedCode && generationComplete;
-    const contextChanged = refinements.trim() !== (activeGeneration?.refinements || "").trim();
-    const styleChanged = styleDirective.trim() !== (activeGeneration?.styleDirective || "").trim();
+    const contextChanged = (refinements || "").trim() !== (activeGeneration?.refinements || "").trim();
+    const styleChanged = (styleDirective || "").trim() !== (activeGeneration?.styleDirective || "").trim();
     
-    if (hasExistingProject && (contextChanged || styleChanged) && refinements.trim()) {
+    if (hasExistingProject && (contextChanged || styleChanged) && (refinements || "").trim()) {
       // Use Edit mode - cheaper and preserves existing structure
-      const editPrompt = refinements.trim() + (styleChanged ? ` Apply style: ${styleDirective}` : "");
+      const editPrompt = (refinements || "").trim() + (styleChanged ? ` Apply style: ${styleDirective}` : "");
       
       // Credits gate for edit
       if (!canAfford(CREDIT_COSTS.AI_EDIT)) {
@@ -3785,6 +4274,8 @@ export const shadows = {
     setGeneratedCode(null);
     setDisplayedCode("");
     setEditableCode("");
+    // Auto-switch to Preview mode when generation starts
+    setViewMode("preview");
     
     // Track generation start time for stuck detection
     generationStartTimeRef.current = Date.now();
@@ -4083,8 +4574,8 @@ export const shadows = {
       let fullStyleDirective = styleDirective || "Modern, clean design with smooth animations";
       
       // Add refinements if provided
-      if (refinements.trim()) {
-        fullStyleDirective += `. Additional refinements: ${refinements.trim()}`;
+      if ((refinements || "").trim()) {
+        fullStyleDirective += `. Additional refinements: ${(refinements || "").trim()}`;
       }
       
       // Add trim info if applicable
@@ -4109,6 +4600,11 @@ export const shadows = {
       } catch (err) {
         console.log("[Generate] No database context:", err);
       }
+      
+      console.log("[Generate] ===== STYLE REFERENCE DEBUG =====");
+      console.log("[Generate] styleReferenceImage:", styleReferenceImage);
+      console.log("[Generate] styleReferenceImage URL:", styleReferenceImage?.url?.substring(0, 100));
+      console.log("[Generate] styleDirective:", fullStyleDirective.substring(0, 200));
       
       const result = await transmuteVideoToCode({
         videoUrl,
@@ -4157,8 +4653,20 @@ export const shadows = {
         } : prev);
         
         // Add to generation history for persistence
-        // Use current title (user can change it manually, default is "Untitled Project")
-        const currentTitle = generationTitle || "Untitled Project";
+        // Auto-generate title from code if user hasn't set one
+        let currentTitle = generationTitle || "Untitled Project";
+        let isAutoTitle = false;
+        
+        if (currentTitle === "Untitled Project") {
+          const extractedName = extractProjectName(result.code);
+          if (extractedName) {
+            currentTitle = extractedName;
+            isAutoTitle = true;
+            // Update the title state so user sees it
+            setGenerationTitle(extractedName);
+            console.log(`[Auto-title] Generated name: "${extractedName}"`);
+          }
+        }
         
         // Create initial version
         const initialVersion: GenerationVersion = {
@@ -4174,7 +4682,7 @@ export const shadows = {
         const newGeneration: GenerationRecord = {
           id: generateId(),
           title: currentTitle,
-          autoTitle: false,
+          autoTitle: isAutoTitle,
           timestamp: Date.now(),
           status: "complete",
           code: result.code,
@@ -4191,6 +4699,8 @@ export const shadows = {
         };
         setGenerations(prev => [...prev, newGeneration]);
         setActiveGeneration(newGeneration);
+        // Reset published URL for new project (don't show old project's publish link)
+        setPublishedUrl(null);
         
         // Immediately save to Supabase for cross-device sync
         saveGenerationToSupabase(newGeneration);
@@ -4230,6 +4740,64 @@ export const shadows = {
     }
   };
 
+  // Auto-generate project name from HTML content
+  const extractProjectName = (code: string): string | null => {
+    // Try to extract from <title> tag
+    const titleMatch = code.match(/<title[^>]*>([^<]+)<\/title>/i);
+    if (titleMatch && titleMatch[1]) {
+      const title = titleMatch[1].trim();
+      if (title && title.length > 0 && title.length < 50 && !title.toLowerCase().includes('untitled')) {
+        return title;
+      }
+    }
+    
+    // Try to extract from nav/header logo or brand text
+    // Look for text in logo area, brand element, or first link in nav
+    const brandPatterns = [
+      /<(?:a|span|div)[^>]*class="[^"]*(?:logo|brand|site-name)[^"]*"[^>]*>([^<]+)</i,
+      /<nav[^>]*>[\s\S]*?<(?:a|span|div)[^>]*>([A-Z][a-zA-Z0-9\s]{2,20})</,
+      /<header[^>]*>[\s\S]*?<(?:a|span|div)[^>]*>([A-Z][a-zA-Z0-9\s]{2,20})</,
+    ];
+    
+    for (const pattern of brandPatterns) {
+      const match = code.match(pattern);
+      if (match && match[1]) {
+        const brand = match[1].trim().replace(/<[^>]*>/g, '');
+        if (brand && brand.length >= 2 && brand.length < 30 && /^[A-Z]/.test(brand)) {
+          return brand;
+        }
+      }
+    }
+    
+    // Try to extract from first H1 (hero headline)
+    const h1Match = code.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+    if (h1Match && h1Match[1]) {
+      // Clean HTML tags and get text
+      let h1Text = h1Match[1].replace(/<[^>]*>/g, ' ').trim();
+      // Remove multiple spaces
+      h1Text = h1Text.replace(/\s+/g, ' ').trim();
+      // Take first 3-4 words or 30 chars max
+      const words = h1Text.split(' ').slice(0, 4).join(' ');
+      if (words && words.length >= 3 && words.length < 40) {
+        return words;
+      }
+    }
+    
+    // Try to find any prominent brand-like text (capitalized words in header area)
+    const headerArea = code.match(/<(?:header|nav)[^>]*>([\s\S]*?)<\/(?:header|nav)>/i);
+    if (headerArea) {
+      const capitalizedMatch = headerArea[1].match(/>([A-Z][a-zA-Z0-9]+(?:\s+[A-Z]?[a-zA-Z0-9]+)?)</);
+      if (capitalizedMatch && capitalizedMatch[1]) {
+        const text = capitalizedMatch[1].trim();
+        if (text.length >= 2 && text.length < 25) {
+          return text;
+        }
+      }
+    }
+    
+    return null;
+  };
+
   // Generate description based on code content
   const generateAnalysisDescription = (code: string, style: string): string => {
     const hasHeader = /<header|<nav/i.test(code);
@@ -4261,6 +4829,82 @@ export const shadows = {
     return desc;
   };
 
+  // Convert image URL to base64 (for sending to AI)
+  const urlToBase64 = useCallback(async (url: string): Promise<string | null> => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result as string;
+          // Remove data URL prefix to get just the base64
+          const base64Data = base64.split(',')[1];
+          resolve(base64Data);
+        };
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch (e) {
+      console.error("Error converting URL to base64:", e);
+      return null;
+    }
+  }, []);
+
+  // Handle paste for images in chat/edit input
+  const handlePasteImage = useCallback(async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (!file) continue;
+        
+        // Create temporary preview
+        const tempId = generateId();
+        const tempUrl = URL.createObjectURL(file);
+        const imgName = `Pasted image ${new Date().toLocaleTimeString()}`;
+        
+        // Add with uploading state
+        setEditImages(prev => [...prev, { id: tempId, url: tempUrl, name: imgName, file, uploading: true }]);
+        showToast("Uploading image...", "info");
+        
+        // Upload to Supabase
+        try {
+          const formData = new FormData();
+          formData.append('file', file, `pasted-${Date.now()}.png`);
+          formData.append('userId', user?.id || 'anon');
+          
+          const response = await fetch('/api/upload-image', {
+            method: 'POST',
+            body: formData,
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            // Update with real URL
+            setEditImages(prev => prev.map(img => 
+              img.id === tempId ? { ...img, url: data.url, uploading: false } : img
+            ));
+            showToast("Image attached!", "success");
+          } else {
+            // Remove failed upload
+            setEditImages(prev => prev.filter(img => img.id !== tempId));
+            showToast("Failed to upload image", "error");
+          }
+        } catch (err) {
+          console.error("Upload error:", err);
+          setEditImages(prev => prev.filter(img => img.id !== tempId));
+          showToast("Failed to upload image", "error");
+        }
+        
+        return; // Only handle first image
+      }
+    }
+  }, [user?.id, showToast]);
+
   const handleEdit = async () => {
     // Prevent double execution
     if (isEditing) {
@@ -4273,7 +4917,7 @@ export const shadows = {
     console.log('[handleEdit] editImages:', editImages.length);
     console.log('[handleEdit] editableCode exists:', !!editableCode);
     
-    if ((!editInput.trim() && editImages.length === 0) || !editableCode) {
+    if ((!(editInput || "").trim() && editImages.length === 0) || !editableCode) {
       console.log('[handleEdit] Early return - no input or no code');
       showToast("Enter a description of what to change", "error");
       return;
@@ -4491,6 +5135,13 @@ export const shadows = {
         console.log('[handleEdit] ALL DONE - showing toast');
         showToast("Changes applied!", "success");
         
+        // Add response to chat explaining what was done
+        const responseMsg = analyzeCodeChanges(editableCode, result.code, editInput);
+        setChatMessages(prev => [...prev, 
+          { id: generateId(), role: "user", content: editInput, timestamp: Date.now() - 1 },
+          { id: generateId(), role: "assistant", content: responseMsg, timestamp: Date.now() }
+        ]);
+        
         // Switch to preview tab to show the result
         setViewMode("preview");
         
@@ -4543,6 +5194,14 @@ export const shadows = {
 
   const handleDownload = () => {
     if (!editableCode) return;
+    
+    // Demo mode: require sign up to download
+    if (isDemoMode && !user) {
+      setShowAuthModal(true);
+      showToast("Sign up free to download code. You get 2 free generations!", "info");
+      return;
+    }
+    
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([editableCode], { type: "text/html" }));
     // Use project title for filename, sanitize for safe filename
@@ -4557,6 +5216,14 @@ export const shadows = {
 
   const handlePublishClick = () => {
     if (!editableCode) return;
+    
+    // Demo mode: require sign up to publish
+    if (isDemoMode && !user) {
+      setShowAuthModal(true);
+      showToast("Sign up free to publish. You get 2 free generations!", "info");
+      return;
+    }
+    
     // Initialize published URL from active generation if exists
     if (activeGeneration?.publishedSlug) {
       setPublishedUrl(`https://www.replay.build/p/${activeGeneration.publishedSlug}`);
@@ -4605,19 +5272,8 @@ export const shadows = {
             // Also save to Supabase
             saveGenerationToSupabase(updatedGen);
           }
-          // Also persist to localStorage directly as backup
-          try {
-            const storedHistory = localStorage.getItem("replay_generation_history");
-            if (storedHistory && activeGeneration) {
-              const history = JSON.parse(storedHistory);
-              const updated = history.map((g: any) => 
-                g.id === activeGeneration.id ? { ...g, publishedSlug: newSlug } : g
-              );
-              localStorage.setItem("replay_generation_history", JSON.stringify(updated));
-            }
-          } catch (e) {
-            console.error("Error saving slug to localStorage:", e);
-          }
+          // Skip localStorage save here - let the dedicated effect handle it
+          // This prevents quota issues from multiple save attempts
         }
         
         // Track export analytics
@@ -4872,14 +5528,26 @@ export const shadows = {
           <div className="relative">
             {user ? (
               <>
-                <button onClick={() => setShowUserMenu(!showUserMenu)} className="p-1 rounded-full hover:bg-white/5 transition-colors">
-                  <Avatar 
-                    src={profile?.avatar_url} 
-                    fallback={user.email?.[0]?.toUpperCase() || "U"} 
-                    size={32}
-                    className="ring-2 ring-transparent hover:ring-[#FF6E3C]/30 transition-all"
-                  />
-                </button>
+                {/* Display name logic: full_name → email prefix → 'User' */}
+                {(() => {
+                  const meta = user.user_metadata;
+                  const displayName = meta?.full_name || meta?.name || user.email?.split('@')[0] || 'User';
+                  const plan = membership?.plan || "free";
+                  return (
+                    <button onClick={() => setShowUserMenu(!showUserMenu)} className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/5 transition-colors">
+                      <span className="text-sm font-medium text-white/80 max-w-[120px] truncate">{displayName}</span>
+                      {isPaidPlan ? (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase">
+                          {plan === "agency" ? "Agency" : plan === "enterprise" ? "Enterprise" : "Pro"}
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-white/50 uppercase">
+                          Free
+                        </span>
+                      )}
+                    </button>
+                  );
+                })()}
                 <AnimatePresence>
                   {showUserMenu && (
                     <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }} className="absolute top-full right-0 mt-2 w-64 bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden shadow-2xl z-50">
@@ -4891,7 +5559,18 @@ export const shadows = {
                         return (
                           <Link href="/settings?tab=credits" className="block p-3 hover:bg-white/5 transition-colors border-b border-white/5">
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm text-white">{userTotalCredits} credits available</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-white">{userTotalCredits} credits</span>
+                                {isPaidPlan ? (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase">
+                                    {plan === "agency" ? "Agency" : plan === "enterprise" ? "Enterprise" : "Pro"}
+                                  </span>
+                                ) : (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-white/50 uppercase">
+                                    Free
+                                  </span>
+                                )}
+                              </div>
                               <ChevronRight className="w-4 h-4 text-white/40" />
                             </div>
                             <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
@@ -4900,10 +5579,16 @@ export const shadows = {
                                 style={{ width: `${percentage}%` }}
                               />
                             </div>
-                            <div className="flex items-center justify-between mt-2">
-                              <span className="text-xs text-white/40 capitalize">{plan} Plan</span>
-                              <Link href="/settings?tab=plans" className="text-xs text-[#FF6E3C] font-medium hover:text-[#FF8F5C]">Upgrade</Link>
-                            </div>
+                            {!isPaidPlan && (
+                              <div className="flex items-center justify-between mt-2">
+                                <span className="text-xs text-[#FF6E3C] font-medium">Upgrade →</span>
+                              </div>
+                            )}
+                            {isPaidPlan && (
+                              <div className="flex items-center justify-between mt-2">
+                                <span className="text-xs text-white/40">Add credits →</span>
+                              </div>
+                            )}
                           </Link>
                         );
                       })()}
@@ -4937,26 +5622,28 @@ export const shadows = {
         </div>
       </header>
       
-      {/* Mobile Header - Fixed */}
-      <header className="fixed top-0 left-0 right-0 z-50 flex md:hidden items-center justify-between px-4 py-3 border-b border-white/5 bg-black/95 backdrop-blur-xl">
-        <a href="/" className="hover:opacity-80 transition-opacity">
-          <Logo />
-        </a>
-        <button 
-          onClick={() => setShowMobileMenu(!showMobileMenu)}
-          className="p-2 rounded-lg hover:bg-white/5 transition-colors"
-        >
-          {user ? (
-            <Avatar 
-              src={profile?.avatar_url} 
-              fallback={user.email?.[0]?.toUpperCase() || "U"} 
-              size={28}
-            />
-          ) : (
-            <User className="w-5 h-5 text-white/60" />
-          )}
-        </button>
-      </header>
+      {/* Mobile Header - Fixed - Hide when panels with own headers are open */}
+      {!(mobilePanel === "chat" && generatedCode) && mobilePanel !== "preview" && mobilePanel !== "code" && mobilePanel !== "flow" && mobilePanel !== "design" && mobilePanel !== "input" && (
+        <header className="fixed top-0 left-0 right-0 z-50 flex md:hidden items-center justify-between px-4 py-3 border-b border-white/5 bg-black/95 backdrop-blur-xl">
+          <a href="/" className="hover:opacity-80 transition-opacity">
+            <Logo />
+          </a>
+          <button 
+            onClick={() => setShowMobileMenu(!showMobileMenu)}
+            className="p-2 rounded-lg hover:bg-white/5 transition-colors"
+          >
+            {user ? (
+              <Avatar 
+                src={profile?.avatar_url} 
+                fallback={user.email?.[0]?.toUpperCase() || "U"} 
+                size={28}
+              />
+            ) : (
+              <User className="w-5 h-5 text-white/60" />
+            )}
+          </button>
+        </header>
+      )}
       
       {/* Mobile Menu Overlay */}
       <AnimatePresence>
@@ -4999,7 +5686,18 @@ export const shadows = {
                         className="block p-4 hover:bg-white/5 transition-colors border-b border-white/5"
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm text-white">{userTotalCredits} credits available</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-white">{userTotalCredits} credits</span>
+                            {isPaidPlan ? (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase">
+                                {plan === "agency" ? "Agency" : plan === "enterprise" ? "Enterprise" : "Pro"}
+                              </span>
+                            ) : (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-white/50 uppercase">
+                                Free
+                              </span>
+                            )}
+                          </div>
                           <ChevronRight className="w-4 h-4 text-white/40" />
                         </div>
                         <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
@@ -5008,10 +5706,16 @@ export const shadows = {
                             style={{ width: `${percentage}%` }}
                           />
                         </div>
-                        <div className="flex items-center justify-between mt-2">
-                          <span className="text-xs text-white/40 capitalize">{plan} Plan</span>
-                          <span className="text-xs text-[#FF6E3C] font-medium">Upgrade</span>
-                        </div>
+                        {!isPaidPlan && (
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="text-xs text-[#FF6E3C] font-medium">Upgrade →</span>
+                          </div>
+                        )}
+                        {isPaidPlan && (
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="text-xs text-white/40">Add credits →</span>
+                          </div>
+                        )}
                       </Link>
                     );
                   })()}
@@ -5091,9 +5795,14 @@ export const shadows = {
               >
                 {generations.length === 0 ? (
                   <div className="text-center py-12">
-                    <History className="w-8 h-8 text-white/10 mx-auto mb-3" />
-                    <p className="text-sm text-white/40">No generations yet</p>
-                    <p className="text-xs text-white/25 mt-1">Your generation history will appear here</p>
+                    <div className="empty-logo-container mx-auto" style={{ width: 60, height: 75 }}>
+                      <svg className="empty-logo" viewBox="0 0 82 109" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M68.099 37.2285C78.1678 43.042 78.168 57.5753 68.099 63.3887L29.5092 85.668C15.6602 93.6633 0.510418 77.4704 9.40857 64.1836L17.4017 52.248C18.1877 51.0745 18.1876 49.5427 17.4017 48.3691L9.40857 36.4336C0.509989 23.1467 15.6602 6.95306 29.5092 14.9482L68.099 37.2285Z" stroke="currentColor" strokeWidth="11.6182" strokeLinejoin="round"/>
+                        <rect x="34.054" y="98.6841" width="48.6555" height="11.6182" rx="5.80909" transform="rotate(-30 34.054 98.6841)" fill="currentColor"/>
+                      </svg>
+                    </div>
+                    <p className="text-sm text-white/40 mt-4">No generations yet</p>
+                    <p className="text-xs text-white/25 mt-1">Upload a video and generate code to start</p>
                   </div>
                 ) : (
                   <div className="space-y-1">
@@ -5108,67 +5817,93 @@ export const shadows = {
                           "group relative p-3 rounded-lg cursor-pointer transition-colors hover:bg-white/5",
                           activeGeneration?.id === gen.id && "bg-[#FF6E3C]/10 border border-[#FF6E3C]/20"
                         )}
-                        onClick={() => {
+                        onClick={async () => {
                           if (renamingId === gen.id) return; // Don't load while renaming
                           
-                          // Ensure generation has versions - if not, create initial version from code
-                          let genToLoad = gen;
-                          if (gen.code && (!gen.versions || gen.versions.length === 0)) {
-                            const initialVersion: GenerationVersion = {
-                              id: generateId(),
-                              timestamp: gen.timestamp,
-                              label: "Initial generation",
-                              code: gen.code,
-                              flowNodes: gen.flowNodes || [],
-                              flowEdges: gen.flowEdges || [],
-                              styleInfo: gen.styleInfo || null,
-                            };
-                            genToLoad = { ...gen, versions: [initialVersion] };
-                            // Update in generations list
-                            setGenerations(prev => prev.map(g => g.id === gen.id ? genToLoad : g));
+                          try {
+                            // If code is missing (minimal fetch), load full data first
+                            let genToLoad = gen;
+                            const isDemo = DEMO_PROJECT_IDS.has(gen.id);
+                            if (!gen.code && (user || isDemo)) {
+                              console.log("[History] Loading full data for generation:", gen.id, isDemo ? "(demo)" : "");
+                              const fullGen = await loadFullGeneration(gen.id);
+                              if (fullGen) {
+                                genToLoad = fullGen;
+                              } else {
+                                console.error("[History] Failed to load generation data");
+                                showToast("Failed to load project", "error");
+                                return;
+                              }
+                            }
+                            
+                            // Set flag to prevent auto-save during load
+                            isLoadingProjectRef.current = true;
+                            
+                            // DON'T create initial version here - UI already shows hardcoded "Initial generation" at bottom
+                            // versions array should only contain EDITS made after initial generation
+                            
+                            // Load this generation
+                            setActiveGeneration(genToLoad);
+                            setGenerationTitle(genToLoad.title || "Untitled");
+                            // Reset published URL state to match the loaded generation
+                            setPublishedUrl(genToLoad.publishedSlug ? `https://www.replay.build/p/${genToLoad.publishedSlug}` : null);
+                            setShowPublishModal(false);
+                            if (genToLoad.code) {
+                              setGeneratedCode(genToLoad.code);
+                              setDisplayedCode(genToLoad.code);
+                              setEditableCode(genToLoad.code);
+                              const blob = new Blob([genToLoad.code], { type: "text/html" });
+                              setPreviewUrl(URL.createObjectURL(blob));
+                            }
+                            if (genToLoad.flowNodes) setFlowNodes(genToLoad.flowNodes);
+                            if (genToLoad.flowEdges) setFlowEdges(genToLoad.flowEdges);
+                            if (genToLoad.styleInfo) setStyleInfo(genToLoad.styleInfo);
+                            setStyleDirective(genToLoad.styleDirective || '');
+                            setRefinements(genToLoad.refinements || '');
+                            // Load chat messages for this project
+                            setChatMessages(genToLoad.chatMessages || []);
+                            lastSavedChatRef.current = JSON.stringify((genToLoad.chatMessages || []).map(m => m.id));
+                            
+                            // Auto-expand versions if there are any
+                            if (genToLoad.versions && genToLoad.versions.length > 0) {
+                              setExpandedVersions(genToLoad.id);
+                            }
+                            
+                            // Restore video from generation if available
+                            if (genToLoad.videoUrl && !flows.some(f => f.videoUrl === genToLoad.videoUrl)) {
+                              const newFlow: FlowItem = {
+                                id: generateId(),
+                                name: genToLoad.title || "Recording",
+                                videoBlob: new Blob(), // Empty blob as placeholder
+                                videoUrl: genToLoad.videoUrl,
+                                thumbnail: genToLoad.thumbnailUrl || "",
+                                duration: 30,
+                                trimStart: 0,
+                                trimEnd: 30,
+                              };
+                              setFlows([newFlow]);
+                              setSelectedFlowId(newFlow.id);
+                            }
+                            setShowHistoryMode(false);
+                            setGenerationComplete(true);
+                            setSidebarMode("chat");
+                            setMobilePanel("chat"); // Also switch mobile to chat
+                            // Load chat messages for this project, or create initial if none exist
+                            if (genToLoad.chatMessages && genToLoad.chatMessages.length > 0) {
+                              setChatMessages(genToLoad.chatMessages);
+                            } else if (genToLoad.code) {
+                              setChatMessages([{
+                                id: generateId(),
+                                role: "assistant",
+                                content: `**Boom. UI Reconstructed.** 🚀\n\nMatched the layout from your video using Tailwind CSS and Alpine.js for interactivity.\n\nReady to refine? Just tell me what to tweak.`,
+                                timestamp: Date.now(),
+                                quickActions: ["Make it mobile-friendly", "Tweak the colors", "Add hover effects", "Improve the spacing"]
+                              }]);
+                            }
+                          } catch (e) {
+                            console.error("[History] Error loading generation:", e);
+                            showToast("Error loading generation", "error");
                           }
-                          
-                          // Load this generation
-                          setActiveGeneration(genToLoad);
-                          setGenerationTitle(genToLoad.title);
-                          // Reset published URL state to match the loaded generation
-                          setPublishedUrl(genToLoad.publishedSlug ? `https://www.replay.build/p/${genToLoad.publishedSlug}` : null);
-                          setShowPublishModal(false);
-                          if (genToLoad.code) {
-                            setGeneratedCode(genToLoad.code);
-                            setDisplayedCode(genToLoad.code);
-                            setEditableCode(genToLoad.code);
-                            const blob = new Blob([genToLoad.code], { type: "text/html" });
-                            setPreviewUrl(URL.createObjectURL(blob));
-                          }
-                          if (genToLoad.flowNodes) setFlowNodes(genToLoad.flowNodes);
-                          if (genToLoad.flowEdges) setFlowEdges(genToLoad.flowEdges);
-                          if (genToLoad.styleInfo) setStyleInfo(genToLoad.styleInfo);
-                          setStyleDirective(genToLoad.styleDirective);
-                          setRefinements(genToLoad.refinements);
-                          
-                          // Auto-expand versions if there are any
-                          if (genToLoad.versions && genToLoad.versions.length > 0) {
-                            setExpandedVersions(genToLoad.id);
-                          }
-                          
-                          // Restore video from generation if available
-                          if (genToLoad.videoUrl && !flows.some(f => f.videoUrl === genToLoad.videoUrl)) {
-                            const newFlow: FlowItem = {
-                              id: generateId(),
-                              name: genToLoad.title || "Recording",
-                              videoBlob: new Blob(), // Empty blob as placeholder
-                              videoUrl: genToLoad.videoUrl,
-                              thumbnail: genToLoad.thumbnailUrl || "",
-                              duration: 30,
-                              trimStart: 0,
-                              trimEnd: 30,
-                            };
-                            setFlows([newFlow]);
-                            setSelectedFlowId(newFlow.id);
-                          }
-                          setShowHistoryMode(false);
-                          setGenerationComplete(true);
                         }}
                       >
                         <div className="flex items-start justify-between">
@@ -5239,7 +5974,7 @@ export const shadows = {
                                     <Copy className="w-3 h-3" /> Duplicate
                                   </button>
                                   <button
-                                    onClick={() => deleteGeneration(gen.id)}
+                                    onClick={() => confirmDeleteGeneration(gen.id, gen.title)}
                                     className="w-full px-3 py-2 text-left text-xs text-red-400/80 hover:bg-red-500/10 flex items-center gap-2"
                                   >
                                     <Trash2 className="w-3 h-3" /> Delete
@@ -5250,106 +5985,789 @@ export const shadows = {
                           </div>
                         </div>
                         
-                        {/* Style & Context hints */}
-                        {(gen.styleDirective || gen.refinements) && (
-                          <div className="mt-1.5 space-y-0.5">
-                            {gen.styleDirective && (
+                        {/* Latest change or style info */}
+                        <div className="mt-1.5 space-y-0.5">
+                          {(() => {
+                            const filteredVersions = (gen.versions || []).filter(v => v.label !== "Initial generation");
+                            return filteredVersions.length > 0 ? (
+                              <p className="text-[10px] text-white/40 truncate">
+                                <span className="text-emerald-400/60">Latest:</span> {filteredVersions[filteredVersions.length - 1]?.label || "Code update"}
+                              </p>
+                            ) : (
                               <p className="text-[10px] text-white/25 truncate">
-                                <span className="text-white/15">Style:</span> {gen.styleDirective}
+                                <span className="text-white/15">Style:</span> {gen.styleDirective || "Auto-Detect"}
                               </p>
-                            )}
-                            {gen.refinements && (
-                              <p className="text-[10px] text-white/20 truncate italic">
-                                <span className="text-white/15">Context:</span> {gen.refinements}
-                              </p>
-                            )}
-                          </div>
-                        )}
+                            );
+                          })()}
+                          {gen.refinements && (
+                            <p className="text-[10px] text-white/20 truncate italic">
+                              <span className="text-white/15">Context:</span> {gen.refinements}
+                            </p>
+                          )}
+                        </div>
                         
-                        {/* Version History Toggle */}
-                        {gen.versions && gen.versions.length >= 1 && (
-                          <div className="mt-2 pt-2 border-t border-white/5">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setExpandedVersions(expandedVersions === gen.id ? null : gen.id);
-                              }}
-                              className="flex items-center gap-2 text-[10px] text-white/40 hover:text-white/60 transition-colors"
-                            >
-                              <Clock className="w-3 h-3" />
-                              <span>{gen.versions.length} version{gen.versions.length !== 1 ? 's' : ''}</span>
-                              <ChevronDown className={cn(
-                                "w-3 h-3 transition-transform",
-                                expandedVersions === gen.id && "rotate-180"
-                              )} />
-                            </button>
+                        {/* Version History Toggle - always show */}
+                        <div className="mt-2 pt-2 border-t border-white/5">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedVersions(expandedVersions === gen.id ? null : gen.id);
+                            }}
+                            className="flex items-center gap-2 text-[10px] text-white/40 hover:text-white/60 transition-colors"
+                          >
+                            <Clock className="w-3 h-3" />
+                            <span>{((gen.versions || []).filter(v => v.label !== "Initial generation").length) + 1} version{((gen.versions || []).filter(v => v.label !== "Initial generation").length) >= 1 ? 's' : ''}</span>
+                            <ChevronDown className={cn(
+                              "w-3 h-3 transition-transform",
+                              expandedVersions === gen.id && "rotate-180"
+                            )} />
+                          </button>
                             
                             {/* Expanded Versions List */}
-                            <AnimatePresence>
-                              {expandedVersions === gen.id && (
-                                <motion.div
-                                  initial={{ opacity: 0, height: 0 }}
-                                  animate={{ opacity: 1, height: "auto" }}
-                                  exit={{ opacity: 0, height: 0 }}
-                                  className="mt-2 ml-1 space-y-1 overflow-hidden"
-                                >
-                                  {/* Version timeline */}
-                                  <div className="relative pl-3 border-l border-white/10">
-                                    {gen.versions.slice().reverse().map((version, idx) => (
-                                      <div 
-                                        key={version.id}
-                                        className="relative py-1.5 group/version"
-                                      >
-                                        {/* Timeline dot */}
-                                        <div className={cn(
-                                          "absolute -left-[7px] top-2.5 w-2.5 h-2.5 rounded-full border-2",
-                                          idx === 0 
-                                            ? "bg-[#FF6E3C] border-[#FF6E3C]" 
-                                            : "bg-[#0a0a0a] border-white/20 group-hover/version:border-white/40"
-                                        )} />
-                                        
-                                        <div className="flex items-center justify-between gap-2 pl-2">
-                                          <div className="flex-1 min-w-0">
-                                            <p className="text-[10px] text-white/50 truncate">{version.label}</p>
-                                            <p className="text-[8px] text-white/25">
-                                              {new Date(version.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </p>
-                                          </div>
-                                          
-                                          {/* Restore button */}
-                                          {idx !== 0 && (
-                                            <button
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                restoreVersion(gen.id, version);
-                                              }}
-                                              className="opacity-0 group-hover/version:opacity-100 p-1 rounded hover:bg-white/10 transition-all"
-                                              title="Restore this version"
-                                            >
-                                              <Play className="w-3 h-3 text-[#FF6E3C]" />
-                                            </button>
-                                          )}
-                                          
-                                          {idx === 0 && (
-                                            <span className="text-[8px] text-[#FF6E3C]/60 uppercase">Current</span>
-                                          )}
+                          <AnimatePresence>
+                            {expandedVersions === gen.id && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="mt-2 ml-1 space-y-1 overflow-hidden"
+                              >
+                                {/* Version timeline - newest at top, oldest at bottom */}
+                                <div className="relative pl-3 border-l border-white/10">
+                                  {/* Versions in reverse order (newest/current at top) - filter out "Initial generation" as it's shown separately below */}
+                                  {(gen.versions || []).filter(v => v.label !== "Initial generation").slice().reverse().map((version, idx) => (
+                                    <div 
+                                      key={version.id}
+                                      className="relative py-1.5 group/version"
+                                    >
+                                      <div className={cn(
+                                        "absolute -left-[7px] top-2.5 w-2.5 h-2.5 rounded-full border-2",
+                                        idx === 0 
+                                          ? "bg-[#FF6E3C] border-[#FF6E3C]" 
+                                          : "bg-[#0a0a0a] border-white/20 group-hover/version:border-white/40"
+                                      )} />
+                                      
+                                      <div className="flex items-center justify-between gap-2 pl-2">
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-[10px] text-white/50 truncate">{version.label}</p>
+                                          <p className="text-[8px] text-white/25">
+                                            {new Date(version.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                          </p>
                                         </div>
+                                        
+                                        {idx === 0 ? (
+                                          <span className="text-[8px] text-[#FF6E3C]/60 uppercase">Current</span>
+                                        ) : (
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              restoreVersion(gen.id, version);
+                                            }}
+                                            className="opacity-0 group-hover/version:opacity-100 p-1 rounded hover:bg-white/10 transition-all"
+                                            title="Restore this version"
+                                          >
+                                            <Play className="w-3 h-3 text-[#FF6E3C]" />
+                                          </button>
+                                        )}
                                       </div>
-                                    ))}
+                                    </div>
+                                  ))}
+                                  
+                                  {/* Initial generation - at the bottom */}
+                                  <div className="relative py-1.5 group/version">
+                                    <div className={cn(
+                                      "absolute -left-[7px] top-2.5 w-2.5 h-2.5 rounded-full border-2",
+                                      !gen.versions?.length ? "bg-[#FF6E3C] border-[#FF6E3C]" : "bg-[#0a0a0a] border-white/20 group-hover/version:border-white/40"
+                                    )} />
+                                    <div className="flex items-center justify-between gap-2 pl-2">
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-[10px] text-white/50 truncate">Initial generation</p>
+                                        <p className="text-[8px] text-white/25">
+                                          {new Date(gen.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                      </div>
+                                      {!gen.versions?.length ? (
+                                        <span className="text-[8px] text-[#FF6E3C]/60 uppercase">Current</span>
+                                      ) : (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            // Restore to initial generation - remove all versions from current code
+                                            restoreVersion(gen.id, { 
+                                              id: 'initial', 
+                                              timestamp: gen.timestamp, 
+                                              label: 'Initial generation',
+                                              code: gen.code || '',
+                                              flowNodes: gen.flowNodes,
+                                              flowEdges: gen.flowEdges,
+                                              styleInfo: gen.styleInfo
+                                            });
+                                          }}
+                                          className="opacity-0 group-hover/version:opacity-100 p-1 rounded hover:bg-white/10 transition-all"
+                                          title="Restore to initial"
+                                        >
+                                          <Play className="w-3 h-3 text-[#FF6E3C]" />
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        )}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
             </div>
+          ) : sidebarMode === "chat" && generationComplete ? (
+            /* AGENTIC CHAT MODE - After Generation - With Tabs */
+            <div className="flex-1 flex flex-col min-h-0">
+              {/* Header: Project Name + Actions */}
+              <div className="flex-shrink-0 px-3 py-2.5 border-b border-white/5">
+                <div className="flex items-center gap-1.5">
+                  <div className="flex-1 min-w-0 flex items-center gap-1 group">
+                    <input 
+                      ref={titleInputRef}
+                      type="text"
+                      value={generationTitle}
+                      onChange={(e) => {
+                        const newTitle = e.target.value;
+                        setGenerationTitle(newTitle);
+                        if (activeGeneration) {
+                          setActiveGeneration(prev => prev ? { ...prev, title: newTitle } : null);
+                          setGenerations(prev => prev.map(g => 
+                            g.id === activeGeneration.id ? { ...g, title: newTitle } : g
+                          ));
+                        }
+                      }}
+                      className="flex-1 min-w-0 text-xs font-medium text-white/70 bg-transparent border-none focus:outline-none truncate hover:text-white transition-colors cursor-text"
+                      placeholder="Untitled Project"
+                    />
+                    <Pencil className="w-2.5 h-2.5 text-white/20 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                  </div>
+                  <button onClick={() => { setGeneratedCode(null); setDisplayedCode(""); setEditableCode(""); setPreviewUrl(null); setGenerationComplete(false); setSidebarMode("config"); setChatMessages([]); setActiveGeneration(null); setGenerationTitle("Untitled Project"); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setPublishedUrl(null); localStorage.removeItem("replay_sidebar_mode"); localStorage.removeItem("replay_generated_code"); localStorage.removeItem("replay_generation_title"); }} className="p-1 rounded hover:bg-white/5" title="New">
+                    <Plus className="w-3.5 h-3.5 text-white/30 hover:text-white/50" />
+                  </button>
+                  <button onClick={() => setShowHistoryMode(true)} className="p-1 rounded hover:bg-white/5" title="History">
+                    <History className="w-3.5 h-3.5 text-white/30 hover:text-white/50" />
+                  </button>
+                  <button onClick={() => setShowProjectSettings(true)} className="p-1 rounded hover:bg-white/5" title="Settings">
+                    <Settings className="w-3.5 h-3.5 text-white/30 hover:text-white/50" />
+                  </button>
+                </div>
+              </div>
+              
+              {/* Tabs: Replay AI | Settings */}
+              <div className="flex-shrink-0 px-3 py-2 border-b border-white/5">
+                <div className="flex gap-1 p-0.5 bg-white/[0.02] rounded-lg">
+                  <button
+                    onClick={() => setSidebarTab("chat")}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium transition-all",
+                      sidebarTab === "chat" 
+                        ? "bg-white/10 text-white" 
+                        : "text-white/40 hover:text-white/60"
+                    )}
+                  >
+                    <Send className="w-3 h-3" />
+                    Replay AI
+                  </button>
+                  <button
+                    onClick={() => setSidebarTab("style")}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium transition-all",
+                      sidebarTab === "style" 
+                        ? "bg-white/10 text-white" 
+                        : "text-white/40 hover:text-white/60"
+                    )}
+                  >
+                    <Boxes className="w-3 h-3" />
+                    Configuration
+                  </button>
+                </div>
+              </div>
+              
+              {sidebarTab === "chat" ? (
+                /* TAB: Replay AI - Chat Interface */
+                <div className="flex-1 flex flex-col min-h-0">
+                  {/* Chat Messages - Premium Look */}
+                  <div 
+                    className="flex-1 overflow-y-auto px-3 py-3 space-y-3 custom-scrollbar"
+                    style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
+                  >
+                    {chatMessages.map((msg) => (
+                      <motion.div 
+                        key={msg.id} 
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="space-y-2"
+                      >
+                        {msg.role === "assistant" ? (
+                          /* AI Message - Clean, no avatar */
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <LogoIcon className="w-3.5 h-3.5" color="#FF6E3C" />
+                              <span className="text-[10px] font-medium text-white/40">Replay</span>
+                            </div>
+                            <div className="text-[11px] leading-relaxed text-white/70 space-y-1.5">
+                              {msg.content.split('\n').map((line, i) => {
+                                if (line.includes('Complete')) {
+                                  return (
+                                    <p key={i} className="flex items-center gap-1.5 text-emerald-400/90 font-medium text-xs">
+                                      <Check className="w-3 h-3" />
+                                      {line.replace(/\*\*/g, '').replace('✅ ', '')}
+                                    </p>
+                                  );
+                                }
+                                if (line.startsWith('**') && line.endsWith('**')) {
+                                  return <p key={i} className="font-medium text-white/90 text-xs">{line.replace(/\*\*/g, '')}</p>;
+                                }
+                                if (line.startsWith('• ') || line.startsWith('- ')) {
+                                  return (
+                                    <p key={i} className="flex items-start gap-1.5 text-white/60">
+                                      <span className="text-[#FF6E3C]/70 mt-px">•</span>
+                                      <span>{line.replace(/^[•-]\s/, '')}</span>
+                                    </p>
+                                  );
+                                }
+                                if (!line.trim()) return <div key={i} className="h-1" />;
+                                return (
+                                  <p key={i} className="text-white/60">
+                                    {line.split(/(\*\*[^*]+\*\*)/).map((part, j) => 
+                                      part.startsWith('**') && part.endsWith('**') 
+                                        ? <span key={j} className="text-white/90 font-medium">{part.replace(/\*\*/g, '')}</span>
+                                        : part
+                                    )}
+                                  </p>
+                                );
+                              })}
+                            </div>
+                            
+                            {/* Quick Actions as chips */}
+                            {msg.quickActions && msg.quickActions.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 pt-1">
+                                {msg.quickActions.map((action, i) => (
+                                  <button
+                                    key={i}
+                                    onClick={() => setChatInput(action)}
+                                    className="px-2 py-1 rounded text-[10px] bg-white/[0.03] text-white/50 hover:bg-white/[0.06] hover:text-white/80 border border-white/[0.05] transition-all"
+                                  >
+                                    {action}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          /* User Message - Right aligned, compact */
+                          <div className="flex justify-end">
+                            <div className="max-w-[85%]">
+                              <div className="px-3 py-2 rounded-xl bg-white/[0.06] text-[11px] text-white/80">
+                                {msg.content}
+                              </div>
+                              {msg.attachments && msg.attachments.length > 0 && (
+                                <div className="flex justify-end gap-1 mt-1">
+                                  {msg.attachments.map((att, i) => (
+                                    <span key={i} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-300/80 text-[9px]">
+                                      {att.type === "element" && <MousePointer className="w-2.5 h-2.5" />}
+                                      {att.type === "image" && <ImageIcon className="w-2.5 h-2.5" />}
+                                      {att.label}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </motion.div>
+                    ))}
+                    
+                    {/* Thinking Indicator - Different for Plan mode vs Execute mode */}
+                    {isEditing && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }} 
+                        animate={{ opacity: 1, y: 0 }} 
+                        className="space-y-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <LogoIcon className="w-3.5 h-3.5" color="#FF6E3C" />
+                            <span className="text-[10px] font-medium text-white/40">Replay</span>
+                          </div>
+                          {/* Cancel button */}
+                          <button
+                            onClick={() => {
+                              cancelAIRequest();
+                              setIsEditing(false);
+                              showToast("Request cancelled", "info");
+                            }}
+                            className="p-1 rounded-md hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
+                            title="Cancel request"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <div className="bg-white/[0.02] border border-white/[0.05] rounded-lg p-2.5 space-y-1.5">
+                          {isPlanMode ? (
+                            /* Plan mode - simple thinking */
+                            <div className="flex items-center gap-2 text-[10px]">
+                              <Loader2 className="w-3 h-3 text-violet-400 animate-spin" />
+                              <span className="text-white/50">Thinking...</span>
+                            </div>
+                          ) : (
+                            /* Execute mode - detailed steps */
+                            <>
+                              <motion.div 
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="flex items-center gap-2 text-[10px]"
+                              >
+                                <motion.div 
+                                  animate={{ rotate: 360 }}
+                                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                  className="w-3 h-3 border border-[#FF6E3C]/50 border-t-[#FF6E3C] rounded-full"
+                                />
+                                <span className="text-white/50">Analyzing request...</span>
+                              </motion.div>
+                              <motion.div 
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.5 }}
+                                className="flex items-center gap-2 text-[10px]"
+                              >
+                                <Code className="w-3 h-3 text-cyan-400/70" />
+                                <span className="text-white/50">Reading current code</span>
+                              </motion.div>
+                              <motion.div 
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 1 }}
+                                className="flex items-center gap-2 text-[10px]"
+                              >
+                                <Pencil className="w-3 h-3 text-emerald-400/70" />
+                                <span className="text-white/50">Applying changes...</span>
+                                <div className="flex gap-0.5 ml-1">
+                                  {[0, 1, 2].map((i) => (
+                                    <motion.div key={i} className="w-1 h-1 bg-emerald-400/70 rounded-full"
+                                      animate={{ opacity: [0.3, 1, 0.3] }}
+                                      transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.1 }}
+                                    />
+                                  ))}
+                                </div>
+                              </motion.div>
+                            </>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+                  
+                  {/* Input Area - Minimal */}
+                  <div className="flex-shrink-0 p-2 border-t border-white/5">
+                    <div className="rounded-xl bg-white/[0.02] border border-white/[0.05] relative">
+                      {/* Auth overlay for non-logged users only */}
+                      {!user && (
+                        <div 
+                          onClick={() => {
+                            setShowAuthModal(true);
+                            showToast("Sign up free to edit with AI. Get 2 free generations!", "info");
+                          }}
+                          className="absolute inset-0 z-10 cursor-pointer flex items-center justify-center bg-black/40 backdrop-blur-[2px] rounded-xl"
+                        >
+                          <div className="flex items-center gap-2 text-white/50 text-xs">
+                            <Lock className="w-3.5 h-3.5" />
+                            <span>Sign up to edit with AI</span>
+                          </div>
+                        </div>
+                      )}
+                      <textarea
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        disabled={!user}
+                        onPaste={handlePasteImage}
+                        onKeyDown={async (e) => {
+                          if (e.key === "Enter" && !e.shiftKey && chatInput.trim() && editableCode) {
+                            e.preventDefault();
+                            // Auth check - only block non-logged users
+                            if (!user) {
+                              setShowAuthModal(true);
+                              showToast("Sign up free to edit with AI. Get 2 free generations!", "info");
+                              return;
+                            }
+                            const userMsg: ChatMessage = { id: generateId(), role: "user", content: chatInput, timestamp: Date.now(), attachments: selectedElement ? [{ type: "element", label: selectedElement }] : editImages.length > 0 ? editImages.map(img => ({ type: "image" as const, label: img.name })) : undefined };
+                            setChatMessages(prev => [...prev, userMsg]);
+                            const currentInput = chatInput;
+                            const currentSelectedElement = selectedElement;
+                            const currentPlanMode = isPlanMode;
+                            const currentChatHistory = chatMessages.slice(-10).map(m => ({ role: m.role, content: m.content }));
+                            setChatInput(""); setSelectedElement(null); setIsEditing(true);
+                            try {
+                              if (currentPlanMode) {
+                                // PLAN MODE: Conversational response without code editing
+                                const result = await editCodeWithAI(editableCode, currentInput, undefined, undefined, true, undefined);
+                                const response = result?.code || "I can help you plan that! What would you like to discuss?";
+                                setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: response, timestamp: Date.now() }]);
+                              } else {
+                                // EXECUTE MODE: Make actual changes with chat history context
+                                // Convert images to base64 for API (server can't always fetch URLs)
+                                let imageData: { base64?: string; url?: string; mimeType: string; name: string }[] | undefined;
+                                if (editImages.length > 0) {
+                                  imageData = [];
+                                  for (const img of editImages) {
+                                    const base64 = await urlToBase64(img.url);
+                                    if (base64) {
+                                      imageData.push({ base64, mimeType: 'image/png', name: img.name, url: img.url });
+                                    }
+                                  }
+                                  if (imageData.length === 0) imageData = undefined;
+                                }
+                                const prompt = currentSelectedElement 
+                                  ? `IMPORTANT: Only modify the specific element that matches this selector/description: "${currentSelectedElement}". Do NOT change any other elements. User request: ${currentInput}`
+                                  : currentInput;
+                                const result = await editCodeWithAI(editableCode, prompt, imageData, undefined, false, currentChatHistory);
+                                if (result && result.success && result.code) {
+                                  const codeChanged = result.code !== editableCode;
+                                  
+                                  if (codeChanged) {
+                                    setEditableCode(result.code); setDisplayedCode(result.code); setGeneratedCode(result.code);
+                                    setPreviewUrl(URL.createObjectURL(new Blob([result.code], { type: "text/html" })));
+                                    
+                                    const responseMsg = analyzeCodeChanges(editableCode, result.code, currentInput);
+                                    
+                                    setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: responseMsg, timestamp: Date.now() }]);
+                                    if (activeGeneration) {
+                                      const versionLabel = generateVersionLabel(currentInput);
+                                      const updatedGen = { ...activeGeneration, code: result.code, versions: [...(activeGeneration.versions || []), { id: generateId(), timestamp: Date.now(), label: versionLabel, code: result.code, flowNodes, flowEdges, styleInfo }] };
+                                      setActiveGeneration(updatedGen); 
+                                      setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
+                                      // FIX: Save to Supabase immediately after edit!
+                                      saveGenerationToSupabase(updatedGen);
+                                    }
+                                  } else {
+                                    setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: `No changes detected. The AI returned the same code. Try being more specific about what you want to change.`, timestamp: Date.now() }]);
+                                  }
+                                } else if (!result?.cancelled) { setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: `Error: ${result?.error || "Something went wrong. Please try again with a different request."}`, timestamp: Date.now() }]); }
+                              }
+                            } catch (error) { 
+                              if (!(error instanceof Error && error.name === 'AbortError')) {
+                                setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: `Error: ${error instanceof Error ? error.message : "Unknown error occurred"}`, timestamp: Date.now() }]); 
+                              }
+                            }
+                            finally { setIsEditing(false); setEditImages([]); setIsPointAndEdit(false); }
+                          }
+                        }}
+                        placeholder={isPlanMode ? "Plan and discuss changes..." : "Ask Replay to edit..."}
+                        rows={1}
+                        className="w-full px-3 py-2.5 bg-transparent text-[11px] text-white/80 placeholder:text-white/25 resize-none focus:outline-none min-h-[36px]"
+                      />
+                      
+                      {/* Attachments preview */}
+                      {(editImages.length > 0 || selectedElement) && (
+                        <div className="px-3 pb-2 flex gap-1.5 flex-wrap">
+                          {editImages.map((img) => (
+                            <div key={img.id} className="relative group">
+                              <img src={img.url} alt="" className={cn("w-8 h-8 rounded object-cover border border-white/10", img.uploading && "opacity-50")} />
+                              {img.uploading && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <Loader2 className="w-3 h-3 text-white animate-spin" />
+                                </div>
+                              )}
+                              <button onClick={() => setEditImages(prev => prev.filter(i => i.id !== img.id))} className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100"><X className="w-2 h-2" /></button>
+                            </div>
+                          ))}
+                          {selectedElement && (
+                            <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#FF6E3C]/10 text-[#FF6E3C]/80 text-[9px] border border-[#FF6E3C]/20">
+                              <MousePointer className="w-2.5 h-2.5" />{selectedElement}
+                              <button onClick={() => { setSelectedElement(null); setIsPointAndEdit(false); }}><X className="w-2 h-2" /></button>
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Tools */}
+                      <div className="px-2 py-1.5 border-t border-white/[0.03] flex items-center justify-between">
+                        <div className="flex items-center gap-1">
+                          {/* Pointer Select - same as Edit with AI */}
+                          <button 
+                            onClick={() => {
+                              const newState = !isPointAndEdit;
+                              setIsPointAndEdit(newState);
+                              setIsSelectingElement(newState);
+                              if (!newState) setSelectedElement(null);
+                            }} 
+                            className={cn(
+                              "relative flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[10px] transition-all",
+                              isPointAndEdit 
+                                ? "bg-[#FF6E3C]/20 text-[#FF6E3C] border border-[#FF6E3C]/30" 
+                                : "text-white/40 hover:text-white/60 hover:bg-white/5"
+                            )}
+                          >
+                            <MousePointer className={cn("w-3.5 h-3.5", isPointAndEdit && "animate-pulse")} />
+                            <span>Select</span>
+                            {isPointAndEdit && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-[#FF6E3C] rounded-full" />}
+                          </button>
+                          {/* Image upload - same icon as Edit with AI */}
+                          <label className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[10px] text-white/40 hover:text-white/60 hover:bg-white/5 cursor-pointer transition-all">
+                            <ImageIcon className="w-3.5 h-3.5" />
+                            <span>Image</span>
+                            <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => { if (e.target.files) Array.from(e.target.files).forEach(file => { const reader = new FileReader(); reader.onload = () => setEditImages(prev => [...prev, { id: generateId(), url: reader.result as string, name: file.name, file }]); reader.readAsDataURL(file); }); }} />
+                          </label>
+                        </div>
+                        {/* Plan + Send grouped on right */}
+                        <div className="flex items-center gap-1.5">
+                          {/* Plan Mode Toggle */}
+                          <button
+                            onClick={() => setIsPlanMode(!isPlanMode)}
+                            className={cn(
+                              "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all",
+                              isPlanMode 
+                                ? "bg-violet-500/20 text-violet-300 border border-violet-500/30" 
+                                : "text-white/40 hover:text-white/60 hover:bg-white/5"
+                            )}
+                            title={isPlanMode ? "Plan mode ON - discussing without executing" : "Plan mode OFF - will execute changes"}
+                          >
+                            <MessageSquare className="w-3 h-3" />
+                            Plan
+                          </button>
+                        <button 
+                          onClick={async () => {
+                            if (!chatInput.trim() || !editableCode || isEditing) return;
+                            const userMsg: ChatMessage = { id: generateId(), role: "user", content: chatInput, timestamp: Date.now(), attachments: selectedElement ? [{ type: "element", label: selectedElement }] : editImages.length > 0 ? editImages.map(img => ({ type: "image" as const, label: img.name })) : undefined };
+                            setChatMessages(prev => [...prev, userMsg]);
+                            const currentInput = chatInput;
+                            const currentSelectedElement = selectedElement;
+                            const currentPlanMode = isPlanMode;
+                            const currentChatHistory = chatMessages.slice(-10).map(m => ({ role: m.role, content: m.content }));
+                            setChatInput(""); setSelectedElement(null); setIsEditing(true);
+                            try {
+                              if (currentPlanMode) {
+                                // PLAN MODE: Conversational response without code editing
+                                const result = await editCodeWithAI(editableCode, currentInput, undefined, undefined, true, undefined);
+                                const response = result?.code || "I can help you plan that! What would you like to discuss?";
+                                setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: response, timestamp: Date.now() }]);
+                              } else {
+                                // EXECUTE MODE: Make actual changes with chat history context
+                                // Convert images to base64 for API (button click handler)
+                                let imageData: { base64?: string; url?: string; mimeType: string; name: string }[] | undefined;
+                                if (editImages.length > 0) {
+                                  imageData = [];
+                                  for (const img of editImages) {
+                                    const base64 = await urlToBase64(img.url);
+                                    if (base64) {
+                                      imageData.push({ base64, mimeType: 'image/png', name: img.name, url: img.url });
+                                    }
+                                  }
+                                  if (imageData.length === 0) imageData = undefined;
+                                }
+                                const prompt = currentSelectedElement 
+                                  ? `IMPORTANT: Only modify the specific element that matches this selector/description: "${currentSelectedElement}". Do NOT change any other elements. User request: ${currentInput}`
+                                  : currentInput;
+                                const result = await editCodeWithAI(editableCode, prompt, imageData, undefined, false, currentChatHistory);
+                                if (result && result.success && result.code) {
+                                  const codeChanged = result.code !== editableCode;
+                                  
+                                  if (codeChanged) {
+                                    setEditableCode(result.code); setDisplayedCode(result.code); setGeneratedCode(result.code);
+                                    setPreviewUrl(URL.createObjectURL(new Blob([result.code], { type: "text/html" })));
+                                    
+                                    const responseMsg = analyzeCodeChanges(editableCode, result.code, currentInput);
+                                    
+                                    setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: responseMsg, timestamp: Date.now() }]);
+                                    if (activeGeneration) {
+                                      const updatedGen = { ...activeGeneration, code: result.code, versions: [...(activeGeneration.versions || []), { id: generateId(), timestamp: Date.now(), label: generateVersionLabel(currentInput), code: result.code, flowNodes, flowEdges, styleInfo }] };
+                                      setActiveGeneration(updatedGen); 
+                                      setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
+                                      saveGenerationToSupabase(updatedGen);
+                                    }
+                                  } else {
+                                    setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: `No changes detected. The AI returned the same code. Try being more specific about what you want to change.`, timestamp: Date.now() }]);
+                                  }
+                                } else if (!result?.cancelled) { setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: `Error: ${result?.error || "Something went wrong. Please try again with a different request."}`, timestamp: Date.now() }]); }
+                              }
+                            } catch (error) { 
+                              if (!(error instanceof Error && error.name === 'AbortError')) {
+                                setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: `Error: ${error instanceof Error ? error.message : "Unknown error occurred"}`, timestamp: Date.now() }]); 
+                              }
+                            }
+                            finally { setIsEditing(false); setEditImages([]); setIsPointAndEdit(false); }
+                          }}
+                          disabled={!chatInput.trim() || isEditing}
+                          className={cn("p-1.5 rounded-lg transition-all", chatInput.trim() && !isEditing ? "bg-white text-black" : "bg-white/5 text-white/30")}
+                        >
+                          {isEditing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                        </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* TAB: Configuration - Simplified with Quick Start */
+                <div className="flex-1 overflow-y-auto custom-scrollbar" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}>
+                  
+                  {/* Upload Section - Primary */}
+                  <div className="p-3 border-b border-white/5">
+                    {flows.length === 0 ? (
+                      <>
+                        {/* Upload Area */}
+                        <div 
+                          onClick={() => fileInputRef.current?.click()}
+                          className="relative rounded-xl border-2 border-dashed border-white/[0.08] bg-white/[0.02] hover:border-[#FF6E3C]/30 hover:bg-white/[0.03] transition-all cursor-pointer group mb-3"
+                        >
+                          <div className="p-4 text-center">
+                            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mx-auto mb-2 group-hover:bg-[#FF6E3C]/10 transition-colors">
+                              <Upload className="w-5 h-5 text-white/30 group-hover:text-[#FF6E3C]/60" />
+                            </div>
+                            <p className="text-xs text-white/50 font-medium">Upload your video</p>
+                            <p className="text-[10px] text-white/25 mt-0.5">or drag & drop</p>
+                          </div>
+                        </div>
+                        
+                        {/* Record Button */}
+                        <button 
+                          onClick={startRecording}
+                          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.06] text-xs text-white/60 hover:text-white/80 transition-colors"
+                        >
+                          <Monitor className="w-3.5 h-3.5" /> Record screen
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {/* Video List */}
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[10px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5">
+                            <Video className="w-3 h-3" /> Videos
+                            <span className="text-[9px] bg-white/10 px-1.5 py-0.5 rounded">{flows.length}</span>
+                          </span>
+                          <button 
+                            onClick={() => fileInputRef.current?.click()}
+                            className="text-[9px] text-white/30 hover:text-white/50 flex items-center gap-1"
+                          >
+                            <Plus className="w-2.5 h-2.5" /> Add
+                          </button>
+                        </div>
+                        <div className="space-y-1">
+                          {flows.map((flow) => (
+                            <div key={flow.id} onClick={() => setSelectedFlowId(flow.id)} className={cn("flex items-center gap-2 p-2 rounded-lg cursor-pointer", selectedFlowId === flow.id ? "bg-[#FF6E3C]/10 border border-[#FF6E3C]/20" : "bg-white/[0.02] hover:bg-white/[0.04]")}>
+                              <div className="w-10 h-6 rounded overflow-hidden bg-white/5 flex-shrink-0">
+                                {flow.thumbnail ? <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" /> : <Film className="w-3 h-3 text-white/20 mx-auto mt-1.5" />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[11px] text-white/70 truncate">{flow.name}</p>
+                                <p className="text-[9px] text-white/30">{formatDuration(flow.duration)}</p>
+                              </div>
+                              <button onClick={(e) => { e.stopPropagation(); setFlows(prev => prev.filter(f => f.id !== flow.id)); }} className="p-1 text-white/20 hover:text-red-400">
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  
+                  {/* Context Section */}
+                  <div className="p-3 border-b border-white/5">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5">
+                        <MousePointer2 className="w-3 h-3" /> Context
+                      </span>
+                      <span className="text-[9px] text-white/30">Optional</span>
+                    </div>
+                    <textarea
+                      value={refinements}
+                      onChange={(e) => setRefinements(e.target.value)}
+                      placeholder="Add data logic, constraints or details..."
+                      rows={2}
+                      className="w-full px-2.5 py-2 rounded-lg bg-white/[0.02] border border-white/[0.05] text-[11px] text-white/70 placeholder:text-white/25 resize-y focus:outline-none focus:border-white/10 min-h-[60px] max-h-[200px]"
+                    />
+                  </div>
+                  
+                  {/* Style Section */}
+                  <div className="p-3 border-b border-white/5">
+                    <span className="text-[10px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5 mb-2">
+                      <Palette className="w-3 h-3" /> Visual Style
+                    </span>
+                    <StyleInjector 
+                      value={styleDirective} 
+                      onChange={setStyleDirective} 
+                      disabled={isProcessing}
+                      referenceImage={styleReferenceImage}
+                      onReferenceImageChange={setStyleReferenceImage}
+                    />
+                  </div>
+                  
+                  {/* Generate Button */}
+                  <div className="p-3">
+                    <button 
+                      onClick={handleGenerate}
+                      disabled={isProcessing || flows.length === 0}
+                      className="w-full py-2.5 rounded-lg bg-[#FF6E3C]/10 hover:bg-[#FF6E3C]/20 border border-[#FF6E3C]/20 text-[11px] font-medium text-[#FF6E3C] flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                    >
+                      <LogoIcon className="w-3.5 h-3.5" color="#FF6E3C" />
+                      Reconstruct
+                    </button>
+                  </div>
+                  
+                  {/* Database Section */}
+                  <div className="p-3 border-b border-white/5">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5">
+                        <Database className="w-3 h-3" /> Database
+                      </span>
+                      <span className="text-[9px] text-white/30" title="Connect Supabase to wire real data to your UI">Optional</span>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        // Require login for Supabase connection
+                        if (!user || isDemoMode) {
+                          setShowAuthModal(true);
+                          showToast("Sign up free to connect Supabase. Get 2 free generations!", "info");
+                          return;
+                        }
+                        // Require paid plan for Supabase
+                        if (!isPaidPlan) {
+                          showToast("Supabase integration is a Pro feature. Upgrade to connect your database!", "info");
+                          return;
+                        }
+                        setShowProjectSettings(true);
+                      }}
+                      className={cn(
+                        "w-full py-2.5 rounded-lg bg-white/[0.02] border border-white/[0.05] text-[10px] flex items-center justify-center gap-1.5 transition-colors group",
+                        (!user || isDemoMode || !isPaidPlan) 
+                          ? "text-white/30 hover:text-white/40 cursor-not-allowed" 
+                          : "text-white/50 hover:text-white/70 hover:bg-white/[0.05]"
+                      )}
+                      title={!user || isDemoMode ? "Sign up to use Supabase integration" : !isPaidPlan ? "Pro feature - Upgrade to connect" : "Connect Supabase to fetch real data"}
+                    >
+                      <Database className="w-3 h-3 group-hover:text-[#3ECF8E]" />
+                      Wire to Supabase
+                      {(!user || isDemoMode || !isPaidPlan) && <Lock className="w-2.5 h-2.5 text-white/20" />}
+                    </button>
+                    <p className="text-[9px] text-white/25 mt-1.5 text-center">
+                      {!user || isDemoMode ? "Sign up to connect database" : !isPaidPlan ? "Pro feature" : "Connect your database to wire real data"}
+                    </p>
+                  </div>
+                  
+                  {/* Colors Preview */}
+                  {styleInfo && styleInfo.colors.length > 0 && (
+                    <div className="p-3">
+                      <span className="text-[10px] font-medium text-white/40 uppercase tracking-wider block mb-2">Current Colors</span>
+                      <div className="flex gap-1 flex-wrap">
+                        {styleInfo.colors.slice(0, 6).map((c, i) => (
+                          <div key={i} className="w-6 h-6 rounded border border-white/10" style={{ background: c.value }} title={c.value} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           ) : (
-            /* ACTIVE GENERATION MODE */
+            /* CONFIG MODE - Before Generation */
             <div 
               className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar"
               style={{ 
@@ -5389,7 +6807,7 @@ export const shadows = {
                   </div>
                   <button 
                     onClick={() => {
-                      // Create new generation - reset state
+                      // Create new generation - reset ALL state
                       setGeneratedCode(null);
                       setDisplayedCode("");
                       setEditableCode("");
@@ -5400,21 +6818,26 @@ export const shadows = {
                       setGenerationTitle("Untitled Project");
                       setGenerationComplete(false);
                       setViewMode("input");
+                      setSidebarMode("config");
+                      setChatMessages([]);
+                      setActiveGeneration(null);
+                      setPublishedUrl(null);
+                      localStorage.removeItem("replay_sidebar_mode");
+                      localStorage.removeItem("replay_generated_code");
+                      localStorage.removeItem("replay_generation_title");
                     }}
                     className="p-1.5 rounded-lg hover:bg-white/5 transition-colors group"
                     title="New generation"
                   >
                     <Plus className="w-4 h-4 text-white/40 group-hover:text-white/60" />
                   </button>
-                  {generations.length > 0 && (
-                    <button 
-                      onClick={() => setShowHistoryMode(true)}
-                      className="p-1.5 rounded-lg hover:bg-white/5 transition-colors group"
-                      title="View history"
-                    >
-                      <History className="w-4 h-4 text-white/40 group-hover:text-white/60" />
-                    </button>
-                  )}
+                  <button 
+                    onClick={() => setShowHistoryMode(true)}
+                    className="p-1.5 rounded-lg hover:bg-white/5 transition-colors group"
+                    title="View history"
+                  >
+                    <History className="w-4 h-4 text-white/40 group-hover:text-white/60" />
+                  </button>
                   <button 
                     onClick={() => setShowProjectSettings(true)}
                     className="p-1.5 rounded-lg hover:bg-white/5 transition-colors group"
@@ -5500,12 +6923,19 @@ export const shadows = {
                 {/* Textarea only */}
                 <textarea
                   value={refinements}
-                  onChange={(e) => setRefinements(e.target.value)}
+                  onChange={(e) => {
+                    const maxLen = isPaidPlan ? 20000 : 2000;
+                    if (e.target.value.length <= maxLen) {
+                      setRefinements(e.target.value);
+                    } else {
+                      showToast(`Context limit: ${isPaidPlan ? "20,000" : "2,000"} characters${!isPaidPlan ? ". Upgrade to PRO for 20k" : ""}`, "error");
+                    }
+                  }}
                   placeholder="Add data logic, constraints or details. Replay works without it — context just sharpens the result (optional)"
                   disabled={isProcessing}
                   rows={3}
                   className={cn(
-                    "w-full px-3 py-3 rounded-lg text-xs text-white/70 placeholder:text-white/30 placeholder:text-[11px] transition-colors focus:outline-none textarea-grow input-subtle min-h-[80px]",
+                    "w-full px-3 py-3 rounded-lg text-xs text-white/70 placeholder:text-white/30 placeholder:text-[11px] transition-colors focus:outline-none textarea-grow input-subtle min-h-[80px] max-h-[300px] resize-y",
                     isProcessing && "opacity-50 cursor-not-allowed"
                   )}
                 />
@@ -5559,7 +6989,6 @@ export const shadows = {
                     className="analysis-section"
                   >
                     <div className="flex items-center gap-2 mb-3">
-                      <Crosshair className="w-3.5 h-3.5 text-[#FF6E3C]/60" />
                       <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">UX Signals</span>
                       {analysisSection === "style" && <Loader2 className="w-3 h-3 animate-spin text-[#FF6E3C]/50 ml-auto" />}
                     </div>
@@ -5620,7 +7049,6 @@ export const shadows = {
                         className="analysis-section"
                       >
                         <div className="flex items-center gap-2 mb-3">
-                          <GitBranch className="w-3.5 h-3.5 text-[#FF6E3C]/60" />
                           <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Structure & Components</span>
                           {analysisSection === "layout" && <Loader2 className="w-3 h-3 animate-spin text-[#FF6E3C]/50 ml-auto" />}
                           {analysisSection === "components" && <Check className="w-3 h-3 text-green-500/50 ml-auto" />}
@@ -5709,24 +7137,43 @@ export const shadows = {
                                 <Database className={cn("w-3 h-3", isSupabaseConnected ? "text-green-500/60" : "text-white/20")} />
                                 <span className="text-[9px] text-white/30 uppercase tracking-wide">Data Patterns</span>
                               </div>
-                              {/* Supabase connection status - simple text */}
-                              <span className={cn(
-                                "text-[9px]",
-                                isSupabaseConnected ? "text-green-500" : "text-white/30"
-                              )}>
-                                {isSupabaseConnected ? "Supabase Connected" : "Supabase Not Connected"}
-                              </span>
+                              {/* Supabase connection status - PRO only */}
+                              {isPaidPlan ? (
+                                <span className={cn(
+                                  "text-[9px]",
+                                  isSupabaseConnected ? "text-green-500" : "text-white/30"
+                                )}>
+                                  {isSupabaseConnected ? "Supabase Connected" : "Supabase Not Connected"}
+                                </span>
+                              ) : (
+                                <button 
+                                  onClick={() => {
+                                    setUpgradeFeature("supabase");
+                                    setShowUpgradeModal(true);
+                                  }}
+                                  className="flex items-center gap-1 text-[9px] text-[#FF6E3C] hover:text-[#FF8F5C]"
+                                >
+                                  <Lock className="w-2.5 h-2.5" />
+                                  <span>PRO</span>
+                                </button>
+                              )}
                             </div>
-                            {analysisPhase.dataPatterns.map((pattern, i) => (
-                              <div key={i} className="flex items-center gap-2 text-[9px] py-0.5">
-                                <span className="text-white/50">{pattern.pattern}</span>
-                                <span className="text-white/20">→</span>
-                                <code className={cn(
-                                  "font-mono px-1 rounded",
-                                  isSupabaseConnected ? "text-green-400/80 bg-green-500/5" : "text-white/40 bg-white/5"
-                                )}>{pattern.suggestedTable || pattern.component}</code>
+                            {isPaidPlan ? (
+                              analysisPhase.dataPatterns.map((pattern, i) => (
+                                <div key={i} className="flex items-center gap-2 text-[9px] py-0.5">
+                                  <span className="text-white/50">{pattern.pattern}</span>
+                                  <span className="text-white/20">→</span>
+                                  <code className={cn(
+                                    "font-mono px-1 rounded",
+                                    isSupabaseConnected ? "text-green-400/80 bg-green-500/5" : "text-white/40 bg-white/5"
+                                  )}>{pattern.suggestedTable || pattern.component}</code>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-[9px] text-white/30 italic">
+                                {analysisPhase.dataPatterns.length} patterns detected — upgrade to see details
                               </div>
-                            ))}
+                            )}
                           </motion.div>
                         )}
                       </motion.div>
@@ -5832,17 +7279,42 @@ export const shadows = {
                     </button>
                   )}
                   <button onClick={handleRefresh} className="btn-black p-1.5 rounded-lg" title="Refresh"><RefreshCw className="w-3.5 h-3.5" /></button>
-                  <button onClick={handleDownload} className="btn-black flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"><Download className="w-3.5 h-3.5" /> Download</button>
+                  <button 
+                    onClick={() => {
+                      if (!isPaidPlan) {
+                        setUpgradeFeature("download");
+                        setShowUpgradeModal(true);
+                      } else {
+                        handleDownload();
+                      }
+                    }} 
+                    className={cn(
+                      "btn-black flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs",
+                      !isPaidPlan && "opacity-60"
+                    )}
+                  >
+                    {!isPaidPlan && <Lock className="w-3 h-3 text-white/40" />}
+                    <Download className="w-3.5 h-3.5" /> Download
+                  </button>
                   
                   {/* Publish dropdown */}
                   <div className="relative">
                     <button 
-                      onClick={handlePublishClick}
+                      onClick={() => {
+                        if (!isPaidPlan) {
+                          setUpgradeFeature("publish");
+                          setShowUpgradeModal(true);
+                        } else {
+                          handlePublishClick();
+                        }
+                      }}
                       className={cn(
                         "btn-black flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs",
-                        activeGeneration?.publishedSlug ? "bg-emerald-500/20 text-emerald-400" : "bg-white/10"
+                        activeGeneration?.publishedSlug ? "bg-emerald-500/20 text-emerald-400" : "bg-white/10",
+                        !isPaidPlan && "opacity-60"
                       )}
                     >
+                      {!isPaidPlan && <Lock className="w-3 h-3 text-white/40" />}
                       <ExternalLink className="w-3.5 h-3.5" />
                       {activeGeneration?.publishedSlug ? "Published" : "Publish"}
                     </button>
@@ -5944,10 +7416,10 @@ export const shadows = {
             </div>
           </div>
 
-          <div className="flex-1 overflow-hidden flex flex-col relative">
+          <div className="flex-1 overflow-hidden flex flex-col relative bg-[#0a0a0a]">
             {/* Preview - show loading during ANY generation phase, only show iframe when FULLY done */}
             {viewMode === "preview" && (
-              <div className="flex-1 preview-container relative bg-[#0a0a0a] flex flex-col">
+              <div className="flex-1 preview-container relative bg-[#0a0a0a] flex flex-col overflow-hidden" style={{ overscrollBehavior: 'none' }}>
                 {(isProcessing || isStreamingCode) ? (
                   <div className="w-full h-full flex items-center justify-center bg-[#0a0a0a]">
                     <LoadingState />
@@ -5955,18 +7427,19 @@ export const shadows = {
                 ) : previewUrl ? (
                   <>
                     {/* Iframe container */}
-                    <div className={cn("flex-1 flex items-center justify-center", isMobilePreview && "py-4 bg-[#0a0a0a]")}>
+                    <div className={cn("flex-1 flex items-center justify-center bg-[#0a0a0a] overflow-hidden", isMobilePreview && "py-4")} style={{ overscrollBehavior: 'none' }}>
                       <iframe 
                         key={previewUrl}
                         ref={previewIframeRef}
                         src={previewUrl} 
                         className={cn(
-                          "border-0 bg-white transition-all duration-300",
+                          "border-0 bg-[#0a0a0a] transition-all duration-300",
                           isMobilePreview 
                             ? "w-[375px] h-[667px] rounded-3xl shadow-2xl ring-4 ring-black/50" 
                             : "w-full h-full",
                           isPointAndEdit && "cursor-crosshair"
                         )} 
+                        style={{ overscrollBehavior: 'none', backgroundColor: '#0a0a0a' }}
                         title="Preview" 
                         sandbox="allow-scripts allow-same-origin" 
                       />
@@ -6035,19 +7508,45 @@ export const shadows = {
                       <div className="flex items-center gap-1.5">
                         <button 
                           onClick={() => {
-                            const content = getActiveFileContent();
-                            navigator.clipboard.writeText(content);
-                            showToast("Code copied to clipboard", "success");
+                            // Demo mode: require sign up
+                            if (isDemoMode && !user) {
+                              setShowAuthModal(true);
+                              showToast("Sign up free to copy code. You get 2 free generations!", "info");
+                              return;
+                            }
+                            if (!isPaidPlan) {
+                              setUpgradeFeature("code");
+                              setShowUpgradeModal(true);
+                            } else {
+                              const content = getActiveFileContent();
+                              navigator.clipboard.writeText(content);
+                              showToast("Code copied to clipboard", "success");
+                            }
                           }}
-                          className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-white/40 hover:text-white/60 hover:bg-white/5 transition-colors"
+                          className={cn(
+                            "flex items-center gap-1 px-2 py-1 rounded text-[10px] text-white/40 hover:text-white/60 hover:bg-white/5 transition-colors",
+                            !isPaidPlan && "opacity-50"
+                          )}
                         >
+                          {!isPaidPlan && <Lock className="w-2.5 h-2.5" />}
                           <Copy className="w-3 h-3" />
                           <span>Copy</span>
                         </button>
                         <button 
-                          onClick={handleDownload}
-                          className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-white/40 hover:text-white/60 hover:bg-white/5 transition-colors"
+                          onClick={() => {
+                            if (!isPaidPlan) {
+                              setUpgradeFeature("download");
+                              setShowUpgradeModal(true);
+                            } else {
+                              handleDownload();
+                            }
+                          }}
+                          className={cn(
+                            "flex items-center gap-1 px-2 py-1 rounded text-[10px] text-white/40 hover:text-white/60 hover:bg-white/5 transition-colors",
+                            !isPaidPlan && "opacity-50"
+                          )}
                         >
+                          {!isPaidPlan && <Lock className="w-2.5 h-2.5" />}
                           <Download className="w-3 h-3" />
                           <span>Download</span>
                         </button>
@@ -6060,8 +7559,8 @@ export const shadows = {
                 <div className="flex-1 flex min-h-0 overflow-hidden">
                   {/* File Tree Panel - Same width for both modes */}
                   {displayedCode && (
-                    <div className="w-56 flex-shrink-0 border-r border-white/5 overflow-y-auto bg-[#080808]">
-                      <div className="p-2 border-b border-white/5 sticky top-0 bg-[#080808] z-10">
+                    <div className="w-56 flex-shrink-0 border-r border-white/5 overflow-y-auto bg-[#0a0a0a]">
+                      <div className="p-2 border-b border-white/5 sticky top-0 bg-[#0a0a0a] z-10">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5 text-[9px] text-white/40 uppercase tracking-wider">
                             <FolderTree className="w-3 h-3" />
@@ -6150,43 +7649,179 @@ export const shadows = {
                           </div>
                         </div>
                       ) : displayedCode ? (
-                        <div className="overflow-x-auto">
-                          <Highlight 
-                            theme={themes.nightOwl} 
-                            code={getActiveFileContent()} 
-                            language={activeFilePath.endsWith('.tsx') || activeFilePath.endsWith('.ts') ? 'tsx' : 'html'}
-                          >
-                            {({ style, tokens, getLineProps, getTokenProps }) => (
-                              <pre 
-                                className="p-3 text-[11px] leading-relaxed" 
-                                style={{ 
-                                  ...style, 
-                                  background: "#0a0a0a", 
-                                  fontFamily: "'JetBrains Mono', monospace", 
-                                  minHeight: "100%",
-                                  minWidth: "fit-content"
-                                }}
-                              >
-                                {tokens.map((line, i) => {
-                                  const lineNum = i + 1;
-                                  const isHighlighted = highlightedLines && lineNum >= highlightedLines.start && lineNum <= highlightedLines.end;
-                                  return (
-                                    <div 
-                                      key={i} 
-                                      {...getLineProps({ line })}
-                                      className={cn(
-                                        isHighlighted && "bg-[#FF6E3C]/10 -mx-3 px-3 border-l-2 border-[#FF6E3C]"
-                                      )}
-                                    >
-                                      <span className="inline-block w-8 pr-3 text-right text-white/15 select-none text-[10px]">{lineNum}</span>
-                                      {line.map((token, key) => <span key={key} {...getTokenProps({ token })} />)}
+                        <div className="overflow-x-auto relative h-full">
+                          {/* For PRO users: show real code */}
+                          {isPaidPlan ? (
+                            <Highlight 
+                              theme={themes.nightOwl} 
+                              code={getActiveFileContent()} 
+                              language={activeFilePath.endsWith('.tsx') || activeFilePath.endsWith('.ts') ? 'tsx' : 'html'}
+                            >
+                              {({ style, tokens, getLineProps, getTokenProps }) => (
+                                <pre 
+                                  className="p-3 text-[11px] leading-relaxed" 
+                                  style={{ 
+                                    ...style, 
+                                    background: "#0a0a0a", 
+                                    fontFamily: "'JetBrains Mono', monospace", 
+                                    minHeight: "100%",
+                                    minWidth: "fit-content"
+                                  }}
+                                >
+                                  {tokens.map((line, i) => {
+                                    const lineNum = i + 1;
+                                    const isHighlighted = highlightedLines && lineNum >= highlightedLines.start && lineNum <= highlightedLines.end;
+                                    return (
+                                      <div 
+                                        key={i} 
+                                        {...getLineProps({ line })}
+                                        className={cn(
+                                          isHighlighted && "bg-[#FF6E3C]/10 -mx-3 px-3 border-l-2 border-[#FF6E3C]"
+                                        )}
+                                      >
+                                        <span className="inline-block w-8 pr-3 text-right text-white/15 select-none text-[10px]">{lineNum}</span>
+                                        {line.map((token, key) => <span key={key} {...getTokenProps({ token })} />)}
+                                      </div>
+                                    );
+                                  })}
+                                  {isStreamingCode && <span className="text-[#FF6E3C] animate-pulse">▋</span>}
+                                </pre>
+                              )}
+                            </Highlight>
+                          ) : (
+                            /* For FREE users: show blurred mock code with upgrade overlay */
+                            <div className="relative h-full">
+                              {/* Blurred mock code background - visible but unreadable */}
+                              <div className="absolute inset-0 overflow-hidden select-none pointer-events-none">
+                                <pre 
+                                  className="p-3 text-[11px] leading-relaxed blur-[8px] opacity-60" 
+                                  style={{ 
+                                    background: "#0a0a0a", 
+                                    fontFamily: "'JetBrains Mono', monospace",
+                                  }}
+                                >
+                                  {`import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+
+export default function GeneratedPage() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    // Fetch data from API
+    fetchData().then(setData);
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b">
+      <header className="fixed top-0 w-full">
+        <nav className="container mx-auto px-4">
+          <div className="flex items-center justify-between">
+            <Logo />
+            <Navigation />
+          </div>
+        </nav>
+      </header>
+
+      <main className="pt-20">
+        <section className="hero-section">
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-5xl font-bold"
+          >
+            Welcome to Your App
+          </motion.h1>
+          <p className="text-xl text-muted">
+            Build something amazing today
+          </p>
+          <Button size="lg">Get Started</Button>
+        </section>
+
+        <section className="features-grid">
+          {features.map((feature, i) => (
+            <Card key={i} className="p-6">
+              <feature.icon className="w-12 h-12" />
+              <h3>{feature.title}</h3>
+              <p>{feature.description}</p>
+            </Card>
+          ))}
+        </section>
+      </main>
+
+      <footer className="border-t">
+        <div className="container py-8">
+          <p>© 2026 Your Company</p>
+        </div>
+      </footer>
+    </div>
+  );
+}`.split('\n').map((line, i) => (
+                                    <div key={i} className="whitespace-pre">
+                                      <span className="inline-block w-8 pr-3 text-right text-white/15 text-[10px]">{i + 1}</span>
+                                      <span className="text-white/50">{line}</span>
                                     </div>
-                                  );
-                                })}
-                                {isStreamingCode && <span className="text-[#FF6E3C] animate-pulse">▋</span>}
-                              </pre>
-                            )}
-                          </Highlight>
+                                  ))}
+                                </pre>
+                              </div>
+                              
+                              {/* Upgrade overlay - FOMO style */}
+                              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-[#0a0a0a]/40 via-[#0a0a0a]/70 to-[#0a0a0a]/90">
+                                <div className="relative text-center p-8 bg-[#111]/95 border border-white/10 rounded-2xl shadow-2xl max-w-md mx-4">
+                                  {/* Close button */}
+                                  <button 
+                                    onClick={() => setViewMode("preview")}
+                                    className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+                                  >
+                                    <X className="w-4 h-4 text-white/40" />
+                                  </button>
+                                  
+                                  <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 border border-[#FF6E3C]/20 flex items-center justify-center">
+                                    <Lock className="w-7 h-7 text-[#FF6E3C]" />
+                                  </div>
+                                  <h3 className="text-xl font-bold text-white mb-3">Unlock Full Source Code</h3>
+                                  <p className="text-sm text-white/60 mb-4">
+                                    Your code is ready. We've successfully reconstructed the UI logic, animations, and data structure.
+                                  </p>
+                                  
+                                  {/* Features list */}
+                                  <div className="text-left space-y-2 mb-6 px-4">
+                                    <div className="flex items-center gap-2 text-sm text-white/70">
+                                      <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                                      <span>Clean React + Tailwind Components</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm text-white/70">
+                                      <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                                      <span>Framer Motion Interactions</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm text-white/70">
+                                      <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                                      <span>Supabase Schema & Data Fetching</span>
+                                    </div>
+                                  </div>
+                                  
+                                  <a
+                                    href="/api/billing/checkout?plan=pro"
+                                    className="block w-full py-3.5 rounded-xl bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white text-sm font-semibold hover:opacity-90 transition-opacity mb-3 text-center"
+                                  >
+                                    Upgrade to Pro
+                                  </a>
+                                  <p className="text-[11px] text-white/40">
+                                    Includes commercial license. Cancel anytime.
+                                  </p>
+                                  
+                                  <button
+                                    onClick={() => setViewMode("preview")}
+                                    className="mt-4 text-xs text-white/30 hover:text-white/50 transition-colors"
+                                  >
+                                    Maybe later
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-[#0a0a0a]">
@@ -6211,10 +7846,10 @@ export const shadows = {
 
             {/* Flow - PRODUCT MAP (Canvas) - what's possible, not what happened */}
             {viewMode === "flow" && (
-              <div className="flex-1 overflow-hidden bg-[#080808] relative flex flex-col">
+              <div className="flex-1 overflow-hidden relative flex flex-col">
                 {/* Show loader when processing (same as other views) */}
                 {(isProcessing || isStreamingCode) ? (
-                  <div className="w-full h-full flex items-center justify-center bg-[#080808]">
+                  <div className="w-full h-full flex items-center justify-center">
                     <LoadingState />
                   </div>
                 ) : flowNodes.length > 0 || flowBuilding ? (
@@ -6417,11 +8052,13 @@ export const shadows = {
                               {/* Node header - DRAGGABLE */}
                               <div 
                                 className={cn(
-                                  "p-3 border-b cursor-grab active:cursor-grabbing",
+                                  "pt-4 px-3 pb-3 border-b cursor-grab active:cursor-grabbing group/nodeheader relative",
                                   isPossible ? "border-white/5 border-dashed" : "border-white/5",
                                   draggingNodeId === node.id && "cursor-grabbing"
                                 )}
                                 onMouseDown={(e) => {
+                                  // Don't start drag if clicking edit/delete buttons
+                                  if ((e.target as HTMLElement).closest('.flow-node-action')) return;
                                   e.stopPropagation();
                                   setDraggingNodeId(node.id);
                                   dragStartPos.current = { 
@@ -6432,6 +8069,7 @@ export const shadows = {
                                   };
                                 }}
                                 onClick={(e) => {
+                                  if ((e.target as HTMLElement).closest('.flow-node-action')) return;
                                   if (!draggingNodeId) {
                                     setSelectedFlowNode(node.id === selectedFlowNode ? null : node.id);
                                     // For detected/possible nodes, open edit with @NodeName prefilled
@@ -6443,12 +8081,38 @@ export const shadows = {
                                   }
                                 }}
                                 onDoubleClick={(e) => {
+                                  if ((e.target as HTMLElement).closest('.flow-node-action')) return;
                                   e.stopPropagation();
                                   // Double-click to view code for this node
                                   handleFlowNodeCodeFocus(node.id);
                                 }}
                               >
-                                <div className="flex items-center gap-2">
+                                {/* Edit/Delete buttons on hover */}
+                                <div className="flow-node-action absolute top-1 right-1 flex items-center gap-0.5 opacity-0 group-hover/nodeheader:opacity-100 transition-opacity z-10">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setFlowNodeRenameValue(node.name);
+                                      setFlowNodeModal({ type: "rename", nodeId: node.id, nodeName: node.name });
+                                    }}
+                                    className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
+                                    title="Rename node"
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setFlowNodeModal({ type: "delete", nodeId: node.id, nodeName: node.name });
+                                    }}
+                                    className="p-1 rounded hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-colors"
+                                    title="Delete node"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                                
+                                <div className="flex items-center gap-2 pr-12">
                                   {/* Confidence indicator */}
                                   {isObserved && <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" title="Observed" />}
                                   {isDetected && <div className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" title="Detected" />}
@@ -6510,39 +8174,53 @@ export const shadows = {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
+                                      // Auth check for Reconstruct
+                                      if (!user || isDemoMode) {
+                                        setShowAuthModal(true);
+                                        showToast("Sign up free to reconstruct pages. Get 2 free generations!", "info");
+                                        return;
+                                      }
                                       if (isEditing) return;
                                       setEditInput(`@${node.name} Reconstruct this page based on observed navigation patterns and styling from the main page`);
                                       setShowFloatingEdit(true);
                                     }}
                                     disabled={isEditing}
                                     className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-[9px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-400/80 hover:text-amber-400 transition-colors disabled:opacity-50"
-                                    title="Reconstruct from observed patterns"
+                                    title={!user || isDemoMode ? "Sign up to reconstruct" : "Reconstruct from observed patterns"}
                                   >
                                     <Plus className="w-3 h-3" />
                                     Reconstruct
+                                    {(!user || isDemoMode) && <Lock className="w-2.5 h-2.5 ml-0.5" />}
                                   </button>
                                 ) : (
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
+                                      // Auth check for Generate
+                                      if (!user || isDemoMode) {
+                                        setShowAuthModal(true);
+                                        showToast("Sign up free to generate pages. Get 2 free generations!", "info");
+                                        return;
+                                      }
                                       if (isEditing) return;
                                       setEditInput(`@${node.name} Generate this flow continuation with consistent style and navigation`);
                                       setShowFloatingEdit(true);
                                     }}
                                     disabled={isEditing}
                                     className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-[9px] bg-white/10 hover:bg-white/15 text-white/50 hover:text-white/70 transition-colors disabled:opacity-50"
-                                    title="Generate flow continuation"
+                                    title={!user || isDemoMode ? "Sign up to generate" : "Generate flow continuation"}
                                   >
                                     <Plus className="w-3 h-3" />
                                     Generate
+                                    {(!user || isDemoMode) && <Lock className="w-2.5 h-2.5 ml-0.5" />}
                                   </button>
                                 )}
                               </div>
                               
-                              {/* Status badge */}
-                              <div className="absolute -top-2 -right-2">
+                              {/* Status badge - centered on top with more spacing */}
+                              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
                                 <span className={cn(
-                                  "text-[8px] px-1.5 py-0.5 rounded-full bg-[#0a0a0a] border capitalize",
+                                  "text-[7px] px-2 py-0.5 rounded-full bg-[#0a0a0a] border capitalize whitespace-nowrap",
                                   isObserved 
                                     ? "border-emerald-500/30 text-emerald-400/70" 
                                     : isAdded
@@ -6569,12 +8247,8 @@ export const shadows = {
                     </div>
                   </>
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-[#080808]">
-                    <div className="text-center">
-                      <GitBranch className="w-10 h-10 text-white/10 mx-auto mb-3" />
-                      <p className="text-sm text-white/40">No product flow yet</p>
-                      <p className="text-xs text-white/25 mt-1">Flow shows how the product is connected - views, states, transitions</p>
-                    </div>
+                  <div className="w-full h-full flex items-center justify-center">
+                    <EmptyState icon="logo" title="No product flow yet" subtitle="Flow shows how the product is connected - views, states, transitions" />
                   </div>
                 )}
                 
@@ -6593,9 +8267,9 @@ export const shadows = {
 
             {/* Design System */}
             {viewMode === "design" && (
-              <div className="flex-1 overflow-auto p-6 bg-[#080808] relative">
+              <div className="flex-1 overflow-auto p-6 relative">
                 {(isProcessing || isStreamingCode) ? (
-                  <div className="w-full h-full flex items-center justify-center bg-[#080808]">
+                  <div className="w-full h-full flex items-center justify-center">
                     <LoadingState />
                   </div>
                 ) : styleInfo ? (
@@ -6676,7 +8350,7 @@ export const shadows = {
                     )}
                   </div>
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-[#080808]">
+                  <div className="w-full h-full flex items-center justify-center">
                     <EmptyState icon="logo" title="No style info yet" subtitle="Generate code to see the design system" />
                   </div>
                 )}
@@ -6843,7 +8517,21 @@ export const shadows = {
                           <>Editing <span className="at-tag">@{selectedArchNode}</span></>
                         ) : "Describe your changes"}
                       </span>
-                      {!isEditing && (
+                      {isEditing ? (
+                        /* Cancel button during editing */
+                        <button 
+                          onClick={() => { 
+                            cancelAIRequest(); 
+                            setIsEditing(false); 
+                            showToast("Request cancelled", "info"); 
+                          }} 
+                          className="ml-auto p-1.5 hover:bg-red-500/20 rounded-lg transition-colors group"
+                          title="Cancel request"
+                        >
+                          <X className="w-4 h-4 text-red-400 group-hover:text-red-300" />
+                        </button>
+                      ) : (
+                        /* Close button when not editing */
                         <button onClick={() => { setShowFloatingEdit(false); setSelectedArchNode(null); setShowSuggestions(false); }} className="ml-auto p-1 hover:bg-white/5 rounded">
                           <X className="w-3 h-3 text-white/20" />
                         </button>
@@ -6873,6 +8561,7 @@ export const shadows = {
                         {/* Pointer tool button */}
                         <button
                           onClick={() => {
+                            if (isEditing) return;
                             const newState = !isPointAndEdit;
                             setIsPointAndEdit(newState);
                             // Clear selected element when turning off pointer
@@ -6880,26 +8569,38 @@ export const shadows = {
                               setSelectedElement(null);
                             }
                           }}
+                          disabled={isEditing}
                           className={cn(
                             "relative flex items-center justify-center w-10 h-10 rounded-lg border transition-all",
-                            isPointAndEdit 
-                              ? "bg-[#FF6E3C]/20 border-[#FF6E3C] text-[#FF6E3C] shadow-[0_0_10px_rgba(255,110,60,0.3)]" 
-                              : "bg-white/[0.03] border-white/[0.04] hover:border-white/10 text-white/40"
+                            isEditing 
+                              ? "bg-white/[0.02] border-white/[0.02] text-white/20 cursor-not-allowed"
+                              : isPointAndEdit 
+                                ? "bg-[#FF6E3C]/20 border-[#FF6E3C] text-[#FF6E3C] shadow-[0_0_10px_rgba(255,110,60,0.3)]" 
+                                : "bg-white/[0.03] border-white/[0.04] hover:border-white/10 text-white/40"
                           )}
-                          title={isPointAndEdit ? "Click to deactivate pointer" : "Click element in preview to edit"}
+                          title={isEditing ? "Disabled during editing" : isPointAndEdit ? "Click to deactivate pointer" : "Click element in preview to edit"}
                         >
-                          <MousePointer className={cn("w-4 h-4", isPointAndEdit && "animate-pulse")} />
-                          {isPointAndEdit && (
+                          <MousePointer className={cn("w-4 h-4", isPointAndEdit && !isEditing && "animate-pulse")} />
+                          {isPointAndEdit && !isEditing && (
                             <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#FF6E3C] rounded-full animate-pulse" />
                           )}
                         </button>
                         {/* Image upload button */}
-                        <label className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/[0.03] border border-white/[0.04] hover:border-white/10 cursor-pointer transition-colors">
+                        <label 
+                          className={cn(
+                            "flex items-center justify-center w-10 h-10 rounded-lg border transition-colors",
+                            isEditing 
+                              ? "bg-white/[0.02] border-white/[0.02] text-white/20 cursor-not-allowed"
+                              : "bg-white/[0.03] border-white/[0.04] hover:border-white/10 cursor-pointer"
+                          )}
+                          title={isEditing ? "Disabled during editing" : "Upload image"}
+                        >
                           <input 
                             type="file"
                             accept="image/*"
                             multiple
                             className="hidden"
+                            disabled={isEditing}
                             onChange={async (e) => {
                               const files = e.target.files;
                               if (files) {
@@ -6945,7 +8646,7 @@ export const shadows = {
                               e.target.value = "";
                             }}
                           />
-                          <ImageIcon className="w-4 h-4 text-white/40" />
+                          <ImageIcon className={cn("w-4 h-4", isEditing ? "text-white/20" : "text-white/40")} />
                         </label>
                         <input 
                           ref={editInputRef}
@@ -7079,62 +8780,110 @@ export const shadows = {
         </div>
       </div>
       
-      {/* Mobile Bottom Navigation */}
+      {/* Mobile Auth Gate - Require login on mobile */}
+      {!user && !authLoading && (
+        <>
+          {/* Backdrop with blur - see content behind */}
+          <div className="fixed inset-0 z-50 md:hidden bg-black/40 backdrop-blur-sm" />
+          
+          {/* Auth Popup Modal */}
+          <div className="fixed inset-0 z-50 md:hidden flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              className="w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl p-6 shadow-2xl text-center"
+            >
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center mx-auto mb-5">
+                <Lock className="w-8 h-8 text-[#FF6E3C]" />
+              </div>
+              <h2 className="text-xl font-semibold text-white mb-2">Sign in to continue</h2>
+              <p className="text-white/50 text-sm mb-6">
+                Create an account or sign in to start building. Get 150 free credits.
+              </p>
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="w-full px-6 py-3.5 rounded-xl bg-[#FF6E3C] text-white font-medium hover:bg-[#FF8F5C] transition-colors mb-4"
+              >
+                Sign in / Sign up
+              </button>
+              <a href="/landing" className="text-sm text-white/40 hover:text-white/60 transition-colors">
+                ← Back to home
+              </a>
+            </motion.div>
+          </div>
+        </>
+      )}
+      
+      {/* Mobile Bottom Navigation - Larger for easier tapping */}
       <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-white/10 bg-[#111]/95 backdrop-blur-xl safe-area-pb">
-        <div className="flex items-center justify-around py-2">
-          <button 
-            onClick={() => setMobilePanel("input")}
-            className={cn(
-              "flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors",
-              mobilePanel === "input" && !showHistoryMode ? "text-[#FF6E3C]" : "text-white/40"
-            )}
-          >
-            <Film className="w-5 h-5" />
-            <span className="text-[10px] font-medium">Input</span>
-          </button>
+        <div className="flex items-center justify-around py-3 px-2">
+          {/* Show Chat tab when we have generated code, otherwise show Input */}
+          {generatedCode ? (
+            <button 
+              onClick={() => setMobilePanel("chat")}
+              className={cn(
+                "flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-xl transition-colors min-w-[56px]",
+                mobilePanel === "chat" && !showHistoryMode ? "text-[#FF6E3C] bg-[#FF6E3C]/10" : "text-white/40"
+              )}
+            >
+              <Sparkles className="w-6 h-6" />
+              <span className="text-[11px] font-medium">Chat</span>
+            </button>
+          ) : (
+            <button 
+              onClick={() => setMobilePanel("input")}
+              className={cn(
+                "flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-xl transition-colors min-w-[56px]",
+                mobilePanel === "input" && !showHistoryMode ? "text-[#FF6E3C] bg-[#FF6E3C]/10" : "text-white/40"
+              )}
+            >
+              <Film className="w-6 h-6" />
+              <span className="text-[11px] font-medium">Input</span>
+            </button>
+          )}
           
           <button 
             onClick={() => setMobilePanel("preview")}
             className={cn(
-              "flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors",
-              mobilePanel === "preview" && !showHistoryMode ? "text-[#FF6E3C]" : "text-white/40"
+              "flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-xl transition-colors min-w-[56px]",
+              mobilePanel === "preview" && !showHistoryMode ? "text-[#FF6E3C] bg-[#FF6E3C]/10" : "text-white/40"
             )}
           >
-            <Eye className="w-5 h-5" />
-            <span className="text-[10px] font-medium">Preview</span>
+            <Eye className="w-6 h-6" />
+            <span className="text-[11px] font-medium">Preview</span>
           </button>
           
           <button 
             onClick={() => setMobilePanel("code")}
             className={cn(
-              "flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors",
-              mobilePanel === "code" && !showHistoryMode ? "text-[#FF6E3C]" : "text-white/40"
+              "flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-xl transition-colors min-w-[56px]",
+              mobilePanel === "code" && !showHistoryMode ? "text-[#FF6E3C] bg-[#FF6E3C]/10" : "text-white/40"
             )}
           >
-            <Code className="w-5 h-5" />
-            <span className="text-[10px] font-medium">Code</span>
+            <Code className="w-6 h-6" />
+            <span className="text-[11px] font-medium">Code</span>
           </button>
           
           <button 
             onClick={() => setMobilePanel("flow")}
             className={cn(
-              "flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors",
-              mobilePanel === "flow" && !showHistoryMode ? "text-[#FF6E3C]" : "text-white/40"
+              "flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-xl transition-colors min-w-[56px]",
+              mobilePanel === "flow" && !showHistoryMode ? "text-[#FF6E3C] bg-[#FF6E3C]/10" : "text-white/40"
             )}
           >
-            <GitBranch className="w-5 h-5" />
-            <span className="text-[10px] font-medium">Flow</span>
+            <GitBranch className="w-6 h-6" />
+            <span className="text-[11px] font-medium">Flow</span>
           </button>
           
           <button 
             onClick={() => setMobilePanel("design")}
             className={cn(
-              "flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors",
-              mobilePanel === "design" && !showHistoryMode ? "text-[#FF6E3C]" : "text-white/40"
+              "flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-xl transition-colors min-w-[56px]",
+              mobilePanel === "design" && !showHistoryMode ? "text-[#FF6E3C] bg-[#FF6E3C]/10" : "text-white/40"
             )}
           >
-            <Palette className="w-5 h-5" />
-            <span className="text-[10px] font-medium">Design</span>
+            <Palette className="w-6 h-6" />
+            <span className="text-[11px] font-medium">Design</span>
           </button>
         </div>
       </div>
@@ -7147,24 +8896,28 @@ export const shadows = {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed inset-x-0 bottom-16 top-16 z-40 md:hidden bg-[#0a0a0a] border-t border-white/10 flex flex-col"
+            className="fixed inset-x-0 bottom-16 top-0 z-40 md:hidden bg-[#0a0a0a] flex flex-col"
           >
-            {/* History Header */}
-            <div className="p-4 border-b border-white/5 flex-shrink-0">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <History className="w-4 h-4 text-[#FF6E3C]" />
-                  <span className="text-sm font-semibold text-white/80">History</span>
-                </div>
-                <button 
-                  onClick={() => setShowHistoryMode(false)}
-                  className="flex items-center gap-1 text-xs text-white/50 hover:text-white px-2 py-1 rounded-lg hover:bg-white/5"
-                >
-                  <span>Back</span>
-                  <ChevronRight className="w-3 h-3" />
-                </button>
+            {/* History Header - Matches main app header */}
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl safe-area-pt">
+              <a href="/" className="flex-shrink-0">
+                <LogoIcon className="w-5 h-5" color="#FF6E3C" />
+              </a>
+              <div className="flex items-center gap-2 flex-1">
+                <History className="w-4 h-4 text-[#FF6E3C]" />
+                <span className="text-sm font-semibold text-white/80">History</span>
               </div>
-              {/* Search */}
+              <button 
+                onClick={() => setShowHistoryMode(false)}
+                className="flex items-center gap-1 text-xs text-white/60 hover:text-white px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10"
+              >
+                <span>Back</span>
+                <ChevronRight className="w-3 h-3" />
+              </button>
+            </div>
+            
+            {/* Search */}
+            <div className="p-3 border-b border-white/5 flex-shrink-0">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
                 <input
@@ -7181,9 +8934,14 @@ export const shadows = {
             <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2">
               {generations.length === 0 ? (
                 <div className="text-center py-12">
-                  <History className="w-10 h-10 text-white/10 mx-auto mb-3" />
-                  <p className="text-sm text-white/40">No generations yet</p>
-                  <p className="text-xs text-white/25 mt-1">Your history will appear here</p>
+                  <div className="empty-logo-container mx-auto" style={{ width: 60, height: 75 }}>
+                    <svg className="empty-logo" viewBox="0 0 82 109" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M68.099 37.2285C78.1678 43.042 78.168 57.5753 68.099 63.3887L29.5092 85.668C15.6602 93.6633 0.510418 77.4704 9.40857 64.1836L17.4017 52.248C18.1877 51.0745 18.1876 49.5427 17.4017 48.3691L9.40857 36.4336C0.509989 23.1467 15.6602 6.95306 29.5092 14.9482L68.099 37.2285Z" stroke="currentColor" strokeWidth="11.6182" strokeLinejoin="round"/>
+                      <rect x="34.054" y="98.6841" width="48.6555" height="11.6182" rx="5.80909" transform="rotate(-30 34.054 98.6841)" fill="currentColor"/>
+                    </svg>
+                  </div>
+                  <p className="text-sm text-white/40 mt-4">No generations yet</p>
+                  <p className="text-xs text-white/25 mt-1">Upload a video and generate code to start</p>
                 </div>
               ) : (
                 generations
@@ -7199,63 +8957,88 @@ export const shadows = {
                         ? "bg-[#FF6E3C]/10 border-[#FF6E3C]/30" 
                         : "bg-white/[0.02] border-white/5 hover:bg-white/5"
                     )}
-                    onClick={() => {
-                      // Ensure generation has versions - if not, create initial version from code
-                      let genToLoad = gen;
-                      if (gen.code && (!gen.versions || gen.versions.length === 0)) {
-                        const initialVersion: GenerationVersion = {
-                          id: generateId(),
-                          timestamp: gen.timestamp,
-                          label: "Initial generation",
-                          code: gen.code,
-                          flowNodes: gen.flowNodes || [],
-                          flowEdges: gen.flowEdges || [],
-                          styleInfo: gen.styleInfo || null,
-                        };
-                        genToLoad = { ...gen, versions: [initialVersion] };
-                        setGenerations(prev => prev.map(g => g.id === gen.id ? genToLoad : g));
-                      }
+                    onClick={async () => {
+                      if (renamingId === gen.id) return;
                       
-                      setActiveGeneration(genToLoad);
-                      setGenerationTitle(genToLoad.title);
-                      // Reset published URL state to match the loaded generation (prevents cross-project slug confusion)
-                      setPublishedUrl(genToLoad.publishedSlug ? `https://www.replay.build/p/${genToLoad.publishedSlug}` : null);
-                      setShowPublishModal(false);
-                      if (genToLoad.code) {
-                        setGeneratedCode(genToLoad.code);
-                        setDisplayedCode(genToLoad.code);
-                        setEditableCode(genToLoad.code);
-                        const blob = new Blob([genToLoad.code], { type: "text/html" });
-                        setPreviewUrl(URL.createObjectURL(blob));
+                      try {
+                        // If code is missing (minimal fetch), load full data first
+                        let genToLoad = gen;
+                        const isDemo = DEMO_PROJECT_IDS.has(gen.id);
+                        if (!gen.code && (user || isDemo)) {
+                          console.log("[History Mobile] Loading full data for generation:", gen.id, isDemo ? "(demo)" : "");
+                          const fullGen = await loadFullGeneration(gen.id);
+                          if (fullGen) {
+                            genToLoad = fullGen;
+                          } else {
+                            console.error("[History Mobile] Failed to load generation data");
+                            showToast("Failed to load project", "error");
+                            return;
+                          }
+                        }
+                        
+                        // Set flag to prevent auto-save during load
+                        isLoadingProjectRef.current = true;
+                        
+                        // DON'T create initial version here - UI already shows hardcoded "Initial generation" at bottom
+                        // versions array should only contain EDITS made after initial generation
+                        
+                        // Load this generation
+                        setActiveGeneration(genToLoad);
+                        setGenerationTitle(genToLoad.title || "Untitled");
+                        setPublishedUrl(genToLoad.publishedSlug ? `https://www.replay.build/p/${genToLoad.publishedSlug}` : null);
+                        setShowPublishModal(false);
+                        if (genToLoad.code) {
+                          setGeneratedCode(genToLoad.code);
+                          setDisplayedCode(genToLoad.code);
+                          setEditableCode(genToLoad.code);
+                          const blob = new Blob([genToLoad.code], { type: "text/html" });
+                          setPreviewUrl(URL.createObjectURL(blob));
+                        }
+                        if (genToLoad.flowNodes) setFlowNodes(genToLoad.flowNodes);
+                        if (genToLoad.flowEdges) setFlowEdges(genToLoad.flowEdges);
+                        if (genToLoad.styleInfo) setStyleInfo(genToLoad.styleInfo);
+                        setStyleDirective(genToLoad.styleDirective || '');
+                        setRefinements(genToLoad.refinements || '');
+                        setChatMessages(genToLoad.chatMessages || []);
+                        lastSavedChatRef.current = JSON.stringify((genToLoad.chatMessages || []).map(m => m.id));
+                        
+                        if (genToLoad.versions && genToLoad.versions.length > 0) {
+                          setExpandedVersions(genToLoad.id);
+                        }
+                        
+                        if (genToLoad.videoUrl && !flows.some(f => f.videoUrl === genToLoad.videoUrl)) {
+                          const newFlow: FlowItem = {
+                            id: generateId(),
+                            name: genToLoad.title || "Recording",
+                            videoBlob: new Blob(),
+                            videoUrl: genToLoad.videoUrl,
+                            thumbnail: genToLoad.thumbnailUrl || "",
+                            duration: 30,
+                            trimStart: 0,
+                            trimEnd: 30,
+                          };
+                          setFlows([newFlow]);
+                          setSelectedFlowId(newFlow.id);
+                        }
+                        setShowHistoryMode(false);
+                        setGenerationComplete(true);
+                        setSidebarMode("chat");
+                        setMobilePanel("preview");
+                        if (genToLoad.chatMessages && genToLoad.chatMessages.length > 0) {
+                          setChatMessages(genToLoad.chatMessages);
+                        } else if (genToLoad.code) {
+                          setChatMessages([{
+                            id: generateId(),
+                            role: "assistant",
+                            content: `**Boom. UI Reconstructed.** 🚀\n\nMatched the layout from your video using Tailwind CSS and Alpine.js for interactivity.\n\nReady to refine? Just tell me what to tweak.`,
+                            timestamp: Date.now(),
+                            quickActions: ["Make it mobile-friendly", "Tweak the colors", "Add hover effects", "Improve the spacing"]
+                          }]);
+                        }
+                      } catch (e) {
+                        console.error("[History Mobile] Error loading generation:", e);
+                        showToast("Error loading generation", "error");
                       }
-                      if (genToLoad.flowNodes) setFlowNodes(genToLoad.flowNodes);
-                      if (genToLoad.flowEdges) setFlowEdges(genToLoad.flowEdges);
-                      if (genToLoad.styleInfo) setStyleInfo(genToLoad.styleInfo);
-                      setStyleDirective(genToLoad.styleDirective);
-                      setRefinements(genToLoad.refinements);
-                      
-                      // Auto-expand versions if there are any
-                      if (genToLoad.versions && genToLoad.versions.length > 0) {
-                        setExpandedVersions(genToLoad.id);
-                      }
-                      
-                      // Restore video from generation if available
-                      if (genToLoad.videoUrl && !flows.some(f => f.videoUrl === genToLoad.videoUrl)) {
-                        const newFlow: FlowItem = {
-                          id: generateId(),
-                          name: genToLoad.title || "Recording",
-                          videoBlob: new Blob(), // Empty blob as placeholder
-                          videoUrl: genToLoad.videoUrl,
-                          thumbnail: genToLoad.thumbnailUrl || "",
-                          duration: 30,
-                          trimStart: 0,
-                          trimEnd: 30,
-                        };
-                        setFlows([newFlow]);
-                        setSelectedFlowId(newFlow.id);
-                      }
-                      setShowHistoryMode(false);
-                      setGenerationComplete(true);
                     }}
                   >
                     <div className="flex items-center gap-2 mb-1">
@@ -7267,83 +9050,134 @@ export const shadows = {
                     {/* Delete action - right aligned */}
                     <div className="absolute top-3 right-3">
                       <button
-                        onClick={(e) => { e.stopPropagation(); deleteGeneration(gen.id); }}
+                        onClick={(e) => { e.stopPropagation(); confirmDeleteGeneration(gen.id, gen.title); }}
                         className="p-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 text-white/30 hover:text-red-400 transition-colors"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                     
+                    {/* Latest change or style info */}
+                    <div className="mt-1">
+                      {gen.versions && gen.versions.length > 0 ? (
+                        <p className="text-[10px] text-white/40 truncate">
+                          <span className="text-emerald-400/60">Latest:</span> {gen.versions[gen.versions.length - 1]?.label || "Code update"}
+                        </p>
+                      ) : (
+                        <p className="text-[10px] text-white/25 truncate">
+                          <span className="text-white/15">Style:</span> {gen.styleDirective || "Auto-Detect"}
+                        </p>
+                      )}
+                    </div>
+                    
                     {/* Version History Toggle - Mobile */}
-                    {gen.versions && gen.versions.length >= 1 && (
-                      <div className="mt-2 pt-2 border-t border-white/5">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setExpandedVersions(expandedVersions === gen.id ? null : gen.id);
-                          }}
-                          className="flex items-center gap-2 text-[10px] text-white/40 hover:text-white/60 transition-colors"
-                        >
-                          <Clock className="w-3 h-3" />
-                          <span>{gen.versions.length} version{gen.versions.length !== 1 ? 's' : ''}</span>
-                          <ChevronDown className={cn(
-                            "w-3 h-3 transition-transform",
-                            expandedVersions === gen.id && "rotate-180"
-                          )} />
-                        </button>
-                        
-                        <AnimatePresence>
-                          {expandedVersions === gen.id && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              exit={{ opacity: 0, height: 0 }}
-                              className="mt-2 ml-1 space-y-1 overflow-hidden"
-                            >
-                              <div className="relative pl-3 border-l border-white/10">
-                                {gen.versions.slice().reverse().map((version, idx) => (
-                                  <div 
-                                    key={version.id}
-                                    className="relative py-1.5"
-                                  >
-                                    <div className={cn(
-                                      "absolute -left-[7px] top-2.5 w-2.5 h-2.5 rounded-full border-2",
-                                      idx === 0 
-                                        ? "bg-[#FF6E3C] border-[#FF6E3C]" 
-                                        : "bg-[#0a0a0a] border-white/20"
-                                    )} />
-                                    
-                                    <div className="flex items-center justify-between gap-2 pl-2">
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-[10px] text-white/50 truncate">{version.label}</p>
-                                        <p className="text-[8px] text-white/25">
-                                          {new Date(version.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </p>
-                                      </div>
-                                      
-                                      {idx !== 0 ? (
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            restoreVersion(gen.id, version);
-                                          }}
-                                          className="p-1.5 rounded bg-white/5 hover:bg-white/10 transition-all"
-                                          title="Restore"
-                                        >
-                                          <Play className="w-3 h-3 text-[#FF6E3C]" />
-                                        </button>
-                                      ) : (
-                                        <span className="text-[8px] text-[#FF6E3C]/60 uppercase">Current</span>
-                                      )}
+                    <div className="mt-2 pt-2 border-t border-white/5">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExpandedVersions(expandedVersions === gen.id ? null : gen.id);
+                        }}
+                        className="flex items-center gap-2 text-[10px] text-white/40 hover:text-white/60 transition-colors"
+                      >
+                        <Clock className="w-3 h-3" />
+                        <span>{((gen.versions || []).filter(v => v.label !== "Initial generation").length) + 1} version{((gen.versions || []).filter(v => v.label !== "Initial generation").length) >= 1 ? 's' : ''}</span>
+                        <ChevronDown className={cn(
+                          "w-3 h-3 transition-transform",
+                          expandedVersions === gen.id && "rotate-180"
+                        )} />
+                      </button>
+                      
+                      <AnimatePresence>
+                        {expandedVersions === gen.id && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="mt-2 ml-1 space-y-1 overflow-hidden"
+                          >
+                            {/* Version timeline - newest at top, oldest at bottom */}
+                            <div className="relative pl-3 border-l border-white/10">
+                              {/* Versions in reverse order (newest/current at top) - filter out "Initial generation" */}
+                              {(gen.versions || []).filter(v => v.label !== "Initial generation").slice().reverse().map((version, idx) => (
+                                <div 
+                                  key={version.id}
+                                  className="relative py-1.5"
+                                >
+                                  <div className={cn(
+                                    "absolute -left-[7px] top-2.5 w-2.5 h-2.5 rounded-full border-2",
+                                    idx === 0 
+                                      ? "bg-[#FF6E3C] border-[#FF6E3C]" 
+                                      : "bg-[#0a0a0a] border-white/20"
+                                  )} />
+                                  
+                                  <div className="flex items-center justify-between gap-2 pl-2">
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-[10px] text-white/50 truncate">{version.label}</p>
+                                      <p className="text-[8px] text-white/25">
+                                        {new Date(version.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                      </p>
                                     </div>
+                                    
+                                    {idx === 0 ? (
+                                      <span className="text-[8px] text-[#FF6E3C]/60 uppercase">Current</span>
+                                    ) : (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          restoreVersion(gen.id, version);
+                                        }}
+                                        className="p-1.5 rounded bg-white/5 hover:bg-white/10 transition-all"
+                                        title="Restore"
+                                      >
+                                        <Play className="w-3 h-3 text-[#FF6E3C]" />
+                                      </button>
+                                    )}
                                   </div>
-                                ))}
+                                </div>
+                              ))}
+                              
+                              {/* Initial generation - at the bottom */}
+                              <div className="relative py-1.5">
+                                <div className={cn(
+                                  "absolute -left-[7px] top-2.5 w-2.5 h-2.5 rounded-full border-2",
+                                  !gen.versions?.length ? "bg-[#FF6E3C] border-[#FF6E3C]" : "bg-[#0a0a0a] border-white/20"
+                                )} />
+                                <div className="flex items-center justify-between gap-2 pl-2">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-[10px] text-white/50 truncate">Initial generation</p>
+                                    <p className="text-[8px] text-white/25">
+                                      {new Date(gen.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                  </div>
+                                  {!gen.versions?.length ? (
+                                    <span className="text-[8px] text-[#FF6E3C]/60 uppercase">Current</span>
+                                  ) : (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        restoreVersion(gen.id, { 
+                                          id: 'initial', 
+                                          timestamp: gen.timestamp, 
+                                          label: 'Initial generation',
+                                          code: gen.code || '',
+                                          flowNodes: gen.flowNodes,
+                                          flowEdges: gen.flowEdges,
+                                          styleInfo: gen.styleInfo
+                                        });
+                                      }}
+                                      className="p-1.5 rounded bg-white/5 hover:bg-white/10 transition-all"
+                                      title="Restore to initial"
+                                    >
+                                      <Play className="w-3 h-3 text-[#FF6E3C]" />
+                                    </button>
+                                  )}
+                                </div>
                               </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </div>
                 ))
               )}
@@ -7360,81 +9194,57 @@ export const shadows = {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed inset-x-0 bottom-16 top-16 z-30 md:hidden bg-[#0a0a0a] border-t border-white/10 overflow-auto"
+            className="fixed inset-x-0 bottom-16 top-0 z-40 md:hidden bg-[#0a0a0a] flex flex-col"
           >
-            <div className="flex flex-col h-full">
-              {/* Project Title Header - like desktop */}
-              <div className="p-4 border-b border-white/5 flex-shrink-0">
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 min-w-0 flex items-center gap-1.5">
-                    <input 
-                      type="text"
-                      value={generationTitle}
-                      onChange={(e) => {
-                        const newTitle = e.target.value;
-                        setGenerationTitle(newTitle);
-                        if (activeGeneration) {
-                          setActiveGeneration(prev => prev ? { ...prev, title: newTitle } : null);
-                          setGenerations(prev => prev.map(g => 
-                            g.id === activeGeneration.id ? { ...g, title: newTitle } : g
-                          ));
-                        }
-                      }}
-                      className="flex-1 min-w-0 text-sm font-medium text-white/80 bg-transparent border-none focus:outline-none truncate"
-                      placeholder="Untitled Project"
-                    />
-                    <Pencil className="w-3 h-3 text-white/30 flex-shrink-0" />
-                  </div>
-                  <button 
-                    onClick={() => {
-                      setGeneratedCode(null);
-                      setDisplayedCode("");
-                      setEditableCode("");
-                      setPreviewUrl(null);
-                      setFlowNodes([]);
-                      setFlowEdges([]);
-                      setStyleInfo(null);
-                      setGenerationTitle("Untitled Project");
-                      setGenerationComplete(false);
-                      setActiveGeneration(null);
-                    }}
-                    className="p-1.5 rounded-lg hover:bg-white/5"
-                    title="New generation"
-                  >
-                    <Plus className="w-4 h-4 text-white/40" />
-                  </button>
-                  <button 
-                    onClick={() => setShowHistoryMode(true)}
-                    className={cn(
-                      "p-1.5 rounded-lg hover:bg-white/5",
-                      generations.length === 0 && "opacity-30 pointer-events-none"
-                    )}
-                    title="View history"
-                  >
-                    <History className="w-4 h-4 text-white/40" />
-                  </button>
-                </div>
+            {/* Unified Mobile Header */}
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
+              <a href="/" className="flex-shrink-0">
+                <LogoIcon className="w-5 h-5" color="#FF6E3C" />
+              </a>
+              <input
+                type="text"
+                value={generationTitle}
+                onChange={(e) => setGenerationTitle(e.target.value)}
+                className="flex-1 min-w-0 text-sm font-medium text-white/80 bg-transparent focus:outline-none truncate"
+                placeholder="Untitled"
+              />
+              <div className="flex items-center gap-0.5 flex-shrink-0">
+                <button onClick={() => setShowHistoryMode(true)} className="p-1.5 rounded-lg hover:bg-white/5" title="History">
+                  <History className="w-4 h-4 text-white/40" />
+                </button>
+                <button onClick={() => setShowProjectSettings(true)} className="p-1.5 rounded-lg hover:bg-white/5" title="Settings">
+                  <Settings className="w-4 h-4 text-white/40" />
+                </button>
+                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="p-1 rounded-lg hover:bg-white/5 ml-1">
+                  {user ? (
+                    <Avatar src={profile?.avatar_url} fallback={user.email?.[0]?.toUpperCase() || "U"} size={24} />
+                  ) : (
+                    <User className="w-5 h-5 text-white/40" />
+                  )}
+                </button>
               </div>
-
+            </div>
+            
+            <div className="flex flex-col flex-1 overflow-auto">
               {/* Videos Section */}
               <div className="p-4 border-b border-white/5 flex-shrink-0">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Video className="w-4 h-4 text-white/40" />
-                    <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Videos</span>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <Video className="w-3.5 h-3.5 text-white/40" />
+                    <span className="text-[10px] font-semibold text-white/60 uppercase tracking-wider">Videos</span>
                   </div>
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-1">
                     {isRecording ? (
-                      <button onClick={stopRecording} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs bg-red-500/20 text-red-400">
-                        <Square className="w-3 h-3 fill-current" />{formatDuration(recordingDuration)}
+                      <button onClick={stopRecording} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] bg-red-500/20 text-red-400">
+                        <Square className="w-2.5 h-2.5 fill-current" />{formatDuration(recordingDuration)}
                       </button>
                     ) : (
-                      <button onClick={startRecording} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs bg-white/5 text-white/60">
-                        <Monitor className="w-3.5 h-3.5" /> Record
+                      <button onClick={startRecording} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] bg-white/5 text-white/60">
+                        <Monitor className="w-3 h-3" /> Record
                       </button>
                     )}
-                    <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs bg-white/5 text-white/60">
-                      <Upload className="w-3.5 h-3.5" /> Upload
+                    <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] bg-white/5 text-white/60">
+                      <Upload className="w-3 h-3" /> Upload
                     </button>
                   </div>
                 </div>
@@ -7488,11 +9298,18 @@ export const shadows = {
                 {/* Textarea only */}
                 <textarea
                   value={refinements}
-                  onChange={(e) => setRefinements(e.target.value)}
+                  onChange={(e) => {
+                    const maxLen = isPaidPlan ? 20000 : 2000;
+                    if (e.target.value.length <= maxLen) {
+                      setRefinements(e.target.value);
+                    } else {
+                      showToast(`Context limit: ${isPaidPlan ? "20,000" : "2,000"} characters${!isPaidPlan ? ". Upgrade to PRO for 20k" : ""}`, "error");
+                    }
+                  }}
                   placeholder="Add data logic, constraints or details. Replay works without it — context just sharpens the result (optional)"
                   disabled={isProcessing}
                   rows={3}
-                  className="w-full px-3 py-3 rounded-lg text-xs text-white/70 placeholder:text-white/30 placeholder:text-[11px] bg-white/[0.03] border border-white/[0.06] focus:outline-none focus:border-[#FF6E3C]/20 min-h-[80px]"
+                  className="w-full px-3 py-3 rounded-lg text-xs text-white/70 placeholder:text-white/30 placeholder:text-[11px] bg-white/[0.03] border border-white/[0.06] focus:outline-none focus:border-[#FF6E3C]/20 min-h-[80px] max-h-[300px] resize-y"
                 />
               </div>
 
@@ -7552,7 +9369,6 @@ export const shadows = {
                       {/* UX Signals */}
                       <div className="bg-white/[0.02] rounded-lg p-3">
                         <div className="flex items-center gap-2 mb-2">
-                          <Activity className="w-3.5 h-3.5 text-[#FF6E3C]/60" />
                           <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">UX Signals</span>
                         </div>
                         <div className="space-y-1.5">
@@ -7576,7 +9392,6 @@ export const shadows = {
                       {analysisPhase.structureItems && analysisPhase.structureItems.length > 0 && (
                         <div className="bg-white/[0.02] rounded-lg p-3">
                           <div className="flex items-center gap-2 mb-2">
-                            <GitBranch className="w-3.5 h-3.5 text-[#FF6E3C]/60" />
                             <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Structure</span>
                           </div>
                           <div className="space-y-1">
@@ -7621,33 +9436,77 @@ export const shadows = {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-x-0 bottom-16 top-16 z-30 md:hidden bg-[#0a0a0a] overflow-hidden"
+            className="fixed inset-x-0 bottom-16 top-0 z-40 md:hidden bg-[#0a0a0a] flex flex-col"
           >
-            {(isProcessing || isStreamingCode) ? (
-              <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                <LoadingState />
+            {/* Unified Mobile Header */}
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
+              <a href="/" className="flex-shrink-0">
+                <LogoIcon className="w-5 h-5" color="#FF6E3C" />
+              </a>
+              <input
+                type="text"
+                value={generationTitle}
+                onChange={(e) => setGenerationTitle(e.target.value)}
+                onBlur={() => {
+                  if (activeGeneration) {
+                    const updated = { ...activeGeneration, title: generationTitle };
+                    setActiveGeneration(updated);
+                    setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updated : g));
+                  }
+                }}
+                className="flex-1 min-w-0 text-sm font-medium text-white/80 bg-transparent focus:outline-none truncate"
+                placeholder="Untitled"
+              />
+              <div className="flex items-center gap-0.5 flex-shrink-0">
+                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); localStorage.removeItem("replay_generation_title"); }} className="p-1.5 rounded-lg hover:bg-white/5" title="New">
+                  <Plus className="w-4 h-4 text-white/40" />
+                </button>
+                <button onClick={() => setShowHistoryMode(true)} className="p-1.5 rounded-lg hover:bg-white/5" title="History">
+                  <History className="w-4 h-4 text-white/40" />
+                </button>
+                <button onClick={() => setShowProjectSettings(true)} className="p-1.5 rounded-lg hover:bg-white/5" title="Settings">
+                  <Settings className="w-4 h-4 text-white/40" />
+                </button>
+                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="p-1 rounded-lg hover:bg-white/5 ml-1">
+                  {user ? (
+                    <Avatar src={profile?.avatar_url} fallback={user.email?.[0]?.toUpperCase() || "U"} size={24} />
+                  ) : (
+                    <User className="w-5 h-5 text-white/40" />
+                  )}
+                </button>
               </div>
-            ) : previewUrl ? (
-              <div className="w-full h-full overflow-hidden">
-                <iframe 
-                  key={previewUrl}
-                  src={previewUrl} 
-                  className="w-full h-full border-0 bg-white" 
-                  style={{ 
-                    overflow: 'hidden',
-                    touchAction: 'pan-y', // Only allow vertical scroll
-                  }}
-                />
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center mb-4">
-                  <Eye className="w-8 h-8 text-[#FF6E3C]/50" />
+            </div>
+            
+            {/* Content */}
+            <div className="flex-1 overflow-hidden">
+              {(isProcessing || isStreamingCode) ? (
+                <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                  <LoadingState />
                 </div>
-                <p className="text-sm text-white/50 font-medium">No preview yet</p>
-                <p className="text-xs text-white/30 mt-1">Generate to see preview</p>
-              </div>
-            )}
+              ) : previewUrl ? (
+                <div className="w-full h-full overflow-hidden bg-[#0a0a0a]" style={{ overscrollBehavior: 'none' }}>
+                  <iframe 
+                    key={previewUrl}
+                    src={previewUrl} 
+                    className="w-full h-full border-0 bg-[#0a0a0a]" 
+                    style={{ 
+                      overflow: 'hidden',
+                      touchAction: 'pan-y',
+                      overscrollBehavior: 'none',
+                      backgroundColor: '#0a0a0a'
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center mb-4">
+                    <Eye className="w-8 h-8 text-[#FF6E3C]/50" />
+                  </div>
+                  <p className="text-sm text-white/50 font-medium">No preview yet</p>
+                  <p className="text-xs text-white/30 mt-1">Generate to see preview</p>
+                </div>
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -7659,16 +9518,55 @@ export const shadows = {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-x-0 bottom-16 top-16 z-30 md:hidden bg-[#0a0a0a] flex flex-col"
+            className="fixed inset-x-0 bottom-16 top-0 z-40 md:hidden bg-[#0a0a0a] flex flex-col"
           >
+            {/* Unified Mobile Header */}
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
+              <a href="/" className="flex-shrink-0">
+                <LogoIcon className="w-5 h-5" color="#FF6E3C" />
+              </a>
+              <input
+                type="text"
+                value={generationTitle}
+                onChange={(e) => setGenerationTitle(e.target.value)}
+                onBlur={() => {
+                  if (activeGeneration) {
+                    const updated = { ...activeGeneration, title: generationTitle };
+                    setActiveGeneration(updated);
+                    setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updated : g));
+                  }
+                }}
+                className="flex-1 min-w-0 text-sm font-medium text-white/80 bg-transparent focus:outline-none truncate"
+                placeholder="Untitled"
+              />
+              <div className="flex items-center gap-0.5 flex-shrink-0">
+                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); localStorage.removeItem("replay_generation_title"); }} className="p-1.5 rounded-lg hover:bg-white/5" title="New">
+                  <Plus className="w-4 h-4 text-white/40" />
+                </button>
+                <button onClick={() => setShowHistoryMode(true)} className="p-1.5 rounded-lg hover:bg-white/5" title="History">
+                  <History className="w-4 h-4 text-white/40" />
+                </button>
+                <button onClick={() => setShowProjectSettings(true)} className="p-1.5 rounded-lg hover:bg-white/5" title="Settings">
+                  <Settings className="w-4 h-4 text-white/40" />
+                </button>
+                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="p-1 rounded-lg hover:bg-white/5 ml-1">
+                  {user ? (
+                    <Avatar src={profile?.avatar_url} fallback={user.email?.[0]?.toUpperCase() || "U"} size={24} />
+                  ) : (
+                    <User className="w-5 h-5 text-white/40" />
+                  )}
+                </button>
+              </div>
+            </div>
+            
             {(isProcessing || isStreamingCode) ? (
               <div className="flex flex-col items-center justify-center h-full text-center p-4">
                 <LoadingState />
               </div>
             ) : generatedCode ? (
               <>
-                {/* Header with toggle, copy, and download */}
-                <div className="flex items-center justify-between p-3 border-b border-white/10 flex-shrink-0">
+                {/* Secondary Header with toggle, copy, and download */}
+                <div className="flex items-center justify-between p-2 border-b border-white/10 flex-shrink-0 bg-black/50">
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => setCodeMode("single-file")}
@@ -7694,17 +9592,37 @@ export const shadows = {
                   <div className="flex items-center gap-2">
                     <button 
                       onClick={() => {
-                        navigator.clipboard.writeText(getActiveFileContent());
-                        showToast("Copied!", "success");
+                        if (!isPaidPlan) {
+                          setUpgradeFeature("code");
+                          setShowUpgradeModal(true);
+                        } else {
+                          navigator.clipboard.writeText(getActiveFileContent());
+                          showToast("Copied!", "success");
+                        }
                       }} 
-                      className="text-[10px] text-white/40 hover:text-white/60 flex items-center gap-1"
+                      className={cn(
+                        "text-[10px] text-white/40 hover:text-white/60 flex items-center gap-1",
+                        !isPaidPlan && "opacity-50"
+                      )}
                     >
+                      {!isPaidPlan && <Lock className="w-2.5 h-2.5" />}
                       <Copy className="w-3 h-3" />
                     </button>
                     <button 
-                      onClick={handleDownload}
-                      className="text-[10px] text-white/40 hover:text-white/60 flex items-center gap-1"
+                      onClick={() => {
+                        if (!isPaidPlan) {
+                          setUpgradeFeature("download");
+                          setShowUpgradeModal(true);
+                        } else {
+                          handleDownload();
+                        }
+                      }}
+                      className={cn(
+                        "text-[10px] text-white/40 hover:text-white/60 flex items-center gap-1",
+                        !isPaidPlan && "opacity-50"
+                      )}
                     >
+                      {!isPaidPlan && <Lock className="w-2.5 h-2.5" />}
                       <Download className="w-3 h-3" />
                     </button>
                   </div>
@@ -7730,8 +9648,8 @@ export const shadows = {
                   </div>
                 )}
                 
-                {/* Code display with syntax highlighting */}
-                <div className="flex-1 overflow-auto bg-[#0a0a0a]">
+                {/* Code display with syntax highlighting - Paywalled for free users */}
+                <div className="flex-1 overflow-auto bg-[#0a0a0a] relative">
                   {generatingFilePath && generatingFilePath === activeFilePath ? (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-3">
                       <Loader2 className="w-6 h-6 text-[#FF6E3C] animate-spin" />
@@ -7740,7 +9658,7 @@ export const shadows = {
                         <p className="text-[10px] text-white/30 mt-0.5">{activeFilePath.split('/').pop()}</p>
                       </div>
                     </div>
-                  ) : (
+                  ) : isPaidPlan ? (
                     <Highlight 
                       theme={themes.nightOwl} 
                       code={getActiveFileContent()} 
@@ -7764,6 +9682,46 @@ export const shadows = {
                         </pre>
                       )}
                     </Highlight>
+                  ) : (
+                    /* FREE USER - Show blurred code with unlock overlay */
+                    <div className="relative h-full">
+                      {/* Blurred background code */}
+                      <div className="blur-[6px] pointer-events-none select-none">
+                        <Highlight 
+                          theme={themes.nightOwl} 
+                          code={getActiveFileContent().slice(0, 1500) + "\n// ... more code ..."} 
+                          language="html"
+                        >
+                          {({ style, tokens, getLineProps, getTokenProps }) => (
+                            <pre className="p-3 text-[10px] leading-relaxed" style={{ ...style, background: "#0a0a0a" }}>
+                              {tokens.slice(0, 30).map((line, i) => (
+                                <div key={i} {...getLineProps({ line })}>
+                                  <span className="inline-block w-6 pr-2 text-right text-white/15 select-none text-[9px]">{i + 1}</span>
+                                  {line.map((token, key) => <span key={key} {...getTokenProps({ token })} />)}
+                                </div>
+                              ))}
+                            </pre>
+                          )}
+                        </Highlight>
+                      </div>
+                      
+                      {/* Unlock overlay */}
+                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/90 to-transparent">
+                        <div className="text-center p-6 max-w-sm">
+                          <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 border border-[#FF6E3C]/20 flex items-center justify-center">
+                            <Lock className="w-6 h-6 text-[#FF6E3C]" />
+                          </div>
+                          <h3 className="text-lg font-bold text-white mb-2">Unlock Source Code</h3>
+                          <p className="text-xs text-white/50 mb-4">Your code is ready. Upgrade to get full access.</p>
+                          <a
+                            href="/api/billing/checkout?plan=pro"
+                            className="block w-full py-3 rounded-xl bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white text-sm font-semibold text-center"
+                          >
+                            Upgrade to Pro
+                          </a>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
                 
@@ -7799,18 +9757,56 @@ export const shadows = {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-x-0 bottom-16 top-16 z-30 md:hidden bg-[#0a0a0a] flex flex-col"
+            className="fixed inset-x-0 bottom-16 top-0 z-40 md:hidden bg-[#0a0a0a] flex flex-col"
           >
+            {/* Unified Mobile Header */}
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
+              <a href="/" className="flex-shrink-0">
+                <LogoIcon className="w-5 h-5" color="#FF6E3C" />
+              </a>
+              <input
+                type="text"
+                value={generationTitle}
+                onChange={(e) => setGenerationTitle(e.target.value)}
+                onBlur={() => {
+                  if (activeGeneration) {
+                    const updated = { ...activeGeneration, title: generationTitle };
+                    setActiveGeneration(updated);
+                    setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updated : g));
+                  }
+                }}
+                className="flex-1 min-w-0 text-sm font-medium text-white/80 bg-transparent focus:outline-none truncate"
+                placeholder="Untitled"
+              />
+              <div className="flex items-center gap-0.5 flex-shrink-0">
+                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); localStorage.removeItem("replay_generation_title"); }} className="p-1.5 rounded-lg hover:bg-white/5" title="New">
+                  <Plus className="w-4 h-4 text-white/40" />
+                </button>
+                <button onClick={() => setShowHistoryMode(true)} className="p-1.5 rounded-lg hover:bg-white/5" title="History">
+                  <History className="w-4 h-4 text-white/40" />
+                </button>
+                <button onClick={() => setShowProjectSettings(true)} className="p-1.5 rounded-lg hover:bg-white/5" title="Settings">
+                  <Settings className="w-4 h-4 text-white/40" />
+                </button>
+                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="p-1 rounded-lg hover:bg-white/5 ml-1">
+                  {user ? (
+                    <Avatar src={profile?.avatar_url} fallback={user.email?.[0]?.toUpperCase() || "U"} size={24} />
+                  ) : (
+                    <User className="w-5 h-5 text-white/40" />
+                  )}
+                </button>
+              </div>
+            </div>
+            
             {flowNodes.length > 0 ? (
               <>
-                {/* Header with toggles */}
-                <div className="flex items-center justify-between p-3 border-b border-white/10 flex-shrink-0">
+                {/* Secondary Header with toggles */}
+                <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 flex-shrink-0 bg-black/50">
                   <div>
                     <span className="text-xs text-white/50 flex items-center gap-1.5">
                       <GitBranch className="w-3.5 h-3.5 text-[#FF6E3C]" />
                       Product Flow
                     </span>
-                    <p className="text-[10px] text-white/30 mt-0.5">Views, states, and what's possible</p>
                   </div>
                   <div className="flex gap-1">
                     <button 
@@ -7948,11 +9944,7 @@ export const shadows = {
               </>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center mb-4">
-                  <GitBranch className="w-8 h-8 text-[#FF6E3C]/50" />
-                </div>
-                <p className="text-sm text-white/50 font-medium">No product flow yet</p>
-                <p className="text-xs text-white/30 mt-1">Flow shows what's possible in the product</p>
+                <EmptyState icon="logo" title="No product flow yet" subtitle="Flow shows what's possible in the product" />
               </div>
             )}
           </motion.div>
@@ -7966,10 +9958,49 @@ export const shadows = {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-x-0 bottom-16 top-16 z-30 md:hidden bg-[#0a0a0a] overflow-auto"
+            className="fixed inset-x-0 bottom-16 top-0 z-40 md:hidden bg-[#0a0a0a] flex flex-col"
           >
+            {/* Unified Mobile Header */}
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
+              <a href="/" className="flex-shrink-0">
+                <LogoIcon className="w-5 h-5" color="#FF6E3C" />
+              </a>
+              <input
+                type="text"
+                value={generationTitle}
+                onChange={(e) => setGenerationTitle(e.target.value)}
+                onBlur={() => {
+                  if (activeGeneration) {
+                    const updated = { ...activeGeneration, title: generationTitle };
+                    setActiveGeneration(updated);
+                    setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updated : g));
+                  }
+                }}
+                className="flex-1 min-w-0 text-sm font-medium text-white/80 bg-transparent focus:outline-none truncate"
+                placeholder="Untitled"
+              />
+              <div className="flex items-center gap-0.5 flex-shrink-0">
+                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); localStorage.removeItem("replay_generation_title"); }} className="p-1.5 rounded-lg hover:bg-white/5" title="New">
+                  <Plus className="w-4 h-4 text-white/40" />
+                </button>
+                <button onClick={() => setShowHistoryMode(true)} className="p-1.5 rounded-lg hover:bg-white/5" title="History">
+                  <History className="w-4 h-4 text-white/40" />
+                </button>
+                <button onClick={() => setShowProjectSettings(true)} className="p-1.5 rounded-lg hover:bg-white/5" title="Settings">
+                  <Settings className="w-4 h-4 text-white/40" />
+                </button>
+                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="p-1 rounded-lg hover:bg-white/5 ml-1">
+                  {user ? (
+                    <Avatar src={profile?.avatar_url} fallback={user.email?.[0]?.toUpperCase() || "U"} size={24} />
+                  ) : (
+                    <User className="w-5 h-5 text-white/40" />
+                  )}
+                </button>
+              </div>
+            </div>
+            
             {styleInfo ? (
-              <div className="p-4 space-y-6">
+              <div className="flex-1 overflow-auto p-4 space-y-6">
                 {/* Colors */}
                 <div>
                   <span className="text-xs text-white/50 flex items-center gap-1.5 mb-3">
@@ -8046,6 +10077,453 @@ export const shadows = {
         )}
       </AnimatePresence>
       
+      {/* Mobile Chat Panel - Same functionality as desktop */}
+      <AnimatePresence>
+        {mobilePanel === "chat" && generatedCode && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-x-0 bottom-16 top-0 z-40 md:hidden bg-[#0a0a0a] flex flex-col"
+          >
+            {/* Combined Header - Logo, Project Name, Actions, Avatar in one row */}
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
+              <a href="/" className="flex-shrink-0">
+                <LogoIcon className="w-5 h-5" color="#FF6E3C" />
+              </a>
+              <input
+                type="text"
+                value={generationTitle}
+                onChange={(e) => setGenerationTitle(e.target.value)}
+                onBlur={() => {
+                  if (activeGeneration) {
+                    const updated = { ...activeGeneration, title: generationTitle };
+                    setActiveGeneration(updated);
+                    setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updated : g));
+                  }
+                }}
+                className="flex-1 min-w-0 text-sm font-medium text-white/80 bg-transparent focus:outline-none truncate"
+                placeholder="Untitled"
+              />
+              <div className="flex items-center gap-0.5 flex-shrink-0">
+                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); localStorage.removeItem("replay_generation_title"); }} className="p-1.5 rounded-lg hover:bg-white/5" title="New">
+                  <Plus className="w-4 h-4 text-white/40" />
+                </button>
+                <button onClick={() => setShowHistoryMode(true)} className="p-1.5 rounded-lg hover:bg-white/5" title="History">
+                  <History className="w-4 h-4 text-white/40" />
+                </button>
+                <button onClick={() => setShowProjectSettings(true)} className="p-1.5 rounded-lg hover:bg-white/5" title="Settings">
+                  <Settings className="w-4 h-4 text-white/40" />
+                </button>
+                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="p-1 rounded-lg hover:bg-white/5 ml-1">
+                  {user ? (
+                    <Avatar src={profile?.avatar_url} fallback={user.email?.[0]?.toUpperCase() || "U"} size={24} />
+                  ) : (
+                    <User className="w-5 h-5 text-white/40" />
+                  )}
+                </button>
+              </div>
+            </div>
+            
+            {/* Tabs: Replay AI | Configuration */}
+            <div className="flex-shrink-0 px-3 py-1.5 border-b border-white/[0.03]">
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setSidebarTab("chat")}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all",
+                    sidebarTab === "chat" 
+                      ? "bg-white/[0.08] text-white" 
+                      : "text-white/40"
+                  )}
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  Replay AI
+                </button>
+                <button
+                  onClick={() => setSidebarTab("style")}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all",
+                    sidebarTab === "style" 
+                      ? "bg-white/[0.08] text-white" 
+                      : "text-white/40"
+                  )}
+                >
+                  <Boxes className="w-3.5 h-3.5" />
+                  Config
+                </button>
+              </div>
+            </div>
+
+            {sidebarTab === "chat" ? (
+              <>
+                {/* Chat Messages - Same style as desktop */}
+                <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                  {chatMessages.map((msg) => (
+                    <motion.div 
+                      key={msg.id} 
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-1"
+                    >
+                      {msg.role === "assistant" ? (
+                        /* AI Message */
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <LogoIcon className="w-4 h-4" color="#FF6E3C" />
+                            <span className="text-xs font-medium text-white/40">Replay</span>
+                          </div>
+                          <div className="text-sm leading-relaxed text-white/70 space-y-2">
+                            {msg.content.split('\n').map((line, i) => {
+                              if (line.includes('Complete')) {
+                                return <p key={i} className="text-emerald-400/90 font-medium flex items-center gap-1.5"><Check className="w-4 h-4" />{line.replace(/\*\*/g, '')}</p>;
+                              }
+                              if (line.startsWith('**') && line.endsWith('**')) {
+                                return <p key={i} className="font-semibold text-white/90">{line.replace(/\*\*/g, '')}</p>;
+                              }
+                              if (line.startsWith('• ') || line.startsWith('- ')) {
+                                return <p key={i} className="text-white/60 pl-3 border-l-2 border-white/10">{line.substring(2)}</p>;
+                              }
+                              if (line.trim()) {
+                                return <p key={i}>{line.replace(/\*\*([^*]+)\*\*/g, (_, t) => t)}</p>;
+                              }
+                              return null;
+                            })}
+                          </div>
+                          {/* Quick Actions */}
+                          {msg.quickActions && msg.quickActions.length > 0 && (
+                            <div className="flex flex-wrap gap-2 pt-2">
+                              {msg.quickActions.map((action, i) => (
+                                <button
+                                  key={i}
+                                  onClick={() => setChatInput(action)}
+                                  className="px-3 py-1.5 rounded-lg text-xs bg-white/[0.04] text-white/50 hover:bg-white/[0.08] hover:text-white/80 border border-white/[0.06] transition-all"
+                                >
+                                  {action}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        /* User Message */
+                        <div className="flex justify-end">
+                          <div className="max-w-[85%]">
+                            <div className="px-4 py-2.5 rounded-2xl bg-white/[0.06] text-sm text-white/80">
+                              {msg.content}
+                            </div>
+                            {msg.attachments && msg.attachments.length > 0 && (
+                              <div className="flex justify-end gap-1.5 mt-1.5">
+                                {msg.attachments.map((att, i) => (
+                                  <span key={i} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-violet-500/10 text-violet-300/80 text-xs">
+                                    {att.type === "image" && <ImageIcon className="w-3 h-3" />}
+                                    {att.label}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
+                  
+                  {/* Thinking Indicator */}
+                  {isEditing && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }} 
+                      animate={{ opacity: 1, y: 0 }} 
+                      className="space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <LogoIcon className="w-4 h-4" color="#FF6E3C" />
+                          <span className="text-xs font-medium text-white/40">Replay</span>
+                        </div>
+                        {/* Cancel button */}
+                        <button
+                          onClick={() => {
+                            cancelAIRequest();
+                            setIsEditing(false);
+                            showToast("Request cancelled", "info");
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
+                          title="Cancel request"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3">
+                        <div className="flex items-center gap-2.5">
+                          <Loader2 className="w-4 h-4 text-[#FF6E3C] animate-spin" />
+                          <span className="text-sm text-white/50">{isPlanMode ? "Thinking..." : "Working..."}</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+              </>
+            ) : (
+              /* Configuration Tab - Same as PC sidebar */
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {/* Videos Section */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-[10px] font-medium text-white/50 uppercase tracking-wider flex items-center gap-1">
+                      <Video className="w-2.5 h-2.5" /> Videos
+                      {flows.length > 0 && <span className="text-[8px] bg-white/10 px-1 py-0.5 rounded">{flows.length}</span>}
+                    </label>
+                  </div>
+                  <div className="flex gap-1.5 mb-2">
+                    <button 
+                      onClick={startRecording}
+                      className="flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.06] text-[10px] text-white/60 hover:text-white/80 transition-colors"
+                    >
+                      <Monitor className="w-3 h-3" /> Record
+                    </button>
+                    <button 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.06] text-[10px] text-white/60 hover:text-white/80 transition-colors"
+                    >
+                      <Upload className="w-3 h-3" /> Upload
+                    </button>
+                  </div>
+                  {/* Video list */}
+                  <div className="space-y-1.5 max-h-[120px] overflow-auto">
+                    {flows.map((flow) => (
+                      <div key={flow.id} onClick={() => setSelectedFlowId(flow.id)} className={cn("flex items-center gap-2 p-2 rounded-lg cursor-pointer", selectedFlowId === flow.id ? "bg-[#FF6E3C]/10 border border-[#FF6E3C]/20" : "bg-white/[0.03] hover:bg-white/[0.05]")}>
+                        <div className="w-10 h-6 rounded overflow-hidden bg-white/5 flex-shrink-0">
+                          {flow.thumbnail ? <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" /> : <Film className="w-3 h-3 text-white/20 mx-auto mt-1.5" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-white/70 truncate">{flow.name}</p>
+                          <p className="text-[10px] text-white/30">{formatDuration(flow.duration)}</p>
+                        </div>
+                        <button onClick={(e) => { e.stopPropagation(); setFlows(prev => prev.filter(f => f.id !== flow.id)); }} className="p-1 text-white/20 hover:text-red-400">
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                    {flows.length === 0 && (
+                      <div className="text-center py-3 text-[10px] text-white/30">
+                        Record or upload a video to get started
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Context */}
+                <div>
+                  <label className="text-[10px] font-medium text-white/50 uppercase tracking-wider mb-1.5 block">Context</label>
+                  <textarea
+                    value={refinements}
+                    onChange={(e) => setRefinements(e.target.value)}
+                    placeholder="Add data logic, constraints..."
+                    rows={2}
+                    className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-xs text-white/80 placeholder:text-white/30 focus:outline-none focus:border-white/15 resize-y min-h-[60px] max-h-[200px] transition-colors"
+                  />
+                </div>
+                
+                {/* Visual Style */}
+                <div>
+                  <label className="text-[10px] font-medium text-white/50 uppercase tracking-wider mb-1.5 block">Visual Style</label>
+                  <StyleInjector 
+                    value={styleDirective} 
+                    onChange={setStyleDirective} 
+                    disabled={isProcessing}
+                    referenceImage={styleReferenceImage}
+                    onReferenceImageChange={setStyleReferenceImage}
+                  />
+                </div>
+                
+                {/* Reconstruct Button */}
+                <div className="pt-1">
+                  <button 
+                    onClick={handleGenerate}
+                    disabled={isProcessing || flows.length === 0}
+                    className="w-full py-2.5 rounded-lg bg-[#FF6E3C]/10 hover:bg-[#FF6E3C]/20 border border-[#FF6E3C]/20 text-xs font-medium text-[#FF6E3C] flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+                  >
+                    <LogoIcon className="w-3.5 h-3.5" color="#FF6E3C" />
+                    Reconstruct
+                  </button>
+                </div>
+                
+                {/* Current Colors */}
+                {styleInfo?.colors && styleInfo.colors.length > 0 && (
+                  <div>
+                    <label className="text-[10px] font-medium text-white/50 uppercase tracking-wider mb-1.5 block">Current Colors</label>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {styleInfo.colors.slice(0, 6).map((color, i) => (
+                        <div 
+                          key={i} 
+                          className="w-7 h-7 rounded-lg border border-white/10" 
+                          style={{ backgroundColor: color.value }}
+                          title={color.name}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Chat Input - Only show in chat tab */}
+            {sidebarTab === "chat" && (
+            <div className="p-3 border-t border-white/5 flex-shrink-0">
+              {/* Attachments preview - images only on mobile */}
+              {editImages.length > 0 && (
+                <div className="pb-2 flex gap-1.5 flex-wrap">
+                  {editImages.map((img) => (
+                    <div key={img.id} className="relative group">
+                      <img src={img.url} alt="" className="w-10 h-10 rounded-lg object-cover border border-white/10" />
+                      <button onClick={() => setEditImages(prev => prev.filter(i => i.id !== img.id))} className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500/80 text-white flex items-center justify-center"><X className="w-2.5 h-2.5" /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-end gap-2">
+                <div className="flex-1 bg-white/[0.03] rounded-xl border border-white/[0.06]">
+                  <textarea
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onPaste={handlePasteImage}
+                    onKeyDown={async (e) => {
+                      if (e.key === "Enter" && !e.shiftKey && chatInput.trim() && editableCode) {
+                        e.preventDefault();
+                        const userMsg: ChatMessage = { id: generateId(), role: "user", content: chatInput, timestamp: Date.now(), attachments: editImages.length > 0 ? editImages.map(img => ({ type: "image" as const, label: img.name })) : undefined };
+                        setChatMessages(prev => [...prev, userMsg]);
+                        const currentInput = chatInput;
+                        const currentPlanMode = isPlanMode;
+                        const currentChatHistory = chatMessages.slice(-10).map(m => ({ role: m.role, content: m.content }));
+                        setChatInput(""); setIsEditing(true);
+                        try {
+                          if (currentPlanMode) {
+                            const result = await editCodeWithAI(editableCode, currentInput, undefined, undefined, true, undefined);
+                            const response = result?.code || "I can help you plan that! What would you like to discuss?";
+                            setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: response, timestamp: Date.now() }]);
+                          } else {
+                            // Convert images to base64 for API (mobile handler 1)
+                            let imageData: { base64?: string; url?: string; mimeType: string; name: string }[] | undefined;
+                            if (editImages.length > 0) {
+                              imageData = [];
+                              for (const img of editImages) {
+                                const base64 = await urlToBase64(img.url);
+                                if (base64) imageData.push({ base64, mimeType: 'image/png', name: img.name, url: img.url });
+                              }
+                              if (imageData.length === 0) imageData = undefined;
+                            }
+                            const result = await editCodeWithAI(editableCode, currentInput, imageData, undefined, false, currentChatHistory);
+                            if (result?.success && result.code && result.code !== editableCode) {
+                              const responseMsg = analyzeCodeChanges(editableCode, result.code, currentInput);
+                              setEditableCode(result.code); setDisplayedCode(result.code); setGeneratedCode(result.code);
+                              setPreviewUrl(URL.createObjectURL(new Blob([result.code], { type: "text/html" })));
+                              setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: responseMsg, timestamp: Date.now() }]);
+                              if (activeGeneration) {
+                                const versionLabel = generateVersionLabel(currentInput);
+                                const updatedGen = { ...activeGeneration, code: result.code, versions: [...(activeGeneration.versions || []), { id: generateId(), timestamp: Date.now(), label: versionLabel, code: result.code, flowNodes, flowEdges, styleInfo }] };
+                                setActiveGeneration(updatedGen); 
+                                setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
+                                saveGenerationToSupabase(updatedGen);
+                              }
+                            } else if (!result?.cancelled) {
+                              setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: result?.error ? `Error: ${result.error}` : "No changes detected. Try being more specific.", timestamp: Date.now() }]);
+                            }
+                          }
+                        } catch (error) { 
+                          if (!(error instanceof Error && error.name === 'AbortError')) {
+                            setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: `Error: ${error instanceof Error ? error.message : "Unknown error"}`, timestamp: Date.now() }]); 
+                          }
+                        }
+                        finally { setIsEditing(false); setEditImages([]); }
+                      }
+                    }}
+                    placeholder={isPlanMode ? "Plan..." : "Ask Replay..."}
+                    rows={1}
+                    className="w-full px-3 py-2.5 bg-transparent text-xs text-white/80 placeholder:text-white/30 resize-none focus:outline-none min-h-[38px]"
+                  />
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {/* Image */}
+                  <label className="p-2 rounded-lg text-white/40 cursor-pointer hover:text-white/60 hover:bg-white/5 transition-colors" title="Upload image">
+                    <ImageIcon className="w-4 h-4" />
+                    <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => { if (e.target.files) Array.from(e.target.files).forEach(file => { const reader = new FileReader(); reader.onload = () => setEditImages(prev => [...prev, { id: generateId(), url: reader.result as string, name: file.name, file }]); reader.readAsDataURL(file); }); }} />
+                  </label>
+                  {/* Plan Mode Toggle */}
+                  <button
+                    onClick={() => setIsPlanMode(!isPlanMode)}
+                    className={cn(
+                      "p-2 rounded-lg transition-all",
+                      isPlanMode 
+                        ? "bg-violet-500/20 text-violet-300" 
+                        : "text-white/40 hover:text-white/60"
+                    )}
+                    title={isPlanMode ? "Plan mode ON" : "Plan mode OFF"}
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                  </button>
+                  {/* Send */}
+                  <button 
+                    onClick={async () => {
+                      if (!chatInput.trim() || !editableCode || isEditing) return;
+                      const userMsg: ChatMessage = { id: generateId(), role: "user", content: chatInput, timestamp: Date.now(), attachments: editImages.length > 0 ? editImages.map(img => ({ type: "image" as const, label: img.name })) : undefined };
+                      setChatMessages(prev => [...prev, userMsg]);
+                      const currentInput = chatInput;
+                      const currentPlanMode = isPlanMode;
+                      const currentChatHistory = chatMessages.slice(-10).map(m => ({ role: m.role, content: m.content }));
+                      setChatInput(""); setIsEditing(true);
+                      try {
+                        if (currentPlanMode) {
+                          const result = await editCodeWithAI(editableCode, currentInput, undefined, undefined, true, undefined);
+                          const response = result?.code || "I can help you plan that! What would you like to discuss?";
+                          setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: response, timestamp: Date.now() }]);
+                        } else {
+                          // Convert images to base64 for API (mobile handler 2)
+                          let imageData: { base64?: string; url?: string; mimeType: string; name: string }[] | undefined;
+                          if (editImages.length > 0) {
+                            imageData = [];
+                            for (const img of editImages) {
+                              const base64 = await urlToBase64(img.url);
+                              if (base64) imageData.push({ base64, mimeType: 'image/png', name: img.name, url: img.url });
+                            }
+                            if (imageData.length === 0) imageData = undefined;
+                          }
+                          const result = await editCodeWithAI(editableCode, currentInput, imageData, undefined, false, currentChatHistory);
+                          if (result?.success && result.code && result.code !== editableCode) {
+                            const responseMsg = analyzeCodeChanges(editableCode, result.code, currentInput);
+                            setEditableCode(result.code); setDisplayedCode(result.code); setGeneratedCode(result.code);
+                            setPreviewUrl(URL.createObjectURL(new Blob([result.code], { type: "text/html" })));
+                            setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: responseMsg, timestamp: Date.now() }]);
+                            if (activeGeneration) {
+                              const versionLabel = generateVersionLabel(currentInput);
+                              const updatedGen = { ...activeGeneration, code: result.code, versions: [...(activeGeneration.versions || []), { id: generateId(), timestamp: Date.now(), label: versionLabel, code: result.code, flowNodes, flowEdges, styleInfo }] };
+                              setActiveGeneration(updatedGen); 
+                              setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
+                              saveGenerationToSupabase(updatedGen);
+                            }
+                          } else if (!result?.cancelled) {
+                            setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: result?.error ? `Error: ${result.error}` : "No changes detected. Try being more specific.", timestamp: Date.now() }]);
+                          }
+                        }
+                      } catch (error) { 
+                        if (!(error instanceof Error && error.name === 'AbortError')) {
+                          setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: `Error: ${error instanceof Error ? error.message : "Unknown error"}`, timestamp: Date.now() }]); 
+                        }
+                      }
+                      finally { setIsEditing(false); setEditImages([]); }
+                    }}
+                    disabled={!chatInput.trim() || isEditing}
+                    className={cn("p-2 rounded-lg transition-all flex-shrink-0", chatInput.trim() && !isEditing ? "bg-[#FF6E3C] text-white" : "bg-white/5 text-white/30")}
+                  >
+                    {isEditing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
       {/* Mobile Floating Edit - Appears above bottom navigation */}
       <AnimatePresence>
         {showFloatingEdit && (
@@ -8053,9 +10531,9 @@ export const shadows = {
             initial={{ opacity: 0, y: 20 }} 
             animate={{ opacity: 1, y: 0 }} 
             exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-[72px] left-2 right-2 z-50 md:hidden"
+            className="fixed bottom-[72px] inset-x-3 z-50 md:hidden"
           >
-            <div className="backdrop-blur-xl bg-[#0a0a0a]/95 border border-white/[0.08] rounded-2xl p-3 shadow-2xl mx-auto max-w-[calc(100%-16px)]">
+            <div className="backdrop-blur-xl bg-[#0a0a0a]/95 border border-white/[0.08] rounded-2xl p-3 shadow-2xl">
               <div className="flex items-center gap-2 mb-2">
                 {isEditing ? (
                   <Loader2 className="w-3.5 h-3.5 text-[#FF6E3C] animate-spin" />
@@ -8099,9 +10577,9 @@ export const shadows = {
                   ))}
                 </div>
               )}
-              <div className="flex gap-2">
+              <div className="flex gap-1.5">
                 {/* Image upload button for mobile */}
-                <label className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/[0.03] border border-white/[0.06] cursor-pointer">
+                <label className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/[0.03] border border-white/[0.06] cursor-pointer flex-shrink-0">
                   <input 
                     type="file"
                     accept="image/*"
@@ -8158,15 +10636,15 @@ export const shadows = {
                     if (e.key === "Enter" && !showSuggestions) handleEdit();
                     if (e.key === "Escape" && !isEditing) { setShowFloatingEdit(false); setSelectedArchNode(null); setEditImages([]); }
                   }}
-                  placeholder={selectedArchNode ? `Describe changes for @${selectedArchNode}...` : "Type @ or add images..."} 
-                  className="flex-1 px-3 py-2.5 rounded-lg text-sm text-white/80 placeholder:text-white/20 bg-white/[0.03] border border-white/[0.06] focus:outline-none focus:border-white/10" 
+                  placeholder={selectedArchNode ? `@${selectedArchNode}...` : "Type @ or add images..."} 
+                  className="flex-1 min-w-0 px-3 py-2 rounded-lg text-xs text-white/80 placeholder:text-white/25 bg-white/[0.03] border border-white/[0.06] focus:outline-none focus:border-white/10" 
                   disabled={isEditing} 
                   autoFocus 
                 />
                 <button 
                   onClick={handleEdit} 
                   disabled={(!editInput.trim() && editImages.length === 0) || isEditing} 
-                  className="px-4 py-2.5 rounded-lg bg-[#FF6E3C] text-white font-medium flex items-center gap-2 disabled:opacity-50"
+                  className="p-2 rounded-lg bg-[#FF6E3C] text-white flex items-center justify-center disabled:opacity-50 flex-shrink-0"
                 >
                   {isEditing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 </button>
@@ -8203,6 +10681,121 @@ export const shadows = {
         userId={user?.id}
       />
       
+      {/* Flow Node Edit/Delete Modal */}
+      <AnimatePresence>
+        {flowNodeModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+            onClick={() => setFlowNodeModal(null)}
+          >
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="relative bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {flowNodeModal.type === "rename" ? (
+                <>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-[#FF6E3C]/10 flex items-center justify-center">
+                      <Pencil className="w-5 h-5 text-[#FF6E3C]" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">Rename Node</h3>
+                      <p className="text-sm text-white/40">Enter a new name for this node</p>
+                    </div>
+                  </div>
+                  <input
+                    type="text"
+                    value={flowNodeRenameValue}
+                    onChange={(e) => setFlowNodeRenameValue(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-[#FF6E3C]/50 focus:ring-1 focus:ring-[#FF6E3C]/30"
+                    placeholder="Node name..."
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && flowNodeRenameValue.trim()) {
+                        setFlowNodes(prev => prev.map(n => 
+                          n.id === flowNodeModal.nodeId ? { ...n, name: flowNodeRenameValue.trim() } : n
+                        ));
+                        showToast(`Renamed to "${flowNodeRenameValue.trim()}"`, "success");
+                        setFlowNodeModal(null);
+                      } else if (e.key === "Escape") {
+                        setFlowNodeModal(null);
+                      }
+                    }}
+                  />
+                  <div className="flex gap-3 mt-5">
+                    <button
+                      onClick={() => setFlowNodeModal(null)}
+                      className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors text-sm font-medium"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (flowNodeRenameValue.trim()) {
+                          setFlowNodes(prev => prev.map(n => 
+                            n.id === flowNodeModal.nodeId ? { ...n, name: flowNodeRenameValue.trim() } : n
+                          ));
+                          showToast(`Renamed to "${flowNodeRenameValue.trim()}"`, "success");
+                          setFlowNodeModal(null);
+                        }
+                      }}
+                      disabled={!flowNodeRenameValue.trim()}
+                      className="flex-1 py-2.5 rounded-xl bg-[#FF6E3C] hover:bg-[#FF6E3C]/90 text-white transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Rename
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center">
+                      <Trash2 className="w-5 h-5 text-red-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">Delete Node</h3>
+                      <p className="text-sm text-white/40">This action cannot be undone</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-white/60 mb-5">
+                    Are you sure you want to delete <span className="font-medium text-white">"{flowNodeModal.nodeName}"</span>? 
+                    This will also remove all connections to this node.
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setFlowNodeModal(null)}
+                      className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors text-sm font-medium"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        setFlowNodes(prev => prev.filter(n => n.id !== flowNodeModal.nodeId));
+                        setFlowEdges(prev => prev.filter(edge => edge.from !== flowNodeModal.nodeId && edge.to !== flowNodeModal.nodeId));
+                        if (selectedFlowNode === flowNodeModal.nodeId) setSelectedFlowNode(null);
+                        showToast(`Deleted "${flowNodeModal.nodeName}"`, "info");
+                        setFlowNodeModal(null);
+                      }}
+                      className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-colors text-sm font-medium"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
       {/* Project Settings Modal */}
       <ProjectSettingsModal
         isOpen={showProjectSettings}
@@ -8233,6 +10826,13 @@ export const shadows = {
         }}
       />
       
+      {/* Upgrade Modal for FREE users */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        feature={upgradeFeature}
+      />
+      
       {/* Global file input for video upload - accessible from both mobile and desktop */}
       <input 
         ref={fileInputRef} 
@@ -8242,6 +10842,68 @@ export const shadows = {
         onChange={handleFileInput} 
         className="hidden" 
       />
+      
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteModal && deleteTargetId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+            onClick={() => setShowDeleteModal(false)}
+          >
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative bg-[#0a0a0a] border border-white/10 rounded-2xl p-6 max-w-sm w-full shadow-2xl"
+            >
+              {/* Icon */}
+              <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-6 h-6 text-red-400" />
+              </div>
+              
+              {/* Title */}
+              <h3 className="text-lg font-semibold text-white text-center mb-2">
+                Delete Project?
+              </h3>
+              
+              {/* Project name */}
+              <p className="text-sm text-white/50 text-center mb-2">
+                Are you sure you want to delete
+              </p>
+              <p className="text-sm text-white/80 text-center font-medium mb-6 truncate px-4">
+                "{deleteTargetTitle}"
+              </p>
+              
+              {/* Warning */}
+              <p className="text-xs text-white/40 text-center mb-6">
+                This action cannot be undone.
+              </p>
+              
+              {/* Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors text-sm font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => deleteTargetId && deleteGeneration(deleteTargetId)}
+                  className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* Toast notifications */}
       <Toast
@@ -8260,7 +10922,7 @@ export const shadows = {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowMobileRecordingInfo(false)}
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
+              className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -8300,5 +10962,18 @@ export const shadows = {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+// Export with Suspense boundary for useSearchParams
+export default function ReplayTool() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#030303] flex items-center justify-center">
+        <div className="w-10 h-10 border-2 border-[#FF6E3C] border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <ReplayToolContent />
+    </Suspense>
   );
 }

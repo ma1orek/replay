@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, useScroll, useTransform, useInView } from "framer-motion";
+import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -30,15 +31,20 @@ import {
   Pause,
   Volume2,
   VolumeX,
+  BarChart3,
+  Smartphone,
+  Layers,
+  Sparkles,
+  PanelLeft,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import StyleInjector from "@/components/StyleInjector";
-import Avatar from "@/components/Avatar";
 import AuthModal from "@/components/modals/AuthModal";
 import { cn } from "@/lib/utils";
 import { usePendingFlow } from "../providers";
 import { useAuth } from "@/lib/auth/context";
 import { useCredits } from "@/lib/credits/context";
+import { useProfile } from "@/lib/profile/context";
 
 // ═══════════════════════════════════════════════════════════════
 // NAVIGATION
@@ -60,7 +66,14 @@ function Navigation() {
   const headerBg = useTransform(scrollY, [0, 100], ["rgba(3,3,3,0)", "rgba(3,3,3,0.9)"]);
   const headerBorder = useTransform(scrollY, [0, 100], ["rgba(255,255,255,0)", "rgba(255,255,255,0.05)"]);
   const { user, isLoading: authLoading } = useAuth();
-  const { totalCredits } = useCredits();
+  const { totalCredits, membership } = useCredits();
+  const { profile } = useProfile();
+  
+  // User display name and plan
+  const meta = user?.user_metadata;
+  const displayName = profile?.full_name || meta?.full_name || meta?.name || user?.email?.split('@')[0] || 'User';
+  const plan = membership?.plan || "free";
+  const isPaidPlan = plan === "pro" || plan === "agency" || plan === "enterprise";
 
   const scrollToSection = (href: string) => {
     setIsOpen(false);
@@ -108,11 +121,17 @@ function Navigation() {
             {/* Auth Section */}
             {user ? (
               <>
-                <Link href="/settings">
-                  <Avatar 
-                    fallback={user.email?.charAt(0).toUpperCase() || "U"} 
-                    size={32}
-                  />
+                <Link href="/settings" className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors">
+                  <span className="text-sm font-medium text-white/80 max-w-[120px] truncate">{displayName}</span>
+                  {isPaidPlan ? (
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase">
+                      {plan === "agency" ? "Agency" : plan === "enterprise" ? "Enterprise" : "Pro"}
+                    </span>
+                  ) : (
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-white/50 uppercase">
+                      Free
+                    </span>
+                  )}
                 </Link>
               </>
             ) : (
@@ -178,11 +197,16 @@ function Navigation() {
                     href="/settings"
                     className="flex items-center gap-3 py-3 text-sm text-white/60"
                   >
-                    <Avatar 
-                      fallback={user.email?.charAt(0).toUpperCase() || "U"} 
-                      size={28}
-                    />
-                    <span>My Account</span>
+                    <span className="text-white">{displayName}</span>
+                    {isPaidPlan ? (
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase">
+                        {plan === "agency" ? "Agency" : plan === "enterprise" ? "Enterprise" : "Pro"}
+                      </span>
+                    ) : (
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-white/50 uppercase">
+                        Free
+                      </span>
+                    )}
                   </Link>
                 ) : (
                   <button
@@ -218,6 +242,70 @@ function Navigation() {
 // ═══════════════════════════════════════════════════════════════
 // BACKGROUND EFFECTS
 // ═══════════════════════════════════════════════════════════════
+
+function AuroraEffect() {
+  return (
+    <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
+      {/* Subtle animated Aurora Beams */}
+      
+      {/* Primary beam - moves slowly */}
+      <motion.div
+        className="absolute top-0 right-0 w-[700px] h-[700px] opacity-25"
+        style={{
+          background: "radial-gradient(ellipse at center, #FF6E3C 0%, transparent 70%)",
+          filter: "blur(100px)",
+        }}
+        animate={{
+          x: [0, 50, 0, -30, 0],
+          y: [0, 30, -20, 40, 0],
+          scale: [1, 1.1, 0.95, 1.05, 1],
+        }}
+        transition={{
+          duration: 20,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      />
+      
+      {/* Secondary beam - different rhythm */}
+      <motion.div
+        className="absolute top-[10%] right-[5%] w-[500px] h-[500px] opacity-20"
+        style={{
+          background: "radial-gradient(ellipse at center, #FF8A5B 0%, transparent 60%)",
+          filter: "blur(80px)",
+        }}
+        animate={{
+          x: [0, -40, 20, -20, 0],
+          y: [0, -30, 50, -10, 0],
+          scale: [1, 0.9, 1.1, 1, 1],
+        }}
+        transition={{
+          duration: 15,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      />
+      
+      {/* Third beam - subtle left glow */}
+      <motion.div
+        className="absolute top-[40%] left-0 w-[400px] h-[400px] opacity-10"
+        style={{
+          background: "radial-gradient(ellipse at center, #FF7043 0%, transparent 60%)",
+          filter: "blur(100px)",
+        }}
+        animate={{
+          x: [0, 30, -20, 0],
+          y: [0, -40, 30, 0],
+        }}
+        transition={{
+          duration: 25,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      />
+    </div>
+  );
+}
 
 function FloatingOrbs() {
   return (
@@ -342,7 +430,24 @@ function HeroInput({
   styleReferenceImage: { url: string; name: string } | null;
   onStyleReferenceImageChange: (image: { url: string; name: string } | null) => void;
 }) {
+  const router = useRouter();
   const [isDragging, setIsDragging] = useState(false);
+  const [selectedDemo, setSelectedDemo] = useState<string | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [loadingDemo, setLoadingDemo] = useState<string | null>(null);
+
+  const DEMOS = [
+    { id: 'dashboard', src: '/dashboard (1).mp4', title: 'SaaS Dashboard', subtitle: 'Analytics & Charts' },
+    { id: 'yc', src: '/yc (1).mp4', title: 'YC Directory', subtitle: 'Startup Listings' },
+    { id: 'landing', src: '/lp (1).mp4', title: 'Landing Page', subtitle: 'Marketing Site' }
+  ];
+
+  const handleDemoSelect = async (demo: typeof DEMOS[0]) => {
+    setSelectedDemo(demo.id);
+    setLoadingDemo(demo.id);
+    // Navigate directly to /tool with demo parameter - loads cached result instantly (no AI cost!)
+    router.push(`/tool?demo=${demo.id}`);
+  };
 
   return (
     <motion.div
@@ -381,25 +486,39 @@ function HeroInput({
           e.preventDefault();
           setIsDragging(false);
           const file = e.dataTransfer.files?.[0];
-          if (file) onFile(file);
+          if (file) {
+            setSelectedDemo(null); // Clear demo selection when user uploads own file
+            onFile(file);
+          }
         }}
       >
         {/* Drop zone header */}
         <div className="p-6 border-b border-white/[0.06]">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
             <div className="flex items-center gap-3">
-              <div className={cn(
-                "w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300",
-                heroFlow.blob ? "bg-[#FF6E3C]/20" : "bg-white/[0.03]"
-              )}>
-                <Video className={cn("w-5 h-5 transition-colors", heroFlow.blob ? "text-[#FF6E3C]" : "text-white/30")} />
-              </div>
+              {heroFlow.blob && heroFlow.previewUrl ? (
+                <div className="w-16 h-12 rounded-lg overflow-hidden bg-black/50 flex-shrink-0 ring-2 ring-[#FF6E3C]/30">
+                  <video 
+                    src={heroFlow.previewUrl} 
+                    className="w-full h-full object-cover"
+                    muted
+                    playsInline
+                  />
+                </div>
+              ) : (
+                <div className={cn(
+                  "w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300",
+                  "bg-white/[0.03]"
+                )}>
+                  <Video className="w-5 h-5 transition-colors text-white/30" />
+                </div>
+              )}
               <div className="text-left">
-                <div className="text-base text-white/90 font-medium">
-                  {heroFlow.blob ? heroFlow.name : "Drop your video"}
+                <div className="text-base text-white/90 font-medium truncate max-w-[200px]">
+                  {heroFlow.blob ? heroFlow.name : "Drop video here"}
                 </div>
                 <div className="text-sm text-white/40">
-                  {heroFlow.blob ? "Ready to process" : "or record your screen"}
+                  {heroFlow.blob ? "Ready to process" : "or record screen"}
                 </div>
               </div>
             </div>
@@ -415,9 +534,9 @@ function HeroInput({
               {!isRecording ? (
                 <button
                   onClick={startRecording}
-                  className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl text-sm font-medium bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.08] text-white/70 hover:text-white transition-all flex items-center justify-center gap-2"
+                  className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl text-sm font-medium bg-white/[0.05] hover:bg-white/[0.08] border border-red-500/30 hover:border-red-500/50 text-white/70 hover:text-white transition-all flex items-center justify-center gap-2"
                 >
-                  <Monitor className="w-4 h-4 text-[#FF6E3C]" />
+                  <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
                   Record screen
                 </button>
               ) : (
@@ -438,7 +557,10 @@ function HeroInput({
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
-                if (f) onFile(f);
+                if (f) {
+                  setSelectedDemo(null); // Clear demo selection when user uploads own file
+                  onFile(f);
+                }
                 e.currentTarget.value = "";
               }}
             />
@@ -446,44 +568,136 @@ function HeroInput({
           
           <p className="text-sm text-white/40 leading-relaxed">
             Upload any video that shows a UI — screen recording, product demo, reference clip or walkthrough.
-            <br />
-            <span className="text-white/50">Replay rebuilds the UI you see.</span>
           </p>
         </div>
-
-        {/* Context & Style */}
-        <div className="p-6 space-y-5 text-left">
-          <div>
-            <label className="text-xs text-white/50 mb-2 flex items-center gap-2">
-              <MousePointer2 className="w-3.5 h-3.5 text-[#FF6E3C]" />
-              Context <span className="text-white/30">(optional)</span>
-            </label>
-            
-            {/* Textarea only - no attach button */}
-            <textarea
-              value={context}
-              onChange={(e) => setContext(e.target.value)}
-              rows={3}
-              placeholder="Add data logic, constraints or details. Replay works without it — context just sharpens the result."
-              className="w-full px-4 py-3 rounded-xl text-xs text-white/80 placeholder:text-white/25 placeholder:text-xs bg-white/[0.03] border border-white/[0.06] focus:outline-none focus:border-[#FF6E3C]/20 focus:bg-white/[0.035] transition-colors duration-300 ease-out resize-none min-h-[72px]"
-            />
+        
+        {/* Quick Start Demo Videos - ALWAYS VISIBLE */}
+        <div className="p-6 border-b border-white/[0.06]">
+          <div className="flex items-center gap-2 mb-4">
+            <Zap className="w-5 h-5 text-[#FF6E3C]" />
+            <span className="text-base font-semibold text-white/90">
+              {selectedDemo ? "Selected sample:" : "See it in action (Instant Load):"}
+            </span>
           </div>
-
-          <div>
-            <label className="text-xs text-white/50 mb-2 flex items-center gap-2">
-              <Palette className="w-3.5 h-3.5 text-[#FF6E3C]" />
-              Style
-            </label>
-            <p className="text-[10px] text-white/30 mb-2">Choose a preset style or use "Style Reference" to apply styles from an image.</p>
-            <StyleInjector 
-              value={styleDirective} 
-              onChange={setStyleDirective} 
-              disabled={false}
-              referenceImage={styleReferenceImage}
-              onReferenceImageChange={onStyleReferenceImageChange}
-            />
+          
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {DEMOS.map((demo) => (
+              <button
+                key={demo.id}
+                onClick={() => handleDemoSelect(demo)}
+                disabled={loadingDemo !== null}
+                className={cn(
+                  "group relative rounded-xl overflow-hidden border-2 transition-all duration-300",
+                  selectedDemo === demo.id 
+                    ? "border-[#FF6E3C] shadow-[0_0_30px_rgba(255,110,60,0.3)]" 
+                    : "border-white/[0.08] hover:border-white/20",
+                  loadingDemo === demo.id && "opacity-70"
+                )}
+              >
+                {/* Video Preview - LARGE */}
+                <div className="aspect-[16/9] relative overflow-hidden bg-black">
+                  <video 
+                    src={demo.src} 
+                    muted 
+                    loop 
+                    playsInline
+                    autoPlay
+                    className={cn(
+                      "w-full h-full object-cover transition-all duration-300",
+                      selectedDemo === demo.id ? "opacity-100 scale-100" : "opacity-70 group-hover:opacity-90 scale-105 group-hover:scale-100"
+                    )}
+                  />
+                  
+                  {/* Loading indicator */}
+                  {loadingDemo === demo.id && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <div className="w-8 h-8 border-2 border-[#FF6E3C] border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
+                  
+                  {/* Selected checkmark */}
+                  {selectedDemo === demo.id && !loadingDemo && (
+                    <div className="absolute top-2 right-2 w-6 h-6 bg-[#FF6E3C] rounded-full flex items-center justify-center">
+                      <Check className="w-4 h-4 text-white" />
+                    </div>
+                  )}
+                  
+                  {/* Gradient overlay */}
+                  <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
+                </div>
+                
+                {/* Title */}
+                <div className="absolute bottom-0 left-0 right-0 p-3">
+                  <p className="text-sm font-semibold text-white">{demo.title}</p>
+                  <p className="text-xs text-white/50">{demo.subtitle}</p>
+                </div>
+              </button>
+            ))}
           </div>
+        </div>
 
+        {/* Advanced Settings Toggle */}
+        <div className="px-6 pt-4">
+          <button
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="flex items-center gap-2 text-sm text-white/40 hover:text-white/60 transition-colors"
+          >
+            <Wand2 className="w-4 h-4" />
+            <span>Advanced Settings</span>
+            <ChevronDown className={cn("w-4 h-4 transition-transform", showAdvanced && "rotate-180")} />
+          </button>
+        </div>
+        
+        {/* Context & Style - Hidden by default */}
+        <AnimatePresence>
+          {showAdvanced && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="p-6 pt-4 space-y-5 text-left">
+                <div>
+                  <label className="text-xs text-white/50 mb-2 flex items-center gap-2">
+                    <MousePointer2 className="w-3.5 h-3.5 text-[#FF6E3C]" />
+                    Context <span className="text-white/30">(optional)</span>
+                  </label>
+                  <textarea
+                    value={context}
+                    onChange={(e) => {
+                      // Limit to 2000 chars for landing page (FREE limit)
+                      if (e.target.value.length <= 2000) {
+                        setContext(e.target.value);
+                      }
+                    }}
+                    rows={2}
+                    placeholder="Add data logic, constraints or details..."
+                    className="w-full px-4 py-3 rounded-xl text-xs text-white/80 placeholder:text-white/25 bg-white/[0.03] border border-white/[0.06] focus:outline-none focus:border-[#FF6E3C]/20 transition-colors resize-y min-h-[60px] max-h-[200px]"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs text-white/50 mb-2 flex items-center gap-2">
+                    <Palette className="w-3.5 h-3.5 text-[#FF6E3C]" />
+                    Style
+                  </label>
+                  <StyleInjector 
+                    value={styleDirective} 
+                    onChange={setStyleDirective} 
+                    disabled={false}
+                    referenceImage={styleReferenceImage}
+                    onReferenceImageChange={onStyleReferenceImageChange}
+                  />
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* CTA Button */}
+        <div className="p-6 pt-4">
           <motion.button
             onClick={onSend}
             disabled={!canSend}
@@ -497,13 +711,16 @@ function HeroInput({
             )}
           >
             <span className="relative z-10 flex items-center justify-center gap-2">
-              Reconstruct
-              <ArrowRight className="w-5 h-5" />
+              <svg className="w-5 h-5" viewBox="0 0 82 109" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M68.099 37.2285C78.1678 43.042 78.168 57.5753 68.099 63.3887L29.5092 85.668C15.6602 93.6633 0.510418 77.4704 9.40857 64.1836L17.4017 52.248C18.1877 51.0745 18.1876 49.5427 17.4017 48.3691L9.40857 36.4336C0.509989 23.1467 15.6602 6.95306 29.5092 14.9482L68.099 37.2285Z" stroke="currentColor" strokeWidth="11.6182" strokeLinejoin="round"/>
+                <rect x="34.054" y="98.6841" width="48.6555" height="11.6182" rx="5.80909" transform="rotate(-30 34.054 98.6841)" fill="currentColor"/>
+              </svg>
+              Try Replay Free
             </span>
           </motion.button>
           
-          <p className="text-center text-xs text-white/40">
-            Early Access users get <span className="text-[#FF6E3C] font-semibold">2 free generations</span>
+          <p className="text-center text-xs text-white/40 mt-3">
+            Includes <span className="text-[#FF6E3C] font-semibold">2 free generations</span>. No credit card required.
           </p>
         </div>
       </div>
@@ -550,7 +767,7 @@ export default function LandingPage() {
     previewUrl: null,
   });
   const [context, setContext] = useState("");
-  const [styleDirective, setStyleDirective] = useState("Custom");
+  const [styleDirective, setStyleDirective] = useState(""); // Empty = Auto-Detect
   const [isRecording, setIsRecording] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pendingRedirect, setPendingRedirect] = useState(false);
@@ -609,7 +826,7 @@ export default function LandingPage() {
       blob: heroFlow.blob,
       name: heroFlow.name || "Flow",
       context: context.trim(),
-      styleDirective: styleDirective?.trim() || "Custom",
+      styleDirective: styleDirective?.trim() || "Auto-Detect",
       createdAt: Date.now(),
     });
     
@@ -633,6 +850,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-[#030303] text-white font-poppins overflow-x-hidden">
+      <AuroraEffect />
       <FloatingOrbs />
       <GridLines />
       <div className="grain-overlay-landing" />
@@ -644,29 +862,26 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════════ */}
       <section className="relative z-10 min-h-screen flex items-center justify-center pt-20">
         <div className="mx-auto max-w-5xl px-6 py-20 w-full text-center">
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.1 }}
-            className="text-3xl sm:text-5xl lg:text-7xl font-bold tracking-tight leading-[1.1] mb-6"
-          >
-            <span className="bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-transparent">
-              Rebuild real UI behavior from video.
-            </span>
-            <br />
-            <span className="bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] bg-clip-text text-transparent">
-              Instantly.
-            </span>
-          </motion.h1>
+          <h1 className="text-3xl sm:text-5xl lg:text-7xl font-bold tracking-tight leading-[1.1] mb-6">
+            <TextGenerateEffect 
+              words="Reconstruct stunning interfaces & behavior from video."
+              textClassName="bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-transparent"
+              duration={0.6}
+              staggerDelay={0.06}
+              filter={true}
+            />
+          </h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-lg sm:text-xl text-white/50 max-w-2xl mx-auto leading-relaxed mb-12"
-          >
-            Code, structure, interactions and style — rebuilt from what actually happens on screen.
-          </motion.p>
+          <div className="text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed mb-12">
+            <TextGenerateEffect 
+              words="Don't describe the user flow. Just record it. Get pixel-perfect responsive layouts and complex interactions directly from your recording."
+              className="font-normal"
+              textClassName="text-white/50"
+              duration={0.4}
+              staggerDelay={0.04}
+              filter={true}
+            />
+          </div>
 
           <HeroInput
             onSend={onSend}
@@ -718,13 +933,16 @@ export default function LandingPage() {
             className="text-center"
           >
             <p className="text-xs text-white/30 uppercase tracking-[0.2em] mb-8">
-              Built on modern frontend stack
+              Built on production-grade libraries
             </p>
-            <div className="flex flex-wrap justify-center gap-6">
+            <div className="flex flex-wrap justify-center gap-4">
               {[
                 { name: "React", icon: Code2 },
                 { name: "Tailwind CSS", icon: Palette },
-                { name: "Production-ready output", icon: Zap },
+                { name: "Recharts", icon: BarChart3, desc: "Data Visualization" },
+                { name: "Framer Motion", icon: Sparkles, desc: "Animations" },
+                { name: "Radix UI", icon: Layers, desc: "Accessible Components" },
+                { name: "Lucide", icon: Eye, desc: "Icons" },
               ].map((tech, i) => (
                 <motion.div
                   key={tech.name}
@@ -829,8 +1047,19 @@ function HowItWorks() {
 
   const toggleMute = () => {
     if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
+      const newMuted = !isMuted;
+      videoRef.current.muted = newMuted;
+      setIsMuted(newMuted);
+    }
+  };
+
+  // Handle video ended
+  const handleVideoEnded = () => {
+    setIsPlaying(false);
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      setProgress(0);
+      setCurrentTime(0);
     }
   };
 
@@ -852,17 +1081,36 @@ function HowItWorks() {
     },
   ];
 
-  const togglePlay = () => {
+  const togglePlay = async () => {
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause();
+        setIsPlaying(false);
       } else {
-        // Unmute and play
-        videoRef.current.muted = false;
-        setIsMuted(false);
-        videoRef.current.play();
+        try {
+          // First try to play muted (always works)
+          await videoRef.current.play();
+          setIsPlaying(true);
+          // Then try to unmute after play starts
+          setTimeout(() => {
+            if (videoRef.current) {
+              videoRef.current.muted = false;
+              setIsMuted(false);
+            }
+          }, 100);
+        } catch (error) {
+          console.log("Autoplay blocked, trying muted:", error);
+          // If blocked, play muted
+          videoRef.current.muted = true;
+          setIsMuted(true);
+          try {
+            await videoRef.current.play();
+            setIsPlaying(true);
+          } catch (e) {
+            console.error("Video play failed:", e);
+          }
+        }
       }
-      setIsPlaying(!isPlaying);
     }
   };
 
@@ -995,21 +1243,26 @@ function HowItWorks() {
             ref={videoRef}
             className="w-full h-auto cursor-pointer object-cover"
             style={{ aspectRatio: "16/9" }}
-            loop 
             playsInline
             muted
-            preload="auto"
+            preload="metadata"
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
+            onEnded={handleVideoEnded}
             onCanPlay={() => {
               // Ensure we're at 2 seconds for thumbnail
               if (videoRef.current && videoRef.current.currentTime < 1) {
                 videoRef.current.currentTime = 2;
               }
             }}
+            onError={(e) => {
+              console.error("Video error:", e);
+            }}
             onClick={togglePlay}
-            src="/Showcase%20Replay.mp4"
-          />
+          >
+            <source src="/ReplayShowcase.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
           <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[#030303]/70 via-transparent to-[#030303]/30" />
           
           {/* Center Play Button - shows when paused */}
@@ -1098,7 +1351,14 @@ function TheMagicSection() {
   ];
 
   const inputTags = ["cursor movement", "clicks", "scrolling", "hover states", "logic"];
-  const outputFeatures = ["New responsive UI", "Componentized production code", "Full flow map with possible paths", "Design system"];
+  const outputFeatures = [
+    "New responsive UI",
+    "Componentized production code", 
+    "Full flow map with possible paths", 
+    "Design system",
+    "Interactive Data Charts (Real Recharts, not static SVGs)",
+    "Mobile-First Navigation (Working hamburgers, drawers & sticky headers)",
+  ];
 
   // Auto-advance slider every 8 seconds (when not paused)
   useEffect(() => {
@@ -1504,18 +1764,65 @@ function PricingSection() {
   const [isYearly, setIsYearly] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ type: "subscription" | "topup"; amount?: number } | null>(null);
   const { user } = useAuth();
+  const router = useRouter();
+
+  // Handle pending action after successful auth
+  useEffect(() => {
+    if (user && pendingAction) {
+      if (pendingAction.type === "subscription") {
+        handleProSubscription();
+      } else if (pendingAction.type === "topup" && pendingAction.amount) {
+        handleBuyCredits(pendingAction.amount);
+      }
+      setPendingAction(null);
+    }
+  }, [user, pendingAction]);
+
+  const handleProSubscription = async () => {
+    // If not logged in, show auth modal and set pending action
+    if (!user) {
+      setPendingAction({ type: "subscription" });
+      setShowAuthModal(true);
+      return;
+    }
+
+    setIsCheckingOut("pro");
+    try {
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          type: "subscription", 
+          interval: isYearly ? "yearly" : "monthly" 
+        }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else if (data.error) {
+        console.error("Checkout error:", data.error);
+        alert("Failed to start checkout: " + data.error);
+      }
+    } catch (error) {
+      console.error("Checkout error:", error);
+    } finally {
+      setIsCheckingOut(null);
+    }
+  };
 
   const handleBuyCredits = async (amount: number) => {
-    // If not logged in, show auth modal
+    // If not logged in, show auth modal and set pending action
     if (!user) {
+      setPendingAction({ type: "topup", amount });
       setShowAuthModal(true);
       return;
     }
 
     setIsCheckingOut(amount.toString());
     try {
-      const res = await fetch("/api/stripe/checkout", {
+      const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "topup", topupAmount: amount }),
@@ -1528,6 +1835,14 @@ function PricingSection() {
       console.error("Checkout error:", error);
     } finally {
       setIsCheckingOut(null);
+    }
+  };
+
+  const handleGetStarted = () => {
+    if (!user) {
+      setShowAuthModal(true);
+    } else {
+      router.push("/");
     }
   };
 
@@ -1546,9 +1861,9 @@ function PricingSection() {
       features: [
         "150 credits (one-time)",
         "~2 rebuilds",
-        "Live preview",
-        "Public projects",
-        "Basic export",
+        "Interactive preview",
+        "Code preview (blurred)",
+        "Public projects only",
       ],
       cta: "Get started",
     },
@@ -1560,9 +1875,9 @@ function PricingSection() {
       features: [
         "3,000 credits / month",
         "~40 rebuilds / month",
-        "Private projects",
-        "All exports",
-        "Style presets",
+        "Full code access",
+        "Download & Copy",
+        "Publish to web",
         "Rollover up to 600 credits",
       ], 
       popular: true,
@@ -1666,23 +1981,36 @@ function PricingSection() {
               
               {plan.name === "Enterprise" ? (
                 <Link
-                  href="/settings?tab=plans"
+                  href="/contact"
                   className="block w-full text-center py-3.5 rounded-xl text-sm font-medium transition-all bg-white/[0.05] text-white/70 hover:bg-white/[0.08] border border-white/[0.08]"
                 >
                   {plan.cta}
                 </Link>
-              ) : (
-                <Link
-                  href="/tool"
+              ) : plan.name === "Pro" ? (
+                <button
+                  onClick={handleProSubscription}
+                  disabled={isCheckingOut === "pro"}
                   className={cn(
-                    "block w-full text-center py-3.5 rounded-xl text-sm font-medium transition-all",
-                    plan.popular
-                      ? "bg-[#FF6E3C] text-white hover:bg-[#FF8F5C]"
-                      : "bg-white/[0.05] text-white/70 hover:bg-white/[0.08] border border-white/[0.08]"
+                    "w-full text-center py-3.5 rounded-xl text-sm font-medium transition-all disabled:opacity-50",
+                    "bg-[#FF6E3C] text-white hover:bg-[#FF8F5C]"
                   )}
                 >
+                  {isCheckingOut === "pro" ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Processing...
+                    </span>
+                  ) : (
+                    plan.cta
+                  )}
+                </button>
+              ) : (
+                <button
+                  onClick={handleGetStarted}
+                  className="w-full text-center py-3.5 rounded-xl text-sm font-medium transition-all bg-white/[0.05] text-white/70 hover:bg-white/[0.08] border border-white/[0.08]"
+                >
                   {plan.cta}
-                </Link>
+                </button>
               )}
             </motion.div>
           ))}
@@ -1763,7 +2091,7 @@ function FAQSection() {
     },
     { 
       q: "How many credits does a generation cost?", 
-      a: "Each video-to-code generation costs 75 credits. AI edits and refinements cost 25 credits each. Free accounts get 150 credits/month (~2 generations). Pro accounts get 3,000 credits/month (~40 generations). You can also buy credits anytime." 
+      a: "Each video-to-code generation costs 75 credits. AI edits and refinements cost 25 credits each. Free accounts get 150 credits one-time (~2 generations). Pro accounts get 3,000 credits/month (~40 generations). You can also buy credits anytime." 
     },
     { 
       q: "What are the style presets?", 
@@ -1783,7 +2111,7 @@ function FAQSection() {
     },
     { 
       q: "What's the difference between Free and Pro?", 
-      a: "Free: 150 credits/month, basic features. Pro ($35/month): 3,000 credits/month, all export formats, rollover credits (up to 600), and priority processing. Both plans include all 30+ style presets and AI editing." 
+      a: "Free: 150 credits (one-time), interactive preview only, code view is blurred. Pro ($35/month): 3,000 credits/month, full code access, download & copy, publish to web, rollover credits (up to 600). Both plans include all 30+ style presets and AI editing." 
     },
     { 
       q: "Can I cancel my subscription anytime?", 

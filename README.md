@@ -53,7 +53,10 @@ Natural language editing that actually works:
 "Make this mobile responsive"  
 "Change the color scheme to dark mode"
 "Connect this to my Supabase database"
+"@Pricing Create a pricing page with 3 tiers"
 ```
+
+After each edit, AI explains what changes it made in the chat — no need to diff code manually.
 
 ### 🎨 30+ Style Presets
 Transform any UI into different aesthetics instantly:
@@ -113,7 +116,7 @@ Deploy your UI to the web instantly. Share the link with anyone.
 
 **Credit Costs:**
 - 🎬 Video generation: **75 credits**
-- ✨ AI edit/refine: **25 credits**
+- ✨ AI edit/refine: **3 credits**
 
 **Top-ups available:**
 - $20 → 2,000 credits
@@ -251,6 +254,11 @@ replay/
 - [x] Supabase integration
 - [x] One-click publish
 - [x] Project settings & analytics
+- [x] Version history with restore
+- [x] AI chat interface with image support
+- [x] Style reference mode (copy from image)
+- [x] Delete confirmation modals
+- [x] Extended history (500 projects)
 - [ ] Figma plugin
 - [ ] Component library export
 - [ ] Team collaboration

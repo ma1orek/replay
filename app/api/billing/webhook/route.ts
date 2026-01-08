@@ -1,6 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
+import crypto from "crypto";
+
+// Facebook Conversions API
+const FB_PIXEL_ID = "767421659003978";
+const FB_ACCESS_TOKEN = "EAAgeb93PAQcBQa52uA3tYglpC9K69T5hGf9Mg8PIwVplDAfQlAZCkGiSQlpAjChsOtvFQvGew8ZAisiRFfGgYUISvNE6X2thIgNY3SX1FNtyZBFKzrQgZBTpX9H4qYBFihmUiFO2QSuuHf9XvsoSDKvtU4IUpZAb6fTAL87e5A4ipKsNWZBb2WCSJZBvOu2FwZDZD";
+
+async function trackFBPurchase(userId: string, email: string | null, value: number, eventName: "Purchase" | "Subscribe") {
+  try {
+    const hashedEmail = email ? crypto.createHash("sha256").update(email.toLowerCase().trim()).digest("hex") : null;
+    const hashedUserId = crypto.createHash("sha256").update(userId).digest("hex");
+    
+    await fetch(`https://graph.facebook.com/v18.0/${FB_PIXEL_ID}/events?access_token=${FB_ACCESS_TOKEN}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        data: [{
+          event_name: eventName,
+          event_time: Math.floor(Date.now() / 1000),
+          event_source_url: "https://replay.build/settings",
+          action_source: "website",
+          user_data: {
+            em: hashedEmail,
+            external_id: hashedUserId,
+          },
+          custom_data: {
+            currency: "USD",
+            value: value,
+          },
+        }],
+      }),
+    });
+    console.log(`FB Event: ${eventName} - $${value} for user ${userId}`);
+  } catch (error) {
+    console.warn("FB tracking failed:", error);
+  }
+}
 
 function getStripe() {
   if (!process.env.STRIPE_SECRET_KEY) {
@@ -67,6 +103,10 @@ export async function POST(request: NextRequest) {
             })
             .eq("user_id", userId);
           
+          // Track subscription purchase to Facebook
+          const customerEmail = session.customer_details?.email || session.customer_email;
+          await trackFBPurchase(userId, customerEmail, session.amount_total ? session.amount_total / 100 : 29, "Subscribe");
+          
           console.log("Updated membership to Pro for user:", userId);
         }
         
@@ -103,6 +143,10 @@ export async function POST(request: NextRequest) {
                 reason: "topup_purchase",
                 reference_id: session.id,
               });
+            
+            // Track top-up purchase to Facebook
+            const customerEmail = session.customer_details?.email || session.customer_email;
+            await trackFBPurchase(userId, customerEmail, session.amount_total ? session.amount_total / 100 : 20, "Purchase");
             
             console.log("Added", creditsAmount, "credits for user:", userId);
           }

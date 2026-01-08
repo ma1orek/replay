@@ -24,17 +24,19 @@ const PLACEHOLDER_EXAMPLES = [
 // Style preview component - renders CSS-based visual thumbnail
 const StylePreview = ({ styleId }: { styleId: string }) => {
   const previewStyles: Record<string, React.ReactNode> = {
+    "auto-detect": (
+      <div className="w-full h-full bg-gradient-to-br from-[#FF6E3C]/30 via-purple-500/20 to-cyan-500/20 relative overflow-hidden">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-[8px] font-bold text-white/60">AI</div>
+        </div>
+        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#FF6E3C]/40 rounded-full blur-md animate-pulse" />
+      </div>
+    ),
     custom: (
       <div className="w-full h-full bg-gradient-to-br from-[#FF6E3C]/20 via-[#FF6E3C]/10 to-transparent relative overflow-hidden">
         <div className="absolute inset-1 rounded-sm border border-dashed border-[#FF6E3C]/40" />
         <div className="absolute top-1.5 left-1.5 w-1.5 h-1.5 rounded-full bg-[#FF6E3C]/60" />
         <div className="absolute bottom-1.5 right-1.5 w-2 h-1 rounded-sm bg-[#FF6E3C]/40" />
-      </div>
-    ),
-    original: (
-      <div className="w-full h-full bg-[#1a1a1a] flex items-center justify-center gap-0.5">
-        <div className="w-2 h-3 bg-white/20 rounded-[1px]" />
-        <div className="w-2 h-3 bg-white/20 rounded-[1px]" />
       </div>
     ),
     "style-reference": (
@@ -339,23 +341,6 @@ const StylePreview = ({ styleId }: { styleId: string }) => {
         <div className="bg-neutral-900" />
       </div>
     ),
-    "silk-smoke": (
-      <div className="w-full h-full bg-[#1a1a1a] relative overflow-hidden">
-        <div className="absolute inset-0 opacity-30" style={{ filter: 'url(#turbulence)', background: 'linear-gradient(45deg, purple, cyan)' }} />
-        <svg className="absolute inset-0 w-0 h-0">
-          <filter id="turbulence"><feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" /></filter>
-        </svg>
-      </div>
-    ),
-    "sliced-shutter": (
-      <div className="w-full h-full bg-black flex overflow-hidden">
-        <div className="w-1/5 h-full bg-gradient-to-b from-purple-500/60 to-pink-500/60" style={{ transform: 'translateY(20%)' }} />
-        <div className="w-1/5 h-full bg-gradient-to-b from-purple-500/60 to-pink-500/60" style={{ transform: 'translateY(40%)' }} />
-        <div className="w-1/5 h-full bg-gradient-to-b from-purple-500/60 to-pink-500/60" style={{ transform: 'translateY(60%)' }} />
-        <div className="w-1/5 h-full bg-gradient-to-b from-purple-500/60 to-pink-500/60" style={{ transform: 'translateY(40%)' }} />
-        <div className="w-1/5 h-full bg-gradient-to-b from-purple-500/60 to-pink-500/60" style={{ transform: 'translateY(20%)' }} />
-      </div>
-    ),
     "gyroscopic-levitation": (
       <div className="w-full h-full bg-white flex items-center justify-center relative">
         <div className="absolute w-5 h-3 bg-black/10 rounded-full blur-sm translate-y-1" />
@@ -367,13 +352,6 @@ const StylePreview = ({ styleId }: { styleId: string }) => {
         <div className="absolute w-5 h-3 rounded-sm bg-white/10 translate-y-1 scale-90" />
         <div className="absolute w-5 h-3 rounded-sm bg-white/20 translate-y-0.5 scale-95" />
         <div className="absolute w-5 h-3 rounded-sm bg-white/30" />
-      </div>
-    ),
-    "sticky-headers": (
-      <div className="w-full h-full bg-white relative overflow-hidden">
-        <div className="absolute top-0 left-0 right-0 h-2 bg-black text-[4px] text-white flex items-center px-1 font-bold">01</div>
-        <div className="absolute top-3 left-0 right-0 h-2 bg-gray-200" />
-        <div className="absolute top-5 left-0 right-0 h-2 bg-gray-300" />
       </div>
     ),
     "morphing-nav": (
@@ -388,24 +366,10 @@ const StylePreview = ({ styleId }: { styleId: string }) => {
         <div className="absolute w-2 h-0.5 bg-purple-500/50 rounded-sm" style={{ transform: 'translateZ(10px) translateY(-5px)' }} />
       </div>
     ),
-    "helix-typography": (
-      <div className="w-full h-full bg-black flex items-center justify-center overflow-hidden" style={{ perspective: '100px' }}>
-        <div className="text-[6px] text-white/60 font-bold" style={{ transform: 'rotateY(30deg)' }}>ABC</div>
-      </div>
-    ),
     "inverted-lens": (
       <div className="w-full h-full bg-white relative overflow-hidden">
         <div className="absolute inset-0 bg-black text-white text-[6px] flex items-center justify-center">TEXT</div>
         <div className="absolute top-1 left-2 w-3 h-3 rounded-full bg-white" style={{ mixBlendMode: 'difference' }} />
-      </div>
-    ),
-    "draggable-masonry": (
-      <div className="w-full h-full bg-[#f5f5f5] p-0.5 grid grid-cols-3 gap-0.5">
-        <div className="bg-pink-400 rounded-sm h-3" />
-        <div className="bg-blue-400 rounded-sm h-4 row-span-2" />
-        <div className="bg-yellow-400 rounded-sm h-3" />
-        <div className="bg-green-400 rounded-sm h-2" />
-        <div className="bg-purple-400 rounded-sm h-2" />
       </div>
     ),
     "crt-noise": (
@@ -414,10 +378,102 @@ const StylePreview = ({ styleId }: { styleId: string }) => {
         <div className="absolute inset-0 flex items-center justify-center text-[6px] font-mono" style={{ textShadow: '1px 0 red, -1px 0 cyan' }}>CRT</div>
       </div>
     ),
-    "parallax-curtain": (
-      <div className="w-full h-full bg-black relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-white to-gray-200" style={{ clipPath: 'inset(0 0 40% 0)' }} />
-        <div className="absolute bottom-0 left-0 right-0 h-2/5 bg-black flex items-center justify-center text-[5px] text-white/40">FOOTER</div>
+    // === NEW DEADPAN KINETIC STYLES ===
+    "indifferent-kinetic": (
+      <div className="w-full h-full bg-[#E5FF00] flex items-center justify-center overflow-hidden">
+        <div className="text-[14px] font-black text-black tracking-tighter leading-none">AB</div>
+      </div>
+    ),
+    "deadpan-documentation": (
+      <div className="w-full h-full bg-[#0B0B0B] relative">
+        <div className="absolute inset-0" style={{ backgroundImage: 'repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0px, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 8px), repeating-linear-gradient(90deg, rgba(255,255,255,0.04) 0px, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 8px)' }} />
+        <div className="absolute bottom-1 left-1 text-[4px] text-[#7A7A7A] font-mono">SYS</div>
+      </div>
+    ),
+    "bureaucratic-void": (
+      <div className="w-full h-full bg-white relative">
+        <div className="absolute inset-0 border border-[#E1E1E1]" />
+        <div className="absolute top-2 left-0 right-0 h-px bg-[#E1E1E1]" />
+        <div className="absolute top-4 left-0 right-0 h-px bg-[#E1E1E1]" />
+        <div className="absolute top-1 left-1 text-[4px] text-[#1C1C1C]">DOC</div>
+      </div>
+    ),
+    "cctv-drift": (
+      <div className="w-full h-full bg-[#0A0A0A] relative overflow-hidden">
+        <div className="absolute inset-0" style={{ backgroundImage: 'repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 3px)' }} />
+        <div className="absolute top-0.5 right-0.5 text-[3px] text-[#6E6E6E] font-mono">REC</div>
+        <div className="absolute bottom-1 left-1 w-1 h-1 rounded-full bg-red-500/50" />
+      </div>
+    ),
+    "inefficient-loop": (
+      <div className="w-full h-full bg-[#161616] relative">
+        <div className="absolute top-1 left-1 w-3 h-2 bg-[#202020] border border-[#202020]" style={{ transform: 'translateX(1px)' }} />
+        <div className="absolute bottom-1 right-1 w-2 h-2 bg-[#202020] border border-[#202020]" />
+      </div>
+    ),
+    "accidental-capture": (
+      <div className="w-full h-full bg-[#141414] relative overflow-hidden">
+        <div className="absolute inset-0" style={{ backgroundImage: 'repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 5px)' }} />
+        <div className="absolute top-2 left-2 w-3 h-2 bg-[#1F1F1F]" style={{ transform: 'translate(1px, 0)' }} />
+      </div>
+    ),
+    "abrupt-termination": (
+      <div className="w-full h-full bg-[#0D0D0D] relative">
+        <div className="absolute top-1 left-1 right-1 h-2 bg-[#191919]" />
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-red-900/20" />
+      </div>
+    ),
+    // === PREMIUM SAAS LANDING PREVIEWS ===
+    "molten-aurora": (
+      <div className="w-full h-full bg-[#050505] relative overflow-hidden">
+        <div className="absolute inset-x-3 top-0 bottom-2 bg-gradient-to-b from-amber-500/30 via-orange-500/50 to-orange-600/30 blur-sm" />
+        <div className="absolute bottom-0 left-1 right-1 h-2 bg-gradient-to-t from-orange-500/40 to-transparent rounded-full blur-[2px]" />
+      </div>
+    ),
+    "midnight-aurora": (
+      <div className="w-full h-full bg-[#050508] relative overflow-hidden">
+        <div className="absolute bottom-1 inset-x-0 h-3 bg-gradient-to-t from-purple-600/40 to-transparent" />
+        <div className="absolute bottom-1 left-2 w-0.5 h-3 bg-gradient-to-t from-purple-500/50 to-transparent" />
+        <div className="absolute bottom-1 right-3 w-0.5 h-2 bg-gradient-to-t from-blue-400/40 to-transparent" />
+      </div>
+    ),
+    "airy-blue-aura": (
+      <div className="w-full h-full bg-white relative overflow-hidden">
+        <div className="absolute top-1 left-1 right-1 h-4 bg-gradient-to-br from-blue-400/40 to-blue-300/20 rounded-full blur-md" />
+        <div className="absolute bottom-2 left-2 text-[4px] text-gray-800 font-bold">Ship fast</div>
+      </div>
+    ),
+    "halftone-beam": (
+      <div className="w-full h-full bg-[#050505] relative overflow-hidden flex items-center justify-center">
+        <div className="absolute inset-x-3 top-0 bottom-1 bg-gradient-to-b from-orange-500/40 to-orange-600/60" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,90,46,0.8) 0 1px, transparent 1.5px)', backgroundSize: '3px 3px' }} />
+        <div className="text-[8px] font-black text-white/80 z-10">BEAM</div>
+      </div>
+    ),
+    "mono-wave": (
+      <div className="w-full h-full bg-black relative overflow-hidden flex items-center">
+        <div className="w-full h-3 bg-white flex items-center overflow-hidden">
+          <div className="text-[6px] font-black text-black whitespace-nowrap">WAVE WAVE WAVE</div>
+        </div>
+      </div>
+    ),
+    "glass-cascade": (
+      <div className="w-full h-full bg-[#05080F] relative overflow-hidden">
+        <div className="absolute top-1 left-1 w-5 h-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-sm" />
+        <div className="absolute top-3 left-2 w-5 h-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-sm" />
+        <div className="absolute bottom-1 right-1 w-2 h-2 rounded-full bg-blue-500/20 blur-[3px]" />
+      </div>
+    ),
+    "fractured-grid": (
+      <div className="w-full h-full bg-[#0E0E0E] relative overflow-hidden">
+        <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.08) 1px, transparent 1px)', backgroundSize: 'calc(100% / 3) 100%' }} />
+        <div className="absolute top-1 left-0.5 text-[5px] font-bold text-white/80">TY</div>
+        <div className="absolute top-3 left-3 text-[5px] font-bold text-white/80">PE</div>
+      </div>
+    ),
+    "glowframe-product": (
+      <div className="w-full h-full bg-[#050505] relative overflow-hidden flex items-center justify-center">
+        <div className="w-5 h-3 bg-[#0C0F14] rounded-sm border border-white/10" style={{ boxShadow: 'inset 0 0 0 1px rgba(45,212,191,0.2)' }} />
+        <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-teal-500/30 blur-[2px]" />
       </div>
     ),
     "viscous-hover": (
@@ -470,51 +526,157 @@ const StylePreview = ({ styleId }: { styleId: string }) => {
         <div className="absolute right-0 top-0 bottom-0 w-1/2 bg-black" style={{ transform: 'translateX(30%)' }} />
       </div>
     ),
-    "matter-gravity": (
-      <div className="w-full h-full bg-white relative overflow-hidden">
-        <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-black/20" />
-        <div className="absolute bottom-1 left-1 w-2 h-2 rounded-full bg-red-500" />
-        <div className="absolute bottom-1 left-3 w-1.5 h-1.5 rounded-full bg-blue-500" />
-        <div className="absolute bottom-1 right-1 w-2.5 h-2.5 rounded-full bg-yellow-500" />
-        <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-green-500" />
-      </div>
-    ),
-    "magnetic-button": (
-      <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center">
-        <div className="w-5 h-3 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
-          <div className="w-1 h-1 rounded-full bg-white/60" />
-        </div>
-      </div>
-    ),
-    "pixelated-dissolve": (
-      <div className="w-full h-full bg-black grid grid-cols-4 grid-rows-4 gap-px p-0.5">
-        <div className="bg-purple-500/80" /><div className="bg-purple-500/60" /><div className="bg-purple-500/20" /><div className="bg-transparent" />
-        <div className="bg-purple-500/90" /><div className="bg-purple-500/70" /><div className="bg-purple-500/40" /><div className="bg-purple-500/10" />
-        <div className="bg-purple-500" /><div className="bg-purple-500/80" /><div className="bg-purple-500/50" /><div className="bg-purple-500/20" />
-        <div className="bg-purple-500" /><div className="bg-purple-500/90" /><div className="bg-purple-500/60" /><div className="bg-purple-500/30" />
-      </div>
-    ),
-    "cyclic-gallery": (
-      <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center overflow-hidden">
-        <div className="relative w-6 h-6">
-          <div className="absolute w-2 h-3 bg-white/30 rounded-sm" style={{ transform: 'rotate(0deg) translateY(-8px)' }} />
-          <div className="absolute w-2 h-3 bg-white/20 rounded-sm" style={{ transform: 'rotate(72deg) translateY(-8px)' }} />
-          <div className="absolute w-2 h-3 bg-white/10 rounded-sm" style={{ transform: 'rotate(144deg) translateY(-8px)' }} />
-        </div>
-      </div>
-    ),
-    "accordion-fold": (
-      <div className="w-full h-full bg-white relative overflow-hidden" style={{ perspective: '50px' }}>
-        <div className="absolute top-0 left-0 right-0 h-1/4 bg-gray-100 origin-bottom" style={{ transform: 'rotateX(-15deg)' }} />
-        <div className="absolute top-1/4 left-0 right-0 h-1/4 bg-white" />
-        <div className="absolute top-2/4 left-0 right-0 h-1/4 bg-gray-50 origin-top" style={{ transform: 'rotateX(15deg)' }} />
-        <div className="absolute top-3/4 left-0 right-0 h-1/4 bg-gray-100 origin-bottom" style={{ transform: 'rotateX(-10deg)' }} />
-      </div>
-    ),
-    "flashlight-mask": (
+    // === NEW SHADER & ANIMATION STYLES ===
+    "liquid-neon": (
       <div className="w-full h-full bg-black relative overflow-hidden">
-        <div className="absolute inset-0 bg-white flex items-center justify-center text-[6px] font-bold">HIDDEN</div>
-        <div className="absolute inset-0 bg-black" style={{ maskImage: 'radial-gradient(circle 10px at 60% 40%, transparent, black 100%)' }} />
+        <motion.div
+          className="absolute w-4 h-4 bg-gradient-to-br from-cyan-400 to-purple-500 rounded-full blur-sm"
+          style={{ top: '20%', left: '20%' }}
+          animate={{ x: [0, 8, 0], y: [0, 5, 0], scale: [1, 1.2, 1] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute w-3 h-3 bg-gradient-to-br from-pink-500 to-orange-400 rounded-full blur-sm"
+          style={{ top: '50%', left: '50%' }}
+          animate={{ x: [0, -6, 0], y: [0, 8, 0], scale: [1, 0.8, 1] }}
+          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+        />
+        <div className="absolute inset-0 flex items-center justify-center text-[6px] font-black text-white/80">NEON</div>
+      </div>
+    ),
+    "matrix-rain": (
+      <div className="w-full h-full bg-black relative overflow-hidden">
+        <motion.div
+          className="absolute text-[4px] text-green-500 font-mono"
+          style={{ left: '15%', top: '10%' }}
+          animate={{ y: [0, 30], opacity: [1, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+        >A</motion.div>
+        <motion.div
+          className="absolute text-[4px] text-green-400 font-mono"
+          style={{ left: '40%', top: '5%' }}
+          animate={{ y: [0, 30], opacity: [1, 0] }}
+          transition={{ duration: 1.2, repeat: Infinity, ease: "linear", delay: 0.3 }}
+        >X</motion.div>
+        <motion.div
+          className="absolute text-[4px] text-green-300 font-mono"
+          style={{ left: '70%', top: '15%' }}
+          animate={{ y: [0, 30], opacity: [1, 0] }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: "linear", delay: 0.6 }}
+        >7</motion.div>
+        <div className="absolute bottom-1 left-1 text-[5px] font-bold text-green-500">RAIN</div>
+      </div>
+    ),
+    "gradient-bar-waitlist": (
+      <div className="w-full h-full bg-[#0a0a0a] relative overflow-hidden">
+        {[...Array(5)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute bottom-0 bg-gradient-to-t from-orange-600 to-orange-400"
+            style={{ left: `${10 + i * 18}%`, width: '12%' }}
+            animate={{ height: [`${20 + i * 10}%`, `${40 + i * 8}%`, `${20 + i * 10}%`] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: i * 0.1 }}
+          />
+        ))}
+        <div className="absolute top-1 left-1 text-[4px] text-white/80">WAITLIST</div>
+      </div>
+    ),
+    "blur-hero-minimal": (
+      <div className="w-full h-full bg-white relative overflow-hidden flex items-center justify-center">
+        <motion.div
+          className="text-[8px] font-bold text-black"
+          initial={{ filter: 'blur(4px)', opacity: 0 }}
+          animate={{ filter: 'blur(0px)', opacity: 1 }}
+          transition={{ duration: 1, repeat: Infinity, repeatDelay: 2 }}
+        >Build</motion.div>
+        <div className="absolute bottom-1 left-1 right-1 h-1 bg-gray-200 rounded-full" />
+      </div>
+    ),
+    "messy-physics": (
+      <div className="w-full h-full bg-white relative overflow-hidden">
+        <motion.div
+          className="absolute bg-blue-500 text-white text-[3px] px-1 rounded-full"
+          style={{ left: '20%', top: '30%' }}
+          animate={{ y: [0, 8, 0], rotate: [0, 5, -5, 0] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >react</motion.div>
+        <motion.div
+          className="absolute bg-pink-500 text-white text-[3px] px-1 rounded-full"
+          style={{ left: '50%', top: '50%' }}
+          animate={{ y: [0, 6, 0], rotate: [0, -8, 8, 0] }}
+          transition={{ duration: 1.8, repeat: Infinity, delay: 0.3 }}
+        >ts</motion.div>
+        <motion.div
+          className="absolute bg-orange-500 text-white text-[3px] px-1 rounded-full"
+          style={{ left: '60%', top: '20%' }}
+          animate={{ y: [0, 10, 0], rotate: [0, 10, -10, 0] }}
+          transition={{ duration: 2.2, repeat: Infinity, delay: 0.6 }}
+        >tw</motion.div>
+        <div className="absolute top-1 left-1 text-[6px] font-serif italic text-black">fancy</div>
+      </div>
+    ),
+    "earthy-grid-reveal": (
+      <div className="w-full h-full bg-gradient-to-br from-[#1a1d18] to-[#2a2e26] relative overflow-hidden">
+        <div className="absolute inset-0" style={{ backgroundImage: 'repeating-linear-gradient(0deg, rgba(200,180,160,0.08) 0px, rgba(200,180,160,0.08) 1px, transparent 1px, transparent 8px)' }} />
+        <motion.div
+          className="absolute text-[5px] text-[#e6e1d7] font-light"
+          style={{ left: '20%', top: '40%' }}
+          animate={{ opacity: [0, 1], y: [5, 0] }}
+          transition={{ duration: 0.8, repeat: Infinity, repeatDelay: 1 }}
+        >Stack</motion.div>
+        <div className="absolute top-0.5 left-0.5 w-1 h-1 bg-[#c8b4a0]/30" />
+        <div className="absolute bottom-0.5 right-0.5 w-1 h-1 bg-[#c8b4a0]/30" />
+      </div>
+    ),
+    "fluid-prismatic": (
+      <div className="w-full h-full bg-gradient-to-br from-cyan-400 via-purple-500 to-orange-400 relative overflow-hidden">
+        <motion.div
+          className="absolute inset-0"
+          animate={{ 
+            background: [
+              'radial-gradient(circle at 30% 40%, rgba(96,197,216,0.8) 0%, transparent 50%)',
+              'radial-gradient(circle at 70% 60%, rgba(110,52,102,0.8) 0%, transparent 50%)',
+              'radial-gradient(circle at 30% 40%, rgba(96,197,216,0.8) 0%, transparent 50%)'
+            ]
+          }}
+          transition={{ duration: 4, repeat: Infinity }}
+        />
+        <div className="absolute inset-0 flex items-center justify-center text-[6px] font-bold text-white drop-shadow-lg">FLUID</div>
+      </div>
+    ),
+    "paper-shader-mesh": (
+      <div className="w-full h-full bg-black relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/40 via-transparent to-orange-500/40" />
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-tr from-cyan-400/30 to-orange-500/30"
+          animate={{ opacity: [0.3, 0.6, 0.3] }}
+          transition={{ duration: 3, repeat: Infinity }}
+        />
+        <div className="absolute top-1 left-1 text-[4px] text-white/80 font-medium">Paper</div>
+        <div className="absolute bottom-1 right-1 w-2 h-2 rounded-full border border-cyan-400/50" />
+      </div>
+    ),
+    "myna-ai-mono": (
+      <div className="w-full h-full bg-white relative overflow-hidden flex flex-col items-center justify-center">
+        <div className="text-[6px] font-mono font-bold text-black mb-1">THE AI</div>
+        <motion.div
+          className="px-1 py-0.5 bg-[#FF6B2C] rounded-sm text-[3px] text-white font-mono"
+          animate={{ scale: [1, 1.05, 1] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >GET STARTED</motion.div>
+      </div>
+    ),
+    "acme-clean-rounded": (
+      <div className="w-full h-full bg-white relative overflow-hidden">
+        <div className="absolute top-1 left-1 right-1 h-2 bg-white rounded-full border border-gray-200 shadow-sm flex items-center justify-center">
+          <div className="text-[3px] text-gray-600">Acme</div>
+        </div>
+        <motion.div
+          className="absolute top-4 left-1 right-1 text-center text-[5px] font-bold text-black"
+          animate={{ opacity: [0, 1], y: [3, 0] }}
+          transition={{ duration: 0.6, repeat: Infinity, repeatDelay: 2 }}
+        >Redefined</motion.div>
+        <div className="absolute bottom-1 left-1 right-1 h-3 bg-gray-100 rounded-md border border-gray-200" />
       </div>
     ),
   };
@@ -541,9 +703,9 @@ const STYLE_CATEGORIES = [
 ];
 
 const STYLE_PRESETS = [
+  { id: "auto-detect", name: "Auto-Detect", desc: "Match video style automatically", fullDesc: "AI analyzes your video and matches its visual style: colors, fonts, spacing, and overall aesthetic.", category: null },
   { id: "custom", name: "Custom", desc: "Describe your own style", fullDesc: "", category: null },
-  { id: "original", name: "Original", desc: "1:1 Copy • Exact Match", fullDesc: "Recreates the exact design from the video with pixel-perfect accuracy.", category: null },
-  { id: "style-reference", name: "Style Reference", desc: "Upload image • Copy its style", fullDesc: "Apply the visual style from the reference image: use its color palette, typography, spacing, border-radius, and overall aesthetic.", category: null },
+  { id: "style-reference", name: "Style Reference", desc: "Upload image, copy its style", fullDesc: "Apply the visual style from the reference image: use its color palette, typography, spacing, border-radius, and overall aesthetic.", category: null },
   
   // === CREATIVE & EXPERIMENTAL ===
   { id: "particle-brain", name: "Particle Brain", desc: "AI Cloud • 50k Points • WebGL", fullDesc: "3D point cloud aesthetic. Objects made of thousands of particles. Particles scatter on hover, morph on scroll.", category: "creative" },
@@ -581,28 +743,19 @@ const STYLE_PRESETS = [
   { id: "xray-blueprint", name: "X-Ray Blueprint", desc: "Wireframe Reveal • Scanner • Technical", fullDesc: "Technical blueprint. Wireframe reveals solid on mouse. Line draw animations.", category: "motion" },
   { id: "digital-collage", name: "Digital Collage", desc: "Scrapbook • Stickers • Draggable", fullDesc: "Mixed media scrapbook. Paper texture, cutout shapes, stickers with shadows.", category: "motion" },
   { id: "opposing-scroll", name: "Opposing Scroll Streams", desc: "Bi-Directional • Velocity • Marquee", fullDesc: "Rows of text moving in opposite directions driven by scroll velocity. Row 1 moves left, Row 2 moves right. Velocity-based speed. Hover pauses row.", category: "motion" },
-  { id: "sliced-shutter", name: "Sliced Shutter Reveal", desc: "5 Strips • Waterfall • Assembly", fullDesc: "Image enters as 5 vertical strips. Same image with shifted background-position. Staggered delay creating fluid waterfall assembly.", category: "motion" },
   { id: "stacked-cards", name: "Stacked Card Deck", desc: "iOS Tabs • Depth • Scale", fullDesc: "Cards stack on top scaling down simulating depth. Like iOS Safari tabs. Scroll drives card transitions with brightness changes.", category: "motion" },
-  { id: "sticky-headers", name: "Sticky Section Headers", desc: "Editorial • Mix-Blend • Parallax", fullDesc: "Section titles stick to top while content slides underneath. Headers use mix-blend-difference. Content has subtle parallax.", category: "motion" },
   { id: "horizontal-inertia", name: "Horizontal Inertia Gallery", desc: "Skew • Velocity • Spring", fullDesc: "Vertical scroll drives horizontal movement with velocity-based skew distortion. Images lean/tilt in movement direction. Spring physics.", category: "motion" },
-  { id: "parallax-curtain", name: "Parallax Curtain Footer", desc: "Fixed Behind • Reveal • Scale", fullDesc: "Footer fixed behind content. Content slides up to reveal it. Footer scales from 0.9 to 1.0 as revealed. Heavy shadow on content edge.", category: "motion" },
   { id: "split-curtain", name: "Split Curtain Reveal", desc: "Dual Panel • Theater • Typography Split", fullDesc: "Screen splits Left/Right to reveal content behind. Typography splits apart too - half word goes left, half goes right. Dramatic reveal.", category: "motion" },
-  { id: "helix-typography", name: "Helix Typography", desc: "DNA Scroll • 3D Cylinder • Rotate", fullDesc: "Text rotates around 3D cylinder axis. Letters positioned with rotateY. Scroll rotates the entire container. Back-facing letters dimmer.", category: "motion" },
-  { id: "cyclic-gallery", name: "Cyclic Rotation Gallery", desc: "Fortune Wheel • Circle • Scroll Rotate", fullDesc: "Items arranged on giant invisible circle. Scrolling rotates the wheel. Items counter-rotate to stay upright/readable.", category: "motion" },
   
   // === INTERACTIVE & CURSOR ===
   { id: "phantom-border", name: "Phantom Border UI", desc: "Invisible Grid • Cursor Proximity • Glow", fullDesc: "Invisible grid that only exists via cursor proximity. Radial gradient follows mouse, masked by grid lines. Duration: 0 for instant response.", category: "interactive" },
   { id: "inverted-lens", name: "Inverted Lens Cursor", desc: "Window Mask • Hidden Layer • Reveal", fullDesc: "Cursor is a window revealing hidden layer. Main content black on white, hidden layer white on black. Mask follows cursor with lag.", category: "interactive" },
-  { id: "magnetic-button", name: "Magnetic Attraction", desc: "Sticky Cursor • Proximity • Wobble", fullDesc: "Elements physically stick to cursor within proximity radius. Text inside moves more than background. Elastic wobble on mouse leave.", category: "interactive" },
-  { id: "flashlight-mask", name: "Inverted Flashlight", desc: "Dark Screen • Light Cursor • Reveal", fullDesc: "Screen is dark. Cursor acts as light source revealing UI underneath. Click/hold expands flashlight radius. Heavy cursor lag for weight.", category: "interactive" },
   { id: "elastic-sidebar", name: "Elastic Sidebar Drag", desc: "Rubber Band • SVG Curve • Wobble", fullDesc: "Sidebar behaves like stretched rubber band when dragged. SVG path morphs with drag. Highly elastic spring on release with wobble.", category: "interactive" },
-  { id: "draggable-masonry", name: "Draggable Masonry", desc: "Physics Grid • Throw • Snap", fullDesc: "Asymmetric grid where elements can be thrown around. Dragging causes layout shift. Snap to nearest grid slot with spring on release.", category: "interactive" },
   { id: "morphing-nav", name: "Morphing Fluid Nav", desc: "Dynamic Island • Apple Physics • Morph", fullDesc: "Navigation bar morphs width/height based on state. Idle: small pill. Hover: medium with text. Active: large rectangle. Very snappy spring.", category: "interactive" },
   
   // === WEBGL & SHADERS ===
   { id: "chromatic-dispersion", name: "Chromatic Dispersion", desc: "RGB Split • Movement Speed • Shader", fullDesc: "Colors split based on movement speed. Red channel offset positive, Blue negative, Green stable. Static looks normal, scrolling creates 3D glasses effect.", category: "shader" },
   { id: "viscous-hover", name: "Viscous Hover", desc: "Displacement Map • Liquid • Gooey", fullDesc: "Images behave like liquid when touched. Displacement map texture pushed by mouse creates gooey trail effect.", category: "shader" },
-  { id: "silk-smoke", name: "Silk Smoke", desc: "SVG Turbulence • Slow Flow • Fabric", fullDesc: "Slow elegant procedural noise. SVG feTurbulence with feDisplacementMap. Animates seed slowly simulating flowing fabric/smoke.", category: "shader" },
   { id: "globe-data", name: "Interactive Globe Data", desc: "3D Sphere • Points • Data Arcs", fullDesc: "3D sphere made of glowing data points. Bezier curves connect points simulating data transfer. Hover explodes points outward.", category: "shader" },
   { id: "liquid-text-mask", name: "Liquid Text Masking", desc: "Video in Text • Drip • SVG Goo", fullDesc: "Giant typography acts as window to video. Edges that melt using SVG goo filter. Letters drip downwards on hover.", category: "shader" },
   { id: "noise-gradient", name: "Dynamic Noise Gradient", desc: "Canvas Grain • Perlin • Aurora", fullDesc: "High-performance Perlin noise mixing with colors in real-time. Dithering for smooth transitions. TV Static meets Aurora feel.", category: "shader" },
@@ -610,19 +763,47 @@ const STYLE_PRESETS = [
   // === PHYSICS & 3D ===
   { id: "gyroscopic-levitation", name: "Gyroscopic Levitation", desc: "Shadow Physics • Lift • Tilt", fullDesc: "Realistic lift physics. When card goes UP, shadow gets smaller, sharper, darker. Gyro tilt based on mouse position. Heavy magnetic feel.", category: "physics" },
   { id: "exploded-view", name: "Exploded View Scroll", desc: "3D Disassembly • Parts Separate • Labels", fullDesc: "3D Model parts separate on Z-axis based on scroll. Meshes move at different speeds. HTML annotations fade in when fully separated.", category: "physics" },
-  { id: "matter-gravity", name: "Matter.js Gravity", desc: "Falling Tags • Collision • Throw", fullDesc: "Elements fall from top and collide with physical rules. Mouse can grab, throw, smash elements. Spawn at random X with angular velocity.", category: "physics" },
-  { id: "accordion-fold", name: "Accordion Fold 3D", desc: "Paper Map • Unfold • Crease Shadow", fullDesc: "Content unfolds vertically like paper accordion. Even slices origin top, odd slices origin bottom. Black overlay animates for crease shadow.", category: "physics" },
   { id: "skeuomorphic", name: "Skeuomorphic Controls", desc: "Physical Switches • Plastic • 3D", fullDesc: "UI elements look/feel like physical plastic/metal switches. rotateX simulates rocker switch. Noise texture on plastic surface. Sound on click.", category: "physics" },
   
   // === DATA & DASHBOARD ===
   { id: "live-dashboard", name: "Live Dashboard Density", desc: "Data Heavy • Micro-Animations • Alive", fullDesc: "High density metrics grid. Scanner line moves through cells. Ticker numbers scramble on load. Blinking status dots. tabular-nums font.", category: "creative" },
   { id: "crt-noise", name: "CRT Signal Noise", desc: "Scanlines • RGB Shift • Flicker", fullDesc: "Old monitor signal simulation. Repeated scanlines, RGB text-shadow shift, vignette for curved glass, rapid opacity flicker.", category: "creative" },
-  { id: "pixelated-dissolve", name: "Pixelated Dissolve", desc: "8-bit • Block Transition • Retro", fullDesc: "Images enter/exit dissolving into large pixel blocks. Grid of squares with animated opacity in wave pattern. image-rendering: pixelated.", category: "creative" },
+  
+  // === DEADPAN / KINETIC / SYSTEM STYLES ===
+  { id: "indifferent-kinetic", name: "Indifferent Kinetic Loop", desc: "Deadpan Motion • Acid Yellow • Brutal", fullDesc: "Massive 15vw typography on #E5FF00/#000. No rounded corners. Fast abrupt motion. Scroll-velocity drift. Hover reveals images with lag.", category: "creative" },
+  { id: "deadpan-documentation", name: "Deadpan Kinetic Documentation", desc: "Industrial Grid • Linear Motion • System", fullDesc: "Near-black #0B0B0B with industrial grid at 5% opacity. Linear timing only. Micro-jitter text. System-like documentation feel.", category: "dark" },
+  { id: "bureaucratic-void", name: "Bureaucratic Motion Void", desc: "Paper White • 1px Dividers • Dull", fullDesc: "Pure white with excessive 1px dividers. Arial only. No visual hierarchy. Hover takes 600ms+. Paperwork aesthetic.", category: "light" },
+  { id: "cctv-drift", name: "Incidental CCTV Drift", desc: "Surveillance • Sensor Noise • Fixed", fullDesc: "Deep black with washed gray. Monospace overlay metadata. Sensor drift and frame jitter. Footage discovered, not created.", category: "dark" },
+  { id: "inefficient-loop", name: "Inefficient Manual Loop", desc: "Overcorrection • Handoff Pause • Habit", fullDesc: "Dark workspace with misaligned elements. Motion overshoots and corrects. Process repeats despite inefficiency.", category: "creative" },
+  { id: "accidental-capture", name: "Accidental Process Capture", desc: "Found Footage • Incidental • Unplanned", fullDesc: "Compression artifact noise. Frame nudges unpredictably. Content feels caught mid-use. Discovered on a drive.", category: "creative" },
+  { id: "abrupt-termination", name: "Abrupt Termination Protocol", desc: "Pre-Cut Drift • Mid-Motion Freeze • Crash", fullDesc: "Layout drifts then cuts abruptly. Motion halts for 1-2 frames. Unstable system state. Recording stopped externally.", category: "dark" },
+  
+  // === PREMIUM SAAS LANDING ===
+  { id: "molten-aurora", name: "Molten Aurora SaaS", desc: "Volcanic Glow • Dark Glass • Orange Beam", fullDesc: "Dark space canvas with vertical molten gold/orange energy stream. Particle system, glowing pool at bottom, glass cards, orange CTA.", category: "dark" },
+  { id: "midnight-aurora", name: "Midnight Aurora Fintech", desc: "Purple Glow • Neon Streaks • Blue Accent", fullDesc: "Fintech dark mode with purple aurora band near bottom third. Vertical neon streaks, electric blue accents, premium glass cards.", category: "dark" },
+  { id: "airy-blue-aura", name: "Airy Blue Aura SaaS", desc: "White Void • Blue Blob • Highlight Pill", fullDesc: "Clean white landing with massive soft blue aura blob. Headline with highlighted phrase in translucent pill. Indigo CTA.", category: "light" },
+  { id: "halftone-beam", name: "Halftone Solar Beam Studio", desc: "Dot Matrix • Grid • Massive Wordmark", fullDesc: "Near-black creative studio. Central orange halftone LED beam, bottom pool glow, strict grid overlay, massive hero word.", category: "dark" },
+  { id: "mono-wave", name: "Monochrome Typographic Wave", desc: "Black White • Marquee Band • Editorial", fullDesc: "Black & white editorial. Large kinetic text wave/ribbon crossing viewport. Letters as continuous band, not individual animations.", category: "creative" },
+  { id: "glass-cascade", name: "Glass Blue Tech Cascade", desc: "Deep Blue • Stacked Glass • Float", fullDesc: "Dark blue background with glassmorphism cards stacked vertically. Cards float at different depths, soft blue radial glows.", category: "dark" },
+  { id: "fractured-grid", name: "Fractured Grid Typography", desc: "Modular Grid • Split Headline • Editorial", fullDesc: "Strict modular grid with visible columns. Headline fragmented across blocks, sections move independently, monochrome + one accent.", category: "creative" },
+  { id: "glowframe-product", name: "Dark Product Glowframe", desc: "Teal Glow • Inner Glow Cards • Compact SaaS", fullDesc: "Dark-mode product page with teal/cyan accent. GlowFrame cards with inner glow borders, central product panel, compact layout.", category: "dark" },
   
   // === BRAND INSPIRED ===
   { id: "apple", name: "Apple Style", desc: "Frosted Glass • Clean • SF Pro", fullDesc: "Clean SF Pro typography, subtle glassmorphism, generous whitespace.", category: "brand" },
   { id: "stripe", name: "Stripe Design", desc: "Premium Gradient • Trust Blue", fullDesc: "Premium gradient backgrounds, smooth animations.", category: "brand" },
   { id: "spotify", name: "Spotify Dark", desc: "#121212 • Green Accent • Cards", fullDesc: "Deep black with vibrant green. Horizontal card carousels.", category: "brand" },
+  
+  // === NEW SHADER & ANIMATION STYLES ===
+  { id: "liquid-neon", name: "Liquid Neon", desc: "WebGL Metaballs • Lava Lamp • Glow", fullDesc: "Mesmerizing liquid crystal WebGL shader with smooth metaball animations. Neon color shifting, soft glow edges, massive bold typography floating above.", category: "shader" },
+  { id: "matrix-rain", name: "Matrix Rain", desc: "Falling Code • Scramble Text • Hacker", fullDesc: "Digital rain of characters falling like Matrix. Text scramble animations on headlines. Green phosphor glow on black. Monospace aesthetic.", category: "creative" },
+  { id: "gradient-bar-waitlist", name: "Gradient Bar Waitlist", desc: "Orange Bars • Pulse • Startup", fullDesc: "Animated gradient bars rising from bottom with pulse animation. Dark premium background, waitlist form, social proof avatars. Space Grotesk font.", category: "dark" },
+  { id: "blur-hero-minimal", name: "Blur Hero Minimal", desc: "Blur Reveal • Stagger • Clean SaaS", fullDesc: "Clean minimal hero with blur-to-clear text animations. Staggered word reveal, subtle spring physics. Customer logos section with hover blur effect.", category: "light" },
+  { id: "messy-physics", name: "Messy Colorful Physics", desc: "Matter.js • Drag Tags • Bouncy Pills", fullDesc: "Playful physics-enabled interface with draggable colorful pill tags. Gravity simulation, throw and bounce mechanics. Italic serif headline.", category: "physics" },
+  { id: "earthy-grid-reveal", name: "Earthy Grid Reveal", desc: "Grid Lines • Word Appear • Organic", fullDesc: "Sophisticated earthy tones with animated grid lines. Words appear with blur-scale-up animation. Mouse gradient follow effect, click ripples.", category: "creative" },
+  { id: "fluid-prismatic", name: "Fluid Prismatic", desc: "Fluid Simulation • Mouse Distort • Colors", fullDesc: "Interactive fluid simulation shader background. Mouse movement creates liquid distortion waves. Prismatic color palette, bold typography overlay.", category: "shader" },
+  { id: "paper-shader-mesh", name: "Paper Shader Mesh", desc: "MeshGradient • Cyan Orange • SVG Filters", fullDesc: "Paper design system with animated mesh gradient. Cyan to orange color scheme, SVG glass filters, gooey buttons, pulsing border accent.", category: "shader" },
+  { id: "myna-ai-mono", name: "Myna AI Mono", desc: "Orange CTA • Monospace • Business AI", fullDesc: "Clean business AI landing with monospace typography. Orange #FF6B2C accent, word-by-word headline animation, feature cards with icons, white background.", category: "light" },
+  { id: "acme-clean-rounded", name: "Acme Clean Rounded", desc: "Rounded Nav • Motion • Dashboard Preview", fullDesc: "Modern clean SaaS with rounded pill navigation. Staggered motion animations, dark/light toggle, dashboard image showcase with gradient overlay.", category: "light" },
 ];
 
 export default function StyleInjector({ value, onChange, disabled, referenceImage, onReferenceImageChange }: StyleInjectorProps) {
@@ -638,9 +819,9 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
   const searchInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Find preset - default to "custom" when no style selected
+  // Find preset - default to "auto-detect" when no style selected (matches video vibe)
   const selectedPreset = STYLE_PRESETS.find(p => value === p.name || value.startsWith(p.name + ".")) 
-    || (!value ? STYLE_PRESETS.find(p => p.id === "custom") : undefined);
+    || (!value || value.trim() === "" ? STYLE_PRESETS.find(p => p.id === "auto-detect") : undefined);
   
   // Extract custom instructions
   const customInstructions = (() => {

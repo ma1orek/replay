@@ -10,7 +10,7 @@ import {
   Calendar, ArrowUpRight, Filter, Download,
   User, Mail, Shield, AlertTriangle, Loader2,
   DollarSign, Cpu, MessageSquare, ThumbsUp, ThumbsDown, Meh,
-  Play
+  Play, FileText, PenSquare, Trash2, Plus, Send, Sparkles, Check, X, ExternalLink
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
@@ -70,6 +70,22 @@ interface FeedbackStats {
   no: number;
 }
 
+interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  meta_description: string;
+  target_keyword: string;
+  tone: string;
+  status: 'draft' | 'review' | 'published';
+  read_time_minutes: number;
+  seo_score: number;
+  created_at: string;
+  updated_at: string;
+  published_at: string | null;
+}
+
 // Gemini API cost estimation (based on approximate pricing)
 // gemini-3-pro: ~$0.00125 per 1K input tokens, ~$0.005 per 1K output tokens
 // Average video generation uses ~40-50K input tokens (video), ~10-15K output tokens (code)
@@ -92,11 +108,27 @@ export default function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [feedback, setFeedback] = useState<FeedbackData[]>([]);
   const [feedbackStats, setFeedbackStats] = useState<FeedbackStats | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "users" | "generations" | "feedback">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "generations" | "feedback" | "content">("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [dataLoading, setDataLoading] = useState(false);
   const [previewGeneration, setPreviewGeneration] = useState<GenerationData | null>(null);
+  
+  // Content Engine state
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [blogTotal, setBlogTotal] = useState(0);
+  const [blogLoading, setBlogLoading] = useState(false);
+  const [generateTitles, setGenerateTitles] = useState("");
+  const [generateKeyword, setGenerateKeyword] = useState("");
+  const [generateTone, setGenerateTone] = useState<"technical" | "controversial" | "tutorial" | "comparison">("technical");
+  const [generateTakeaways, setGenerateTakeaways] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generateResults, setGenerateResults] = useState<any[]>([]);
+  const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
+  const [blogFilter, setBlogFilter] = useState<"all" | "draft" | "review" | "published">("all");
+  const [autoMode, setAutoMode] = useState(true); // Auto-generate mode (AI picks topics)
+  const [autoCount, setAutoCount] = useState(10); // Number of articles to auto-generate
+  const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0, currentTitle: "" });
 
   // Load admin data with token
   const loadAdminData = useCallback(async (token: string) => {
@@ -186,6 +218,173 @@ export default function AdminPage() {
     setStats(null);
   };
 
+  // Load blog posts
+  const loadBlogPosts = useCallback(async (token: string) => {
+    setBlogLoading(true);
+    try {
+      const response = await fetch(`/api/admin/blog?status=${blogFilter}&limit=500`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setBlogPosts(data.posts || []);
+        setBlogTotal(data.total || 0);
+      }
+    } catch (error) {
+      console.error("Error loading blog posts:", error);
+    } finally {
+      setBlogLoading(false);
+    }
+  }, [blogFilter]);
+
+  // Generate articles
+  const handleGenerateArticles = async () => {
+    if (!adminToken) return;
+    
+    // Manual mode validation
+    if (!autoMode) {
+      if (!generateTitles.trim()) return;
+      const titleList = generateTitles.split('\n').filter(t => t.trim()).map(t => t.trim());
+      if (titleList.length === 0) return;
+    }
+    
+    // Auto mode validation  
+    if (autoMode && autoCount < 1) {
+      alert("Enter at least 1 article");
+      return;
+    }
+
+    setIsGenerating(true);
+    setGenerateResults([]);
+    setGenerationProgress({ current: 0, total: 0, currentTitle: "Getting topics..." });
+    
+    try {
+      let titlesToGenerate: string[] = [];
+      
+      if (autoMode) {
+        // First, get AI-generated topics
+        const topicsResponse = await fetch("/api/admin/generate-article", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${adminToken}`
+          },
+          body: JSON.stringify({
+            getTopicsOnly: true,
+            autoCount: autoCount,
+            targetKeyword: generateKeyword.trim() || undefined,
+          })
+        });
+        
+        const topicsData = await topicsResponse.json();
+        titlesToGenerate = topicsData.topics || [];
+        
+        if (titlesToGenerate.length === 0) {
+          throw new Error("No topics generated");
+        }
+      } else {
+        titlesToGenerate = generateTitles.split('\n').filter(t => t.trim()).map(t => t.trim());
+      }
+      
+      setGenerationProgress({ current: 0, total: titlesToGenerate.length, currentTitle: "" });
+      
+      // Generate articles one by one
+      for (let i = 0; i < titlesToGenerate.length; i++) {
+        const title = titlesToGenerate[i];
+        setGenerationProgress({ current: i + 1, total: titlesToGenerate.length, currentTitle: title });
+        
+        try {
+          const response = await fetch("/api/admin/generate-article", {
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${adminToken}`
+            },
+            body: JSON.stringify({
+              singleTitle: title,
+              targetKeyword: generateKeyword.trim() || undefined,
+              tone: generateTone,
+              keyTakeaways: generateTakeaways.split('\n').filter(t => t.trim()),
+              saveToDB: true
+            })
+          });
+
+          const data = await response.json();
+          
+          if (data.result) {
+            setGenerateResults(prev => [...prev, data.result]);
+          } else {
+            setGenerateResults(prev => [...prev, { title, error: true }]);
+          }
+        } catch (err) {
+          console.error(`Error generating "${title}":`, err);
+          setGenerateResults(prev => [...prev, { title, error: true }]);
+        }
+        
+        // Longer delay between requests to avoid DB connection exhaustion
+        if (i < titlesToGenerate.length - 1) {
+          await new Promise(r => setTimeout(r, 2000)); // 2 seconds between each article
+        }
+      }
+      
+      // Refresh blog posts
+      loadBlogPosts(adminToken);
+      // Clear form
+      setGenerateTitles("");
+      setGenerateKeyword("");
+      setGenerateTakeaways("");
+      
+    } catch (error) {
+      console.error("Generation error:", error);
+    } finally {
+      setIsGenerating(false);
+      setGenerationProgress({ current: 0, total: 0, currentTitle: "" });
+    }
+  };
+
+  // Update blog post status
+  const updatePostStatus = async (id: string, status: string) => {
+    if (!adminToken) return;
+    try {
+      const response = await fetch("/api/admin/blog", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${adminToken}`
+        },
+        body: JSON.stringify({ id, status })
+      });
+      if (response.ok) {
+        loadBlogPosts(adminToken);
+      }
+    } catch (error) {
+      console.error("Update error:", error);
+    }
+  };
+
+  // Delete blog post
+  const deletePost = async (id: string) => {
+    if (!adminToken || !confirm("Delete this post?")) return;
+    try {
+      const response = await fetch(`/api/admin/blog?id=${id}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${adminToken}` }
+      });
+      if (response.ok) {
+        loadBlogPosts(adminToken);
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+    }
+  };
+
+  // Load blog posts when tab changes or filter changes
+  useEffect(() => {
+    if (activeTab === "content" && adminToken) {
+      loadBlogPosts(adminToken);
+    }
+  }, [activeTab, blogFilter, adminToken, loadBlogPosts]);
+
   const refreshData = () => {
     if (adminToken) {
       loadAdminData(adminToken);
@@ -220,6 +419,76 @@ export default function AdminPage() {
       if (response.ok && data.success) {
         alert(`✅ Credits updated for ${userEmail}\n\nPrevious: ${data.previousCredits ?? 0}\nNew: ${creditsNum}`);
         refreshData();
+      } else {
+        alert(`❌ Failed: ${data.error || "Unknown error"}`);
+      }
+    } catch (err: any) {
+      alert(`❌ Error: ${err.message}`);
+    }
+  };
+
+  // Toggle PRO status for a user
+  const toggleUserPro = async (userId: string, currentMembership: string) => {
+    if (!adminToken) return;
+    
+    const newMembership = currentMembership === "pro" ? "free" : "pro";
+    
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { 
+          "Authorization": `Bearer ${adminToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ userId, membership: newMembership })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        // Update local state
+        setUsers(prev => prev.map(u => 
+          u.id === userId ? { ...u, membership: newMembership } : u
+        ));
+      } else {
+        alert(`❌ Failed: ${data.error || "Unknown error"}`);
+      }
+    } catch (err: any) {
+      alert(`❌ Error: ${err.message}`);
+    }
+  };
+
+  // Add credits to a user
+  const addUserCredits = async (userId: string, userEmail: string) => {
+    if (!adminToken) return;
+    
+    const credits = prompt(`Enter credits to ADD to ${userEmail}:`, "100");
+    if (!credits) return;
+    
+    const creditsNum = parseInt(credits, 10);
+    if (isNaN(creditsNum)) {
+      alert("Invalid credits amount");
+      return;
+    }
+    
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { 
+          "Authorization": `Bearer ${adminToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ userId, addCredits: creditsNum, creditType: "free" })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        // Update local state
+        setUsers(prev => prev.map(u => 
+          u.id === userId ? { ...u, credits_free: data.user.credits_free } : u
+        ));
+        alert(`✅ Added ${creditsNum} credits to ${userEmail}`);
       } else {
         alert(`❌ Failed: ${data.error || "Unknown error"}`);
       }
@@ -381,6 +650,7 @@ export default function AdminPage() {
             { id: "users", label: "Users", icon: Users },
             { id: "generations", label: "Generations", icon: Code },
             { id: "feedback", label: "Feedback", icon: MessageSquare },
+            { id: "content", label: "Content", icon: FileText },
           ].map(tab => (
             <button
               key={tab.id}
@@ -658,21 +928,35 @@ export default function AdminPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={cn(
-                            "text-xs px-2 py-1 rounded-full",
-                            user.membership === "pro" 
-                              ? "bg-[#FF6E3C]/20 text-[#FF6E3C]" 
-                              : "bg-white/5 text-white/50"
-                          )}>
-                            {user.membership || "free"}
-                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleUserPro(user.id, user.membership || "free");
+                            }}
+                            className={cn(
+                              "text-xs px-2 py-1 rounded-full transition-colors cursor-pointer hover:opacity-80",
+                              user.membership === "pro" 
+                                ? "bg-[#FF6E3C]/20 text-[#FF6E3C] hover:bg-[#FF6E3C]/30" 
+                                : "bg-white/5 text-white/50 hover:bg-white/10"
+                            )}
+                            title="Click to toggle PRO status"
+                          >
+                            {user.membership === "pro" ? "⭐ PRO" : "free"}
+                          </button>
                         </td>
                         <td className="px-4 py-3">
-                          <div className="text-sm">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addUserCredits(user.id, user.email);
+                            }}
+                            className="text-sm hover:bg-white/5 px-2 py-1 rounded transition-colors"
+                            title="Click to add credits"
+                          >
                             <span className="text-white/70">{user.credits_free || 0}</span>
                             <span className="text-white/30"> + </span>
                             <span className="text-[#FF6E3C]">{user.credits_purchased || 0}</span>
-                          </div>
+                          </button>
                         </td>
                         <td className="px-4 py-3">
                           <span className="text-sm text-white/70">{user.generations_count || 0}</span>
@@ -958,7 +1242,451 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+
+        {/* Content Tab - SEO Article Generator */}
+        {activeTab === "content" && (
+          <div className="space-y-6">
+            {/* Generator Form */}
+            <div className="bg-[#111] border border-white/10 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-[#FF6E3C]" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-white">Replay Content Engine</h2>
+                  <p className="text-xs text-white/50">Generate SEO-optimized articles using Gemini 2.5</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left - Mode Toggle & Input */}
+                <div className="space-y-4">
+                  {/* Mode Toggle */}
+                  <div className="flex items-center gap-2 p-1 bg-black/30 rounded-xl border border-white/10">
+                    <button
+                      onClick={() => setAutoMode(true)}
+                      className={cn(
+                        "flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2",
+                        autoMode 
+                          ? "bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white" 
+                          : "text-white/50 hover:text-white/70"
+                      )}
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      Auto SEO
+                    </button>
+                    <button
+                      onClick={() => setAutoMode(false)}
+                      className={cn(
+                        "flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2",
+                        !autoMode 
+                          ? "bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white" 
+                          : "text-white/50 hover:text-white/70"
+                      )}
+                    >
+                      <PenSquare className="w-4 h-4" />
+                      Manual
+                    </button>
+                  </div>
+
+                  {/* Auto Mode - Just Number Input */}
+                  {autoMode ? (
+                    <div className="p-5 bg-gradient-to-br from-[#FF6E3C]/10 to-transparent border border-[#FF6E3C]/20 rounded-xl">
+                      <div className="flex items-center gap-3 mb-4">
+                        <Zap className="w-5 h-5 text-[#FF6E3C]" />
+                        <div>
+                          <p className="text-sm font-medium text-white">AI picks the best SEO topics</p>
+                          <p className="text-xs text-white/50">Just enter how many articles you want</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <label className="text-sm text-white/70">Generate</label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={autoCount}
+                          onChange={(e) => setAutoCount(Math.max(1, parseInt(e.target.value) || 1))}
+                          className="w-24 px-4 py-3 bg-black/50 border border-white/20 rounded-xl text-white text-lg font-bold text-center focus:outline-none focus:border-[#FF6E3C]/50"
+                        />
+                        <label className="text-sm text-white/70">articles</label>
+                      </div>
+                      <p className="text-xs text-white/40 mt-3">
+                        AI will generate {autoCount} unique SEO-optimized topics: comparisons, tutorials, how-tos
+                      </p>
+                    </div>
+                  ) : (
+                    /* Manual Mode - Titles Textarea */
+                    <div>
+                      <label className="block text-sm font-medium text-white/70 mb-2">
+                        Article Titles (one per line)
+                      </label>
+                      <textarea
+                        value={generateTitles}
+                        onChange={(e) => setGenerateTitles(e.target.value)}
+                        placeholder="Replay vs v0.dev - which handles complex state better?&#10;How to build a SaaS dashboard with Supabase using Video&#10;Stop renaming props manually: The problem with Image-to-Code AI"
+                        rows={6}
+                        className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50 resize-none"
+                      />
+                      <p className="text-[10px] text-white/40 mt-1">
+                        {generateTitles.split('\n').filter(t => t.trim()).length} titles
+                      </p>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-white/70 mb-2">
+                      Target Keyword (optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={generateKeyword}
+                      onChange={(e) => setGenerateKeyword(e.target.value)}
+                      placeholder="video to code ai"
+                      className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50"
+                    />
+                  </div>
+                </div>
+
+                {/* Right - Options */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-white/70 mb-2">
+                      Tone
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { id: "technical", label: "Technical", desc: "Code snippets, implementation" },
+                        { id: "controversial", label: "Controversial", desc: "Strong stance, provocative" },
+                        { id: "tutorial", label: "Tutorial", desc: "Step-by-step guide" },
+                        { id: "comparison", label: "Comparison", desc: "Vs articles, alternatives" },
+                      ].map(tone => (
+                        <button
+                          key={tone.id}
+                          onClick={() => setGenerateTone(tone.id as any)}
+                          className={cn(
+                            "p-3 rounded-xl border text-left transition-all",
+                            generateTone === tone.id
+                              ? "border-[#FF6E3C]/50 bg-[#FF6E3C]/10"
+                              : "border-white/10 bg-black/20 hover:border-white/20"
+                          )}
+                        >
+                          <p className="text-sm font-medium text-white">{tone.label}</p>
+                          <p className="text-[10px] text-white/40">{tone.desc}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-white/70 mb-2">
+                      Key Takeaways (optional, one per line)
+                    </label>
+                    <textarea
+                      value={generateTakeaways}
+                      onChange={(e) => setGenerateTakeaways(e.target.value)}
+                      placeholder="Mention Supabase integration&#10;Include code examples&#10;Compare with competitors"
+                      rows={3}
+                      className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50 resize-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Generate Button */}
+              <div className="mt-6 flex items-center justify-between">
+                <p className="text-xs text-white/40">
+                  Using Gemini 2.5 Flash • ~$0.001 per article
+                </p>
+                <button
+                  onClick={handleGenerateArticles}
+                  disabled={isGenerating || (!autoMode && !generateTitles.trim())}
+                  className="px-6 py-3 bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white font-medium rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isGenerating ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> 
+                      {generationProgress.total > 0 
+                        ? `${generationProgress.current}/${generationProgress.total}` 
+                        : "Getting topics..."}
+                    </>
+                  ) : (
+                    <><Sparkles className="w-4 h-4" /> {autoMode ? `Generate ${autoCount} Articles` : "Generate Articles"}</>
+                  )}
+                </button>
+                
+                {/* Progress Bar */}
+                {isGenerating && generationProgress.total > 0 && (
+                  <div className="flex-1 min-w-0">
+                    <div className="h-2 bg-black/30 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] transition-all duration-300"
+                        style={{ width: `${(generationProgress.current / generationProgress.total) * 100}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-white/50 mt-1 truncate">
+                      {generationProgress.currentTitle || "Starting..."}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Generation Results */}
+              {generateResults.length > 0 && (
+                <div className="mt-6 p-4 bg-black/30 rounded-xl border border-white/10">
+                  <h3 className="text-sm font-medium text-white mb-3">Generation Results</h3>
+                  <div className="space-y-3">
+                    {generateResults.map((result, i) => (
+                      <div key={i} className="p-3 bg-black/30 rounded-lg border border-white/5">
+                        <div className="flex items-center justify-between gap-3 mb-2">
+                          <div className="flex items-center gap-2 text-sm flex-1 min-w-0">
+                            {result.error && !result.content ? (
+                              <>
+                                <X className="w-4 h-4 text-red-400 flex-shrink-0" />
+                                <span className="text-white/70 truncate">{result.title}</span>
+                                <span className="text-red-400 text-xs flex-shrink-0">- Failed</span>
+                              </>
+                            ) : result.saved ? (
+                              <>
+                                <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                                <span className="text-white/70 truncate">{result.title}</span>
+                                <span className="text-emerald-400 text-xs flex-shrink-0">
+                                  - Published! ({result.read_time_minutes}min)
+                                </span>
+                                <a
+                                  href={`/blog/${result.slug}`}
+                                  target="_blank"
+                                  className="text-[#FF6E3C] text-xs hover:underline flex-shrink-0"
+                                >
+                                  View →
+                                </a>
+                              </>
+                            ) : (
+                              <>
+                                <Check className="w-4 h-4 text-yellow-400 flex-shrink-0" />
+                                <span className="text-white/70 truncate">{result.title}</span>
+                                <span className="text-yellow-400 text-xs flex-shrink-0">
+                                  - Generated ({result.read_time_minutes}min)
+                                </span>
+                              </>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {result.saved && result.slug && (
+                              <a
+                                href={`/blog/${result.slug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-2 py-1 text-xs bg-[#FF6E3C]/20 text-[#FF6E3C] rounded hover:bg-[#FF6E3C]/30 transition-colors flex items-center gap-1"
+                              >
+                                <ExternalLink className="w-3 h-3" /> View
+                              </a>
+                            )}
+                            {result.content && (
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(result.content);
+                                  alert("Content copied to clipboard!");
+                                }}
+                                className="px-2 py-1 text-xs bg-white/5 text-white/60 rounded hover:bg-white/10 transition-colors"
+                              >
+                                Copy MD
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        {result.content && (
+                          <details className="mt-2">
+                            <summary className="text-xs text-white/40 cursor-pointer hover:text-white/60">
+                              Preview content ({result.content.length} chars)
+                            </summary>
+                            <div className="mt-2 p-3 bg-black/50 rounded-lg text-xs text-white/60 overflow-x-auto max-h-64 overflow-y-auto">
+                              <pre className="whitespace-pre-wrap">{result.content}</pre>
+                            </div>
+                          </details>
+                        )}
+                        {!result.saved && result.content && (
+                          <p className="text-[10px] text-yellow-500/60 mt-2">
+                            ⚠️ Create blog_posts table in Supabase to save articles
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Blog Posts List */}
+            <div className="bg-[#111] border border-white/10 rounded-xl">
+              <div className="p-4 border-b border-white/10 flex items-center justify-between">
+                <h3 className="text-sm font-medium text-white/70 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-[#FF6E3C]" />
+                  Generated Articles ({blogTotal} total{blogFilter !== 'all' ? `, showing ${blogPosts.length}` : ''})
+                </h3>
+                <div className="flex items-center gap-2">
+                  {["all", "draft", "review", "published"].map(status => (
+                    <button
+                      key={status}
+                      onClick={() => setBlogFilter(status as any)}
+                      className={cn(
+                        "px-3 py-1.5 text-xs rounded-lg transition-colors capitalize",
+                        blogFilter === status
+                          ? "bg-[#FF6E3C]/20 text-[#FF6E3C]"
+                          : "bg-white/5 text-white/50 hover:text-white/70"
+                      )}
+                    >
+                      {status}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="divide-y divide-white/5">
+                {blogLoading ? (
+                  <div className="py-12 flex items-center justify-center">
+                    <Loader2 className="w-6 h-6 text-white/30 animate-spin" />
+                  </div>
+                ) : blogPosts.length === 0 ? (
+                  <div className="py-12 text-center text-white/30">
+                    No articles yet. Generate some above!
+                  </div>
+                ) : (
+                  blogPosts.map(post => (
+                    <div key={post.id} className="p-4 hover:bg-white/[0.02]">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="text-sm font-medium text-white truncate">{post.title}</h4>
+                            <span className={cn(
+                              "text-[10px] px-2 py-0.5 rounded-full capitalize",
+                              post.status === "published" && "bg-emerald-500/20 text-emerald-400",
+                              post.status === "review" && "bg-yellow-500/20 text-yellow-400",
+                              post.status === "draft" && "bg-white/10 text-white/50"
+                            )}>
+                              {post.status}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4 text-[10px] text-white/40">
+                            <span>/{post.slug}</span>
+                            <span>{post.read_time_minutes} min read</span>
+                            <span>SEO: {post.seo_score}/100</span>
+                            <span>{new Date(post.created_at).toLocaleDateString()}</span>
+                          </div>
+                          {post.meta_description && (
+                            <p className="text-xs text-white/50 mt-2 line-clamp-1">{post.meta_description}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {post.status !== "published" && (
+                            <button
+                              onClick={() => updatePostStatus(post.id, "published")}
+                              className="p-2 hover:bg-emerald-500/10 rounded-lg text-white/40 hover:text-emerald-400 transition-colors"
+                              title="Publish"
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+                          )}
+                          {post.status === "draft" && (
+                            <button
+                              onClick={() => updatePostStatus(post.id, "review")}
+                              className="p-2 hover:bg-yellow-500/10 rounded-lg text-white/40 hover:text-yellow-400 transition-colors"
+                              title="Mark for Review"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setEditingPost(post)}
+                            className="p-2 hover:bg-white/10 rounded-lg text-white/40 hover:text-white transition-colors"
+                            title="Edit"
+                          >
+                            <PenSquare className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deletePost(post.id)}
+                            className="p-2 hover:bg-red-500/10 rounded-lg text-white/40 hover:text-red-400 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </main>
+
+      {/* Post Editor Modal */}
+      <AnimatePresence>
+        {editingPost && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setEditingPost(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#0a0a0a] border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-4 border-b border-white/10">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">{editingPost.title}</h3>
+                  <p className="text-xs text-white/50">/{editingPost.slug} • {editingPost.read_time_minutes} min • SEO: {editingPost.seo_score}/100</p>
+                </div>
+                <button onClick={() => setEditingPost(null)} className="p-2 hover:bg-white/10 rounded-lg">
+                  <X className="w-5 h-5 text-white/50" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-auto p-4">
+                <pre className="text-sm text-white/70 whitespace-pre-wrap font-mono bg-black/30 p-4 rounded-xl border border-white/10">
+                  {editingPost.content}
+                </pre>
+              </div>
+              <div className="p-4 border-t border-white/10 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className={cn(
+                    "text-xs px-3 py-1 rounded-full capitalize",
+                    editingPost.status === "published" && "bg-emerald-500/20 text-emerald-400",
+                    editingPost.status === "review" && "bg-yellow-500/20 text-yellow-400",
+                    editingPost.status === "draft" && "bg-white/10 text-white/50"
+                  )}>
+                    {editingPost.status}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {editingPost.status !== "published" && (
+                    <button
+                      onClick={() => {
+                        updatePostStatus(editingPost.id, "published");
+                        setEditingPost(null);
+                      }}
+                      className="px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-lg text-sm font-medium hover:bg-emerald-500/30 transition-colors flex items-center gap-2"
+                    >
+                      <Check className="w-4 h-4" /> Publish
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(editingPost.content);
+                    }}
+                    className="px-4 py-2 bg-white/10 text-white/70 rounded-lg text-sm font-medium hover:bg-white/20 transition-colors"
+                  >
+                    Copy Markdown
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* Preview Modal */}
       <AnimatePresence>

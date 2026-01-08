@@ -81,24 +81,25 @@ export async function POST(request: NextRequest) {
     }
 
     // If existing slug provided, update instead of create
-    // Use admin client to bypass RLS (slug might have been created by anonymous user)
-    const adminSupabase = createAdminClient();
-    
-    if (existingSlug && adminSupabase) {
+    if (existingSlug) {
       console.log('[publish] Attempting to update existing slug:', existingSlug);
       
-      // First check if the record exists (using admin to bypass RLS)
-      const { data: existingRecord, error: checkError } = await adminSupabase
+      // Try admin client first (bypasses RLS), fallback to regular client
+      const adminSupabase = createAdminClient();
+      const updateClient = adminSupabase || supabase;
+      
+      // First check if the record exists
+      const { data: existingRecord, error: checkError } = await updateClient
         .from("published_projects")
-        .select("id, slug")
+        .select("id, slug, user_id")
         .eq("slug", existingSlug)
         .single();
       
       console.log('[publish] Existing record check:', existingRecord, checkError?.message);
       
       if (existingRecord) {
-        // Record exists, update it (using admin to bypass RLS)
-        const { data, error } = await adminSupabase
+        // Record exists, update it
+        const { data, error } = await updateClient
           .from("published_projects")
           .update({
             title,
@@ -113,15 +114,20 @@ export async function POST(request: NextRequest) {
 
         if (error) {
           console.error("Database update error:", error);
+          // If update failed with regular client (RLS), try creating at same slug won't work
+          // So we should return the existing slug anyway to maintain URL consistency
+          console.log('[publish] Update failed, but keeping existing slug for consistency');
         } else {
           console.log('[publish] Successfully updated existing project');
-          return NextResponse.json({
-            success: true,
-            slug: existingSlug,
-            url: `https://www.replay.build/p/${existingSlug}`,
-            updated: true,
-          });
         }
+        
+        // ALWAYS return the existing slug when we have one - never create a new URL
+        return NextResponse.json({
+          success: true,
+          slug: existingSlug,
+          url: `https://www.replay.build/p/${existingSlug}`,
+          updated: true,
+        });
       } else {
         console.log('[publish] No existing record found for slug, will create new');
       }

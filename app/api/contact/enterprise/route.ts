@@ -24,103 +24,138 @@ export async function POST(request: NextRequest) {
 
     const resend = getResend();
     
-    // Send email to support
-    await resend.emails.send({
-      from: "Replay <noreply@replay.build>",
-      to: "support@replay.build",
-      subject: `Enterprise inquiry — ${company} — ${firstName} ${lastName}`,
+    // Send email to support (with reply_to so you can easily respond)
+    console.log("[Contact API] Sending email to support@replay.build...");
+    console.log("[Contact API] Form data:", { firstName, lastName, email, company, role, useCase, links });
+    
+    const supportEmailResult = await resend.emails.send({
+      from: "Replay Contact Form <system@replay.build>",
+      to: ["support@replay.build"],
+      replyTo: email,
+      subject: `🔔 New Contact: ${firstName} ${lastName} from ${company}`,
+      text: `
+NEW CONTACT FORM SUBMISSION
+============================
+
+Name: ${firstName} ${lastName}
+Email: ${email}
+Company: ${company}
+Topic: ${role || "Not specified"}
+
+MESSAGE:
+${useCase || "No message provided"}
+
+${links ? `Links: ${links}` : ""}
+
+---
+Reply directly to this email to respond to the user.
+      `.trim(),
       html: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background: #0a0a0a; color: #fff;">
-          <div style="text-align: center; margin-bottom: 40px;">
-            <img src="https://replay.build/logo.png" alt="Replay" style="height: 32px;" />
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background: #111; color: #fff;">
+          <div style="text-align: center; margin-bottom: 32px;">
+            <h2 style="color: #FF6E3C; font-size: 28px; margin: 0; font-weight: bold;">Replay</h2>
           </div>
           
-          <div style="background: linear-gradient(135deg, rgba(255,110,60,0.1) 0%, rgba(255,143,92,0.05) 100%); border: 1px solid rgba(255,110,60,0.2); border-radius: 16px; padding: 32px;">
-            <h1 style="color: #FF6E3C; font-size: 24px; margin: 0 0 24px 0;">New Enterprise Inquiry</h1>
+          <div style="background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 24px;">
+            <h1 style="color: #FF6E3C; font-size: 20px; margin: 0 0 20px 0;">📩 New Contact Form Submission</h1>
             
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
-                <td style="padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); width: 120px;">Name</td>
-                <td style="padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1); color: #fff;">${firstName} ${lastName}</td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #333; color: #888; width: 100px;">Name</td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #333; color: #fff;">${firstName} ${lastName}</td>
               </tr>
               <tr>
-                <td style="padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.5);">Email</td>
-                <td style="padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1);"><a href="mailto:${email}" style="color: #FF6E3C;">${email}</a></td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #333; color: #888;">Email</td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #333;"><a href="mailto:${email}" style="color: #FF6E3C;">${email}</a></td>
               </tr>
               <tr>
-                <td style="padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.5);">Company</td>
-                <td style="padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1); color: #fff;">${company}</td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #333; color: #888;">Company</td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #333; color: #fff;">${company}</td>
               </tr>
               <tr>
-                <td style="padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.5);">Role</td>
-                <td style="padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1); color: #fff;">${role || "Not specified"}</td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #333; color: #888;">Topic</td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #333; color: #fff;">${role || "Not specified"}</td>
               </tr>
             </table>
             
-            <div style="margin-top: 24px;">
-              <p style="color: rgba(255,255,255,0.5); margin: 0 0 8px 0; font-size: 14px;">What are they rebuilding?</p>
-              <p style="color: #fff; margin: 0; line-height: 1.6;">${useCase || "Not specified"}</p>
+            <div style="margin-top: 20px; background: #222; padding: 16px; border-radius: 8px; border-left: 3px solid #FF6E3C;">
+              <p style="color: #FF6E3C; margin: 0 0 8px 0; font-size: 13px; font-weight: bold;">MESSAGE:</p>
+              <p style="color: #fff; margin: 0; line-height: 1.6; white-space: pre-wrap;">${useCase || "No message provided"}</p>
             </div>
             
             ${links ? `
-            <div style="margin-top: 24px;">
-              <p style="color: rgba(255,255,255,0.5); margin: 0 0 8px 0; font-size: 14px;">Links</p>
+            <div style="margin-top: 16px;">
+              <p style="color: #888; margin: 0 0 4px 0; font-size: 13px;">Links:</p>
               <p style="color: #FF6E3C; margin: 0; word-break: break-all;">${links}</p>
             </div>
             ` : ""}
           </div>
           
-          <p style="text-align: center; color: rgba(255,255,255,0.3); font-size: 12px; margin-top: 32px;">
+          <p style="text-align: center; color: #666; font-size: 11px; margin-top: 24px;">
             Replay — Behavior-Driven UI Rebuild
           </p>
         </div>
       `,
     });
+    console.log("[Contact API] Support email result:", JSON.stringify(supportEmailResult, null, 2));
+    
+    // Check if there was an error sending to support
+    if (supportEmailResult.error) {
+      console.error("[Contact API] ERROR sending to support:", supportEmailResult.error);
+      // Don't return error - still try to send user confirmation
+    } else {
+      console.log("[Contact API] ✅ Email sent to support, ID:", supportEmailResult.data?.id);
+    }
 
     // Send confirmation to user
-    await resend.emails.send({
-      from: "Replay <noreply@replay.build>",
+    console.log("[Contact API] Sending confirmation to user:", email);
+    const userEmailResult = await resend.emails.send({
+      from: "Replay <system@replay.build>",
       to: email,
-      subject: "Thanks for reaching out — Replay Enterprise",
+      subject: "Thanks for reaching out — Replay",
       html: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background: #0a0a0a; color: #fff;">
-          <div style="text-align: center; margin-bottom: 40px;">
-            <img src="https://replay.build/logo.png" alt="Replay" style="height: 32px;" />
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background: #111; color: #fff;">
+          <div style="text-align: center; margin-bottom: 32px;">
+            <h2 style="color: #FF6E3C; font-size: 28px; margin: 0; font-weight: bold;">Replay</h2>
           </div>
           
-          <div style="background: linear-gradient(135deg, rgba(255,110,60,0.1) 0%, rgba(255,143,92,0.05) 100%); border: 1px solid rgba(255,110,60,0.2); border-radius: 16px; padding: 32px; text-align: center;">
-            <div style="width: 64px; height: 64px; margin: 0 auto 24px; background: linear-gradient(135deg, #FF6E3C 0%, #FF8F5C 100%); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
-              <span style="font-size: 32px;">✓</span>
-            </div>
+          <div style="background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 32px; text-align: center;">
+            <div style="width: 48px; height: 48px; margin: 0 auto 20px; background: #FF6E3C; border-radius: 50%; line-height: 48px; font-size: 24px; color: #fff;">✓</div>
             
-            <h1 style="color: #fff; font-size: 28px; margin: 0 0 16px 0;">Thanks, ${firstName}!</h1>
+            <h1 style="color: #fff; font-size: 24px; margin: 0 0 12px 0;">Thanks, ${firstName}!</h1>
             
-            <p style="color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
-              We've received your Enterprise inquiry and will get back to you within 48 hours.
+            <p style="color: #aaa; font-size: 15px; line-height: 1.5; margin: 0 0 20px 0;">
+              We've received your message and will get back to you within 48 hours.
             </p>
             
-            <p style="color: rgba(255,255,255,0.5); font-size: 14px; margin: 0;">
-              In the meantime, feel free to explore Replay with our free tier — 150 credits included.
+            <p style="color: #666; font-size: 13px; margin: 0;">
+              In the meantime, feel free to explore Replay with our free tier.
             </p>
           </div>
           
-          <div style="text-align: center; margin-top: 32px;">
-            <a href="https://replay.build/tool" style="display: inline-block; background: linear-gradient(135deg, #FF6E3C 0%, #FF8F5C 100%); color: #fff; text-decoration: none; padding: 14px 32px; border-radius: 12px; font-weight: 600;">
+          <div style="text-align: center; margin-top: 24px;">
+            <a href="https://replay.build" style="display: inline-block; background: #FF6E3C; color: #fff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 14px;">
               Start Building →
             </a>
           </div>
           
-          <p style="text-align: center; color: rgba(255,255,255,0.3); font-size: 12px; margin-top: 32px;">
+          <p style="text-align: center; color: #666; font-size: 11px; margin-top: 24px;">
             Replay — Behavior-Driven UI Rebuild
           </p>
         </div>
       `,
     });
+    console.log("[Contact API] User email result:", JSON.stringify(userEmailResult, null, 2));
 
-    return NextResponse.json({ success: true });
+    console.log("[Contact API] Both emails processed!");
+    return NextResponse.json({ 
+      success: true,
+      supportEmailId: supportEmailResult?.data?.id,
+      userEmailId: userEmailResult?.data?.id,
+      supportError: supportEmailResult.error || null
+    });
   } catch (error: any) {
-    console.error("Contact error:", error);
+    console.error("[Contact API] Error sending email:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-

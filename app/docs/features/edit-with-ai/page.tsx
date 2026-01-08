@@ -187,6 +187,29 @@ export default function EditWithAIPage() {
             <span className="font-mono text-[#FF6E3C]">3 credits per edit</span>
           </div>
         </div>
+        <p className="text-sm text-white/50">
+          Each edit request costs 3 credits, regardless of complexity. New page generation with @PageName also costs 3 credits.
+        </p>
+      </div>
+
+      {/* New: AI Response */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-semibold text-white">AI Response in Chat</h2>
+        <p className="text-white/70 leading-relaxed">
+          After each edit, the AI explains what changes it made in the chat window. 
+          This helps you understand exactly what was modified without comparing code line by line.
+        </p>
+        <div className="p-4 rounded-xl bg-[#1a1a1a] border border-white/10">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full bg-[#FF6E3C]/20 flex items-center justify-center flex-shrink-0">
+              <Sparkles className="w-4 h-4 text-[#FF6E3C]" />
+            </div>
+            <div className="text-sm text-white/70">
+              <p className="text-white font-medium mb-1">Done!</p>
+              <p>I've made the header sticky with a frosted glass effect. Added backdrop-blur-xl and bg-black/80. The navigation now stays visible while scrolling.</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

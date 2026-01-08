@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Mail, Loader2, ArrowLeft } from "lucide-react";
+import { X, Mail, Loader2, ArrowLeft, Eye, EyeOff, Lock } from "lucide-react";
 import { useAuth } from "@/lib/auth/context";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
@@ -14,20 +14,24 @@ interface AuthModalProps {
   description?: string;
 }
 
+type AuthMode = "select" | "email-otp" | "email-password" | "otp-verify" | "otp-verify-register" | "register";
+
 export default function AuthModal({
   isOpen,
   onClose,
   title = "Sign in to generate",
   description = "Your credits and projects are saved to your account.",
 }: AuthModalProps) {
-  const { signInWithGoogle, signInWithGitHub, signInWithEmail, verifyOtp } = useAuth();
+  const { signInWithGoogle, signInWithGitHub, signInWithEmail, signInWithPassword, signUpWithPassword, verifyOtp } = useAuth();
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [otpCode, setOtpCode] = useState(["", "", "", "", "", ""]);
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingProvider, setLoadingProvider] = useState<"google" | "github" | "email" | "verify" | null>(null);
-  const [showEmailInput, setShowEmailInput] = useState(false);
-  const [showOtpInput, setShowOtpInput] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState<"google" | "github" | "email" | "password" | "register" | "verify" | null>(null);
+  const [authMode, setAuthMode] = useState<AuthMode>("select");
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleGoogleSignIn = async () => {
@@ -70,10 +74,80 @@ export default function AuthModal({
     if (result.error) {
       setError(result.error);
     } else {
-      setShowOtpInput(true);
+      setAuthMode("otp-verify");
       setOtpCode(["", "", "", "", "", ""]);
       // Focus first OTP input after render
       setTimeout(() => otpRefs.current[0]?.focus(), 100);
+    }
+    
+    setIsLoading(false);
+    setLoadingProvider(null);
+  };
+
+  const handlePasswordSignIn = async () => {
+    if (!email.trim() || !password.trim()) return;
+    
+    setIsLoading(true);
+    setLoadingProvider("password");
+    setError(null);
+    
+    const result = await signInWithPassword(email.trim(), password.trim());
+    
+    if (result.error) {
+      setError(result.error);
+    } else {
+      handleClose();
+    }
+    
+    setIsLoading(false);
+    setLoadingProvider(null);
+  };
+
+  const handleRegister = async () => {
+    if (!email.trim() || !password.trim()) return;
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+    
+    setIsLoading(true);
+    setLoadingProvider("register");
+    setError(null);
+    
+    // First register with Supabase
+    const result = await signUpWithPassword(email.trim(), password.trim());
+    
+    if (result.error) {
+      setError(result.error);
+      setIsLoading(false);
+      setLoadingProvider(null);
+      return;
+    }
+    
+    // Send verification code via Resend
+    try {
+      const res = await fetch("/api/auth/verify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), action: "send" }),
+      });
+      
+      if (res.ok) {
+        // Show OTP verification screen for registration
+        setAuthMode("otp-verify-register");
+        setOtpCode(["", "", "", "", "", ""]);
+        setTimeout(() => otpRefs.current[0]?.focus(), 100);
+        setSuccessMessage(null);
+      } else {
+        // Fallback message if email fails
+        setSuccessMessage("Account created! Check your email to confirm your account.");
+        setAuthMode("email-password");
+        setPassword("");
+      }
+    } catch (e) {
+      setSuccessMessage("Account created! Check your email to confirm your account.");
+      setAuthMode("email-password");
+      setPassword("");
     }
     
     setIsLoading(false);
@@ -123,33 +197,94 @@ export default function AuthModal({
     setLoadingProvider("verify");
     setError(null);
     
-    const result = await verifyOtp(email.trim(), code);
-    
-    if (result.error) {
-      setError(result.error);
-      setOtpCode(["", "", "", "", "", ""]);
-      otpRefs.current[0]?.focus();
+    // Check if this is registration verification (using our API) or magic link (using Supabase)
+    if (authMode === "otp-verify-register") {
+      // Verify with our Resend-based API
+      try {
+        const res = await fetch("/api/auth/verify-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email.trim(), code, action: "verify" }),
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok && data.verified) {
+          // Email verified! Now sign them in
+          const signInResult = await signInWithPassword(email.trim(), password);
+          if (signInResult.error) {
+            setError(signInResult.error);
+          } else {
+            handleClose();
+          }
+        } else {
+          setError(data.error || "Invalid code");
+          setOtpCode(["", "", "", "", "", ""]);
+          otpRefs.current[0]?.focus();
+        }
+      } catch (e) {
+        setError("Verification failed. Please try again.");
+        setOtpCode(["", "", "", "", "", ""]);
+        otpRefs.current[0]?.focus();
+      }
     } else {
-      // Success! Close modal
-      handleClose();
+      // Magic link verification via Supabase
+      const result = await verifyOtp(email.trim(), code);
+      
+      if (result.error) {
+        setError(result.error);
+        setOtpCode(["", "", "", "", "", ""]);
+        otpRefs.current[0]?.focus();
+      } else {
+        handleClose();
+      }
     }
     
     setIsLoading(false);
     setLoadingProvider(null);
   };
 
-  const handleBackToEmail = () => {
-    setShowOtpInput(false);
+  const handleBack = () => {
+    if (authMode === "otp-verify") {
+      setAuthMode("email-otp");
+    } else if (authMode === "otp-verify-register") {
+      setAuthMode("register");
+    } else {
+      setAuthMode("select");
+    }
     setOtpCode(["", "", "", "", "", ""]);
     setError(null);
+    setSuccessMessage(null);
+  };
+
+  const handleResendRegistrationCode = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/auth/verify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), action: "send" }),
+      });
+      if (res.ok) {
+        setSuccessMessage("New code sent!");
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        setError("Failed to resend code");
+      }
+    } catch (e) {
+      setError("Failed to resend code");
+    }
+    setIsLoading(false);
   };
 
   const handleClose = () => {
     setEmail("");
-    setShowEmailInput(false);
-    setShowOtpInput(false);
+    setPassword("");
+    setAuthMode("select");
     setOtpCode(["", "", "", "", "", ""]);
     setError(null);
+    setSuccessMessage(null);
     onClose();
   };
 
@@ -163,7 +298,7 @@ export default function AuthModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
-            className="fixed inset-0 bg-black/80 backdrop-blur-md z-50"
+            className="fixed inset-0 bg-black/30 backdrop-blur-md z-50"
           />
           
           {/* Modal - Centered and responsive */}
@@ -194,10 +329,11 @@ export default function AuthModal({
                 <p className="text-sm text-white/50">{description}</p>
               </div>
 
-              {showOtpInput ? (
+              {/* OTP Verification (both magic link and registration) */}
+              {(authMode === "otp-verify" || authMode === "otp-verify-register") && (
                 <div className="text-center py-4">
                   <button
-                    onClick={handleBackToEmail}
+                    onClick={handleBack}
                     className="absolute left-3 top-3 md:left-4 md:top-4 p-2 rounded-lg hover:bg-white/5 transition-colors"
                   >
                     <ArrowLeft className="w-5 h-5 text-white/40" />
@@ -206,7 +342,9 @@ export default function AuthModal({
                   <div className="w-16 h-16 rounded-full bg-[#FF6E3C]/20 flex items-center justify-center mx-auto mb-4">
                     <Mail className="w-8 h-8 text-[#FF6E3C]" />
                   </div>
-                  <h3 className="text-lg font-medium text-white mb-2">Enter verification code</h3>
+                  <h3 className="text-lg font-medium text-white mb-2">
+                    {authMode === "otp-verify-register" ? "Verify your email" : "Enter verification code"}
+                  </h3>
                   <p className="text-sm text-white/50 mb-6">
                     We sent a 6-digit code to <span className="text-white">{email}</span>
                   </p>
@@ -241,14 +379,154 @@ export default function AuthModal({
                   )}
                   
                   <button
-                    onClick={handleEmailSignIn}
+                    onClick={authMode === "otp-verify-register" ? handleResendRegistrationCode : handleEmailSignIn}
                     disabled={isLoading}
                     className="mt-4 text-sm text-[#FF6E3C] hover:text-[#FF8F5C] transition-colors disabled:opacity-50"
                   >
                     Resend code
                   </button>
                 </div>
-              ) : (
+              )}
+
+              {/* Email/Password Login */}
+              {authMode === "email-password" && (
+                <div className="space-y-3">
+                  <button
+                    onClick={handleBack}
+                    className="absolute left-3 top-3 md:left-4 md:top-4 p-2 rounded-lg hover:bg-white/5 transition-colors"
+                  >
+                    <ArrowLeft className="w-5 h-5 text-white/40" />
+                  </button>
+
+                  {successMessage && (
+                    <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm text-center mb-4">
+                      {successMessage}
+                    </div>
+                  )}
+
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email"
+                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
+                    autoFocus
+                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handlePasswordSignIn()}
+                      placeholder="Password"
+                      className="w-full px-4 py-3 pr-12 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-white/30 hover:text-white/50"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  <button
+                    onClick={handlePasswordSignIn}
+                    disabled={isLoading || !email.trim() || !password.trim()}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#FF6E3C] text-white font-medium hover:bg-[#FF8F5C] transition-colors disabled:opacity-50"
+                  >
+                    {loadingProvider === "password" ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <Lock className="w-5 h-5" />
+                        Sign in
+                      </>
+                    )}
+                  </button>
+
+                  <p className="text-center text-sm text-white/40">
+                    Don't have an account?{" "}
+                    <button 
+                      onClick={() => { setAuthMode("register"); setError(null); setSuccessMessage(null); }}
+                      className="text-[#FF6E3C] hover:text-[#FF8F5C]"
+                    >
+                      Create one
+                    </button>
+                  </p>
+
+                  {error && (
+                    <p className="text-sm text-red-400 text-center">{error}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Register */}
+              {authMode === "register" && (
+                <div className="space-y-3">
+                  <button
+                    onClick={handleBack}
+                    className="absolute left-3 top-3 md:left-4 md:top-4 p-2 rounded-lg hover:bg-white/5 transition-colors"
+                  >
+                    <ArrowLeft className="w-5 h-5 text-white/40" />
+                  </button>
+
+                  <h3 className="text-lg font-medium text-white text-center mb-4">Create account</h3>
+
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email"
+                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
+                    autoFocus
+                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleRegister()}
+                      placeholder="Password (min 6 characters)"
+                      className="w-full px-4 py-3 pr-12 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-white/30 hover:text-white/50"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  <button
+                    onClick={handleRegister}
+                    disabled={isLoading || !email.trim() || !password.trim()}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#FF6E3C] text-white font-medium hover:bg-[#FF8F5C] transition-colors disabled:opacity-50"
+                  >
+                    {loadingProvider === "register" ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      "Create account"
+                    )}
+                  </button>
+
+                  <p className="text-center text-sm text-white/40">
+                    Already have an account?{" "}
+                    <button 
+                      onClick={() => { setAuthMode("email-password"); setError(null); }}
+                      className="text-[#FF6E3C] hover:text-[#FF8F5C]"
+                    >
+                      Sign in
+                    </button>
+                  </p>
+
+                  {error && (
+                    <p className="text-sm text-red-400 text-center">{error}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Main selection */}
+              {authMode === "select" && (
                 <div className="space-y-3">
                   {/* Google Button */}
                   <button
@@ -295,42 +573,64 @@ export default function AuthModal({
                     </div>
                   </div>
 
-                  {/* Email Input */}
-                  {showEmailInput ? (
-                    <div className="space-y-3">
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleEmailSignIn()}
-                        placeholder="Enter your email"
-                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
-                        autoFocus
-                      />
-                      <button
-                        onClick={handleEmailSignIn}
-                        disabled={isLoading || !email.trim()}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#FF6E3C] text-white font-medium hover:bg-[#FF8F5C] transition-colors disabled:opacity-50"
-                      >
-                        {loadingProvider === "email" ? (
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
-                          <>
-                            <Mail className="w-5 h-5" />
-                            Send verification code
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setShowEmailInput(true)}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                    >
-                      <Mail className="w-5 h-5" />
-                      Continue with email
-                    </button>
+                  {/* Email/Password Button */}
+                  <button
+                    onClick={() => setAuthMode("email-password")}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <Lock className="w-5 h-5" />
+                    Sign in with email & password
+                  </button>
+
+                  {/* Magic Link Button */}
+                  <button
+                    onClick={() => setAuthMode("email-otp")}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <Mail className="w-5 h-5" />
+                    Sign in with magic link
+                  </button>
+
+                  {/* Error */}
+                  {error && (
+                    <p className="text-sm text-red-400 text-center">{error}</p>
                   )}
+                </div>
+              )}
+
+              {/* Email OTP (Magic Link) */}
+              {authMode === "email-otp" && (
+                <div className="space-y-3">
+                  <button
+                    onClick={handleBack}
+                    className="absolute left-3 top-3 md:left-4 md:top-4 p-2 rounded-lg hover:bg-white/5 transition-colors"
+                  >
+                    <ArrowLeft className="w-5 h-5 text-white/40" />
+                  </button>
+
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleEmailSignIn()}
+                    placeholder="Enter your email"
+                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
+                    autoFocus
+                  />
+                  <button
+                    onClick={handleEmailSignIn}
+                    disabled={isLoading || !email.trim()}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#FF6E3C] text-white font-medium hover:bg-[#FF8F5C] transition-colors disabled:opacity-50"
+                  >
+                    {loadingProvider === "email" ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <Mail className="w-5 h-5" />
+                        Send verification code
+                      </>
+                    )}
+                  </button>
 
                   {/* Error */}
                   {error && (

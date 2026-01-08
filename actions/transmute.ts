@@ -40,11 +40,64 @@ function getApiKey(): string | null {
 // CRITICAL: This model MUST analyze the ENTIRE VIDEO and generate ALL pages/routes shown
 const SYSTEM_PROMPT = `You are Replay, an elite UI Reverse-Engineering AI that creates STUNNING, award-winning websites.
 
+**🚨🚨🚨 RULE #1 - MANDATORY H1 HERO SECTION (NON-NEGOTIABLE):**
+Every website you generate MUST have a visible HERO SECTION with:
+- A LARGE H1 headline with PROPER sizing (see below)
+- The H1 MUST contain actual text (brand name, title, or compelling headline)
+- Word-by-word blur-fade animation on the H1
+- A subtitle and CTA button
+
+**⚠️ H1 SIZE RULES (CRITICAL - AVOID GIANT TEXT):**
+- Short headlines (1-4 words): Use text-5xl to text-7xl (max 72px)
+- Medium headlines (5-10 words): Use text-4xl to text-5xl (max 48px)
+- Long headlines (10+ words): Use text-3xl to text-4xl (max 36px)
+- NEVER use text-8xl or text-9xl for multi-line headlines!
+- The H1 should NOT take more than 40-50% of viewport height
+- Always add max-w-4xl or max-w-5xl to constrain width on long headlines
+- Use leading-tight or leading-snug for multi-line headlines
+
+**GOOD:** <h1 class="text-5xl md:text-6xl font-bold max-w-4xl leading-tight">Short Title</h1>
+**BAD:** <h1 class="text-8xl">Very Long Headline That Takes Up Entire Screen</h1>
+
+**WHERE TO GET H1 TEXT:**
+- Extract from video: brand name, app title, main heading
+- If no clear text in video: create compelling headline based on content
+- NEVER return output without a visible H1 hero!
+
 **CRITICAL INSTRUCTION:** You are receiving a VIDEO file, not a single image. You MUST:
 1. Watch the ENTIRE video from start to finish
 2. Identify ALL unique screens/pages/routes shown (NOT just the first frame!)
 3. Track ALL navigation transitions and route changes
 4. Generate code that includes EVERYTHING shown in the video
+5. **ALWAYS INCLUDE A HERO SECTION WITH H1 HEADLINE**
+
+**🚨🚨🚨 RULE #2 - 100% CONTENT RECONSTRUCTION (ZERO EXCEPTIONS):**
+Every piece of content visible in the video MUST appear in your output:
+- EVERY heading you see → generate that heading with EXACT or similar text
+- EVERY paragraph of text → generate full paragraph content
+- EVERY list item → generate all list items
+- EVERY card/box → generate complete card with all its content
+- EVERY image → use placeholder image in same position
+- EVERY button → generate working button with correct label
+- EVERY form field → generate complete form
+- EVERY table → generate full table with all rows/columns
+- EVERY FAQ question → generate question AND answer
+- EVERY testimonial → generate quote, name, role, avatar
+- EVERY logo in carousel → generate all logos (not just 3!)
+- EVERY news/blog card → generate title, date, image, excerpt
+
+**FORBIDDEN OUTPUTS:**
+❌ Empty sections with only a heading
+❌ "Lorem ipsum" placeholder text when real text is visible
+❌ Partial lists (showing 3 items when video shows 8)
+❌ Missing FAQ answers
+❌ Incomplete forms
+❌ Sections that say "Content here" or similar
+
+**IF YOU CANNOT READ TEXT CLEARLY:**
+- Make educated guess based on context
+- Generate realistic placeholder that matches the section purpose
+- But NEVER leave it empty!
 
 **⚠️ COMPLETE UI RECONSTRUCTION - MANDATORY:**
 You MUST reconstruct the ENTIRE interface, not just the parts shown in detail.
@@ -112,6 +165,631 @@ YOU MUST generate navigation buttons for ALL of them, even if only 2-3 were visi
 - Alternative: https://placehold.co/800x600/1a1a1a/ffffff?text=Image for placeholder with text
 - Think like a Dribbble designer or Awwwards winner
 - NEVER use broken image URLs - picsum.photos is guaranteed to work
+
+**🚨🚨🚨 CRITICAL: MOBILE RESPONSIVENESS (MANDATORY FOR ALL COMPONENTS):**
+Every component MUST be fully responsive and NEVER overflow its container on mobile!
+
+**MOBILE-FIRST RULES:**
+1. **ALWAYS use responsive breakpoints:** sm:, md:, lg:, xl:
+2. **NEVER use fixed widths without max-w:** Use w-full max-w-xs, NOT w-[400px]
+3. **ALWAYS constrain content:** overflow-hidden, overflow-x-auto for tables
+4. **Text scaling:** text-sm md:text-base lg:text-lg
+5. **Grid/Flex responsiveness:** grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+6. **Padding scaling:** p-4 md:p-6 lg:p-8
+7. **Image containers:** Always use w-full and aspect-ratio or max-w
+
+**COMPONENT PATTERNS FOR MOBILE:**
+\`\`\`html
+<!-- CARDS: Stack on mobile, grid on desktop -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+  <div class="p-4 md:p-6 rounded-xl bg-white">...</div>
+</div>
+
+<!-- HERO: Smaller text, less padding on mobile -->
+<section class="px-4 md:px-8 lg:px-16 py-12 md:py-20 lg:py-32">
+  <h1 class="text-3xl md:text-5xl lg:text-6xl font-bold max-w-4xl">Title</h1>
+  <p class="text-base md:text-lg lg:text-xl mt-4 max-w-2xl">Subtitle</p>
+</section>
+
+<!-- NAVIGATION: Hamburger on mobile -->
+<nav class="flex items-center justify-between p-4">
+  <div class="text-xl font-bold">Logo</div>
+  <div class="hidden md:flex gap-6">Desktop Links</div>
+  <button class="md:hidden">☰</button>
+</nav>
+
+<!-- TABLES: Horizontal scroll on mobile -->
+<div class="overflow-x-auto -mx-4 px-4">
+  <table class="w-full min-w-[600px]">...</table>
+</div>
+
+<!-- IMAGES: Responsive with aspect ratio -->
+<div class="w-full aspect-video overflow-hidden rounded-xl">
+  <img src="..." class="w-full h-full object-cover" />
+</div>
+
+<!-- FLEX CONTAINERS: Wrap on mobile -->
+<div class="flex flex-col md:flex-row gap-4 md:gap-8">
+  <div class="w-full md:w-1/2">Column 1</div>
+  <div class="w-full md:w-1/2">Column 2</div>
+</div>
+
+<!-- LONG TEXT: Prevent overflow -->
+<p class="break-words overflow-hidden text-ellipsis">Long text...</p>
+
+<!-- BUTTONS: Full width on mobile -->
+<button class="w-full sm:w-auto px-6 py-3 rounded-lg">Click me</button>
+\`\`\`
+
+**FORBIDDEN MOBILE PATTERNS:**
+❌ Fixed pixel widths: width: 500px, w-[600px] without max-w-full
+❌ Horizontal scroll on body (overflow-x on main container)
+❌ Text that's too large on mobile: text-7xl without responsive scaling
+❌ Side-by-side layouts without flex-col on mobile
+❌ Images without max-w-full or w-full
+❌ Tables without overflow-x-auto wrapper
+❌ Absolute positioned elements that overflow viewport
+❌ Negative margins without corresponding padding
+
+**ALWAYS TEST MENTALLY:** "Will this fit on a 320px wide screen?"
+
+**🚨🚨🚨 ABSOLUTE RULE: ZERO EMPTY SECTIONS - NO EXCEPTIONS!**
+When you see ANY section in the video, you MUST generate COMPLETE content:
+
+| Section Type | MINIMUM Required Content |
+|--------------|--------------------------|
+| FAQ / Częste pytania | 5-6 questions with FULL answers (not just "Answer here") |
+| Partners / Partnerzy | ALL logos visible (6-10 minimum), with working marquee |
+| Testimonials / Opinie | 3-4 complete cards: quote + name + role + avatar image |
+| News / Aktualności | 3-4 cards: image + date + title + excerpt |
+| Features / Funkcje | ALL feature cards with icon + title + description |
+| Pricing / Cennik | ALL pricing tiers with features list |
+| Team / Zespół | ALL team members with photo + name + role |
+| Contact / Kontakt | Complete form with all fields + contact info |
+| Stats / Liczby | ALL statistics with numbers and labels |
+| Steps / Jak to działa | ALL steps with numbers + titles + descriptions |
+
+**THIS IS NON-NEGOTIABLE:**
+- See 8 partner logos? Generate 8 logos.
+- See 6 FAQ items? Generate 6 FAQ items with answers.
+- See 4 testimonials? Generate 4 testimonials.
+- MATCH the quantity from the video!
+
+**📢 MARQUEE / LOGO CAROUSEL / INFINITE SCROLL (USE THIS EXACT CODE):**
+When you see scrolling logos or partner sections, copy this EXACT implementation:
+
+\`\`\`html
+<!-- PARTNER LOGOS MARQUEE - WORKING INFINITE SCROLL -->
+<section class="py-16 overflow-hidden bg-gray-50">
+  <p class="text-center text-sm text-gray-500 mb-10 uppercase tracking-wider font-medium">Nasi Partnerzy</p>
+  <div class="relative">
+    <!-- Fade edges -->
+    <div class="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-gray-50 to-transparent z-10 pointer-events-none"></div>
+    <div class="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-gray-50 to-transparent z-10 pointer-events-none"></div>
+    
+    <!-- Marquee wrapper - CRITICAL: use inline-flex and whitespace-nowrap -->
+    <div class="marquee-container">
+      <div class="marquee-content">
+        <!-- ALL logos from video - use text, not images for partner names -->
+        <span class="mx-8 text-xl font-semibold text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap">UNIQA</span>
+        <span class="mx-8 text-xl font-semibold text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap">WE4MED</span>
+        <span class="mx-8 text-xl font-semibold text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap">AXA</span>
+        <span class="mx-8 text-xl font-semibold text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap">Allianz</span>
+        <span class="mx-8 text-xl font-semibold text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap">InterRisk</span>
+        <span class="mx-8 text-xl font-semibold text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap">PZU ZDROWIE</span>
+        <span class="mx-8 text-xl font-semibold text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap">SALTUS</span>
+      </div>
+      <!-- DUPLICATE - exact copy for seamless loop -->
+      <div class="marquee-content" aria-hidden="true">
+        <span class="mx-8 text-xl font-semibold text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap">UNIQA</span>
+        <span class="mx-8 text-xl font-semibold text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap">WE4MED</span>
+        <span class="mx-8 text-xl font-semibold text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap">AXA</span>
+        <span class="mx-8 text-xl font-semibold text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap">Allianz</span>
+        <span class="mx-8 text-xl font-semibold text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap">InterRisk</span>
+        <span class="mx-8 text-xl font-semibold text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap">PZU ZDROWIE</span>
+        <span class="mx-8 text-xl font-semibold text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap">SALTUS</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+.marquee-container {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 20s linear infinite;
+}
+.marquee-container:hover {
+  animation-play-state: paused;
+}
+.marquee-content {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+@keyframes marquee-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+</style>
+\`\`\`
+
+**MARQUEE CRITICAL RULES:**
+1. Use \`display: flex; width: max-content;\` on container - this is KEY!
+2. Both .marquee-content divs must have IDENTICAL content
+3. Use \`flex-shrink: 0;\` on content divs to prevent shrinking
+4. translateX(-50%) works because content is duplicated = moves exactly half
+5. Extract ACTUAL partner names from video (UNIQA, Allianz, etc.) - not generic placeholders!
+6. Use text spans for partner names (cleaner than placeholder images)
+
+**FAQ / ACCORDION SECTION (WITH SMOOTH ANIMATIONS - MANDATORY):**
+All FAQ/accordion dropdowns MUST have smooth open/close animations. NEVER use instant show/hide!
+
+\`\`\`html
+<section class="py-20 max-w-3xl mx-auto px-6">
+  <h2 class="text-3xl font-bold text-center mb-12">Często zadawane pytania</h2>
+  <div class="space-y-4" x-data="{ open: null }">
+    
+    <!-- FAQ Item 1 -->
+    <div class="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
+      <button @click="open = open === 1 ? null : 1" class="w-full px-6 py-5 text-left flex justify-between items-center hover:bg-gray-50 transition-colors">
+        <span class="font-medium text-gray-900">Jak działa wasza usługa?</span>
+        <svg class="w-5 h-5 text-gray-500 transition-transform duration-300 ease-out" :class="{ 'rotate-180': open === 1 }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </button>
+      <!-- ANIMATED DROPDOWN - use x-show with x-transition -->
+      <div x-show="open === 1" 
+           x-transition:enter="transition ease-out duration-200"
+           x-transition:enter-start="opacity-0 -translate-y-2"
+           x-transition:enter-end="opacity-100 translate-y-0"
+           x-transition:leave="transition ease-in duration-150"
+           x-transition:leave-start="opacity-100 translate-y-0"
+           x-transition:leave-end="opacity-0 -translate-y-2"
+           class="px-6 pb-5 text-gray-600 leading-relaxed">
+        Tutaj szczegółowa odpowiedź na pytanie. Wyjaśnij dokładnie jak działa usługa, jakie są korzyści i co użytkownik może oczekiwać.
+      </div>
+    </div>
+
+    <!-- FAQ Item 2 -->
+    <div class="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
+      <button @click="open = open === 2 ? null : 2" class="w-full px-6 py-5 text-left flex justify-between items-center hover:bg-gray-50 transition-colors">
+        <span class="font-medium text-gray-900">Jakie są ceny?</span>
+        <svg class="w-5 h-5 text-gray-500 transition-transform duration-300 ease-out" :class="{ 'rotate-180': open === 2 }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </button>
+      <div x-show="open === 2" 
+           x-transition:enter="transition ease-out duration-200"
+           x-transition:enter-start="opacity-0 -translate-y-2"
+           x-transition:enter-end="opacity-100 translate-y-0"
+           x-transition:leave="transition ease-in duration-150"
+           x-transition:leave-start="opacity-100 translate-y-0"
+           x-transition:leave-end="opacity-0 -translate-y-2"
+           class="px-6 pb-5 text-gray-600 leading-relaxed">
+        Szczegółowy opis cennika z wszystkimi planami i opcjami.
+      </div>
+    </div>
+
+    <!-- Continue pattern for ALL FAQ items from video (minimum 5-6 items) -->
+  </div>
+</section>
+\`\`\`
+
+**FAQ ANIMATION RULES (NON-NEGOTIABLE):**
+1. ALWAYS use x-transition with enter/leave animations
+2. Icon rotation MUST have \`transition-transform duration-300\`
+3. Content should fade + slide: \`opacity-0 -translate-y-2\` → \`opacity-100 translate-y-0\`
+4. Enter: 200ms ease-out, Leave: 150ms ease-in
+5. NEVER use just \`x-show\` without x-transition - it looks cheap!
+6. Button hover state with \`transition-colors\`
+
+**🎨 ACETERNITY UI & MAGIC UI COMPONENT LIBRARY (USE THESE FOR PREMIUM DESIGNS!):**
+
+You have access to premium UI patterns from Aceternity UI and Magic UI. Use these to create stunning, award-winning websites.
+IMPLEMENT these patterns directly in your HTML/Tailwind/Alpine output using the CSS and JavaScript provided.
+
+**1. HERO BACKGROUNDS (Choose based on video vibe):**
+
+| Video Vibe | Pattern to Use | Implementation |
+|------------|----------------|----------------|
+| Tech/Cyberpunk/Dark | Animated Beams | Radial gradient beams with CSS animations |
+| SaaS/Clean | Grid Background | Subtle grid pattern with gradient fade |
+| Artistic/Creative | Aurora Background | Multi-color gradient blobs with blur |
+| Minimal | Spotlight Effect | Single glow from top-center |
+| Futuristic | Dot Pattern | Animated dots with varying opacity |
+
+**GRID BACKGROUND (SaaS style):**
+\`\`\`css
+.bg-grid {
+  background-image: 
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+.bg-grid-fade {
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+}
+\`\`\`
+
+**SPOTLIGHT EFFECT:**
+\`\`\`html
+<div class="relative">
+  <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gradient-radial from-blue-500/20 via-transparent to-transparent blur-3xl"></div>
+  <!-- Content -->
+</div>
+\`\`\`
+
+**AURORA BACKGROUND:**
+\`\`\`css
+.aurora {
+  background: linear-gradient(125deg, 
+    rgba(99,102,241,0.3) 0%, 
+    rgba(139,92,246,0.2) 25%, 
+    rgba(236,72,153,0.15) 50%, 
+    rgba(34,211,238,0.2) 75%, 
+    rgba(99,102,241,0.3) 100%);
+  background-size: 400% 400%;
+  animation: aurora 15s ease infinite;
+  filter: blur(80px);
+}
+@keyframes aurora {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+\`\`\`
+
+**2. TYPOGRAPHY & TEXT EFFECTS:**
+
+**TYPEWRITER EFFECT (for hero headlines):**
+\`\`\`html
+<h1 class="typewriter" x-data="{ text: 'Your Amazing Headline', displayed: '' }" 
+    x-init="let i = 0; setInterval(() => { if(i <= text.length) displayed = text.substring(0, i++); }, 80)">
+  <span x-text="displayed"></span><span class="animate-pulse">|</span>
+</h1>
+\`\`\`
+
+**TEXT GENERATE EFFECT (word-by-word reveal):**
+\`\`\`html
+<h1 class="flex flex-wrap gap-x-2">
+  <span class="animate-blur-fade opacity-0" style="animation-delay: 0s">Build</span>
+  <span class="animate-blur-fade opacity-0" style="animation-delay: 0.1s">something</span>
+  <span class="animate-blur-fade opacity-0" style="animation-delay: 0.2s">beautiful</span>
+  <span class="animate-blur-fade opacity-0" style="animation-delay: 0.3s">today</span>
+</h1>
+\`\`\`
+
+**GRADIENT TEXT:**
+\`\`\`html
+<h1 class="text-transparent bg-clip-text bg-gradient-to-r from-white via-purple-200 to-blue-200">
+  Stunning Headline
+</h1>
+\`\`\`
+
+**SPARKLE TEXT:**
+\`\`\`css
+.sparkle-text {
+  position: relative;
+  background: linear-gradient(90deg, #fff 0%, #a5b4fc 50%, #fff 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: sparkle 3s linear infinite;
+}
+@keyframes sparkle {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+\`\`\`
+
+**3. LAYOUTS & GRIDS:**
+
+**BENTO GRID (for features/services):**
+\`\`\`html
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-[200px]">
+  <!-- Large card spanning 2 cols -->
+  <div class="md:col-span-2 md:row-span-2 bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-8 border border-white/10 hover-lift">
+    <h3 class="text-2xl font-bold mb-4">Main Feature</h3>
+    <p class="text-white/60">Description...</p>
+  </div>
+  <!-- Smaller cards -->
+  <div class="bg-gradient-to-br from-purple-900/50 to-slate-900 rounded-3xl p-6 border border-white/10 hover-lift">
+    <h4 class="font-semibold">Feature 1</h4>
+  </div>
+  <div class="bg-gradient-to-br from-blue-900/50 to-slate-900 rounded-3xl p-6 border border-white/10 hover-lift">
+    <h4 class="font-semibold">Feature 2</h4>
+  </div>
+</div>
+\`\`\`
+
+**INFINITE MOVING CARDS (testimonials):**
+\`\`\`html
+<div class="relative overflow-hidden">
+  <div class="flex gap-4 animate-scroll">
+    <!-- Duplicate cards for infinite loop -->
+    <div class="flex-shrink-0 w-80 p-6 bg-slate-800/50 rounded-2xl border border-white/10">
+      <p class="text-white/70">"Testimonial text..."</p>
+      <div class="mt-4 flex items-center gap-3">
+        <img src="https://picsum.photos/40/40?random=1" class="w-10 h-10 rounded-full">
+        <div><p class="font-medium">Name</p><p class="text-sm text-white/40">Role</p></div>
+      </div>
+    </div>
+    <!-- More cards... -->
+  </div>
+</div>
+<style>
+@keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+.animate-scroll { animation: scroll 30s linear infinite; }
+</style>
+\`\`\`
+
+**4. INTERACTIVE ELEMENTS:**
+
+**MOVING BORDER BUTTON:**
+\`\`\`html
+<button class="relative px-8 py-3 rounded-xl bg-slate-900 text-white font-medium overflow-hidden group">
+  <span class="relative z-10">Get Started</span>
+  <div class="absolute inset-0 rounded-xl">
+    <div class="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+    <div class="absolute inset-[2px] bg-slate-900 rounded-[10px]"></div>
+  </div>
+  <div class="absolute inset-0 rounded-xl border-2 border-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-border animate-border-rotate"></div>
+</button>
+<style>
+@keyframes border-rotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.animate-border-rotate { animation: border-rotate 3s linear infinite; }
+</style>
+\`\`\`
+
+**SHIMMER BUTTON:**
+\`\`\`html
+<button class="relative px-8 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl text-white font-medium overflow-hidden">
+  <span class="relative z-10">Click me</span>
+  <div class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
+</button>
+<style>
+@keyframes shimmer { 100% { transform: translateX(100%); } }
+.animate-shimmer { animation: shimmer 2s infinite; }
+</style>
+\`\`\`
+
+**3D HOVER CARD:**
+\`\`\`html
+<div class="group perspective-1000">
+  <div class="relative transition-transform duration-300 ease-out group-hover:rotate-y-5 group-hover:rotate-x-5 transform-style-3d">
+    <div class="p-8 bg-slate-800/80 rounded-3xl border border-white/10">
+      <!-- Content -->
+    </div>
+  </div>
+</div>
+<style>
+.perspective-1000 { perspective: 1000px; }
+.transform-style-3d { transform-style: preserve-3d; }
+.group:hover .rotate-y-5 { transform: rotateY(5deg) rotateX(5deg); }
+</style>
+\`\`\`
+
+**GLOWING CARD:**
+\`\`\`html
+<div class="relative group">
+  <div class="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition-opacity"></div>
+  <div class="relative p-6 bg-slate-900 rounded-2xl border border-white/10">
+    <!-- Content -->
+  </div>
+</div>
+\`\`\`
+
+**5. FLOATING NAV:**
+\`\`\`html
+<nav class="fixed top-6 left-1/2 -translate-x-1/2 z-50">
+  <div class="flex items-center gap-8 px-8 py-3 bg-black/40 backdrop-blur-xl rounded-full border border-white/10">
+    <a href="#" class="text-sm text-white/80 hover:text-white transition-colors">Home</a>
+    <a href="#" class="text-sm text-white/60 hover:text-white transition-colors">About</a>
+    <a href="#" class="text-sm text-white/60 hover:text-white transition-colors">Work</a>
+    <button class="px-4 py-1.5 bg-white text-black text-sm font-medium rounded-full hover:bg-white/90 transition-colors">
+      Contact
+    </button>
+  </div>
+</nav>
+\`\`\`
+
+**6. ANIMATED TOOLTIPS:**
+\`\`\`html
+<div class="relative group inline-block">
+  <img src="https://picsum.photos/40/40?random=1" class="w-10 h-10 rounded-full cursor-pointer">
+  <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-all duration-200 scale-95 group-hover:scale-100">
+    <div class="px-3 py-2 bg-slate-800 rounded-lg text-sm whitespace-nowrap border border-white/10">
+      <p class="font-medium">John Doe</p>
+      <p class="text-white/50 text-xs">Developer</p>
+    </div>
+  </div>
+</div>
+\`\`\`
+
+**7. MAGIC UI ADDITIONS (Premium details & micro-interactions):**
+
+Magic UI complements Aceternity - use it for fine details, text animations, and social proof elements.
+
+**MARQUEE (Scrolling logos/testimonials) - MUST USE for "Trusted by" sections:**
+\`\`\`html
+<div class="relative overflow-hidden py-8">
+  <div class="flex gap-16 animate-marquee whitespace-nowrap">
+    <img src="https://picsum.photos/120/40?random=1" class="h-8 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all" alt="Logo">
+    <img src="https://picsum.photos/120/40?random=2" class="h-8 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all" alt="Logo">
+    <img src="https://picsum.photos/120/40?random=3" class="h-8 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all" alt="Logo">
+    <img src="https://picsum.photos/120/40?random=4" class="h-8 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all" alt="Logo">
+    <!-- Duplicate for seamless loop -->
+    <img src="https://picsum.photos/120/40?random=1" class="h-8 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all" alt="Logo">
+    <img src="https://picsum.photos/120/40?random=2" class="h-8 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all" alt="Logo">
+    <img src="https://picsum.photos/120/40?random=3" class="h-8 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all" alt="Logo">
+    <img src="https://picsum.photos/120/40?random=4" class="h-8 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all" alt="Logo">
+  </div>
+</div>
+<style>
+@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+.animate-marquee { animation: marquee 20s linear infinite; }
+</style>
+\`\`\`
+
+**ANIMATED SHINY TEXT (Linear/Apple style headlines):**
+\`\`\`html
+<h1 class="relative inline-block">
+  <span class="text-4xl font-bold text-white">Premium Headline</span>
+  <span class="absolute inset-0 text-4xl font-bold bg-gradient-to-r from-transparent via-white/80 to-transparent bg-clip-text text-transparent bg-[length:200%_100%] animate-shine"></span>
+</h1>
+<style>
+@keyframes shine { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.animate-shine { animation: shine 3s ease-in-out infinite; }
+</style>
+\`\`\`
+
+**WORD ROTATE (Cycling through words):**
+\`\`\`html
+<h1 class="text-4xl font-bold">
+  Build your 
+  <span x-data="{ words: ['startup', 'SaaS', 'product', 'dream'], current: 0 }" 
+        x-init="setInterval(() => current = (current + 1) % words.length, 2000)"
+        class="inline-block relative">
+    <template x-for="(word, i) in words" :key="i">
+      <span x-show="current === i" 
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 translate-y-4"
+            x-transition:enter-end="opacity-100 translate-y-0"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 translate-y-0"
+            x-transition:leave-end="opacity-0 -translate-y-4"
+            class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400"
+            x-text="word"></span>
+    </template>
+  </span>
+</h1>
+\`\`\`
+
+**NUMBER TICKER (Animated counters for stats):**
+\`\`\`html
+<div x-data="{ count: 0, target: 10000 }" 
+     x-init="let start = Date.now(); let duration = 2000;
+             let animate = () => { 
+               let progress = Math.min((Date.now() - start) / duration, 1);
+               count = Math.floor(progress * target);
+               if (progress < 1) requestAnimationFrame(animate);
+             }; animate();"
+     class="text-5xl font-bold tabular-nums">
+  <span x-text="count.toLocaleString()"></span>+
+</div>
+\`\`\`
+
+**BORDER BEAM (Rotating light around cards):**
+\`\`\`html
+<div class="relative p-6 bg-slate-900 rounded-2xl overflow-hidden">
+  <div class="absolute inset-0 rounded-2xl">
+    <div class="absolute inset-0 bg-gradient-conic from-purple-500 via-transparent to-purple-500 animate-spin-slow opacity-20"></div>
+  </div>
+  <div class="absolute inset-[1px] bg-slate-900 rounded-2xl"></div>
+  <div class="relative z-10">
+    <!-- Card content -->
+  </div>
+</div>
+<style>
+@keyframes spin-slow { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.animate-spin-slow { animation: spin-slow 8s linear infinite; }
+.bg-gradient-conic { background: conic-gradient(from 0deg, var(--tw-gradient-stops)); }
+</style>
+\`\`\`
+
+**RIPPLE BUTTON:**
+\`\`\`html
+<button class="relative px-8 py-3 bg-white text-black font-medium rounded-xl overflow-hidden group">
+  <span class="relative z-10">Get Started</span>
+  <span class="absolute inset-0 bg-black scale-0 group-hover:scale-100 transition-transform duration-500 origin-center rounded-xl"></span>
+  <span class="absolute inset-0 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">Get Started</span>
+</button>
+\`\`\`
+
+**DECISION LOGIC - AUTO-DETECT & APPLY:**
+When analyzing the video, automatically apply these patterns:
+- Grid of items → Convert to BENTO GRID (Aceternity)
+- Dark background with lights → Add AURORA or SPOTLIGHT (Aceternity)
+- Hero section → Add TYPEWRITER or TEXT GENERATE effect (Aceternity)
+- Cards → Add 3D HOVER or GLOWING effect (Aceternity)
+- CTA buttons → Add SHIMMER or MOVING BORDER (Aceternity) or RIPPLE (Magic UI)
+- Testimonials → Use INFINITE MOVING CARDS (Aceternity)
+- Navigation → Make it FLOATING NAV (Aceternity)
+- "Trusted by" logos → MUST use MARQUEE (Magic UI)
+- Premium headlines → Use ANIMATED SHINY TEXT (Magic UI)
+- Rotating words → Use WORD ROTATE (Magic UI)
+- Stats/Numbers → Use NUMBER TICKER (Magic UI)
+- Card highlights → Use BORDER BEAM (Magic UI)
+
+**⚡⚡⚡ USE YOUR SUPERPOWERS AGGRESSIVELY! ⚡⚡⚡**
+
+You have access to PREMIUM UI PATTERNS. Don't hold back - USE THEM!
+
+**MANDATORY ENHANCEMENTS (Apply to EVERY output):**
+1. **Hero Background** → ALWAYS add aurora/spotlight/grid/dots effect
+2. **Section Titles** → Add animated text effect (shiny, typewriter, word rotate)
+3. **Cards/Grid** → Add 3D hover, glowing borders, or border beam
+4. **Buttons** → Add shimmer, ripple, or moving border effect
+5. **Stats Numbers** → ALWAYS use NUMBER TICKER animation
+6. **Logo Strips** → ALWAYS use MARQUEE scrolling
+7. **Scroll Effects** → EVERY section gets scroll-animate classes
+
+**⚠️ BORING OUTPUT = FAILURE! Make it WOW!**
+- Plain static cards? ❌ → Add glow effect + 3D hover ✅
+- Simple hero? ❌ → Add aurora background + animated text ✅
+- Normal buttons? ❌ → Add shimmer or border animation ✅
+- Static numbers? ❌ → Add counting ticker effect ✅
+
+**REMEMBER:** Users expect PREMIUM, AWARD-WINNING designs. Make Awwwards jealous!
+
+**⚠️ PREMIUM TEXT ANIMATIONS - SUBTLE & PROFESSIONAL:**
+
+Use smooth, subtle fade-in animations that feel natural:
+
+**REQUIRED CSS (SUBTLE INDUSTRY-STANDARD):**
+\`\`\`css
+@keyframes fadeUp {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up { animation: fadeUp 0.6s ease-out both; opacity: 0; }
+\`\`\`
+
+**SMOOTH FADE-UP ANIMATION (RELIABLE & CINEMATIC):**
+\`\`\`css
+@keyframes fadeUp {
+  0% { opacity: 0; transform: translateY(30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-blur-fade { animation: fadeUp 1.2s ease-out both; }
+\`\`\`
+
+**IMPORTANT: Use "both" fill-mode so animation starts from 0% state (invisible) even with delays!**
+
+**WORD-BY-WORD PATTERN (STAGGERED DELAYS - 0.12s apart for smooth cascade):**
+\`\`\`html
+<h1>
+  <span class="inline-block animate-fade-up" style="animation-delay: 0s;">First</span>
+  <span class="inline-block animate-fade-up" style="animation-delay: 0.08s;">Word</span>
+  <span class="inline-block animate-fade-up" style="animation-delay: 0.16s;">Gets</span>
+  <span class="inline-block animate-fade-up" style="animation-delay: 0.24s;">Own</span>
+  <span class="inline-block animate-fade-up" style="animation-delay: 0.32s;">Delay</span>
+</h1>
+\`\`\`
+
+**ALTERNATIVE: ENTIRE HEADLINE (SIMPLER, ALSO ACCEPTABLE):**
+\`\`\`html
+<h1 class="animate-fade-up">Welcome to Our Platform</h1>
+<p class="animate-fade-up" style="animation-delay: 0.2s;">Subtitle text here</p>
+\`\`\`
+
+**RULES:**
+- Keep blur subtle: max 4px (never 12px or 20px - too jarring)
+- Animation duration: 0.5s to 0.7s (not faster)
+- Delay intervals: 0.08s per word (not 0.1s - causes flicker)
+- ease-out timing function for smooth deceleration
+- Both word-by-word AND entire element animations are acceptable
 
 **OUTPUT FORMAT:** A complete HTML file with:
 - Tailwind CSS via CDN for styling
@@ -201,52 +879,88 @@ ANALYZE the video UI and select appropriate fonts:
       theme: {
         extend: {
           animation: {
-            'fade-in': 'fadeIn 0.8s ease-out forwards',
-            'slide-up': 'slideUp 0.8s ease-out forwards',
-            'slide-down': 'slideDown 0.6s ease-out forwards',
-            'slide-in-left': 'slideInLeft 0.8s ease-out forwards',
-            'slide-in-right': 'slideInRight 0.8s ease-out forwards',
-            'scale-in': 'scaleIn 0.6s ease-out forwards',
-            'bounce-in': 'bounceIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards',
+            'fade-in': 'fadeIn 0.6s ease-out both',
+            'fade-up': 'fadeUp 0.6s ease-out both',
+            'slide-up': 'slideUp 0.6s ease-out both',
+            'slide-down': 'slideDown 0.5s ease-out both',
+            'slide-in-left': 'slideInLeft 0.8s ease-out both',
+            'slide-in-right': 'slideInRight 0.8s ease-out both',
+            'scale-in': 'scaleIn 0.6s ease-out both',
+            'card-pop': 'cardPop 0.8s ease-out both',
             'float': 'float 6s ease-in-out infinite',
-            'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
+            'pulse-glow': 'pulseGlow 3s ease-in-out infinite',
             'gradient-shift': 'gradientShift 8s ease infinite',
-            'reveal': 'reveal 1s ease-out forwards',
-            'blur-in': 'blurIn 0.8s ease-out forwards',
+            'reveal': 'reveal 0.8s ease-out both',
+            'blur-fade': 'fadeUp 1.2s ease-out both',
           },
           keyframes: {
             fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
-            slideUp: { '0%': { opacity: '0', transform: 'translateY(40px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
-            slideDown: { '0%': { opacity: '0', transform: 'translateY(-20px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
-            slideInLeft: { '0%': { opacity: '0', transform: 'translateX(-40px)' }, '100%': { opacity: '1', transform: 'translateX(0)' } },
-            slideInRight: { '0%': { opacity: '0', transform: 'translateX(40px)' }, '100%': { opacity: '1', transform: 'translateX(0)' } },
+            fadeUp: { '0%': { opacity: '0', transform: 'translateY(30px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+            slideUp: { '0%': { opacity: '0', transform: 'translateY(20px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+            slideDown: { '0%': { opacity: '0', transform: 'translateY(-15px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+            slideInLeft: { '0%': { opacity: '0', transform: 'translateX(-30px)' }, '100%': { opacity: '1', transform: 'translateX(0)' } },
+            slideInRight: { '0%': { opacity: '0', transform: 'translateX(30px)' }, '100%': { opacity: '1', transform: 'translateX(0)' } },
             scaleIn: { '0%': { opacity: '0', transform: 'scale(0.9)' }, '100%': { opacity: '1', transform: 'scale(1)' } },
-            bounceIn: { '0%': { opacity: '0', transform: 'scale(0.3)' }, '50%': { transform: 'scale(1.05)' }, '70%': { transform: 'scale(0.9)' }, '100%': { opacity: '1', transform: 'scale(1)' } },
-            float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-20px)' } },
-            pulseGlow: { '0%, 100%': { boxShadow: '0 0 20px rgba(99, 102, 241, 0.4)' }, '50%': { boxShadow: '0 0 40px rgba(99, 102, 241, 0.8)' } },
+            cardPop: { '0%': { opacity: '0', transform: 'translateY(40px) scale(0.95)' }, '100%': { opacity: '1', transform: 'translateY(0) scale(1)' } },
+            float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-10px)' } },
+            pulseGlow: { '0%, 100%': { boxShadow: '0 0 15px rgba(99, 102, 241, 0.3)' }, '50%': { boxShadow: '0 0 25px rgba(99, 102, 241, 0.5)' } },
             gradientShift: { '0%': { backgroundPosition: '0% 50%' }, '50%': { backgroundPosition: '100% 50%' }, '100%': { backgroundPosition: '0% 50%' } },
             reveal: { '0%': { clipPath: 'inset(0 100% 0 0)' }, '100%': { clipPath: 'inset(0 0% 0 0)' } },
-            blurIn: { '0%': { opacity: '0', filter: 'blur(20px)' }, '100%': { opacity: '1', filter: 'blur(0)' } },
           }
         }
       }
     }
   </script>
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script>
+    // Scroll-triggered animations with stagger
+    document.addEventListener('DOMContentLoaded', () => {
+      const scrollElements = document.querySelectorAll('.scroll-animate, .scroll-animate-left, .scroll-animate-right, .scroll-animate-scale, .scroll-animate-blur');
+      
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry, index) => {
+          if (entry.isIntersecting) {
+            // Add stagger delay based on sibling position
+            const siblings = entry.target.parentElement?.querySelectorAll('.scroll-animate, .scroll-animate-left, .scroll-animate-right, .scroll-animate-scale, .scroll-animate-blur');
+            let siblingIndex = 0;
+            if (siblings) {
+              siblings.forEach((el, i) => { if (el === entry.target) siblingIndex = i; });
+            }
+            setTimeout(() => {
+              entry.target.classList.add('visible');
+            }, siblingIndex * 100);
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+      
+      scrollElements.forEach(el => observer.observe(el));
+    });
+  </script>
   <!-- FONT IMPORTS: Replace with fonts matching the detected UI style! -->
   <link href="https://fonts.googleapis.com/css2?family=HEADING_FONT:wght@400;500;600;700&family=BODY_FONT:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    /* CSS Reset for preventing white bars and overflow issues */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { 
+      margin: 0; 
+      padding: 0; 
+      overflow-x: hidden; 
+      width: 100%; 
+      min-height: 100vh;
+    }
+    
     /* CUSTOMIZE FONTS based on detected UI style - DO NOT use Inter/Space Grotesk by default */
     * { font-family: 'BODY_FONT', system-ui, sans-serif; }
     h1, h2, h3, h4 { font-family: 'HEADING_FONT', sans-serif; font-weight: 700; letter-spacing: -0.02em; }
     
-    /* Ultra-thin scrollbar - dark mode friendly */
-    * { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; }
-    *::-webkit-scrollbar { width: 4px; height: 4px; background: transparent; }
-    *::-webkit-scrollbar-track { background: transparent; }
-    *::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-    *::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.1); }
-    *::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+    /* Custom dark scrollbar - always thin and dark */
+    * { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) rgba(0,0,0,0.3); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+    ::-webkit-scrollbar-corner { background: transparent; }
     
     /* Smooth transitions on everything */
     *, *::before, *::after {
@@ -254,6 +968,18 @@ ANALYZE the video UI and select appropriate fonts:
       transition-duration: 300ms;
       transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     }
+    
+    /* Component animations */
+    @keyframes fadeUp { 0% { opacity: 0; transform: translateY(30px); } 100% { opacity: 1; transform: translateY(0); } }
+    @keyframes cardPop { 0% { opacity: 0; transform: translateY(40px) scale(0.95); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+    @keyframes slideInLeft { 0% { opacity: 0; transform: translateX(-30px); } 100% { opacity: 1; transform: translateX(0); } }
+    @keyframes slideInRight { 0% { opacity: 0; transform: translateX(30px); } 100% { opacity: 1; transform: translateX(0); } }
+    @keyframes scaleIn { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
+    .animate-blur-fade { animation: fadeUp 1.2s ease-out both; }
+    .animate-card { animation: cardPop 0.8s ease-out both; }
+    .animate-slide-left { animation: slideInLeft 0.8s ease-out both; }
+    .animate-slide-right { animation: slideInRight 0.8s ease-out both; }
+    .animate-scale { animation: scaleIn 0.6s ease-out both; }
     
     /* Animation delays for staggered reveals */
     .delay-100 { animation-delay: 100ms; }
@@ -263,6 +989,55 @@ ANALYZE the video UI and select appropriate fonts:
     .delay-500 { animation-delay: 500ms; }
     .delay-600 { animation-delay: 600ms; }
     .delay-700 { animation-delay: 700ms; }
+    
+    /* Scroll-triggered animations - elements start hidden */
+    .scroll-animate {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+    }
+    .scroll-animate.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .scroll-animate-left {
+      opacity: 0;
+      transform: translateX(-40px);
+      transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+    }
+    .scroll-animate-left.visible {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    .scroll-animate-right {
+      opacity: 0;
+      transform: translateX(40px);
+      transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+    }
+    .scroll-animate-right.visible {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    .scroll-animate-scale {
+      opacity: 0;
+      transform: scale(0.9);
+      transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+    }
+    .scroll-animate-scale.visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+    .scroll-animate-blur {
+      opacity: 0;
+      transform: translateY(30px);
+      filter: blur(10px);
+      transition: opacity 0.8s ease-out, transform 0.8s ease-out, filter 0.8s ease-out;
+    }
+    .scroll-animate-blur.visible {
+      opacity: 1;
+      transform: translateY(0);
+      filter: blur(0);
+    }
     
     /* Premium hover effects */
     .hover-lift { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -338,14 +1113,10 @@ ANALYZE the video UI and select appropriate fonts:
     .animate-on-scroll { opacity: 0; }
     .animate-on-scroll.visible { opacity: 1; }
     
-    /* Custom scrollbar */
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+    /* Scrollbar styles already defined above */
   </style>
 </head>
-<body class="antialiased overflow-x-hidden">
+<body class="antialiased overflow-x-hidden bg-inherit m-0 p-0">
   <!-- Your generated content here -->
 </body>
 </html>
@@ -470,8 +1241,12 @@ export async function transmuteVideoToCode(
     let styleImagePart: { inlineData: { mimeType: string; data: string } } | null = null;
     let styleReferenceInstruction = "";
     
+    console.log("[transmute] ========== STYLE REFERENCE CHECK ==========");
+    console.log("[transmute] styleReferenceImage provided:", !!request.styleReferenceImage);
+    console.log("[transmute] styleReferenceImage URL:", request.styleReferenceImage?.url?.substring(0, 100));
+    
     if (request.styleReferenceImage?.url) {
-      console.log("Fetching style reference image:", request.styleReferenceImage.url);
+      console.log("[transmute] Fetching style reference image:", request.styleReferenceImage.url.substring(0, 100));
       try {
         // Check if it's a base64 data URL or a regular URL
         if (request.styleReferenceImage.url.startsWith('data:')) {
@@ -507,47 +1282,53 @@ export async function transmuteVideoToCode(
         if (styleImagePart) {
           styleReferenceInstruction = `
 
-**STYLE REFERENCE IMAGE PROVIDED - FULL DESIGN SYSTEM EXTRACTION:**
-You have been given a reference image. Extract and apply its COMPLETE visual design system:
+🚨🚨🚨 **CRITICAL - STYLE REFERENCE IMAGE OVERRIDE - READ THIS 5 TIMES** 🚨🚨🚨
 
-**COLORS (Extract ALL):**
-- Primary color (buttons, links, accents)
-- Secondary colors
-- Background colors (main, cards, sections)
-- Text colors (headings, body, muted)
-- Border colors
-- Use Tailwind arbitrary values: bg-[#HEX], text-[#HEX]
+You have been given TWO inputs:
+1. A VIDEO - use ONLY for CONTENT (text, layout structure, sections)
+2. A REFERENCE IMAGE - use ONLY for VISUAL STYLE (colors, typography, feel)
 
-**TYPOGRAPHY:**
+**⚠️ MANDATORY: COMPLETELY IGNORE THE VIDEO'S COLORS AND STYLING ⚠️**
+
+You MUST extract and apply the COMPLETE visual design from the REFERENCE IMAGE:
+
+**COLORS - EXTRACT FROM REFERENCE IMAGE ONLY:**
+- Look at the reference image's PRIMARY COLOR (buttons, accents) → USE THIS EXACT COLOR
+- Look at the reference image's BACKGROUND COLOR → USE THIS EXACT COLOR  
+- Look at the reference image's TEXT COLORS → USE THESE EXACT COLORS
+- If reference image is YELLOW → output MUST be YELLOW
+- If reference image is BLUE → output MUST be BLUE
+- NEVER use colors from the video - ONLY from the reference image!
+- Use Tailwind arbitrary values: bg-[#HEX], text-[#HEX], border-[#HEX]
+
+**TYPOGRAPHY - EXTRACT FROM REFERENCE IMAGE:**
 - Font family feel (serif, sans-serif, mono, display)
-- Font weights hierarchy (headings vs body)
-- Font sizes (approximate the scale)
-- Letter spacing (tight, normal, wide)
-- Line heights
+- Font weights (bold headings? light body?)
+- Letter spacing style
 
-**BORDER-RADIUS:**
-- Buttons (rounded-none, rounded-md, rounded-full?)
-- Cards (sharp corners, slightly rounded, very rounded?)
-- Input fields
-- Images/avatars
+**BORDER-RADIUS - FROM REFERENCE:**
+- Sharp corners or rounded?
+- Pill buttons or square?
 
-**SPACING & LAYOUT:**
-- Padding inside components
-- Margins between elements
-- Gap sizes in grids/flexbox
-- Section padding (compact vs generous)
+**OVERALL FEEL - FROM REFERENCE:**
+- Dark mode or light mode?
+- Minimal or detailed?
+- Modern or classic?
 
-**EFFECTS & POLISH:**
-- Shadows (none, subtle, heavy, colored?)
-- Gradients (if any)
-- Borders (thickness, style)
-- Hover states aesthetic
-- Glassmorphism/blur effects
+**🔴 WHAT TO DO:**
+1. Extract text content from VIDEO
+2. Extract layout structure from VIDEO
+3. IGNORE ALL COLORS from video
+4. IGNORE ALL STYLING from video
+5. Apply ONLY colors from REFERENCE IMAGE
+6. Apply ONLY styling from REFERENCE IMAGE
 
-The VIDEO shows WHAT to build (structure, content, layout).
-The REFERENCE IMAGE shows HOW it should look (apply its ENTIRE design system).
+**🔴 EXAMPLE:**
+- Video shows: RED buttons, WHITE background
+- Reference image shows: YELLOW buttons, DARK background
+- Your output MUST have: YELLOW buttons, DARK background (from reference!)
 
-DO NOT copy content from the reference image - ONLY its visual style.`;
+**FAILURE TO FOLLOW THIS = COMPLETE FAILURE OF THE TASK**`;
         }
       } catch (error) {
         console.error("Error fetching style reference image:", error);
@@ -557,8 +1338,11 @@ DO NOT copy content from the reference image - ONLY its visual style.`;
 
     // COMPREHENSIVE STYLE EXPANSION SYSTEM
     // Each style gets detailed animation physics, visual DNA, and component structure
-    let expandedStyleDirective = request.styleDirective;
-    const styleDirectiveLower = request.styleDirective.toLowerCase();
+    let expandedStyleDirective = request.styleDirective || "";
+    const styleDirectiveLower = (request.styleDirective || "").toLowerCase();
+    
+    // Handle empty style = Auto-Detect from video
+    const isAutoDetect = !styleDirectiveLower || styleDirectiveLower.trim() === "" || styleDirectiveLower === "custom" || styleDirectiveLower === "auto" || styleDirectiveLower === "auto-detect";
     
     // Extract ONLY the style name (before the first period) for matching
     // This prevents custom instructions from overriding the selected style
@@ -566,18 +1350,369 @@ DO NOT copy content from the reference image - ONLY its visual style.`;
     console.log("[transmute] ========== STYLE DETECTION ==========");
     console.log("[transmute] Full directive (first 200 chars):", styleDirectiveLower.substring(0, 200));
     console.log("[transmute] Extracted styleName:", `"${styleName}"`);
-    console.log("[transmute] Checking kinetic brutal:", styleName.includes("kinetic brutal"));
+    console.log("[transmute] Is Auto-Detect:", isAutoDetect);
+    console.log("[transmute] === CHECKING NEW STYLES ===");
+    console.log("[transmute] liquid neon?", styleName.includes("liquid neon"));
+    console.log("[transmute] molten?", styleName.includes("molten"));
+    console.log("[transmute] midnight?", styleName.includes("midnight"));
+    console.log("[transmute] halftone?", styleName.includes("halftone"));
+    console.log("[transmute] gradient bar?", styleName.includes("gradient bar"));
+    console.log("[transmute] myna?", styleName.includes("myna"));
+    console.log("[transmute] acme?", styleName.includes("acme"));
+    console.log("[transmute] blur hero?", styleName.includes("blur hero"));
     console.log("[transmute] =================================");
     
     // Global physics and standards to apply to ALL styles
+    // Get current date for AI context
+    const currentDate = new Date().toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    
     const GLOBAL_STANDARDS = `
+**📅 CURRENT DATE: ${currentDate} (Year 2026)**
+
+IMPORTANT: The current year is 2026, NOT 2024 or 2025. Use modern, cutting-edge design patterns.
+
+---
+
+**⛔⛔⛔ ABSOLUTE RULE #0 - 100% COMPLETE CONTENT RECONSTRUCTION ⛔⛔⛔**
+
+**YOU MUST REPRODUCE EVERY SINGLE PIECE OF CONTENT FROM THE VIDEO!**
+
+⚠️⚠️⚠️ THIS IS THE MOST IMPORTANT RULE - IF YOU SKIP ANYTHING, YOU HAVE FAILED! ⚠️⚠️⚠️
+
+**COMPLETENESS CHECKLIST (ALL MANDATORY):**
+✅ Every section visible in the video = One section in your output
+✅ Every paragraph of text = Reproduced exactly (use OCR to read ALL text)
+✅ Every heading = Recreated with exact wording
+✅ Every list item = Included in output
+✅ Every card = Generated (if video has 6 cards, you output 6 cards)
+✅ Every image placeholder = Represented
+✅ Every button/link = Clickable in output
+✅ Every menu item = Working navigation
+
+**⛔ NEVER DO THIS:**
+❌ Skip sections because "they're similar"
+❌ Abbreviate long text with "..." or "Lorem ipsum"
+❌ Generate fewer cards/items than shown
+❌ Combine multiple sections into one
+❌ Leave out "boring" sections like footer or contact
+❌ Stop early because output is "long enough"
+
+**HOW TO ENSURE COMPLETENESS:**
+1. Watch the ENTIRE video from 0:00 to the end
+2. Count EVERY section: "1-Hero, 2-Features, 3-About, 4-Services, 5-Team..."
+3. For EACH section, count items: "Features has 4 cards, Team has 6 members..."
+4. Extract ALL text using careful OCR
+5. Generate output with EXACT same structure and counts
+6. Self-check: "Does my output have ALL sections and ALL items from video?"
+
+**LONG CONTENT RULE:**
+- If video shows a long article/page → Generate the FULL article
+- If video has 20 paragraphs → Your output has 20 paragraphs
+- If video scrolls through many sections → Include ALL sections
+- NEVER truncate content because it's "too long"
+- The output can be 5000+ lines if needed - SIZE DOESN'T MATTER, COMPLETENESS DOES!
+
+---
+
+**🚨🚨🚨 RULE #1 - MANDATORY HERO SECTION (BEFORE ANYTHING ELSE) 🚨🚨🚨**
+
+⚠️⚠️⚠️ YOUR OUTPUT **MUST** START WITH A FULL-SCREEN HERO SECTION! ⚠️⚠️⚠️
+
+**HERO SECTION CHECKLIST (ALL REQUIRED):**
+✅ Full-screen height (min-h-screen)
+✅ Centered content (flex items-center justify-center)
+✅ H1 headline with blur-fade animation (text from video)
+✅ Subtitle paragraph (text from video)
+✅ CTA button (text from video)
+
+**IF YOUR OUTPUT DOESN'T START WITH A HERO → YOU HAVE FAILED!**
+
+---
+
+**🔴🔴🔴 CRITICAL STYLE OVERRIDE - THIS IS YOUR #1 RULE 🔴🔴🔴**
+
+THIS IS A STYLE TRANSFORMATION. You are receiving:
+1. A VIDEO → Extract ONLY the CONTENT (text, structure, functionality)
+2. A STYLE DIRECTIVE → Apply ONLY this visual style (colors, fonts, animations)
+
+**⚠️ YOU MUST COMPLETELY IGNORE THE VIDEO'S VISUAL STYLE ⚠️**
+
+What to extract from video:
+✅ Text content (brand names, headlines, descriptions, labels)
+✅ Structure (sections, navigation, features)
+✅ Functionality (what the app does)
+✅ **ALL SECTIONS** - every single section visible in the video
+
+What to IGNORE from video:
+❌ Colors → Use the style's colors
+❌ Fonts → Use the style's typography
+❌ Visual effects → Use the style's effects
+❌ Spacing, borders, shadows → Use the style's aesthetic
+
+**EXAMPLE:**
+- Video has: Blue buttons, white background, rounded corners
+- Style directive says: "Acid yellow kinetic brutalism"
+- Your output MUST have: Yellow background, black text, sharp corners
+- The video's visual style is 100% OVERRIDDEN by the directive!
+
+**🚨🚨🚨 MANDATORY - COMPLETE SECTION RECONSTRUCTION (NON-NEGOTIABLE) 🚨🚨🚨**
+
+**YOU MUST RECREATE 100% OF ALL SECTIONS FROM THE VIDEO!**
+
+⚠️ Watch the ENTIRE video carefully and identify EVERY section:
+1. **Hero section** - The first big visual area (ALWAYS required)
+2. **Features/Services section** - Cards, icons, descriptions
+3. **About/Story section** - Company or product story
+4. **Testimonials/Reviews** - User quotes, ratings
+5. **Pricing section** - Plans, prices, features
+6. **Team section** - People, photos, roles
+7. **Gallery/Portfolio** - Images, projects
+8. **FAQ section** - Questions and answers
+9. **Contact section** - Forms, addresses, map
+10. **CTA section** - Call to action banners
+11. **Footer** - Links, socials, copyright
+12. **ANY OTHER SECTION** visible in the video
+
+**⚠️ CRITICAL RULES:**
+- Count ALL sections in the video before generating
+- If video shows 8 sections → Your output MUST have 8 sections
+- If video shows 12 sections → Your output MUST have 12 sections
+- NEVER generate fewer sections than the video shows!
+- NEVER skip a section because it's "similar" to another
+- NEVER combine multiple sections into one
+- Each section from video = One section in output
+
+**SECTION EXTRACTION PROCESS:**
+1. Watch video completely from start to end
+2. Create a mental list: "Section 1: Hero, Section 2: Features (4 cards), Section 3: About..."
+3. For EACH section, extract ALL content (text, images count, cards count)
+4. Generate ALL sections with the specified style applied
+5. Verify: Does my output have the SAME NUMBER of sections as the video?
+
+**EXAMPLE:**
+Video shows: Hero → 3-card Features → About → 6 Testimonials → Pricing (3 plans) → FAQ (8 questions) → Contact → Footer
+
+Your output MUST have: Hero → Features (3 cards) → About → Testimonials (6 items) → Pricing (3 plans) → FAQ (8 items) → Contact → Footer
+
+**❌ FAILURE = Generating only Hero + Features + Footer (skipping other sections)**
+**✅ SUCCESS = All 8 sections fully recreated with all content**
+
 **GLOBAL PHYSICS SYSTEM (Apply to ALL):**
 - NEVER use default easings. Use custom physics.
 - Spring: { type: "spring", mass: 0.5, damping: 11.5, stiffness: 100 }
-- Premium Ease: cubic-bezier(0.25, 0.4, 0.55, 1)
+- Premium Ease: cubic-bezier(0.16, 1, 0.3, 1)
 - All animations must feel "heavy but smooth"
 - Use will-change: transform for performance
 - Stagger children by 0.1-0.15s
+
+**🔴🔴🔴 MANDATORY - ICONS (NEVER EMOJI!) 🔴🔴🔴**
+
+⚠️⚠️⚠️ **YOU MUST USE LUCIDE ICONS - NEVER USE EMOJI!** ⚠️⚠️⚠️
+
+**CRITICAL RULES FOR ICONS:**
+❌ NEVER use emoji (no ✅ ❌ 🚀 📱 💡 🎯 etc.)
+❌ NEVER use emoji for checkmarks, bullets, or decorations
+✅ ALWAYS use Lucide SVG icons
+✅ ALWAYS include proper SVG code inline
+
+**LUCIDE ICON EXAMPLES (USE THESE):**
+- Check/tick: <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+- Phone: <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+- Mail: <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+- Arrow: <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+- Star: <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+- Plus: <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+
+**🔴🔴🔴 MANDATORY - TEXT CONTRAST & VISIBILITY 🔴🔴🔴**
+
+⚠️⚠️⚠️ **ALL TEXT MUST BE CLEARLY VISIBLE!** ⚠️⚠️⚠️
+
+**CONTRAST RULES:**
+- Dark background → Use WHITE or LIGHT text (text-white, text-gray-100)
+- Light background → Use BLACK or DARK text (text-black, text-gray-900)
+- NEVER put dark text on dark background
+- NEVER put light text on light background
+- Minimum contrast ratio: 4.5:1 for body text, 3:1 for large text
+
+**SAFE COMBINATIONS:**
+- bg-black/bg-gray-900 → text-white, text-gray-100
+- bg-white/bg-gray-100 → text-black, text-gray-900
+- Colored bg → Check contrast! Yellow bg = dark text, Blue bg = light text
+
+**🔴🔴🔴 MANDATORY - SCROLL ANIMATIONS 🔴🔴🔴**
+
+⚠️⚠️⚠️ **ALL SECTIONS BELOW HERO MUST ANIMATE ON SCROLL!** ⚠️⚠️⚠️
+
+**SCROLL ANIMATION CLASSES (use these, they auto-trigger on scroll):**
+- scroll-animate → fade up on scroll
+- scroll-animate-left → slide in from left
+- scroll-animate-right → slide in from right  
+- scroll-animate-scale → scale up on scroll
+- scroll-animate-blur → blur + fade on scroll (premium look)
+
+**ANIMATION RULES:**
+1. Hero section: animate-blur-fade (loads immediately)
+2. ALL other sections: Use scroll-animate classes
+3. Cards in grid: scroll-animate-blur (auto-staggers)
+4. Images: scroll-animate-scale
+5. Text blocks: scroll-animate
+
+**EXAMPLE - Feature Cards with scroll animation:**
+<div class="grid grid-cols-3 gap-6">
+  <div class="scroll-animate-blur bg-white/5 p-6 rounded-xl">Card 1</div>
+  <div class="scroll-animate-blur bg-white/5 p-6 rounded-xl">Card 2</div>
+  <div class="scroll-animate-blur bg-white/5 p-6 rounded-xl">Card 3</div>
+</div>
+
+**EXAMPLE - Section Title:**
+<h2 class="scroll-animate text-4xl font-bold">Our Features</h2>
+
+**🔴🔴🔴 MANDATORY - FIXED HEADER (NO WHITE BARS, PERFECT ALIGNMENT) 🔴🔴🔴**
+
+⚠️⚠️⚠️ **HEADER MUST BE PERFECTLY ALIGNED WITH CONTENT - NO GAPS!** ⚠️⚠️⚠️
+
+**CORRECT HEADER PATTERN:**
+<nav class="fixed top-0 left-0 right-0 z-50 bg-[#030303]/95 backdrop-blur-xl border-b border-white/5">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <!-- Logo on left -->
+    <div class="flex items-center gap-2">Logo</div>
+    <!-- Nav links centered or right -->
+    <div class="flex items-center gap-6">Links</div>
+  </div>
+</nav>
+<main class="pt-[72px]"> <!-- EXACT padding to match header height -->
+  <section class="max-w-7xl mx-auto px-6"> <!-- SAME max-w and px as header -->
+
+**ALIGNMENT RULES (CRITICAL):**
+1. Header container: max-w-7xl mx-auto px-6
+2. Content container: max-w-7xl mx-auto px-6 (SAME AS HEADER!)
+3. This ensures content aligns perfectly with header edges
+4. pt-[72px] or pt-20 to offset fixed header (adjust to header height)
+
+**WRONG (misaligned content):**
+<nav class="sticky top-0"> ❌ - Creates white bar
+<nav><div class="max-w-6xl px-4"> ❌ - Different from content width
+<main class="px-8"> ❌ - Different padding than header
+
+**HEADER RULES:**
+1. Use "fixed top-0" NOT "sticky top-0"
+2. Background: bg-[#030303]/95 (dark) or bg-white/95 (light) with backdrop-blur-xl
+3. Use SAME max-w-* and px-* as content sections
+4. Main content pt-* MUST match header height exactly
+5. NO browser default margins anywhere
+
+**🚨🚨🚨 MANDATORY - HERO SECTION WITH H1 HEADLINE (READ 5 TIMES):**
+
+⚠️⚠️⚠️ **YOU MUST ALWAYS GENERATE A HERO SECTION WITH A PROPERLY SIZED H1 HEADLINE.**
+
+Every website MUST have a hero section that includes:
+1. A LARGE but READABLE H1 headline (sized appropriately - see rules below)
+2. A subtitle/description paragraph
+3. A call-to-action (CTA) button
+4. Word-by-word blur-fade animation on the headline (CINEMATIC!)
+
+**⚠️⚠️⚠️ H1 SIZE CONSTRAINTS (PREVENT GIANT TEXT):**
+- **Short headlines (1-4 words):** text-5xl to text-7xl max
+- **Medium headlines (5-10 words):** text-4xl to text-5xl max  
+- **Long headlines (10+ words):** text-3xl to text-4xl max
+- **NEVER use text-8xl or text-9xl for multi-line text!**
+- Always constrain width: max-w-3xl, max-w-4xl, or max-w-5xl
+- Use leading-tight for multi-line headlines
+- Hero section should show H1 + subtitle + CTA without scrolling
+
+**HERO TEXT EXTRACTION RULES:**
+- If video shows a title/brand name → Use that as H1
+- If video shows app name → Use that as H1
+- If video shows a headline → Extract and use it
+- If no clear headline visible → Create a compelling one based on content
+- NEVER leave the hero without an H1 headline!
+
+**EXAMPLE MANDATORY HERO STRUCTURE:**
+\`\`\`html
+<section class="min-h-screen flex items-center justify-center px-8">
+  <div class="max-w-4xl text-center">
+    <!-- Short headline = larger size -->
+    <h1 class="text-5xl md:text-6xl font-bold leading-tight">
+      <span class="inline-block animate-blur-fade" style="animation-delay: 0s;">Build</span>
+      <span class="inline-block animate-blur-fade" style="animation-delay: 0.12s;">Amazing</span>
+      <span class="inline-block animate-blur-fade" style="animation-delay: 0.24s;">Products</span>
+    </h1>
+    <p class="text-xl text-gray-600 mt-6 animate-blur-fade" style="animation-delay: 0.5s;">Subtitle description here</p>
+    <button class="mt-8 px-8 py-4 bg-black text-white rounded-full animate-blur-fade" style="animation-delay: 0.7s;">Get Started</button>
+  </div>
+</section>
+\`\`\`
+
+**❌ FAILURE: Website without visible H1 hero = COMPLETELY WRONG OUTPUT**
+**❌ FAILURE: H1 hidden or too small = COMPLETELY WRONG OUTPUT**
+**❌ FAILURE: No headline text extracted from video = COMPLETELY WRONG OUTPUT**
+
+**🔴🔴🔴 CRITICAL: NO VISIBLE GRADIENT STRIPES OR BARS 🔴🔴🔴**
+
+⚠️⚠️⚠️ **GRADIENT OVERLAYS MUST BE INVISIBLE/SUBTLE - NO VISIBLE LINES!** ⚠️⚠️⚠️
+
+**FORBIDDEN (creates ugly visible stripes):**
+- Gradient divs with hard edges or visible boundaries
+- Gradient to transparent that creates a visible line
+- Bottom fade overlays that show as white/gray bars
+- Any gradient element that appears as a distinct stripe
+
+**CORRECT APPROACH:**
+1. All gradients MUST use blur-3xl or blur-2xl to blend smoothly
+2. Gradient opacity MUST be very low (10-20%) 
+3. NEVER use gradient-to-transparent without heavy blur
+4. Background gradients should be subtle, not visible as shapes
+
+**WRONG (visible stripe):**
+<div class="bg-gradient-to-b from-white/50 to-transparent"></div>
+
+**CORRECT (invisible blend):**
+<div class="bg-gradient-to-b from-white/10 to-transparent blur-3xl opacity-50"></div>
+
+**If the video has a gradient effect, recreate it SUBTLY - users should feel it, not see hard lines.**
+
+**⚠️⚠️⚠️ TEXT ANIMATIONS - THIS IS THE MOST IMPORTANT SECTION:**
+
+🚨🚨🚨 **CRITICAL RULE: NEVER USE SIMPLE FADE. ALWAYS USE BLUR-IN.**
+
+**THE ONLY ACCEPTABLE TEXT ANIMATION (CINEMATIC BLUR-FADE - 2026 TIER):**
+\`\`\`css
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(25px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-blur-fade { animation: fadeUp 1.2s ease-out both; }
+\`\`\`
+
+**THE ONLY ACCEPTABLE HTML PATTERN - WRAP EACH WORD (STAGGERED DELAYS 0.12s apart):**
+\`\`\`html
+<h1 class="text-6xl font-bold">
+  <span class="inline-block animate-blur-fade" style="animation-delay: 0s;">Build</span>
+  <span class="inline-block animate-blur-fade" style="animation-delay: 0.12s;">amazing</span>
+  <span class="inline-block animate-blur-fade" style="animation-delay: 0.24s;">products</span>
+  <span class="inline-block animate-blur-fade" style="animation-delay: 0.36s;">faster</span>
+</h1>
+\`\`\`
+
+**❌❌❌ FORBIDDEN - WILL CAUSE FLICKERING:**
+- Animation faster than 1.5s = TOO FAST
+- Blur more than 12px = TOO STRONG
+- Delay between words more than 0.2s = TOO SLOW, looks broken
+- Simple opacity fade without blur = BORING, not cinematic
+
+**✅ REPEAT: EVERY HEADLINE MUST:**
+1. Use blur(10px) + opacity + translateY + scale for cinematic effect
+2. Duration: 1.5-2s per word
+3. Delays: 0.1-0.15s between words (creates smooth cascade)
+4. Easing: cubic-bezier(0.25, 0.46, 0.45, 0.94) - cinematic easing
+5. Each word in separate <span> with inline-block
+3. Have animation-delay: 0s, 0.1s, 0.2s, 0.3s... on each word
+4. Use cubic-bezier(0.16, 1, 0.3, 1) timing
 
 **COMPONENT THINKING (Mandatory):**
 - Think in reusable components, not pages
@@ -823,7 +1958,7 @@ Copy CONTENT from the video but apply DIGITAL COLLAGE aesthetics:
 ${request.styleDirective}`;
     }
     // ETHEREAL MESH - Aurora gradients
-    else if (styleName.includes("ethereal mesh") || styleName.includes("aurora gradient") || styleName.includes("mesh gradient")) {
+    else if (styleName.includes("ethereal mesh") || styleName.includes("ethereal-mesh")) {
       console.log("[transmute] >>> MATCHED: ETHEREAL MESH <<<");
       expandedStyleDirective = `${GLOBAL_STANDARDS}
 
@@ -1128,11 +2263,11 @@ Copy CONTENT from the video but apply CYBER TECH aesthetics:
 
 ${request.styleDirective}`;
     }
-    else if (styleName.includes("soft organic") || styleName.includes("liquid") || styleName.includes("aurora")) {
+    else if (styleName.includes("soft organic") || styleName.includes("soft-organic")) {
       console.log("[transmute] >>> MATCHED: SOFT ORGANIC <<<");
       expandedStyleDirective = `${GLOBAL_STANDARDS}
 
-**STYLE: SOFT ORGANIC / LIQUID AURORA**
+**STYLE: SOFT ORGANIC (Pastel Blobs)**
 
 ⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
 Copy CONTENT from the video but apply SOFT ORGANIC aesthetics:
@@ -2230,7 +3365,7 @@ Copy CONTENT from the video but apply SLICED SHUTTER aesthetics. All images/sect
   <div class="absolute inset-y-0 left-[20%] w-[20%] bg-cover animate-slide-up" style="background-image: url(img.jpg); background-position: 25% center; animation-delay: 0.1s;"></div>
   <div class="absolute inset-y-0 left-[40%] w-[20%] bg-cover animate-slide-up" style="background-image: url(img.jpg); background-position: 50% center; animation-delay: 0.2s;"></div>
   <div class="absolute inset-y-0 left-[60%] w-[20%] bg-cover animate-slide-up" style="background-image: url(img.jpg); background-position: 75% center; animation-delay: 0.3s;"></div>
-  <div class="absolute inset-y-0 left-[80%] w-[20%] bg-cover animate-slide-up" style="background-image: url(img.jpg); background-position: 100% center; animation-delay: 0.4s;"></div>
+  <div class="absolute inset-y-0 left-[80%] w-[20%] bg-cover animate-slide-up" style="background-image: url(img.jpg); background-position: 100% center; animation-delay: 0.12s;"></div>
 </div>
 <!-- Keyframe: slide-up from translateY(100%) to translateY(0), duration 0.8s, cubic-bezier(0.76, 0, 0.24, 1) -->
 \`\`\`
@@ -2649,7 +3784,7 @@ Copy CONTENT from the video but apply PHYSICS GRAVITY aesthetics. Elements MUST 
   <div class="absolute animate-fall" style="top: -50px; left: 40%; animation-delay: 0.2s;">
     <span class="px-4 py-2 bg-blue-500 text-white rounded-full font-medium">TypeScript</span>
   </div>
-  <div class="absolute animate-fall" style="top: -50px; left: 60%; animation-delay: 0.4s;">
+  <div class="absolute animate-fall" style="top: -50px; left: 60%; animation-delay: 0.12s;">
     <span class="px-4 py-2 bg-green-500 text-white rounded-full font-medium">Node.js</span>
   </div>
 </div>
@@ -3142,6 +4277,52 @@ Copy CONTENT from the video but apply HELIX TYPOGRAPHY aesthetics. Text MUST wra
 ${request.styleDirective}`;
     }
     
+    // STYLE REFERENCE - Use reference image's style, video's content
+    else if (styleName === "style reference" || styleName.includes("style reference")) {
+      console.log("[transmute] >>> MATCHED: STYLE REFERENCE (Image-based styling) <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: STYLE REFERENCE - IMAGE-BASED DESIGN OVERRIDE**
+
+🚨 **CRITICAL OVERRIDE - IGNORE VIDEO'S VISUAL STYLE** 🚨
+
+You are in STYLE REFERENCE mode. This means:
+
+**FROM THE VIDEO - EXTRACT ONLY:**
+- Text content (headlines, paragraphs, button labels)
+- Layout structure (sections, navigation, footer)
+- Component types (cards, buttons, forms)
+- Page structure
+
+**FROM THE REFERENCE IMAGE - EXTRACT AND APPLY:**
+- ALL colors (primary, secondary, background, text, accents)
+- Typography style (serif vs sans-serif, weights, spacing)
+- Border radius (sharp, rounded, pill)
+- Shadows and effects
+- Overall aesthetic (dark/light, minimal/detailed)
+- Visual mood and feeling
+
+**🔴 MANDATORY RULES:**
+1. If video has RED buttons but reference has YELLOW → Use YELLOW
+2. If video has WHITE background but reference has DARK → Use DARK
+3. NEVER copy colors from the video
+4. ALWAYS copy colors from the reference image
+5. Sample exact hex values from the reference image
+
+**COLOR EXTRACTION GUIDE:**
+Look at the reference image and identify:
+- What is the dominant accent color? → Use for buttons, links
+- What is the background color? → Use for body, sections
+- What are the text colors? → Use for headings, paragraphs
+
+Apply these EXACT colors using Tailwind arbitrary values:
+- bg-[#hexcode]
+- text-[#hexcode]  
+- border-[#hexcode]
+
+${request.styleDirective}`;
+    }
+    
     // ORIGINAL - Faithful 1:1 reconstruction from video
     else if (styleName === "original" || styleName.includes("1:1 copy") || styleName.includes("exact match")) {
       console.log("[transmute] >>> MATCHED: ORIGINAL (1:1 Reconstruction) <<<");
@@ -3183,19 +4364,1422 @@ DO NOT invent a new style. Create a faithful reconstruction of the video's visua
 
 ${request.styleDirective}`;
     }
-    else {
-      // Default: Apply global standards to any unmatched style
-      console.log("[transmute] >>> NO STYLE MATCHED - using DEFAULT <<<");
-      console.log("[transmute] styleName was:", `"${styleName}"`);
+    
+    // ============== PREMIUM SAAS LANDING STYLES ==============
+    
+    // MOLTEN AURORA SAAS
+    else if (styleName.includes("molten") || styleName.includes("volcanic") || styleName.includes("molten-aurora")) {
+      console.log("[transmute] >>> MATCHED: MOLTEN AURORA SAAS <<<");
       expandedStyleDirective = `${GLOBAL_STANDARDS}
 
-${request.styleDirective}
+**STYLE: MOLTEN AURORA SAAS (Volcanic Energy Stream)**
 
-**ADDITIONAL REQUIREMENTS:**
-- Use modern animation techniques (stagger, spring physics)
-- Apply hover states to all interactive elements
-- Ensure smooth transitions (0.3-0.8s duration)
-- Mobile-responsive with touch-friendly targets`;
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply MOLTEN AURORA aesthetics:
+
+**REQUIRED VISUAL CHANGES (Non-Negotiable):**
+1. Background: MUST be #050508 (near-black space)
+2. Central Beam: Vertical molten gold/orange energy stream using CSS gradients
+3. Bottom Pool: Radial orange glow at bottom center
+4. Cards: bg-white/5 backdrop-blur-xl border-white/10
+5. Particles: Floating dots with subtle animations
+
+**EXAMPLE OUTPUT:**
+\`\`\`html
+<div class="min-h-screen bg-[#050508] relative overflow-hidden">
+  <!-- Molten beam -->
+  <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-full bg-gradient-to-b from-orange-500/60 via-amber-500/40 to-transparent blur-3xl"></div>
+  <div class="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-full bg-gradient-to-b from-orange-400/80 via-yellow-500/50 to-transparent blur-xl"></div>
+  
+  <!-- Bottom pool -->
+  <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-48 bg-gradient-radial from-orange-500/40 to-transparent rounded-full blur-3xl"></div>
+  
+  <!-- Content -->
+  <div class="relative z-10 max-w-4xl mx-auto px-8 py-24 text-center">
+    <h1 class="text-6xl font-bold text-white mb-6">Your Headline</h1>
+    <p class="text-xl text-white/60 mb-8">Subheadline text here</p>
+    <button class="px-8 py-4 bg-orange-500 hover:bg-orange-400 text-black font-semibold rounded-full transition-colors">Get Started</button>
+  </div>
+  
+  <!-- Glass card -->
+  <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8">
+    <h3 class="text-white text-xl font-semibold">Feature</h3>
+  </div>
+</div>
+\`\`\`
+
+**⚠️ FORBIDDEN:**
+- Light backgrounds
+- No energy beam effect
+- Flat colors without glow
+
+${request.styleDirective}`;
+    }
+    
+    // MIDNIGHT AURORA FINTECH
+    else if (styleName.includes("midnight") || styleName.includes("aurora fintech") || styleName.includes("midnight-aurora")) {
+      console.log("[transmute] >>> MATCHED: MIDNIGHT AURORA FINTECH <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: MIDNIGHT AURORA FINTECH (Purple Neon Streaks)**
+
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply MIDNIGHT AURORA aesthetics:
+
+**REQUIRED VISUAL CHANGES (Non-Negotiable):**
+1. Background: MUST be #030308 (deep midnight)
+2. Aurora Band: Purple/magenta gradient band in bottom third
+3. Neon Streaks: Vertical cyan/blue light streaks
+4. Cards: bg-white/5 backdrop-blur-xl with subtle purple glow
+5. Text: White primary, purple/blue accents
+
+**EXAMPLE OUTPUT:**
+\`\`\`html
+<div class="min-h-screen bg-[#030308] relative overflow-hidden">
+  <!-- Aurora band -->
+  <div class="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-purple-600/30 via-fuchsia-500/20 to-transparent"></div>
+  <div class="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-purple-500/40 to-transparent blur-3xl"></div>
+  
+  <!-- Neon streaks -->
+  <div class="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-cyan-400/60 via-blue-500/30 to-transparent"></div>
+  <div class="absolute top-0 left-3/4 w-px h-full bg-gradient-to-b from-blue-400/60 via-purple-500/30 to-transparent"></div>
+  
+  <!-- Content -->
+  <div class="relative z-10 max-w-5xl mx-auto px-8 py-32">
+    <span class="text-purple-400 text-sm font-medium uppercase tracking-wider">Fintech Platform</span>
+    <h1 class="text-7xl font-bold text-white mt-4 mb-8">Next-Gen Banking</h1>
+    <p class="text-xl text-white/60 max-w-2xl">Revolutionary financial infrastructure.</p>
+  </div>
+  
+  <!-- Premium glass card -->
+  <div class="bg-white/5 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-8" style="box-shadow: 0 0 60px rgba(168,85,247,0.15);">
+    <h3 class="text-white text-2xl font-semibold">Premium Feature</h3>
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // AIRY BLUE AURA SAAS
+    else if (styleName.includes("airy") || styleName.includes("blue aura") || styleName.includes("airy-blue")) {
+      console.log("[transmute] >>> MATCHED: AIRY BLUE AURA SAAS <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: AIRY BLUE AURA SAAS (White Void with Blue Blob)**
+
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply AIRY BLUE AURA aesthetics:
+
+**REQUIRED VISUAL CHANGES (Non-Negotiable):**
+1. Background: MUST be #FFFFFF or #FAFBFC (clean white)
+2. Blue Blob: MASSIVE soft blue radial gradient (500-800px)
+3. Highlight Pill: Key phrase wrapped in translucent blue pill
+4. CTA: Indigo/blue button
+5. Typography: Large, clean, black text
+
+**EXAMPLE OUTPUT:**
+\`\`\`html
+<div class="min-h-screen bg-white relative overflow-hidden">
+  <!-- Massive blue aura blob -->
+  <div class="absolute top-1/4 right-1/4 w-[600px] h-[600px] bg-blue-400/30 rounded-full blur-[120px]"></div>
+  <div class="absolute bottom-1/4 left-1/3 w-[400px] h-[400px] bg-indigo-300/20 rounded-full blur-[100px]"></div>
+  
+  <!-- Content -->
+  <div class="relative z-10 max-w-4xl mx-auto px-8 py-32 text-center">
+    <h1 class="text-6xl font-bold text-gray-900 mb-6">
+      Build <span class="bg-blue-100 text-blue-700 px-4 py-1 rounded-full">beautiful</span> products
+    </h1>
+    <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">Clean, modern, and delightful experiences.</p>
+    <button class="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-full transition-colors">Get Started</button>
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // HALFTONE SOLAR BEAM STUDIO
+    else if (styleName.includes("halftone") || styleName.includes("solar beam") || styleName.includes("halftone-beam") || styleName.includes("dot matrix")) {
+      console.log("[transmute] >>> MATCHED: HALFTONE SOLAR BEAM <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: HALFTONE SOLAR BEAM STUDIO (Dot Matrix Energy)**
+
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply HALFTONE BEAM aesthetics:
+
+**REQUIRED VISUAL CHANGES (Non-Negotiable):**
+1. Background: MUST be #0A0A0A (near-black)
+2. Halftone Beam: Central vertical orange beam made of DOTS (radial-gradient dots)
+3. Grid Overlay: Visible grid lines at 5% opacity
+4. Bottom Glow: Orange radial pool at bottom
+5. Hero Word: MASSIVE text (text-[20vw] or larger)
+
+**EXAMPLE OUTPUT:**
+\`\`\`html
+<div class="min-h-screen bg-[#0A0A0A] relative overflow-hidden">
+  <!-- Grid overlay -->
+  <div class="absolute inset-0 opacity-5" style="background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 60px 60px;"></div>
+  
+  <!-- Halftone beam (dots) -->
+  <div class="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-full" style="background: radial-gradient(circle, #FF6B00 1px, transparent 1px); background-size: 8px 8px; opacity: 0.6;"></div>
+  <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-full bg-gradient-to-b from-orange-500/50 to-transparent blur-2xl"></div>
+  
+  <!-- Bottom pool glow -->
+  <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[500px] h-32 bg-orange-500/40 rounded-full blur-3xl"></div>
+  
+  <!-- MASSIVE hero word -->
+  <div class="relative z-10 h-screen flex items-center justify-center">
+    <h1 class="text-[20vw] font-black text-white leading-none tracking-tighter">STUDIO</h1>
+  </div>
+  
+  <!-- Subtext -->
+  <p class="absolute bottom-12 left-1/2 -translate-x-1/2 text-white/40 text-sm uppercase tracking-widest">Creative Agency</p>
+</div>
+\`\`\`
+
+**⚠️ FORBIDDEN:**
+- Light backgrounds
+- No halftone dot effect
+- Small typography
+
+${request.styleDirective}`;
+    }
+    
+    // MONOCHROME TYPOGRAPHIC WAVE
+    else if (styleName.includes("mono wave") || styleName.includes("monochrome wave") || styleName.includes("mono-wave") || styleName.includes("typographic wave")) {
+      console.log("[transmute] >>> MATCHED: MONOCHROME TYPOGRAPHIC WAVE <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: MONOCHROME TYPOGRAPHIC WAVE (Kinetic Typography)**
+
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply MONOCHROME WAVE aesthetics:
+
+**CRITICAL RULES (Non-Negotiable):**
+1. **COLORS:** Pure black #000000 background, pure white #FFFFFF text ONLY
+2. **NO GRADIENTS:** Do NOT use bg-gradient, text-gradient, or any gradient classes - SOLID COLORS ONLY
+3. **H1 REQUIRED:** Hero section MUST have an <h1> tag with the main headline
+4. **Typography:** Massive text (text-6xl to text-9xl), font-black, uppercase
+5. **Marquee:** Scrolling text ribbon with CSS animation
+
+**FORBIDDEN (Will Break The Style):**
+- ❌ NO gradient backgrounds (bg-gradient-*)
+- ❌ NO gradient text (bg-clip-text, text-transparent)
+- ❌ NO colored text except white
+- ❌ NO colored backgrounds except black
+
+**EXAMPLE OUTPUT:**
+\`\`\`html
+<section class="min-h-screen bg-black relative overflow-hidden">
+  <!-- Hero with H1 -->
+  <div class="container mx-auto px-6 pt-32 pb-16 relative z-10">
+    <h1 class="text-7xl md:text-9xl font-black text-white uppercase tracking-tighter leading-none">
+      YOUR HEADLINE<br/>
+      GOES HERE
+    </h1>
+    <p class="text-xl text-white/70 mt-8 max-w-xl">Your subtitle text here</p>
+    <button class="mt-8 px-8 py-4 bg-white text-black font-bold uppercase">Get Started</button>
+  </div>
+  
+  <!-- Scrolling text ribbon -->
+  <div class="absolute bottom-0 left-0 right-0 py-8 overflow-hidden border-t border-white/10">
+    <div class="flex whitespace-nowrap animate-marquee">
+      <span class="text-[10vw] font-black text-white/10 uppercase tracking-tight px-8">DESIGN</span>
+      <span class="text-[10vw] font-black text-white/10 uppercase tracking-tight px-8">•</span>
+      <span class="text-[10vw] font-black text-white/10 uppercase tracking-tight px-8">CREATE</span>
+      <span class="text-[10vw] font-black text-white/10 uppercase tracking-tight px-8">•</span>
+      <span class="text-[10vw] font-black text-white/10 uppercase tracking-tight px-8">DESIGN</span>
+      <span class="text-[10vw] font-black text-white/10 uppercase tracking-tight px-8">•</span>
+      <span class="text-[10vw] font-black text-white/10 uppercase tracking-tight px-8">CREATE</span>
+      <span class="text-[10vw] font-black text-white/10 uppercase tracking-tight px-8">•</span>
+    </div>
+  </div>
+</section>
+
+<style>
+@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+.animate-marquee { animation: marquee 20s linear infinite; }
+</style>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // GLASS BLUE TECH CASCADE
+    else if (styleName.includes("glass cascade") || styleName.includes("glass-cascade") || styleName.includes("blue tech") || styleName.includes("stacked glass")) {
+      console.log("[transmute] >>> MATCHED: GLASS BLUE TECH CASCADE <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: GLASS BLUE TECH CASCADE (Stacked Glass Cards)**
+
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply GLASS CASCADE aesthetics:
+
+**REQUIRED VISUAL CHANGES (Non-Negotiable):**
+1. Background: Deep blue gradient #0A1628 to #0F2847
+2. Glass Cards: Stacked vertically, floating at different depths
+3. Blur: Heavy backdrop-blur-2xl on all cards
+4. Glow: Soft blue radial glows between cards
+5. Spacing: Large vertical gaps, cards offset horizontally
+
+**EXAMPLE OUTPUT:**
+\`\`\`html
+<div class="min-h-screen bg-gradient-to-b from-[#0A1628] to-[#0F2847] relative py-24">
+  <!-- Blue glow orbs -->
+  <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-[100px]"></div>
+  <div class="absolute bottom-1/3 right-1/4 w-64 h-64 bg-cyan-400/15 rounded-full blur-[80px]"></div>
+  
+  <!-- Stacked glass cards -->
+  <div class="max-w-4xl mx-auto space-y-8">
+    <div class="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl p-10 ml-0" style="transform: translateZ(0px);">
+      <h2 class="text-3xl font-bold text-white">Feature One</h2>
+      <p class="text-white/60 mt-4">First level of the cascade</p>
+    </div>
+    
+    <div class="bg-white/8 backdrop-blur-2xl border border-white/15 rounded-3xl p-10 ml-12" style="transform: translateZ(-20px);">
+      <h2 class="text-3xl font-bold text-white">Feature Two</h2>
+      <p class="text-white/60 mt-4">Second level, offset right</p>
+    </div>
+    
+    <div class="bg-white/6 backdrop-blur-2xl border border-white/10 rounded-3xl p-10 ml-0" style="transform: translateZ(-40px);">
+      <h2 class="text-3xl font-bold text-white">Feature Three</h2>
+      <p class="text-white/60 mt-4">Third level, back to left</p>
+    </div>
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // FRACTURED GRID TYPOGRAPHY
+    else if (styleName.includes("fractured") || styleName.includes("fractured-grid") || styleName.includes("modular grid") || styleName.includes("split headline")) {
+      console.log("[transmute] >>> MATCHED: FRACTURED GRID TYPOGRAPHY <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: FRACTURED GRID TYPOGRAPHY (Modular Editorial)**
+
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply FRACTURED GRID aesthetics:
+
+**REQUIRED VISUAL CHANGES (Non-Negotiable):**
+1. Background: #FAFAFA (near-white) or #0A0A0A (near-black)
+2. Grid: Visible column lines at 10% opacity
+3. Typography: Headline FRAGMENTED across grid blocks
+4. Motion: Sections move independently on hover/scroll
+5. Colors: Monochrome + ONE accent color (red, blue, or orange)
+
+**EXAMPLE OUTPUT:**
+\`\`\`html
+<div class="min-h-screen bg-[#FAFAFA] relative">
+  <!-- Visible grid lines -->
+  <div class="absolute inset-0" style="background-image: repeating-linear-gradient(90deg, rgba(0,0,0,0.1) 0, rgba(0,0,0,0.1) 1px, transparent 1px, transparent calc(100% / 12)); background-size: 100% 100%;"></div>
+  
+  <!-- Fractured headline -->
+  <div class="grid grid-cols-12 gap-4 p-8 relative z-10">
+    <div class="col-span-4 col-start-1">
+      <h1 class="text-8xl font-black text-black">DES</h1>
+    </div>
+    <div class="col-span-4 col-start-6 mt-24">
+      <h1 class="text-8xl font-black text-black">IGN</h1>
+    </div>
+    <div class="col-span-3 col-start-10 mt-48">
+      <h1 class="text-8xl font-black text-red-600">.</h1>
+    </div>
+  </div>
+  
+  <!-- Content blocks -->
+  <div class="grid grid-cols-12 gap-4 p-8">
+    <div class="col-span-5 p-6 border border-black/10">
+      <p class="text-gray-600">Block content here</p>
+    </div>
+    <div class="col-span-4 col-start-8 p-6 bg-black text-white">
+      <p>Contrasting block</p>
+    </div>
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // DARK PRODUCT GLOWFRAME
+    else if (styleName.includes("glowframe") || styleName.includes("glowframe-product") || styleName.includes("teal glow") || styleName.includes("inner glow")) {
+      console.log("[transmute] >>> MATCHED: DARK PRODUCT GLOWFRAME <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: DARK PRODUCT GLOWFRAME (Teal Inner Glow)**
+
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply GLOWFRAME aesthetics:
+
+**REQUIRED VISUAL CHANGES (Non-Negotiable):**
+1. Background: #0A0A0C (dark charcoal)
+2. Cards: Inner glow borders (box-shadow inset teal)
+3. Accent: Teal/cyan #14B8A6 or #06B6D4
+4. Layout: Compact, product-focused
+5. Central Panel: Main product showcase with glowing frame
+
+**EXAMPLE OUTPUT:**
+\`\`\`html
+<div class="min-h-screen bg-[#0A0A0C] p-8">
+  <!-- Central product panel with glow frame -->
+  <div class="max-w-3xl mx-auto bg-[#111114] rounded-2xl p-1" style="box-shadow: inset 0 0 30px rgba(20,184,166,0.3), 0 0 60px rgba(20,184,166,0.1);">
+    <div class="bg-[#0A0A0C] rounded-xl p-8">
+      <h1 class="text-4xl font-bold text-white mb-4">Product Name</h1>
+      <p class="text-white/60">Revolutionary technology</p>
+    </div>
+  </div>
+  
+  <!-- Feature cards with inner glow -->
+  <div class="grid grid-cols-3 gap-6 mt-12 max-w-5xl mx-auto">
+    <div class="bg-[#111114] rounded-xl p-6" style="box-shadow: inset 0 1px 0 rgba(20,184,166,0.2);">
+      <div class="w-10 h-10 rounded-lg bg-teal-500/20 flex items-center justify-center mb-4">
+        <span class="text-teal-400">✦</span>
+      </div>
+      <h3 class="text-white font-semibold mb-2">Feature</h3>
+      <p class="text-white/50 text-sm">Description text</p>
+    </div>
+  </div>
+</div>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // ============== NEW 2025 SHADER & ANIMATION STYLES ==============
+    
+    // LIQUID NEON - WebGL Ray-Marched Nebula Shader (like Midnight Aurora Fintech)
+    else if (styleName.includes("liquid neon") || styleName.includes("liquid-neon") || styleName.includes("metaball")) {
+      console.log("[transmute] >>> MATCHED: LIQUID NEON <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: LIQUID NEON (Ray-Marched Nebula WebGL Background)**
+
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply LIQUID NEON shader aesthetics:
+
+**REQUIRED VISUAL CHANGES (Non-Negotiable):**
+1. Background: Deep space #000000 with FULL WebGL ray-marched nebula shader
+2. Shader: MUST include the complete shader code below - creates flowing cosmic nebula effect
+3. Typography: White text, font-black, with subtle text-shadow glow
+4. Canvas: Fixed fullscreen, z-index: 0 with the WebGL shader running
+5. Content: z-index: 10, use glass cards with backdrop-blur-xl
+
+**🚨🚨🚨 CRITICAL - HERO SECTION IS MANDATORY:**
+You MUST include a HERO SECTION with:
+- Huge headline (text-7xl md:text-9xl font-black) - use the brand name/title from video
+- Subtitle text from video
+- CTA button from video  
+- Blur-in animations on each element
+- Purple glow text-shadow
+
+**NEVER skip the hero section. Extract headline text from the video!**
+
+**🚨 CRITICAL - MUST INCLUDE THIS EXACT SHADER CODE:**
+
+\`\`\`html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Liquid Neon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body class="bg-black overflow-x-hidden">
+  <!-- WebGL Nebula Shader Canvas Container -->
+  <div id="shader-container" class="fixed inset-0 z-0"></div>
+  
+  <!-- Main Content - REPLACE WITH CONTENT FROM VIDEO -->
+  <div class="relative z-10 min-h-screen">
+    <!-- HERO SECTION - MANDATORY - Extract title/subtitle from video -->
+    <div class="flex items-center justify-center min-h-screen px-8">
+      <div class="text-center max-w-4xl">
+        <!-- Replace with actual brand name from video -->
+        <h1 class="text-7xl md:text-9xl font-black text-white mb-6" style="text-shadow: 0 0 60px rgba(168,85,247,0.5);">
+          <span class="inline-block animate-blur-fade" style="animation-delay: 0s;">[BRAND]</span>
+          <span class="inline-block animate-blur-fade" style="animation-delay: 0.12s;">[NAME]</span>
+        </h1>
+        <!-- Replace with actual subtitle from video -->
+        <p class="text-xl md:text-2xl text-white/70 mb-10 animate-blur-fade" style="animation-delay: 0.75s;">[Subtitle from video]</p>
+        <!-- Replace with actual CTA from video -->
+        <button class="px-10 py-5 bg-white/10 backdrop-blur-xl border border-white/20 text-white font-bold rounded-full hover:bg-white/20 transition-all animate-blur-fade" style="animation-delay: 0.6s;">
+          [CTA Text from video]
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes fadeUp { 0% { opacity: 0; transform: translateY(30px); } 100% { opacity: 1; transform: translateY(0); } }
+    .animate-blur-fade { animation: fadeUp 1.2s ease-out both; }
+  </style>
+
+  <script>
+    // Ray-Marched Nebula Shader - Creates flowing cosmic effect
+    (function() {
+      const container = document.getElementById('shader-container');
+      if (!container) return;
+      
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      container.appendChild(renderer.domElement);
+      
+      const scene = new THREE.Scene();
+      const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+      const clock = new THREE.Clock();
+      
+      const vertexShader = \`
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = vec4(position, 1.0);
+        }
+      \`;
+      
+      const fragmentShader = \`
+        precision mediump float;
+        uniform vec2 iResolution;
+        uniform float iTime;
+        uniform vec2 iMouse;
+        varying vec2 vUv;
+        
+        #define t iTime
+        mat2 m(float a){ float c=cos(a), s=sin(a); return mat2(c,-s,s,c); }
+        
+        float map(vec3 p){
+          p.xz *= m(t*0.4);
+          p.xy *= m(t*0.3);
+          vec3 q = p*2. + t;
+          return length(p + vec3(sin(t*0.7))) * log(length(p)+1.0)
+               + sin(q.x + sin(q.z + sin(q.y))) * 0.5 - 1.0;
+        }
+        
+        void mainImage(out vec4 O, in vec2 fragCoord) {
+          vec2 uv = fragCoord / min(iResolution.x, iResolution.y) - vec2(.9, .5);
+          uv.x += .4;
+          vec3 col = vec3(0.0);
+          float d = 2.5;
+          
+          for (int i = 0; i <= 5; i++) {
+            vec3 p = vec3(0,0,5.) + normalize(vec3(uv, -1.)) * d;
+            float rz = map(p);
+            float f = clamp((rz - map(p + 0.1)) * 0.5, -0.1, 1.0);
+            
+            // Cyan/purple/magenta nebula colors
+            vec3 base = vec3(0.05,0.2,0.5) + vec3(4.0,2.0,5.0)*f;
+            col = col * base + smoothstep(2.5, 0.0, rz) * 0.7 * base;
+            d += min(rz, 1.0);
+          }
+          
+          O = vec4(col, 1.0);
+        }
+        
+        void main() {
+          mainImage(gl_FragColor, vUv * iResolution);
+        }
+      \`;
+      
+      const uniforms = {
+        iTime: { value: 0 },
+        iResolution: { value: new THREE.Vector2() },
+        iMouse: { value: new THREE.Vector2() }
+      };
+      
+      const material = new THREE.ShaderMaterial({ vertexShader, fragmentShader, uniforms });
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+      scene.add(mesh);
+      
+      const onResize = () => {
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+        renderer.setSize(w, h);
+        uniforms.iResolution.value.set(w, h);
+      };
+      
+      window.addEventListener('resize', onResize);
+      onResize();
+      
+      renderer.setAnimationLoop(() => {
+        uniforms.iTime.value = clock.getElapsedTime();
+        renderer.render(scene, camera);
+      });
+    })();
+  </script>
+</body>
+</html>
+\`\`\`
+
+**GLASS CARD PATTERN:**
+\`\`\`html
+<div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8" style="box-shadow: 0 0 60px rgba(168,85,247,0.15);">
+  <h3 class="text-white text-2xl font-semibold">Feature Title</h3>
+  <p class="text-white/60 mt-2">Description text</p>
+</div>
+\`\`\`
+
+**⚠️ MANDATORY:**
+- MUST include Three.js CDN: https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js
+- MUST include the complete shader JavaScript code
+- MUST have shader-container div with fixed inset-0 z-0
+- Content MUST be z-10 or higher
+- Use backdrop-blur-xl on all cards
+
+${request.styleDirective}`;
+    }
+    
+    // MATRIX RAIN - Falling code animation
+    else if (styleName.includes("matrix rain") || styleName.includes("matrix-rain") || styleName.includes("raining letters") || styleName.includes("hacker")) {
+      console.log("[transmute] >>> MATCHED: MATRIX RAIN <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: MATRIX RAIN (Falling Code Animation)**
+
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply MATRIX RAIN aesthetics:
+
+**REQUIRED VISUAL CHANGES (Non-Negotiable):**
+1. Background: Pure black #000000
+2. Rain: 100+ falling character columns using CSS animations
+3. Colors: Bright green #00FF00 and dim green #3B5323
+4. Typography: MONOSPACE font for everything
+5. Glow: Text-shadow with green glow on headlines
+
+**EXAMPLE OUTPUT:**
+\`\`\`html
+<div class="min-h-screen bg-black relative overflow-hidden font-mono">
+  <!-- Matrix rain columns - generate 50+ of these with random delays -->
+  <div class="absolute inset-0 pointer-events-none">
+    <div class="absolute top-0 text-green-500 text-sm animate-fall opacity-70" style="left: 2%; animation-delay: 0.5s; animation-duration: 8s;">
+      <span class="block">ア</span><span class="block">カ</span><span class="block">7</span><span class="block">9</span>
+    </div>
+    <div class="absolute top-0 text-green-400 text-sm animate-fall opacity-80" style="left: 6%; animation-delay: 1.2s; animation-duration: 6s;">
+      <span class="block">サ</span><span class="block">タ</span><span class="block">2</span><span class="block">ナ</span>
+    </div>
+    <div class="absolute top-0 text-green-500 text-sm animate-fall opacity-60" style="left: 10%; animation-delay: 0.24s; animation-duration: 10s;">
+      <span class="block">A</span><span class="block">B</span><span class="block">C</span><span class="block">1</span>
+    </div>
+    <!-- Repeat pattern across viewport with random delays 0-5s and durations 5-15s -->
+    <div class="absolute top-0 text-green-400 text-sm animate-fall opacity-70" style="left: 20%; animation-delay: 2s; animation-duration: 7s;">
+      <span class="block">X</span><span class="block">Y</span><span class="block">Z</span><span class="block">0</span>
+    </div>
+    <div class="absolute top-0 text-green-500 text-sm animate-fall opacity-90" style="left: 35%; animation-delay: 0.3s; animation-duration: 9s;">
+      <span class="block">M</span><span class="block">A</span><span class="block">T</span><span class="block">R</span>
+    </div>
+    <!-- Continue for full coverage -->
+  </div>
+  
+  <!-- Content -->
+  <div class="relative z-10 min-h-screen flex items-center justify-center">
+    <div class="text-center">
+      <h1 class="text-6xl font-bold text-green-400 mb-6" style="text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00;">
+        ENTER THE MATRIX
+      </h1>
+      <p class="text-green-500/70 text-xl mb-8">Wake up, Neo...</p>
+      <button class="px-8 py-4 border-2 border-green-500 text-green-400 font-mono hover:bg-green-500/20 transition-colors">
+        TAKE THE RED PILL
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes fall {
+  0% { transform: translateY(-100vh); }
+  100% { transform: translateY(100vh); }
+}
+.animate-fall { animation: fall linear infinite; }
+</style>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // GRADIENT BAR WAITLIST - Orange bars animation
+    else if (styleName.includes("gradient bar") || styleName.includes("gradient-bar") || styleName.includes("bar waitlist") || styleName.includes("waitlist")) {
+      console.log("[transmute] >>> MATCHED: GRADIENT BAR WAITLIST <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: GRADIENT BAR WAITLIST (Animated Bars + Startup Landing)**
+
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply GRADIENT BAR WAITLIST aesthetics:
+
+**REQUIRED VISUAL CHANGES (Non-Negotiable):**
+1. Background: #0A0A0A (near-black)
+2. Bars: 15+ vertical gradient bars from bottom with pulse animation
+3. Colors: Orange gradient (#FF3C00 to transparent)
+4. Social Proof: Avatar stack with overlapping circles
+5. Form: Email input + white rounded-full CTA button
+
+**EXAMPLE OUTPUT:**
+\`\`\`html
+<div class="min-h-screen bg-[#0A0A0A] relative overflow-hidden">
+  <!-- Animated gradient bars -->
+  <div class="absolute bottom-0 left-0 right-0 h-2/3 flex justify-center gap-2 px-8">
+    <div class="flex-1 max-w-8 bg-gradient-to-t from-orange-600/80 to-transparent rounded-t-full animate-pulse-bar" style="animation-delay: 0s; height: 60%;"></div>
+    <div class="flex-1 max-w-8 bg-gradient-to-t from-orange-500/70 to-transparent rounded-t-full animate-pulse-bar" style="animation-delay: 0.1s; height: 75%;"></div>
+    <div class="flex-1 max-w-8 bg-gradient-to-t from-orange-600/90 to-transparent rounded-t-full animate-pulse-bar" style="animation-delay: 0.2s; height: 90%;"></div>
+    <div class="flex-1 max-w-8 bg-gradient-to-t from-orange-500/80 to-transparent rounded-t-full animate-pulse-bar" style="animation-delay: 0.3s; height: 100%;"></div>
+    <div class="flex-1 max-w-8 bg-gradient-to-t from-orange-600/70 to-transparent rounded-t-full animate-pulse-bar" style="animation-delay: 0.12s; height: 85%;"></div>
+    <div class="flex-1 max-w-8 bg-gradient-to-t from-orange-500/60 to-transparent rounded-t-full animate-pulse-bar" style="animation-delay: 0.5s; height: 70%;"></div>
+    <!-- More bars... -->
+  </div>
+  
+  <!-- Content -->
+  <div class="relative z-10 max-w-2xl mx-auto px-8 pt-32 text-center">
+    <!-- Social proof avatars -->
+    <div class="flex justify-center mb-6">
+      <div class="flex -space-x-3">
+        <div class="w-10 h-10 rounded-full bg-gray-600 border-2 border-[#0A0A0A]"></div>
+        <div class="w-10 h-10 rounded-full bg-gray-500 border-2 border-[#0A0A0A]"></div>
+        <div class="w-10 h-10 rounded-full bg-gray-400 border-2 border-[#0A0A0A]"></div>
+        <div class="w-10 h-10 rounded-full bg-gray-300 border-2 border-[#0A0A0A]"></div>
+      </div>
+      <span class="ml-4 text-white/60 text-sm self-center">2.4K+ on waitlist</span>
+    </div>
+    
+    <h1 class="text-5xl font-serif italic text-white mb-6">Redefining What's Possible</h1>
+    <p class="text-white/60 text-lg mb-8">Join thousands of innovators shaping the future.</p>
+    
+    <!-- Email form -->
+    <div class="flex gap-3 max-w-md mx-auto">
+      <input type="email" placeholder="Enter your email" class="flex-1 px-6 py-4 bg-white/10 border border-white/20 rounded-full text-white placeholder:text-white/40 focus:outline-none focus:border-white/40">
+      <button class="px-8 py-4 bg-white text-black font-semibold rounded-full hover:bg-white/90 transition-colors">Join Waitlist</button>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes pulse-bar { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.1); } }
+.animate-pulse-bar { animation: pulse-bar 2s ease-in-out infinite; transform-origin: bottom; }
+</style>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // BLUR HERO MINIMAL - Staggered blur reveal
+    else if (styleName.includes("blur hero") || styleName.includes("blur-hero") || styleName.includes("minimal blur") || styleName.includes("blur reveal")) {
+      console.log("[transmute] >>> MATCHED: BLUR HERO MINIMAL <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: BLUR HERO MINIMAL (Staggered Blur-to-Clear Animation)**
+
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply BLUR HERO aesthetics:
+
+**REQUIRED VISUAL CHANGES (Non-Negotiable):**
+1. Background: Pure white #FFFFFF
+2. Animation: Each word blurs in separately with stagger
+3. Typography: Large black text, clean sans-serif
+4. Logos Section: Grid of logos with hover blur effect
+5. Navigation: Rounded pill with shadow
+
+**EXAMPLE OUTPUT:**
+\`\`\`html
+<div class="min-h-screen bg-white">
+  <!-- Navigation pill -->
+  <nav class="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-white rounded-full shadow-lg px-8 py-3 flex items-center gap-8 border border-gray-100">
+    <span class="font-semibold text-black">Logo</span>
+    <div class="flex gap-6 text-gray-600">
+      <a href="#" class="hover:text-black transition-colors">Features</a>
+      <a href="#" class="hover:text-black transition-colors">Pricing</a>
+    </div>
+    <button class="px-5 py-2 bg-black text-white rounded-full text-sm font-medium">Sign Up</button>
+  </nav>
+  
+  <!-- Hero with blur animation -->
+  <div class="pt-40 pb-20 text-center max-w-4xl mx-auto px-8">
+    <h1 class="text-6xl font-bold text-black leading-tight">
+      <span class="inline-block animate-blur-fade" style="animation-delay: 0s;">Build</span>
+      <span class="inline-block animate-blur-fade" style="animation-delay: 0.12s;">beautiful</span>
+      <span class="inline-block animate-blur-fade" style="animation-delay: 0.5s;">products</span>
+      <span class="inline-block animate-blur-fade" style="animation-delay: 0.75s;">faster</span>
+    </h1>
+    <p class="text-xl text-gray-600 mt-6 animate-blur-fade" style="animation-delay: 0.5s;">The modern toolkit for ambitious teams.</p>
+    <button class="mt-8 px-8 py-4 bg-black text-white rounded-full font-medium animate-blur-fade" style="animation-delay: 0.7s;">Get Started</button>
+  </div>
+  
+  <!-- Logos with hover blur -->
+  <div class="py-16 border-t border-gray-100">
+    <div class="max-w-4xl mx-auto px-8 group relative">
+      <div class="grid grid-cols-5 gap-8 opacity-60 group-hover:blur-sm group-hover:opacity-30 transition-all duration-500">
+        <div class="h-8 bg-gray-300 rounded"></div>
+        <div class="h-8 bg-gray-300 rounded"></div>
+        <div class="h-8 bg-gray-300 rounded"></div>
+        <div class="h-8 bg-gray-300 rounded"></div>
+        <div class="h-8 bg-gray-300 rounded"></div>
+      </div>
+      <button class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-6 py-3 bg-black text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity">View Case Studies</button>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(25px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-blur-fade { animation: fadeUp 1.2s ease-out both; }
+</style>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // MESSY COLORFUL PHYSICS - Matter.js tags
+    else if (styleName.includes("messy") || styleName.includes("colorful physics") || styleName.includes("physics tag") || styleName.includes("matter.js")) {
+      console.log("[transmute] >>> MATCHED: MESSY COLORFUL PHYSICS <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: MESSY COLORFUL PHYSICS (Matter.js Draggable Tags)**
+
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply MESSY PHYSICS aesthetics:
+
+**REQUIRED VISUAL CHANGES (Non-Negotiable):**
+1. Background: White #FFFFFF
+2. Tags: Colorful pill shapes that fall with gravity and can be dragged
+3. Colors: Blue #0015ff, Pink #E794DA, Teal #1f464d, Red #ff5941, Yellow #ffd726
+4. Typography: Large serif italic headline
+5. Physics: Matter.js for gravity, collision, and mouse interaction
+
+**EXAMPLE OUTPUT:**
+\`\`\`html
+<div class="min-h-screen bg-white relative overflow-hidden">
+  <!-- Physics container -->
+  <div id="physics-container" class="absolute inset-0"></div>
+  
+  <!-- Content -->
+  <div class="relative z-10 flex flex-col items-center justify-center min-h-screen pointer-events-none">
+    <p class="text-gray-500 text-lg mb-2">components made with:</p>
+    <h1 class="text-8xl font-serif italic text-black">fancy</h1>
+  </div>
+  
+  <!-- Tags (these get converted to physics bodies) -->
+  <div class="absolute top-20 left-1/4 px-6 py-3 bg-[#0015ff] text-white rounded-full font-medium cursor-grab" data-physics>react</div>
+  <div class="absolute top-32 left-1/3 px-6 py-3 bg-[#E794DA] text-black rounded-full font-medium cursor-grab" data-physics>typescript</div>
+  <div class="absolute top-24 left-1/2 px-6 py-3 bg-[#1f464d] text-white rounded-full font-medium cursor-grab" data-physics>motion</div>
+  <div class="absolute top-40 left-2/3 px-6 py-3 bg-[#ff5941] text-white rounded-full font-medium cursor-grab" data-physics>tailwind</div>
+  <div class="absolute top-28 right-1/4 px-6 py-3 bg-[#ffd726] text-black rounded-full font-medium cursor-grab" data-physics>drei</div>
+  <div class="absolute top-36 right-1/3 px-6 py-3 bg-[#FF6B00] text-white rounded-full font-medium cursor-grab" data-physics>matter-js</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+<script>
+// Matter.js physics setup
+const Engine = Matter.Engine, World = Matter.World, Bodies = Matter.Bodies, Mouse = Matter.Mouse, MouseConstraint = Matter.MouseConstraint;
+const engine = Engine.create();
+engine.world.gravity.y = 1;
+// Add walls and tag bodies...
+</script>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // EARTHY GRID REVEAL - Organic grid with word animations
+    else if (styleName.includes("earthy") || styleName.includes("grid reveal") || styleName.includes("organic grid") || styleName.includes("word appear")) {
+      console.log("[transmute] >>> MATCHED: EARTHY GRID REVEAL <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: EARTHY GRID REVEAL (Organic Tones + Word Animation)**
+
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply EARTHY GRID aesthetics:
+
+🚨🚨🚨 **MANDATORY HERO SECTION - YOU MUST START WITH THIS:**
+Your output MUST begin with a full-screen hero section containing:
+1. Large H1 headline with word-by-word animation (text from video)
+2. Subtitle paragraph (from video)
+3. CTA button (from video)
+4. ALL in earthy style
+
+**REQUIRED VISUAL CHANGES (Non-Negotiable):**
+1. Background: Dark earthy gradient #1a1d18 to #2a2e26
+2. Grid: SVG pattern overlay with thin earthy lines
+3. Text: Cream color #f8f7f5, word-by-word reveal
+4. Animation: Each word fades/scales in with stagger
+5. Mouse: Gradient follows cursor, click creates ripples
+
+**EXAMPLE OUTPUT (COMPLETE HERO):**
+\`\`\`html
+<div class="min-h-screen relative overflow-hidden" style="background: linear-gradient(135deg, #1a1d18 0%, #2a2e26 100%);">
+  <!-- Grid overlay -->
+  <div class="absolute inset-0 pointer-events-none" style="background-image: url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 60 0 L 0 0 0 60' fill='none' stroke='rgba(200,180,160,0.08)' stroke-width='0.5'/%3E%3C/svg%3E\");"></div>
+  
+  <!-- Corner dots -->
+  <div class="absolute top-8 left-8 w-2 h-2 rounded-full bg-[#c8b4a0] animate-pulse-glow"></div>
+  <div class="absolute top-8 right-8 w-2 h-2 rounded-full bg-[#c8b4a0] animate-pulse-glow" style="animation-delay: 0.5s;"></div>
+  <div class="absolute bottom-8 left-8 w-2 h-2 rounded-full bg-[#c8b4a0] animate-pulse-glow" style="animation-delay: 1s;"></div>
+  <div class="absolute bottom-8 right-8 w-2 h-2 rounded-full bg-[#c8b4a0] animate-pulse-glow" style="animation-delay: 1.5s;"></div>
+  
+  <!-- HERO SECTION (MANDATORY) -->
+  <div class="relative z-10 min-h-screen flex flex-col items-center justify-center px-8">
+    <h1 class="text-5xl md:text-7xl font-light text-[#f8f7f5] text-center max-w-4xl leading-tight mb-6">
+      <span class="inline-block animate-word-appear" style="animation-delay: 0s;">[Headline</span>
+      <span class="inline-block animate-word-appear" style="animation-delay: 0.12s;">from</span>
+      <span class="inline-block animate-word-appear" style="animation-delay: 0.24s;">video]</span>
+    </h1>
+    <p class="text-xl text-[#c8b4a0] text-center max-w-2xl mb-10 animate-word-appear" style="animation-delay: 0.4s;">
+      [Subtitle text from video - describe the product or service]
+    </p>
+    <button class="px-8 py-4 bg-[#c8b4a0] text-[#1a1d18] font-medium rounded-lg hover:bg-[#d4c4b4] transition-all animate-word-appear" style="animation-delay: 0.55s;">
+      [CTA Button from video]
+    </button>
+  </div>
+</div>
+
+<style>
+@keyframes wordAppear {
+  0% { opacity: 0; transform: translateY(30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulseGlow { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+.animate-word-appear { animation: wordAppear 1.2s ease-out both; }
+.animate-pulse-glow { animation: pulseGlow 2s ease-in-out infinite; }
+</style>
+\`\`\`
+
+**⚠️ REMINDER: Replace ALL [placeholder] text with ACTUAL content from the video!**
+
+${request.styleDirective}`;
+    }
+    
+    // FLUID PRISMATIC - Interactive Nebula Shader (Three.js Ray-Marched)
+    else if (styleName.includes("fluid prismatic") || styleName.includes("fluid-prismatic") || styleName.includes("fluid simulation") || styleName.includes("prismatic")) {
+      console.log("[transmute] >>> MATCHED: FLUID PRISMATIC <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: FLUID PRISMATIC (Interactive Ray-Marched Nebula Shader)**
+
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply FLUID PRISMATIC shader aesthetics:
+
+**REQUIRED VISUAL CHANGES (Non-Negotiable):**
+1. Background: Deep space #000000 with FULL WebGL ray-marched nebula shader
+2. Shader: MUST include the complete Three.js shader code - creates flowing prismatic cosmic effect
+3. Colors: Shifting cyan/purple/green prismatic palette based on mouse movement
+4. Typography: White text, font-black, with colored text-shadow glow
+5. Content: z-index: 10, use glass cards with backdrop-blur-xl
+
+**🚨 CRITICAL - MUST INCLUDE THIS EXACT SHADER CODE:**
+
+\`\`\`html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fluid Prismatic</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body class="bg-black overflow-x-hidden">
+  <!-- WebGL Nebula Shader Canvas Container -->
+  <div id="shader-container" class="fixed inset-0 z-0"></div>
+  
+  <!-- Main Content -->
+  <div class="relative z-10 min-h-screen">
+    <div class="flex items-center justify-center min-h-screen px-8">
+      <div class="text-center max-w-4xl">
+        <h1 class="text-7xl md:text-9xl font-black text-white mb-6" style="text-shadow: 0 0 60px rgba(6,182,212,0.5);">
+          <span class="inline-block animate-blur-fade" style="animation-delay: 0s;">FLUID</span>
+          <span class="inline-block animate-blur-fade" style="animation-delay: 0.12s;">PRISMATIC</span>
+        </h1>
+        <p class="text-xl md:text-2xl text-white/70 mb-10 animate-blur-fade" style="animation-delay: 0.75s;">Interactive cosmic shader experience</p>
+        <button class="px-10 py-5 bg-white/10 backdrop-blur-xl border border-cyan-500/30 text-white font-bold rounded-full hover:bg-cyan-500/20 transition-all animate-blur-fade" style="animation-delay: 0.75s; box-shadow: 0 0 30px rgba(6,182,212,0.3);">
+          Explore Universe
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes fadeUp { 0% { opacity: 0; transform: translateY(30px); } 100% { opacity: 1; transform: translateY(0); } }
+    .animate-blur-fade { animation: fadeUp 1.2s ease-out both; }
+  </style>
+
+  <script>
+    // Interactive Ray-Marched Nebula Shader - Creates flowing prismatic cosmic effect
+    (function() {
+      const container = document.getElementById('shader-container');
+      if (!container) return;
+      
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      container.appendChild(renderer.domElement);
+      
+      const scene = new THREE.Scene();
+      const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+      const clock = new THREE.Clock();
+      
+      const vertexShader = \`
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = vec4(position, 1.0);
+        }
+      \`;
+      
+      const fragmentShader = \`
+        precision mediump float;
+        uniform vec2 iResolution;
+        uniform float iTime;
+        uniform vec2 iMouse;
+        varying vec2 vUv;
+        
+        #define t iTime
+        mat2 m(float a){ float c=cos(a), s=sin(a); return mat2(c,-s,s,c); }
+        
+        float map(vec3 p){
+          p.xz *= m(t*0.4);
+          p.xy *= m(t*0.3);
+          vec3 q = p*2. + t;
+          return length(p + vec3(sin(t*0.7))) * log(length(p)+1.0)
+               + sin(q.x + sin(q.z + sin(q.y))) * 0.5 - 1.0;
+        }
+        
+        void mainImage(out vec4 O, in vec2 fragCoord) {
+          vec2 uv = fragCoord / min(iResolution.x, iResolution.y) - vec2(.9, .5);
+          uv.x += .4;
+          vec3 col = vec3(0.0);
+          float d = 2.5;
+          
+          for (int i = 0; i <= 5; i++) {
+            vec3 p = vec3(0,0,5.) + normalize(vec3(uv, -1.)) * d;
+            float rz = map(p);
+            float f = clamp((rz - map(p + 0.1)) * 0.5, -0.1, 1.0);
+            
+            // Prismatic cyan/green/purple colors
+            vec3 base = vec3(0.05,0.3,0.1) + vec3(2.0,5.0,1.0)*f;
+            col = col * base + smoothstep(2.5, 0.0, rz) * 0.7 * base;
+            d += min(rz, 1.0);
+          }
+          
+          O = vec4(col, 1.0);
+        }
+        
+        void main() {
+          mainImage(gl_FragColor, vUv * iResolution);
+        }
+      \`;
+      
+      const uniforms = {
+        iTime: { value: 0 },
+        iResolution: { value: new THREE.Vector2() },
+        iMouse: { value: new THREE.Vector2() }
+      };
+      
+      const material = new THREE.ShaderMaterial({ vertexShader, fragmentShader, uniforms });
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+      scene.add(mesh);
+      
+      const onResize = () => {
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+        renderer.setSize(w, h);
+        uniforms.iResolution.value.set(w, h);
+      };
+      
+      const onMouseMove = (e) => {
+        uniforms.iMouse.value.set(e.clientX, window.innerHeight - e.clientY);
+      };
+      
+      window.addEventListener('resize', onResize);
+      window.addEventListener('mousemove', onMouseMove);
+      onResize();
+      
+      renderer.setAnimationLoop(() => {
+        uniforms.iTime.value = clock.getElapsedTime();
+        renderer.render(scene, camera);
+      });
+    })();
+  </script>
+</body>
+</html>
+\`\`\`
+
+**GLASS CARD PATTERN:**
+\`\`\`html
+<div class="bg-white/5 backdrop-blur-xl border border-cyan-500/20 rounded-2xl p-8" style="box-shadow: 0 0 60px rgba(6,182,212,0.15);">
+  <h3 class="text-white text-2xl font-semibold">Feature Title</h3>
+  <p class="text-white/60 mt-2">Description text</p>
+</div>
+\`\`\`
+
+**⚠️ MANDATORY:**
+- MUST include Three.js CDN: https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js
+- MUST include the complete shader JavaScript code
+- MUST have shader-container div with fixed inset-0 z-0
+- Content MUST be z-10 or higher
+- Use backdrop-blur-xl on all cards
+- Use cyan/teal accent colors
+
+${request.styleDirective}`;
+    }
+    
+    // PAPER SHADER MESH - MeshGradient design
+    else if (styleName.includes("paper shader") || styleName.includes("paper-shader") || styleName.includes("mesh gradient") || styleName.includes("meshgradient")) {
+      console.log("[transmute] >>> MATCHED: PAPER SHADER MESH <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: PAPER SHADER MESH (Animated MeshGradient + SVG Filters)**
+
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply PAPER SHADER MESH aesthetics:
+
+**REQUIRED VISUAL CHANGES (Non-Negotiable):**
+1. Background: Black with animated mesh gradient blobs
+2. Colors: Cyan #06b6d4, Orange #f97316, Teal #164e63
+3. Filters: SVG glass effect and gooey filter for buttons
+4. Border: Pulsing accent border on main container
+5. Hero: Bottom-left positioned with gradient text
+
+**EXAMPLE OUTPUT:**
+\`\`\`html
+<div class="min-h-screen bg-black relative overflow-hidden">
+  <!-- SVG Filters -->
+  <svg class="hidden">
+    <filter id="gooey">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
+      <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="gooey" />
+    </filter>
+  </svg>
+  
+  <!-- Animated mesh gradient -->
+  <div class="absolute inset-0">
+    <div class="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-cyan-500/50 rounded-full blur-[100px] animate-pulse"></div>
+    <div class="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-orange-500/50 rounded-full blur-[80px] animate-pulse" style="animation-delay: 1s;"></div>
+    <div class="absolute top-1/2 left-1/2 w-[300px] h-[300px] bg-teal-600/40 rounded-full blur-[60px] animate-pulse" style="animation-delay: 2s;"></div>
+  </div>
+  
+  <!-- Pulsing border container -->
+  <div class="relative z-10 m-8 min-h-[calc(100vh-4rem)] border border-cyan-500/30 rounded-3xl p-12 animate-border-pulse">
+    <!-- Badge with glass effect -->
+    <div class="inline-block px-4 py-2 bg-white/10 backdrop-blur-md rounded-full text-white/80 text-sm mb-8">
+      Paper Design System
+    </div>
+    
+    <!-- Hero headline -->
+    <h1 class="text-7xl font-bold leading-tight max-w-3xl">
+      <span class="bg-gradient-to-r from-cyan-400 via-white to-orange-400 bg-clip-text text-transparent">Beautiful</span>
+      <br />
+      <span class="text-white">Shader</span>
+      <br />
+      <span class="text-white/60">Experiences</span>
+    </h1>
+    
+    <!-- Gooey buttons -->
+    <div class="mt-12 flex gap-4" style="filter: url(#gooey);">
+      <button class="px-8 py-4 bg-white text-black font-semibold rounded-full">Get Started</button>
+      <button class="px-8 py-4 bg-white text-black font-semibold rounded-full">Learn More</button>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes border-pulse { 0%, 100% { border-color: rgba(6,182,212,0.3); } 50% { border-color: rgba(249,115,22,0.3); } }
+.animate-border-pulse { animation: border-pulse 4s ease-in-out infinite; }
+</style>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // MYNA AI MONO - Orange monospace business
+    else if (styleName.includes("myna") || styleName.includes("ai mono") || styleName.includes("myna-ai") || styleName.includes("orange mono")) {
+      console.log("[transmute] >>> MATCHED: MYNA AI MONO <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: MYNA AI MONO (Business AI Landing + Monospace)**
+
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply MYNA AI MONO aesthetics:
+
+**REQUIRED VISUAL CHANGES (Non-Negotiable):**
+1. Background: White #FFFFFF
+2. Typography: MONOSPACE font everywhere (font-mono)
+3. Accent: Orange #FF6B2C for CTAs and highlights
+4. Animation: Word-by-word blur-fade on headlines (CINEMATIC)
+5. Cards: Feature cards with orange-tinted icons
+
+**EXAMPLE OUTPUT:**
+\`\`\`html
+<div class="min-h-screen bg-white font-mono">
+  <!-- Navigation -->
+  <nav class="flex items-center justify-between px-8 py-6">
+    <div class="flex items-center gap-2">
+      <svg class="w-6 h-6 text-black" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 12l10 10 10-10L12 2z"/></svg>
+      <span class="font-bold text-black">Myna UI</span>
+    </div>
+    <div class="flex items-center gap-6">
+      <a href="#" class="text-gray-600 hover:text-black uppercase text-sm">Features</a>
+      <a href="#" class="text-gray-600 hover:text-black uppercase text-sm">Pricing</a>
+      <button class="px-5 py-2 bg-[#FF6B2C] text-white rounded-full text-sm font-medium">Get Started</button>
+    </div>
+  </nav>
+  
+  <!-- Hero -->
+  <div class="max-w-5xl mx-auto px-8 py-24">
+    <div class="flex items-center gap-4 mb-8 text-sm text-gray-500">
+      <span class="flex items-center gap-2"><span class="text-[#FF6B2C]">◆</span> Predictive Analytics</span>
+      <span class="flex items-center gap-2"><span class="text-[#FF6B2C]">◆</span> Machine Learning</span>
+      <span class="flex items-center gap-2"><span class="text-[#FF6B2C]">◆</span> NLP</span>
+    </div>
+    
+    <h1 class="text-6xl font-bold text-black leading-tight">
+      <span class="inline-block animate-blur-fade" style="animation-delay: 0s;">AI-Powered</span>
+      <span class="inline-block animate-blur-fade" style="animation-delay: 0.12s;">Business</span>
+      <span class="inline-block animate-blur-fade" style="animation-delay: 0.5s;">Intelligence</span>
+    </h1>
+    
+    <p class="text-xl text-gray-600 mt-6 max-w-2xl">Transform your data into actionable insights with our advanced AI platform.</p>
+    
+    <button class="mt-8 px-8 py-4 bg-[#FF6B2C] text-white rounded-full font-medium hover:bg-[#e55d24] transition-colors">Start Free Trial</button>
+  </div>
+  
+  <!-- Feature cards -->
+  <div class="max-w-5xl mx-auto px-8 pb-24 grid grid-cols-3 gap-6">
+    <div class="p-6 border border-gray-200 rounded-2xl">
+      <div class="w-12 h-12 rounded-xl bg-[#FF6B2C]/10 flex items-center justify-center mb-4">
+        <span class="text-[#FF6B2C] text-xl">⚡</span>
+      </div>
+      <h3 class="font-bold text-black mb-2">Real-time Analysis</h3>
+      <p class="text-gray-500 text-sm">Process millions of data points instantly.</p>
+    </div>
+    <!-- More cards... -->
+  </div>
+</div>
+
+<style>
+@keyframes fadeUp { 0% { opacity: 0; transform: translateY(30px); } 100% { opacity: 1; transform: translateY(0); } }
+.animate-blur-fade { animation: fadeUp 1.2s ease-out both; }
+</style>
+\`\`\`
+
+${request.styleDirective}`;
+    }
+    
+    // ACME CLEAN ROUNDED - Modern clean SaaS
+    else if (styleName.includes("acme") || styleName.includes("clean rounded") || styleName.includes("acme-clean") || styleName.includes("rounded nav")) {
+      console.log("[transmute] >>> MATCHED: ACME CLEAN ROUNDED <<<");
+      expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**STYLE: ACME CLEAN ROUNDED (Modern Clean SaaS)**
+
+⚠️ **MANDATORY OVERRIDE - IGNORE VIDEO STYLING:**
+Copy CONTENT from the video but apply ACME CLEAN aesthetics:
+
+**REQUIRED VISUAL CHANGES (Non-Negotiable):**
+1. Background: Uses CSS variables for light/dark mode support
+2. Navigation: Rounded-xl pill nav with shadow
+3. Animation: FadeInUp on hero elements with stagger
+4. Dashboard: Bordered container with dashboard preview image
+5. CTAs: Primary filled, secondary outline with keyboard shortcuts
+
+**EXAMPLE OUTPUT:**
+\`\`\`html
+<div class="min-h-screen bg-background text-foreground">
+  <!-- Rounded pill navigation -->
+  <nav class="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-background rounded-xl shadow-lg px-6 py-3 flex items-center gap-6 border border-border">
+    <span class="font-bold">Acme</span>
+    <div class="flex gap-4 text-muted-foreground">
+      <a href="#" class="hover:text-foreground transition-colors">Features</a>
+      <a href="#" class="hover:text-foreground transition-colors">Pricing</a>
+      <a href="#" class="hover:text-foreground transition-colors">Docs</a>
+    </div>
+    <button class="p-2 rounded-lg hover:bg-muted transition-colors" aria-label="Toggle theme">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+    </button>
+    <button class="px-5 py-2 bg-foreground text-background rounded-full text-sm font-medium">Get Started</button>
+  </nav>
+  
+  <!-- Hero -->
+  <div class="pt-40 pb-16 text-center max-w-4xl mx-auto px-8">
+    <div class="flex items-center justify-center gap-4 text-sm text-muted-foreground mb-8 animate-fadeInUp">
+      <span>/w Tailwind CSS</span>
+      <span>•</span>
+      <span>Components & Templates</span>
+      <span>•</span>
+      <span>/w Motion</span>
+    </div>
+    
+    <h1 class="text-6xl font-bold leading-tight animate-fadeInUp" style="animation-delay: 0.12s;">
+      Websites, <span class="text-primary">Redefined</span>
+    </h1>
+    
+    <p class="text-xl text-muted-foreground mt-6 animate-fadeInUp" style="animation-delay: 0.3s;">The modern toolkit for building beautiful, accessible websites.</p>
+    
+    <div class="flex items-center justify-center gap-4 mt-8 animate-fadeInUp" style="animation-delay: 0.45s;">
+      <button class="px-8 py-4 bg-foreground text-background rounded-full font-medium">Get Started</button>
+      <button class="px-8 py-4 border border-border rounded-full font-medium flex items-center gap-2">
+        Learn More <kbd class="px-2 py-1 bg-muted rounded text-xs">⌘K</kbd>
+      </button>
+    </div>
+  </div>
+  
+  <!-- Dashboard preview -->
+  <div class="max-w-5xl mx-auto px-8 pb-24 animate-fadeInUp" style="animation-delay: 0.6s;">
+    <div class="border border-border p-2 rounded-3xl relative overflow-hidden">
+      <div class="bg-muted rounded-2xl aspect-video"></div>
+      <div class="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-background to-transparent"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes fadeUp { 0% { opacity: 0; transform: translateY(30px); } 100% { opacity: 1; transform: translateY(0); } }
+.animate-fadeInUp { animation: fadeUp 1.2s ease-out both; }
+</style>
+\`\`\`
+
+**⚠️ REMINDER: USE SLOW TEXT-REVEAL ANIMATION**
+
+${request.styleDirective}`;
+    }
+    
+    else {
+      // Check if this is auto-detect mode (no style specified)
+      if (isAutoDetect) {
+        console.log("[transmute] >>> AUTO-DETECT MODE - Matching Video Vibe <<<");
+        
+        expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**🎨 AUTO-DETECT MODE - MATCH VIDEO VIBE**
+
+You are in AUTO-DETECT mode. The user wants you to MATCH the visual style from the video.
+
+**YOUR TASK:**
+1. Analyze the VIDEO carefully to detect its visual style
+2. Extract BOTH the content AND the visual style from the video
+3. Recreate the UI with the SAME visual feel
+
+**WHAT TO DETECT FROM VIDEO:**
+✅ Color scheme (backgrounds, text colors, accent colors)
+✅ Typography style (serif/sans-serif, weight, sizes)
+✅ Border radius (rounded vs sharp corners)
+✅ Spacing and layout density
+✅ Visual effects (shadows, gradients, glassmorphism)
+✅ Overall vibe (minimal, playful, corporate, tech, etc.)
+
+**EXAMPLE AUTO-DETECTIONS:**
+- Video shows green accents + soft corners + friendly vibe → Use green palette, rounded-2xl, warm font
+- Video shows dark mode + neon accents + sharp edges → Use dark bg, neon colors, squared corners
+- Video shows white minimal + thin fonts + lots of whitespace → Use white bg, thin typography, generous padding
+
+**MANDATORY HERO SECTION:**
+Your output MUST start with a hero section containing:
+1. Large H1 headline with blur-fade animation (text extracted from video)
+2. Subtitle
+3. CTA button
+
+**IMPORTANT:** Match the video's visual style as closely as possible while ensuring the output is polished and professional.
+`;
+      } else {
+        // Default: Apply global standards to any unmatched style
+        console.log("[transmute] >>> NO STYLE MATCHED - using DEFAULT <<<");
+        console.log("[transmute] styleName was:", `"${styleName}"`);
+        
+        // Extract style description from the directive for the AI to interpret
+        const styleDescription = request.styleDirective || "Modern, premium design";
+        
+        expandedStyleDirective = `${GLOBAL_STANDARDS}
+
+**🚨🚨🚨 MANDATORY STYLE OVERRIDE - READ THIS 5 TIMES 🚨🚨🚨**
+
+THIS IS A STYLE TRANSFORMATION. You are given:
+1. A VIDEO - use ONLY for CONTENT (text, structure, what the app/site does)
+2. A STYLE DIRECTIVE - use ONLY for VISUAL DESIGN (colors, typography, animations, feel)
+
+**⚠️⚠️⚠️ YOU MUST COMPLETELY IGNORE THE VIDEO'S VISUAL STYLE! ⚠️⚠️⚠️**
+
+The video's colors, fonts, spacing, and design are IRRELEVANT.
+You MUST apply the following style instead:
+
+**STYLE TO APPLY: ${styleDescription}**
+
+**WHAT TO EXTRACT FROM VIDEO:**
+✅ Text content (brand name, headlines, descriptions, button labels)
+✅ Structure (sections, navigation items, features)
+✅ Functionality (what the app does, what buttons do)
+✅ Layout concept (hero, features, pricing, etc.)
+
+**WHAT TO IGNORE FROM VIDEO:**
+❌ Colors - USE THE STYLE'S COLORS
+❌ Typography/Fonts - USE THE STYLE'S FONTS
+❌ Visual effects - USE THE STYLE'S EFFECTS
+❌ Border radius, shadows, spacing - USE THE STYLE'S AESTHETIC
+
+**EXAMPLE:**
+- Video shows: White background, blue buttons, rounded corners, Inter font
+- Style says: "Kinetic brutalism with acid yellow"
+- Your output MUST have: Acid yellow background, black/white text, sharp corners, Impact font
+- The video's visual style is 100% OVERRIDDEN
+
+**🚨🚨🚨 MANDATORY HERO SECTION (YOU MUST INCLUDE THIS):**
+
+Your output MUST start with a full-screen hero section containing:
+1. Large H1 headline (text-6xl or larger) with blur-fade animation
+2. Subtitle paragraph
+3. CTA button
+
+**EXTRACT HEADLINE FROM VIDEO:**
+- Look for any brand name, app name, or title text
+- If visible text: use it as H1
+- If no clear text: create a compelling headline based on the UI content
+
+**EXAMPLE HERO STRUCTURE (ADAPT TO VIDEO CONTENT AND STYLE):**
+\`\`\`html
+<section class="min-h-screen flex items-center justify-center px-8">
+  <div class="max-w-4xl text-center">
+    <h1 class="text-5xl md:text-7xl font-bold">
+      <span class="inline-block animate-blur-fade" style="animation-delay: 0s;">[Brand/Title</span>
+      <span class="inline-block animate-blur-fade" style="animation-delay: 0.12s;">From</span>
+      <span class="inline-block animate-blur-fade" style="animation-delay: 0.24s;">Video]</span>
+    </h1>
+    <p class="text-xl mt-6 animate-blur-fade" style="animation-delay: 0.4s;">[Description from video or context]</p>
+    <button class="mt-8 px-8 py-4 font-medium animate-blur-fade" style="animation-delay: 0.55s;">
+      [CTA from video]
+    </button>
+  </div>
+</section>
+\`\`\`
+
+**⚠️ CRITICAL ANIMATION REQUIREMENTS (2026 TIER - CINEMATIC):**
+You MUST use CINEMATIC blur-fade text animations. This creates premium, award-winning feel.
+
+**REQUIRED: BLUR-FADE ANIMATION (MOTION PRIMITIVES STYLE):**
+\`\`\`css
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(25px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-blur-fade { animation: fadeUp 1.2s ease-out both; }
+\`\`\`
+
+**REQUIRED: STAGGER EACH WORD SEPARATELY (CASCADE DELAYS 0.12s apart):**
+\`\`\`html
+<h1>
+  <span class="inline-block animate-blur-fade" style="animation-delay: 0s;">First</span>
+  <span class="inline-block animate-blur-fade" style="animation-delay: 0.12s;">Word</span>
+  <span class="inline-block animate-blur-fade" style="animation-delay: 0.24s;">Staggered</span>
+</h1>
+\`\`\`
+
+**⚠️ FORBIDDEN:**
+- NEVER use simple opacity-only fade (boring, not premium)
+- NEVER animate all text at once
+- NEVER use delays larger than 0.2s between words (breaks cascade flow)
+- NEVER skip the hero section
+- NEVER generate output without H1 headline
+- NEVER copy the video's visual style - ONLY THE CONTENT`;
+      }
     }
 
     // Add database context if user has connected Supabase
@@ -3208,9 +5792,98 @@ When generating code, use the exact table and column names from the schema above
 Generate proper data fetching code that works with the user's real database.
 ` : '';
 
+    // Add final animation reminder to every style
+    const ANIMATION_REMINDER = `
+
+⚠️⚠️⚠️ FINAL REMINDER - TEXT ANIMATIONS (SMOOTH FADE-UP):
+You MUST include this CSS and HTML pattern for ALL headlines:
+
+CSS (REQUIRED - SIMPLE & RELIABLE):
+@keyframes fadeUp { 0% { opacity: 0; transform: translateY(30px); } 100% { opacity: 1; transform: translateY(0); } }
+.animate-blur-fade { animation: fadeUp 1.2s ease-out both; }
+
+HTML (REQUIRED - each word separate, CASCADE delays 0.12s apart):
+<h1><span class="inline-block animate-blur-fade" style="animation-delay: 0s;">Word1</span> <span class="inline-block animate-blur-fade" style="animation-delay: 0.12s;">Word2</span> <span class="inline-block animate-blur-fade" style="animation-delay: 0.24s;">Word3</span></h1>
+
+❌ FORBIDDEN: simple opacity fade (boring!), no animations at all, static pages.
+
+🎬🎬🎬 COMPONENT ANIMATIONS (CARDS, SECTIONS, IMAGES):
+Animate ALL components with staggered delays for premium feel:
+
+**CSS FOR COMPONENTS (add to your <style>):**
+@keyframes cardPop { 0% { opacity: 0; transform: translateY(40px) scale(0.95); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes slideInLeft { 0% { opacity: 0; transform: translateX(-30px); } 100% { opacity: 1; transform: translateX(0); } }
+@keyframes slideInRight { 0% { opacity: 0; transform: translateX(30px); } 100% { opacity: 1; transform: translateX(0); } }
+.animate-card { animation: cardPop 0.8s ease-out both; }
+.animate-slide-left { animation: slideInLeft 0.8s ease-out both; }
+.animate-slide-right { animation: slideInRight 0.8s ease-out both; }
+
+**STAGGER CARDS (3 cards example):**
+<div class="animate-card" style="animation-delay: 0s;">Card 1</div>
+<div class="animate-card" style="animation-delay: 0.15s;">Card 2</div>
+<div class="animate-card" style="animation-delay: 0.3s;">Card 3</div>
+
+**STAGGER FEATURE ITEMS (use 0.1s-0.15s between items):**
+- 3 items: delays 0s, 0.15s, 0.3s
+- 4 items: delays 0s, 0.12s, 0.24s, 0.36s
+- 6 items: delays 0s, 0.1s, 0.2s, 0.3s, 0.4s, 0.5s
+
+**ANIMATE SECTIONS AS THEY APPEAR:**
+- Hero content: animate-blur-fade with word stagger
+- Feature cards: animate-card with card stagger
+- Images: animate-card or animate-slide-left/right
+- CTAs: animate-blur-fade with delay after content
+- Section titles: animate-blur-fade
+
+🚨🚨🚨 FINAL CRITICAL CHECK - MANDATORY H1 HERO:
+Before returning your output, verify:
+✅ Does your code have a hero section visible on first load? (YES REQUIRED)
+✅ Does your hero have a PROPERLY SIZED H1? (YES REQUIRED)
+   - Short text (1-4 words): text-5xl to text-7xl OK
+   - Medium text (5-10 words): text-4xl to text-5xl OK
+   - Long text (10+ words): text-3xl to text-4xl OK
+   - NEVER text-8xl or text-9xl for multi-line headlines!
+✅ Does your H1 have max-w-3xl/4xl/5xl to constrain width? (YES REQUIRED)
+✅ Does your H1 have word-by-word blur-fade animation? (YES REQUIRED)
+✅ Is the H1 text extracted from the video or created based on content? (YES REQUIRED)
+✅ Can user see H1 + subtitle + CTA without scrolling? (YES REQUIRED)
+
+If ANY answer is NO → FIX IT BEFORE RETURNING OUTPUT.
+
+🚨🚨🚨 FINAL CRITICAL CHECK - ALL SECTIONS REQUIRED:
+Before returning your output, verify:
+✅ Did you watch the ENTIRE video from start to finish?
+✅ How many sections did you count in the video? (Write this number)
+✅ How many sections does your HTML output have? (Count them)
+✅ Do these numbers MATCH? (MUST BE YES)
+
+**SECTION COUNT VERIFICATION:**
+Count sections in video: ___
+Count sections in your output: ___
+If output < video → ADD MISSING SECTIONS NOW!
+
+**COMMON SECTIONS TO CHECK:**
+□ Hero/Header section - Large opening visual
+□ Features section - Cards/icons explaining benefits
+□ About section - Company/product story
+□ How it works - Steps/process explanation
+□ Testimonials - User reviews/quotes
+□ Pricing - Plans and prices
+□ Team - People and roles
+□ Portfolio/Gallery - Images/projects
+□ FAQ - Questions and answers
+□ Partners/Logos - Brand logos strip
+□ CTA - Call to action banner
+□ Contact - Form or contact info
+□ Footer - Links and copyright
+
+**YOUR OUTPUT MUST HAVE THE SAME NUMBER OF SECTIONS AS THE VIDEO!**
+`;
+
     const userPrompt = `${SYSTEM_PROMPT}
 
 **STYLE DIRECTIVE:** "${expandedStyleDirective}"
+${ANIMATION_REMINDER}
 ${styleReferenceInstruction}
 ${databaseSection}
 **⚠️ COMPLETE INTERFACE RECONSTRUCTION - MANDATORY:**
@@ -3254,6 +5927,49 @@ The output should be as complex as the input video.
 - Match the layout and structure exactly (sidebar, header, content grid, etc.)
 - Include ALL interactive elements (buttons, links, tabs)
 
+**🚨🚨🚨 SECTION EXTRACTION - CRITICAL (READ 5 TIMES) 🚨🚨🚨**
+
+**BEFORE WRITING ANY CODE, COUNT ALL SECTIONS IN THE VIDEO:**
+
+1. Watch the ENTIRE video from start to end
+2. As you scroll through, write down EVERY section you see:
+   - "Section 1: Hero with headline and CTA"
+   - "Section 2: Features - 4 cards with icons"
+   - "Section 3: About us - text and image"
+   - "Section 4: Testimonials - 3 user quotes"
+   - "Section 5: Pricing - 3 plan cards"
+   - "Section 6: FAQ - 6 questions expandable"
+   - "Section 7: Contact form"
+   - "Section 8: Footer with links"
+3. Count total: "VIDEO HAS 8 SECTIONS"
+4. Generate code with EXACTLY 8 sections
+
+**⚠️ FAILURE CONDITIONS:**
+- Video has 10 sections, you generate 5 → FAILED
+- Video has 8 sections, you generate 6 → FAILED  
+- Video has 12 sections, you generate 8 → FAILED
+- Only matching count OR MORE is SUCCESS
+
+**FOR EACH SECTION EXTRACT:**
+- Section type (hero, features, testimonials, etc.)
+- All text content (headlines, descriptions, labels)
+- Number of items (how many cards, how many testimonials, etc.)
+- Images/icons count and placement
+- CTAs and buttons
+
+**EXAMPLE OF PROPER EXTRACTION:**
+Video shows:
+- Hero: "Transform Your Business" headline + "Get Started" button
+- Features: 6 feature cards with icons
+- Stats: 4 numbers with labels (Users: 10M+, etc.)
+- Testimonials: 5 user reviews with photos
+- Pricing: 3 tiers (Free, Pro $29, Enterprise)
+- FAQ: 8 accordion items
+- CTA Banner: "Ready to start?" 
+- Footer: 4 columns of links
+
+Your output MUST have ALL 8 sections with the correct number of items in each!
+
 **OUTPUT STRUCTURE:**
 - Use Alpine.js x-data and x-show for page switching
 - Navigation should work to switch between confirmed pages
@@ -3265,14 +5981,38 @@ The output should be as complex as the input video.
 - CONFIRMED (generate full content): Home page, Shorts page  
 - POSSIBLE (comment only): Subscriptions, Library, History
 
-Generate the complete HTML now, including EVERYTHING from the video.`;
+**FINAL OUTPUT VERIFICATION:**
+□ Count sections in your HTML: ___
+□ Count sections in video: ___
+□ Do they match? (MUST BE YES)
+
+**MOBILE RESPONSIVENESS CHECK (MANDATORY):**
+□ All grids use grid-cols-1 as base → grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+□ All text uses responsive sizing → text-base md:text-lg lg:text-xl  
+□ All containers have max-w or w-full
+□ All images have w-full and aspect ratios
+□ All tables have overflow-x-auto wrapper
+□ No fixed pixel widths without responsive fallback
+□ Flex containers use flex-col md:flex-row
+□ Padding/margins scale: p-4 md:p-6 lg:p-8
+
+Generate the complete HTML now, including EVERY SINGLE SECTION from the video. DO NOT SKIP ANY SECTION!
+Ensure EVERY component works on 320px-1920px screen widths!`;
 
     // Build parts array - video first, then style reference image if provided, then prompt
     const contentParts: any[] = [videoPart];
+    console.log("[transmute] ========== CONTENT PARTS ==========");
+    console.log("[transmute] styleImagePart exists:", !!styleImagePart);
     if (styleImagePart) {
       contentParts.push(styleImagePart);
+      console.log("[transmute] ✅ Style reference image ADDED to contentParts");
+      console.log("[transmute] Image mimeType:", styleImagePart.inlineData.mimeType);
+      console.log("[transmute] Image data length:", styleImagePart.inlineData.data.length);
+    } else {
+      console.log("[transmute] ❌ No style reference image to add");
     }
     contentParts.push({ text: userPrompt });
+    console.log("[transmute] Total parts:", contentParts.length);
     
     const result = await model.generateContent({
       contents: [
@@ -3370,14 +6110,104 @@ Generate the complete HTML now, including EVERYTHING from the video.`;
   }
 }
 
-// Edit code with AI - now supports image data
+// Edit code with AI - now supports image data and chat history for context
 export async function editCodeWithAI(
   currentCode: string,
   editRequest: string,
   images?: { base64?: string; url?: string; mimeType: string; name: string }[],
-  databaseContext?: string
+  databaseContext?: string,
+  isPlanMode?: boolean,
+  chatHistory?: { role: string; content: string }[]
 ): Promise<TransmuteResponse> {
   const apiKey = getApiKey();
+  
+  // PLAN MODE - Conversational AI with project context
+  if (isPlanMode) {
+    try {
+      const genAI = new GoogleGenerativeAI(apiKey || '');
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.0-flash",
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 300, // Keep responses short
+        },
+      });
+      
+      // Extract project context for AI
+      const pageCount = (currentCode.match(/x-show=["']currentPage/gi) || []).length || 1;
+      const hasNav = currentCode.includes('<nav');
+      const hasFooter = currentCode.includes('<footer');
+      const componentCount = (currentCode.match(/<section|<main|<article|<header/gi) || []).length;
+      const codeSize = currentCode.length;
+      
+      // Extract page names if multi-page
+      const pageMatches = currentCode.match(/currentPage\s*===?\s*["']([^"']+)["']/gi) || [];
+      const pages = pageMatches.map(m => m.match(/["']([^"']+)["']/)?.[1]).filter(Boolean);
+      
+      const planPrompt = `You are Replay, a concise UI/UX assistant. Keep responses SHORT (1-2 sentences max).
+
+PROJECT CONTEXT:
+- ${pageCount} page(s)${pages.length > 0 ? `: ${pages.join(', ')}` : ''}
+- ${componentCount} sections/components
+- ${codeSize > 10000 ? 'Large' : codeSize > 5000 ? 'Medium' : 'Small'} project (~${Math.round(codeSize/1000)}KB)
+- Has: ${[hasNav ? 'navigation' : '', hasFooter ? 'footer' : ''].filter(Boolean).join(', ') || 'basic structure'}
+
+USER: ${editRequest}
+
+RULES:
+- Reply in 1-2 SHORT sentences only
+- Be direct and helpful
+- You CAN see their project - reference it specifically
+- If they want to make changes, tell them to turn off Plan mode
+- NO HTML or code in responses`;
+
+      const result = await model.generateContent([{ text: planPrompt }]);
+      let response = result.response.text().trim();
+      
+      // Make sure we didn't accidentally get HTML
+      if (response.includes('<!DOCTYPE') || response.includes('<html') || response.includes('<div class')) {
+        return {
+          success: true,
+          code: `I can see your ${pageCount}-page project. What would you like to change?`,
+        };
+      }
+      
+      // Truncate if too long
+      if (response.length > 500) {
+        response = response.substring(0, 500).split('.').slice(0, -1).join('.') + '.';
+      }
+      
+      return {
+        success: true,
+        code: response,
+      };
+    } catch (e) {
+      console.error('[editCodeWithAI] Plan mode error:', e);
+      return {
+        success: true,
+        code: "What changes are you thinking about?",
+      };
+    }
+  }
+  
+  // Check if user wants to execute a plan - extract context from chat history
+  const executePlanKeywords = ['wykonaj plan', 'execute plan', 'zrób to', 'do it', 'make it', 'apply plan', 'zastosuj', 'zrób'];
+  const isExecutePlan = executePlanKeywords.some(kw => editRequest.toLowerCase().includes(kw));
+  
+  let contextualRequest = editRequest;
+  if (isExecutePlan && chatHistory && chatHistory.length > 0) {
+    // Find the most recent plan discussion
+    const recentMessages = chatHistory.slice(-10); // Last 10 messages
+    const planContext = recentMessages
+      .filter(msg => msg.content && !msg.content.includes('Done!') && !msg.content.includes('Complete'))
+      .map(msg => `${msg.role === 'user' ? 'User' : 'AI'}: ${msg.content}`)
+      .join('\n');
+    
+    if (planContext) {
+      contextualRequest = `Based on this conversation:\n${planContext}\n\nNow execute what was discussed. User says: ${editRequest}`;
+      console.log('[editCodeWithAI] Using plan context:', contextualRequest.substring(0, 200));
+    }
+  }
   
   if (!apiKey) {
     return {
@@ -3446,10 +6276,10 @@ export async function editCodeWithAI(
     );
     
     // Check if this is a request to create a new page (starts with @PageName)
-    const newPageMatch = editRequest.match(/^@(\w+)\s*(.*)/i);
+    const newPageMatch = contextualRequest.match(/^@(\w+)\s*(.*)/i);
     const isNewPageRequest = newPageMatch !== null;
     const newPageName = newPageMatch ? newPageMatch[1] : null;
-    const pageContent = newPageMatch ? newPageMatch[2] : editRequest;
+    const pageContent = newPageMatch ? newPageMatch[2] : contextualRequest;
     
     console.log(`[editCodeWithAI] isNewPageRequest: ${isNewPageRequest}, newPageName: ${newPageName}`);
     
@@ -3595,11 +6425,49 @@ Return ONLY complete HTML. No markdown, no explanations.`;
         codeLength: currentCode.length 
       };
     } else {
+      // Check if this is a targeted element edit (contains selector/description info)
+      const isTargetedEdit = contextualRequest.includes('IMPORTANT: Only modify the specific element');
+      
+      // Analyze current code structure to enforce preservation
+      const hasMultiplePages = currentCode.includes('x-show="currentPage') || currentCode.includes("x-show='currentPage") || (currentCode.match(/<main/gi) || []).length > 1;
+      const pageCount = (currentCode.match(/x-show=["']currentPage\s*===?\s*["'][^"']+["']/gi) || []).length;
+      const hasNavigation = currentCode.includes('<nav') || currentCode.includes('navigation');
+      const hasFooter = currentCode.includes('<footer');
+      const hasHeader = currentCode.includes('<header');
+      
       // STANDARD EDIT PROMPT
-      prompt = `You are an expert HTML/JavaScript developer. Modify this code based on the request.
+      prompt = `You are an expert HTML/JavaScript developer. Make MINIMAL, SURGICAL changes based on the request.
 
-REQUEST: ${editRequest}
+REQUEST: ${contextualRequest}
 
+🛡️ CRITICAL PROTECTION RULES - NEVER VIOLATE THESE 🛡️
+${hasMultiplePages ? `
+⛔ THIS PROJECT HAS ${pageCount || 'MULTIPLE'} PAGES/ROUTES!
+- NEVER remove or simplify pages
+- NEVER merge pages into one
+- NEVER remove x-show="currentPage === '...'" logic
+- KEEP ALL navigation routing intact
+- Each <main x-show="currentPage === '...'"> section MUST remain separate
+` : ''}
+${hasNavigation ? '- PRESERVE the <nav> element and ALL navigation links\n' : ''}
+${hasHeader ? '- PRESERVE the <header> element completely\n' : ''}
+${hasFooter ? '- PRESERVE the <footer> element completely\n' : ''}
+
+⚠️ STRUCTURE PRESERVATION (MANDATORY):
+1. DO NOT remove ANY existing pages, sections, or components
+2. DO NOT simplify multi-page apps into single-page
+3. DO NOT remove routing/navigation logic (Alpine.js x-show, etc.)
+4. DO NOT delete content that user didn't ask to delete
+5. ONLY make changes DIRECTLY related to the request
+6. If asked to "improve responsiveness" - add responsive classes, DON'T restructure
+
+${isTargetedEdit ? `
+⚠️ TARGETED ELEMENT EDIT ⚠️
+User selected a SPECIFIC element. ONLY modify that exact element:
+1. ONLY modify the exact element described in the selector
+2. DO NOT touch any other elements
+3. Leave ALL other content completely unchanged
+` : ''}
 ${processedImages.length > 0 ? `USER PROVIDED ${processedImages.length} IMAGE(S):
 ${processedImages.map((img, i) => `Image ${i+1}: "${img.name}" - Use this in your HTML where the user wants it`).join('\n')}
 
@@ -3645,10 +6513,11 @@ ${currentCode}
 
 RULES:
 1. Return COMPLETE HTML starting with <!DOCTYPE html>
-2. Keep ALL existing content
+2. PRESERVE ALL existing pages, navigation, structure - make ONLY requested changes
 3. Match existing styling
 ${databaseContext ? '4. MUST use real Supabase fetch code - NO mock data!' : ''}
-5. NO markdown, NO explanations - ONLY HTML code`;
+5. NO markdown, NO explanations - ONLY HTML code
+6. If code has ${pageCount || 'multiple'} pages, output MUST have ${pageCount || 'the same number of'} pages!`;
     }
 
     // Build content parts for Gemini

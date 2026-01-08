@@ -3,6 +3,165 @@ import { Clock, Sparkles, Bug, Wrench, ArrowUp, Bell } from "lucide-react";
 
 const changelog = [
   {
+    date: "January 8, 2026",
+    version: "1.5.0",
+    changes: [
+      {
+        type: "feature",
+        title: "Text Generate Effect",
+        description: "Beautiful word-by-word blur fade-in animation on landing page hero. Integrated Aceternity UI component for smooth text reveals."
+      },
+      {
+        type: "feature",
+        title: "Delete Confirmation Modal",
+        description: "Projects now require confirmation before deletion. Modal shows project title and prevents accidental deletions."
+      },
+      {
+        type: "feature",
+        title: "Edit with AI Chat Response",
+        description: "AI now explains what changes it made in the chat after each edit. See exactly what was modified without comparing code."
+      },
+      {
+        type: "improvement",
+        title: "Extended History",
+        description: "History now shows up to 500 projects (up from 100). See your full generation history across all sessions."
+      },
+      {
+        type: "improvement",
+        title: "Demo Project Loading",
+        description: "Demo projects now load correctly from history. Fixed 404 errors and duplicate key issues when loading demos."
+      },
+      {
+        type: "improvement",
+        title: "Project Duplication",
+        description: "Fixed empty project issue when duplicating. Duplication now properly copies all code, versions, and metadata."
+      },
+      {
+        type: "improvement",
+        title: "Version History",
+        description: "Removed duplicate 'Initial generation' entries. Version count now correctly reflects actual edit history."
+      },
+      {
+        type: "fix",
+        title: "Image Paste in Chat",
+        description: "Fixed Ctrl+V image pasting in Edit with AI. Images now upload to Supabase and convert to base64 for AI processing."
+      },
+      {
+        type: "fix",
+        title: "Title Saving",
+        description: "Project title changes now save immediately to database. No more lost renames after refresh."
+      },
+      {
+        type: "fix",
+        title: "Aurora Background Animation",
+        description: "Aurora beams now animate smoothly with subtle movement. Fixed static background issue."
+      },
+    ]
+  },
+  {
+    date: "January 5, 2026",
+    version: "1.4.0",
+    changes: [
+      {
+        type: "feature",
+        title: "Supabase-First Architecture",
+        description: "All generation history now saves to Supabase as primary storage. No more localStorage quota crashes. Unlimited history, syncs across devices."
+      },
+      {
+        type: "feature",
+        title: "Style Reference Mode",
+        description: "Upload any image and Replay will copy its exact visual style - colors, typography, border-radius, shadows. Video provides content, image provides design."
+      },
+      {
+        type: "improvement",
+        title: "Fresh Start Experience",
+        description: "Tool now starts with a clean slate by default. Access previous work via the History button - always visible even for new accounts."
+      },
+      {
+        type: "improvement",
+        title: "Consistent Empty States",
+        description: "Flow, Code, Preview, and Design System tabs now share the same beautiful empty state with animated Replay logo."
+      },
+      {
+        type: "fix",
+        title: "Memory Crash Fix",
+        description: "Fixed infinite loop and out-of-memory crash caused by localStorage quota exceeded errors."
+      },
+    ]
+  },
+  {
+    date: "January 4, 2026",
+    version: "1.3.0",
+    changes: [
+      {
+        type: "feature",
+        title: "AI Chat Interface",
+        description: "New chat-based editing experience. Have a conversation with AI to refine your generated code. Supports image uploads for visual reference."
+      },
+      {
+        type: "feature",
+        title: "Auto SEO Blog Generator",
+        description: "Admin panel can now auto-generate unlimited SEO-optimized blog articles. AI creates unique topics, avoids duplicates, and publishes instantly."
+      },
+      {
+        type: "feature",
+        title: "Meta Pixel Integration",
+        description: "Full Facebook Conversions API integration with all standard events: PageView, Purchase, Subscribe, Lead, InitiateCheckout, and more."
+      },
+      {
+        type: "feature",
+        title: "WebGL Shader Styles",
+        description: "New Liquid Neon style with ray-marched nebula shader, Matrix Rain with falling code, and other premium WebGL effects."
+      },
+      {
+        type: "improvement",
+        title: "Auto-Switch to Preview",
+        description: "Generation now automatically switches to Preview tab so you see results immediately."
+      },
+      {
+        type: "improvement",
+        title: "Video Player Fix",
+        description: "Landing page video player now works reliably with proper play/pause, mute toggle, and progress bar."
+      },
+    ]
+  },
+  {
+    date: "January 3, 2026",
+    version: "1.2.1",
+    changes: [
+      {
+        type: "feature",
+        title: "Admin User Management",
+        description: "Toggle user membership (PRO/Free) directly from admin panel. View and manage all users with their credit balances."
+      },
+      {
+        type: "feature",
+        title: "Stripe Plan Integration",
+        description: "Pricing page buttons now correctly redirect to Stripe checkout. Non-logged users go to login first, then Stripe."
+      },
+      {
+        type: "improvement",
+        title: "Project Settings Responsive",
+        description: "Settings modal is now fully responsive - full-screen on mobile with scrollable tabs."
+      },
+      {
+        type: "improvement",
+        title: "Share Tab in Settings",
+        description: "Analytics tab replaced with Share tab showing project URL, social share buttons, and embed code."
+      },
+      {
+        type: "fix",
+        title: "Feedback Popup Timing",
+        description: "Feedback popup now appears 10 seconds after first generation, not immediately."
+      },
+      {
+        type: "fix",
+        title: "Blog SEO Score Hidden",
+        description: "SEO Score removed from public article pages - it's internal info only."
+      },
+    ]
+  },
+  {
     date: "January 2, 2026",
     version: "1.2.0",
     changes: [
