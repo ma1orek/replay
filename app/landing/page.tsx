@@ -862,26 +862,62 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════════ */}
       <section className="relative z-10 min-h-screen flex items-center justify-center pt-20">
         <div className="mx-auto max-w-5xl px-6 py-20 w-full text-center">
-          <h1 className="text-3xl sm:text-5xl lg:text-7xl font-bold tracking-tight leading-[1.1] mb-6">
+          {/* Small label */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-sm sm:text-base text-white/40 mb-4 tracking-wide"
+          >
+            Turn any video into a working UI.
+          </motion.p>
+          
+          {/* Big headline */}
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] mb-6">
             <TextGenerateEffect 
-              words="Reconstruct stunning interfaces & behavior from video."
+              words="Prove it to yourself."
               textClassName="bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-transparent"
               duration={0.6}
-              staggerDelay={0.06}
+              staggerDelay={0.08}
               filter={true}
             />
           </h1>
 
-          <div className="text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed mb-12">
+          <div className="text-base sm:text-lg lg:text-xl max-w-2xl mx-auto leading-relaxed mb-10">
             <TextGenerateEffect 
-              words="Don't describe the user flow. Just record it. Get pixel-perfect responsive layouts and complex interactions directly from your recording."
+              words="Upload your most complex UI recording and see if Replay can handle it. If it fails, you lost 30 seconds. If it works, you ship today instead of next week."
               className="font-normal"
               textClassName="text-white/50"
               duration={0.4}
-              staggerDelay={0.04}
+              staggerDelay={0.03}
               filter={true}
             />
           </div>
+
+          {/* Primary CTA - Glowing Button */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.8 }}
+            className="mb-8"
+          >
+            <Link
+              href="/tool"
+              className="group relative inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white font-semibold text-lg shadow-[0_0_40px_rgba(255,110,60,0.4)] hover:shadow-[0_0_60px_rgba(255,110,60,0.6)] transition-all hover:scale-[1.02]"
+            >
+              {/* Pulsing glow effect */}
+              <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] blur-lg opacity-50 group-hover:opacity-70 animate-pulse" />
+              <span className="relative flex items-center gap-2">
+                Claim 2 Free Generations
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </span>
+            </Link>
+            
+            {/* Micro-copy */}
+            <p className="mt-4 text-sm text-white/40">
+              No credit card required • <span className="text-[#FF6E3C]">150 Credits</span> included
+            </p>
+          </motion.div>
 
           <HeroInput
             onSend={onSend}
@@ -970,6 +1006,11 @@ export default function LandingPage() {
       {/* THE MAGIC - Before/After Demo */}
       {/* ═══════════════════════════════════════════════════════════════ */}
       <TheMagicSection />
+
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* MID-PAGE CTA - Action Banner */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      <MidPageCTA />
 
       {/* ═══════════════════════════════════════════════════════════════ */}
       {/* FEATURES */}
@@ -1525,6 +1566,55 @@ function TheMagicSection() {
             ))}
           </div>
         </div>
+      </div>
+    </section>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MID-PAGE CTA - Action Banner
+// ═══════════════════════════════════════════════════════════════
+
+function MidPageCTA() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-50px" });
+
+  return (
+    <section ref={ref} className="relative z-10 py-8">
+      <div className="mx-auto max-w-7xl px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6 }}
+          className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#FF6E3C]/10 via-[#FF6E3C]/5 to-transparent border border-[#FF6E3C]/20"
+        >
+          {/* Subtle animated glow */}
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-[#FF6E3C]/10 to-transparent"
+            animate={{
+              opacity: [0.3, 0.5, 0.3],
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+          
+          <div className="relative flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-5 sm:px-8 sm:py-6">
+            <p className="text-base sm:text-lg font-medium text-white/80 text-center sm:text-left">
+              Don't just watch the demo. <span className="text-[#FF6E3C]">Try the engine yourself.</span>
+            </p>
+            
+            <Link
+              href="/tool"
+              className="group flex items-center gap-2 px-6 py-3 rounded-xl bg-[#FF6E3C] text-white font-semibold text-sm hover:bg-[#FF8F5C] transition-all hover:scale-[1.02] shadow-[0_0_20px_rgba(255,110,60,0.3)] whitespace-nowrap"
+            >
+              Try Replay Free
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
+        </motion.div>
       </div>
     </section>
   );
@@ -2205,26 +2295,31 @@ function FinalCTA() {
           </div>
           
           <div className="relative text-center">
+            <p className="text-lg sm:text-xl text-white/40 mb-4">
+              Still skeptical?
+            </p>
             <h2 className="text-3xl sm:text-5xl font-bold mb-4 text-white/90">
-              Turn any video into a working UI.
+              Prove it to yourself.
             </h2>
-            <p className="text-2xl sm:text-3xl font-bold mb-8 bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] bg-clip-text text-transparent">
-              Start reconstructing.
+            <p className="text-base sm:text-lg text-white/50 max-w-xl mx-auto mb-8">
+              Upload your most complex UI. If it fails, you lost 30 seconds. If it works, you ship today.
             </p>
             
             <Link
               href="/tool"
-              className="inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white font-semibold text-lg shadow-[0_20px_60px_-20px_rgba(255,110,60,0.5)] hover:shadow-[0_30px_80px_-20px_rgba(255,110,60,0.6)] transition-all hover:scale-[1.02]"
+              className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white font-semibold text-lg shadow-[0_0_40px_rgba(255,110,60,0.4)] hover:shadow-[0_0_60px_rgba(255,110,60,0.6)] transition-all hover:scale-[1.02]"
             >
-              Get Started
-              <ArrowRight className="w-5 h-5" />
+              {/* Pulsing glow effect */}
+              <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] blur-lg opacity-40 group-hover:opacity-60 animate-pulse" />
+              <span className="relative flex items-center gap-2">
+                Claim 2 Free Generations
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </span>
             </Link>
             
-            {/* Early Access note */}
-            <p className="mt-6 text-sm text-white/40">
-              You're joining Replay Early Access.
-              <br />
-              <span className="text-white/30">Some features are experimental.</span>
+            {/* Micro-copy */}
+            <p className="mt-4 text-sm text-white/40">
+              No credit card required • <span className="text-[#FF6E3C]">150 Credits</span> included
             </p>
           </div>
         </motion.div>
