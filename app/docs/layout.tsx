@@ -28,7 +28,6 @@ import {
   Home,
   Sparkles,
   Clock,
-  ExternalLink,
 } from "lucide-react";
 
 // Navigation structure
@@ -251,15 +250,6 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
               <Home className="w-4 h-4" />
               Back to App
             </Link>
-            <a
-              href="https://github.com/ma1orek/replay"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden md:flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors"
-            >
-              GitHub
-              <ExternalLink className="w-3 h-3" />
-            </a>
             <button
               onClick={() => setMobileMenuOpen(true)}
               className="md:hidden p-2 rounded-lg hover:bg-white/5"
