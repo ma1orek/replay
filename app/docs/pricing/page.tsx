@@ -36,7 +36,7 @@ export default function PricingPage() {
             <p className="text-xs text-white/40 mt-1">Full UI reconstruction</p>
           </div>
           <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-center">
-            <div className="text-3xl font-bold text-[#FF6E3C] mb-1">25</div>
+            <div className="text-3xl font-bold text-[#FF6E3C] mb-1">3</div>
             <p className="text-sm text-white/70">Edit with AI</p>
             <p className="text-xs text-white/40 mt-1">Refine, add, modify</p>
           </div>

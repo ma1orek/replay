@@ -1,6 +1,9 @@
 import type { Config } from "tailwindcss";
+// @ts-ignore - tailwindcss internal module
+import flattenColorPalette from "tailwindcss/lib/util/flattenColorPalette";
 
 const config: Config = {
+  darkMode: "class",
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -55,6 +58,10 @@ const config: Config = {
         "fade-in": "fadeIn 0.2s ease-out",
         "scale-in": "scaleIn 0.2s ease-out",
         "recording": "recording 1.5s ease-in-out infinite",
+        // Aurora animations
+        "aurora": "aurora 60s linear infinite",
+        "aurora-slow": "aurora 90s linear infinite",
+        "aurora-fast": "aurora 40s linear infinite reverse",
       },
       keyframes: {
         glow: {
@@ -81,6 +88,15 @@ const config: Config = {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.4" },
         },
+        // Aurora keyframes - smooth background movement
+        aurora: {
+          "from": {
+            backgroundPosition: "50% 50%, 50% 50%",
+          },
+          "to": {
+            backgroundPosition: "350% 50%, 350% 50%",
+          },
+        },
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
@@ -88,7 +104,18 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // Plugin to add Tailwind colors as CSS variables (e.g., var(--blue-500))
+    function addVariablesForColors({ addBase, theme }: { addBase: Function; theme: Function }) {
+      const allColors = flattenColorPalette(theme("colors"));
+      const newVars = Object.fromEntries(
+        Object.entries(allColors).map(([key, val]) => [`--${key}`, val])
+      );
+      addBase({
+        ":root": newVars,
+      });
+    },
+  ],
 };
 
 export default config;

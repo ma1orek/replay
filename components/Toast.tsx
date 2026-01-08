@@ -81,8 +81,8 @@ export function Toast({ message, type = "info", duration = 3000, onClose, isVisi
               color.border
             )}
           >
-            <Icon className={cn("w-4 h-4 shrink-0", color.icon)} />
-            <p className={cn("flex-1 text-xs break-words", color.text)}>{message}</p>
+            <Icon className={cn("w-4 h-4 shrink-0 self-start mt-0.5", color.icon)} />
+            <p className={cn("flex-1 text-xs break-words whitespace-pre-line", color.text)}>{message}</p>
             <button
               onClick={onClose}
               className="p-0.5 rounded hover:bg-white/5 transition-colors ml-1"

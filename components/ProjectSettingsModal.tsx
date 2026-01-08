@@ -51,7 +51,7 @@ const TABS = [
   { id: "general", label: "General", icon: Settings },
   { id: "secrets", label: "Secrets", icon: Key },
   { id: "database", label: "Database", icon: Database },
-  { id: "analytics", label: "Analytics", icon: BarChart3 },
+  { id: "analytics", label: "Share", icon: ExternalLink },
 ];
 
 // Helper to get secrets from localStorage
@@ -111,47 +111,6 @@ export default function ProjectSettingsModal({
   const [dbError, setDbError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
-  // Analytics state - load from localStorage
-  const [analytics, setAnalytics] = useState({
-    generations: 0,
-    edits: 0,
-    exports: 0,
-    tokensUsed: 0,
-  });
-
-  // Load analytics from localStorage
-  useEffect(() => {
-    // Load project-specific analytics
-    const analyticsKey = `replay_analytics_${project.id}`;
-    const stored = localStorage.getItem(analyticsKey);
-    if (stored) {
-      try {
-        const data = JSON.parse(stored);
-        setAnalytics(data);
-      } catch {}
-    }
-    
-    // Also count from generation history as fallback
-    const historyKey = "replay_generation_history";
-    const history = localStorage.getItem(historyKey);
-    if (history) {
-      try {
-        const records = JSON.parse(history);
-        // Count generations and edits for this project
-        const projectRecords = records.filter((r: any) => r.id === project.id);
-        if (projectRecords.length > 0 && !stored) {
-          // Use history data as initial analytics
-          const record = projectRecords[0];
-          setAnalytics({
-            generations: record.versions?.length || 1,
-            edits: Math.max(0, (record.versions?.length || 1) - 1),
-            exports: record.publishedSlug ? 1 : 0,
-            tokensUsed: (record.versions?.length || 1) * 15000, // Estimate
-          });
-        }
-      } catch {}
-    }
-  }, [project.id]);
 
   // Load secrets on mount - with STRICT validation
   useEffect(() => {
@@ -397,7 +356,8 @@ export default function ProjectSettingsModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Full-screen on mobile, centered modal on desktop */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center md:p-4">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -407,30 +367,53 @@ export default function ProjectSettingsModal({
           onClick={onClose}
         />
 
-        {/* Modal */}
+        {/* Modal - fullscreen on mobile */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-4xl bg-[#0a0a0a] rounded-2xl border border-white/10 overflow-hidden shadow-2xl"
+          className="relative w-full h-full md:h-auto md:max-h-[90vh] md:max-w-4xl bg-[#0a0a0a] md:rounded-2xl md:border md:border-white/10 overflow-hidden shadow-2xl flex flex-col"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-white/10">
-            <div>
-              <h2 className="text-xl font-semibold text-white">Project Settings</h2>
-              <p className="text-sm text-white/50 mt-1">{project.name}</p>
+          <div className="flex items-center justify-between p-4 md:p-6 border-b border-white/10 flex-shrink-0">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg md:text-xl font-semibold text-white truncate">Project Settings</h2>
+              <p className="text-xs md:text-sm text-white/50 mt-0.5 truncate">{project.name}</p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+              className="p-2 rounded-lg hover:bg-white/10 transition-colors flex-shrink-0 ml-2"
             >
               <X className="w-5 h-5 text-white/60" />
             </button>
           </div>
 
-          <div className="flex min-h-[500px]">
-            {/* Sidebar */}
-            <div className="w-56 border-r border-white/10 p-4">
+          {/* Mobile Tabs - horizontal scrollable */}
+          <div className="md:hidden flex-shrink-0 border-b border-white/10 overflow-x-auto scrollbar-hide">
+            <div className="flex p-2 gap-1 min-w-max">
+              {TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
+                    activeTab === tab.id
+                      ? "bg-[#FF6E3C] text-white"
+                      : "bg-white/5 text-white/50"
+                  }`}
+                >
+                  <tab.icon className="w-4 h-4" />
+                  {tab.label}
+                  {tab.id === "database" && isConnected && (
+                    <span className="w-2 h-2 rounded-full bg-green-400" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-1 min-h-0 overflow-hidden">
+            {/* Desktop Sidebar - hidden on mobile */}
+            <div className="hidden md:block w-56 border-r border-white/10 p-4 flex-shrink-0">
               <nav className="space-y-1">
                 {TABS.map((tab) => (
                   <button
@@ -452,8 +435,8 @@ export default function ProjectSettingsModal({
               </nav>
             </div>
 
-            {/* Content */}
-            <div className="flex-1 p-6 overflow-y-auto">
+            {/* Content - scrollable */}
+            <div className="flex-1 p-4 md:p-6 overflow-y-auto">
               <AnimatePresence mode="wait">
                 {/* General Tab */}
                 {activeTab === "general" && (
@@ -469,17 +452,17 @@ export default function ProjectSettingsModal({
                       <label className="block text-sm font-medium text-white mb-2">
                         Project Name
                       </label>
-                      <div className="flex gap-3">
+                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                         <input
                           type="text"
                           value={projectName}
                           onChange={(e) => setProjectName(e.target.value)}
-                          className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-[#FF6E3C]/50"
+                          className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-[#FF6E3C]/50"
                         />
                         <button
                           onClick={handleRename}
                           disabled={projectName === project.name}
-                          className="px-6 py-3 rounded-xl bg-white/10 text-white font-medium hover:bg-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-6 py-3 rounded-xl bg-white/10 text-white font-medium hover:bg-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                         >
                           Save
                         </button>
@@ -491,11 +474,11 @@ export default function ProjectSettingsModal({
                       <label className="block text-sm font-medium text-white mb-2">
                         Project ID
                       </label>
-                      <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10">
-                        <code className="text-sm text-white/70 font-mono">{project.id}</code>
+                      <div className="flex items-center gap-2 px-3 md:px-4 py-3 rounded-xl bg-white/5 border border-white/10">
+                        <code className="text-xs md:text-sm text-white/70 font-mono truncate flex-1">{project.id}</code>
                         <button
                           onClick={() => navigator.clipboard.writeText(project.id)}
-                          className="ml-auto p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+                          className="p-1.5 rounded-lg hover:bg-white/10 transition-colors flex-shrink-0"
                         >
                           <Copy className="w-4 h-4 text-white/50" />
                         </button>
@@ -703,8 +686,8 @@ export default function ProjectSettingsModal({
                             <Loader2 className="w-8 h-8 text-[#FF6E3C] animate-spin" />
                           </div>
                         ) : tables.length > 0 ? (
-                          <div className="border border-white/10 rounded-xl overflow-hidden">
-                            <table className="w-full">
+                          <div className="border border-white/10 rounded-xl overflow-x-auto">
+                            <table className="w-full min-w-[400px]">
                               <thead>
                                 <tr className="bg-white/5">
                                   <th className="text-left px-4 py-3 text-sm font-medium text-white/70">
@@ -841,7 +824,7 @@ USING (true);`}
                   </motion.div>
                 )}
 
-                {/* Analytics Tab */}
+                {/* Share Tab (renamed from Analytics) */}
                 {activeTab === "analytics" && (
                   <motion.div
                     key="analytics"
@@ -850,52 +833,126 @@ USING (true);`}
                     exit={{ opacity: 0, x: -20 }}
                     className="space-y-6"
                   >
-                    <h3 className="text-lg font-medium text-white">Usage Statistics</h3>
+                    <h3 className="text-lg font-medium text-white">Share & Export</h3>
 
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-6 rounded-xl bg-white/5 border border-white/10">
-                        <p className="text-3xl font-bold text-white">{analytics.generations}</p>
-                        <p className="text-sm text-white/50 mt-1">Generations</p>
-                      </div>
-                      <div className="p-6 rounded-xl bg-white/5 border border-white/10">
-                        <p className="text-3xl font-bold text-white">{analytics.edits}</p>
-                        <p className="text-sm text-white/50 mt-1">AI Edits</p>
-                      </div>
-                      <div className="p-6 rounded-xl bg-white/5 border border-white/10">
-                        <p className="text-3xl font-bold text-white">{analytics.exports}</p>
-                        <p className="text-sm text-white/50 mt-1">Exports</p>
-                      </div>
-                      <div className="p-6 rounded-xl bg-white/5 border border-white/10">
-                        <p className="text-3xl font-bold text-[#FF6E3C]">
-                          {(analytics.tokensUsed / 1000).toFixed(0)}K
-                        </p>
-                        <p className="text-sm text-white/50 mt-1">Tokens Used</p>
-                      </div>
-                    </div>
+                    {/* Check if project is published */}
+                    {(() => {
+                      // Try to get published slug from localStorage
+                      const historyKey = "replay_generation_history";
+                      const history = typeof window !== 'undefined' ? localStorage.getItem(historyKey) : null;
+                      let publishedSlug = null;
+                      
+                      if (history) {
+                        try {
+                          const records = JSON.parse(history);
+                          const projectRecord = records.find((r: any) => r.id === project.id);
+                          publishedSlug = projectRecord?.publishedSlug;
+                        } catch {}
+                      }
 
-                    {/* Chart Placeholder */}
-                    <div className="p-6 rounded-xl bg-white/5 border border-white/10">
-                      <h4 className="text-sm font-medium text-white mb-4">Activity (Last 7 days)</h4>
-                      <div className="h-32 flex items-end gap-2">
-                        {[40, 65, 45, 80, 55, 90, 70].map((h, i) => (
-                          <div
-                            key={i}
-                            className="flex-1 bg-gradient-to-t from-[#FF6E3C] to-[#FF6E3C]/50 rounded-t-lg transition-all hover:opacity-80"
-                            style={{ height: `${h}%` }}
-                          />
-                        ))}
-                      </div>
-                      <div className="flex justify-between mt-2 text-xs text-white/40">
-                        <span>Mon</span>
-                        <span>Tue</span>
-                        <span>Wed</span>
-                        <span>Thu</span>
-                        <span>Fri</span>
-                        <span>Sat</span>
-                        <span>Sun</span>
-                      </div>
-                    </div>
+                      if (publishedSlug) {
+                        const publishedUrl = `https://replay.build/p/${publishedSlug}`;
+                        return (
+                          <div className="space-y-4">
+                            {/* Published URL */}
+                            <div className="p-5 rounded-xl bg-gradient-to-br from-emerald-500/10 to-transparent border border-emerald-500/20">
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
+                                <span className="text-sm font-medium text-emerald-400">Published & Live</span>
+                              </div>
+                              <div className="flex items-center gap-2 p-3 bg-black/30 rounded-lg">
+                                <code className="text-sm text-white/80 font-mono flex-1 truncate">{publishedUrl}</code>
+                                <button
+                                  onClick={() => navigator.clipboard.writeText(publishedUrl)}
+                                  className="p-2 rounded-lg hover:bg-white/10 transition-colors flex-shrink-0"
+                                  title="Copy URL"
+                                >
+                                  <Copy className="w-4 h-4 text-white/50" />
+                                </button>
+                                <a
+                                  href={publishedUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-2 rounded-lg hover:bg-white/10 transition-colors flex-shrink-0"
+                                  title="Open in new tab"
+                                >
+                                  <ExternalLink className="w-4 h-4 text-white/50" />
+                                </a>
+                              </div>
+                            </div>
+
+                            {/* Share buttons */}
+                            <div className="p-5 rounded-xl bg-white/5 border border-white/10">
+                              <p className="text-sm font-medium text-white mb-3">Share your project</p>
+                              <div className="flex flex-wrap gap-2">
+                                <a
+                                  href={`https://twitter.com/intent/tweet?text=Check out my project built with Replay!&url=${encodeURIComponent(publishedUrl)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="px-4 py-2 rounded-lg bg-[#1DA1F2]/20 text-[#1DA1F2] text-sm hover:bg-[#1DA1F2]/30 transition-colors flex items-center gap-2"
+                                >
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                                  Share on X
+                                </a>
+                                <a
+                                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(publishedUrl)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="px-4 py-2 rounded-lg bg-[#0A66C2]/20 text-[#0A66C2] text-sm hover:bg-[#0A66C2]/30 transition-colors flex items-center gap-2"
+                                >
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                                  Share on LinkedIn
+                                </a>
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(publishedUrl);
+                                  }}
+                                  className="px-4 py-2 rounded-lg bg-white/10 text-white/70 text-sm hover:bg-white/20 transition-colors flex items-center gap-2"
+                                >
+                                  <Copy className="w-4 h-4" />
+                                  Copy Link
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* QR Code placeholder - could add later */}
+                            <div className="p-5 rounded-xl bg-white/5 border border-white/10">
+                              <p className="text-sm font-medium text-white mb-2">Embed Code</p>
+                              <p className="text-xs text-white/50 mb-3">Add your project to any website</p>
+                              <div className="p-3 bg-black/30 rounded-lg">
+                                <code className="text-xs text-white/60 font-mono break-all">
+                                  {`<iframe src="${publishedUrl}" width="100%" height="600" frameborder="0"></iframe>`}
+                                </code>
+                              </div>
+                              <button
+                                onClick={() => navigator.clipboard.writeText(`<iframe src="${publishedUrl}" width="100%" height="600" frameborder="0"></iframe>`)}
+                                className="mt-2 text-xs text-[#FF6E3C] hover:underline"
+                              >
+                                Copy embed code
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // Not published yet
+                      return (
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                          <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-6">
+                            <ExternalLink className="w-8 h-8 text-white/30" />
+                          </div>
+                          <h3 className="text-lg font-medium text-white mb-2">
+                            Not Published Yet
+                          </h3>
+                          <p className="text-sm text-white/50 max-w-sm mb-4">
+                            Publish your project to get a shareable link.
+                          </p>
+                          <p className="text-xs text-white/30">
+                            Use the <strong className="text-white/50">Publish</strong> button in the top toolbar to deploy your project.
+                          </p>
+                        </div>
+                      );
+                    })()}
                   </motion.div>
                 )}
               </AnimatePresence>

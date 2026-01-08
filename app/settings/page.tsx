@@ -54,11 +54,11 @@ const PLANS = [
     tagline: "For getting started",
     credits: 150,
     features: [
-      "150 credits / month",
-      "~2 rebuilds / month",
-      "Live preview",
-      "Basic export",
-      "Style presets",
+      "150 credits (one-time)",
+      "~2 rebuilds",
+      "Interactive preview",
+      "Code preview (blurred)",
+      "Public projects only",
     ],
     cta: "Current plan",
   },
@@ -73,9 +73,9 @@ const PLANS = [
     features: [
       "3,000 credits / month",
       "~40 rebuilds / month",
-      "Private workspace",
-      "All exports (React / HTML)",
-      "Style presets",
+      "Full code access",
+      "Download & Copy",
+      "Publish to web",
       "Rollover up to 600 credits",
     ],
     cta: "Upgrade",
@@ -146,7 +146,7 @@ function SettingsContent() {
     const success = searchParams.get("success");
     const canceled = searchParams.get("canceled");
     if (success === "1") {
-      setTestMessage({ type: "success", text: "Successfully upgraded to Pro! 🎉" });
+      setTestMessage({ type: "success", text: "Successfully upgraded to Pro!" });
     } else if (canceled === "1") {
       setTestMessage({ type: "error", text: "Checkout was canceled." });
     }
@@ -217,72 +217,8 @@ function SettingsContent() {
     }
   };
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-[#030303] flex flex-col">
-        {/* Header */}
-        <header className="border-b border-white/5 bg-black/60 backdrop-blur-xl">
-          <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-            <Link href="/landing">
-              <Logo />
-            </Link>
-          </div>
-        </header>
-
-        {/* Content */}
-        <div className="flex-1 flex items-center justify-center p-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center max-w-sm"
-          >
-            {/* Icon */}
-            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF6E3C]/5 border border-[#FF6E3C]/20 flex items-center justify-center">
-              <User className="w-10 h-10 text-[#FF6E3C]" />
-            </div>
-
-            <h1 className="text-2xl font-semibold text-white mb-2">Sign in required</h1>
-            <p className="text-white/50 mb-8">
-              Sign in to access your account settings, manage your subscription, and view your credits.
-            </p>
-
-            {/* Sign in button */}
-            <button
-              onClick={() => setShowAuthModal(true)}
-              className="w-full py-3 px-6 rounded-xl bg-[#FF6E3C] text-white font-medium hover:bg-[#FF8F5C] transition-colors mb-4"
-            >
-              Sign in
-            </button>
-
-            {/* Links */}
-            <div className="flex items-center justify-center gap-6 text-sm">
-              <Link 
-                href="/landing" 
-                className="text-white/50 hover:text-white transition-colors flex items-center gap-1"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back to home
-              </Link>
-              <Link 
-                href="/tool" 
-                className="text-[#FF6E3C] hover:text-[#FF8F5C] transition-colors"
-              >
-                Go to tool →
-              </Link>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Auth Modal */}
-        <AuthModal
-          isOpen={showAuthModal}
-          onClose={() => setShowAuthModal(false)}
-          title="Sign in to settings"
-          description="Access your account, subscription, and credits."
-        />
-      </div>
-    );
-  }
+  // Show auth modal overlay when not logged in (but still render page behind with blur)
+  const needsAuth = !user;
 
   const currentPlan = membership?.plan || "free";
   const planLimits = PLAN_LIMITS[currentPlan];
@@ -339,7 +275,7 @@ function SettingsContent() {
                 <div className="relative group">
                   <Avatar 
                     src={profile?.avatar_url} 
-                    fallback={user.email?.[0]?.toUpperCase() || "U"} 
+                    fallback={user?.email?.[0]?.toUpperCase() || "U"} 
                     size={80}
                     className="text-2xl"
                   />
@@ -418,10 +354,12 @@ function SettingsContent() {
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 mt-1">
-                        <p className="text-white">{profile?.full_name || "Not set"}</p>
+                        <p className="text-white">
+                          {profile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || "Not set"}
+                        </p>
                         <button
                           onClick={() => {
-                            setNameInput(profile?.full_name || "");
+                            setNameInput(profile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || "");
                             setIsEditingName(true);
                           }}
                           className="p-1 rounded hover:bg-white/10 transition-colors"
@@ -433,7 +371,7 @@ function SettingsContent() {
                   </div>
                   <div>
                     <label className="text-xs text-white/40 uppercase tracking-wider">Email</label>
-                    <p className="text-white mt-1">{user.email}</p>
+                    <p className="text-white mt-1">{user?.email || "—"}</p>
                   </div>
                 </div>
               </div>
@@ -445,7 +383,7 @@ function SettingsContent() {
               <div className="space-y-3">
                 <div>
                   <label className="text-xs text-white/40 uppercase tracking-wider">User ID</label>
-                  <p className="text-white/50 text-sm mt-1 font-mono">{user.id}</p>
+                  <p className="text-white/50 text-sm mt-1 font-mono">{user?.id || "—"}</p>
                 </div>
               </div>
             </div>
@@ -618,12 +556,12 @@ function SettingsContent() {
                       Included
                     </button>
                   ) : plan.id === "enterprise" ? (
-                    <button
-                      onClick={() => setShowEnterpriseModal(true)}
-                      className="w-full py-2.5 rounded-lg bg-white/10 text-white text-sm font-medium hover:bg-white/20 transition-colors"
+                    <Link
+                      href="/contact"
+                      className="w-full py-2.5 rounded-lg bg-white/10 text-white text-sm font-medium hover:bg-white/20 transition-colors block text-center"
                     >
                       Contact sales
-                    </button>
+                    </Link>
                   ) : (
                     <button
                       onClick={() => handleCheckout("subscription", { plan: plan.id, interval: billingInterval })}
@@ -778,7 +716,7 @@ function SettingsContent() {
 
       {/* Avatar Crop Modal */}
       {showCropModal && cropImageSrc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -881,6 +819,63 @@ function SettingsContent() {
           </motion.div>
         </div>
       )}
+      
+      {/* Auth Overlay - Blur background with popup modal when not logged in */}
+      {needsAuth && (
+        <>
+          {/* Backdrop with blur */}
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
+          
+          {/* Auth Modal */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              className="w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl p-6 shadow-2xl text-center"
+            >
+              <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF6E3C]/5 border border-[#FF6E3C]/20 flex items-center justify-center">
+                <User className="w-8 h-8 text-[#FF6E3C]" />
+              </div>
+              
+              <h2 className="text-xl font-semibold text-white mb-2">Sign in required</h2>
+              <p className="text-white/50 text-sm mb-6">
+                Sign in to access your account settings, manage your subscription, and view your credits.
+              </p>
+              
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="w-full py-3 px-6 rounded-xl bg-[#FF6E3C] text-white font-medium hover:bg-[#FF8F5C] transition-colors mb-4"
+              >
+                Sign in
+              </button>
+              
+              <div className="flex items-center justify-center gap-4 text-sm">
+                <Link 
+                  href="/landing" 
+                  className="text-white/50 hover:text-white transition-colors flex items-center gap-1"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Home
+                </Link>
+                <Link 
+                  href="/" 
+                  className="text-[#FF6E3C] hover:text-[#FF8F5C] transition-colors"
+                >
+                  Go to tool →
+                </Link>
+              </div>
+            </motion.div>
+          </div>
+          
+          {/* Auth Modal */}
+          <AuthModal
+            isOpen={showAuthModal}
+            onClose={() => setShowAuthModal(false)}
+            title="Sign in to settings"
+            description="Access your account, subscription, and credits."
+          />
+        </>
+      )}
     </div>
   );
 }
@@ -919,7 +914,7 @@ function EnterpriseModal({ onClose }: { onClose: () => void }) {
 
   if (submitted) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -944,7 +939,7 @@ function EnterpriseModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm overflow-y-auto">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}

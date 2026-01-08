@@ -24,6 +24,69 @@
   scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
 }
 
+/* Prevent white overscroll bounce */
+html, body {
+  overscroll-behavior: none;
+  background-color: #0a0a0a;
+}
+
+/* ============================================
+   PAGE TRANSITIONS
+   ============================================ */
+
+/* View Transitions API (modern browsers) */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.3s;
+  animation-timing-function: ease-in-out;
+}
+
+::view-transition-old(root) {
+  animation-name: page-fade-out;
+}
+
+::view-transition-new(root) {
+  animation-name: page-fade-in;
+}
+
+@keyframes page-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes page-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Fallback page load animation */
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+body > div:first-child {
+  animation: pageEnter 0.3s ease-out;
+}
+
+/* Force dark background on all containers */
+.preview-container,
+.preview-container * {
+  overscroll-behavior: none !important;
+}
+
+iframe {
+  background-color: #0a0a0a !important;
+}
+
 /* ============================================
    WEBKIT SCROLLBAR - FORCE NO WHITE HOVER
    ============================================ */
@@ -1117,8 +1180,8 @@ select:focus-visible {
 /* Auto-grow textarea */
 .textarea-grow {
   min-height: 60px;
-  max-height: 150px;
-  resize: none;
+  max-height: 300px;
+  resize: vertical !important;
   overflow-y: auto;
 }
 
@@ -1271,4 +1334,27 @@ select:focus-visible {
 
 .touch-ripple:active::after {
   animation: ripple 0.4s ease-out;
+}
+
+/* Aurora Background Animation - Aceternity UI */
+@keyframes aurora {
+  from {
+    background-position: 50% 50%, 50% 50%;
+  }
+  to {
+    background-position: 350% 50%, 350% 50%;
+  }
+}
+
+.animate-aurora {
+  animation: aurora 60s linear infinite;
+}
+
+/* Aurora variations */
+.animate-aurora-fast {
+  animation: aurora 30s linear infinite;
+}
+
+.animate-aurora-slow {
+  animation: aurora 90s linear infinite;
 }

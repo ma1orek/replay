@@ -29,31 +29,48 @@ export async function middleware(req: NextRequest) {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (supabaseUrl && supabaseAnonKey) {
-    // Create Supabase client for session management
-    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-      cookies: {
-        get(name: string) {
-          return req.cookies.get(name)?.value;
+    try {
+      // Create Supabase client for session management
+      const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+        cookies: {
+          get(name: string) {
+            try {
+              return req.cookies.get(name)?.value;
+            } catch {
+              return undefined;
+            }
+          },
+          set(name: string, value: string, options: any) {
+            try {
+              req.cookies.set({ name, value, ...options });
+              res = NextResponse.next({
+                request: { headers: req.headers },
+              });
+              res.cookies.set({ name, value, ...options });
+            } catch {
+              // Ignore cookie set errors
+            }
+          },
+          remove(name: string, options: any) {
+            try {
+              req.cookies.set({ name, value: "", ...options });
+              res = NextResponse.next({
+                request: { headers: req.headers },
+              });
+              res.cookies.set({ name, value: "", ...options });
+            } catch {
+              // Ignore cookie remove errors
+            }
+          },
         },
-        set(name: string, value: string, options: any) {
-          req.cookies.set({ name, value, ...options });
-          res = NextResponse.next({
-            request: { headers: req.headers },
-          });
-          res.cookies.set({ name, value, ...options });
-        },
-        remove(name: string, options: any) {
-          req.cookies.set({ name, value: "", ...options });
-          res = NextResponse.next({
-            request: { headers: req.headers },
-          });
-          res.cookies.set({ name, value: "", ...options });
-        },
-      },
-    });
+      });
 
-    // Refresh session if needed (important for server components)
-    await supabase.auth.getSession();
+      // Refresh session if needed (important for server components)
+      await supabase.auth.getSession();
+    } catch {
+      // If Supabase auth fails (e.g., invalid UTF-8 in cookies), continue without auth
+      console.error("Middleware auth error - continuing without session");
+    }
   }
 
   // Routing: Home -> Landing

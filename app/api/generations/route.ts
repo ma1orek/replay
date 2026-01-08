@@ -4,6 +4,11 @@ import { createServerSupabaseClient, createAdminClient } from "@/lib/supabase/se
 export const runtime = "nodejs";
 
 // GET - Fetch user's generations
+// Query params:
+// - id: fetch single generation by ID (with full data)
+// - limit: max number of generations (default 100)
+// - offset: pagination offset (default 0)
+// - minimal: if "true", fetch only metadata for history list (no code/versions)
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -20,13 +25,57 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, generations: [] });
     }
 
-    // Fetch generations for this user using admin client
-    const { data: generations, error } = await adminSupabase
+    const { searchParams } = new URL(request.url);
+    const singleId = searchParams.get("id");
+    const limit = Math.min(parseInt(searchParams.get("limit") || "100"), 500); // Max 500
+    const offset = parseInt(searchParams.get("offset") || "0");
+    const minimal = searchParams.get("minimal") === "true";
+
+    // If fetching single generation by ID
+    if (singleId) {
+      const { data: gen, error } = await adminSupabase
+        .from("generations")
+        .select("*")
+        .eq("id", singleId)
+        .eq("user_id", user.id)
+        .single();
+
+      if (error || !gen) {
+        return NextResponse.json({ error: "Generation not found" }, { status: 404 });
+      }
+
+      const record = {
+        id: gen.id,
+        title: gen.title || gen.input_context?.split('\n')[0]?.slice(0, 50) || 'Untitled Project',
+        autoTitle: !gen.title,
+        timestamp: new Date(gen.created_at).getTime(),
+        status: gen.status as "running" | "complete" | "failed",
+        code: gen.output_code,
+        styleDirective: gen.input_style || '',
+        refinements: gen.input_context || '',
+        flowNodes: gen.output_architecture?.flowNodes || [],
+        flowEdges: gen.output_architecture?.flowEdges || [],
+        styleInfo: gen.output_design_system,
+        videoUrl: gen.input_video_url,
+        versions: gen.versions || [],
+        publishedSlug: gen.published_slug || null,
+      };
+
+      return NextResponse.json({ success: true, generation: record });
+    }
+
+    // For history list, fetch only essential fields (much faster)
+    // Include versions for version count display
+    const selectFields = minimal
+      ? "id, title, input_context, created_at, status, input_video_url, published_slug, versions, input_style"
+      : "*";
+
+    const { data: generations, error, count } = await adminSupabase
       .from("generations")
-      .select("*")
+      .select(selectFields, { count: "exact" })
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
-      .limit(50);
+      .range(offset, offset + limit - 1);
 
     if (error) {
       console.error("Error fetching generations:", error);
@@ -34,24 +83,47 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform to match the frontend GenerationRecord format
-    const records = (generations || []).map((gen: any) => ({
-      id: gen.id,
-      title: gen.title || gen.input_context?.split('\n')[0]?.slice(0, 50) || 'Untitled Project',
-      autoTitle: !gen.title,
-      timestamp: new Date(gen.created_at).getTime(),
-      status: gen.status as "running" | "complete" | "failed",
-      code: gen.output_code,
-      styleDirective: gen.input_style || '',
-      refinements: gen.input_context || '',
-      flowNodes: gen.output_architecture?.flowNodes || [],
-      flowEdges: gen.output_architecture?.flowEdges || [],
-      styleInfo: gen.output_design_system,
-      videoUrl: gen.input_video_url,
-      versions: gen.versions || [],
-      publishedSlug: gen.published_slug || null, // Will be null if column doesn't exist yet
-    }));
+    const records = (generations || []).map((gen: any) => {
+      if (minimal) {
+        // Minimal response for history list (includes versions for display)
+        return {
+          id: gen.id,
+          title: gen.title || gen.input_context?.split('\n')[0]?.slice(0, 50) || 'Untitled Project',
+          autoTitle: !gen.title,
+          timestamp: new Date(gen.created_at).getTime(),
+          status: gen.status as "running" | "complete" | "failed",
+          videoUrl: gen.input_video_url,
+          publishedSlug: gen.published_slug || null,
+          versions: gen.versions || [],
+          styleDirective: gen.input_style || '',
+        };
+      }
+      // Full response
+      return {
+        id: gen.id,
+        title: gen.title || gen.input_context?.split('\n')[0]?.slice(0, 50) || 'Untitled Project',
+        autoTitle: !gen.title,
+        timestamp: new Date(gen.created_at).getTime(),
+        status: gen.status as "running" | "complete" | "failed",
+        code: gen.output_code,
+        styleDirective: gen.input_style || '',
+        refinements: gen.input_context || '',
+        flowNodes: gen.output_architecture?.flowNodes || [],
+        flowEdges: gen.output_architecture?.flowEdges || [],
+        styleInfo: gen.output_design_system,
+        videoUrl: gen.input_video_url,
+        versions: gen.versions || [],
+        publishedSlug: gen.published_slug || null,
+      };
+    });
 
-    return NextResponse.json({ success: true, generations: records });
+    return NextResponse.json({ 
+      success: true, 
+      generations: records,
+      total: count || records.length,
+      limit,
+      offset
+    });
 
   } catch (error: any) {
     console.error("Error in generations GET:", error);

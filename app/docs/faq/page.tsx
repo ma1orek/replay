@@ -74,7 +74,7 @@ const faqs = [
     questions: [
       {
         q: "What costs credits?",
-        a: "Video generation costs 1 credit, Edit with AI costs 0.25 credits, and Style Injection costs 0.5 credits."
+        a: "Video to UI generation costs 75 credits for full reconstruction. Edit with AI costs 3 credits per edit. Creating new pages with @PageName also costs 3 credits."
       },
       {
         q: "Do my credits roll over?",
