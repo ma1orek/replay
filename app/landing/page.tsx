@@ -2295,9 +2295,6 @@ function FinalCTA() {
           </div>
           
           <div className="relative text-center">
-            <p className="text-lg sm:text-xl text-white/40 mb-4">
-              Still skeptical?
-            </p>
             <h2 className="text-3xl sm:text-5xl font-bold mb-4 text-white/90">
               Prove it to yourself.
             </h2>
