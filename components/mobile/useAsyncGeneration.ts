@@ -132,6 +132,22 @@ export function useAsyncGeneration(
         return null;
       }
 
+      // Handle non-JSON responses (e.g., Vercel WAF 403)
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const textResponse = await res.text();
+        console.error("[useAsyncGeneration] Non-JSON response:", res.status, textResponse);
+        setIsPolling(false);
+        setJobStatus({ 
+          status: "failed", 
+          progress: 0, 
+          message: `Server error: ${res.status}`, 
+          error: textResponse || "Server returned non-JSON response" 
+        });
+        onError(`Server error: ${res.status}`);
+        return null;
+      }
+
       const data = await res.json();
       console.log("[useAsyncGeneration] API response:", { success: data.success, hasCode: !!data.code, codeLength: data.code?.length });
 
