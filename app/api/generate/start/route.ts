@@ -3,6 +3,10 @@ import { createServerSupabaseClient, createAdminClient } from "@/lib/supabase/se
 import { generateId } from "@/lib/utils";
 import { transmuteVideoToCode } from "@/actions/transmute";
 
+// Vercel config - allow large video uploads and long generation time
+export const runtime = "nodejs";
+export const maxDuration = 300; // 5 minutes for generation
+
 // POST /api/generate/start
 // Accepts video, processes it, returns result
 // IMPORTANT: Credits should be spent by the frontend BEFORE calling this endpoint
