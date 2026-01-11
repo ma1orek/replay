@@ -3,7 +3,7 @@
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X, Settings, LogOut, ChevronRight } from "lucide-react";
+import { Menu, X, Settings, LogOut, ChevronRight, History } from "lucide-react";
 import Logo from "@/components/Logo";
 import AuthModal from "@/components/modals/AuthModal";
 import { useAuth } from "@/lib/auth/context";
@@ -167,6 +167,16 @@ export default function LandingNavigation() {
                         );
                       })()}
                       
+                      {/* Your Projects */}
+                      <Link 
+                        href="/tool"
+                        onClick={() => setShowProfileMenu(false)}
+                        className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/5 transition-colors"
+                      >
+                        <History className="w-4 h-4 opacity-50" />
+                        Your Projects
+                      </Link>
+                      
                       {/* Settings */}
                       <Link 
                         href="/settings"
@@ -313,6 +323,14 @@ export default function LandingNavigation() {
                         );
                       })()}
                       
+                      <Link
+                        href="/tool"
+                        onClick={() => setIsOpen(false)}
+                        className="flex items-center gap-3 py-3 text-sm text-white/80 hover:text-white transition-colors"
+                      >
+                        <History className="w-4 h-4 opacity-50" />
+                        Your Projects
+                      </Link>
                       <Link
                         href="/settings"
                         onClick={() => setIsOpen(false)}

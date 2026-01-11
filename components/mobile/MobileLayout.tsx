@@ -373,7 +373,7 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
       )}
       
       {/* Main content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden flex flex-col">
         {activeTab === "configure" ? (
           <MobileConfigureView
             videoBlob={videoBlob}
