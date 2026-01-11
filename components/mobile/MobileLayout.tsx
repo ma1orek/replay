@@ -9,7 +9,6 @@ import { useMobileVideoProcessor } from "./useMobileVideoProcessor";
 
 interface MobileLayoutProps {
   user: any;
-  credits: number;
   isPro: boolean;
   plan: string;
   onLogin: () => void;
@@ -20,7 +19,7 @@ interface MobileLayoutProps {
 const STORAGE_KEY_VIDEO = "replay_mobile_pending_video";
 const STORAGE_KEY_NAME = "replay_mobile_pending_name";
 
-export default function MobileLayout({ user, credits, isPro, plan, onLogin, onGenerate }: MobileLayoutProps) {
+export default function MobileLayout({ user, isPro, plan, onLogin, onGenerate }: MobileLayoutProps) {
   const [activeTab, setActiveTab] = useState<"configure" | "preview">("configure");
   const [projectName, setProjectName] = useState("New Project");
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
@@ -207,7 +206,6 @@ export default function MobileLayout({ user, credits, isPro, plan, onLogin, onGe
         <MobileHeader
           projectName={projectName}
           onProjectNameChange={setProjectName}
-          credits={credits}
           isPro={isPro}
           plan={plan}
           onBack={handleBack}
