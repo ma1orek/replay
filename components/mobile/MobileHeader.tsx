@@ -141,14 +141,20 @@ export default function MobileHeader({
                   Manage Credits
                 </button>
                 <button 
-                  onClick={() => setShowQuickMenu(false)}
+                  onClick={() => {
+                    setShowQuickMenu(false);
+                    window.location.href = "/tool";
+                  }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-white/70 hover:bg-white/5"
                 >
                   <History className="w-4 h-4" />
-                  History
+                  Your Projects
                 </button>
                 <button 
-                  onClick={() => setShowQuickMenu(false)}
+                  onClick={() => {
+                    setShowQuickMenu(false);
+                    window.location.href = "/settings";
+                  }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-white/70 hover:bg-white/5"
                 >
                   <Settings className="w-4 h-4" />

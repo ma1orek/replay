@@ -200,7 +200,7 @@ export default function MobilePreviewView({
   // Preview state - fullscreen iframe
   // Use blob URL (src) like desktop - works better on mobile Safari than srcdoc
   return (
-    <div className="flex-1 relative bg-white">
+    <div className="flex-1 relative bg-white w-full h-full min-h-0">
       {/* Fullscreen iframe - use src with blob URL (same as desktop) */}
       {previewUrl ? (
         <iframe
