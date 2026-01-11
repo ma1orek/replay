@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import MobileHeader from "./MobileHeader";
 import MobileConfigureView from "./MobileConfigureView";
 import MobilePreviewView from "./MobilePreviewView";
@@ -25,6 +26,9 @@ const STORAGE_KEY_VIDEO = "replay_mobile_pending_video";
 const STORAGE_KEY_NAME = "replay_mobile_pending_name";
 
 export default function MobileLayout({ user, isPro, plan, credits, creditsLoading, onLogin, onOpenCreditsModal, onCreditsRefresh, onSaveGeneration }: MobileLayoutProps) {
+  const searchParams = useSearchParams();
+  const autoStartCamera = searchParams?.get("camera") === "true";
+  
   const [activeTab, setActiveTab] = useState<"configure" | "preview">("configure");
   const [projectName, setProjectName] = useState("New Project");
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
@@ -400,6 +404,7 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
             onStyleChange={setStyle}
             onReconstruct={handleReconstruct}
             isProcessing={isProcessing}
+            autoStartCamera={autoStartCamera}
           />
         ) : (
           <MobilePreviewView
