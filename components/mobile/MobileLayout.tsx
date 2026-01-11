@@ -149,18 +149,16 @@ export default function MobileLayout({ user, isPro, plan, creditsLoading, onLogi
       setProcessingProgress(20);
       setProcessingMessage("Uploading video...");
       
-      // Directly use the video blob without processing
-      // This matches desktop behavior
-      setProcessingProgress(40);
-      setProcessingMessage("Generating UI...");
+      console.log("[MobileLayout] Starting generation with blob:", videoBlob.size, videoBlob.type);
       
-      console.log("[MobileLayout] Calling onGenerate with blob:", videoBlob.size, videoBlob.type);
+      setProcessingProgress(40);
+      setProcessingMessage("Reconstructing user interface...");
       
       const result = await onGenerate(videoBlob, projectName);
       
-      console.log("[MobileLayout] onGenerate result:", result);
+      console.log("[MobileLayout] Generation result:", result);
       
-      if (result) {
+      if (result && result.previewUrl) {
         setProcessingProgress(90);
         setProcessingMessage("Rendering preview...");
         
@@ -168,17 +166,24 @@ export default function MobileLayout({ user, isPro, plan, creditsLoading, onLogi
         
         setPreviewUrl(result.previewUrl);
         setProcessingProgress(100);
-        setProcessingMessage("Done!");
+        setProcessingMessage("Complete!");
         setHasGenerated(true);
+        
+        // Update project name if we have generated code with a title
+        // (will be handled by parent)
       } else {
-        // onGenerate returns null on error (error toast shown there)
-        console.error("[MobileLayout] onGenerate returned null");
+        // Generation failed - go back to configure
+        console.error("[MobileLayout] Generation failed - no result");
         setActiveTab("configure");
         setProcessingMessage("");
+        setIsProcessing(false);
+        // Error toast already shown by onGenerate
       }
       
     } catch (err) {
-      console.error("[MobileLayout] Reconstruction error:", err);
+      console.error("[MobileLayout] Error:", err);
+      // Show error to user
+      alert(`Generation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
       setActiveTab("configure");
       setProcessingMessage("");
     } finally {
