@@ -18,9 +18,17 @@ interface UseAsyncGenerationResult {
   isPolling: boolean;
   stopPolling: () => void;
   resetJob: () => void;
+  uploadedVideoUrl: string | null;
 }
 
-// ... imports ...
+// Simulated progress messages
+const PROGRESS_MESSAGES = [
+  "Analyzing content...",
+  "Reconstructing UI...",
+  "Generating code...",
+  "Applying styles...",
+  "Finalizing..."
+];
 
 export function useAsyncGeneration(
   onComplete: (code: string, title?: string, videoUrl?: string) => void,
@@ -28,47 +36,109 @@ export function useAsyncGeneration(
 ): UseAsyncGenerationResult {
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
   const [isPolling, setIsPolling] = useState(false);
-  const progressRef = useRef<NodeJS.Timeout | null>(null);
+  const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string | null>(null);
+  const pollRef = useRef<NodeJS.Timeout | null>(null);
+  const currentJobIdRef = useRef<string | null>(null);
 
-  // Simulate progress while waiting for server
-  const startProgressSimulation = useCallback(() => {
-    let stepIndex = 0;
-    const messages = [
-      "Analyzing content...",
-      "Reconstructing UI...",
-      "Generating code...",
-      "Applying styles...",
-      "Finalizing..."
-    ];
-    
-    progressRef.current = setInterval(() => {
-      if (stepIndex < messages.length) {
-        setJobStatus(prev => prev ? {
-          ...prev,
-          progress: 30 + (stepIndex * 15), // Start from 30%
-          message: messages[stepIndex],
-        } : null);
-        stepIndex++;
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
       }
-    }, 3000);
+    };
   }, []);
 
-  const stopProgressSimulation = useCallback(() => {
-    if (progressRef.current) {
-      clearInterval(progressRef.current);
-      progressRef.current = null;
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
     }
+    setIsPolling(false);
   }, []);
 
-  // Start generation - calls API with EXISTING video URL
+  // Poll status from server
+  const pollStatus = useCallback(async (jobId: string, videoUrl: string) => {
+    if (!jobId) return;
+    
+    try {
+      const res = await fetch(`/api/generations?id=${jobId}`);
+      
+      if (!res.ok) {
+        if (res.status === 404) {
+          // Job might not be committed to DB yet, keep waiting
+          console.log("Job not found yet, retrying...");
+          return;
+        }
+        throw new Error(`Polling error: ${res.status}`);
+      }
+      
+      const data = await res.json();
+      if (!data.success || !data.generation) return;
+      
+      const gen = data.generation;
+      
+      if (gen.status === "complete") {
+        stopPolling();
+        setJobStatus({
+          status: "complete",
+          progress: 100,
+          message: "Complete!",
+          code: gen.code,
+          title: gen.title,
+        });
+        onComplete(gen.code, gen.title, videoUrl);
+      } else if (gen.status === "failed") {
+        stopPolling();
+        setJobStatus({
+          status: "failed",
+          progress: 0,
+          message: "Generation failed",
+          error: "Server processing failed",
+        });
+        onError("Generation failed on server");
+      } else {
+        // Still processing
+        // Just update message/progress slightly
+        setJobStatus(prev => {
+          // Increment progress slowly up to 90%
+          const currentProgress = prev?.progress || 30;
+          const nextProgress = Math.min(currentProgress + 2, 90);
+          return {
+            status: "processing",
+            progress: nextProgress,
+            message: "Processing on server...",
+            ...prev
+          } as JobStatus;
+        });
+      }
+      
+    } catch (err) {
+      console.warn("Polling failed:", err);
+      // Don't stop polling on transient errors
+    }
+  }, [stopPolling, onComplete, onError]);
+
+  // Start polling loop
+  const startPolling = useCallback((jobId: string, videoUrl: string) => {
+    stopPolling();
+    setIsPolling(true);
+    currentJobIdRef.current = jobId;
+    
+    pollRef.current = setInterval(() => {
+      pollStatus(jobId, videoUrl);
+    }, 3000); // Check every 3s
+  }, [stopPolling, pollStatus]);
+
+  // Start generation - Calls Async Endpoint
   const startGeneration = useCallback(async (videoUrl: string, styleDirective: string): Promise<{ jobId: string; videoUrl: string } | null> => {
     try {
+      setUploadedVideoUrl(videoUrl);
+      
       // Reset state
       setJobStatus({ status: "processing", progress: 5, message: "Checking credits..." });
-      setIsPolling(true);
-
+      
       // STEP 1: Spend credits FIRST
-      console.log("[useAsyncGeneration] Spending credits via /api/credits/spend...");
       const spendRes = await fetch("/api/credits/spend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -82,19 +152,18 @@ export function useAsyncGeneration(
 
       const spendData = await spendRes.json();
       if (!spendRes.ok || !spendData.success) {
-        setIsPolling(false);
-        setJobStatus({ status: "failed", progress: 0, message: "Insufficient credits", error: spendData.error });
-        onError(spendData.error || "Insufficient credits");
+        const errorMsg = spendData.error || "Insufficient credits";
+        setJobStatus({ status: "failed", progress: 0, message: errorMsg, error: errorMsg });
+        onError(errorMsg);
         return null;
       }
 
-      // STEP 2: Start generation with video URL (Skip upload logic here - handled by processor)
-      setJobStatus({ status: "processing", progress: 30, message: "Starting generation..." });
-      startProgressSimulation();
+      // STEP 2: Trigger Async Generation
+      setJobStatus({ status: "processing", progress: 10, message: "Starting server job..." });
+      
+      console.log("[useAsyncGeneration] Calling /api/generate/async...");
 
-      console.log("[useAsyncGeneration] Calling /api/generate/start with videoUrl:", videoUrl);
-
-      const res = await fetch("/api/generate/start", {
+      const res = await fetch("/api/generate/async", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -104,77 +173,38 @@ export function useAsyncGeneration(
         }),
       });
 
-      stopProgressSimulation();
-
-      if (res.status === 401) {
-        setIsPolling(false);
-        setJobStatus({ status: "failed", progress: 0, message: "Please log in", error: "Unauthorized" });
-        onError("Please log in to continue");
-        return null;
-      }
-
-      // Handle non-JSON responses
-      const contentType = res.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const textResponse = await res.text();
-        console.error("[useAsyncGeneration] Non-JSON response:", res.status, textResponse);
-        setIsPolling(false);
-        setJobStatus({ 
-          status: "failed", 
-          progress: 0, 
-          message: `Server error: ${res.status}`, 
-          error: textResponse 
-        });
-        onError(`Server error: ${res.status}`);
-        return null;
-      }
-
       const data = await res.json();
+
       if (!res.ok || !data.success) {
-        setJobStatus({
-          status: "failed",
-          progress: 0,
-          message: data.error || "Generation failed",
-          error: data.error,
-        });
-        setIsPolling(false);
-        onError(data.error || "Generation failed");
+        const errorMsg = data.error || "Failed to start job";
+        setJobStatus({ status: "failed", progress: 0, message: errorMsg, error: errorMsg });
+        onError(errorMsg);
         return null;
       }
 
-      if (data.success && data.code) {
-        setJobStatus({
-          status: "complete",
-          progress: 100,
-          message: "Complete!",
-          code: data.code,
-          title: data.title,
-        });
-        setIsPolling(false);
-        onComplete(data.code, data.title, videoUrl);
-        return { jobId: data.jobId, videoUrl };
-      }
+      const jobId = data.jobId;
+      console.log("[useAsyncGeneration] Job started:", jobId);
       
-      return null;
+      // STEP 3: Start Polling
+      setJobStatus({ status: "processing", progress: 20, message: "Job queued..." });
+      startPolling(jobId, videoUrl);
+      
+      return { jobId, videoUrl };
+      
     } catch (err) {
       console.error("[useAsyncGeneration] Error:", err);
-      stopProgressSimulation();
-      setIsPolling(false);
-      const errorMsg = err instanceof Error ? err.message : "Failed to generate";
+      const errorMsg = err instanceof Error ? err.message : "Failed to start";
       setJobStatus({ status: "failed", progress: 0, message: errorMsg, error: errorMsg });
       onError(errorMsg);
       return null;
     }
-  }, [startProgressSimulation, stopProgressSimulation, onComplete, onError]);
+  }, [onError, startPolling]);
 
-  const stopPolling = useCallback(() => {
-    stopProgressSimulation();
-    setIsPolling(false);
-  }, [stopProgressSimulation]);
-
+  // Reset job state
   const resetJob = useCallback(() => {
     stopPolling();
     setJobStatus(null);
+    setUploadedVideoUrl(null);
   }, [stopPolling]);
 
   return {
@@ -183,5 +213,6 @@ export function useAsyncGeneration(
     isPolling,
     stopPolling,
     resetJob,
+    uploadedVideoUrl,
   };
 }
