@@ -238,9 +238,16 @@ async function compressWithFFmpeg(
     await ffmpeg.deleteFile(inputName);
     await ffmpeg.deleteFile(outputName);
     
-    // Convert FileData to Uint8Array for Blob compatibility
-    const uint8Array = data instanceof Uint8Array ? data : new Uint8Array(data as ArrayBuffer);
-    return new Blob([uint8Array.buffer], { type: "video/mp4" });
+    // FileData is Uint8Array or string - handle both
+    if (typeof data === "string") {
+      // If string, convert to blob via text encoder
+      const encoder = new TextEncoder();
+      return new Blob([encoder.encode(data)], { type: "video/mp4" });
+    }
+    // data is Uint8Array - create new ArrayBuffer copy for Blob compatibility
+    const arrayBuffer = new ArrayBuffer(data.byteLength);
+    new Uint8Array(arrayBuffer).set(data);
+    return new Blob([arrayBuffer], { type: "video/mp4" });
     
   } catch (err) {
     console.error("FFmpeg failed:", err);
