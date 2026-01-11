@@ -89,7 +89,9 @@ export function useMobileVideoProcessor() {
       
       // Read output
       const data = await ffmpeg.readFile(outputName);
-      const compressedBlob = new Blob([(data as Uint8Array).buffer], { type: "video/mp4" });
+      // Ensure we treat it as Uint8Array then get buffer
+      const u8 = data instanceof Uint8Array ? data : new Uint8Array(data as any);
+      const compressedBlob = new Blob([u8], { type: "video/mp4" });
       
       console.log(`Compressed: ${file.size} -> ${compressedBlob.size} bytes`);
       
