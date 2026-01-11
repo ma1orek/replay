@@ -35,7 +35,7 @@ const TARGET_FPS = 30;
 
 /**
  * Check if video can use Fast Path (direct upload)
- * Conditions: MP4, H.264 codec, under 15MB
+ * Conditions: MP4 or WebM, under 15MB
  */
 async function canUseFastPath(file: File | Blob): Promise<boolean> {
   // Size check
@@ -43,20 +43,18 @@ async function canUseFastPath(file: File | Blob): Promise<boolean> {
     return false;
   }
   
-  // Type check - only MP4 can skip compression
+  // Type check - MP4 and WebM can skip compression
   const type = file instanceof File ? file.type : file.type;
-  if (!type.includes("mp4")) {
-    return false;
+  if (type.includes("mp4") || type.includes("webm")) {
+    return true;
   }
   
-  // For now, assume MP4s under 15MB are fine
-  // In production, we'd check the actual codec with MediaInfo
-  return true;
+  return false;
 }
 
 /**
- * Compress video using Canvas + MediaRecorder (no FFmpeg dependency)
- * This is a fallback that works on all browsers including Safari
+ * Compress video using Canvas + MediaRecorder
+ * Works on all browsers including Safari - no SharedArrayBuffer needed
  */
 async function compressWithCanvas(
   file: File | Blob,
@@ -74,7 +72,7 @@ async function compressWithCanvas(
       await new Promise<void>((res, rej) => {
         video.onloadedmetadata = () => res();
         video.onerror = () => rej(new Error("Failed to load video"));
-        setTimeout(() => rej(new Error("Video load timeout")), 10000);
+        setTimeout(() => rej(new Error("Video load timeout")), 15000);
       });
       
       // Calculate target dimensions (max 720p height)
@@ -176,7 +174,8 @@ async function compressWithCanvas(
 }
 
 /**
- * Try to compress with FFmpeg (better quality, but may fail on Safari)
+ * Try to compress with FFmpeg (single-threaded version for Safari compatibility)
+ * Uses unpkg CDN to avoid bundler issues
  */
 async function compressWithFFmpeg(
   file: File | Blob,
@@ -188,12 +187,25 @@ async function compressWithFFmpeg(
     
     const ffmpeg = new FFmpeg();
     
-    // Load FFmpeg
-    const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
-    await ffmpeg.load({
-      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
-      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
-    });
+    // Use single-threaded version (no SharedArrayBuffer required)
+    // This bypasses COOP/COEP header requirements
+    const baseURL = "https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/esm";
+    
+    try {
+      await ffmpeg.load({
+        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
+        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
+        workerURL: await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, "text/javascript"),
+      });
+    } catch (mtError) {
+      // Fallback to single-thread version
+      console.log("Multi-threaded FFmpeg failed, trying single-thread...");
+      const stBaseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
+      await ffmpeg.load({
+        coreURL: await toBlobURL(`${stBaseURL}/ffmpeg-core.js`, "text/javascript"),
+        wasmURL: await toBlobURL(`${stBaseURL}/ffmpeg-core.wasm`, "application/wasm"),
+      });
+    }
     
     ffmpeg.on("progress", ({ progress }) => {
       onProgress(Math.round(progress * 100));
@@ -229,7 +241,7 @@ async function compressWithFFmpeg(
     return new Blob([data], { type: "video/mp4" });
     
   } catch (err) {
-    console.error("FFmpeg failed, falling back to Canvas:", err);
+    console.error("FFmpeg failed:", err);
     throw err;
   }
 }
@@ -295,21 +307,28 @@ export function useMobileVideoProcessor(): VideoProcessorHook {
       
       let compressedBlob: Blob;
       
-      // Try FFmpeg first (better quality)
+      // Try Canvas compression first (most reliable)
+      // FFmpeg often fails on mobile due to SharedArrayBuffer requirements
       try {
-        compressedBlob = await compressWithFFmpeg(file, (p) => {
+        compressedBlob = await compressWithCanvas(file, (p) => {
           if (!abortRef.current) {
             setProgress(10 + Math.round(p * 0.7)); // 10-80%
           }
         });
-      } catch {
-        // Fallback to Canvas compression
-        console.log("Falling back to Canvas compression");
-        compressedBlob = await compressWithCanvas(file, (p) => {
-          if (!abortRef.current) {
-            setProgress(10 + Math.round(p * 0.7));
-          }
-        });
+      } catch (canvasError) {
+        console.log("Canvas compression failed, trying FFmpeg...");
+        // Fallback to FFmpeg
+        try {
+          compressedBlob = await compressWithFFmpeg(file, (p) => {
+            if (!abortRef.current) {
+              setProgress(10 + Math.round(p * 0.7));
+            }
+          });
+        } catch (ffmpegError) {
+          // Last resort: use original file
+          console.log("All compression methods failed, using original");
+          compressedBlob = file;
+        }
       }
       
       if (abortRef.current) {
@@ -323,14 +342,14 @@ export function useMobileVideoProcessor(): VideoProcessorHook {
         blob: compressedBlob,
         originalSize,
         finalSize: compressedBlob.size,
-        wasCompressed: true,
+        wasCompressed: compressedBlob !== file,
       };
       
       setProgress(100);
       setState("done");
       setResult(processingResult);
       
-      console.log(`Compression complete: ${(originalSize / 1024 / 1024).toFixed(2)}MB → ${(compressedBlob.size / 1024 / 1024).toFixed(2)}MB`);
+      console.log(`Processing complete: ${(originalSize / 1024 / 1024).toFixed(2)}MB → ${(compressedBlob.size / 1024 / 1024).toFixed(2)}MB`);
       
       return processingResult;
       

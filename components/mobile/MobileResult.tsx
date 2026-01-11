@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Check, Lock, Share2, Download, RotateCcw, ChevronLeft, ChevronRight, Sparkles, Code } from "lucide-react";
-import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { Lock, Smartphone, Monitor, ArrowRight, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface MobileResultProps {
   videoBlob: Blob | null;
@@ -27,6 +26,7 @@ export default function MobileResult({
   const [sliderPosition, setSliderPosition] = useState(50);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [showHandoffModal, setShowHandoffModal] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   
@@ -67,43 +67,11 @@ export default function MobileResult({
     }
   };
   
-  // Share functionality
-  const handleShare = async () => {
-    if (navigator.share && previewUrl) {
-      try {
-        await navigator.share({
-          title: `${videoName} - Built with Replay`,
-          text: "Check out this UI I scanned with Replay!",
-          url: previewUrl
-        });
-      } catch (err) {
-        // User cancelled or error
-      }
-    }
-  };
-  
   const showBlur = !isAuthenticated;
   
   return (
-    <div className="flex-1 flex flex-col bg-black">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-        <button onClick={onNewScan} className="flex items-center gap-2 text-white/60">
-          <RotateCcw className="w-5 h-5" />
-          <span className="text-sm">New Scan</span>
-        </button>
-        
-        <div className="flex items-center gap-2">
-          <Check className="w-5 h-5 text-green-500" />
-          <span className="text-white font-medium">Reconstructed!</span>
-        </div>
-        
-        <button onClick={handleShare} className="p-2">
-          <Share2 className="w-5 h-5 text-white/60" />
-        </button>
-      </div>
-      
-      {/* Compare Slider */}
+    <div className="fixed inset-0 bg-black flex flex-col">
+      {/* Compare Slider - Full screen */}
       <div 
         ref={containerRef}
         className="flex-1 relative overflow-hidden select-none"
@@ -113,7 +81,7 @@ export default function MobileResult({
         onTouchMove={handleTouchMove}
         onTouchEnd={() => setIsDragging(false)}
       >
-        {/* Original Video (Left side) */}
+        {/* Original Video (Left/Bottom side) */}
         <div className="absolute inset-0">
           {videoUrl ? (
             <video
@@ -127,17 +95,12 @@ export default function MobileResult({
             />
           ) : (
             <div className="w-full h-full bg-neutral-900 flex items-center justify-center">
-              <p className="text-white/30">Original Video</p>
+              <p className="text-white/30">Original</p>
             </div>
           )}
-          
-          {/* Label */}
-          <div className="absolute top-4 left-4 px-3 py-1.5 bg-black/60 backdrop-blur-sm rounded-full">
-            <span className="text-white/80 text-xs font-medium">ORIGINAL</span>
-          </div>
         </div>
         
-        {/* Generated Preview (Right side) - clipped */}
+        {/* Generated Preview (Right/Top side) - clipped */}
         <div 
           className="absolute inset-0 overflow-hidden"
           style={{ clipPath: `inset(0 0 0 ${sliderPosition}%)` }}
@@ -145,105 +108,163 @@ export default function MobileResult({
           {previewUrl ? (
             <iframe
               src={previewUrl}
-              className={cn(
-                "w-full h-full border-0 bg-white",
-                showBlur && "filter blur-lg"
-              )}
+              className={`w-full h-full border-0 bg-white ${showBlur ? "filter blur-xl" : ""}`}
               style={{ pointerEvents: showBlur ? "none" : "auto" }}
             />
           ) : (
             <div className="w-full h-full bg-neutral-800 flex items-center justify-center">
-              <p className="text-white/30">Generated Preview</p>
+              <p className="text-white/30">Generated</p>
             </div>
           )}
-          
-          {/* Label */}
-          <div className="absolute top-4 right-4 px-3 py-1.5 bg-[#FF6E3C]/80 backdrop-blur-sm rounded-full">
-            <span className="text-white text-xs font-medium">GENERATED</span>
-          </div>
         </div>
         
         {/* Slider handle */}
         <div
-          className="absolute top-0 bottom-0 w-1 bg-white cursor-ew-resize z-20"
+          className="absolute top-0 bottom-0 w-0.5 bg-white cursor-ew-resize z-20"
           style={{ left: `${sliderPosition}%`, transform: "translateX(-50%)" }}
           onMouseDown={() => setIsDragging(true)}
           onTouchStart={() => setIsDragging(true)}
         >
           {/* Handle grip */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white shadow-2xl flex items-center justify-center">
             <ChevronLeft className="w-4 h-4 text-black -mr-1" />
             <ChevronRight className="w-4 h-4 text-black -ml-1" />
           </div>
         </div>
         
-        {/* Auth Gate Overlay */}
+        {/* Labels */}
+        <div className="absolute top-6 left-6 px-3 py-1.5 bg-black/60 backdrop-blur-sm rounded-full">
+          <span className="text-white/70 text-xs font-medium">Original</span>
+        </div>
+        <div className="absolute top-6 right-6 px-3 py-1.5 bg-[#FF6E3C]/80 backdrop-blur-sm rounded-full">
+          <span className="text-white text-xs font-medium">Generated</span>
+        </div>
+        
+        {/* Auth Gate Overlay - only on generated side */}
         {showBlur && (
           <motion.div 
             className="absolute inset-0 flex items-center justify-center z-30"
             style={{ 
               left: `${sliderPosition}%`,
-              background: "rgba(0,0,0,0.3)",
-              backdropFilter: "blur(4px)"
+              background: "rgba(0,0,0,0.6)",
+              backdropFilter: "blur(8px)"
             }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
             <div className="text-center p-6 max-w-xs">
-              <div className="w-16 h-16 rounded-2xl bg-[#FF6E3C]/20 flex items-center justify-center mx-auto mb-4">
-                <Lock className="w-8 h-8 text-[#FF6E3C]" />
+              <div className="w-14 h-14 rounded-2xl bg-[#FF6E3C]/20 flex items-center justify-center mx-auto mb-4">
+                <Lock className="w-7 h-7 text-[#FF6E3C]" />
               </div>
               
               <h3 className="text-xl font-bold text-white mb-2">
                 UI Reconstructed!
               </h3>
-              <p className="text-white/60 text-sm mb-6">
-                Sign up free to unlock the preview and download your code
+              <p className="text-white/50 text-sm mb-6">
+                Sign up to unlock the preview
               </p>
               
               <button
                 onClick={onLogin}
-                className="w-full py-4 bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] rounded-xl text-white font-bold text-lg shadow-lg shadow-[#FF6E3C]/30"
+                className="w-full py-4 bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] rounded-xl text-white font-bold shadow-lg shadow-[#FF6E3C]/30"
               >
-                Continue Free →
+                Continue Free
               </button>
               
-              <p className="text-white/30 text-xs mt-3">
-                No credit card required
-              </p>
+              <p className="text-white/30 text-xs mt-3">No credit card required</p>
             </div>
           </motion.div>
         )}
       </div>
       
-      {/* Bottom actions - only shown when authenticated */}
+      {/* Bottom action bar - only when authenticated */}
       {isAuthenticated && (
-        <div className="p-4 border-t border-white/10 space-y-3">
-          {/* Code preview hint */}
-          <div className="flex items-center justify-center gap-2 text-white/40 text-sm">
-            <Code className="w-4 h-4" />
-            <span>Swipe to compare • Code ready to download</span>
-          </div>
+        <div className="relative z-10 p-4 pb-8 bg-black border-t border-white/5">
+          <button
+            onClick={() => setShowHandoffModal(true)}
+            className="w-full py-4 bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] rounded-xl text-white font-bold text-base flex items-center justify-center gap-3 shadow-lg shadow-[#FF6E3C]/20"
+          >
+            Save & Edit on Desktop
+            <ArrowRight className="w-5 h-5" />
+          </button>
           
-          {/* Action buttons */}
-          <div className="flex gap-3">
-            <button className="flex-1 py-3 bg-white/5 border border-white/10 rounded-xl text-white font-medium flex items-center justify-center gap-2">
-              <Download className="w-5 h-5" />
-              Download Code
-            </button>
-            
-            <button className="flex-1 py-3 bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] rounded-xl text-white font-medium flex items-center justify-center gap-2">
-              <Sparkles className="w-5 h-5" />
-              Edit with AI
-            </button>
-          </div>
-          
-          {/* Send to desktop hint */}
-          <p className="text-center text-white/30 text-xs">
-            Open replay.build on desktop for full editor
-          </p>
+          <button
+            onClick={onNewScan}
+            className="w-full py-3 mt-3 text-white/50 text-sm"
+          >
+            Scan another
+          </button>
         </div>
       )}
+      
+      {/* Handoff Modal */}
+      <AnimatePresence>
+        {showHandoffModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowHandoffModal(false)}
+          >
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md bg-[#0a0a0a] rounded-t-3xl border-t border-white/10 p-6 pb-10"
+            >
+              {/* Close button */}
+              <button
+                onClick={() => setShowHandoffModal(false)}
+                className="absolute top-4 right-4 p-2"
+              >
+                <X className="w-5 h-5 text-white/40" />
+              </button>
+              
+              {/* Icon row */}
+              <div className="flex items-center justify-center gap-4 mb-6">
+                <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center">
+                  <Smartphone className="w-7 h-7 text-[#FF6E3C]" />
+                </div>
+                <motion.div
+                  animate={{ x: [0, 5, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                >
+                  <ArrowRight className="w-6 h-6 text-white/30" />
+                </motion.div>
+                <div className="w-14 h-14 rounded-2xl bg-[#FF6E3C]/20 flex items-center justify-center">
+                  <Monitor className="w-7 h-7 text-[#FF6E3C]" />
+                </div>
+              </div>
+              
+              {/* Text */}
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-bold text-white mb-2">
+                  Project Synced! 🚀
+                </h3>
+                <p className="text-white/50 text-sm leading-relaxed">
+                  Full code editor is available on Desktop.
+                  <br />
+                  Open <span className="text-[#FF6E3C] font-medium">replay.build</span> on your computer to edit logic, export code, and refine styles.
+                </p>
+              </div>
+              
+              {/* Action */}
+              <button
+                onClick={() => {
+                  setShowHandoffModal(false);
+                  onNewScan();
+                }}
+                className="w-full py-4 bg-white/5 border border-white/10 rounded-xl text-white font-medium"
+              >
+                OK, Got it
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
