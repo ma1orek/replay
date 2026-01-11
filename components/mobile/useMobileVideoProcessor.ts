@@ -1,7 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { toBlobURL } from "@ffmpeg/util";
-import { createBrowserClient } from "@supabase/ssr";
 
 export type ProcessingStage = "idle" | "compressing" | "uploading" | "complete" | "error";
 
@@ -21,31 +20,25 @@ export function useMobileVideoProcessor() {
   });
   
   const ffmpegRef = useRef(new FFmpeg());
-  const messageRef = useRef<HTMLParagraphElement | null>(null);
 
-  // Load FFmpeg from CDN (bypasses local bundle issues)
-  const loadFFmpeg = useCallback(async () => {
+  // Load FFmpeg safely
+  const loadFFmpeg = useCallback(async (): Promise<FFmpeg | null> => {
     const ffmpeg = ffmpegRef.current;
-    
-    // Using single-threaded core for better compatibility on mobile/Vercel without COOP/COEP headers
-    // Or standard core if headers are set correctly. Using standard 0.12.6 from unpkg for now.
     const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
     
-    // Only load if not loaded
-    if (!ffmpeg.loaded) {
-      try {
-        await ffmpeg.load({
-          coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-        });
-        console.log("FFmpeg loaded successfully");
-      } catch (error) {
-        console.error("Failed to load FFmpeg:", error);
-        throw new Error("Failed to initialize video processor");
-      }
+    if (ffmpeg.loaded) return ffmpeg;
+
+    try {
+      await ffmpeg.load({
+        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+      });
+      console.log("FFmpeg loaded successfully");
+      return ffmpeg;
+    } catch (error) {
+      console.error("Failed to load FFmpeg:", error);
+      return null;
     }
-    
-    return ffmpeg;
   }, []);
 
   const processAndUpload = useCallback(async (file: File) => {
@@ -53,66 +46,64 @@ export function useMobileVideoProcessor() {
     let contentType = file.type;
     let filename = file.name;
 
-    // 1. COMPRESSION PHASE (With Fallback)
+    // 1. COMPRESSION PHASE (Optional / Best Effort)
     try {
-      setStatus({ stage: "compressing", progress: 0, message: "Initializing compressor..." });
+      setStatus({ stage: "compressing", progress: 0, message: "Initializing..." });
       
       const ffmpeg = await loadFFmpeg();
       
-      setStatus({ stage: "compressing", progress: 5, message: "Compressing video (720p)..." });
+      if (ffmpeg) {
+        setStatus({ stage: "compressing", progress: 5, message: "Optimizing video..." });
+        
+        // Write file
+        const inputName = "input" + (file.name.split('.').pop() ? `.${file.name.split('.').pop()}` : ".mp4");
+        const outputName = "output.mp4";
+        
+        await ffmpeg.writeFile(inputName, await fetchFile(file));
+        
+        ffmpeg.on("progress", ({ progress }) => {
+          setStatus(prev => ({
+            ...prev,
+            progress: Math.round(progress * 100),
+            message: `Optimizing... ${Math.round(progress * 100)}%`
+          }));
+        });
+        
+        // Compression command
+        await ffmpeg.exec([
+          "-i", inputName,
+          "-vf", "scale=-2:720",
+          "-c:v", "libx264",
+          "-crf", "26",
+          "-preset", "superfast",
+          "-c:a", "aac",
+          "-b:a", "128k",
+          outputName
+        ]);
+        
+        // Read output
+        const data = await ffmpeg.readFile(outputName);
+        const u8 = data instanceof Uint8Array ? data : new Uint8Array(data as any);
+        blobToUpload = new Blob([u8], { type: "video/mp4" });
+        contentType = "video/mp4";
+        filename = "compressed_video.mp4";
+        
+        console.log(`Compressed: ${file.size} -> ${blobToUpload.size} bytes`);
+      } else {
+        console.warn("FFmpeg not loaded, skipping compression");
+        setStatus({ stage: "compressing", progress: 100, message: "Skipping optimization..." });
+      }
       
-      // Write file to FFmpeg memory
-      const inputName = "input" + (file.name.split('.').pop() ? `.${file.name.split('.').pop()}` : ".mp4");
-      const outputName = "output.mp4";
-      
-      await ffmpeg.writeFile(inputName, await fetchFile(file));
-      
-      // Progress listener
-      ffmpeg.on("progress", ({ progress, time }) => {
-        // progress is 0-1
-        setStatus(prev => ({
-          ...prev,
-          progress: Math.round(progress * 100),
-          message: `Compressing... ${Math.round(progress * 100)}%`
-        }));
-      });
-      
-      // Run FFmpeg command: 720p, H.264, ~2Mbps
-      // -vf scale=-2:720 ensures height is 720p and width keeps aspect ratio (divisible by 2)
-      // -c:v libx264 -crf 26 -preset superfast for speed
-      await ffmpeg.exec([
-        "-i", inputName,
-        "-vf", "scale=-2:720",
-        "-c:v", "libx264",
-        "-crf", "26",
-        "-preset", "superfast",
-        "-c:a", "aac",
-        "-b:a", "128k",
-        outputName
-      ]);
-      
-      // Read output
-      const data = await ffmpeg.readFile(outputName);
-      // Ensure we treat it as Uint8Array then get buffer
-      const u8 = data instanceof Uint8Array ? data : new Uint8Array(data as any);
-      blobToUpload = new Blob([u8], { type: "video/mp4" });
-      contentType = "video/mp4";
-      filename = "compressed_video.mp4";
-      
-      console.log(`Compressed: ${file.size} -> ${blobToUpload.size} bytes`);
-      
-    } catch (ffmpegError) {
-      console.warn("FFmpeg compression failed, falling back to original file upload:", ffmpegError);
-      // Fallback: Use original file
-      // No change to blobToUpload, contentType, filename
-      setStatus({ stage: "compressing", progress: 100, message: "Compression skipped (using original)..." });
+    } catch (error) {
+      console.warn("Compression failed, using original:", error);
+      // Fallback to original file
+      setStatus({ stage: "compressing", progress: 100, message: "Using original video..." });
     }
 
+    // 2. UPLOAD PHASE (Critical)
     try {
-      // 2. UPLOAD PHASE (Direct to Supabase via Signed URL)
       setStatus({ stage: "uploading", progress: 0, message: "Preparing upload..." });
       
-      // Get Presigned URL
       const urlRes = await fetch("/api/upload-video/get-url", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -125,7 +116,6 @@ export function useMobileVideoProcessor() {
       if (!urlRes.ok) throw new Error("Failed to get upload URL");
       const { signedUrl, publicUrl } = await urlRes.json();
       
-      // Upload to Storage
       setStatus({ stage: "uploading", progress: 20, message: "Uploading video..." });
       
       const uploadRes = await fetch(signedUrl, {
@@ -146,11 +136,11 @@ export function useMobileVideoProcessor() {
       return publicUrl;
       
     } catch (error: any) {
-      console.error("Processing error:", error);
+      console.error("Upload error:", error);
       setStatus({ 
         stage: "error", 
         progress: 0, 
-        message: "Failed to process video", 
+        message: "Upload failed", 
         error: error.message || "Unknown error" 
       });
       throw error;
@@ -168,7 +158,6 @@ export function useMobileVideoProcessor() {
   };
 }
 
-// Helper to convert File to Uint8Array for FFmpeg
 async function fetchFile(file: File): Promise<Uint8Array> {
   return new Uint8Array(await file.arrayBuffer());
 }

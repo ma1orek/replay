@@ -5,19 +5,16 @@ import { Share2, Check, ExternalLink, Smartphone, Monitor, ArrowRight, X } from 
 
 // Loading messages - same as desktop
 const STREAMING_MESSAGES = [
-  "Reconstructing user interface...",
-  "Building visual components...",
-  "Rendering pixel-perfect layout...",
-  "Assembling responsive design...",
-  "Crafting interactive elements...",
-  "Applying style treatments...",
-  "Polishing animations...",
-  "Optimizing visual hierarchy...",
-  "Finalizing preview render...",
-  "Adding finishing touches...",
+  "Keep app open during upload...",
+  "Analyzing content...",
+  "Reconstructing UI...",
+  "Generating code...",
+  "Applying styles...",
+  "Finalizing...",
 ];
 
 const GENERATION_TIPS = [
+  "Please keep the app open while we process your video.",
   "Click, don't just watch. Interacting helps the engine differentiate functional elements from static containers.",
   "Hover states matter. Move your cursor over buttons and links to capture their hover effects.",
   "Scroll to the bottom. Hidden sections and lazy-loaded content need to be visible in the recording.",
