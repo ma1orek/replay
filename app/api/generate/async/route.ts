@@ -28,23 +28,34 @@ export async function POST(request: NextRequest) {
     // 1. Create a generation record immediately (Status: PROCESSING)
     const generationId = generateId();
     
+    const insertData = {
+      id: generationId,
+      user_id: user.id,
+      title: "Processing...",
+      status: "processing",
+      input_video_url: videoUrl,
+      input_style: styleDirective || "",
+      input_context: "",
+      cost_credits: 75,
+      output_code: null,
+      output_architecture: {},
+      output_design_system: null,
+      versions: [],
+      completed_at: null,
+    };
+    
+    console.log("[AsyncJob] Inserting job record:", generationId);
+    
     const { error: insertError } = await admin
       .from("generations")
-      .insert({
-        id: generationId,
-        user_id: user.id,
-        title: "Processing...",
-        status: "processing", // Client will poll for this
-        input_video_url: videoUrl,
-        input_style: styleDirective,
-        cost_credits: 75, // Deducted already by frontend or charge here? Frontend handles it.
-        created_at: new Date().toISOString(),
-      });
+      .insert(insertData);
 
     if (insertError) {
-      console.error("DB Init Error:", insertError);
-      return NextResponse.json({ error: "Failed to initialize job" }, { status: 500 });
+      console.error("DB Init Error:", JSON.stringify(insertError, null, 2));
+      return NextResponse.json({ error: `Failed to initialize job: ${insertError.message}` }, { status: 500 });
     }
+    
+    console.log("[AsyncJob] Job record created successfully");
 
     // 2. Return success IMMEDIATELY to the client
     // This allows the mobile app to "disconnect" UI-wise and start polling.
