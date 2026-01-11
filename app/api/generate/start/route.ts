@@ -34,34 +34,35 @@ export async function POST(request: NextRequest) {
 
     console.log(`[generate/start] Video received: ${videoFile.size} bytes, ${videoFile.type}`);
 
-    // 3. Check and spend credits
+    // 3. Spend credits using RPC (same as desktop)
     const admin = createAdminClient();
     if (!admin) {
       return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
     }
 
-    // Check credits
-    const { data: creditData } = await admin
-      .from("user_credits")
-      .select("balance")
-      .eq("user_id", user.id)
-      .single();
+    // Use the same RPC function as /api/credits/spend
+    const { data: spendResult, error: spendError } = await admin.rpc("spend_credits", {
+      p_user_id: user.id,
+      p_cost: CREDIT_COSTS.VIDEO_GENERATE,
+      p_reason: "video_generate",
+      p_reference_id: `mobile_gen_${Date.now()}`,
+    });
 
-    if (!creditData || creditData.balance < CREDIT_COSTS.VIDEO_GENERATE) {
+    if (spendError) {
+      console.error("[generate/start] Credit spend RPC error:", spendError);
+      return NextResponse.json({ error: spendError.message }, { status: 500 });
+    }
+
+    if (!spendResult?.success) {
+      console.log("[generate/start] Insufficient credits:", spendResult);
       return NextResponse.json({ 
-        error: "Insufficient credits",
+        error: spendResult?.error || "Insufficient credits",
         required: CREDIT_COSTS.VIDEO_GENERATE,
-        available: creditData?.balance || 0
+        available: spendResult?.remaining || 0
       }, { status: 402 });
     }
 
-    // Deduct credits
-    await admin
-      .from("user_credits")
-      .update({ balance: creditData.balance - CREDIT_COSTS.VIDEO_GENERATE })
-      .eq("user_id", user.id);
-
-    console.log(`[generate/start] Credits deducted: ${CREDIT_COSTS.VIDEO_GENERATE}`);
+    console.log(`[generate/start] Credits spent: ${CREDIT_COSTS.VIDEO_GENERATE}, remaining: ${spendResult.remaining}`);
 
     // 4. Upload video to Supabase Storage
     const jobId = generateId();
@@ -79,11 +80,7 @@ export async function POST(request: NextRequest) {
 
     if (uploadError) {
       console.error("[generate/start] Upload error:", uploadError);
-      // Refund credits
-      await admin
-        .from("user_credits")
-        .update({ balance: creditData.balance })
-        .eq("user_id", user.id);
+      // Note: Credits already spent - no refund (same as desktop behavior)
       return NextResponse.json({ error: "Failed to upload video" }, { status: 500 });
     }
 
@@ -129,12 +126,7 @@ export async function POST(request: NextRequest) {
         duration,
       });
     } else {
-      // Generation failed - refund credits
-      await admin
-        .from("user_credits")
-        .update({ balance: creditData.balance })
-        .eq("user_id", user.id);
-        
+      // Generation failed - credits already spent (same as desktop behavior)
       return NextResponse.json({ 
         success: false,
         error: result.error || "Generation failed - no code returned" 
