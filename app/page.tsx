@@ -68,6 +68,8 @@ import {
 import { cn, generateId, formatDuration, updateProjectAnalytics } from "@/lib/utils";
 import { transmuteVideoToCode } from "@/actions/transmute";
 import { getDatabaseContext, formatDatabaseContextForPrompt } from "@/lib/supabase/schema";
+import { useIsMobile } from "@/lib/useIsMobile";
+import { MobileLayout } from "@/components/mobile";
 // Demo is now loaded from /api/demo/[id] endpoint
 
 // Global abort controller for canceling AI requests
@@ -281,7 +283,7 @@ import FeedbackGateModal from "@/components/modals/FeedbackGateModal";
 import UpgradeModal from "@/components/modals/UpgradeModal";
 import ProjectSettingsModal from "@/components/ProjectSettingsModal";
 import { Toast, useToast } from "@/components/Toast";
-import MobileScanner from "@/components/MobileScanner";
+// MobileScanner removed - mobile users now use MobileLayout exclusively
 import Link from "next/link";
 import type { CodeMode, FileNode, FileTreeFolder, FileTreeFile, CodeReferenceMap } from "@/types";
 import { trackViewContent, trackStartGeneration } from "@/lib/fb-tracking";
@@ -800,6 +802,9 @@ function ReplayToolContent() {
   const { totalCredits: userTotalCredits, wallet, membership, canAfford, refreshCredits } = useCredits();
   const { profile } = useProfile();
   const { toast, showToast, hideToast } = useToast();
+  
+  // MOBILE HARD FORK - Mobile users get completely different app
+  const isMobile = useIsMobile();
   
   // Demo mode state - for cached demo results
   const [isDemoMode, setIsDemoMode] = useState(false);
@@ -6347,6 +6352,122 @@ export const shadows = {
     });
   };
 
+  // MOBILE GENERATION HANDLER - Simplified flow for mobile
+  const handleMobileGenerate = useCallback(async (videoBlob: Blob, videoName: string): Promise<{ code: string; previewUrl: string } | null> => {
+    try {
+      // Check credits
+      if (!canAfford(CREDIT_COSTS.VIDEO_GENERATE)) {
+        setShowOutOfCreditsModal(true);
+        return null;
+      }
+      
+      // Spend credits
+      const spendRes = await fetch("/api/credits/spend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cost: CREDIT_COSTS.VIDEO_GENERATE,
+          reason: "video_generate_mobile",
+          referenceId: `mobile_gen_${Date.now()}`,
+        }),
+      });
+      const spendData = await spendRes.json();
+      if (!spendData.success) {
+        setShowOutOfCreditsModal(true);
+        return null;
+      }
+      refreshCredits();
+      
+      // Upload video to Supabase
+      const videoType = videoBlob.type || "video/webm";
+      const fileExt = videoType.includes("mp4") ? "mp4" : "webm";
+      
+      const urlRes = await fetch("/api/upload-video/get-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filename: `mobile-${Date.now()}.${fileExt}`,
+          contentType: videoType.startsWith("video/") ? videoType : "video/mp4",
+        }),
+      });
+      
+      if (!urlRes.ok) {
+        showToast("Failed to prepare upload", "error");
+        return null;
+      }
+      
+      const { signedUrl, publicUrl } = await urlRes.json();
+      
+      // Upload to Supabase Storage
+      const uploadRes = await fetch(signedUrl, {
+        method: "PUT",
+        headers: { "Content-Type": videoType.startsWith("video/") ? videoType : "video/mp4" },
+        body: videoBlob,
+      });
+      
+      if (!uploadRes.ok) {
+        showToast("Failed to upload video", "error");
+        return null;
+      }
+      
+      // Generate code
+      const result = await transmuteVideoToCode({
+        videoUrl: publicUrl,
+        styleDirective: "Modern, clean design",
+      });
+      
+      if (result.success && result.code) {
+        const blob = new Blob([result.code], { type: "text/html" });
+        return {
+          code: result.code,
+          previewUrl: URL.createObjectURL(blob),
+        };
+      }
+      
+      showToast("Generation failed", "error");
+      return null;
+    } catch (err) {
+      console.error("Mobile generation error:", err);
+      showToast("Something went wrong", "error");
+      return null;
+    }
+  }, [canAfford, refreshCredits, showToast]);
+
+  // ====== MOBILE HARD FORK ======
+  // Mobile users get a completely different experience
+  // They NEVER see the desktop IDE
+  if (isMobile) {
+    return (
+      <>
+        <MobileLayout
+          user={user}
+          onLogin={() => setShowAuthModal(true)}
+          onGenerate={handleMobileGenerate}
+        />
+        
+        {/* Auth Modal for mobile */}
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => {
+            setShowAuthModal(false);
+            setPendingAction(null);
+          }}
+          title="Sign in to continue"
+          description="Your scans and credits are saved to your account."
+        />
+        
+        {/* Out of Credits Modal for mobile */}
+        <OutOfCreditsModal
+          isOpen={showOutOfCreditsModal}
+          onClose={() => setShowOutOfCreditsModal(false)}
+          requiredCredits={CREDIT_COSTS.VIDEO_GENERATE}
+          availableCredits={userTotalCredits}
+        />
+      </>
+    );
+  }
+
+  // ====== DESKTOP APP ======
   return (
     <div className="h-screen flex flex-col bg-[#050505] overflow-hidden font-poppins">
       <div className="gradient-bg" />
@@ -10204,56 +10325,23 @@ export default function GeneratedPage() {
           </div>
       )}
       
-      {/* Mobile Input Panel - Reality Scanner or Standard Input */}
+      {/* Mobile Input Panel - Standard Input (MobileScanner users go to MobileLayout) */}
       {mobilePanel === "input" && !showHistoryMode && !showMobileMenu && (
           <div className="fixed inset-x-0 bottom-[72px] top-0 z-30 md:hidden bg-black flex flex-col">
-            {/* Show MobileScanner when no videos AND not processing AND no generated code */}
             {flows.length === 0 && !isProcessing && !generatedCode ? (
-              <MobileScanner
-                onVideoCapture={async (blob, name) => {
-                  setIsMobileScanning(true);
-                  setCompressionProgress(20);
-                  try {
-                    // Add video directly - compression happens server-side
-                    setCompressionProgress(50);
-                    await addVideoToFlows(blob, name);
-                    setCompressionProgress(100);
-                    
-                    // Auto-start generation after short delay
-                    setTimeout(() => {
-                      setIsMobileScanning(false);
-                      if (flows.length > 0 || blob) {
-                        handleGenerate();
-                      }
-                    }, 300);
-                  } catch (err) {
-                    console.error("Video capture error:", err);
-                    setIsMobileScanning(false);
-                    showToast("Failed to add video", "error");
-                  }
-                }}
-                onVideoUpload={async (file) => {
-                  setIsMobileScanning(true);
-                  setCompressionProgress(20);
-                  try {
-                    // Simple: just add the file as blob
-                    setCompressionProgress(50);
-                    const blob = file;
-                    await addVideoToFlows(blob, file.name.replace(/\.[^.]+$/, ""));
-                    setCompressionProgress(100);
-                    
-                    setTimeout(() => {
-                      setIsMobileScanning(false);
-                    }, 300);
-                  } catch (err) {
-                    console.error("Video upload error:", err);
-                    setIsMobileScanning(false);
-                    showToast("Failed to add video", "error");
-                  }
-                }}
-                isProcessing={isMobileScanning}
-                compressionProgress={compressionProgress}
-              />
+              <div className="flex-1 flex flex-col items-center justify-center p-6">
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-bold text-white mb-2">Upload a video</h2>
+                  <p className="text-white/50">Record your screen and upload it here</p>
+                </div>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full max-w-xs py-4 bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] rounded-2xl text-white font-bold text-lg flex items-center justify-center gap-3"
+                >
+                  <Upload className="w-5 h-5" />
+                  Upload Video
+                </button>
+              </div>
             ) : (
               <>
               {/* Standard Mobile Header - when video is loaded */}
