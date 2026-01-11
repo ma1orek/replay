@@ -102,40 +102,58 @@ export function useAsyncGeneration(
         return null;
       }
 
-      // STEP 2: Upload video first (like desktop does)
-      // This avoids Vercel's 403 Forbidden on FormData uploads from mobile
-      setJobStatus({ status: "processing", progress: 10, message: "Uploading video..." });
+      // STEP 2: Upload video DIRECTLY to Supabase (bypasses Vercel WAF!)
+      // 1. Get presigned URL (small JSON request - won't be blocked)
+      // 2. Upload to Supabase Storage directly (bypasses Vercel entirely)
+      setJobStatus({ status: "processing", progress: 10, message: "Preparing upload..." });
       
-      console.log("[useAsyncGeneration] Uploading video to /api/upload-video...");
+      console.log("[useAsyncGeneration] Getting presigned URL...");
       
-      const uploadFormData = new FormData();
-      uploadFormData.append("video", videoBlob, `video.${videoBlob.type.includes("webm") ? "webm" : "mp4"}`);
-      
-      const uploadRes = await fetch("/api/upload-video", {
+      const extension = videoBlob.type.includes("webm") ? "webm" : "mp4";
+      const urlRes = await fetch("/api/upload-video/get-url", {
         method: "POST",
         credentials: "include",
-        body: uploadFormData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filename: `video.${extension}`,
+          contentType: videoBlob.type,
+        }),
+      });
+
+      if (!urlRes.ok) {
+        const urlError = await urlRes.text();
+        console.error("[useAsyncGeneration] Failed to get upload URL:", urlRes.status, urlError);
+        setIsPolling(false);
+        setJobStatus({ status: "failed", progress: 0, message: "Upload setup failed", error: urlError });
+        onError("Failed to prepare upload");
+        return null;
+      }
+
+      const urlData = await urlRes.json();
+      console.log("[useAsyncGeneration] Got presigned URL, uploading directly to Supabase...");
+      
+      setJobStatus({ status: "processing", progress: 15, message: "Uploading video..." });
+      
+      // Upload directly to Supabase Storage (bypasses Vercel WAF!)
+      const uploadRes = await fetch(urlData.signedUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": videoBlob.type,
+        },
+        body: videoBlob,
       });
 
       if (!uploadRes.ok) {
         const uploadError = await uploadRes.text();
-        console.error("[useAsyncGeneration] Upload failed:", uploadRes.status, uploadError);
+        console.error("[useAsyncGeneration] Direct upload failed:", uploadRes.status, uploadError);
         setIsPolling(false);
         setJobStatus({ status: "failed", progress: 0, message: "Upload failed", error: uploadError });
         onError("Failed to upload video");
         return null;
       }
 
-      const uploadData = await uploadRes.json();
-      if (!uploadData.success || !uploadData.url) {
-        console.error("[useAsyncGeneration] Upload failed:", uploadData);
-        setIsPolling(false);
-        setJobStatus({ status: "failed", progress: 0, message: "Upload failed", error: uploadData.error });
-        onError(uploadData.error || "Failed to upload video");
-        return null;
-      }
-
-      console.log("[useAsyncGeneration] Video uploaded:", uploadData.url);
+      console.log("[useAsyncGeneration] Video uploaded to Supabase:", urlData.publicUrl);
+      const uploadedVideoUrl = urlData.publicUrl;
 
       // STEP 3: Start generation with video URL (JSON body, not FormData)
       setJobStatus({ status: "processing", progress: 30, message: "Starting generation..." });
@@ -153,7 +171,7 @@ export function useAsyncGeneration(
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          videoUrl: uploadData.url,
+          videoUrl: uploadedVideoUrl,
           styleDirective,
         }),
       });
