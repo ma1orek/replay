@@ -36,6 +36,8 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
+  const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
   
   const pendingLoginRef = useRef(false);
 
@@ -77,18 +79,17 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
 
   // Handle generation completion
   const handleGenerationComplete = useCallback((code: string, title?: string, videoUrl?: string) => {
-    console.log("[MobileLayout] Generation complete!", { codeLength: code.length, title, videoUrl, codePreview: code.substring(0, 200) });
+    console.log("[MobileLayout] Generation complete!", { codeLength: code.length, title, videoUrl });
     
     // Store the code
     setGeneratedCode(code);
     
-    // Log code preview for debugging
-    console.log("[MobileLayout] Code received, length:", code.length);
-    console.log("[MobileLayout] Code starts with:", code.substring(0, 200));
+    // Create blob URL for iframe (same approach as desktop - this works better on mobile Safari)
+    const blob = new Blob([code], { type: "text/html" });
+    const blobUrl = URL.createObjectURL(blob);
+    console.log("[MobileLayout] Created blob URL:", blobUrl);
+    setPreviewUrl(blobUrl);
     
-    // Update state synchronously to ensure proper rendering
-    // No need for blob URL - we use srcdoc now
-    setPreviewUrl(null); // Clear old blob URL if any
     setHasGenerated(true);
     setIsProcessing(false);
     
@@ -101,15 +102,9 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
       setProjectName(title);
     }
     
-    // Save generation to history
-    if (onSaveGeneration) {
-      console.log("[MobileLayout] Saving generation to history...");
-      onSaveGeneration({
-        title: finalTitle,
-        code,
-        videoUrl: videoUrl || undefined,
-      });
-    }
+    // NOTE: Don't call onSaveGeneration here!
+    // The /api/generate/async endpoint already saves the generation to DB.
+    // Calling onSaveGeneration would create a duplicate "Untitled Project".
     
     // Refresh credits
     if (onCreditsRefresh) onCreditsRefresh();
@@ -307,6 +302,43 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
     }
   }, [activeTab, isProcessing, videoBlob, handleRemoveVideo]);
   
+  // Handle publish - calls the same API as desktop
+  const handlePublish = useCallback(async (): Promise<string | null> => {
+    if (!generatedCode) return null;
+    
+    setIsPublishing(true);
+    try {
+      const response = await fetch("/api/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          code: generatedCode,
+          title: projectName || "Untitled Project",
+          thumbnailDataUrl: null,
+          existingSlug: null, // Always create new for mobile
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.url) {
+        setPublishedUrl(data.url);
+        return data.url;
+      } else {
+        console.error("[MobileLayout] Publish failed:", data.error);
+        alert("Failed to publish: " + (data.error || "Unknown error"));
+        return null;
+      }
+    } catch (error: any) {
+      console.error("[MobileLayout] Publish error:", error);
+      alert("Failed to publish: " + error.message);
+      return null;
+    } finally {
+      setIsPublishing(false);
+    }
+  }, [generatedCode, projectName]);
+
   // Calculate progress combining both hooks
   let processingProgress = 0;
   let processingMessage = "Starting...";
@@ -364,6 +396,9 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
             processingProgress={processingProgress}
             processingMessage={processingMessage}
             projectName={projectName}
+            onPublish={handlePublish}
+            publishedUrl={publishedUrl}
+            isPublishing={isPublishing}
           />
         )}
       </div>

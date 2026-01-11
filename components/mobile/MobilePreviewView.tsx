@@ -30,6 +30,9 @@ interface MobilePreviewViewProps {
   processingMessage: string;
   onShare?: () => void;
   projectName: string;
+  onPublish?: () => Promise<string | null>;
+  publishedUrl?: string | null;
+  isPublishing?: boolean;
 }
 
 export default function MobilePreviewView({
@@ -39,7 +42,10 @@ export default function MobilePreviewView({
   processingProgress,
   processingMessage,
   onShare,
-  projectName
+  projectName,
+  onPublish,
+  publishedUrl,
+  isPublishing = false,
 }: MobilePreviewViewProps) {
   const [showShareModal, setShowShareModal] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -90,12 +96,20 @@ export default function MobilePreviewView({
   };
   
   const handleCopyLink = async () => {
-    const link = `https://replay.build/p/${projectName.toLowerCase().replace(/\s+/g, "-")}`;
-    try {
-      await navigator.clipboard.writeText(link);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {}
+    let linkToCopy = publishedUrl;
+    
+    // If not published yet, publish first
+    if (!linkToCopy && onPublish) {
+      linkToCopy = await onPublish();
+    }
+    
+    if (linkToCopy) {
+      try {
+        await navigator.clipboard.writeText(linkToCopy);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch {}
+    }
   };
   
   // Processing state - SAME skeleton as desktop
@@ -184,23 +198,25 @@ export default function MobilePreviewView({
   }
   
   // Preview state - fullscreen iframe
-  // Use srcdoc (inline HTML) which is more reliable than blob URLs
+  // Use blob URL (src) like desktop - works better on mobile Safari than srcdoc
   return (
     <div className="flex-1 relative bg-white">
-      {/* Fullscreen iframe - use srcdoc for better browser compatibility */}
-      {previewCode ? (
-        <iframe
-          key={`code-${previewCode.length}`}
-          srcDoc={previewCode}
-          className="absolute inset-0 w-full h-full border-0"
-          title="Preview"
-          sandbox="allow-scripts allow-same-origin"
-        />
-      ) : previewUrl ? (
+      {/* Fullscreen iframe - use src with blob URL (same as desktop) */}
+      {previewUrl ? (
         <iframe
           key={previewUrl}
           src={previewUrl}
-          className="absolute inset-0 w-full h-full border-0"
+          className="absolute inset-0 w-full h-full border-0 bg-white"
+          style={{ backgroundColor: 'white' }}
+          title="Preview"
+          sandbox="allow-scripts allow-same-origin"
+        />
+      ) : previewCode ? (
+        <iframe
+          key={`code-${previewCode.length}`}
+          srcDoc={previewCode}
+          className="absolute inset-0 w-full h-full border-0 bg-white"
+          style={{ backgroundColor: 'white' }}
           title="Preview"
           sandbox="allow-scripts allow-same-origin"
         />
@@ -253,9 +269,15 @@ export default function MobilePreviewView({
             <div className="space-y-3">
               <button
                 onClick={handleCopyLink}
-                className="w-full py-4 bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] rounded-xl text-white font-bold flex items-center justify-center gap-2"
+                disabled={isPublishing}
+                className="w-full py-4 bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] rounded-xl text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                {copied ? (
+                {isPublishing ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Publishing...
+                  </>
+                ) : copied ? (
                   <>
                     <Check className="w-5 h-5" />
                     Link Copied!
@@ -263,7 +285,7 @@ export default function MobilePreviewView({
                 ) : (
                   <>
                     <ExternalLink className="w-5 h-5" />
-                    Copy Share Link
+                    {publishedUrl ? "Copy Share Link" : "Publish & Copy Link"}
                   </>
                 )}
               </button>
