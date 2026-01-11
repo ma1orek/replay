@@ -1,5 +1,6 @@
 export { default as MobileLayout } from "./MobileLayout";
-export { default as MobileHome } from "./MobileHome";
-export { default as MobileProcessing } from "./MobileProcessing";
-export { default as MobileResult } from "./MobileResult";
+export { default as MobileHeader } from "./MobileHeader";
+export { default as MobileConfigureView } from "./MobileConfigureView";
+export { default as MobilePreviewView } from "./MobilePreviewView";
+export { default as FloatingIsland } from "./FloatingIsland";
 export { useMobileVideoProcessor } from "./useMobileVideoProcessor";
