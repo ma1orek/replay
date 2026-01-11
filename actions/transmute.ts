@@ -292,7 +292,7 @@ FORBIDDEN: text-8xl or text-9xl for multi-line headlines
 ❌ "[Image]" text instead of placeholder
 ❌ "Coming soon" for visible content
 ❌ Truncated text with "..."
-❌ **ZERO (0) IN STATS** - NEVER use 0 as placeholder for statistics! Use realistic numbers!
+❌ **ZERO (0) IN STATS** - ABSOLUTELY FORBIDDEN! "0 Users", "0 Countries", "0 Years" looks BROKEN! Use: "10K+ Users", "50+ Countries", "15+ Years" instead!
 
 **2.3 Fallback Rules (when video unclear):**
 | Situation | Action |
@@ -983,6 +983,16 @@ You have access to PREMIUM UI PATTERNS. Don't hold back - USE THEM!
 ❌ Animations without easing (linear for UI)
 ❌ Janky/stuttering animations
 ❌ Animation on every scroll (performance)
+❌ Looping animations that STOP - marquee, spinning logos, rotating elements MUST use "infinite" keyword
+❌ Animation without "infinite" on decorative/background elements
+
+**5.7 LOOPING ANIMATIONS (CRITICAL):**
+ALL decorative animations (marquee, rotating logos, floating elements, pulsing badges) MUST:
+- Use `animation: name duration timing-function infinite`
+- NEVER stop or have a fixed iteration count
+- For marquee: Duplicate content to fill gaps during loop reset
+- For spinning/rotating: Use `animation: spin 10s linear infinite`
+Example: `.animate-spin { animation: spin 10s linear infinite; }`
 
 **OUTPUT FORMAT:** A complete HTML file with:
 - Tailwind CSS via CDN for styling

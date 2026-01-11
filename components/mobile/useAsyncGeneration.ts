@@ -183,10 +183,24 @@ export function useAsyncGeneration(
       }
 
       const jobId = data.jobId;
-      console.log("[useAsyncGeneration] Job started:", jobId);
+      console.log("[useAsyncGeneration] API Response:", { jobId, status: data.status, hasCode: !!data.code });
       
-      // STEP 3: Start Polling
-      setJobStatus({ status: "processing", progress: 20, message: "Job queued..." });
+      // Check if API returned complete result directly (synchronous mode)
+      if (data.status === "complete" && data.code) {
+        console.log("[useAsyncGeneration] Got code directly from API!");
+        setJobStatus({
+          status: "complete",
+          progress: 100,
+          message: "Complete!",
+          code: data.code,
+          title: data.title,
+        });
+        onComplete(data.code, data.title, videoUrl);
+        return { jobId, videoUrl };
+      }
+      
+      // If not complete, start polling (fallback for truly async scenarios)
+      setJobStatus({ status: "processing", progress: 20, message: "Processing..." });
       startPolling(jobId, videoUrl);
       
       return { jobId, videoUrl };

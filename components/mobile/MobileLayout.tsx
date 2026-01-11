@@ -264,9 +264,12 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
       console.log("[MobileLayout] Step 1 Complete. URL:", finalVideoUrl);
 
       // Build style directive from user inputs
-      let styleDirective = style || "Modern, clean design with Tailwind CSS";
+      // Empty style = Auto-Detect (AI analyzes video and matches its visual style)
+      let styleDirective = style || "";
       if (context.trim()) {
-        styleDirective += `. Additional context: ${context.trim()}`;
+        styleDirective = styleDirective 
+          ? `${styleDirective}. Additional context: ${context.trim()}`
+          : `Additional context: ${context.trim()}`;
       }
 
       // 2. GENERATE (AI)
