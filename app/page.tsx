@@ -281,6 +281,7 @@ import FeedbackGateModal from "@/components/modals/FeedbackGateModal";
 import UpgradeModal from "@/components/modals/UpgradeModal";
 import ProjectSettingsModal from "@/components/ProjectSettingsModal";
 import { Toast, useToast } from "@/components/Toast";
+import MobileScanner from "@/components/MobileScanner";
 import Link from "next/link";
 import type { CodeMode, FileNode, FileTreeFolder, FileTreeFile, CodeReferenceMap } from "@/types";
 import { trackViewContent, trackStartGeneration } from "@/lib/fb-tracking";
@@ -910,6 +911,8 @@ function ReplayToolContent() {
   });
   const [styleReferenceImage, setStyleReferenceImage] = useState<{ url: string; name: string } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [compressionProgress, setCompressionProgress] = useState(0);
+  const [isMobileScanning, setIsMobileScanning] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false);
   const [displayedCode, setDisplayedCode] = useState<string>("");
@@ -10201,47 +10204,108 @@ export default function GeneratedPage() {
           </div>
       )}
       
-      {/* Mobile Input Panel - Static, no animations */}
+      {/* Mobile Input Panel - Reality Scanner or Standard Input */}
       {mobilePanel === "input" && !showHistoryMode && !showMobileMenu && (
-          <div className="fixed inset-x-0 bottom-[72px] top-0 z-30 md:hidden bg-[#0a0a0a] flex flex-col">
-            {/* Unified Mobile Header - Larger touch targets */}
-            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
-              <a href="/" className="flex-shrink-0 p-1.5 -ml-1.5">
-                <LogoIcon className="w-6 h-6" color="#FF6E3C" />
-              </a>
-              <input
-                type="text"
-                value={generationTitle}
-                onChange={(e) => setGenerationTitle(e.target.value)}
-                className="flex-1 min-w-0 text-sm font-medium text-white/80 bg-transparent focus:outline-none truncate"
-                placeholder="Untitled"
+          <div className="fixed inset-x-0 bottom-[72px] top-0 z-30 md:hidden bg-black flex flex-col">
+            {/* Show MobileScanner when no videos AND not processing AND no generated code */}
+            {flows.length === 0 && !isProcessing && !generatedCode ? (
+              <MobileScanner
+                onVideoCapture={async (blob, name) => {
+                  setIsMobileScanning(true);
+                  setCompressionProgress(0);
+                  try {
+                    // Compress video using FFmpeg if needed
+                    const { needsCompression } = await import("@/lib/video-compress");
+                    let processedBlob = blob;
+                    
+                    if (needsCompression(blob, 4)) {
+                      setCompressionProgress(10);
+                      const { convertToMP4 } = await import("@/lib/ffmpeg-converter");
+                      processedBlob = await convertToMP4(blob, (p) => setCompressionProgress(10 + p * 0.7));
+                    }
+                    
+                    setCompressionProgress(80);
+                    await addVideoToFlows(processedBlob, name);
+                    setCompressionProgress(100);
+                    
+                    // Auto-start generation after capture
+                    setTimeout(() => {
+                      setIsMobileScanning(false);
+                      handleGenerate();
+                    }, 500);
+                  } catch (err) {
+                    console.error("Video processing error:", err);
+                    setIsMobileScanning(false);
+                    showToast("Failed to process video", "error");
+                  }
+                }}
+                onVideoUpload={async (file) => {
+                  setIsMobileScanning(true);
+                  setCompressionProgress(0);
+                  try {
+                    const blob = new Blob([await file.arrayBuffer()], { type: file.type });
+                    const { needsCompression } = await import("@/lib/video-compress");
+                    let processedBlob = blob;
+                    
+                    if (needsCompression(blob, 4)) {
+                      setCompressionProgress(10);
+                      const { convertToMP4 } = await import("@/lib/ffmpeg-converter");
+                      processedBlob = await convertToMP4(blob, (p) => setCompressionProgress(10 + p * 0.7));
+                    }
+                    
+                    setCompressionProgress(80);
+                    await addVideoToFlows(processedBlob, file.name.replace(/\.[^.]+$/, ""));
+                    setCompressionProgress(100);
+                    setIsMobileScanning(false);
+                  } catch (err) {
+                    console.error("Video upload error:", err);
+                    setIsMobileScanning(false);
+                    showToast("Failed to process video", "error");
+                  }
+                }}
+                isProcessing={isMobileScanning}
+                compressionProgress={compressionProgress}
               />
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <button onClick={() => { setGenerationTitle("Untitled Project"); setFlows([]); setRefinements(""); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); setActiveGeneration(null); setGeneratedCode(null); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setChatMessages([]); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New Project">
-                  <Plus className="w-5 h-5 text-white/50" />
-                </button>
-                <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="History">
-                  <History className="w-5 h-5 text-white/50" />
-                </button>
-                <button onClick={() => setShowProjectSettings(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Settings">
-                  <Settings className="w-5 h-5 text-white/50" />
-                </button>
-                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="px-3 py-2 rounded-xl hover:bg-white/5 active:bg-white/10 min-h-[44px] flex items-center justify-center">
-                  {user ? (
-                    <span className={cn(
-                      "text-xs font-semibold uppercase",
-                      isPaidPlan ? "text-[#FF6E3C]" : "text-white/50"
-                    )}>
-                      {isPaidPlan ? (membership?.plan === "agency" ? "Agency" : "Pro") : "Free"}
-                    </span>
-                  ) : (
-                    <User className="w-5 h-5 text-white/50" />
-                  )}
-                </button>
+            ) : (
+              <>
+              {/* Standard Mobile Header - when video is loaded */}
+              <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
+                <a href="/" className="flex-shrink-0 p-1.5 -ml-1.5">
+                  <LogoIcon className="w-6 h-6" color="#FF6E3C" />
+                </a>
+                <input
+                  type="text"
+                  value={generationTitle}
+                  onChange={(e) => setGenerationTitle(e.target.value)}
+                  className="flex-1 min-w-0 text-sm font-medium text-white/80 bg-transparent focus:outline-none truncate"
+                  placeholder="Untitled"
+                />
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button onClick={() => { setGenerationTitle("Untitled Project"); setFlows([]); setRefinements(""); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); setActiveGeneration(null); setGeneratedCode(null); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setChatMessages([]); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New Project">
+                    <Plus className="w-5 h-5 text-white/50" />
+                  </button>
+                  <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="History">
+                    <History className="w-5 h-5 text-white/50" />
+                  </button>
+                  <button onClick={() => setShowProjectSettings(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Settings">
+                    <Settings className="w-5 h-5 text-white/50" />
+                  </button>
+                  <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="px-3 py-2 rounded-xl hover:bg-white/5 active:bg-white/10 min-h-[44px] flex items-center justify-center">
+                    {user ? (
+                      <span className={cn(
+                        "text-xs font-semibold uppercase",
+                        isPaidPlan ? "text-[#FF6E3C]" : "text-white/50"
+                      )}>
+                        {isPaidPlan ? (membership?.plan === "agency" ? "Agency" : "Pro") : "Free"}
+                      </span>
+                    ) : (
+                      <User className="w-5 h-5 text-white/50" />
+                    )}
+                  </button>
+                </div>
               </div>
-            </div>
-            
-            <div className="flex flex-col flex-1 overflow-auto">
+              
+              <div className="flex flex-col flex-1 overflow-auto">
               {/* Videos Section - Consistent sizing */}
               <div className="p-4 border-b border-white/5 flex-shrink-0">
                 <div className="flex items-center justify-between mb-3">
@@ -10450,6 +10514,8 @@ export default function GeneratedPage() {
                 </div>
               </div>
             </div>
+              </>
+            )}
           </div>
       )}
       

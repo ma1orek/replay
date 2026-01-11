@@ -184,11 +184,11 @@ export default function EditWithAIPage() {
         <div className="p-4 rounded-xl bg-white/5 border border-white/10">
           <div className="flex items-center justify-between">
             <span className="text-white">Edit with AI</span>
-            <span className="font-mono text-[#FF6E3C]">3 credits per edit</span>
+            <span className="font-mono text-[#FF6E3C]">25 credits per edit</span>
           </div>
         </div>
         <p className="text-sm text-white/50">
-          Each edit request costs 3 credits, regardless of complexity. New page generation with @PageName also costs 3 credits.
+          Each edit request costs 25 credits, regardless of complexity. New page generation with @PageName also costs 25 credits.
         </p>
       </div>
 
