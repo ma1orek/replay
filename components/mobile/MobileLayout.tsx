@@ -5,7 +5,7 @@ import MobileHeader from "./MobileHeader";
 import MobileConfigureView from "./MobileConfigureView";
 import MobilePreviewView from "./MobilePreviewView";
 import FloatingIsland from "./FloatingIsland";
-import { useMobileVideoProcessor } from "./useMobileVideoProcessor";
+import { useAsyncGeneration } from "./useAsyncGeneration";
 
 interface MobileLayoutProps {
   user: any;
@@ -14,15 +14,15 @@ interface MobileLayoutProps {
   credits?: number;
   creditsLoading?: boolean;
   onLogin: () => void;
-  onGenerate: (videoBlob: Blob, styleDirective: string) => Promise<{ code: string; previewUrl: string; title?: string } | null>;
   onOpenCreditsModal?: () => void;
+  onCreditsRefresh?: () => void;
 }
 
 // Keys for localStorage
 const STORAGE_KEY_VIDEO = "replay_mobile_pending_video";
 const STORAGE_KEY_NAME = "replay_mobile_pending_name";
 
-export default function MobileLayout({ user, isPro, plan, credits, creditsLoading, onLogin, onGenerate, onOpenCreditsModal }: MobileLayoutProps) {
+export default function MobileLayout({ user, isPro, plan, credits, creditsLoading, onLogin, onOpenCreditsModal, onCreditsRefresh }: MobileLayoutProps) {
   const [activeTab, setActiveTab] = useState<"configure" | "preview">("configure");
   const [projectName, setProjectName] = useState("New Project");
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
@@ -31,12 +31,44 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
   const [style, setStyle] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [processingProgress, setProcessingProgress] = useState(0);
-  const [processingMessage, setProcessingMessage] = useState("");
   const [hasGenerated, setHasGenerated] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
   
-  const videoProcessor = useMobileVideoProcessor();
   const pendingLoginRef = useRef(false);
+
+  // Handle generation completion
+  const handleGenerationComplete = useCallback((code: string, title?: string) => {
+    console.log("[MobileLayout] Generation complete!", { codeLength: code.length, title });
+    
+    // Create preview URL from code
+    const blob = new Blob([code], { type: "text/html" });
+    setPreviewUrl(URL.createObjectURL(blob));
+    setHasGenerated(true);
+    setIsProcessing(false);
+    
+    // Update project name from AI
+    if (title && title !== "Untitled Project") {
+      setProjectName(title);
+    }
+    
+    // Refresh credits
+    if (onCreditsRefresh) onCreditsRefresh();
+  }, [onCreditsRefresh]);
+
+  // Handle generation error
+  const handleGenerationError = useCallback((error: string) => {
+    console.error("[MobileLayout] Generation error:", error);
+    setGenerationError(error);
+    setIsProcessing(false);
+    setActiveTab("configure");
+    alert(`Generation failed: ${error}`);
+  }, []);
+
+  // Async generation hook - uses server-side processing with polling
+  const { startGeneration, jobStatus, isPolling, resetJob } = useAsyncGeneration(
+    handleGenerationComplete,
+    handleGenerationError
+  );
   
   // Restore video from localStorage after login
   useEffect(() => {
@@ -123,7 +155,7 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
     }
   }, [videoBlob, projectName]);
   
-  // Reconstruct - the main action
+  // Reconstruct - the main action (uses async server-side processing)
   const handleReconstruct = useCallback(async () => {
     if (!videoBlob) return;
     
@@ -141,63 +173,31 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
       return;
     }
     
+    // Clear any previous error
+    setGenerationError(null);
     setIsProcessing(true);
-    setProcessingProgress(0);
-    setProcessingMessage("Starting...");
     setActiveTab("preview");
     
-    try {
-      setProcessingProgress(20);
-      setProcessingMessage("Uploading video...");
-      
-      console.log("[MobileLayout] Starting generation with blob:", videoBlob.size, videoBlob.type);
-      
-      // Build style directive from user inputs (like desktop)
-      let styleDirective = style || "Modern, clean design with Tailwind CSS";
-      if (context.trim()) {
-        styleDirective += `. Additional context: ${context.trim()}`;
-      }
-      
-      setProcessingProgress(40);
-      setProcessingMessage("Reconstructing user interface...");
-      
-      const result = await onGenerate(videoBlob, styleDirective);
-      
-      console.log("[MobileLayout] Generation result:", result);
-      
-      if (result && result.previewUrl) {
-        setProcessingProgress(90);
-        setProcessingMessage("Rendering preview...");
-        
-        await new Promise(r => setTimeout(r, 200));
-        
-        setPreviewUrl(result.previewUrl);
-        setProcessingProgress(100);
-        setProcessingMessage("Complete!");
-        setHasGenerated(true);
-        
-        // Update project name from AI-generated title (like desktop)
-        if (result.title && result.title !== "Untitled Project") {
-          setProjectName(result.title);
-          console.log("[MobileLayout] Set project name from AI:", result.title);
-        }
-      } else {
-        // Generation failed - go back to configure
-        console.error("[MobileLayout] Generation failed - no result");
-        setActiveTab("configure");
-        setProcessingMessage("");
-        setIsProcessing(false);
-      }
-      
-    } catch (err) {
-      console.error("[MobileLayout] Error:", err);
-      alert(`Generation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
-      setActiveTab("configure");
-      setProcessingMessage("");
-    } finally {
-      setIsProcessing(false);
+    console.log("[MobileLayout] Starting async generation with blob:", videoBlob.size, videoBlob.type);
+    
+    // Build style directive from user inputs
+    let styleDirective = style || "Modern, clean design with Tailwind CSS";
+    if (context.trim()) {
+      styleDirective += `. Additional context: ${context.trim()}`;
     }
-  }, [videoBlob, user, onLogin, saveVideoForLogin, onGenerate, creditsLoading, style, context]);
+    
+    // Start async generation - will poll for result
+    // User can now lock screen, generation continues on server
+    const jobId = await startGeneration(videoBlob, styleDirective);
+    
+    if (!jobId) {
+      // Error already handled by hook
+      setIsProcessing(false);
+      setActiveTab("configure");
+    }
+    
+    // isProcessing will be set to false by handleGenerationComplete or handleGenerationError
+  }, [videoBlob, user, onLogin, saveVideoForLogin, creditsLoading, style, context, startGeneration]);
   
   // Handle back - goes back in flow or clears video
   const handleBack = useCallback(() => {
@@ -211,17 +211,9 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
     }
   }, [activeTab, isProcessing, videoBlob, handleRemoveVideo]);
   
-  // Calculate progress
-  const combinedProgress = videoProcessor.state === "compressing"
-    ? 10 + (videoProcessor.progress * 0.2)
-    : processingProgress;
-  
-  // Get message
-  const currentMessage = videoProcessor.state === "compressing"
-    ? "Compressing..."
-    : videoProcessor.state === "analyzing"
-    ? "Analyzing..."
-    : processingMessage;
+  // Calculate progress from job status (server-side async processing)
+  const processingProgress = jobStatus?.progress || 0;
+  const processingMessage = jobStatus?.message || "Starting...";
   
   return (
     <div className="fixed inset-0 bg-black flex flex-col overflow-hidden">
@@ -257,9 +249,9 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
         ) : (
           <MobilePreviewView
             previewUrl={previewUrl}
-            isProcessing={isProcessing}
-            processingProgress={combinedProgress}
-            processingMessage={currentMessage}
+            isProcessing={isProcessing || isPolling}
+            processingProgress={processingProgress}
+            processingMessage={processingMessage}
             projectName={projectName}
           />
         )}

@@ -6352,140 +6352,6 @@ export const shadows = {
     });
   };
 
-  // MOBILE GENERATION HANDLER - EXACTLY like desktop
-  const handleMobileGenerate = useCallback(async (videoBlob: Blob, styleDirective: string): Promise<{ code: string; previewUrl: string; title?: string } | null> => {
-    console.log("[MOBILE] Starting generation...", { blobSize: videoBlob.size, blobType: videoBlob.type, styleDirective });
-    
-    // Request Wake Lock to prevent screen from turning off
-    let wakeLock: WakeLockSentinel | null = null;
-    if ('wakeLock' in navigator) {
-      try {
-        wakeLock = await (navigator as any).wakeLock.request('screen');
-        console.log("[MOBILE] Wake Lock acquired - screen will stay on");
-      } catch (err) {
-        console.log("[MOBILE] Wake Lock not available:", err);
-        showToast("Keep your screen on during generation", "info");
-      }
-    } else {
-      showToast("Keep your screen on during generation", "info");
-    }
-    
-    try {
-      // 1. Spend credits (same as desktop)
-      console.log("[MOBILE] Step 1: Spending credits...");
-      const spendRes = await fetch("/api/credits/spend", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          cost: CREDIT_COSTS.VIDEO_GENERATE,
-          reason: "video_generate",
-          referenceId: `gen_${Date.now()}`,
-        }),
-      });
-      
-      if (spendRes.status === 401) {
-        console.log("[MOBILE] Not authenticated");
-        setShowAuthModal(true);
-        return null;
-      }
-      
-      const spendData = await spendRes.json();
-      console.log("[MOBILE] Spend result:", spendData);
-      
-      if (!spendData.success) {
-        setShowOutOfCreditsModal(true);
-        return null;
-      }
-      refreshCredits();
-      
-      // 2. Upload video (same as desktop)
-      console.log("[MOBILE] Step 2: Getting upload URL...");
-      const videoType = videoBlob.type || "video/mp4";
-      const fileExt = videoType.includes("webm") ? "webm" : "mp4";
-      
-      const urlRes = await fetch("/api/upload-video/get-url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          filename: `mobile-${Date.now()}.${fileExt}`,
-          contentType: videoType,
-        }),
-      });
-      
-      if (!urlRes.ok) {
-        console.error("[MOBILE] Failed to get upload URL:", urlRes.status);
-        showToast("Upload failed", "error");
-        return null;
-      }
-      
-      const { signedUrl, publicUrl } = await urlRes.json();
-      console.log("[MOBILE] Got upload URL, uploading...");
-      
-      // 3. Upload blob
-      const uploadRes = await fetch(signedUrl, {
-        method: "PUT",
-        headers: { "Content-Type": videoType },
-        body: videoBlob,
-      });
-      
-      if (!uploadRes.ok) {
-        console.error("[MOBILE] Upload failed:", uploadRes.status);
-        showToast("Upload failed", "error");
-        return null;
-      }
-      console.log("[MOBILE] Upload complete:", publicUrl);
-      
-      // 4. Generate code (same as desktop)
-      console.log("[MOBILE] Step 3: Calling transmuteVideoToCode with styleDirective:", styleDirective);
-      const result = await transmuteVideoToCode({
-        videoUrl: publicUrl,
-        styleDirective: styleDirective,
-      });
-      
-      console.log("[MOBILE] Generation result:", { success: result.success, hasCode: !!result.code, codeLength: result.code?.length });
-      
-      if (result.success && result.code) {
-        const blob = new Blob([result.code], { type: "text/html" });
-        const previewUrl = URL.createObjectURL(blob);
-        
-        // Extract project title from code (same as desktop extractProjectName)
-        let title: string | undefined;
-        const titleMatch = result.code.match(/<title[^>]*>([^<]+)<\/title>/i);
-        if (titleMatch && titleMatch[1]) {
-          const extractedTitle = titleMatch[1].trim();
-          if (extractedTitle && extractedTitle.length > 0 && extractedTitle.length < 50 && !extractedTitle.toLowerCase().includes('untitled')) {
-            title = extractedTitle;
-            console.log("[MOBILE] Extracted title from code:", title);
-          }
-        }
-        
-        console.log("[MOBILE] Success! Preview URL created, title:", title);
-        return { code: result.code, previewUrl, title };
-      }
-      
-      console.error("[MOBILE] Generation returned no code:", result);
-      showToast(result.error || "Generation failed - no code returned", "error");
-      return null;
-      
-    } catch (err) {
-      console.error("[MOBILE] Error:", err);
-      showToast(`Error: ${err instanceof Error ? err.message : "Unknown error"}`, "error");
-      return null;
-    } finally {
-      // Release Wake Lock
-      if (wakeLock) {
-        try {
-          await wakeLock.release();
-          console.log("[MOBILE] Wake Lock released");
-        } catch (e) {
-          console.log("[MOBILE] Wake Lock release failed:", e);
-        }
-      }
-    }
-  }, [refreshCredits, showToast]);
-
   // ====== DEVICE DETECTION LOADING ======
   if (isMobile === null) {
     return (
@@ -6496,6 +6362,8 @@ export const shadows = {
   }
 
   // ====== MOBILE HARD FORK ======
+  // Mobile uses server-side async processing (like Bolt/Lovable)
+  // User can lock screen - generation continues on server
   if (isMobile === true) {
     return (
       <>
@@ -6506,8 +6374,8 @@ export const shadows = {
           credits={userTotalCredits}
           creditsLoading={creditsLoading}
           onLogin={() => setShowAuthModal(true)}
-          onGenerate={handleMobileGenerate}
           onOpenCreditsModal={() => setShowProfileMenu(true)}
+          onCreditsRefresh={refreshCredits}
         />
         <AuthModal
           isOpen={showAuthModal}
