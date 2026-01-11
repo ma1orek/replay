@@ -180,12 +180,17 @@ export default function MobileLayout({ user, isPro, plan, onLogin, onGenerate }:
     }
   }, [videoBlob, user, onLogin, saveVideoForLogin, videoProcessor, onGenerate, projectName]);
   
-  // Handle back
+  // Handle back - goes back in flow or clears video
   const handleBack = useCallback(() => {
     if (activeTab === "preview" && !isProcessing) {
       setActiveTab("configure");
+    } else if (activeTab === "configure") {
+      // If there's a video, clear it. Otherwise do nothing (or could navigate home)
+      if (videoBlob) {
+        handleRemoveVideo();
+      }
     }
-  }, [activeTab, isProcessing]);
+  }, [activeTab, isProcessing, videoBlob, handleRemoveVideo]);
   
   // Calculate progress
   const combinedProgress = videoProcessor.state === "compressing"
@@ -209,7 +214,6 @@ export default function MobileLayout({ user, isPro, plan, onLogin, onGenerate }:
           isPro={isPro}
           plan={plan}
           onBack={handleBack}
-          showBack={activeTab === "preview"}
         />
       )}
       

@@ -9,7 +9,6 @@ interface MobileHeaderProps {
   isPro: boolean;
   plan: string;
   onBack: () => void;
-  showBack?: boolean;
 }
 
 export default function MobileHeader({ 
@@ -17,8 +16,7 @@ export default function MobileHeader({
   onProjectNameChange, 
   isPro,
   plan,
-  onBack,
-  showBack = false
+  onBack
 }: MobileHeaderProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(projectName);
@@ -47,16 +45,14 @@ export default function MobileHeader({
   
   return (
     <header className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-black">
-      {/* Left - Back button or spacer */}
+      {/* Left - Back button ALWAYS visible */}
       <div className="w-10">
-        {showBack && (
-          <button 
-            onClick={onBack}
-            className="flex items-center justify-center text-white/60 p-2 -ml-2"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-        )}
+        <button 
+          onClick={onBack}
+          className="flex items-center justify-center text-white/60 hover:text-white p-2 -ml-2 transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
       </div>
       
       {/* Center - Project name */}

@@ -6355,14 +6355,8 @@ export const shadows = {
   // MOBILE GENERATION HANDLER - Simplified flow for mobile
   const handleMobileGenerate = useCallback(async (videoBlob: Blob, videoName: string): Promise<{ code: string; previewUrl: string } | null> => {
     try {
-      // For PRO users, skip client-side check - let API handle it
-      // This avoids race conditions where credits haven't loaded yet
-      const isPro = membership?.plan && membership.plan !== "free";
-      
-      if (!isPro && !creditsLoading && !canAfford(CREDIT_COSTS.VIDEO_GENERATE)) {
-        setShowOutOfCreditsModal(true);
-        return null;
-      }
+      // NO client-side credit check - API handles everything
+      // This ensures PRO users with credits always work
       
       // Spend credits via API (server validates actual balance)
       const spendRes = await fetch("/api/credits/spend", {
@@ -6374,11 +6368,23 @@ export const shadows = {
           referenceId: `mobile_gen_${Date.now()}`,
         }),
       });
+      
+      // Handle auth error - user needs to login
+      if (spendRes.status === 401) {
+        console.log("Mobile: User not authenticated");
+        setShowAuthModal(true);
+        return null;
+      }
+      
       const spendData = await spendRes.json();
+      
+      // If API says no credits, show modal
       if (!spendData.success) {
+        console.log("Mobile spend failed:", spendData);
         setShowOutOfCreditsModal(true);
         return null;
       }
+      
       refreshCredits();
       
       // Upload video to Supabase
@@ -6434,7 +6440,7 @@ export const shadows = {
       showToast("Something went wrong", "error");
       return null;
     }
-  }, [canAfford, refreshCredits, showToast, membership, creditsLoading]);
+  }, [refreshCredits, showToast]);
 
   // ====== DEVICE DETECTION LOADING ======
   // Show loading while detecting device type
