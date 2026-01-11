@@ -988,11 +988,11 @@ You have access to PREMIUM UI PATTERNS. Don't hold back - USE THEM!
 
 **5.7 LOOPING ANIMATIONS (CRITICAL):**
 ALL decorative animations (marquee, rotating logos, floating elements, pulsing badges) MUST:
-- Use `animation: name duration timing-function infinite`
+- Use "animation: name duration timing-function infinite"
 - NEVER stop or have a fixed iteration count
 - For marquee: Duplicate content to fill gaps during loop reset
-- For spinning/rotating: Use `animation: spin 10s linear infinite`
-Example: `.animate-spin { animation: spin 10s linear infinite; }`
+- For spinning/rotating: Use "animation: spin 10s linear infinite"
+Example: .animate-spin { animation: spin 10s linear infinite; }
 
 **OUTPUT FORMAT:** A complete HTML file with:
 - Tailwind CSS via CDN for styling
