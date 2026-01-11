@@ -11,6 +11,8 @@ interface MobileHeaderProps {
   credits?: number;
   onBack: () => void;
   onOpenCreditsModal?: () => void;
+  onOpenHistory?: () => void;
+  onOpenSettings?: () => void;
 }
 
 export default function MobileHeader({ 
@@ -20,7 +22,9 @@ export default function MobileHeader({
   plan,
   credits,
   onBack,
-  onOpenCreditsModal
+  onOpenCreditsModal,
+  onOpenHistory,
+  onOpenSettings,
 }: MobileHeaderProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(projectName);
@@ -143,7 +147,8 @@ export default function MobileHeader({
                 <button 
                   onClick={() => {
                     setShowQuickMenu(false);
-                    window.location.href = "/tool";
+                    if (onOpenHistory) onOpenHistory();
+                    else window.location.href = "/tool";
                   }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-white/70 hover:bg-white/5"
                 >
@@ -153,7 +158,8 @@ export default function MobileHeader({
                 <button 
                   onClick={() => {
                     setShowQuickMenu(false);
-                    window.location.href = "/settings";
+                    if (onOpenSettings) onOpenSettings();
+                    else window.location.href = "/settings";
                   }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-white/70 hover:bg-white/5"
                 >
