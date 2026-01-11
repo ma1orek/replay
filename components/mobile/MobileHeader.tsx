@@ -98,14 +98,8 @@ export default function MobileHeader({
       {/* Right - Plan badge (clickable for PRO menu) */}
       <div className="flex items-center relative">
         <button 
-          onClick={() => {
-            if (onOpenCreditsModal) {
-              onOpenCreditsModal();
-            } else {
-              setShowQuickMenu(!showQuickMenu);
-            }
-          }}
-          className="focus:outline-none"
+          onClick={() => setShowQuickMenu(!showQuickMenu)}
+          className="focus:outline-none active:scale-95 transition-transform"
         >
           {isPro ? (
             <span className="px-2.5 py-1 rounded text-[10px] font-bold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase tracking-wide">

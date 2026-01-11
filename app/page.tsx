@@ -6356,6 +6356,20 @@ export const shadows = {
   const handleMobileGenerate = useCallback(async (videoBlob: Blob, styleDirective: string): Promise<{ code: string; previewUrl: string; title?: string } | null> => {
     console.log("[MOBILE] Starting generation...", { blobSize: videoBlob.size, blobType: videoBlob.type, styleDirective });
     
+    // Request Wake Lock to prevent screen from turning off
+    let wakeLock: WakeLockSentinel | null = null;
+    if ('wakeLock' in navigator) {
+      try {
+        wakeLock = await (navigator as any).wakeLock.request('screen');
+        console.log("[MOBILE] Wake Lock acquired - screen will stay on");
+      } catch (err) {
+        console.log("[MOBILE] Wake Lock not available:", err);
+        showToast("Keep your screen on during generation", "info");
+      }
+    } else {
+      showToast("Keep your screen on during generation", "info");
+    }
+    
     try {
       // 1. Spend credits (same as desktop)
       console.log("[MOBILE] Step 1: Spending credits...");
@@ -6459,6 +6473,16 @@ export const shadows = {
       console.error("[MOBILE] Error:", err);
       showToast(`Error: ${err instanceof Error ? err.message : "Unknown error"}`, "error");
       return null;
+    } finally {
+      // Release Wake Lock
+      if (wakeLock) {
+        try {
+          await wakeLock.release();
+          console.log("[MOBILE] Wake Lock released");
+        } catch (e) {
+          console.log("[MOBILE] Wake Lock release failed:", e);
+        }
+      }
     }
   }, [refreshCredits, showToast]);
 
