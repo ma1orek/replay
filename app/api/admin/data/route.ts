@@ -33,15 +33,36 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Server configuration error - missing SUPABASE_SERVICE_ROLE_KEY" }, { status: 503 });
     }
 
-    // Fetch auth users for email/created_at info
-    const { data: authUsersData, error: authError } = await supabase.auth.admin.listUsers();
+    // Fetch ALL auth users with pagination (listUsers returns max 50 per page)
+    let allAuthUsers: any[] = [];
+    let page = 1;
+    const perPage = 1000; // Max allowed
     
-    if (authError) {
-      console.error("Error fetching auth users:", authError);
+    while (true) {
+      const { data: authUsersData, error: authError } = await supabase.auth.admin.listUsers({
+        page,
+        perPage
+      });
+      
+      if (authError) {
+        console.error("Error fetching auth users page", page, ":", authError);
+        break;
+      }
+      
+      const users = authUsersData?.users || [];
+      allAuthUsers = [...allAuthUsers, ...users];
+      
+      console.log(`[Admin] Fetched page ${page}: ${users.length} users (total: ${allAuthUsers.length})`);
+      
+      // If we got less than perPage, we've reached the end
+      if (users.length < perPage) {
+        break;
+      }
+      page++;
     }
 
-    const authUsers = authUsersData?.users || [];
-    console.log("Found auth users:", authUsers.length);
+    const authUsers = allAuthUsers;
+    console.log("[Admin] Total auth users found:", authUsers.length);
 
     // Fetch memberships (plan info)
     const { data: memberships, error: membershipError } = await supabase

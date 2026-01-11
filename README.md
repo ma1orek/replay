@@ -116,7 +116,7 @@ Deploy your UI to the web instantly. Share the link with anyone.
 
 **Credit Costs:**
 - 🎬 Video generation: **75 credits**
-- ✨ AI edit/refine: **3 credits**
+- ✨ AI edit/refine: **25 credits**
 
 **Top-ups available:**
 - $20 → 2,000 credits

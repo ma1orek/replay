@@ -62,7 +62,8 @@ import {
   Database,
   MessageSquare,
   ArrowRight,
-  MousePointer2
+  MousePointer2,
+  Info
 } from "lucide-react";
 import { cn, generateId, formatDuration, updateProjectAnalytics } from "@/lib/utils";
 import { transmuteVideoToCode } from "@/actions/transmute";
@@ -72,7 +73,140 @@ import { getDatabaseContext, formatDatabaseContextForPrompt } from "@/lib/supaba
 // Global abort controller for canceling AI requests
 let currentAbortController: AbortController | null = null;
 
-// Client-side wrapper for editCodeWithAI that uses API route with extended timeout
+// Streaming edit callback type
+type StreamCallback = (event: {
+  type: 'status' | 'chunk' | 'progress' | 'complete' | 'error';
+  message?: string;
+  phase?: string;
+  text?: string;
+  fullText?: string;
+  code?: string;
+  summary?: string;
+  error?: string;
+  isChat?: boolean;
+  lines?: number;
+  preview?: string;
+}) => void;
+
+// Client-side wrapper for editCodeWithAI that uses streaming API
+async function editCodeWithAIStreaming(
+  currentCode: string,
+  editRequest: string,
+  images?: { base64?: string; url?: string; mimeType: string; name: string }[],
+  databaseContext?: string,
+  isPlanMode?: boolean,
+  chatHistory?: { role: string; content: string }[],
+  onStream?: StreamCallback
+): Promise<{ success: boolean; code?: string; error?: string; cancelled?: boolean; summary?: string }> {
+  // Cancel any existing request
+  if (currentAbortController) {
+    currentAbortController.abort();
+  }
+  
+  currentAbortController = new AbortController();
+  
+  try {
+    const response = await fetch('/api/edit-code/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        currentCode,
+        editRequest,
+        images,
+        databaseContext,
+        isPlanMode,
+        chatHistory,
+      }),
+      signal: currentAbortController.signal,
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[editCodeWithAI] API error:', response.status, errorText);
+      return { success: false, error: `API error: ${response.status}` };
+    }
+    
+    const reader = response.body?.getReader();
+    if (!reader) {
+      return { success: false, error: 'No response stream' };
+    }
+    
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let finalResult: { success: boolean; code?: string; error?: string; summary?: string } = { success: false };
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      buffer += decoder.decode(value, { stream: true });
+      
+      // Parse SSE events
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || ''; // Keep incomplete line in buffer
+      
+      for (const line of lines) {
+        if (line.startsWith('event: ')) {
+          const eventType = line.slice(7);
+          continue;
+        }
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            
+            if (data.error) {
+              onStream?.({ type: 'error', error: data.error });
+              finalResult = { success: false, error: data.error };
+            } else if (data.message && data.phase) {
+              onStream?.({ type: 'status', message: data.message, phase: data.phase });
+            } else if (data.text !== undefined && data.fullText !== undefined) {
+              // Real-time code chunk
+              onStream?.({ type: 'chunk', text: data.text, fullText: data.fullText });
+            } else if (data.lines !== undefined) {
+              // Progress update with lines count and optional preview
+              onStream?.({ 
+                type: 'progress', 
+                message: `${data.lines} lines...`,
+                lines: data.lines,
+                preview: data.preview
+              });
+            } else if (data.code !== undefined) {
+              onStream?.({ 
+                type: 'complete', 
+                code: data.code, 
+                summary: data.summary,
+                isChat: data.isChat 
+              });
+              // Include needsClarification and isChat in result
+              finalResult = { 
+                success: true, 
+                code: data.code, 
+                summary: data.summary,
+                needsClarification: data.needsClarification,
+                isChat: data.isChat
+              } as any;
+            }
+          } catch (e) {
+            // Ignore JSON parse errors for incomplete data
+          }
+        }
+      }
+    }
+    
+    return finalResult;
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.log('[editCodeWithAI] Request cancelled by user');
+      return { success: false, cancelled: true, error: 'Request cancelled' };
+    }
+    console.error('[editCodeWithAI] Fetch error:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Network error' };
+  } finally {
+    currentAbortController = null;
+  }
+}
+
+// Non-streaming fallback for compatibility
 async function editCodeWithAI(
   currentCode: string,
   editRequest: string,
@@ -540,6 +674,23 @@ const STREAMING_MESSAGES = [
   "Just a few more seconds...",
 ];
 
+// Tips & Tricks shown during generation - technical, monospace style (NO "TIP:" prefix!)
+const GENERATION_TIPS = [
+  "Click, don't just watch. Interacting helps the engine differentiate functional elements from static containers.",
+  "Cursor movement matters. Slow down over interactive elements to help us capture hover states accurately.",
+  "Context is King. Providing specific context clues (e.g., 'Admin Dashboard') improves component density and typography.",
+  "Don't be afraid to scroll. Replay can reconstruct long pages—just scroll slowly to ensure every section is captured.",
+  "Use 'Edit with AI' after generation to refine specific parts — like 'make the button bigger' or 'add hover effect'.",
+  "Record interactions, not just static views. Clicking, hovering, and scrolling help AI understand your UI better.",
+  "Style injection is powerful. Specify 'Apple-style' or 'Linear dark mode' for consistent design language.",
+  "Shorter videos often work better. Focus on one flow or feature at a time for more accurate results.",
+  "Select a style preset before generating to match your design system — or use Auto-Detect to match the video.",
+  "After generation, check the Flow Map tab to see how Replay understood your UI's navigation structure.",
+  "Use 'Componentized' mode in the Code tab to get organized, production-ready component files.",
+  "Replay extracts colors, fonts, and spacing into a reusable design system — check the Design tab.",
+  "Show hover states in your video — Replay will recreate them with smooth CSS transitions.",
+];
+
 const LogoIcon = ({ className, color = "currentColor" }: { className?: string; color?: string }) => (
   <svg className={className} viewBox="0 0 82 109" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M68.099 37.2285C78.1678 43.042 78.168 57.5753 68.099 63.3887L29.5092 85.668C15.6602 93.6633 0.510418 77.4704 9.40857 64.1836L17.4017 52.248C18.1877 51.0745 18.1876 49.5427 17.4017 48.3691L9.40857 36.4336C0.509989 23.1467 15.6602 6.95306 29.5092 14.9482L68.099 37.2285Z" stroke={color} strokeWidth="11.6182" strokeLinejoin="round"/>
@@ -589,7 +740,7 @@ const analyzeCodeChanges = (oldCode: string, newCode: string, userRequest: strin
   }
   
   if (isResponsive || addedMedia) {
-    insights.push("Made it responsive. 📱 Added breakpoints using Tailwind's `sm:`, `md:`, `lg:` utilities so it stacks properly on mobile.");
+    insights.push("Made it responsive. Added breakpoints using Tailwind's `sm:`, `md:`, `lg:` utilities so it stacks properly on mobile.");
   }
   
   if (isLayout && addedTailwind) {
@@ -597,7 +748,7 @@ const analyzeCodeChanges = (oldCode: string, newCode: string, userRequest: strin
   }
   
   if (isColors || addedGradient) {
-    insights.push("Updated the color scheme. 🎨 Adjusted the palette to match the reference - using CSS variables for consistency.");
+    insights.push("Updated the color scheme. Adjusted the palette to match the reference - using CSS variables for consistency.");
   }
   
   if (isButtons) {
@@ -617,7 +768,7 @@ const analyzeCodeChanges = (oldCode: string, newCode: string, userRequest: strin
   }
   
   if (isFix) {
-    insights.push("Good catch - fixed that. 🔧 The issue was in the CSS specificity. Should work correctly now.");
+    insights.push("Good catch - fixed that. The issue was in the CSS specificity. Should work correctly now.");
   }
   
   if (isAdd && insights.length === 0) {
@@ -629,8 +780,8 @@ const analyzeCodeChanges = (oldCode: string, newCode: string, userRequest: strin
     insights.push("Applied your changes. Kept the existing structure but tweaked the parts you mentioned.");
   }
   
-  // Always add "Preview updated" with a human touch
-  insights.push("Preview updated - take a look! 👀");
+  // Always add "Preview updated"
+  insights.push("Preview updated - take a look!");
   
   // Build the response
   let response = `**Done!** \n\n`;
@@ -660,7 +811,103 @@ function ReplayToolContent() {
   ]), []);
   
   const [flows, setFlows] = useState<FlowItem[]>([]);
-  const [styleDirective, setStyleDirective] = useState(""); // Empty = Auto-Detect from video
+  const hasRestoredFlowsRef = useRef(false);
+  // Map of style IDs to their full names (for converting Settings preferences)
+  const STYLE_ID_TO_NAME: Record<string, string> = {
+    "auto-detect": "",
+    "custom": "",
+    "aura-glass": "High-End Dark Glass",
+    "void-spotlight": "Void Spotlight",
+    "dark-cosmos": "Dark Cosmos",
+    "linear": "Linear",
+    "liquid-chrome": "Liquid Chrome",
+    "molten-aurora": "Molten Aurora SaaS",
+    "midnight-aurora": "Midnight Aurora",
+    "glass-cascade": "Glass Blue Tech",
+    "glowframe-product": "Dark Product Glowframe",
+    "swiss-grid": "Swiss Grid",
+    "soft-organic": "Soft Organic",
+    "silent-luxury": "Silent Luxury",
+    "ethereal-mesh": "Ethereal Mesh",
+    "glassmorphism": "Glassmorphism",
+    "neubrutalism": "Neo-Brutalism",
+    "kinetic-brutalism": "Kinetic Brutalism",
+    "spatial-glass": "Spatial Glass",
+    "particle-brain": "Particle Brain",
+    "old-money": "Old Money Heritage",
+    "tactical-hud": "Tactical HUD",
+    "urban-grunge": "Urban Grunge",
+    "ink-zen": "Ink & Zen",
+    "infinite-tunnel": "Infinite Tunnel",
+    "frosted-acrylic": "Frosted Acrylic",
+    "datamosh": "Datamosh Glitch",
+    "origami-fold": "Origami Fold",
+    "gravity-physics": "Gravity Physics",
+    "neo-retro-os": "Neo-Retro OS",
+    "soft-clay-pop": "Soft Clay Pop",
+    "deconstructed-editorial": "Deconstructed Editorial",
+    "cinematic-product": "Cinematic Product",
+    "digital-collage": "Digital Collage",
+    "halftone-beam": "Halftone Solar Beam",
+    "mono-wave": "Monochrome Wave",
+    "fractured-grid": "Fractured Grid",
+    "matrix-rain": "Matrix Rain",
+    "xray-blueprint": "X-Ray Blueprint",
+    "opposing-scroll": "Opposing Scroll",
+    "stacked-cards": "Stacked Card Deck",
+    "horizontal-inertia": "Horizontal Inertia",
+    "split-curtain": "Split Curtain Reveal",
+    "phantom-border": "Phantom Border UI",
+    "inverted-lens": "Inverted Lens Cursor",
+    "elastic-sidebar": "Elastic Sidebar",
+    "morphing-nav": "Morphing Fluid Nav",
+    "liquid-neon": "Liquid Neon",
+    "chromatic-dispersion": "Chromatic Dispersion",
+    "viscous-hover": "Viscous Hover",
+    "globe-data": "Interactive Globe",
+    "liquid-text-mask": "Liquid Text Masking",
+    "noise-gradient": "Dynamic Noise Gradient",
+    "fluid-prismatic": "Fluid Prismatic",
+    "paper-shader-mesh": "Paper Shader Mesh",
+    "gradient-bar-waitlist": "Gradient Bar Waitlist",
+    "earthy-grid-reveal": "Earthy Grid Reveal",
+    "gyroscopic-levitation": "Gyroscopic Levitation",
+    "exploded-view": "Exploded View Scroll",
+    "skeuomorphic": "Skeuomorphic Controls",
+    "messy-physics": "Messy Colorful Physics",
+    "apple": "Apple Style",
+    "stripe": "Stripe Design",
+    "vercel": "Vercel",
+    "live-dashboard": "Live Dashboard",
+    "crt-noise": "CRT Signal Noise",
+    "airy-blue-aura": "Airy Blue Aura",
+    "blur-hero-minimal": "Blur Hero Minimal",
+    "myna-ai-mono": "Myna AI Mono",
+    "acme-clean-rounded": "Acme Clean Rounded",
+    "deadpan-documentation": "Deadpan Documentation",
+    "bureaucratic-void": "Bureaucratic Void",
+    "cctv-drift": "CCTV Drift",
+    "abrupt-termination": "Abrupt Termination",
+    "indifferent-kinetic": "Indifferent Kinetic",
+    "inefficient-loop": "Inefficient Loop",
+    "accidental-capture": "Accidental Capture",
+    "biomimetic-organic": "Biomimetic Organic",
+    "generative-ascii": "Generative ASCII",
+    "cinematic-portals": "Cinematic Portals",
+    "typographic-architecture": "Typographic Architecture",
+  };
+  
+  // Helper function to get default style name from localStorage
+  const getDefaultStyleName = () => {
+    if (typeof window === 'undefined') return "";
+    const defaultPreset = localStorage.getItem("replay_default_style_preset");
+    if (!defaultPreset || defaultPreset === "auto-detect") return "";
+    return STYLE_ID_TO_NAME[defaultPreset] || "";
+  };
+  
+  const [styleDirective, setStyleDirective] = useState(() => {
+    return getDefaultStyleName();
+  });
   const [styleReferenceImage, setStyleReferenceImage] = useState<{ url: string; name: string } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
@@ -672,7 +919,7 @@ function ReplayToolContent() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("preview");
   const [selectedFlowId, setSelectedFlowId] = useState<string | null>(null);
-  const [showUserMenu, setShowUserMenu] = useState(false);
+  // const [showUserMenu, setShowUserMenu] = useState(false); // Removed in favor of direct link
   // streamingMessage state removed - loading handled in LoadingState component
   const [generationSessionId, setGenerationSessionId] = useState<string | null>(null); // Track current generation to hide old content
   
@@ -709,6 +956,28 @@ function ReplayToolContent() {
   // Mobile state - input visible by default, chat after generation
   const [mobilePanel, setMobilePanel] = useState<"input" | "preview" | "code" | "flow" | "design" | "chat" | null>("input");
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  
+  // Close profile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+        setShowProfileMenu(false);
+      }
+    };
+    if (showProfileMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showProfileMenu]);
+  
+  const [showMobileBanner, setShowMobileBanner] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem("replay_mobile_banner_dismissed") !== "true";
+    }
+    return true;
+  });
   
   // Live analysis state for "Matrix" view
   interface AnalysisPhase {
@@ -770,6 +1039,9 @@ function ReplayToolContent() {
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [isSelectingElement, setIsSelectingElement] = useState(false);
   const [isPlanMode, setIsPlanMode] = useState(false); // Plan mode - discuss without executing
+  const [streamingStatus, setStreamingStatus] = useState<string | null>(null); // Streaming status message
+  const [streamingCode, setStreamingCode] = useState<string | null>(null); // Code being streamed
+  const [streamingLines, setStreamingLines] = useState<number>(0); // Number of lines being written
   
   // Publishing state
   const [isPublishing, setIsPublishing] = useState(false);
@@ -780,6 +1052,10 @@ function ReplayToolContent() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [deleteTargetTitle, setDeleteTargetTitle] = useState<string>("");
+  
+  // Direct text editing mode (like Framer)
+  const [isDirectEditMode, setIsDirectEditMode] = useState(false);
+  const [pendingTextEdits, setPendingTextEdits] = useState<{ originalText: string; newText: string; elementPath: string }[]>([]);
   
   // Dragging state for flow nodes
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
@@ -821,6 +1097,29 @@ function ReplayToolContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const analysisRef = useRef<HTMLDivElement>(null);
   const codeContainerRef = useRef<HTMLDivElement>(null);
+  const completionAudioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Pre-load completion audio and request notification permission
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Pre-load audio
+      const audio = new Audio("/finish.mp3");
+      audio.volume = 1.0;
+      audio.preload = "auto";
+      audio.load();
+      completionAudioRef.current = audio;
+      
+      // Request notification permission for background tab alerts
+      if ('Notification' in window && Notification.permission === 'default') {
+        // Request permission when user interacts (deferred)
+        const requestPermission = () => {
+          Notification.requestPermission();
+          document.removeEventListener('click', requestPermission);
+        };
+        document.addEventListener('click', requestPermission, { once: true });
+      }
+    }
+  }, []);
 
   const selectedFlow = flows.find(f => f.id === selectedFlowId);
 
@@ -839,10 +1138,10 @@ function ReplayToolContent() {
       video.onseeked = () => {
         try {
           const canvas = document.createElement("canvas");
-          const vw = video.videoWidth || 320;
-          const vh = video.videoHeight || 180;
-          canvas.width = 160;
-          canvas.height = Math.round((160 / vw) * vh) || 90;
+          const vw = video.videoWidth || 640;
+          const vh = video.videoHeight || 360;
+          canvas.width = 320; // Higher quality thumbnail
+          canvas.height = Math.round((320 / vw) * vh) || 180;
           const ctx = canvas.getContext("2d");
           if (ctx && vw > 0 && vh > 0) {
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -922,6 +1221,42 @@ function ReplayToolContent() {
     generationStartTimeRef.current = null;
     
     console.log("Completing generation - showing result immediately");
+    
+    // Play notification sound and show browser notification if tab is hidden
+    try {
+      const soundEnabled = localStorage.getItem("replay_sound_on_complete");
+      const isTabHidden = typeof document !== 'undefined' && document.hidden;
+      
+      // Show browser notification if tab is hidden (works in background!)
+      if (isTabHidden && 'Notification' in window && Notification.permission === 'granted') {
+        const notification = new Notification('Replay - Generation Complete! 🎉', {
+          body: 'Your interface is ready. Click to view.',
+          icon: '/favicon.ico',
+          tag: 'replay-generation-complete',
+          requireInteraction: true // Keep notification visible until clicked
+        });
+        notification.onclick = () => {
+          window.focus();
+          notification.close();
+        };
+      }
+      
+      // Play sound (may not work in background tab, but notification will)
+      if (soundEnabled !== "false") {
+        if (completionAudioRef.current) {
+          completionAudioRef.current.currentTime = 0;
+          completionAudioRef.current.play().catch((err) => {
+            console.log("Audio play failed (likely background tab):", err);
+          });
+        } else {
+          const audio = new Audio("/finish.mp3");
+          audio.volume = 1.0;
+          audio.play().catch(() => {});
+        }
+      }
+    } catch (e) { 
+      console.log("Notification/Audio error:", e);
+    }
     
     // Track successful generation (FB Pixel + CAPI)
     trackViewContent("Generation Complete", user?.id);
@@ -1164,6 +1499,9 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
             const blob = new Blob([gen.code], { type: "text/html" });
             setPreviewUrl(URL.createObjectURL(blob));
             
+            // On mobile, show preview tab immediately
+            setMobilePanel("preview");
+            
             // Show toast - better formatted
             showToast("Demo loaded!\nSign up free to generate your own projects.", "info");
             
@@ -1240,7 +1578,28 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
     return () => clearInterval(interval);
   }, [generatedCode, isStreamingCode, completeGeneration]);
   
+  // SAFEGUARD: Ensure code is visible when generation is complete
+  // This fixes cases where streaming failed or sidebar wasn't set
+  useEffect(() => {
+    if (generatedCode && !isStreamingCode && !isProcessing) {
+      // Ensure displayedCode is set
+      if (!displayedCode && generatedCode) {
+        console.log("[Safeguard] displayedCode was empty but generatedCode exists - fixing");
+        setDisplayedCode(generatedCode);
+        setEditableCode(generatedCode);
+      }
+      // Ensure sidebar is in chat mode when we have code
+      if (sidebarMode !== "chat" && generatedCode) {
+        console.log("[Safeguard] sidebarMode was not chat but code exists - fixing");
+        setSidebarMode("chat");
+        setGenerationComplete(true);
+      }
+    }
+  }, [generatedCode, displayedCode, isStreamingCode, isProcessing, sidebarMode]);
+  
   // Show feedback modal after generation (separate effect)
+  // Feedback modal effect removed
+  /*
   useEffect(() => {
     if (generationComplete && !hasShownFeedback) {
       const timer = setTimeout(() => {
@@ -1251,6 +1610,7 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
       return () => clearTimeout(timer);
     }
   }, [generationComplete, hasShownFeedback]);
+  */
 
   useEffect(() => {
     return () => {
@@ -1789,12 +2149,22 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'element-selected') {
-        const { tagName, id, className, textContent } = event.data;
+        const { tagName, id, className, textContent, isSvg, svgType } = event.data;
         // Build a descriptive element reference (not CSS selector format)
         let elementDesc = '';
         const tag = tagName?.toLowerCase() || 'element';
         
-        if (textContent && textContent.length > 0 && textContent.length < 40) {
+        // Handle SVG elements specially
+        if (isSvg) {
+          if (tag === 'svg') {
+            elementDesc = id ? `the SVG icon with id "${id}"` : (className ? `the SVG icon with class "${className.split(' ')[0]}"` : 'the SVG icon/graphic');
+          } else if (svgType) {
+            // It's an element inside an SVG (path, circle, rect, etc.)
+            elementDesc = `the ${svgType} inside the SVG icon`;
+          } else {
+            elementDesc = 'the SVG element';
+          }
+        } else if (textContent && textContent.length > 0 && textContent.length < 40) {
           // Use text content as primary identifier - most intuitive
           elementDesc = `the "${textContent.substring(0, 35).trim()}" ${tag}`;
         } else if (id) {
@@ -1861,12 +2231,27 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
               e.stopPropagation();
               const el = document.elementFromPoint(e.clientX, e.clientY);
               if (el && el !== overlay) {
+                // Get className safely - SVG elements have SVGAnimatedString which can't be cloned
+                let classValue = '';
+                if (el.className) {
+                  if (typeof el.className === 'string') {
+                    classValue = el.className;
+                  } else if (el.className.baseVal !== undefined) {
+                    // SVG element - use baseVal
+                    classValue = el.className.baseVal;
+                  } else {
+                    classValue = el.getAttribute('class') || '';
+                  }
+                }
                 window.parent.postMessage({
                   type: 'element-selected',
                   tagName: el.tagName,
-                  id: el.id,
-                  className: el.className,
-                  textContent: el.textContent?.trim().substring(0, 50)
+                  id: el.id || '',
+                  className: classValue,
+                  textContent: el.textContent?.trim().substring(0, 50) || '',
+                  // Add SVG-specific info
+                  isSvg: el.tagName === 'svg' || el.closest('svg') !== null,
+                  svgType: el.closest('svg') ? el.tagName.toLowerCase() : null
                 }, '*');
               }
             }, true);
@@ -1905,6 +2290,326 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
       }
     } catch (e) { /* ignore */ }
   }, [isPointAndEdit]);
+
+  // Direct text editing mode - inject contenteditable script
+  useEffect(() => {
+    if (!isDirectEditMode || !previewIframeRef.current) return;
+    
+    const iframe = previewIframeRef.current;
+    const injectDirectEditScript = () => {
+      try {
+        const doc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (!doc) return;
+        
+        if (doc.getElementById('direct-edit-script')) return;
+        
+        const script = doc.createElement('script');
+        script.id = 'direct-edit-script';
+        script.textContent = `
+          (function() {
+            let activeElement = null;
+            let originalText = '';
+            
+            // Editable tags list
+            const editableTags = ['H1','H2','H3','H4','H5','H6','P','SPAN','A','BUTTON','LI','LABEL','TD','TH','STRONG','EM','B','I','SMALL','FOOTER','DIV','SECTION','ARTICLE','ASIDE','NAV','HEADER','TIME','ADDRESS','FIGCAPTION','BLOCKQUOTE','CITE','CODE','PRE','MARK','DEL','INS','SUB','SUP'];
+            
+            // Start editing function
+            function startEdit(el) {
+              if (activeElement) {
+                finishEdit();
+              }
+              if (el.children.length > 3 && el.tagName !== 'A' && el.tagName !== 'BUTTON') return;
+              if (!editableTags.includes(el.tagName)) return;
+              
+              activeElement = el;
+              originalText = el.textContent;
+              el.contentEditable = 'true';
+              el.style.outline = '2px solid #FF6E3C';
+              el.style.outlineOffset = '2px';
+              el.focus();
+              
+              // Select all text
+              setTimeout(function() {
+                const range = document.createRange();
+                range.selectNodeContents(el);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+              }, 10);
+            }
+            
+            function finishEdit(cancelled) {
+              if (!activeElement) return;
+              
+              const newText = activeElement.textContent.trim();
+              activeElement.contentEditable = 'false';
+              activeElement.style.outline = '';
+              activeElement.style.outlineOffset = '';
+              
+              if (!cancelled && newText !== originalText.trim()) {
+                const path = getElementPath(activeElement);
+                window.parent.postMessage({
+                  type: 'text-edited',
+                  originalText: originalText.trim(),
+                  newText: newText,
+                  elementPath: path,
+                  tagName: activeElement.tagName
+                }, '*');
+              }
+              
+              activeElement = null;
+              originalText = '';
+            }
+            
+            function getElementPath(el) {
+              const parts = [];
+              while (el && el.tagName !== 'HTML') {
+                let selector = el.tagName.toLowerCase();
+                if (el.id) selector += '#' + el.id;
+                else if (el.className && typeof el.className === 'string') {
+                  selector += '.' + el.className.split(' ').filter(function(c) { return c; }).join('.');
+                }
+                parts.unshift(selector);
+                el = el.parentElement;
+              }
+              return parts.join(' > ');
+            }
+            
+            // Block form submissions
+            document.addEventListener('submit', function(e) {
+              e.preventDefault();
+              e.stopPropagation();
+            }, true);
+            
+            // Single click handler - for buttons/links, start edit; for others, finish edit if clicking outside
+            document.addEventListener('click', function(e) {
+              const el = e.target;
+              
+              // Always prevent navigation on links
+              const closestLink = el.closest('a');
+              if (closestLink) {
+                e.preventDefault();
+              }
+              
+              // If clicking on a button or link (or inside one), start editing it
+              const closestButton = el.closest('button');
+              if (closestButton || closestLink) {
+                e.preventDefault();
+                e.stopPropagation();
+                const target = closestButton || closestLink;
+                if (target !== activeElement) {
+                  startEdit(target);
+                }
+                return;
+              }
+              
+              // If currently editing and clicked outside, finish edit
+              if (activeElement && el !== activeElement && !activeElement.contains(el)) {
+                finishEdit();
+              }
+            }, true);
+            
+            // Double-click on other text elements
+            document.addEventListener('dblclick', function(e) {
+              const el = e.target;
+              
+              // Skip if inside button/link (handled by single click)
+              if (el.closest('button') || el.closest('a')) return;
+              
+              if (!editableTags.includes(el.tagName)) return;
+              
+              e.preventDefault();
+              e.stopPropagation();
+              startEdit(el);
+            });
+            
+            // Handle Enter/Escape to finish editing
+            document.addEventListener('keydown', function(e) {
+              if (!activeElement) return;
+              
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                finishEdit();
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                activeElement.textContent = originalText;
+                finishEdit(true);
+              }
+            });
+            
+            // Visual indicator that editing mode is active
+            const indicator = document.createElement('div');
+            indicator.id = 'direct-edit-indicator';
+            indicator.style.cssText = 'position:fixed;top:8px;right:8px;padding:4px 10px;background:#FF6E3C;color:white;font-size:11px;font-family:system-ui;border-radius:4px;z-index:99999;pointer-events:none;';
+            indicator.textContent = '✎ Editing Mode (click buttons/links, double-click text)';
+            document.body.appendChild(indicator);
+          })();
+        `;
+        doc.body.appendChild(script);
+        
+        // Add hover highlight style and disable all interactivity
+        const style = doc.createElement('style');
+        style.id = 'direct-edit-style';
+        style.textContent = 'a, button, input, select, textarea, [onclick], [href] { pointer-events: auto !important; cursor: text !important; } a:hover, button:hover { outline: 2px dashed #FF6E3C !important; outline-offset: 2px; } h1,h2,h3,h4,h5,h6,p,span,li,label,td,th,strong,em,b,i,small,div,section,article,aside,nav,header,time,address,figcaption,blockquote,cite,code,pre,mark,del,ins,sub,sup { transition: outline 0.1s; } h1:hover,h2:hover,h3:hover,h4:hover,h5:hover,h6:hover,p:hover,span:hover,li:hover,label:hover,td:hover,th:hover,strong:hover,em:hover,b:hover,i:hover,small:hover,div:hover,section:hover,article:hover,aside:hover,nav:hover,header:hover,time:hover,address:hover,figcaption:hover,blockquote:hover,cite:hover,code:hover,pre:hover,mark:hover,del:hover,ins:hover,sub:hover,sup:hover { outline: 1px dashed rgba(255,110,60,0.5); outline-offset: 2px; cursor: text; }';
+        doc.head.appendChild(style);
+      } catch (e) {
+        console.log('Cannot inject direct edit script:', e);
+      }
+    };
+    
+    if (iframe.contentDocument?.readyState === 'complete') {
+      injectDirectEditScript();
+    } else {
+      iframe.addEventListener('load', injectDirectEditScript);
+      return () => iframe.removeEventListener('load', injectDirectEditScript);
+    }
+  }, [isDirectEditMode, previewUrl]);
+
+  // Clean up direct edit script when disabled
+  useEffect(() => {
+    if (isDirectEditMode || !previewIframeRef.current) return;
+    try {
+      const doc = previewIframeRef.current.contentDocument;
+      if (doc) {
+        doc.getElementById('direct-edit-script')?.remove();
+        doc.getElementById('direct-edit-style')?.remove();
+        doc.getElementById('direct-edit-indicator')?.remove();
+      }
+    } catch (e) { /* ignore */ }
+  }, [isDirectEditMode]);
+
+  // Reset editing modes when changing tabs
+  useEffect(() => {
+    if (viewMode !== "preview") {
+      setIsDirectEditMode(false);
+      setIsPointAndEdit(false);
+      // If there were pending edits and user switched tabs, discard them
+      if (pendingTextEdits.length > 0) {
+        setPendingTextEdits([]);
+        // Refresh preview to original code
+        if (editableCode) {
+          setPreviewUrl(URL.createObjectURL(new Blob([editableCode], { type: "text/html" })));
+        }
+      }
+    }
+  }, [viewMode]);
+
+  // Listen for text edit messages from iframe
+  useEffect(() => {
+    const handleTextEdit = (event: MessageEvent) => {
+      if (event.data?.type === 'text-edited') {
+        const { originalText, newText, elementPath, tagName } = event.data;
+        setPendingTextEdits(prev => {
+          // Check if this edit already exists (update it)
+          const existing = prev.findIndex(e => e.originalText === originalText);
+          if (existing >= 0) {
+            const updated = [...prev];
+            updated[existing] = { originalText, newText, elementPath };
+            return updated;
+          }
+          return [...prev, { originalText, newText, elementPath }];
+        });
+      }
+    };
+    window.addEventListener('message', handleTextEdit);
+    return () => window.removeEventListener('message', handleTextEdit);
+  }, []);
+
+  // Apply pending text edits to the code
+  const applyPendingTextEdits = useCallback(() => {
+    if (pendingTextEdits.length === 0 || !editableCode) return;
+    
+    let newCode = editableCode;
+    let appliedCount = 0;
+    
+    for (const edit of pendingTextEdits) {
+      // Simple text replacement - find the original text and replace with new
+      // We need to be careful to only replace text content, not attribute values
+      const escapedOriginal = edit.originalText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      
+      let matched = false;
+      
+      // Strategy 1: Match text between tags (strict)
+      const regex1 = new RegExp(`(>\\s*)${escapedOriginal}(\\s*<)`, 'g');
+      let newCodeAfter = newCode.replace(regex1, `$1${edit.newText}$2`);
+      if (newCodeAfter !== newCode) {
+        newCode = newCodeAfter;
+        matched = true;
+      }
+      
+      // Strategy 2: Match text with possible whitespace/newlines around it
+      if (!matched) {
+        const regex2 = new RegExp(`(>[^<]*?)${escapedOriginal}([^<]*?<)`, 'g');
+        newCodeAfter = newCode.replace(regex2, `$1${edit.newText}$2`);
+        if (newCodeAfter !== newCode) {
+          newCode = newCodeAfter;
+          matched = true;
+        }
+      }
+      
+      // Strategy 3: Simple replace but avoid attribute values (check not inside quotes)
+      if (!matched) {
+        // Find all occurrences and only replace those not inside attribute values
+        const parts = newCode.split(edit.originalText);
+        if (parts.length > 1) {
+          let result = parts[0];
+          for (let i = 1; i < parts.length; i++) {
+            // Check if we're inside an attribute (count quotes before this position)
+            const before = result;
+            const doubleQuotes = (before.match(/"/g) || []).length;
+            const singleQuotes = (before.match(/'/g) || []).length;
+            // If odd number of quotes, we're inside an attribute - don't replace
+            if (doubleQuotes % 2 === 0 && singleQuotes % 2 === 0) {
+              result += edit.newText + parts[i];
+              matched = true;
+            } else {
+              result += edit.originalText + parts[i];
+            }
+          }
+          if (matched) {
+            newCode = result;
+          }
+        }
+      }
+      
+      if (matched) {
+        appliedCount++;
+      }
+    }
+    
+    if (appliedCount > 0) {
+      setEditableCode(newCode);
+      setDisplayedCode(newCode);
+      setGeneratedCode(newCode);
+      setPreviewUrl(URL.createObjectURL(new Blob([newCode], { type: "text/html" })));
+      
+      // Save version
+      if (activeGeneration) {
+        const versionLabel = `Text edits (${appliedCount} changes)`;
+        const updatedGen = { 
+          ...activeGeneration, 
+          code: newCode, 
+          versions: [...(activeGeneration.versions || []), { 
+            id: generateId(), 
+            timestamp: Date.now(), 
+            label: versionLabel, 
+            code: newCode, 
+            flowNodes, 
+            flowEdges, 
+            styleInfo 
+          }] 
+        };
+        setActiveGeneration(updatedGen);
+        setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
+        saveGenerationToSupabase(updatedGen);
+      }
+      
+      showToast(`Applied ${appliedCount} text edit${appliedCount > 1 ? 's' : ''}`, "success");
+    }
+    
+    setPendingTextEdits([]);
+    setIsDirectEditMode(false);
+  }, [pendingTextEdits, editableCode, activeGeneration, flowNodes, flowEdges, styleInfo]);
 
   // Build architecture from code - better positioning with no overlaps
   const buildArchitectureLive = async (code: string) => {
@@ -3535,10 +4240,10 @@ export const shadows = {
       const generateThumbnail = (videoEl: HTMLVideoElement): string | undefined => {
         try {
           const canvas = document.createElement("canvas");
-          const vw = videoEl.videoWidth || 320;
-          const vh = videoEl.videoHeight || 180;
-          canvas.width = 160;
-          canvas.height = Math.round((160 / vw) * vh) || 90;
+          const vw = videoEl.videoWidth || 640;
+          const vh = videoEl.videoHeight || 360;
+          canvas.width = 320; // Higher quality thumbnail
+          canvas.height = Math.round((320 / vw) * vh) || 180;
           const ctx = canvas.getContext("2d");
           if (ctx && vw > 0 && vh > 0) {
             ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
@@ -3758,6 +4463,42 @@ export const shadows = {
       }
     }
     e.target.value = "";
+  }, [showToast]);
+
+  // Drag and drop handlers for video upload
+  const [isDragging, setIsDragging] = useState(false);
+  
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+  
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+  
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      for (const file of Array.from(files)) {
+        const isVideo = file.type.startsWith("video/") || 
+                        file.name.toLowerCase().match(/\.(mp4|mov|webm|avi|mkv|m4v)$/);
+        if (isVideo) {
+          const sizeMB = file.size / 1024 / 1024;
+          console.log(`Dropped video: ${file.name}, size: ${sizeMB.toFixed(1)}MB, type: ${file.type}`);
+          await addVideoToFlows(file, file.name.replace(/\.[^/.]+$/, ""));
+        } else {
+          showToast("Please drop a video file", "error");
+        }
+      }
+    }
   }, [showToast]);
 
   const removeFlow = (flowId: string) => {
@@ -4105,10 +4846,10 @@ export const shadows = {
     
     // FREE PLAN RESTRICTIONS
     if (!isPaidPlan) {
-      // Check video duration - max 30s for FREE
+      // Check video duration - max 5min for FREE (same as PRO)
       const flow = flows.find(f => f.id === selectedFlowId) || flows[0];
-      if (flow && flow.duration && flow.duration > 30) {
-        showToast("Video too long for Free Plan. Free plan supports videos up to 30 seconds. Upgrade to PRO for videos up to 5 minutes.", "error");
+      if (flow && flow.duration && flow.duration > 300) {
+        showToast("Video too long. Maximum 5 minutes allowed.", "error");
         return;
       }
       
@@ -5294,6 +6035,11 @@ export const shadows = {
   };
 
   const handleRefresh = () => {
+    // Disable editing modes on refresh
+    setIsDirectEditMode(false);
+    setIsPointAndEdit(false);
+    setSelectedElement(null);
+    
     // Refresh the preview by re-creating the blob URL
     if (editableCode) {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -5456,7 +6202,26 @@ export const shadows = {
 
   // Stable loading message - doesn't depend on streamingMessage to prevent flickering
   const [loadingMessage, setLoadingMessage] = useState("Reconstructing from video...");
+  const [isMessageTransitioning, setIsMessageTransitioning] = useState(false);
+  const [currentTipIndex, setCurrentTipIndex] = useState(0);
+  const [isTipTransitioning, setIsTipTransitioning] = useState(false);
   
+  // Rotate tips every 5 seconds - moved to parent to persist across renders
+  useEffect(() => {
+    if (!isProcessing && !isStreamingCode) return;
+    
+    const tipInterval = setInterval(() => {
+      setIsTipTransitioning(true);
+      setTimeout(() => {
+        setCurrentTipIndex(prev => (prev + 1) % GENERATION_TIPS.length);
+        setIsTipTransitioning(false);
+      }, 300);
+    }, 5000);
+    
+    return () => clearInterval(tipInterval);
+  }, [isProcessing, isStreamingCode]);
+  
+  // Rotate loading messages with smooth transition
   useEffect(() => {
     if (!isProcessing && !isStreamingCode) return;
     
@@ -5467,36 +6232,102 @@ export const shadows = {
     setLoadingMessage(msgs[0] || "Reconstructing from video...");
     
     const interval = setInterval(() => {
-      index = (index + 1) % msgs.length;
-      setLoadingMessage(msgs[index] || "Reconstructing from video...");
-    }, 2500);
+      // Start fade out
+      setIsMessageTransitioning(true);
+      setTimeout(() => {
+        // Change message while faded out
+        index = (index + 1) % msgs.length;
+        setLoadingMessage(msgs[index] || "Reconstructing from video...");
+        // Fade back in
+        setIsMessageTransitioning(false);
+      }, 300); // Wait for fade out animation to complete
+    }, 3000);
     
     return () => clearInterval(interval);
   }, [isProcessing, isStreamingCode, viewMode]); // Only depend on stable values
   
   const LoadingState = ({ customMessage }: { customMessage?: string }) => {
     const displayMessage = customMessage || loadingMessage || "Reconstructing from video...";
+    // Using parent state for tips to persist across renders
     
     return (
-      <div className="logo-loader">
-        <div className="logo-loader-container">
-          <svg className="logo-loader-svg" viewBox="0 0 82 109" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M68.099 37.2285C78.1678 43.042 78.168 57.5753 68.099 63.3887L29.5092 85.668C15.6602 93.6633 0.510418 77.4704 9.40857 64.1836L17.4017 52.248C18.1877 51.0745 18.1876 49.5427 17.4017 48.3691L9.40857 36.4336C0.509989 23.1467 15.6602 6.95306 29.5092 14.9482L68.099 37.2285Z" />
-            <rect x="34.054" y="98.6841" width="48.6555" height="11.6182" rx="5.80909" transform="rotate(-30 34.054 98.6841)" />
-          </svg>
-          <div className="logo-loader-gradient" />
-        </div>
-        <div className="streaming-text">
-          <motion.div 
-            key={displayMessage}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.4 }}
-            className="streaming-text-inner"
-          >
+      <div className="w-full h-full flex flex-col bg-[#050505] overflow-hidden">
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col items-center justify-center p-6">
+          
+          {/* Skeleton UI with Logo in Center */}
+          <div className="w-full max-w-2xl relative">
+            {/* Centered Logo with Gradient Sweep - Overlay on skeleton */}
+            <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+              <div className="relative">
+                {/* Animated Glow */}
+                <div className="absolute inset-0 blur-2xl bg-[#FF6E3C]/30 scale-[2]" style={{ animation: "glow-pulse 2s ease-in-out infinite" }} />
+                {/* Logo with gradient sweep */}
+                <div className="logo-loader-container relative">
+                  <svg className="logo-loader-svg" viewBox="0 0 82 109" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M68.099 37.2285C78.1678 43.042 78.168 57.5753 68.099 63.3887L29.5092 85.668C15.6602 93.6633 0.510418 77.4704 9.40857 64.1836L17.4017 52.248C18.1877 51.0745 18.1876 49.5427 17.4017 48.3691L9.40857 36.4336C0.509989 23.1467 15.6602 6.95306 29.5092 14.9482L68.099 37.2285Z" />
+                    <rect x="34.054" y="98.6841" width="48.6555" height="11.6182" rx="5.80909" transform="rotate(-30 34.054 98.6841)" />
+                  </svg>
+                  <div className="logo-loader-gradient" />
+                </div>
+              </div>
+            </div>
+            
+            {/* Skeleton Frame - More visible */}
+            <div className="rounded-xl border border-white/[0.08] overflow-hidden bg-black/40 opacity-50">
+              {/* Skeleton Header */}
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.06]">
+                <div className="w-6 h-6 rounded bg-white/5" style={{ animation: "skeleton-pulse 2s ease-in-out infinite" }} />
+                <div className="w-24 h-3 rounded bg-white/5" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.1s" }} />
+                <div className="flex-1" />
+                <div className="flex gap-2">
+                  <div className="w-16 h-6 rounded bg-white/5" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.2s" }} />
+                  <div className="w-16 h-6 rounded bg-white/5" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.3s" }} />
+                </div>
+              </div>
+              
+              {/* Skeleton Body */}
+              <div className="flex min-h-[220px]">
+                {/* Sidebar */}
+                <div className="w-40 border-r border-white/[0.06] p-3 space-y-2 hidden sm:block">
+                  <div className="w-full h-7 rounded bg-white/5" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.1s" }} />
+                  <div className="w-3/4 h-7 rounded bg-white/[0.03]" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.2s" }} />
+                  <div className="w-5/6 h-7 rounded bg-white/[0.03]" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.3s" }} />
+                  <div className="w-2/3 h-7 rounded bg-white/[0.03]" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.4s" }} />
+                </div>
+                
+                {/* Main Content */}
+                <div className="flex-1 p-4">
+                  <div className="w-2/3 h-5 rounded bg-white/5 mb-3" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.1s" }} />
+                  <div className="w-1/2 h-3 rounded bg-white/[0.03] mb-6" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.2s" }} />
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="rounded-lg border border-white/[0.04] p-3 bg-white/[0.02]">
+                        <div className="w-8 h-8 rounded bg-white/5 mb-2" style={{ animation: `skeleton-pulse 2s ease-in-out infinite ${0.1 * i}s` }} />
+                        <div className="w-full h-3 rounded bg-white/5 mb-1.5" style={{ animation: `skeleton-pulse 2s ease-in-out infinite ${0.1 * i + 0.1}s` }} />
+                        <div className="w-2/3 h-2 rounded bg-white/[0.03]" style={{ animation: `skeleton-pulse 2s ease-in-out infinite ${0.1 * i + 0.2}s` }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Status Message - Below skeleton, centered with slide-fade animation */}
+          <p className={`text-sm text-white/50 mt-6 text-center transition-all duration-300 ease-out ${isMessageTransitioning ? 'opacity-0 translate-y-2 blur-sm' : 'opacity-100 translate-y-0 blur-0'}`}>
             {displayMessage}
-          </motion.div>
+          </p>
+          
+          {/* Tip Banner - Below status, centered */}
+          <div className="w-full max-w-lg mt-4">
+            <p
+              className={`font-mono text-[10px] text-white/35 leading-relaxed text-center transition-all duration-300 ease-out ${isTipTransitioning ? 'opacity-0 -translate-y-1 blur-sm' : 'opacity-100 translate-y-0 blur-0'}`}
+            >
+              {GENERATION_TIPS[currentTipIndex]}
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -5525,7 +6356,7 @@ export const shadows = {
           <Logo />
         </a>
         <div className="flex items-center gap-4">
-          <div className="relative">
+          <div className="relative" ref={profileMenuRef}>
             {user ? (
               <>
                 {/* Display name logic: full_name → email prefix → 'User' */}
@@ -5534,7 +6365,10 @@ export const shadows = {
                   const displayName = meta?.full_name || meta?.name || user.email?.split('@')[0] || 'User';
                   const plan = membership?.plan || "free";
                   return (
-                    <button onClick={() => setShowUserMenu(!showUserMenu)} className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/5 transition-colors">
+                    <button 
+                      onClick={() => setShowProfileMenu(!showProfileMenu)}
+                      className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/5 transition-colors"
+                    >
                       <span className="text-sm font-medium text-white/80 max-w-[120px] truncate">{displayName}</span>
                       {isPaidPlan ? (
                         <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase">
@@ -5548,16 +6382,28 @@ export const shadows = {
                     </button>
                   );
                 })()}
+                
+                {/* Profile Dropdown - same as landing */}
                 <AnimatePresence>
-                  {showUserMenu && (
-                    <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }} className="absolute top-full right-0 mt-2 w-64 bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden shadow-2xl z-50">
+                  {showProfileMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -5, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -5, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 top-full mt-2 w-64 bg-[#0A0A0A] border border-white/10 rounded-xl shadow-xl overflow-hidden z-50"
+                    >
                       {/* Credits section */}
                       {(() => {
                         const plan = membership?.plan || "free";
                         const maxCredits = plan === "agency" ? 10000 : plan === "pro" ? 3000 : 150;
                         const percentage = Math.min(100, (userTotalCredits / maxCredits) * 100);
                         return (
-                          <Link href="/settings?tab=credits" className="block p-3 hover:bg-white/5 transition-colors border-b border-white/5">
+                          <Link 
+                            href="/settings?tab=plans"
+                            onClick={() => setShowProfileMenu(false)}
+                            className="block p-4 hover:bg-white/5 transition-colors border-b border-white/5"
+                          >
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
                                 <span className="text-sm text-white">{userTotalCredits} credits</span>
@@ -5579,31 +6425,37 @@ export const shadows = {
                                 style={{ width: `${percentage}%` }}
                               />
                             </div>
-                            {!isPaidPlan && (
-                              <div className="flex items-center justify-between mt-2">
-                                <span className="text-xs text-[#FF6E3C] font-medium">Upgrade →</span>
-                              </div>
-                            )}
-                            {isPaidPlan && (
-                              <div className="flex items-center justify-between mt-2">
+                            {isPaidPlan ? (
+                              <div className="mt-2">
                                 <span className="text-xs text-white/40">Add credits →</span>
+                              </div>
+                            ) : (
+                              <div className="mt-2">
+                                <span className="text-xs text-[#FF6E3C] font-medium">Upgrade →</span>
                               </div>
                             )}
                           </Link>
                         );
                       })()}
                       
-                      <div className="p-1.5">
-                        <Link href="/settings" className="w-full dropdown-item text-left text-sm text-white/80 flex items-center gap-2">
-                          <Settings className="w-4 h-4 opacity-50" /> Settings
-                        </Link>
-                      </div>
-                      <div className="p-1.5 border-t border-white/5">
-                        <button
-                          onClick={() => { setShowUserMenu(false); signOut(); }}
-                          className="w-full dropdown-item text-left text-sm text-white/80 flex items-center gap-2"
+                      {/* Settings */}
+                      <Link 
+                        href="/settings"
+                        onClick={() => setShowProfileMenu(false)}
+                        className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/5 transition-colors"
+                      >
+                        <Settings className="w-4 h-4 opacity-50" />
+                        Settings
+                      </Link>
+                      
+                      {/* Sign out */}
+                      <div className="border-t border-white/5">
+                        <button 
+                          onClick={() => { setShowProfileMenu(false); signOut(); }}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/5 transition-colors"
                         >
-                          <LogOut className="w-4 h-4 opacity-50" /> Sign out
+                          <LogOut className="w-4 h-4 opacity-50" />
+                          Sign out
                         </button>
                       </div>
                     </motion.div>
@@ -5630,14 +6482,15 @@ export const shadows = {
           </a>
           <button 
             onClick={() => setShowMobileMenu(!showMobileMenu)}
-            className="p-2 rounded-lg hover:bg-white/5 transition-colors"
+            className="px-3 py-2 rounded-xl hover:bg-white/5 active:bg-white/10 min-h-[44px] flex items-center justify-center"
           >
             {user ? (
-              <Avatar 
-                src={profile?.avatar_url} 
-                fallback={user.email?.[0]?.toUpperCase() || "U"} 
-                size={28}
-              />
+              <span className={cn(
+                "text-xs font-semibold uppercase",
+                isPaidPlan ? "text-[#FF6E3C]" : "text-white/50"
+              )}>
+                {isPaidPlan ? (membership?.plan === "agency" ? "Agency" : "Pro") : "Free"}
+              </span>
             ) : (
               <User className="w-5 h-5 text-white/60" />
             )}
@@ -5645,32 +6498,22 @@ export const shadows = {
         </header>
       )}
       
-      {/* Mobile Menu Overlay */}
-      <AnimatePresence>
-        {showMobileMenu && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm md:hidden"
-            onClick={() => setShowMobileMenu(false)}
-          >
-            <motion.div 
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="absolute right-0 top-0 bottom-0 w-72 bg-[#111] border-l border-white/10"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-4 border-b border-white/5">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-white">Menu</span>
-                  <button onClick={() => setShowMobileMenu(false)} className="p-1 hover:bg-white/10 rounded">
-                    <X className="w-5 h-5 text-white/60" />
-                  </button>
+      {/* Mobile Menu - Full Screen Overlay - Static */}
+      {showMobileMenu && (
+          <div className="fixed inset-0 z-[100] bg-[#0a0a0a] md:hidden flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 safe-area-pt">
+                <div className="flex items-center gap-3">
+                  <User className="w-5 h-5 text-[#FF6E3C]" />
+                  <span className="text-base font-semibold text-white">Account</span>
                 </div>
+                <button onClick={() => setShowMobileMenu(false)} className="p-3 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center">
+                  <X className="w-5 h-5 text-white/60" />
+                </button>
               </div>
+              
+              {/* Content */}
+              <div className="flex-1 overflow-auto">
               
               {user ? (
                 <>
@@ -5729,29 +6572,28 @@ export const shadows = {
                       <Settings className="w-4 h-4 opacity-50" /> Settings
                     </Link>
                   </div>
-                  <div className="p-2 border-t border-white/5">
+                  <div className="p-4 border-t border-white/5 safe-area-pb">
                     <button 
                       onClick={() => { setShowMobileMenu(false); signOut(); }}
-                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 text-white/80"
+                      className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 active:bg-white/10 text-white/80 min-h-[48px]"
                     >
-                      <LogOut className="w-4 h-4 opacity-50" /> Sign out
+                      <LogOut className="w-5 h-5 opacity-50" /> Sign out
                     </button>
                   </div>
                 </>
               ) : (
-                <div className="p-4">
+                <div className="p-4 safe-area-pb">
                   <button
                     onClick={() => { setShowMobileMenu(false); setShowAuthModal(true); }}
-                    className="w-full py-3 rounded-xl bg-[#FF6E3C] text-white font-medium hover:bg-[#FF8F5C] transition-colors"
+                    className="w-full py-4 rounded-xl bg-[#FF6E3C] text-white font-medium active:bg-[#FF8F5C] transition-colors min-h-[52px]"
                   >
                     Sign in
                   </button>
                 </div>
               )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              </div>
+          </div>
+      )}
 
       <div className="flex-1 flex overflow-hidden relative z-10">
         {/* Left Panel - Hidden on mobile */}
@@ -5839,6 +6681,12 @@ export const shadows = {
                             // Set flag to prevent auto-save during load
                             isLoadingProjectRef.current = true;
                             
+                            // Reset editing modes when switching projects
+                            setIsDirectEditMode(false);
+                            setIsPointAndEdit(false);
+                            setPendingTextEdits([]);
+                            setShowFloatingEdit(false);
+                            
                             // DON'T create initial version here - UI already shows hardcoded "Initial generation" at bottom
                             // versions array should only contain EDITS made after initial generation
                             
@@ -5871,8 +6719,9 @@ export const shadows = {
                             
                             // Restore video from generation if available
                             if (genToLoad.videoUrl && !flows.some(f => f.videoUrl === genToLoad.videoUrl)) {
+                              const newFlowId = generateId();
                               const newFlow: FlowItem = {
-                                id: generateId(),
+                                id: newFlowId,
                                 name: genToLoad.title || "Recording",
                                 videoBlob: new Blob(), // Empty blob as placeholder
                                 videoUrl: genToLoad.videoUrl,
@@ -5882,7 +6731,11 @@ export const shadows = {
                                 trimEnd: 30,
                               };
                               setFlows([newFlow]);
-                              setSelectedFlowId(newFlow.id);
+                              setSelectedFlowId(newFlowId);
+                              // Regenerate thumbnail if missing
+                              if (!genToLoad.thumbnailUrl) {
+                                regenerateThumbnail(newFlowId, genToLoad.videoUrl);
+                              }
                             }
                             setShowHistoryMode(false);
                             setGenerationComplete(true);
@@ -6148,7 +7001,7 @@ export const shadows = {
                     />
                     <Pencil className="w-2.5 h-2.5 text-white/20 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                   </div>
-                  <button onClick={() => { setGeneratedCode(null); setDisplayedCode(""); setEditableCode(""); setPreviewUrl(null); setGenerationComplete(false); setSidebarMode("config"); setChatMessages([]); setActiveGeneration(null); setGenerationTitle("Untitled Project"); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setPublishedUrl(null); localStorage.removeItem("replay_sidebar_mode"); localStorage.removeItem("replay_generated_code"); localStorage.removeItem("replay_generation_title"); }} className="p-1 rounded hover:bg-white/5" title="New">
+                  <button onClick={() => { setGeneratedCode(null); setDisplayedCode(""); setEditableCode(""); setPreviewUrl(null); setGenerationComplete(false); setSidebarMode("config"); setChatMessages([]); setActiveGeneration(null); setGenerationTitle("Untitled Project"); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_sidebar_mode"); localStorage.removeItem("replay_generated_code"); localStorage.removeItem("replay_generation_title"); }} className="p-1 rounded hover:bg-white/5" title="New">
                     <Plus className="w-3.5 h-3.5 text-white/30 hover:text-white/50" />
                   </button>
                   <button onClick={() => setShowHistoryMode(true)} className="p-1 rounded hover:bg-white/5" title="History">
@@ -6285,81 +7138,60 @@ export const shadows = {
                       </motion.div>
                     ))}
                     
-                    {/* Thinking Indicator - Different for Plan mode vs Execute mode */}
+                    {/* Thinking Indicator - Single clean frame */}
                     {isEditing && (
                       <motion.div 
-                        initial={{ opacity: 0, y: 10 }} 
+                        initial={{ opacity: 0, y: 8 }} 
                         animate={{ opacity: 1, y: 0 }} 
-                        className="space-y-2"
+                        className="rounded-lg overflow-hidden border border-white/[0.08]"
+                        style={{ background: '#0a0a0a' }}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5">
-                            <LogoIcon className="w-3.5 h-3.5" color="#FF6E3C" />
-                            <span className="text-[10px] font-medium text-white/40">Replay</span>
+                        {/* Header - minimal */}
+                        <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.06]" style={{ background: '#0d0d0d' }}>
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="w-3 h-3 text-[#FF6E3C] animate-spin" />
+                            <span className="text-[10px] text-white/50">{streamingStatus || "Analyzing..."}</span>
+                            {streamingLines > 0 && (
+                              <span className="text-[9px] text-[#FF6E3C]/60 font-mono">{streamingLines} lines</span>
+                            )}
                           </div>
-                          {/* Cancel button */}
                           <button
                             onClick={() => {
                               cancelAIRequest();
                               setIsEditing(false);
                               showToast("Request cancelled", "info");
                             }}
-                            className="p-1 rounded-md hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
-                            title="Cancel request"
+                            className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors"
                           >
-                            <X className="w-3.5 h-3.5" />
+                            <X className="w-3 h-3" />
                           </button>
                         </div>
-                        <div className="bg-white/[0.02] border border-white/[0.05] rounded-lg p-2.5 space-y-1.5">
-                          {isPlanMode ? (
-                            /* Plan mode - simple thinking */
-                            <div className="flex items-center gap-2 text-[10px]">
-                              <Loader2 className="w-3 h-3 text-violet-400 animate-spin" />
-                              <span className="text-white/50">Thinking...</span>
-                            </div>
-                          ) : (
-                            /* Execute mode - detailed steps */
-                            <>
-                              <motion.div 
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                className="flex items-center gap-2 text-[10px]"
-                              >
-                                <motion.div 
-                                  animate={{ rotate: 360 }}
-                                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                  className="w-3 h-3 border border-[#FF6E3C]/50 border-t-[#FF6E3C] rounded-full"
-                                />
-                                <span className="text-white/50">Analyzing request...</span>
-                              </motion.div>
-                              <motion.div 
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.5 }}
-                                className="flex items-center gap-2 text-[10px]"
-                              >
-                                <Code className="w-3 h-3 text-cyan-400/70" />
-                                <span className="text-white/50">Reading current code</span>
-                              </motion.div>
-                              <motion.div 
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 1 }}
-                                className="flex items-center gap-2 text-[10px]"
-                              >
-                                <Pencil className="w-3 h-3 text-emerald-400/70" />
-                                <span className="text-white/50">Applying changes...</span>
-                                <div className="flex gap-0.5 ml-1">
-                                  {[0, 1, 2].map((i) => (
-                                    <motion.div key={i} className="w-1 h-1 bg-emerald-400/70 rounded-full"
-                                      animate={{ opacity: [0.3, 1, 0.3] }}
-                                      transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.1 }}
-                                    />
-                                  ))}
+                        
+                        {/* Code streaming - syntax highlighted */}
+                        <div className="p-3 h-[120px] overflow-hidden relative font-mono text-[10px] leading-relaxed">
+                          <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-[#0a0a0a] to-transparent z-10" />
+                          <pre className="m-0 pt-2 whitespace-pre-wrap break-words">
+                            {streamingCode ? (
+                              streamingCode.split('\n').slice(-8).map((line, i) => (
+                                <div key={i} className="min-h-[15px]">
+                                  {/* Basic syntax highlighting */}
+                                  {line.split(/(<[^>]+>|"[^"]*"|'[^']*'|\/\*.*\*\/|\/\/.*$|{|}|\(|\)|class=|className=|style=|\b(?:const|let|var|function|return|if|else|for|while|import|export|from|default)\b)/g).map((part, j) => {
+                                    if (!part) return null;
+                                    if (part.startsWith('<') && part.endsWith('>')) return <span key={j} className="text-[#7fdbca]">{part}</span>;
+                                    if (part.startsWith('"') || part.startsWith("'")) return <span key={j} className="text-[#ecc48d]">{part}</span>;
+                                    if (part.startsWith('//') || part.startsWith('/*')) return <span key={j} className="text-[#637777]">{part}</span>;
+                                    if (/^(const|let|var|function|return|if|else|for|while|import|export|from|default)$/.test(part)) return <span key={j} className="text-[#c792ea]">{part}</span>;
+                                    if (part === 'class=' || part === 'className=' || part === 'style=') return <span key={j} className="text-[#addb67]">{part}</span>;
+                                    if (part === '{' || part === '}' || part === '(' || part === ')') return <span key={j} className="text-[#ffd700]">{part}</span>;
+                                    return <span key={j} className="text-[#d6deeb]">{part}</span>;
+                                  })}
                                 </div>
-                              </motion.div>
-                            </>
-                          )}
+                              ))
+                            ) : (
+                              <span className="text-white/30">Initializing...</span>
+                            )}
+                            <span className="inline-block w-2 h-4 bg-[#FF6E3C] ml-0.5 animate-pulse" />
+                          </pre>
                         </div>
                       </motion.div>
                     )}
@@ -6403,18 +7235,27 @@ export const shadows = {
                             const currentSelectedElement = selectedElement;
                             const currentPlanMode = isPlanMode;
                             const currentChatHistory = chatMessages.slice(-10).map(m => ({ role: m.role, content: m.content }));
-                            setChatInput(""); setSelectedElement(null); setIsEditing(true);
+                            setChatInput(""); setSelectedElement(null); setIsEditing(true); setStreamingStatus(null);
                             try {
                               if (currentPlanMode) {
-                                // PLAN MODE: Conversational response without code editing
-                                const result = await editCodeWithAI(editableCode, currentInput, undefined, undefined, true, undefined);
+                                // PLAN MODE: Conversational response without code editing with streaming
+                                const result = await editCodeWithAIStreaming(
+                                  editableCode, currentInput, undefined, undefined, true, undefined,
+                                  (event) => {
+                                    if (event.type === 'status') setStreamingStatus(event.message || null);
+                                    else if (event.type === 'chunk' && event.fullText) {
+                                      // Update streaming text in real-time (optional for plan mode)
+                                    }
+                                  }
+                                );
                                 const response = result?.code || "I can help you plan that! What would you like to discuss?";
                                 setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: response, timestamp: Date.now() }]);
                               } else {
-                                // EXECUTE MODE: Make actual changes with chat history context
-                                // Convert images to base64 for API (server can't always fetch URLs)
+                                // EXECUTE MODE: Make actual changes with streaming status
+                                // Convert images to base64 for API
                                 let imageData: { base64?: string; url?: string; mimeType: string; name: string }[] | undefined;
                                 if (editImages.length > 0) {
+                                  setStreamingStatus("Processing images...");
                                   imageData = [];
                                   for (const img of editImages) {
                                     const base64 = await urlToBase64(img.url);
@@ -6427,27 +7268,70 @@ export const shadows = {
                                 const prompt = currentSelectedElement 
                                   ? `IMPORTANT: Only modify the specific element that matches this selector/description: "${currentSelectedElement}". Do NOT change any other elements. User request: ${currentInput}`
                                   : currentInput;
-                                const result = await editCodeWithAI(editableCode, prompt, imageData, undefined, false, currentChatHistory);
-                                if (result && result.success && result.code) {
-                                  const codeChanged = result.code !== editableCode;
-                                  
-                                  if (codeChanged) {
-                                    setEditableCode(result.code); setDisplayedCode(result.code); setGeneratedCode(result.code);
-                                    setPreviewUrl(URL.createObjectURL(new Blob([result.code], { type: "text/html" })));
-                                    
-                                    const responseMsg = analyzeCodeChanges(editableCode, result.code, currentInput);
-                                    
-                                    setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: responseMsg, timestamp: Date.now() }]);
-                                    if (activeGeneration) {
-                                      const versionLabel = generateVersionLabel(currentInput);
-                                      const updatedGen = { ...activeGeneration, code: result.code, versions: [...(activeGeneration.versions || []), { id: generateId(), timestamp: Date.now(), label: versionLabel, code: result.code, flowNodes, flowEdges, styleInfo }] };
-                                      setActiveGeneration(updatedGen); 
-                                      setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
-                                      // FIX: Save to Supabase immediately after edit!
-                                      saveGenerationToSupabase(updatedGen);
+                                
+                                // Use streaming API with status updates and code preview
+                                let currentStreamCode = '';
+                                const result = await editCodeWithAIStreaming(
+                                  editableCode, prompt, imageData, undefined, false, currentChatHistory,
+                                  (event) => {
+                                    if (event.type === 'status') {
+                                      setStreamingStatus(event.message || null);
+                                      if (event.phase === 'writing') {
+                                        currentStreamCode = '';
+                                        setStreamingCode('');
+                                      }
+                                    } else if (event.type === 'progress') {
+                                      setStreamingStatus(`Writing code...`);
+                                      setStreamingLines(event.lines || 0);
+                                      if (event.preview) {
+                                        setStreamingCode(event.preview);
+                                      }
+                                    } else if (event.type === 'chunk' && event.text) {
+                                      // Real-time code streaming
+                                      currentStreamCode += event.text;
+                                      setStreamingCode(currentStreamCode.slice(-400)); // Show last 400 chars
+                                      setStreamingLines(currentStreamCode.split('\n').length);
                                     }
+                                  }
+                                );
+                                
+                                if (result && result.success && result.code) {
+                                  // Check if AI returned a clarifying question or chat response instead of code
+                                  const isChatResponse = (result as any).needsClarification || (result as any).isChat;
+                                  // Also check if the "code" doesn't look like HTML at all
+                                  const looksLikeHTML = result.code.includes('<!DOCTYPE') || result.code.includes('<html') || result.code.includes('<div') || result.code.includes('<body');
+                                  
+                                  if (isChatResponse || !looksLikeHTML) {
+                                    // Show as chat message only - DON'T update the code
+                                    setChatMessages(prev => [...prev, { 
+                                      id: generateId(), 
+                                      role: "assistant", 
+                                      content: result.code || "What would you like me to change?", 
+                                      timestamp: Date.now() 
+                                    }]);
                                   } else {
-                                    setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: `No changes detected. The AI returned the same code. Try being more specific about what you want to change.`, timestamp: Date.now() }]);
+                                    const codeChanged = result.code !== editableCode;
+                                    
+                                    if (codeChanged) {
+                                      setEditableCode(result.code); setDisplayedCode(result.code); setGeneratedCode(result.code);
+                                      setPreviewUrl(URL.createObjectURL(new Blob([result.code], { type: "text/html" })));
+                                      
+                                      // Use summary from streaming if available, otherwise analyze
+                                      const responseMsg = result.summary 
+                                        ? `✅ Done! ${result.summary}`
+                                        : analyzeCodeChanges(editableCode, result.code, currentInput);
+                                      
+                                      setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: responseMsg, timestamp: Date.now() }]);
+                                      if (activeGeneration) {
+                                        const versionLabel = generateVersionLabel(currentInput);
+                                        const updatedGen = { ...activeGeneration, code: result.code, versions: [...(activeGeneration.versions || []), { id: generateId(), timestamp: Date.now(), label: versionLabel, code: result.code, flowNodes, flowEdges, styleInfo }] };
+                                        setActiveGeneration(updatedGen); 
+                                        setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
+                                        saveGenerationToSupabase(updatedGen);
+                                      }
+                                    } else {
+                                      setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: `No changes detected. The AI returned the same code. Try being more specific about what you want to change.`, timestamp: Date.now() }]);
+                                    }
                                   }
                                 } else if (!result?.cancelled) { setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: `Error: ${result?.error || "Something went wrong. Please try again with a different request."}`, timestamp: Date.now() }]); }
                               }
@@ -6456,7 +7340,7 @@ export const shadows = {
                                 setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: `Error: ${error instanceof Error ? error.message : "Unknown error occurred"}`, timestamp: Date.now() }]); 
                               }
                             }
-                            finally { setIsEditing(false); setEditImages([]); setIsPointAndEdit(false); }
+                            finally { setIsEditing(false); setStreamingStatus(null); setStreamingCode(null); setStreamingLines(0); setEditImages([]); setIsPointAndEdit(false); }
                           }
                         }}
                         placeholder={isPlanMode ? "Plan and discuss changes..." : "Ask Replay to edit..."}
@@ -6612,16 +7496,30 @@ export const shadows = {
                   <div className="p-3 border-b border-white/5">
                     {flows.length === 0 ? (
                       <>
-                        {/* Upload Area */}
+                        {/* Upload Area with Drag & Drop */}
                         <div 
                           onClick={() => fileInputRef.current?.click()}
-                          className="relative rounded-xl border-2 border-dashed border-white/[0.08] bg-white/[0.02] hover:border-[#FF6E3C]/30 hover:bg-white/[0.03] transition-all cursor-pointer group mb-3"
+                          onDragOver={handleDragOver}
+                          onDragLeave={handleDragLeave}
+                          onDrop={handleDrop}
+                          className={cn(
+                            "relative rounded-xl border-2 border-dashed bg-white/[0.02] transition-all cursor-pointer group mb-3",
+                            isDragging 
+                              ? "border-[#FF6E3C] bg-[#FF6E3C]/10" 
+                              : "border-white/[0.08] hover:border-[#FF6E3C]/30 hover:bg-white/[0.03]"
+                          )}
                         >
                           <div className="p-4 text-center">
-                            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mx-auto mb-2 group-hover:bg-[#FF6E3C]/10 transition-colors">
-                              <Upload className="w-5 h-5 text-white/30 group-hover:text-[#FF6E3C]/60" />
+                            <div className={cn(
+                              "w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2 transition-colors",
+                              isDragging ? "bg-[#FF6E3C]/20" : "bg-white/5 group-hover:bg-[#FF6E3C]/10"
+                            )}>
+                              <Upload className={cn(
+                                "w-5 h-5 transition-colors",
+                                isDragging ? "text-[#FF6E3C]" : "text-white/30 group-hover:text-[#FF6E3C]/60"
+                              )} />
                             </div>
-                            <p className="text-xs text-white/50 font-medium">Upload your video</p>
+                            <p className="text-xs text-white/50 font-medium">{isDragging ? "Drop video here" : "Upload your video"}</p>
                             <p className="text-[10px] text-white/25 mt-0.5">or drag & drop</p>
                           </div>
                         </div>
@@ -6629,9 +7527,9 @@ export const shadows = {
                         {/* Record Button */}
                         <button 
                           onClick={startRecording}
-                          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.06] text-xs text-white/60 hover:text-white/80 transition-colors"
+                          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white/[0.03] border border-red-500/30 hover:border-red-500/50 hover:bg-white/[0.06] text-xs text-white/60 hover:text-white/80 transition-all"
                         >
-                          <Monitor className="w-3.5 h-3.5" /> Record screen
+                          <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" /> Record screen
                         </button>
                       </>
                     ) : (
@@ -6862,24 +7760,31 @@ export const shadows = {
                         <Square className="w-3 h-3 fill-red-500 text-red-500" />{formatDuration(recordingDuration)}
                       </button>
                     ) : (
-                      <button onClick={startRecording} className="btn-black flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs"><Monitor className="w-3.5 h-3.5" /> Record</button>
+                      <button onClick={startRecording} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs bg-white/[0.03] border border-red-500/30 hover:border-red-500/50 text-white/60 hover:text-white/80 transition-all"><div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> Record</button>
                     )}
                     <button onClick={() => fileInputRef.current?.click()} className="btn-black flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs"><Upload className="w-3.5 h-3.5" /> Upload</button>
                   </div>
                 </div>
                 <div 
-                  className="space-y-2 max-h-[140px] overflow-auto custom-scrollbar"
-                  style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
+                  className="space-y-2"
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
                 >
                   {flows.length === 0 ? (
                     <div 
                       onClick={() => fileInputRef.current?.click()} 
-                      className="relative rounded-xl border-2 border-dashed border-white/[0.08] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.03] transition-all cursor-pointer"
+                      className={cn(
+                        "relative rounded-xl border-2 border-dashed transition-all cursor-pointer",
+                        isDragging 
+                          ? "border-[#FF6E3C] bg-[#FF6E3C]/10" 
+                          : "border-white/[0.08] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.03]"
+                      )}
                     >
                       <div className="p-5 text-center">
-                        <Video className="w-5 h-5 text-white/30 mx-auto mb-2" />
-                        <p className="text-[10px] text-white/40">
-                          Drop your video here
+                        <Video className={cn("w-5 h-5 mx-auto mb-2", isDragging ? "text-[#FF6E3C]" : "text-white/30")} />
+                        <p className={cn("text-[10px]", isDragging ? "text-[#FF6E3C]" : "text-white/40")}>
+                          {isDragging ? "Drop video here!" : "Drop your video here"}
                         </p>
                         <p className="text-[9px] text-white/25 mt-1">
                           Screen recording, product demo, or UI walkthrough
@@ -7270,13 +8175,91 @@ export const shadows = {
               {editableCode && (
                 <>
                   {viewMode === "preview" && (
-                    <button 
-                      onClick={() => setIsMobilePreview(!isMobilePreview)} 
-                      className={cn("btn-black p-1.5 rounded-lg", isMobilePreview && "bg-[#FF6E3C]/20 text-[#FF6E3C]")} 
-                      title={isMobilePreview ? "Desktop view" : "Mobile view"}
-                    >
-                      {isMobilePreview ? <Monitor className="w-3.5 h-3.5" /> : <Smartphone className="w-3.5 h-3.5" />}
-                    </button>
+                    <>
+                      {/* Pending edits indicator and Save All */}
+                      {pendingTextEdits.length > 0 && (
+                        <>
+                          <button 
+                            onClick={() => { 
+                              // Reset pending edits and refresh preview to original
+                              setPendingTextEdits([]); 
+                              setIsDirectEditMode(false);
+                              // Force refresh preview to discard visual changes
+                              if (editableCode) {
+                                setPreviewUrl(URL.createObjectURL(new Blob([editableCode], { type: "text/html" })));
+                              }
+                            }}
+                            className="btn-black px-2 py-1 rounded-lg text-[10px] text-white/50 hover:text-white/70"
+                          >
+                            Discard All
+                          </button>
+                          <button 
+                            onClick={applyPendingTextEdits}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30"
+                          >
+                            <Check className="w-3 h-3" /> Save All ({pendingTextEdits.length})
+                          </button>
+                        </>
+                      )}
+                      
+                      {/* Editing / Select toggle - click again to deselect */}
+                      <div className="flex items-center rounded-lg overflow-hidden border border-white/10">
+                        <button 
+                          onClick={() => { 
+                            if (isDirectEditMode) {
+                              setIsDirectEditMode(false);
+                            } else {
+                              setIsDirectEditMode(true); 
+                              setIsPointAndEdit(false);
+                              setShowFloatingEdit(false); // Close Edit with AI when entering direct edit mode
+                            }
+                          }}
+                          className={cn(
+                            "flex items-center gap-1 px-2.5 py-1.5 text-[11px] transition-colors",
+                            isDirectEditMode ? "bg-[#FF6E3C]/20 text-[#FF6E3C]" : "bg-white/5 text-white/50 hover:text-white/70"
+                          )}
+                        >
+                          <Pencil className="w-3 h-3" /> Editing
+                        </button>
+                        <button 
+                          onClick={() => { 
+                            if (isPointAndEdit) {
+                              setIsPointAndEdit(false);
+                            } else {
+                              setIsPointAndEdit(true); 
+                              setIsDirectEditMode(false); 
+                            }
+                          }}
+                          className={cn(
+                            "flex items-center gap-1 px-2.5 py-1.5 text-[11px] transition-colors border-l border-white/10",
+                            isPointAndEdit ? "bg-[#FF6E3C]/20 text-[#FF6E3C]" : "bg-white/5 text-white/50 hover:text-white/70"
+                          )}
+                        >
+                          <MousePointer className="w-3 h-3" /> Select
+                        </button>
+                      </div>
+                      
+                      <button 
+                        onClick={() => {
+                          // If there are pending edits, apply them to preview before switching
+                          if (pendingTextEdits.length > 0 && editableCode) {
+                            let tempCode = editableCode;
+                            for (const edit of pendingTextEdits) {
+                              const escapedOriginal = edit.originalText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                              const regex = new RegExp(`(>\\s*)${escapedOriginal}(\\s*<)`, 'g');
+                              tempCode = tempCode.replace(regex, `$1${edit.newText}$2`);
+                            }
+                            if (previewUrl) URL.revokeObjectURL(previewUrl);
+                            setPreviewUrl(URL.createObjectURL(new Blob([tempCode], { type: "text/html" })));
+                          }
+                          setIsMobilePreview(!isMobilePreview);
+                        }} 
+                        className={cn("btn-black p-1.5 rounded-lg", isMobilePreview && "bg-[#FF6E3C]/20 text-[#FF6E3C]")} 
+                        title={isMobilePreview ? "Desktop view" : "Mobile view"}
+                      >
+                        {isMobilePreview ? <Monitor className="w-3.5 h-3.5" /> : <Smartphone className="w-3.5 h-3.5" />}
+                      </button>
+                    </>
                   )}
                   <button onClick={handleRefresh} className="btn-black p-1.5 rounded-lg" title="Refresh"><RefreshCw className="w-3.5 h-3.5" /></button>
                   <button 
@@ -7446,7 +8429,7 @@ export const shadows = {
                     </div>
                     
                     {!showFloatingEdit && (
-                      <button onClick={() => setShowFloatingEdit(true)} className="floating-edit-btn flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium text-white/90">
+                      <button onClick={() => { setShowFloatingEdit(true); setIsDirectEditMode(false); }} className="floating-edit-btn flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium text-white/90">
                         <Sparkles className="w-4 h-4 text-[#FF6E3C]" /> Edit with AI
                       </button>
                     )}
@@ -7835,7 +8818,7 @@ export default function GeneratedPage() {
                 </div>
                 
                 {editableCode && !isStreamingCode && !isCodeEditable && !showFloatingEdit && (
-                  <button onClick={() => setShowFloatingEdit(true)} className="floating-edit-btn flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium text-white/90">
+                  <button onClick={() => { setShowFloatingEdit(true); setIsDirectEditMode(false); }} className="floating-edit-btn flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium text-white/90">
                     <Sparkles className="w-4 h-4 text-[#FF6E3C]" /> Edit with AI
                   </button>
                 )}
@@ -8255,7 +9238,7 @@ export default function GeneratedPage() {
                 {/* Edit with AI button for Flow */}
                 {!flowBuilding && flowNodes.length > 0 && !showFloatingEdit && !isProcessing && (
                   <button 
-                    onClick={() => setShowFloatingEdit(true)} 
+                    onClick={() => { setShowFloatingEdit(true); setIsDirectEditMode(false); }} 
                     className="floating-edit-btn flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium text-white/90"
                   >
                     <Sparkles className="w-4 h-4 text-[#FF6E3C]" /> Edit with AI
@@ -8344,7 +9327,7 @@ export default function GeneratedPage() {
                     </div>
                     
                     {!showFloatingEdit && (
-                      <button onClick={() => setShowFloatingEdit(true)} className="floating-edit-btn flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium text-white/90">
+                      <button onClick={() => { setShowFloatingEdit(true); setIsDirectEditMode(false); }} className="floating-edit-btn flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium text-white/90">
                         <Sparkles className="w-4 h-4 text-[#FF6E3C]" /> Edit with AI
                       </button>
                     )}
@@ -8366,19 +9349,21 @@ export default function GeneratedPage() {
                       <video 
                         ref={videoRef} 
                         src={selectedFlow.videoUrl} 
-                        preload="auto"
+                        preload="metadata"
                         playsInline
-                        poster=""
                         className="w-full h-full object-contain" 
                         style={{ 
                           maxWidth: '100%', 
                           maxHeight: '100%',
                           imageRendering: 'auto'
                         }}
-                        onPlay={() => setIsPlaying(true)} 
-                        onPause={() => setIsPlaying(false)}
                         onLoadedMetadata={(e) => {
                           const video = e.currentTarget;
+                          // Seek to 0.5s to show a good frame instead of black
+                          if (video.currentTime === 0) {
+                            video.currentTime = 0.5;
+                          }
+                          // Update duration if needed
                           if (video.duration && isFinite(video.duration) && video.duration > 0) {
                             const newDuration = Math.round(video.duration);
                             if (!selectedFlow.duration || !isFinite(selectedFlow.duration) || selectedFlow.duration <= 0) {
@@ -8390,6 +9375,8 @@ export default function GeneratedPage() {
                             }
                           }
                         }}
+                        onPlay={() => setIsPlaying(true)} 
+                        onPause={() => setIsPlaying(false)}
                         onCanPlay={(e) => {
                           // Force first frame display when video data is ready
                           const video = e.currentTarget;
@@ -8470,7 +9457,7 @@ export default function GeneratedPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <button onClick={() => fileInputRef.current?.click()} className="btn-black flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"><Upload className="w-3.5 h-3.5" /> Upload New</button>
-                          <button onClick={startRecording} className="btn-black flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"><Monitor className="w-3.5 h-3.5" /> Record New</button>
+                          <button onClick={startRecording} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-white/[0.03] border border-red-500/30 hover:border-red-500/50 text-white/60 hover:text-white/80 transition-all"><div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> Record New</button>
                         </div>
                         <button onClick={applyTrim} className="btn-black flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs bg-[#FF6E3C]/20 text-[#FF6E3C] border border-[#FF6E3C]/30">
                           <Check className="w-3.5 h-3.5" /> Apply Trim
@@ -8484,7 +9471,7 @@ export default function GeneratedPage() {
                       <EmptyState icon="logo" title="No video selected" subtitle="Record or upload a video first" showEarlyAccess={generations.length === 0} />
                       <div className="flex items-center justify-center gap-2 mt-4">
                         <button onClick={() => fileInputRef.current?.click()} className="btn-black flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs"><Upload className="w-3.5 h-3.5" /> Upload</button>
-                        <button onClick={startRecording} className="btn-black flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs"><Monitor className="w-3.5 h-3.5" /> Record</button>
+                        <button onClick={startRecording} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs bg-white/[0.03] border border-red-500/30 hover:border-red-500/50 text-white/60 hover:text-white/80 transition-all"><div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" /> Record</button>
                       </div>
                     </div>
                   </div>
@@ -8780,19 +9767,15 @@ export default function GeneratedPage() {
         </div>
       </div>
       
-      {/* Mobile Auth Gate - Require login on mobile */}
-      {!user && !authLoading && (
+      {/* Mobile Auth Gate - Require login on mobile (EXCEPT in demo mode or loading demo!) */}
+      {!user && !authLoading && !isDemoMode && !searchParams.get('demo') && (
         <>
           {/* Backdrop with blur - see content behind */}
           <div className="fixed inset-0 z-50 md:hidden bg-black/40 backdrop-blur-sm" />
           
-          {/* Auth Popup Modal */}
+          {/* Auth Popup Modal - Static, no animations */}
           <div className="fixed inset-0 z-50 md:hidden flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              className="w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl p-6 shadow-2xl text-center"
-            >
+            <div className="w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl p-6 shadow-2xl text-center">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center mx-auto mb-5">
                 <Lock className="w-8 h-8 text-[#FF6E3C]" />
               </div>
@@ -8809,123 +9792,145 @@ export default function GeneratedPage() {
               <a href="/landing" className="text-sm text-white/40 hover:text-white/60 transition-colors">
                 ← Back to home
               </a>
-            </motion.div>
+            </div>
           </div>
         </>
       )}
       
-      {/* Mobile Bottom Navigation - Larger for easier tapping */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-white/10 bg-[#111]/95 backdrop-blur-xl safe-area-pb">
-        <div className="flex items-center justify-around py-3 px-2">
+      {/* Mobile Tip Banner */}
+      <AnimatePresence>
+        {showMobileBanner && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-[80px] left-3 right-3 z-50 md:hidden"
+          >
+            <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-4 shadow-2xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#FF6E3C]/10 flex items-center justify-center flex-shrink-0">
+                  <Monitor className="w-5 h-5 text-[#FF6E3C]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-white/90">Quick preview mode</p>
+                  <p className="text-xs text-white/50 mt-0.5">Full features available on desktop</p>
+                </div>
+                <button 
+                  onClick={() => {
+                    setShowMobileBanner(false);
+                    localStorage.setItem("replay_mobile_banner_dismissed", "true");
+                  }}
+                  className="p-3 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                >
+                  <X className="w-5 h-5 text-white/40" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Mobile Bottom Navigation - 72px height, proper touch targets */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-white/10 bg-[#0a0a0a] safe-area-pb" style={{ height: '72px' }}>
+        <div className="flex items-center justify-around h-full px-1">
           {/* Show Chat tab when we have generated code, otherwise show Input */}
           {generatedCode ? (
             <button 
               onClick={() => setMobilePanel("chat")}
               className={cn(
-                "flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-xl transition-colors min-w-[56px]",
+                "flex flex-col items-center justify-center gap-1 rounded-xl transition-colors min-w-[64px] min-h-[56px]",
                 mobilePanel === "chat" && !showHistoryMode ? "text-[#FF6E3C] bg-[#FF6E3C]/10" : "text-white/40"
               )}
             >
               <Sparkles className="w-6 h-6" />
-              <span className="text-[11px] font-medium">Chat</span>
+              <span className="text-[10px] font-medium">Chat</span>
             </button>
           ) : (
             <button 
               onClick={() => setMobilePanel("input")}
               className={cn(
-                "flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-xl transition-colors min-w-[56px]",
+                "flex flex-col items-center justify-center gap-1 rounded-xl transition-colors min-w-[64px] min-h-[56px]",
                 mobilePanel === "input" && !showHistoryMode ? "text-[#FF6E3C] bg-[#FF6E3C]/10" : "text-white/40"
               )}
             >
               <Film className="w-6 h-6" />
-              <span className="text-[11px] font-medium">Input</span>
+              <span className="text-[10px] font-medium">Input</span>
             </button>
           )}
           
           <button 
             onClick={() => setMobilePanel("preview")}
             className={cn(
-              "flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-xl transition-colors min-w-[56px]",
+              "flex flex-col items-center justify-center gap-1 rounded-xl transition-colors min-w-[64px] min-h-[56px]",
               mobilePanel === "preview" && !showHistoryMode ? "text-[#FF6E3C] bg-[#FF6E3C]/10" : "text-white/40"
             )}
           >
             <Eye className="w-6 h-6" />
-            <span className="text-[11px] font-medium">Preview</span>
+            <span className="text-[10px] font-medium">Preview</span>
           </button>
           
           <button 
             onClick={() => setMobilePanel("code")}
             className={cn(
-              "flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-xl transition-colors min-w-[56px]",
+              "flex flex-col items-center justify-center gap-1 rounded-xl transition-colors min-w-[64px] min-h-[56px]",
               mobilePanel === "code" && !showHistoryMode ? "text-[#FF6E3C] bg-[#FF6E3C]/10" : "text-white/40"
             )}
           >
             <Code className="w-6 h-6" />
-            <span className="text-[11px] font-medium">Code</span>
+            <span className="text-[10px] font-medium">Code</span>
           </button>
           
           <button 
             onClick={() => setMobilePanel("flow")}
             className={cn(
-              "flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-xl transition-colors min-w-[56px]",
+              "flex flex-col items-center justify-center gap-1 rounded-xl transition-colors min-w-[64px] min-h-[56px]",
               mobilePanel === "flow" && !showHistoryMode ? "text-[#FF6E3C] bg-[#FF6E3C]/10" : "text-white/40"
             )}
           >
             <GitBranch className="w-6 h-6" />
-            <span className="text-[11px] font-medium">Flow</span>
+            <span className="text-[10px] font-medium">Flow</span>
           </button>
           
           <button 
             onClick={() => setMobilePanel("design")}
             className={cn(
-              "flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-xl transition-colors min-w-[56px]",
+              "flex flex-col items-center justify-center gap-1 rounded-xl transition-colors min-w-[64px] min-h-[56px]",
               mobilePanel === "design" && !showHistoryMode ? "text-[#FF6E3C] bg-[#FF6E3C]/10" : "text-white/40"
             )}
           >
             <Palette className="w-6 h-6" />
-            <span className="text-[11px] font-medium">Design</span>
+            <span className="text-[10px] font-medium">Design</span>
           </button>
         </div>
       </div>
       
-      {/* Mobile History Mode Panel */}
-      <AnimatePresence>
-        {showHistoryMode && (
-          <motion.div 
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed inset-x-0 bottom-16 top-0 z-40 md:hidden bg-[#0a0a0a] flex flex-col"
-          >
-            {/* History Header - Matches main app header */}
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl safe-area-pt">
-              <a href="/" className="flex-shrink-0">
-                <LogoIcon className="w-5 h-5" color="#FF6E3C" />
-              </a>
-              <div className="flex items-center gap-2 flex-1">
-                <History className="w-4 h-4 text-[#FF6E3C]" />
-                <span className="text-sm font-semibold text-white/80">History</span>
+      {/* Mobile History - Full Screen Overlay - Static */}
+      {showHistoryMode && (
+          <div className="fixed inset-0 z-[100] md:hidden bg-[#0a0a0a] flex flex-col">
+            {/* History Header - Same height as tool headers */}
+            <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
+              <div className="flex items-center gap-2">
+                <History className="w-5 h-5 text-[#FF6E3C]" />
+                <span className="text-sm font-semibold text-white">History</span>
               </div>
               <button 
                 onClick={() => setShowHistoryMode(false)}
-                className="flex items-center gap-1 text-xs text-white/60 hover:text-white px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10"
+                className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center"
               >
-                <span>Back</span>
-                <ChevronRight className="w-3 h-3" />
+                <X className="w-5 h-5 text-white/60" />
               </button>
             </div>
             
             {/* Search */}
-            <div className="p-3 border-b border-white/5 flex-shrink-0">
+            <div className="p-4 border-b border-white/5 flex-shrink-0">
               <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                 <input
                   type="text"
                   value={historySearch}
                   onChange={(e) => setHistorySearch(e.target.value)}
                   placeholder="Search projects..."
-                  className="w-full pl-8 pr-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-sm text-white/70 placeholder:text-white/30 focus:outline-none focus:border-white/10"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.06] text-sm text-white/70 placeholder:text-white/30 focus:outline-none focus:border-white/10"
                 />
               </div>
             </div>
@@ -8979,6 +9984,12 @@ export default function GeneratedPage() {
                         // Set flag to prevent auto-save during load
                         isLoadingProjectRef.current = true;
                         
+                        // Reset editing modes when switching projects
+                        setIsDirectEditMode(false);
+                        setIsPointAndEdit(false);
+                        setPendingTextEdits([]);
+                        setShowFloatingEdit(false);
+                        
                         // DON'T create initial version here - UI already shows hardcoded "Initial generation" at bottom
                         // versions array should only contain EDITS made after initial generation
                         
@@ -9007,8 +10018,9 @@ export default function GeneratedPage() {
                         }
                         
                         if (genToLoad.videoUrl && !flows.some(f => f.videoUrl === genToLoad.videoUrl)) {
+                          const newFlowId = generateId();
                           const newFlow: FlowItem = {
-                            id: generateId(),
+                            id: newFlowId,
                             name: genToLoad.title || "Recording",
                             videoBlob: new Blob(),
                             videoUrl: genToLoad.videoUrl,
@@ -9018,7 +10030,11 @@ export default function GeneratedPage() {
                             trimEnd: 30,
                           };
                           setFlows([newFlow]);
-                          setSelectedFlowId(newFlow.id);
+                          setSelectedFlowId(newFlowId);
+                          // Regenerate thumbnail if missing
+                          if (!genToLoad.thumbnailUrl) {
+                            regenerateThumbnail(newFlowId, genToLoad.videoUrl);
+                          }
                         }
                         setShowHistoryMode(false);
                         setGenerationComplete(true);
@@ -9182,24 +10198,16 @@ export default function GeneratedPage() {
                 ))
               )}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+      )}
       
-      {/* Mobile Input Panel - Full layout like desktop */}
-      <AnimatePresence>
-        {mobilePanel === "input" && !showHistoryMode && (
-          <motion.div 
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed inset-x-0 bottom-16 top-0 z-40 md:hidden bg-[#0a0a0a] flex flex-col"
-          >
-            {/* Unified Mobile Header */}
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
-              <a href="/" className="flex-shrink-0">
-                <LogoIcon className="w-5 h-5" color="#FF6E3C" />
+      {/* Mobile Input Panel - Static, no animations */}
+      {mobilePanel === "input" && !showHistoryMode && !showMobileMenu && (
+          <div className="fixed inset-x-0 bottom-[72px] top-0 z-30 md:hidden bg-[#0a0a0a] flex flex-col">
+            {/* Unified Mobile Header - Larger touch targets */}
+            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
+              <a href="/" className="flex-shrink-0 p-1.5 -ml-1.5">
+                <LogoIcon className="w-6 h-6" color="#FF6E3C" />
               </a>
               <input
                 type="text"
@@ -9208,60 +10216,78 @@ export default function GeneratedPage() {
                 className="flex-1 min-w-0 text-sm font-medium text-white/80 bg-transparent focus:outline-none truncate"
                 placeholder="Untitled"
               />
-              <div className="flex items-center gap-0.5 flex-shrink-0">
-                <button onClick={() => setShowHistoryMode(true)} className="p-1.5 rounded-lg hover:bg-white/5" title="History">
-                  <History className="w-4 h-4 text-white/40" />
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button onClick={() => { setGenerationTitle("Untitled Project"); setFlows([]); setRefinements(""); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); setActiveGeneration(null); setGeneratedCode(null); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setChatMessages([]); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New Project">
+                  <Plus className="w-5 h-5 text-white/50" />
                 </button>
-                <button onClick={() => setShowProjectSettings(true)} className="p-1.5 rounded-lg hover:bg-white/5" title="Settings">
-                  <Settings className="w-4 h-4 text-white/40" />
+                <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="History">
+                  <History className="w-5 h-5 text-white/50" />
                 </button>
-                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="p-1 rounded-lg hover:bg-white/5 ml-1">
+                <button onClick={() => setShowProjectSettings(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Settings">
+                  <Settings className="w-5 h-5 text-white/50" />
+                </button>
+                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="px-3 py-2 rounded-xl hover:bg-white/5 active:bg-white/10 min-h-[44px] flex items-center justify-center">
                   {user ? (
-                    <Avatar src={profile?.avatar_url} fallback={user.email?.[0]?.toUpperCase() || "U"} size={24} />
+                    <span className={cn(
+                      "text-xs font-semibold uppercase",
+                      isPaidPlan ? "text-[#FF6E3C]" : "text-white/50"
+                    )}>
+                      {isPaidPlan ? (membership?.plan === "agency" ? "Agency" : "Pro") : "Free"}
+                    </span>
                   ) : (
-                    <User className="w-5 h-5 text-white/40" />
+                    <User className="w-5 h-5 text-white/50" />
                   )}
                 </button>
               </div>
             </div>
             
             <div className="flex flex-col flex-1 overflow-auto">
-              {/* Videos Section */}
+              {/* Videos Section - Consistent sizing */}
               <div className="p-4 border-b border-white/5 flex-shrink-0">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5">
-                    <Video className="w-3.5 h-3.5 text-white/40" />
-                    <span className="text-[10px] font-semibold text-white/60 uppercase tracking-wider">Videos</span>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Video className="w-4 h-4 text-white/50" />
+                    <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Videos</span>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-2">
                     {isRecording ? (
-                      <button onClick={stopRecording} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] bg-red-500/20 text-red-400">
-                        <Square className="w-2.5 h-2.5 fill-current" />{formatDuration(recordingDuration)}
+                      <button onClick={stopRecording} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-red-500/20 text-red-400 min-h-[44px]">
+                        <Square className="w-3 h-3 fill-current" />{formatDuration(recordingDuration)}
                       </button>
                     ) : (
-                      <button onClick={startRecording} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] bg-white/5 text-white/60">
-                        <Monitor className="w-3 h-3" /> Record
+                      <button onClick={startRecording} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-white/5 border border-red-500/30 active:bg-red-500/10 text-white/70 transition-all min-h-[44px]">
+                        <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" /> Record
                       </button>
                     )}
-                    <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] bg-white/5 text-white/60">
-                      <Upload className="w-3 h-3" /> Upload
+                    <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-white/5 active:bg-white/10 text-white/70 min-h-[44px]">
+                      <Upload className="w-4 h-4" /> Upload
                     </button>
                   </div>
                 </div>
                 
-                <div className="space-y-2 max-h-[140px] overflow-auto">
+                <div 
+                  className="space-y-2"
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                >
                   {flows.length === 0 ? (
                     <div 
                       onClick={() => fileInputRef.current?.click()} 
-                      className="relative rounded-xl border-2 border-dashed border-white/[0.08] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.03] transition-all cursor-pointer"
+                      className={cn(
+                        "relative rounded-xl border-2 border-dashed transition-all cursor-pointer min-h-[100px]",
+                        isDragging 
+                          ? "border-[#FF6E3C] bg-[#FF6E3C]/10" 
+                          : "border-white/[0.08] bg-white/[0.02] active:bg-white/[0.05]"
+                      )}
                     >
-                      <div className="p-5 text-center">
-                        <Video className="w-5 h-5 text-white/30 mx-auto mb-2" />
-                        <p className="text-[10px] text-white/40">
-                          Drop your video here
+                      <div className="p-6 text-center">
+                        <Video className={cn("w-6 h-6 mx-auto mb-2", isDragging ? "text-[#FF6E3C]" : "text-white/30")} />
+                        <p className={cn("text-sm", isDragging ? "text-[#FF6E3C]" : "text-white/50")}>
+                          {isDragging ? "Drop video here!" : "Drop your video here"}
                         </p>
-                        <p className="text-[9px] text-white/25 mt-1">
-                          Screen recording, product demo, or UI walkthrough
+                        <p className="text-xs text-white/30 mt-1">
+                          Screen recording or UI walkthrough
                         </p>
                       </div>
                     </div>
@@ -9270,32 +10296,31 @@ export default function GeneratedPage() {
                       key={flow.id} 
                       onClick={() => setSelectedFlowId(flow.id)}
                       className={cn(
-                        "flex items-center gap-2.5 p-2 rounded-lg cursor-pointer",
-                        selectedFlowId === flow.id ? "bg-[#FF6E3C]/10 border border-[#FF6E3C]/30" : "bg-white/5"
+                        "flex items-center gap-3 p-3 rounded-xl cursor-pointer min-h-[56px]",
+                        selectedFlowId === flow.id ? "bg-[#FF6E3C]/10 border border-[#FF6E3C]/30" : "bg-white/5 active:bg-white/10"
                       )}
                     >
-                      <div className="w-14 h-8 rounded overflow-hidden bg-white/5 flex-shrink-0 flex items-center justify-center">
-                        {flow.thumbnail ? <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" /> : <Film className="w-3 h-3 text-white/20" />}
+                      <div className="w-16 h-10 rounded-lg overflow-hidden bg-white/5 flex-shrink-0 flex items-center justify-center">
+                        {flow.thumbnail ? <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" /> : <Film className="w-4 h-4 text-white/20" />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-white/80 truncate">{flow.name}</p>
                         <p className="text-xs text-white/40">{formatDuration(flow.trimEnd - flow.trimStart)} / {formatDuration(flow.duration)}</p>
                       </div>
-                      <button onClick={(e) => { e.stopPropagation(); removeFlow(flow.id); }} className="p-1 hover:bg-white/10 rounded">
-                        <Trash2 className="w-3 h-3 text-white/40" />
+                      <button onClick={(e) => { e.stopPropagation(); removeFlow(flow.id); }} className="p-3 rounded-xl active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center">
+                        <Trash2 className="w-4 h-4 text-white/40" />
                       </button>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Context Section */}
+              {/* Context Section - Consistent sizing */}
               <div className="p-4 border-b border-white/5 flex-shrink-0">
                 <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="w-4 h-4 text-white/40" />
+                  <Sparkles className="w-4 h-4 text-white/50" />
                   <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Context</span>
                 </div>
-                {/* Textarea only */}
                 <textarea
                   value={refinements}
                   onChange={(e) => {
@@ -9306,17 +10331,17 @@ export default function GeneratedPage() {
                       showToast(`Context limit: ${isPaidPlan ? "20,000" : "2,000"} characters${!isPaidPlan ? ". Upgrade to PRO for 20k" : ""}`, "error");
                     }
                   }}
-                  placeholder="Add data logic, constraints or details. Replay works without it — context just sharpens the result (optional)"
+                  placeholder="Add data logic, constraints or details (optional)"
                   disabled={isProcessing}
                   rows={3}
-                  className="w-full px-3 py-3 rounded-lg text-xs text-white/70 placeholder:text-white/30 placeholder:text-[11px] bg-white/[0.03] border border-white/[0.06] focus:outline-none focus:border-[#FF6E3C]/20 min-h-[80px] max-h-[300px] resize-y"
+                  className="w-full px-4 py-3 rounded-xl text-sm text-white/70 placeholder:text-white/30 bg-white/[0.03] border border-white/[0.06] focus:outline-none focus:border-[#FF6E3C]/20 min-h-[88px] max-h-[200px] resize-y leading-relaxed"
                 />
               </div>
 
-              {/* Style Section */}
+              {/* Style Section - Consistent sizing */}
               <div className="p-4 border-b border-white/5 flex-shrink-0">
                 <div className="flex items-center gap-2 mb-3">
-                  <Palette className="w-4 h-4 text-white/40" />
+                  <Palette className="w-4 h-4 text-white/50" />
                   <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Style</span>
                 </div>
                 <StyleInjector 
@@ -9425,23 +10450,16 @@ export default function GeneratedPage() {
                 </div>
               </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+      )}
       
-      {/* Mobile Preview Panel */}
-      <AnimatePresence>
-        {mobilePanel === "preview" && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-x-0 bottom-16 top-0 z-40 md:hidden bg-[#0a0a0a] flex flex-col"
-          >
+      {/* Mobile Preview Panel - Static */}
+      {mobilePanel === "preview" && !showHistoryMode && !showMobileMenu && (
+          <div className="fixed inset-x-0 bottom-[72px] top-0 z-30 md:hidden bg-[#0a0a0a] flex flex-col">
             {/* Unified Mobile Header */}
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
-              <a href="/" className="flex-shrink-0">
-                <LogoIcon className="w-5 h-5" color="#FF6E3C" />
+            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
+              <a href="/" className="flex-shrink-0 p-1.5 -ml-1.5">
+                <LogoIcon className="w-6 h-6" color="#FF6E3C" />
               </a>
               <input
                 type="text"
@@ -9457,21 +10475,26 @@ export default function GeneratedPage() {
                 className="flex-1 min-w-0 text-sm font-medium text-white/80 bg-transparent focus:outline-none truncate"
                 placeholder="Untitled"
               />
-              <div className="flex items-center gap-0.5 flex-shrink-0">
-                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); localStorage.removeItem("replay_generation_title"); }} className="p-1.5 rounded-lg hover:bg-white/5" title="New">
-                  <Plus className="w-4 h-4 text-white/40" />
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
+                  <Plus className="w-5 h-5 text-white/50" />
                 </button>
-                <button onClick={() => setShowHistoryMode(true)} className="p-1.5 rounded-lg hover:bg-white/5" title="History">
-                  <History className="w-4 h-4 text-white/40" />
+                <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="History">
+                  <History className="w-5 h-5 text-white/50" />
                 </button>
-                <button onClick={() => setShowProjectSettings(true)} className="p-1.5 rounded-lg hover:bg-white/5" title="Settings">
-                  <Settings className="w-4 h-4 text-white/40" />
+                <button onClick={() => setShowProjectSettings(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Settings">
+                  <Settings className="w-5 h-5 text-white/50" />
                 </button>
-                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="p-1 rounded-lg hover:bg-white/5 ml-1">
+                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="px-3 py-2 rounded-xl hover:bg-white/5 active:bg-white/10 min-h-[44px] flex items-center justify-center">
                   {user ? (
-                    <Avatar src={profile?.avatar_url} fallback={user.email?.[0]?.toUpperCase() || "U"} size={24} />
+                    <span className={cn(
+                      "text-xs font-semibold uppercase",
+                      isPaidPlan ? "text-[#FF6E3C]" : "text-white/50"
+                    )}>
+                      {isPaidPlan ? (membership?.plan === "agency" ? "Agency" : "Pro") : "Free"}
+                    </span>
                   ) : (
-                    <User className="w-5 h-5 text-white/40" />
+                    <User className="w-5 h-5 text-white/50" />
                   )}
                 </button>
               </div>
@@ -9507,23 +10530,16 @@ export default function GeneratedPage() {
                 </div>
               )}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+      )}
       
-      {/* Mobile Code Panel - With syntax highlighting like desktop */}
-      <AnimatePresence>
-        {mobilePanel === "code" && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-x-0 bottom-16 top-0 z-40 md:hidden bg-[#0a0a0a] flex flex-col"
-          >
+      {/* Mobile Code Panel - Static */}
+      {mobilePanel === "code" && !showHistoryMode && !showMobileMenu && (
+          <div className="fixed inset-x-0 bottom-[72px] top-0 z-30 md:hidden bg-[#0a0a0a] flex flex-col">
             {/* Unified Mobile Header */}
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
-              <a href="/" className="flex-shrink-0">
-                <LogoIcon className="w-5 h-5" color="#FF6E3C" />
+            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
+              <a href="/" className="flex-shrink-0 p-1.5 -ml-1.5">
+                <LogoIcon className="w-6 h-6" color="#FF6E3C" />
               </a>
               <input
                 type="text"
@@ -9539,21 +10555,26 @@ export default function GeneratedPage() {
                 className="flex-1 min-w-0 text-sm font-medium text-white/80 bg-transparent focus:outline-none truncate"
                 placeholder="Untitled"
               />
-              <div className="flex items-center gap-0.5 flex-shrink-0">
-                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); localStorage.removeItem("replay_generation_title"); }} className="p-1.5 rounded-lg hover:bg-white/5" title="New">
-                  <Plus className="w-4 h-4 text-white/40" />
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
+                  <Plus className="w-5 h-5 text-white/50" />
                 </button>
-                <button onClick={() => setShowHistoryMode(true)} className="p-1.5 rounded-lg hover:bg-white/5" title="History">
-                  <History className="w-4 h-4 text-white/40" />
+                <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="History">
+                  <History className="w-5 h-5 text-white/50" />
                 </button>
-                <button onClick={() => setShowProjectSettings(true)} className="p-1.5 rounded-lg hover:bg-white/5" title="Settings">
-                  <Settings className="w-4 h-4 text-white/40" />
+                <button onClick={() => setShowProjectSettings(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Settings">
+                  <Settings className="w-5 h-5 text-white/50" />
                 </button>
-                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="p-1 rounded-lg hover:bg-white/5 ml-1">
+                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="px-3 py-2 rounded-xl hover:bg-white/5 active:bg-white/10 min-h-[44px] flex items-center justify-center">
                   {user ? (
-                    <Avatar src={profile?.avatar_url} fallback={user.email?.[0]?.toUpperCase() || "U"} size={24} />
+                    <span className={cn(
+                      "text-xs font-semibold uppercase",
+                      isPaidPlan ? "text-[#FF6E3C]" : "text-white/50"
+                    )}>
+                      {isPaidPlan ? (membership?.plan === "agency" ? "Agency" : "Pro") : "Free"}
+                    </span>
                   ) : (
-                    <User className="w-5 h-5 text-white/40" />
+                    <User className="w-5 h-5 text-white/50" />
                   )}
                 </button>
               </div>
@@ -9729,7 +10750,7 @@ export default function GeneratedPage() {
                 {!showFloatingEdit && !isStreamingCode && (
                   <div className="flex-shrink-0 p-3 border-t border-white/5">
                     <button 
-                      onClick={() => setShowFloatingEdit(true)} 
+                      onClick={() => { setShowFloatingEdit(true); setIsDirectEditMode(false); }} 
                       className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/70 text-xs font-medium"
                     >
                       <Sparkles className="w-3.5 h-3.5 text-[#FF6E3C]" /> Edit with AI
@@ -9746,23 +10767,16 @@ export default function GeneratedPage() {
                 <p className="text-xs text-white/30 mt-1">Generate to see code</p>
               </div>
             )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+      )}
       
-      {/* Mobile Flow Panel - Product Map with toggles like desktop */}
-      <AnimatePresence>
-        {mobilePanel === "flow" && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-x-0 bottom-16 top-0 z-40 md:hidden bg-[#0a0a0a] flex flex-col"
-          >
+      {/* Mobile Flow Panel - Static */}
+      {mobilePanel === "flow" && !showHistoryMode && !showMobileMenu && (
+          <div className="fixed inset-x-0 bottom-[72px] top-0 z-30 md:hidden bg-[#0a0a0a] flex flex-col">
             {/* Unified Mobile Header */}
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
-              <a href="/" className="flex-shrink-0">
-                <LogoIcon className="w-5 h-5" color="#FF6E3C" />
+            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
+              <a href="/" className="flex-shrink-0 p-1.5 -ml-1.5">
+                <LogoIcon className="w-6 h-6" color="#FF6E3C" />
               </a>
               <input
                 type="text"
@@ -9778,21 +10792,26 @@ export default function GeneratedPage() {
                 className="flex-1 min-w-0 text-sm font-medium text-white/80 bg-transparent focus:outline-none truncate"
                 placeholder="Untitled"
               />
-              <div className="flex items-center gap-0.5 flex-shrink-0">
-                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); localStorage.removeItem("replay_generation_title"); }} className="p-1.5 rounded-lg hover:bg-white/5" title="New">
-                  <Plus className="w-4 h-4 text-white/40" />
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
+                  <Plus className="w-5 h-5 text-white/50" />
                 </button>
-                <button onClick={() => setShowHistoryMode(true)} className="p-1.5 rounded-lg hover:bg-white/5" title="History">
-                  <History className="w-4 h-4 text-white/40" />
+                <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="History">
+                  <History className="w-5 h-5 text-white/50" />
                 </button>
-                <button onClick={() => setShowProjectSettings(true)} className="p-1.5 rounded-lg hover:bg-white/5" title="Settings">
-                  <Settings className="w-4 h-4 text-white/40" />
+                <button onClick={() => setShowProjectSettings(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Settings">
+                  <Settings className="w-5 h-5 text-white/50" />
                 </button>
-                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="p-1 rounded-lg hover:bg-white/5 ml-1">
+                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="px-3 py-2 rounded-xl hover:bg-white/5 active:bg-white/10 min-h-[44px] flex items-center justify-center">
                   {user ? (
-                    <Avatar src={profile?.avatar_url} fallback={user.email?.[0]?.toUpperCase() || "U"} size={24} />
+                    <span className={cn(
+                      "text-xs font-semibold uppercase",
+                      isPaidPlan ? "text-[#FF6E3C]" : "text-white/50"
+                    )}>
+                      {isPaidPlan ? (membership?.plan === "agency" ? "Agency" : "Pro") : "Free"}
+                    </span>
                   ) : (
-                    <User className="w-5 h-5 text-white/40" />
+                    <User className="w-5 h-5 text-white/50" />
                   )}
                 </button>
               </div>
@@ -9934,7 +10953,7 @@ export default function GeneratedPage() {
                 {!showFloatingEdit && !isProcessing && (
                   <div className="flex-shrink-0 p-3 border-t border-white/5">
                     <button 
-                      onClick={() => setShowFloatingEdit(true)} 
+                      onClick={() => { setShowFloatingEdit(true); setIsDirectEditMode(false); }} 
                       className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/70 text-xs font-medium"
                     >
                       <Sparkles className="w-3.5 h-3.5 text-[#FF6E3C]" /> Edit with AI
@@ -9944,26 +10963,23 @@ export default function GeneratedPage() {
               </>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                <EmptyState icon="logo" title="No product flow yet" subtitle="Flow shows what's possible in the product" />
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center mb-4">
+                  <GitBranch className="w-8 h-8 text-[#FF6E3C]/50" />
+                </div>
+                <p className="text-sm text-white/50 font-medium">No flow yet</p>
+                <p className="text-xs text-white/30 mt-1">Generate to see product flow</p>
               </div>
             )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+      )}
       
-      {/* Mobile Design System Panel - Now uses styleInfo like desktop */}
-      <AnimatePresence>
-        {mobilePanel === "design" && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-x-0 bottom-16 top-0 z-40 md:hidden bg-[#0a0a0a] flex flex-col"
-          >
+      {/* Mobile Design Panel - Static */}
+      {mobilePanel === "design" && !showHistoryMode && !showMobileMenu && (
+          <div className="fixed inset-x-0 bottom-[72px] top-0 z-30 md:hidden bg-[#0a0a0a] flex flex-col">
             {/* Unified Mobile Header */}
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
-              <a href="/" className="flex-shrink-0">
-                <LogoIcon className="w-5 h-5" color="#FF6E3C" />
+            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
+              <a href="/" className="flex-shrink-0 p-1.5 -ml-1.5">
+                <LogoIcon className="w-6 h-6" color="#FF6E3C" />
               </a>
               <input
                 type="text"
@@ -9979,21 +10995,26 @@ export default function GeneratedPage() {
                 className="flex-1 min-w-0 text-sm font-medium text-white/80 bg-transparent focus:outline-none truncate"
                 placeholder="Untitled"
               />
-              <div className="flex items-center gap-0.5 flex-shrink-0">
-                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); localStorage.removeItem("replay_generation_title"); }} className="p-1.5 rounded-lg hover:bg-white/5" title="New">
-                  <Plus className="w-4 h-4 text-white/40" />
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
+                  <Plus className="w-5 h-5 text-white/50" />
                 </button>
-                <button onClick={() => setShowHistoryMode(true)} className="p-1.5 rounded-lg hover:bg-white/5" title="History">
-                  <History className="w-4 h-4 text-white/40" />
+                <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="History">
+                  <History className="w-5 h-5 text-white/50" />
                 </button>
-                <button onClick={() => setShowProjectSettings(true)} className="p-1.5 rounded-lg hover:bg-white/5" title="Settings">
-                  <Settings className="w-4 h-4 text-white/40" />
+                <button onClick={() => setShowProjectSettings(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Settings">
+                  <Settings className="w-5 h-5 text-white/50" />
                 </button>
-                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="p-1 rounded-lg hover:bg-white/5 ml-1">
+                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="px-3 py-2 rounded-xl hover:bg-white/5 active:bg-white/10 min-h-[44px] flex items-center justify-center">
                   {user ? (
-                    <Avatar src={profile?.avatar_url} fallback={user.email?.[0]?.toUpperCase() || "U"} size={24} />
+                    <span className={cn(
+                      "text-xs font-semibold uppercase",
+                      isPaidPlan ? "text-[#FF6E3C]" : "text-white/50"
+                    )}>
+                      {isPaidPlan ? (membership?.plan === "agency" ? "Agency" : "Pro") : "Free"}
+                    </span>
                   ) : (
-                    <User className="w-5 h-5 text-white/40" />
+                    <User className="w-5 h-5 text-white/50" />
                   )}
                 </button>
               </div>
@@ -10073,23 +11094,16 @@ export default function GeneratedPage() {
                 <p className="text-xs text-white/30 mt-1">Generate to see design system</p>
               </div>
             )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+      )}
       
-      {/* Mobile Chat Panel - Same functionality as desktop */}
-      <AnimatePresence>
-        {mobilePanel === "chat" && generatedCode && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-x-0 bottom-16 top-0 z-40 md:hidden bg-[#0a0a0a] flex flex-col"
-          >
+      {/* Mobile Chat Panel - Static */}
+      {mobilePanel === "chat" && generatedCode && !showHistoryMode && !showMobileMenu && (
+          <div className="fixed inset-x-0 bottom-[72px] top-0 z-30 md:hidden bg-[#0a0a0a] flex flex-col">
             {/* Combined Header - Logo, Project Name, Actions, Avatar in one row */}
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
-              <a href="/" className="flex-shrink-0">
-                <LogoIcon className="w-5 h-5" color="#FF6E3C" />
+            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
+              <a href="/" className="flex-shrink-0 p-1.5 -ml-1.5">
+                <LogoIcon className="w-6 h-6" color="#FF6E3C" />
               </a>
               <input
                 type="text"
@@ -10105,21 +11119,26 @@ export default function GeneratedPage() {
                 className="flex-1 min-w-0 text-sm font-medium text-white/80 bg-transparent focus:outline-none truncate"
                 placeholder="Untitled"
               />
-              <div className="flex items-center gap-0.5 flex-shrink-0">
-                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); localStorage.removeItem("replay_generation_title"); }} className="p-1.5 rounded-lg hover:bg-white/5" title="New">
-                  <Plus className="w-4 h-4 text-white/40" />
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
+                  <Plus className="w-5 h-5 text-white/50" />
                 </button>
-                <button onClick={() => setShowHistoryMode(true)} className="p-1.5 rounded-lg hover:bg-white/5" title="History">
-                  <History className="w-4 h-4 text-white/40" />
+                <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="History">
+                  <History className="w-5 h-5 text-white/50" />
                 </button>
-                <button onClick={() => setShowProjectSettings(true)} className="p-1.5 rounded-lg hover:bg-white/5" title="Settings">
-                  <Settings className="w-4 h-4 text-white/40" />
+                <button onClick={() => setShowProjectSettings(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Settings">
+                  <Settings className="w-5 h-5 text-white/50" />
                 </button>
-                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="p-1 rounded-lg hover:bg-white/5 ml-1">
+                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="px-3 py-2 rounded-xl hover:bg-white/5 active:bg-white/10 min-h-[44px] flex items-center justify-center">
                   {user ? (
-                    <Avatar src={profile?.avatar_url} fallback={user.email?.[0]?.toUpperCase() || "U"} size={24} />
+                    <span className={cn(
+                      "text-xs font-semibold uppercase",
+                      isPaidPlan ? "text-[#FF6E3C]" : "text-white/50"
+                    )}>
+                      {isPaidPlan ? (membership?.plan === "agency" ? "Agency" : "Pro") : "Free"}
+                    </span>
                   ) : (
-                    <User className="w-5 h-5 text-white/40" />
+                    <User className="w-5 h-5 text-white/50" />
                   )}
                 </button>
               </div>
@@ -10228,36 +11247,32 @@ export default function GeneratedPage() {
                     </motion.div>
                   ))}
                   
-                  {/* Thinking Indicator */}
+                  {/* Thinking Indicator - Single frame */}
                   {isEditing && (
                     <motion.div 
-                      initial={{ opacity: 0, y: 10 }} 
+                      initial={{ opacity: 0, y: 8 }} 
                       animate={{ opacity: 1, y: 0 }} 
-                      className="space-y-2"
+                      className="rounded-xl overflow-hidden border border-white/[0.08]"
+                      style={{ background: '#0a0a0a' }}
                     >
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between px-3 py-2.5">
                         <div className="flex items-center gap-2">
-                          <LogoIcon className="w-4 h-4" color="#FF6E3C" />
-                          <span className="text-xs font-medium text-white/40">Replay</span>
+                          <Loader2 className="w-4 h-4 text-[#FF6E3C] animate-spin" />
+                          <span className="text-xs text-white/50">{streamingStatus || "Working..."}</span>
+                          {streamingLines > 0 && (
+                            <span className="text-[10px] text-[#FF6E3C]/60 font-mono">{streamingLines} lines</span>
+                          )}
                         </div>
-                        {/* Cancel button */}
                         <button
                           onClick={() => {
                             cancelAIRequest();
                             setIsEditing(false);
                             showToast("Request cancelled", "info");
                           }}
-                          className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
-                          title="Cancel request"
+                          className="p-1 rounded hover:bg-white/10 text-white/30"
                         >
                           <X className="w-4 h-4" />
                         </button>
-                      </div>
-                      <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3">
-                        <div className="flex items-center gap-2.5">
-                          <Loader2 className="w-4 h-4 text-[#FF6E3C] animate-spin" />
-                          <span className="text-sm text-white/50">{isPlanMode ? "Thinking..." : "Working..."}</span>
-                        </div>
                       </div>
                     </motion.div>
                   )}
@@ -10369,7 +11384,22 @@ export default function GeneratedPage() {
 
             {/* Chat Input - Only show in chat tab */}
             {sidebarTab === "chat" && (
-            <div className="p-3 border-t border-white/5 flex-shrink-0">
+            <div className="p-3 border-t border-white/5 flex-shrink-0 relative">
+              {/* Auth overlay for non-logged users OR demo mode - Mobile */}
+              {(!user || isDemoMode) && (
+                <div 
+                  onClick={() => {
+                    setShowAuthModal(true);
+                    showToast("Sign up free to edit with AI. Get 2 free generations!", "info");
+                  }}
+                  className="absolute inset-0 z-10 cursor-pointer flex items-center justify-center bg-black/60 backdrop-blur-[2px]"
+                >
+                  <div className="flex items-center gap-2 text-white/60 text-sm">
+                    <Lock className="w-4 h-4" />
+                    <span>Sign up to edit with AI</span>
+                  </div>
+                </div>
+              )}
               {/* Attachments preview - images only on mobile */}
               {editImages.length > 0 && (
                 <div className="pb-2 flex gap-1.5 flex-wrap">
@@ -10386,10 +11416,17 @@ export default function GeneratedPage() {
                   <textarea
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
+                    disabled={!user || isDemoMode}
                     onPaste={handlePasteImage}
                     onKeyDown={async (e) => {
                       if (e.key === "Enter" && !e.shiftKey && chatInput.trim() && editableCode) {
                         e.preventDefault();
+                        // Auth check on mobile - block non-logged users AND demo mode
+                        if (!user || isDemoMode) {
+                          setShowAuthModal(true);
+                          showToast("Sign up free to edit with AI. Get 2 free generations!", "info");
+                          return;
+                        }
                         const userMsg: ChatMessage = { id: generateId(), role: "user", content: chatInput, timestamp: Date.now(), attachments: editImages.length > 0 ? editImages.map(img => ({ type: "image" as const, label: img.name })) : undefined };
                         setChatMessages(prev => [...prev, userMsg]);
                         const currentInput = chatInput;
@@ -10520,9 +11557,8 @@ export default function GeneratedPage() {
               </div>
             </div>
             )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+      )}
       
       {/* Mobile Floating Edit - Appears above bottom navigation */}
       <AnimatePresence>
@@ -10673,14 +11709,6 @@ export default function GeneratedPage() {
         availableCredits={userTotalCredits}
       />
       
-      {/* Feedback Gate Modal - shows after first generation */}
-      <FeedbackGateModal
-        isOpen={showFeedbackModal}
-        onClose={() => setShowFeedbackModal(false)}
-        generationId={activeGeneration?.id}
-        userId={user?.id}
-      />
-      
       {/* Flow Node Edit/Delete Modal */}
       <AnimatePresence>
         {flowNodeModal && (
@@ -10720,9 +11748,17 @@ export default function GeneratedPage() {
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && flowNodeRenameValue.trim()) {
-                        setFlowNodes(prev => prev.map(n => 
+                        const newNodes = flowNodes.map(n => 
                           n.id === flowNodeModal.nodeId ? { ...n, name: flowNodeRenameValue.trim() } : n
-                        ));
+                        );
+                        setFlowNodes(newNodes);
+                        // Save to Supabase
+                        if (activeGeneration) {
+                          const updatedGen = { ...activeGeneration, flowNodes: newNodes };
+                          setActiveGeneration(updatedGen);
+                          setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
+                          saveGenerationToSupabase(updatedGen);
+                        }
                         showToast(`Renamed to "${flowNodeRenameValue.trim()}"`, "success");
                         setFlowNodeModal(null);
                       } else if (e.key === "Escape") {
@@ -10740,9 +11776,17 @@ export default function GeneratedPage() {
                     <button
                       onClick={() => {
                         if (flowNodeRenameValue.trim()) {
-                          setFlowNodes(prev => prev.map(n => 
+                          const newNodes = flowNodes.map(n => 
                             n.id === flowNodeModal.nodeId ? { ...n, name: flowNodeRenameValue.trim() } : n
-                          ));
+                          );
+                          setFlowNodes(newNodes);
+                          // Save to Supabase
+                          if (activeGeneration) {
+                            const updatedGen = { ...activeGeneration, flowNodes: newNodes };
+                            setActiveGeneration(updatedGen);
+                            setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
+                            saveGenerationToSupabase(updatedGen);
+                          }
                           showToast(`Renamed to "${flowNodeRenameValue.trim()}"`, "success");
                           setFlowNodeModal(null);
                         }
@@ -10778,9 +11822,18 @@ export default function GeneratedPage() {
                     </button>
                     <button
                       onClick={() => {
-                        setFlowNodes(prev => prev.filter(n => n.id !== flowNodeModal.nodeId));
-                        setFlowEdges(prev => prev.filter(edge => edge.from !== flowNodeModal.nodeId && edge.to !== flowNodeModal.nodeId));
+                        const newNodes = flowNodes.filter(n => n.id !== flowNodeModal.nodeId);
+                        const newEdges = flowEdges.filter(edge => edge.from !== flowNodeModal.nodeId && edge.to !== flowNodeModal.nodeId);
+                        setFlowNodes(newNodes);
+                        setFlowEdges(newEdges);
                         if (selectedFlowNode === flowNodeModal.nodeId) setSelectedFlowNode(null);
+                        // Save to Supabase
+                        if (activeGeneration) {
+                          const updatedGen = { ...activeGeneration, flowNodes: newNodes, flowEdges: newEdges };
+                          setActiveGeneration(updatedGen);
+                          setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
+                          saveGenerationToSupabase(updatedGen);
+                        }
                         showToast(`Deleted "${flowNodeModal.nodeName}"`, "info");
                         setFlowNodeModal(null);
                       }}
@@ -10913,54 +11966,54 @@ export default function GeneratedPage() {
         onClose={hideToast}
       />
       
-      {/* Mobile Recording Info Modal */}
-      <AnimatePresence>
-        {showMobileRecordingInfo && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowMobileRecordingInfo(false)}
-              className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            >
-              <div className="w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl p-6 shadow-2xl">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-[#FF6E3C]/20 flex items-center justify-center">
-                    <Smartphone className="w-5 h-5 text-[#FF6E3C]" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-white">Screen recording is not available on mobile browsers.</h3>
+      {/* Mobile Recording Info Modal - Static, no animations */}
+      {showMobileRecordingInfo && (
+        <>
+          {/* Backdrop */}
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200]" />
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <div className="w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl p-6 shadow-2xl">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-[#FF6E3C]/20 flex items-center justify-center flex-shrink-0">
+                  <Smartphone className="w-6 h-6 text-[#FF6E3C]" />
                 </div>
-                
-                <div className="space-y-3 text-sm text-white/70">
-                  <p className="font-medium text-white">To record your phone screen:</p>
-                  <ol className="list-decimal list-inside space-y-1">
-                    <li>Use your phone's built-in screen recorder</li>
-                    <li>Upload the recording here</li>
-                  </ol>
-                  <div className="pt-2 space-y-1 text-xs text-white/50">
-                    <p><span className="text-white/70">iOS:</span> Control Center → Screen Recording</p>
-                    <p><span className="text-white/70">Android:</span> Quick Settings → Screen Record</p>
-                  </div>
+                <div>
+                  <h3 className="text-base font-semibold text-white">Use your phone's recorder</h3>
+                  <p className="text-xs text-white/50 mt-0.5">Browser recording unavailable on mobile</p>
                 </div>
-                
+              </div>
+              
+              <div className="space-y-3 text-sm text-white/70 bg-white/5 rounded-xl p-4">
+                <p className="font-medium text-white">How to record your screen:</p>
+                <ol className="list-decimal list-inside space-y-2">
+                  <li>Use your phone's built-in screen recorder</li>
+                  <li>Record the app/website you want to convert</li>
+                  <li>Come back here and upload the video</li>
+                </ol>
+                <div className="pt-3 border-t border-white/10 space-y-1 text-xs text-white/50">
+                  <p><span className="text-white/70">iOS:</span> Control Center → Screen Recording</p>
+                  <p><span className="text-white/70">Android:</span> Quick Settings → Screen Record</p>
+                </div>
+              </div>
+              
+              <div className="flex gap-3 mt-6">
                 <button
                   onClick={() => setShowMobileRecordingInfo(false)}
-                  className="w-full mt-6 py-2.5 rounded-xl bg-[#FF6E3C] text-white font-medium hover:bg-[#FF8F5C] transition-colors"
+                  className="flex-1 py-3 rounded-xl bg-white/10 text-white font-medium hover:bg-white/15 transition-colors"
                 >
-                  Close
+                  Got it
+                </button>
+                <button
+                  onClick={() => { setShowMobileRecordingInfo(false); fileInputRef.current?.click(); }}
+                  className="flex-1 py-3 rounded-xl bg-[#FF6E3C] text-white font-medium hover:bg-[#FF8F5C] transition-colors flex items-center justify-center gap-2"
+                >
+                  <Upload className="w-4 h-4" /> Upload
                 </button>
               </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -21,6 +21,12 @@ import {
   Send,
   Camera,
   Pencil,
+  Settings,
+  Bell,
+  Volume2,
+  VolumeX,
+  ChevronDown,
+  Palette,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/context";
 import { useCredits, PLAN_LIMITS, CREDIT_COSTS } from "@/lib/credits/context";
@@ -28,6 +34,7 @@ import { useProfile } from "@/lib/profile/context";
 import Logo from "@/components/Logo";
 import Avatar from "@/components/Avatar";
 import AuthModal from "@/components/modals/AuthModal";
+import { StylePreview } from "@/components/StyleInjector";
 import { cn } from "@/lib/utils";
 
 // Loading fallback for Suspense
@@ -43,6 +50,7 @@ const TABS = [
   { id: "account", label: "Account", icon: User },
   { id: "plans", label: "Plans", icon: CreditCard },
   { id: "credits", label: "Credits", icon: Zap },
+  { id: "preferences", label: "Preferences", icon: Settings },
 ];
 
 const PLANS = [
@@ -128,6 +136,144 @@ function SettingsContent() {
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const cropCanvasRef = useRef<HTMLCanvasElement>(null);
+  
+  // Preferences state
+  const [soundOnComplete, setSoundOnComplete] = useState(true);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  const [defaultStylePreset, setDefaultStylePreset] = useState("auto-detect");
+  const [showStyleDropdown, setShowStyleDropdown] = useState(false);
+  
+  // Style presets list (matching StyleInjector - ALL styles)
+  const STYLE_PRESET_OPTIONS = [
+    // === SPECIAL ===
+    { id: "auto-detect", name: "Auto-Detect", desc: "Match video style automatically", category: "special" },
+    
+    // === DARK PREMIUM ===
+    { id: "aura-glass", name: "High-End Dark Glass", desc: "Aurora Glow • Spotlight • Premium", category: "dark" },
+    { id: "void-spotlight", name: "Void Spotlight", desc: "Deep Void • Mouse Glow • Heavy", category: "dark" },
+    { id: "dark-cosmos", name: "Dark Cosmos", desc: "Purple/Cyan Glow • Glass • Float", category: "dark" },
+    { id: "linear", name: "Linear", desc: "Clean dark with subtle borders", category: "dark" },
+    { id: "liquid-chrome", name: "Liquid Chrome", desc: "Metallic • Y2K • Reflections", category: "dark" },
+    { id: "molten-aurora", name: "Molten Aurora SaaS", desc: "Volcanic Glow • Dark Glass • Orange", category: "dark" },
+    { id: "midnight-aurora", name: "Midnight Aurora", desc: "Purple Glow • Neon • Blue Accent", category: "dark" },
+    { id: "glass-cascade", name: "Glass Blue Tech", desc: "Deep Blue • Stacked Glass • Float", category: "dark" },
+    { id: "glowframe-product", name: "Dark Product Glowframe", desc: "Teal Glow • Inner Glow Cards", category: "dark" },
+    { id: "deadpan-documentation", name: "Deadpan Documentation", desc: "Industrial Grid • Linear • System", category: "dark" },
+    { id: "cctv-drift", name: "CCTV Drift", desc: "Surveillance • Sensor Noise • Fixed", category: "dark" },
+    { id: "abrupt-termination", name: "Abrupt Termination", desc: "Pre-Cut Drift • Mid-Motion Freeze", category: "dark" },
+    
+    // === LIGHT & CLEAN ===
+    { id: "swiss-grid", name: "Swiss Grid", desc: "Visible Grid • Massive Type • Sharp", category: "light" },
+    { id: "soft-organic", name: "Soft Organic", desc: "Blobs • Pastel • Underwater", category: "light" },
+    { id: "silent-luxury", name: "Silent Luxury", desc: "Radical Minimal • White Void", category: "light" },
+    { id: "ethereal-mesh", name: "Ethereal Mesh", desc: "Aurora Blobs • Soft SaaS • Modern", category: "light" },
+    { id: "airy-blue-aura", name: "Airy Blue Aura", desc: "White Void • Blue Blob • SaaS", category: "light" },
+    { id: "blur-hero-minimal", name: "Blur Hero Minimal", desc: "Blur Reveal • Stagger • Clean", category: "light" },
+    { id: "myna-ai-mono", name: "Myna AI Mono", desc: "Orange CTA • Monospace • Business", category: "light" },
+    { id: "acme-clean-rounded", name: "Acme Clean Rounded", desc: "Rounded Nav • Motion • Dashboard", category: "light" },
+    { id: "bureaucratic-void", name: "Bureaucratic Void", desc: "Paper White • 1px Dividers • Dull", category: "light" },
+    
+    // === CREATIVE & EXPERIMENTAL ===
+    { id: "glassmorphism", name: "Glassmorphism", desc: "Glass panels • Gradients • Blur", category: "creative" },
+    { id: "neubrutalism", name: "Neo-Brutalism", desc: "Hard Shadow • Thick Border • Bouncy", category: "creative" },
+    { id: "kinetic-brutalism", name: "Kinetic Brutalism", desc: "15vw Type • Acid Yellow • Bold", category: "creative" },
+    { id: "spatial-glass", name: "Spatial Glass", desc: "Vision Pro • 3D Tilt • Light", category: "creative" },
+    { id: "particle-brain", name: "Particle Brain", desc: "AI Cloud • 50k Points • WebGL", category: "creative" },
+    { id: "old-money", name: "Old Money Heritage", desc: "Cream • Gold Serif • Classic", category: "creative" },
+    { id: "tactical-hud", name: "Tactical HUD", desc: "Sci-Fi Game • Brackets • Scanning", category: "creative" },
+    { id: "urban-grunge", name: "Urban Grunge", desc: "Concrete • Spray Paint • Street", category: "creative" },
+    { id: "ink-zen", name: "Ink & Zen", desc: "Japanese • Vertical • Sumi-e", category: "creative" },
+    { id: "infinite-tunnel", name: "Infinite Tunnel", desc: "Z-Axis • Fly Through • Warp", category: "creative" },
+    { id: "frosted-acrylic", name: "Frosted Acrylic", desc: "Thick Glass • Solid • Glow Through", category: "creative" },
+    { id: "datamosh", name: "Datamosh Glitch", desc: "Pixel Sort • Melt • RGB Split", category: "creative" },
+    { id: "origami-fold", name: "Origami Fold", desc: "Paper 3D • Unfold • Envelope", category: "creative" },
+    { id: "gravity-physics", name: "Gravity Physics", desc: "Falling Tags • Drag & Throw • Bounce", category: "creative" },
+    { id: "neo-retro-os", name: "Neo-Retro OS", desc: "Windows 95 • Draggable • Vaporwave", category: "creative" },
+    { id: "soft-clay-pop", name: "Soft Clay Pop", desc: "Claymorphism • Pastel • Bouncy", category: "creative" },
+    { id: "deconstructed-editorial", name: "Deconstructed Editorial", desc: "Fashion • Vertical Text • Chaos", category: "creative" },
+    { id: "cinematic-product", name: "Cinematic Product", desc: "Apple Page • Scroll-Driven 3D", category: "creative" },
+    { id: "digital-collage", name: "Digital Collage", desc: "Scrapbook • Stickers • Draggable", category: "creative" },
+    { id: "halftone-beam", name: "Halftone Solar Beam", desc: "Dot Matrix • Grid • Wordmark", category: "creative" },
+    { id: "mono-wave", name: "Monochrome Wave", desc: "Black White • Marquee • Editorial", category: "creative" },
+    { id: "fractured-grid", name: "Fractured Grid", desc: "Modular Grid • Split Headline", category: "creative" },
+    { id: "matrix-rain", name: "Matrix Rain", desc: "Falling Code • Scramble • Hacker", category: "creative" },
+    { id: "indifferent-kinetic", name: "Indifferent Kinetic", desc: "Deadpan Motion • Acid Yellow", category: "creative" },
+    { id: "inefficient-loop", name: "Inefficient Loop", desc: "Overcorrection • Handoff Pause", category: "creative" },
+    { id: "accidental-capture", name: "Accidental Capture", desc: "Found Footage • Incidental", category: "creative" },
+    
+    // === MOTION & SCROLL ===
+    { id: "xray-blueprint", name: "X-Ray Blueprint", desc: "Wireframe Reveal • Scanner", category: "motion" },
+    { id: "opposing-scroll", name: "Opposing Scroll", desc: "Bi-Directional • Velocity • Marquee", category: "motion" },
+    { id: "stacked-cards", name: "Stacked Card Deck", desc: "iOS Tabs • Depth • Scale", category: "motion" },
+    { id: "horizontal-inertia", name: "Horizontal Inertia", desc: "Skew • Velocity • Spring", category: "motion" },
+    { id: "split-curtain", name: "Split Curtain Reveal", desc: "Dual Panel • Theater • Typography", category: "motion" },
+    
+    // === INTERACTIVE ===
+    { id: "phantom-border", name: "Phantom Border UI", desc: "Invisible Grid • Cursor Proximity", category: "interactive" },
+    { id: "inverted-lens", name: "Inverted Lens Cursor", desc: "Window Mask • Hidden Layer", category: "interactive" },
+    { id: "elastic-sidebar", name: "Elastic Sidebar", desc: "Rubber Band • SVG Curve • Wobble", category: "interactive" },
+    { id: "morphing-nav", name: "Morphing Fluid Nav", desc: "Dynamic Island • Apple Physics", category: "interactive" },
+    
+    // === SHADERS ===
+    { id: "liquid-neon", name: "Liquid Neon", desc: "WebGL Metaballs • Lava Lamp • Glow", category: "shader" },
+    { id: "chromatic-dispersion", name: "Chromatic Dispersion", desc: "RGB Split • Movement Speed", category: "shader" },
+    { id: "viscous-hover", name: "Viscous Hover", desc: "Displacement Map • Liquid • Gooey", category: "shader" },
+    { id: "globe-data", name: "Interactive Globe", desc: "3D Sphere • Points • Data Arcs", category: "shader" },
+    { id: "liquid-text-mask", name: "Liquid Text Masking", desc: "Video in Text • Drip • SVG Goo", category: "shader" },
+    { id: "noise-gradient", name: "Dynamic Noise Gradient", desc: "Canvas Grain • Perlin • Aurora", category: "shader" },
+    { id: "fluid-prismatic", name: "Fluid Prismatic", desc: "Fluid Simulation • Mouse Distort", category: "shader" },
+    { id: "paper-shader-mesh", name: "Paper Shader Mesh", desc: "MeshGradient • Cyan Orange", category: "shader" },
+    { id: "gradient-bar-waitlist", name: "Gradient Bar Waitlist", desc: "Orange Bars • Pulse • Startup", category: "shader" },
+    { id: "earthy-grid-reveal", name: "Earthy Grid Reveal", desc: "Grid Lines • Word Appear • Organic", category: "shader" },
+    
+    // === PHYSICS & 3D ===
+    { id: "gyroscopic-levitation", name: "Gyroscopic Levitation", desc: "Shadow Physics • Lift • Tilt", category: "physics" },
+    { id: "exploded-view", name: "Exploded View Scroll", desc: "3D Disassembly • Parts Separate", category: "physics" },
+    { id: "skeuomorphic", name: "Skeuomorphic Controls", desc: "Physical Switches • Plastic • 3D", category: "physics" },
+    { id: "messy-physics", name: "Messy Colorful Physics", desc: "Matter.js • Drag Tags • Bouncy", category: "physics" },
+    
+    // === BRAND INSPIRED ===
+    { id: "apple", name: "Apple Style", desc: "Frosted Glass • Clean • SF Pro", category: "brand" },
+    { id: "stripe", name: "Stripe Design", desc: "Premium Gradient • Trust Blue", category: "brand" },
+    { id: "vercel", name: "Vercel", desc: "Black & White • Triangle • Minimal", category: "brand" },
+    
+    // === DATA & DASHBOARD ===
+    { id: "live-dashboard", name: "Live Dashboard", desc: "Data Heavy • Micro-Animations", category: "data" },
+    { id: "crt-noise", name: "CRT Signal Noise", desc: "Scanlines • RGB Shift • Flicker", category: "data" },
+    
+    // === OTHER ===
+    { id: "biomimetic-organic", name: "Biomimetic Organic", desc: "Natural Forms • Flowing Shapes", category: "other" },
+    { id: "generative-ascii", name: "Generative ASCII", desc: "Text Art • Monospace • Retro", category: "other" },
+    { id: "cinematic-portals", name: "Cinematic Portals", desc: "Video BG • Transitions • Epic", category: "other" },
+    { id: "typographic-architecture", name: "Typographic Architecture", desc: "Giant Letters • Structure", category: "other" },
+  ];
+  
+  // Load preferences from localStorage
+  useEffect(() => {
+    const savedSound = localStorage.getItem("replay_sound_on_complete");
+    const savedAutoSave = localStorage.getItem("replay_auto_save");
+    const savedDefaultStyle = localStorage.getItem("replay_default_style_preset");
+    if (savedSound !== null) setSoundOnComplete(savedSound === "true");
+    if (savedAutoSave !== null) setAutoSaveEnabled(savedAutoSave === "true");
+    if (savedDefaultStyle !== null) setDefaultStylePreset(savedDefaultStyle);
+  }, []);
+  
+  // Save preferences to localStorage
+  const updateSoundPreference = (enabled: boolean) => {
+    setSoundOnComplete(enabled);
+    localStorage.setItem("replay_sound_on_complete", enabled.toString());
+  };
+  
+  const updateAutoSavePreference = (enabled: boolean) => {
+    setAutoSaveEnabled(enabled);
+    localStorage.setItem("replay_auto_save", enabled.toString());
+  };
+  
+  const updateDefaultStylePreset = (presetId: string) => {
+    setDefaultStylePreset(presetId);
+    localStorage.setItem("replay_default_style_preset", presetId);
+    setShowStyleDropdown(false);
+  };
 
   const { user, signOut } = useAuth();
   const { wallet, membership, totalCredits, isLoading, refreshCredits } = useCredits();
@@ -237,26 +383,28 @@ function SettingsContent() {
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto px-6 py-8">
-        <h1 className="text-2xl font-semibold mb-8">Settings</h1>
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8">
+        <h1 className="text-xl md:text-2xl font-semibold mb-6 md:mb-8">Settings</h1>
 
-        {/* Tabs */}
-        <div className="flex gap-1 p-1 rounded-lg bg-white/5 w-fit mb-8">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
-                activeTab === tab.id
-                  ? "bg-white/10 text-white"
-                  : "text-white/50 hover:text-white/70"
-              )}
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-            </button>
-          ))}
+        {/* Tabs - horizontally scrollable on mobile */}
+        <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 mb-6 md:mb-8 scrollbar-hide">
+          <div className="flex gap-1 p-1 rounded-lg bg-white/5 w-max md:w-fit">
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2.5 md:py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap min-h-[44px] md:min-h-0",
+                  activeTab === tab.id
+                    ? "bg-white/10 text-white"
+                    : "text-white/50 hover:text-white/70"
+                )}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Content */}
@@ -705,6 +853,209 @@ function SettingsContent() {
               </div>
             </div>
 
+          </motion.div>
+        )}
+
+        {/* Preferences Tab */}
+        {activeTab === "preferences" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6"
+          >
+            {/* Sound Settings */}
+            <div className="p-6 rounded-xl border border-white/10 bg-white/[0.02]">
+              <div className="flex items-center gap-3 mb-4">
+                <Bell className="w-5 h-5 text-[#FF6E3C]" />
+                <h2 className="text-lg font-medium">Notifications</h2>
+              </div>
+              
+              <div className="space-y-4">
+                {/* Sound on complete */}
+                <div className="flex items-center justify-between gap-4 p-4 rounded-lg bg-white/5">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {soundOnComplete ? (
+                      <Volume2 className="w-5 h-5 text-white/60 flex-shrink-0" />
+                    ) : (
+                      <VolumeX className="w-5 h-5 text-white/40 flex-shrink-0" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm md:text-base">Sound on generation complete</p>
+                      <p className="text-xs md:text-sm text-white/50 truncate">Play a sound when AI finishes</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => updateSoundPreference(!soundOnComplete)}
+                    className={cn(
+                      "relative w-12 h-7 rounded-full transition-colors flex-shrink-0",
+                      soundOnComplete ? "bg-[#FF6E3C]" : "bg-white/20"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "absolute top-1 w-5 h-5 rounded-full bg-white transition-transform shadow-sm",
+                        soundOnComplete ? "left-6" : "left-1"
+                      )}
+                    />
+                  </button>
+                </div>
+                
+                {/* Test sound button */}
+                {soundOnComplete && (
+                  <button
+                    onClick={() => {
+                      const audio = new Audio("/finish.mp3");
+                      audio.volume = 1.0;
+                      audio.play();
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm text-white/70 hover:text-white transition-colors"
+                  >
+                    <Volume2 className="w-4 h-4" />
+                    Test sound
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            {/* Editor Settings */}
+            <div className="p-6 rounded-xl border border-white/10 bg-white/[0.02]">
+              <div className="flex items-center gap-3 mb-4">
+                <Settings className="w-5 h-5 text-[#FF6E3C]" />
+                <h2 className="text-lg font-medium">Editor</h2>
+              </div>
+              
+              <div className="space-y-4">
+                {/* Default Style Preset */}
+                <div className="p-4 rounded-lg bg-white/5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="font-medium">Default Style Preset</p>
+                      <p className="text-sm text-white/50">Applied to new projects automatically</p>
+                    </div>
+                  </div>
+                  
+                  {/* Style Dropdown */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowStyleDropdown(!showStyleDropdown)}
+                      className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        {/* Preview thumbnail - using StylePreview from StyleInjector */}
+                        <StylePreview styleId={defaultStylePreset} />
+                        <div className="text-left min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {STYLE_PRESET_OPTIONS.find(s => s.id === defaultStylePreset)?.name || "Auto-Detect"}
+                          </p>
+                          <p className="text-xs text-white/40 truncate">
+                            {STYLE_PRESET_OPTIONS.find(s => s.id === defaultStylePreset)?.desc}
+                          </p>
+                        </div>
+                      </div>
+                      <ChevronDown className={cn(
+                        "w-4 h-4 text-white/40 transition-transform flex-shrink-0",
+                        showStyleDropdown && "rotate-180"
+                      )} />
+                    </button>
+                    
+                    {/* Dropdown Options with categories */}
+                    {showStyleDropdown && (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-[#0a0a0a] border border-white/10 rounded-xl shadow-xl z-50 max-h-[400px] overflow-y-auto">
+                        {/* Category labels */}
+                        {["special", "dark", "light", "creative", "motion", "interactive", "shader", "physics", "brand", "data", "other"].map(category => {
+                          const categoryStyles = STYLE_PRESET_OPTIONS.filter(s => s.category === category);
+                          if (categoryStyles.length === 0) return null;
+                          
+                          const categoryLabels: Record<string, { name: string; color: string }> = {
+                            special: { name: "Special", color: "text-[#FF6E3C]" },
+                            dark: { name: "Dark Premium", color: "text-purple-400" },
+                            light: { name: "Light & Clean", color: "text-blue-400" },
+                            creative: { name: "Creative & Experimental", color: "text-orange-400" },
+                            motion: { name: "Motion & Scroll", color: "text-cyan-400" },
+                            interactive: { name: "Interactive & Cursor", color: "text-pink-400" },
+                            shader: { name: "WebGL & Shaders", color: "text-emerald-400" },
+                            physics: { name: "Physics & 3D", color: "text-amber-400" },
+                            brand: { name: "Brand Inspired", color: "text-green-400" },
+                            data: { name: "Data & Dashboard", color: "text-indigo-400" },
+                            other: { name: "Other", color: "text-gray-400" },
+                          };
+                          
+                          return (
+                            <div key={category}>
+                              <div className={cn("px-4 py-2 text-[10px] font-medium uppercase tracking-wider", categoryLabels[category]?.color)}>
+                                {categoryLabels[category]?.name}
+                              </div>
+                              {categoryStyles.map((style) => (
+                                <button
+                                  key={style.id}
+                                  onClick={() => updateDefaultStylePreset(style.id)}
+                                  className={cn(
+                                    "w-full flex items-center gap-3 px-4 py-2 hover:bg-white/5 transition-colors text-left",
+                                    defaultStylePreset === style.id && "bg-[#FF6E3C]/10"
+                                  )}
+                                >
+                                  {/* Mini preview - using StylePreview from StyleInjector */}
+                                  <div className={cn(
+                                    "rounded overflow-hidden border flex-shrink-0",
+                                    defaultStylePreset === style.id ? "border-[#FF6E3C]" : "border-white/10"
+                                  )}>
+                                    <StylePreview styleId={style.id} />
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <p className={cn(
+                                      "text-xs font-medium truncate",
+                                      defaultStylePreset === style.id ? "text-[#FF6E3C]" : "text-white/80"
+                                    )}>
+                                      {style.name}
+                                    </p>
+                                    <p className="text-[10px] text-white/40 truncate">{style.desc}</p>
+                                  </div>
+                                  {defaultStylePreset === style.id && (
+                                    <Check className="w-4 h-4 text-[#FF6E3C] flex-shrink-0" />
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Auto-save */}
+                <div className="flex items-center justify-between gap-4 p-4 rounded-lg bg-white/5">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm md:text-base">Auto-save projects</p>
+                    <p className="text-xs md:text-sm text-white/50 truncate">Automatically save to the cloud</p>
+                  </div>
+                  <button
+                    onClick={() => updateAutoSavePreference(!autoSaveEnabled)}
+                    className={cn(
+                      "relative w-12 h-7 rounded-full transition-colors flex-shrink-0",
+                      autoSaveEnabled ? "bg-[#FF6E3C]" : "bg-white/20"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "absolute top-1 w-5 h-5 rounded-full bg-white transition-transform shadow-sm",
+                        autoSaveEnabled ? "left-6" : "left-1"
+                      )}
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            {/* Info */}
+            <div className="p-4 rounded-lg bg-white/5 border border-white/10">
+              <div className="flex items-start gap-3">
+                <Info className="w-4 h-4 text-white/40 mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-white/50">
+                  Preferences are saved locally in your browser. They will persist across sessions but not across devices.
+                </p>
+              </div>
+            </div>
           </motion.div>
         )}
       </div>

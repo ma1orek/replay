@@ -50,21 +50,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         setIsLoading(false);
         
-        // Track CompleteRegistration for new users (OAuth/magic link)
+        // Track CompleteRegistration for NEW users
         if (event === "SIGNED_IN" && session?.user) {
           const user = session.user;
-          const createdAt = new Date(user.created_at);
-          const now = new Date();
-          const ageInSeconds = (now.getTime() - createdAt.getTime()) / 1000;
           
-          // If user was created in the last 60 seconds, it's a new signup
-          if (ageInSeconds < 60) {
-            try {
-              trackCompleteRegistration(user.email, user.id);
-              console.log("[FB Tracking] CompleteRegistration sent for new OAuth/MagicLink user:", user.email);
-            } catch (e) {
-              console.warn("[FB Tracking] Failed:", e);
+          // Check if we already tracked this user (prevent duplicates across sessions)
+          const trackedKey = `replay_fb_tracked_${user.id}`;
+          const alreadyTracked = localStorage.getItem(trackedKey);
+          
+          if (!alreadyTracked) {
+            // Check if this is a new user (created in last 5 minutes)
+            // This catches both OAuth and email/password signups
+            const createdAt = new Date(user.created_at);
+            const now = new Date();
+            const ageInMinutes = (now.getTime() - createdAt.getTime()) / 1000 / 60;
+            
+            // If user was created recently (< 5 min), it's a new signup
+            // If user is older, it's a returning user logging in - don't track
+            if (ageInMinutes < 5) {
+              try {
+                trackCompleteRegistration(user.email, user.id);
+                localStorage.setItem(trackedKey, new Date().toISOString());
+                console.log("[FB Tracking] CompleteRegistration sent for NEW user:", user.email, `(age: ${ageInMinutes.toFixed(1)} min)`);
+              } catch (e) {
+                console.warn("[FB Tracking] Failed:", e);
+              }
+            } else {
+              // Mark as tracked anyway to avoid future checks
+              localStorage.setItem(trackedKey, "returning-user");
+              console.log("[FB Tracking] Skipping returning user:", user.email, `(age: ${ageInMinutes.toFixed(1)} min)`);
             }
+          } else {
+            console.log("[FB Tracking] User already tracked, skipping:", user.email);
           }
         }
       }
@@ -147,15 +164,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(data.session);
       setUser(data.session.user);
     }
-    // Track Facebook CompleteRegistration event
-    if (data.user) {
-      try {
-        trackCompleteRegistration(email, data.user.id);
-        console.log("[FB Tracking] CompleteRegistration sent for:", email);
-      } catch (e) {
-        console.warn("[FB Tracking] Failed:", e);
-      }
-    }
+    // NOTE: DO NOT track CompleteRegistration here!
+    // Event fires in onAuthStateChange when user verifies email and SIGNED_IN event triggers
+    // This prevents counting unverified signups in Facebook
+    console.log("[FB Tracking] Signup initiated, waiting for email verification before tracking:", email);
     return { error: null };
   }, [supabase.auth]);
 

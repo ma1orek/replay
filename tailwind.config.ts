@@ -62,6 +62,7 @@ const config: Config = {
         "aurora": "aurora 60s linear infinite",
         "aurora-slow": "aurora 90s linear infinite",
         "aurora-fast": "aurora 40s linear infinite reverse",
+        grid: "grid 15s linear infinite",
       },
       keyframes: {
         glow: {
@@ -97,6 +98,10 @@ const config: Config = {
             backgroundPosition: "350% 50%, 350% 50%",
           },
         },
+        grid: {
+          "0%": { transform: "translateY(-50%)" },
+          "100%": { transform: "translateY(0)" },
+        },
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
@@ -119,5 +124,3 @@ const config: Config = {
 };
 
 export default config;
-
-

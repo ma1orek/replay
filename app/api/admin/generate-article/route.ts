@@ -208,44 +208,99 @@ Each new title must target a COMPLETELY DIFFERENT topic, keyword, and angle!`
 Generate exactly ${count} HIGHLY UNIQUE SEO article titles. Each title MUST target a DIFFERENT keyword and audience.
 ${existingList}
 
-**FRESH TOPIC CATEGORIES TO EXPLORE:**
+**🔥 TRENDING TOPICS 2026 (PRIORITY - Google Trends hot keywords):**
 
-1. **SPECIFIC FRAMEWORK TUTORIALS** (use exact versions/features):
-   - "Building a Real-time Chat App with Replay AI and Socket.io"
-   - "Migrating from Create React App to Next.js 14 Using Replay"
-   - "Creating Accessible WCAG 2.1 Compliant Forms with Replay AI"
+1. **AI CODING ASSISTANTS** (high search volume):
+   - "Claude 4 vs GPT-5 for Frontend Development: Real Code Comparison"
+   - "Devin AI vs Human Developers: When to Use Each"
+   - "How Gemini 2.5 Changed Video Understanding for Code Generation"
+   - "Cursor vs Windsurf vs Replay: Which AI Codes Best?"
    
-2. **INDUSTRY-SPECIFIC USE CASES** (be VERY specific):
-   - "Replay AI for Healthcare: Building HIPAA-Compliant Patient Portals"
-   - "Restaurant POS System UI: From Video Demo to Working React App"
-   - "Fintech KYC Flows: Recreating ID Verification UIs with AI"
+2. **VIBE CODING / AI PAIR PROGRAMMING** (trending):
+   - "Vibe Coding: The New Way Developers Build UIs in 2026"
+   - "AI Pair Programming: Why Video Input Beats Text Prompts"
+   - "The Rise of 'Show Don't Tell' Development with AI"
    
-3. **PROBLEM-SOLUTION ARTICLES** (developer pain points):
-   - "Why Your Design-to-Code Workflow is Broken (And How Video Fixes It)"
-   - "Cutting Sprint Planning Time: Let AI Build Your Component Library"
-   - "The $50K Cost of Manual UI Recreation (ROI Analysis)"
+3. **SPECIFIC TECH STACKS** (long-tail SEO):
+   - "Astro 5.0 Components from Video Recordings"
+   - "Building Remix Apps with AI Video Analysis"
+   - "Qwik City UI from Screen Captures: Complete Guide"
+   - "SolidStart + Replay: Reactive UI Generation"
+   - "TanStack Router UI from Video Demos"
+   - "Hono.js Admin Panels with AI Generation"
    
-4. **VS COMPARISONS** (specific angles, not generic):
-   - "Replay vs Cursor for UI Development: Which AI Codes Better Tailwind?"
-   - "Video-to-Code vs Screenshot-to-Code: Why Motion Matters"
+4. **AI AGENTS & AUTOMATION** (trending 2026):
+   - "AI Agents That Build Your UI While You Sleep"
+   - "Autonomous UI Development: Replay + GitHub Actions"
+   - "MCP Servers for Automated Frontend Generation"
    
-5. **TECHNICAL DEEP DIVES** (advanced, specific):
-   - "How Replay's Behavior-Driven Reconstruction Handles State Management"
-   - "Under the Hood: Frame-by-Frame Analysis of UI Video Decoding"
-   - "Optimizing Generated Code: From 100KB to 20KB Components"
+5. **ENTERPRISE & BUSINESS** (money keywords):
+   - "Fortune 500 Companies Using AI for UI Development"
+   - "ROI Calculator: AI Code Generation vs Manual Development"
+   - "Compliance-Ready UIs: Building SOC2 Dashboards with AI"
+   - "How Startups Ship 10x Faster with Video-to-Code"
+   
+6. **NICHE INDUSTRIES** (low competition, high intent):
+   - "AI UI Generation for Crypto/DeFi Dashboards"
+   - "Building Trading Terminal UIs from Video"
+   - "Healthcare SaaS UI: HIPAA-Compliant Generation"
+   - "EdTech Platform UI from Teacher Demos"
+   - "PropTech: Real Estate Dashboard Generation"
+   - "Legal Tech: Contract Management UI with AI"
+   - "AgriTech Dashboard UIs from Field Recordings"
+   - "HRTech: Employee Portal Generation"
+   - "Logistics Dashboard from Warehouse Videos"
+   - "Gaming UI/UX: Menu Systems from Gameplay"
+   
+7. **DEVELOPER EXPERIENCE** (engagement keywords):
+   - "Why Senior Devs Are Secretly Using AI for Boilerplate"
+   - "The Ethical Debate: AI-Generated Code in Production"
+   - "Junior vs Senior: Who Benefits More from AI Coding?"
+   - "10 AI Coding Tools Every React Dev Needs in 2026"
+   
+8. **FRAMEWORK MIGRATIONS** (problem-solving):
+   - "Angular to React Migration Using Video Capture"
+   - "Vue 2 to Vue 3: Let AI Handle the UI Migration"
+   - "jQuery to Modern JS: Video-Based Refactoring"
+   - "WordPress to Headless: UI Recreation with AI"
+   
+9. **COMPONENT LIBRARIES** (specific keywords):
+   - "shadcn/ui Components from Video Recordings"
+   - "Radix UI + Replay: Accessible Component Generation"
+   - "Material UI 6 Recreation from Figma Videos"
+   - "Ant Design Dashboards from Screen Recordings"
+   - "Chakra UI v3 Components with AI Generation"
+   
+10. **CONTROVERSIAL / THOUGHT LEADERSHIP**:
+    - "Is Manual CSS Dead? AI-Generated Tailwind Analysis"
+    - "The Frontend Job Market After AI: 2026 Reality Check"
+    - "Why Figma-to-Code Tools Are Already Obsolete"
+    - "Video-to-Code Will Replace Design Handoff Forever"
 
-6. **EMERGING TRENDS 2026** (be timely):
-   - "AI UI Generation Trends: What's Working in 2026"
-   - "The Future of No-Code: Video as the New Design File Format"
+11. **COMPARISONS** (high click-through):
+    - "Lovable vs Bolt vs Replay: AI Builder Showdown 2026"
+    - "v0.dev vs Replay: Screenshot vs Video Approach"
+    - "GitHub Copilot Workspace vs Replay for UI Tasks"
+    - "Figma AI vs Replay: Different Problems, Different Solutions"
+    
+12. **HOW-TO LONG-TAIL** (answer keywords):
+    - "How to Build a SaaS Dashboard in Under 5 Minutes"
+    - "How to Convert Figma Prototypes to React Code"
+    - "How to Generate Landing Pages from Competitor Sites"
+    - "How to Create Mobile Apps from Desktop UI Videos"
+
+13. **LOCALIZED/LANGUAGE** (international SEO):
+    - "Building RTL UIs for Arabic Markets with AI"
+    - "Japanese UI Patterns: Recreating Yahoo Japan Layouts"
+    - "German Enterprise UIs: SAP-Style Dashboard Generation"
 
 **ABSOLUTE RULES:**
-1. NO duplicate concepts - if we have "Replay for e-commerce", don't do "Building e-commerce with Replay"
-2. NO generic titles like "Ultimate Guide to [thing]" if we already have guides on that thing
-3. NO variations like adding "in 2026" to existing topics
-4. Each title = unique primary keyword that we DON'T already rank for
-5. Be SPECIFIC: "Building Multi-Tenant SaaS Dashboards" not "Building Dashboards"
-6. Mix languages/frameworks: Vue, Svelte, Angular, not just React
-7. Include specific numbers when relevant: "5 Ways", "10 Tips", "$50K Cost"
+1. NO duplicate concepts - check ${existingTitles.length} existing titles
+2. Each title = unique primary keyword
+3. Mix frameworks: React, Vue, Svelte, Angular, Solid, Qwik, Astro
+4. Include numbers when relevant: "5 Ways", "10x Faster", "$50K"
+5. Target different search intents: informational, commercial, transactional
+6. Balance: 30% trending, 30% evergreen, 20% technical, 20% business
 
 Output ONLY the titles, one per line, no numbers or bullets.`;
 

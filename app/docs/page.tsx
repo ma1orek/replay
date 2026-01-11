@@ -1,5 +1,11 @@
 import Link from "next/link";
 import { Video, Edit3, GitBranch, Globe, Database, Zap, ArrowRight } from "lucide-react";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Documentation - Replay",
+  description: "Learn how to use Replay to turn video recordings into production-ready UI code. Quickstart guides, features, and API reference.",
+};
 
 export default function DocsPage() {
   return (
@@ -173,4 +179,3 @@ export default function DocsPage() {
     </div>
   );
 }
-

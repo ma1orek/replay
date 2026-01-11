@@ -21,6 +21,8 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { rating, feedback, generationId, userId, dismissed } = body;
 
+    console.log("[Feedback] Received:", { rating, hasText: !!feedback, generationId, userId });
+
     if (!rating) {
       return NextResponse.json({ error: "Rating is required" }, { status: 400 });
     }
@@ -28,59 +30,68 @@ export async function POST(request: Request) {
     const supabase = getSupabaseAdmin();
     
     if (!supabase) {
-      // Still return success so user experience isn't affected
-      console.warn("Feedback not saved - no Supabase client");
-      return NextResponse.json({ success: true, warning: "Feedback not saved" });
+      console.error("[Feedback] No Supabase client - check SUPABASE_SERVICE_ROLE_KEY");
+      return NextResponse.json({ success: false, error: "No database connection" });
     }
     
-    const { error } = await supabase.from("feedback").insert({
+    const { data, error } = await supabase.from("feedback").insert({
       rating,
       feedback_text: feedback || null,
       generation_id: generationId || null,
       user_id: userId || null,
       dismissed: dismissed || false,
       created_at: new Date().toISOString(),
-    });
+    }).select();
 
     if (error) {
-      console.error("Error saving feedback:", error);
+      console.error("[Feedback] Insert error:", error.message, error.details, error.hint);
+      
       // Check if table doesn't exist
       if (error.message?.includes('relation') && error.message?.includes('does not exist')) {
-        console.warn("Feedback table doesn't exist - please create it manually in Supabase SQL Editor:");
-        console.warn(`
-          CREATE TABLE IF NOT EXISTS feedback (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-            rating TEXT NOT NULL,
-            feedback_text TEXT,
-            generation_id TEXT,
-            user_id TEXT,
-            dismissed BOOLEAN DEFAULT false,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-          );
+        console.error("[Feedback] TABLE DOES NOT EXIST! Run this SQL in Supabase:");
+        console.error(`
+CREATE TABLE IF NOT EXISTS public.feedback (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  rating TEXT NOT NULL,
+  feedback_text TEXT,
+  generation_id TEXT,
+  user_id TEXT,
+  dismissed BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Allow inserts
+ALTER TABLE public.feedback ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all feedback inserts" ON public.feedback FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow all feedback reads" ON public.feedback FOR SELECT USING (true);
         `);
+        return NextResponse.json({ success: false, error: "Table does not exist" });
       }
-      // Still return success so UI isn't affected
-      return NextResponse.json({ success: true });
+      
+      return NextResponse.json({ success: false, error: error.message });
     }
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Feedback error:", error);
-    // Return success anyway so user experience isn't disrupted
-    return NextResponse.json({ success: true });
+    console.log("[Feedback] Saved successfully:", data);
+    return NextResponse.json({ success: true, id: data?.[0]?.id });
+  } catch (error: any) {
+    console.error("[Feedback] Exception:", error);
+    return NextResponse.json({ success: false, error: error.message });
   }
 }
 
 // GET - for admin panel
 export async function GET(request: Request) {
   try {
+    console.log("[Feedback GET] Fetching feedback...");
+    
     const supabase = getSupabaseAdmin();
     
     if (!supabase) {
+      console.error("[Feedback GET] No Supabase client");
       return NextResponse.json({ 
         feedback: [], 
         stats: { total: 0, yes: 0, kinda: 0, no: 0 },
-        error: "No database connection"
+        error: "No database connection - check SUPABASE_SERVICE_ROLE_KEY"
       });
     }
     
@@ -91,13 +102,14 @@ export async function GET(request: Request) {
       .limit(100);
 
     if (error) {
-      console.error("Error fetching feedback:", error);
+      console.error("[Feedback GET] Error:", error.message, error.details);
+      
       // Return empty data if table doesn't exist
       if (error.message?.includes('relation') && error.message?.includes('does not exist')) {
         return NextResponse.json({ 
           feedback: [], 
           stats: { total: 0, yes: 0, kinda: 0, no: 0 },
-          warning: "Feedback table not yet created"
+          error: "Feedback table does not exist - create it in Supabase SQL Editor"
         });
       }
       return NextResponse.json({ 
@@ -106,6 +118,8 @@ export async function GET(request: Request) {
         error: error.message 
       });
     }
+
+    console.log("[Feedback GET] Found", feedback?.length || 0, "entries");
 
     // Calculate stats
     const stats = {
@@ -117,7 +131,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ feedback: feedback || [], stats });
   } catch (error: any) {
-    console.error("Feedback fetch error:", error);
+    console.error("[Feedback GET] Exception:", error);
     return NextResponse.json({ 
       feedback: [], 
       stats: { total: 0, yes: 0, kinda: 0, no: 0 },

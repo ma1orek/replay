@@ -108,6 +108,7 @@ export default function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [feedback, setFeedback] = useState<FeedbackData[]>([]);
   const [feedbackStats, setFeedbackStats] = useState<FeedbackStats | null>(null);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "generations" | "feedback" | "content">("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
@@ -161,6 +162,13 @@ export default function AdminPage() {
         const feedbackData = await feedbackResponse.json();
         setFeedback(feedbackData.feedback || []);
         setFeedbackStats(feedbackData.stats || null);
+        if (feedbackData.error) {
+          setFeedbackError(feedbackData.error);
+        } else {
+          setFeedbackError(null);
+        }
+      } else {
+        setFeedbackError("Failed to load feedback data");
       }
     } catch (error) {
       console.error("Error loading admin data:", error);
@@ -1191,7 +1199,27 @@ export default function AdminPage() {
                 </h3>
               </div>
               <div className="divide-y divide-white/5">
-                {feedback.length === 0 ? (
+                {feedbackError ? (
+                  <div className="py-8 text-center">
+                    <p className="text-red-400 mb-2">Error loading feedback</p>
+                    <p className="text-white/50 text-sm mb-4">{feedbackError}</p>
+                    <div className="bg-black/30 rounded-lg p-4 text-left max-w-xl mx-auto">
+                      <p className="text-xs text-white/40 mb-2">Run this SQL in Supabase SQL Editor:</p>
+                      <pre className="text-xs text-white/60 overflow-x-auto whitespace-pre-wrap">{`CREATE TABLE IF NOT EXISTS public.feedback (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  rating TEXT NOT NULL,
+  feedback_text TEXT,
+  generation_id TEXT,
+  user_id TEXT,
+  dismissed BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.feedback ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (true);`}</pre>
+                    </div>
+                  </div>
+                ) : feedback.length === 0 ? (
                   <div className="py-12 text-center text-white/30">
                     No feedback yet
                   </div>
