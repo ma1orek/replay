@@ -35,8 +35,11 @@ export async function POST(request: NextRequest) {
     // 3. Spend credits - SAME CODE as /api/credits/spend (copy-paste to avoid internal fetch issues)
     const admin = createAdminClient();
     if (!admin) {
+      console.error("[generate/start] Admin client is null - check SUPABASE_SERVICE_ROLE_KEY");
       return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
     }
+
+    console.log(`[generate/start] Calling spend_credits RPC for user ${user.id}, cost ${CREDIT_COSTS.VIDEO_GENERATE}`);
 
     const { data: spendData, error: spendError } = await admin.rpc("spend_credits", {
       p_user_id: user.id,
@@ -45,13 +48,15 @@ export async function POST(request: NextRequest) {
       p_reference_id: `mobile_gen_${Date.now()}`,
     });
 
+    console.log("[generate/start] RPC response:", { spendData, spendError });
+
     if (spendError) {
-      console.error("[generate/start] Credit spend error:", spendError);
+      console.error("[generate/start] Credit spend RPC error:", JSON.stringify(spendError, null, 2));
       return NextResponse.json({ error: spendError.message }, { status: 500 });
     }
 
     if (!spendData?.success) {
-      console.log("[generate/start] Insufficient credits:", spendData);
+      console.log("[generate/start] Insufficient credits - spendData:", JSON.stringify(spendData, null, 2));
       return NextResponse.json(
         { error: spendData?.error || "Insufficient credits", ...spendData },
         { status: 402 }
