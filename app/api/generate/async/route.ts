@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       id: generationId,
       user_id: user.id,
       title: "Processing...",
-      status: "processing",
+      status: "running",  // Must be: running, complete, or failed
       input_video_url: videoUrl,
       input_style: styleDirective || "",
       input_context: "",
