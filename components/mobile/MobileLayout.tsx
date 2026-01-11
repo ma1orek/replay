@@ -37,11 +37,10 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
   const [generationError, setGenerationError] = useState<string | null>(null);
   
   const pendingLoginRef = useRef(false);
-  const uploadedVideoUrlRef = useRef<string | null>(null);
 
   // Handle generation completion
-  const handleGenerationComplete = useCallback((code: string, title?: string) => {
-    console.log("[MobileLayout] Generation complete!", { codeLength: code.length, title, codePreview: code.substring(0, 200) });
+  const handleGenerationComplete = useCallback((code: string, title?: string, videoUrl?: string) => {
+    console.log("[MobileLayout] Generation complete!", { codeLength: code.length, title, videoUrl, codePreview: code.substring(0, 200) });
     
     // Store the code
     setGeneratedCode(code);
@@ -50,13 +49,9 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
     console.log("[MobileLayout] Code received, length:", code.length);
     console.log("[MobileLayout] Code starts with:", code.substring(0, 200));
     
-    // Create preview URL from code
-    const blob = new Blob([code], { type: "text/html; charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    console.log("[MobileLayout] Preview URL created:", url, "blob size:", blob.size);
-    
     // Update state synchronously to ensure proper rendering
-    setPreviewUrl(url);
+    // No need for blob URL - we use srcdoc now
+    setPreviewUrl(null); // Clear old blob URL if any
     setHasGenerated(true);
     setIsProcessing(false);
     
@@ -75,7 +70,7 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
       onSaveGeneration({
         title: finalTitle,
         code,
-        videoUrl: uploadedVideoUrlRef.current || undefined,
+        videoUrl: videoUrl || undefined,
       });
     }
     
@@ -279,6 +274,7 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
         ) : (
           <MobilePreviewView
             previewUrl={previewUrl}
+            previewCode={generatedCode}
             isProcessing={isProcessing || isPolling}
             processingProgress={processingProgress}
             processingMessage={processingMessage}
