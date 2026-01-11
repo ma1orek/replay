@@ -6352,17 +6352,17 @@ export const shadows = {
     });
   };
 
-  // MOBILE GENERATION HANDLER - Calls spend API directly (API validates credits)
+  // MOBILE GENERATION HANDLER - EXACTLY like desktop
   const handleMobileGenerate = useCallback(async (videoBlob: Blob, videoName: string): Promise<{ code: string; previewUrl: string } | null> => {
+    console.log("[MOBILE] Starting generation...", { blobSize: videoBlob.size, blobType: videoBlob.type });
+    
     try {
-      // Skip client-side credit check - let API handle it
-      // This avoids stale closure issues with userTotalCredits
-      // The API will return success:false if not enough credits
-      
+      // 1. Spend credits (same as desktop)
+      console.log("[MOBILE] Step 1: Spending credits...");
       const spendRes = await fetch("/api/credits/spend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // Ensure auth cookies are sent on mobile Safari
+        credentials: "include",
         body: JSON.stringify({
           cost: CREDIT_COSTS.VIDEO_GENERATE,
           reason: "video_generate",
@@ -6370,9 +6370,6 @@ export const shadows = {
         }),
       });
       
-      console.log("[MOBILE] Spend response status:", spendRes.status);
-      
-      // Handle auth error
       if (spendRes.status === 401) {
         console.log("[MOBILE] Not authenticated");
         setShowAuthModal(true);
@@ -6383,21 +6380,15 @@ export const shadows = {
       console.log("[MOBILE] Spend result:", spendData);
       
       if (!spendData.success) {
-        console.log("[MOBILE] Spend failed - showing modal. Error:", spendData.error);
-        // Only show out of credits if it's actually a credits issue
-        if (spendData.error?.includes("credit") || spendData.error?.includes("insufficient")) {
-          setShowOutOfCreditsModal(true);
-        } else {
-          showToast(spendData.error || "Failed to process", "error");
-        }
+        setShowOutOfCreditsModal(true);
         return null;
       }
-      
       refreshCredits();
       
-      // Upload video to Supabase
-      const videoType = videoBlob.type || "video/webm";
-      const fileExt = videoType.includes("mp4") ? "mp4" : "webm";
+      // 2. Upload video (same as desktop)
+      console.log("[MOBILE] Step 2: Getting upload URL...");
+      const videoType = videoBlob.type || "video/mp4";
+      const fileExt = videoType.includes("webm") ? "webm" : "mp4";
       
       const urlRes = await fetch("/api/upload-video/get-url", {
         method: "POST",
@@ -6405,48 +6396,56 @@ export const shadows = {
         credentials: "include",
         body: JSON.stringify({
           filename: `mobile-${Date.now()}.${fileExt}`,
-          contentType: videoType.startsWith("video/") ? videoType : "video/mp4",
+          contentType: videoType,
         }),
       });
       
       if (!urlRes.ok) {
-        showToast("Failed to prepare upload", "error");
+        console.error("[MOBILE] Failed to get upload URL:", urlRes.status);
+        showToast("Upload failed", "error");
         return null;
       }
       
       const { signedUrl, publicUrl } = await urlRes.json();
+      console.log("[MOBILE] Got upload URL, uploading...");
       
-      // Upload to Supabase Storage
+      // 3. Upload blob
       const uploadRes = await fetch(signedUrl, {
         method: "PUT",
-        headers: { "Content-Type": videoType.startsWith("video/") ? videoType : "video/mp4" },
+        headers: { "Content-Type": videoType },
         body: videoBlob,
       });
       
       if (!uploadRes.ok) {
-        showToast("Failed to upload video", "error");
+        console.error("[MOBILE] Upload failed:", uploadRes.status);
+        showToast("Upload failed", "error");
         return null;
       }
+      console.log("[MOBILE] Upload complete:", publicUrl);
       
-      // Generate code
+      // 4. Generate code (same as desktop)
+      console.log("[MOBILE] Step 3: Calling transmuteVideoToCode...");
       const result = await transmuteVideoToCode({
         videoUrl: publicUrl,
-        styleDirective: "Modern, clean design",
+        styleDirective: "Modern, clean design with Tailwind CSS",
       });
+      
+      console.log("[MOBILE] Generation result:", { success: result.success, hasCode: !!result.code, codeLength: result.code?.length });
       
       if (result.success && result.code) {
         const blob = new Blob([result.code], { type: "text/html" });
-        return {
-          code: result.code,
-          previewUrl: URL.createObjectURL(blob),
-        };
+        const previewUrl = URL.createObjectURL(blob);
+        console.log("[MOBILE] Success! Preview URL created");
+        return { code: result.code, previewUrl };
       }
       
-      showToast("Generation failed", "error");
+      console.error("[MOBILE] Generation returned no code:", result);
+      showToast("Generation failed - no code returned", "error");
       return null;
+      
     } catch (err) {
-      console.error("Mobile generation error:", err);
-      showToast("Something went wrong", "error");
+      console.error("[MOBILE] Error:", err);
+      showToast(`Error: ${err instanceof Error ? err.message : "Unknown error"}`, "error");
       return null;
     }
   }, [refreshCredits, showToast]);

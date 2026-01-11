@@ -141,51 +141,50 @@ export default function MobileLayout({ user, isPro, plan, creditsLoading, onLogi
     
     setIsProcessing(true);
     setProcessingProgress(0);
-    setProcessingMessage("Preparing...");
+    setProcessingMessage("Starting...");
     setActiveTab("preview");
     
     try {
-      // Process video
-      setProcessingMessage("Optimizing video...");
-      setProcessingProgress(10);
+      // Skip compression - send raw video directly (like desktop does)
+      setProcessingProgress(20);
+      setProcessingMessage("Uploading video...");
       
-      const processed = await videoProcessor.processVideo(videoBlob);
+      // Directly use the video blob without processing
+      // This matches desktop behavior
+      setProcessingProgress(40);
+      setProcessingMessage("Generating UI...");
       
-      if (!processed) {
-        throw new Error("Video processing failed");
-      }
+      console.log("[MobileLayout] Calling onGenerate with blob:", videoBlob.size, videoBlob.type);
       
-      setProcessingProgress(30);
-      setProcessingMessage("Uploading...");
+      const result = await onGenerate(videoBlob, projectName);
       
-      // Generate code
-      setProcessingProgress(50);
-      setProcessingMessage("Analyzing UI...");
-      
-      const result = await onGenerate(processed.blob, projectName);
+      console.log("[MobileLayout] onGenerate result:", result);
       
       if (result) {
         setProcessingProgress(90);
-        setProcessingMessage("Rendering...");
+        setProcessingMessage("Rendering preview...");
         
-        await new Promise(r => setTimeout(r, 300));
+        await new Promise(r => setTimeout(r, 200));
         
         setPreviewUrl(result.previewUrl);
         setProcessingProgress(100);
         setProcessingMessage("Done!");
         setHasGenerated(true);
       } else {
-        throw new Error("Generation failed");
+        // onGenerate returns null on error (error toast shown there)
+        console.error("[MobileLayout] onGenerate returned null");
+        setActiveTab("configure");
+        setProcessingMessage("");
       }
       
     } catch (err) {
-      console.error("Reconstruction error:", err);
+      console.error("[MobileLayout] Reconstruction error:", err);
       setActiveTab("configure");
       setProcessingMessage("");
     } finally {
       setIsProcessing(false);
     }
-  }, [videoBlob, user, onLogin, saveVideoForLogin, videoProcessor, onGenerate, projectName, creditsLoading]);
+  }, [videoBlob, user, onLogin, saveVideoForLogin, onGenerate, projectName, creditsLoading]);
   
   // Handle back - goes back in flow or clears video
   const handleBack = useCallback(() => {
