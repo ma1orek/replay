@@ -42,9 +42,6 @@ export default function LandingHero() {
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
-  const mobileVideoRef = useRef<HTMLVideoElement | null>(null);
-  const mobileCameraChunksRef = useRef<Blob[]>([]);
-  const mobileCameraTimerRef = useRef<NodeJS.Timeout | null>(null);
   const mimeType = useSupportedRecorderMime();
 
   const [heroFlow, setHeroFlow] = useState<{ blob: Blob | null; name: string; previewUrl: string | null }>({
@@ -59,8 +56,6 @@ export default function LandingHero() {
   const [pendingRedirect, setPendingRedirect] = useState(false);
   const [styleReferenceImage, setStyleReferenceImage] = useState<{ url: string; name: string } | null>(null);
   const [showMobileRecordingInfo, setShowMobileRecordingInfo] = useState(false);
-  const [showMobileCamera, setShowMobileCamera] = useState(false);
-  const [mobileRecordingTime, setMobileRecordingTime] = useState(0);
   
   const [isDragging, setIsDragging] = useState(false);
   const [selectedDemo, setSelectedDemo] = useState<string | null>(null);
@@ -126,86 +121,12 @@ export default function LandingHero() {
     } catch {}
   }, []);
 
-  // Mobile camera functions
-  const startMobileCamera = useCallback(async () => {
-    try {
-      setShowMobileCamera(true);
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: 1280, height: 720 },
-        audio: false
-      });
-      streamRef.current = stream;
-      if (mobileVideoRef.current) {
-        mobileVideoRef.current.srcObject = stream;
-        mobileVideoRef.current.play();
-      }
-    } catch (err) {
-      console.error("Camera error:", err);
-      setShowMobileCamera(false);
-    }
-  }, []);
+  // Mobile: Go to tool with camera mode
+  const startMobileCamera = useCallback(() => {
+    // Navigate to tool with camera=true param to auto-open camera there
+    router.push("/tool?camera=true");
+  }, [router]);
 
-  const stopMobileCamera = useCallback(() => {
-    if (mobileCameraTimerRef.current) clearInterval(mobileCameraTimerRef.current);
-    if (recorderRef.current?.state === "recording") recorderRef.current.stop();
-    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
-    streamRef.current = null;
-    setShowMobileCamera(false);
-    setIsRecording(false);
-    setMobileRecordingTime(0);
-  }, []);
-
-  const startMobileCameraRecording = useCallback(() => {
-    if (!streamRef.current) return;
-    mobileCameraChunksRef.current = [];
-    
-    const mimeTypes = ["video/webm;codecs=vp9", "video/webm", "video/mp4"];
-    let mime = "video/webm";
-    for (const m of mimeTypes) {
-      if (MediaRecorder.isTypeSupported(m)) { mime = m; break; }
-    }
-    
-    const recorder = new MediaRecorder(streamRef.current, { mimeType: mime, videoBitsPerSecond: 2500000 });
-    recorder.ondataavailable = (e) => { if (e.data.size > 0) mobileCameraChunksRef.current.push(e.data); };
-    recorder.onstop = async () => {
-      if (mobileCameraChunksRef.current.length > 0) {
-        const blob = new Blob(mobileCameraChunksRef.current, { type: mime });
-        // Save to pending flow and redirect to tool
-        await setPending({
-          blob,
-          name: "Recording",
-          context: context.trim(),
-          styleDirective: styleDirective?.trim() || "Auto-Detect",
-          createdAt: Date.now(),
-        });
-        stopMobileCamera();
-        router.push("/tool");
-      } else {
-        stopMobileCamera();
-      }
-    };
-    
-    recorderRef.current = recorder;
-    recorder.start(500);
-    setIsRecording(true);
-    mobileCameraTimerRef.current = setInterval(() => setMobileRecordingTime(p => p + 1), 1000);
-  }, [stopMobileCamera, setPending, router, context, styleDirective]);
-
-  const stopMobileCameraRecording = useCallback(() => {
-    if (mobileCameraTimerRef.current) clearInterval(mobileCameraTimerRef.current);
-    if (recorderRef.current?.state === "recording") recorderRef.current.stop();
-    setIsRecording(false);
-  }, []);
-
-  const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
-
-  // Cleanup mobile camera on unmount
-  useEffect(() => {
-    return () => {
-      if (mobileCameraTimerRef.current) clearInterval(mobileCameraTimerRef.current);
-      if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
-    };
-  }, []);
 
   const canSend = !!heroFlow.blob;
 
@@ -240,42 +161,6 @@ export default function LandingHero() {
     setLoadingDemo(demo.id);
     router.push(`/tool?demo=${demo.id}`);
   };
-
-  // Mobile camera overlay
-  if (showMobileCamera) {
-    return (
-      <div className="fixed inset-0 bg-black z-[100] flex flex-col">
-        <video ref={mobileVideoRef} className="flex-1 object-cover" playsInline muted autoPlay />
-        
-        {isRecording && (
-          <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 bg-red-600 rounded-full">
-            <div className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
-            <span className="text-white font-mono text-sm font-bold">{formatTime(mobileRecordingTime)}</span>
-          </div>
-        )}
-        
-        <div className="absolute bottom-0 left-0 right-0 pb-10 pt-16 bg-gradient-to-t from-black/90 to-transparent">
-          <div className="flex items-center justify-center gap-10">
-            <button onClick={stopMobileCamera} className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-            </button>
-            
-            {isRecording ? (
-              <button onClick={stopMobileCameraRecording} className="w-20 h-20 rounded-full bg-red-600 flex items-center justify-center">
-                <div className="w-8 h-8 rounded-sm bg-white" />
-              </button>
-            ) : (
-              <button onClick={startMobileCameraRecording} className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center">
-                <div className="w-14 h-14 rounded-full bg-[#FF6E3C]" />
-              </button>
-            )}
-            
-            <div className="w-14" />
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="relative w-full">

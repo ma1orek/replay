@@ -16,6 +16,7 @@ interface MobileConfigureViewProps {
   onStyleChange: (value: string) => void;
   onReconstruct: () => void;
   isProcessing: boolean;
+  autoStartCamera?: boolean;
 }
 
 export default function MobileConfigureView({
@@ -29,11 +30,13 @@ export default function MobileConfigureView({
   style,
   onStyleChange,
   onReconstruct,
-  isProcessing
+  isProcessing,
+  autoStartCamera = false
 }: MobileConfigureViewProps) {
   const [showCamera, setShowCamera] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const hasAutoStarted = useRef(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const previewVideoRef = useRef<HTMLVideoElement>(null);
@@ -119,6 +122,17 @@ export default function MobileConfigureView({
   };
   
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
+  
+  // Auto-start camera when coming from landing page with ?camera=true
+  useEffect(() => {
+    if (autoStartCamera && !hasAutoStarted.current && !videoBlob) {
+      hasAutoStarted.current = true;
+      // Small delay to ensure component is mounted
+      setTimeout(() => {
+        startCamera();
+      }, 100);
+    }
+  }, [autoStartCamera, videoBlob]);
   
   // Camera overlay
   if (showCamera) {
