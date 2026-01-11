@@ -1,6 +1,43 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 export default function LandingSuperpowers() {
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+
+  // Force autoplay on mobile - iOS Safari needs explicit play() call
+  useEffect(() => {
+    const playVideos = () => {
+      videoRefs.current.forEach(video => {
+        if (video) {
+          video.play().catch(() => {
+            // Silent catch - video might not be ready or in viewport
+          });
+        }
+      });
+    };
+
+    // Try to play immediately
+    playVideos();
+
+    // Also try when scrolling (for lazy loading)
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.target instanceof HTMLVideoElement) {
+            entry.target.play().catch(() => {});
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    videoRefs.current.forEach(video => {
+      if (video) observer.observe(video);
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   const powers = [
     {
@@ -55,12 +92,13 @@ export default function LandingSuperpowers() {
               {/* Video Background */}
               <div className="absolute inset-0 z-0 bg-black">
                 <video
+                  ref={(el) => { videoRefs.current[i] = el; }}
                   src={power.video}
                   autoPlay
                   muted
                   loop
                   playsInline
-                  preload="metadata"
+                  preload="auto"
                   className="w-full h-full object-cover mix-blend-screen opacity-60 md:opacity-80 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
                 />
                 {/* Gradient: transparent at top, black at bottom for text */}

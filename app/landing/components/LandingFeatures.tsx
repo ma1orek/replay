@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 
 export function LandingFeatures() {
   const ref = useRef(null);
+  const beforeVideoRef = useRef<HTMLVideoElement>(null);
+  const afterVideoRef = useRef<HTMLVideoElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
   const [activeSlide, setActiveSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
@@ -35,6 +37,16 @@ export function LandingFeatures() {
     }, 8000);
     return () => clearInterval(interval);
   }, [examples.length, isAutoPlaying]);
+
+  // Force autoplay on mobile - iOS Safari needs explicit play() call
+  useEffect(() => {
+    const playVideos = () => {
+      beforeVideoRef.current?.play().catch(() => {});
+      afterVideoRef.current?.play().catch(() => {});
+    };
+    playVideos();
+    // Also play when slide changes
+  }, [activeSlide]);
 
   return (
     <section id="features" ref={ref} className="relative z-10 py-32 border-t border-white/[0.03]">
@@ -70,6 +82,7 @@ export function LandingFeatures() {
             <div className="relative rounded-2xl border border-white/[0.08] overflow-hidden bg-[#0a0a0a]">
               <AnimatePresence mode="wait">
                 <motion.video
+                  ref={beforeVideoRef}
                   key={`before-${activeSlide}`}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -78,6 +91,7 @@ export function LandingFeatures() {
                   className="w-full"
                   style={{ aspectRatio: "1920/940" }}
                   autoPlay muted loop playsInline
+                  preload="auto"
                   src={examples[activeSlide].before}
                 />
               </AnimatePresence>
@@ -114,6 +128,7 @@ export function LandingFeatures() {
             <div className="relative rounded-2xl border border-[#FF6E3C]/20 overflow-hidden bg-[#0a0a0a]">
               <AnimatePresence mode="wait">
                 <motion.video
+                  ref={afterVideoRef}
                   key={`after-${activeSlide}`}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -122,6 +137,7 @@ export function LandingFeatures() {
                   className="w-full"
                   style={{ aspectRatio: "1920/940" }}
                   autoPlay muted loop playsInline
+                  preload="auto"
                   src={examples[activeSlide].after}
                 />
               </AnimatePresence>
