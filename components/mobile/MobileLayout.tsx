@@ -308,7 +308,7 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
   let processingProgress = 0;
   let processingMessage = "Starting...";
 
-  if (uploadStatus.stage === "compressing" || uploadStatus.stage === "uploading") {
+  if (uploadStatus.stage === "uploading") {
     // Phase 1: Upload (0-30% of total perceived progress)
     processingProgress = Math.round(uploadStatus.progress * 0.3); 
     processingMessage = uploadStatus.message;
