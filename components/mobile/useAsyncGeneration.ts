@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { CREDIT_COSTS } from "@/lib/credits/context";
 
 interface JobStatus {
   status: "pending" | "processing" | "complete" | "failed";
@@ -71,11 +72,38 @@ export function useAsyncGeneration(
   }, []);
 
   // Start generation - calls API and waits for result
+  // SAME FLOW AS DESKTOP: spend credits first, then generate
   const startGeneration = useCallback(async (videoBlob: Blob, styleDirective: string): Promise<string | null> => {
     try {
       // Reset state
-      setJobStatus({ status: "processing", progress: 5, message: "Starting..." });
+      setJobStatus({ status: "processing", progress: 5, message: "Checking credits..." });
       setIsPolling(true);
+
+      // STEP 1: Spend credits FIRST (same as desktop)
+      console.log("[useAsyncGeneration] Spending credits via /api/credits/spend...");
+      const spendRes = await fetch("/api/credits/spend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          cost: CREDIT_COSTS.VIDEO_GENERATE,
+          reason: "video_generate",
+          referenceId: `mobile_gen_${Date.now()}`,
+        }),
+      });
+
+      const spendData = await spendRes.json();
+      console.log("[useAsyncGeneration] Credit spend result:", spendData);
+
+      if (!spendRes.ok || !spendData.success) {
+        setIsPolling(false);
+        setJobStatus({ status: "failed", progress: 0, message: "Insufficient credits", error: spendData.error });
+        onError(spendData.error || "Insufficient credits");
+        return null;
+      }
+
+      // STEP 2: Start generation (credits already spent)
+      setJobStatus({ status: "processing", progress: 10, message: "Starting generation..." });
       
       // Start progress simulation
       startProgressSimulation();
@@ -104,16 +132,20 @@ export function useAsyncGeneration(
         return null;
       }
 
-      if (res.status === 402) {
-        setIsPolling(false);
-        const data = await res.json();
-        setJobStatus({ status: "failed", progress: 0, message: "Insufficient credits", error: data.error });
-        onError("Insufficient credits");
-        return null;
-      }
-
       const data = await res.json();
       console.log("[useAsyncGeneration] API response:", { success: data.success, hasCode: !!data.code, codeLength: data.code?.length });
+
+      if (!res.ok) {
+        setJobStatus({
+          status: "failed",
+          progress: 0,
+          message: data.error || "Generation failed",
+          error: data.error,
+        });
+        setIsPolling(false);
+        onError(data.error || "Generation failed");
+        return null;
+      }
 
       if (data.success && data.code) {
         setJobStatus({
