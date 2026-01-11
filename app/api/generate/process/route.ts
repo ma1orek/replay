@@ -7,7 +7,7 @@ import { CREDIT_COSTS } from "@/lib/credits/context";
 import { getJobStorage, setJob, updateJob, type GenerationJob } from "@/lib/jobStorage";
 
 // Helper to update job status (in-memory + database)
-async function updateJobStatusFullFull(
+async function updateJobStatusFull(
   jobId: string,
   status: "pending" | "processing" | "complete" | "failed",
   progress: number,
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Update status: Spending credits
-    await updateJobStatusFullFull(jobId, "processing", 20, "Verifying credits...");
+    await updateJobStatusFull(jobId, "processing", 20, "Verifying credits...");
 
     // Spend credits
     const admin = createAdminClient();
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (!creditData || creditData.balance < CREDIT_COSTS.VIDEO_GENERATE) {
-        await updateJobStatusFullFull(jobId, "failed", 0, "Insufficient credits", {
+        await updateJobStatusFull(jobId, "failed", 0, "Insufficient credits", {
           error: "Not enough credits for generation",
         });
         return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
