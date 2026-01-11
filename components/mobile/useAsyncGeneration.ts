@@ -102,24 +102,60 @@ export function useAsyncGeneration(
         return null;
       }
 
-      // STEP 2: Start generation (credits already spent)
-      setJobStatus({ status: "processing", progress: 10, message: "Starting generation..." });
+      // STEP 2: Upload video first (like desktop does)
+      // This avoids Vercel's 403 Forbidden on FormData uploads from mobile
+      setJobStatus({ status: "processing", progress: 10, message: "Uploading video..." });
+      
+      console.log("[useAsyncGeneration] Uploading video to /api/upload-video...");
+      
+      const uploadFormData = new FormData();
+      uploadFormData.append("video", videoBlob, `video.${videoBlob.type.includes("webm") ? "webm" : "mp4"}`);
+      
+      const uploadRes = await fetch("/api/upload-video", {
+        method: "POST",
+        credentials: "include",
+        body: uploadFormData,
+      });
+
+      if (!uploadRes.ok) {
+        const uploadError = await uploadRes.text();
+        console.error("[useAsyncGeneration] Upload failed:", uploadRes.status, uploadError);
+        setIsPolling(false);
+        setJobStatus({ status: "failed", progress: 0, message: "Upload failed", error: uploadError });
+        onError("Failed to upload video");
+        return null;
+      }
+
+      const uploadData = await uploadRes.json();
+      if (!uploadData.success || !uploadData.url) {
+        console.error("[useAsyncGeneration] Upload failed:", uploadData);
+        setIsPolling(false);
+        setJobStatus({ status: "failed", progress: 0, message: "Upload failed", error: uploadData.error });
+        onError(uploadData.error || "Failed to upload video");
+        return null;
+      }
+
+      console.log("[useAsyncGeneration] Video uploaded:", uploadData.url);
+
+      // STEP 3: Start generation with video URL (JSON body, not FormData)
+      setJobStatus({ status: "processing", progress: 30, message: "Starting generation..." });
       
       // Start progress simulation
       startProgressSimulation();
-      
-      // Create form data
-      const formData = new FormData();
-      formData.append("video", videoBlob, `video.${videoBlob.type.includes("webm") ? "webm" : "mp4"}`);
-      formData.append("styleDirective", styleDirective);
 
-      console.log("[useAsyncGeneration] Calling /api/generate/start...");
+      console.log("[useAsyncGeneration] Calling /api/generate/start with videoUrl...");
 
-      // Call API - this will wait for the full result
+      // Call API with JSON body (avoids 403 from Vercel WAF on FormData)
       const res = await fetch("/api/generate/start", {
         method: "POST",
         credentials: "include",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          videoUrl: uploadData.url,
+          styleDirective,
+        }),
       });
 
       // Stop progress simulation
