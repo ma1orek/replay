@@ -218,15 +218,17 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
     // isProcessing will be set to false by handleGenerationComplete or handleGenerationError
   }, [videoBlob, user, onLogin, saveVideoForLogin, creditsLoading, style, context, startGeneration]);
   
-  // Handle back - goes back in flow or clears video
+  // Handle back - goes back in flow or to landing page
   const handleBack = useCallback(() => {
     if (activeTab === "preview" && !isProcessing) {
       setActiveTab("configure");
     } else if (activeTab === "configure") {
-      // If there's a video, clear it. Otherwise do nothing (or could navigate home)
+      // If there's a video, clear it first, then go home
       if (videoBlob) {
         handleRemoveVideo();
       }
+      // Navigate to landing page
+      window.location.href = "/";
     }
   }, [activeTab, isProcessing, videoBlob, handleRemoveVideo]);
   
