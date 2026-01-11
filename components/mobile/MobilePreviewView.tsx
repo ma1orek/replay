@@ -27,6 +27,7 @@ const GENERATION_TIPS = [
 
 interface MobilePreviewViewProps {
   previewUrl: string | null;
+  previewCode?: string | null; // Raw HTML code for srcdoc
   isProcessing: boolean;
   processingProgress: number;
   processingMessage: string;
@@ -36,6 +37,7 @@ interface MobilePreviewViewProps {
 
 export default function MobilePreviewView({
   previewUrl,
+  previewCode,
   isProcessing,
   processingProgress,
   processingMessage,
@@ -100,7 +102,7 @@ export default function MobilePreviewView({
   };
   
   // Processing state - SAME skeleton as desktop
-  if (isProcessing || !previewUrl) {
+  if (isProcessing || (!previewUrl && !previewCode)) {
     return (
       <div className="w-full h-full flex flex-col bg-[#050505] overflow-hidden">
         {/* Main Content */}
@@ -185,16 +187,27 @@ export default function MobilePreviewView({
   }
   
   // Preview state - fullscreen iframe
+  // Use srcdoc (inline HTML) which is more reliable than blob URLs
   return (
     <div className="flex-1 relative bg-white">
-      {/* Fullscreen iframe - key forces re-render when URL changes */}
-      <iframe
-        key={previewUrl}
-        src={previewUrl}
-        className="absolute inset-0 w-full h-full border-0"
-        title="Preview"
-        sandbox="allow-scripts allow-same-origin"
-      />
+      {/* Fullscreen iframe - use srcdoc for better browser compatibility */}
+      {previewCode ? (
+        <iframe
+          key={`code-${previewCode.length}`}
+          srcDoc={previewCode}
+          className="absolute inset-0 w-full h-full border-0"
+          title="Preview"
+          sandbox="allow-scripts allow-same-origin"
+        />
+      ) : previewUrl ? (
+        <iframe
+          key={previewUrl}
+          src={previewUrl}
+          className="absolute inset-0 w-full h-full border-0"
+          title="Preview"
+          sandbox="allow-scripts allow-same-origin"
+        />
+      ) : null}
       
       {/* Floating share button */}
       <button

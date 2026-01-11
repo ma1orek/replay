@@ -13,11 +13,12 @@ interface JobStatus {
 }
 
 interface UseAsyncGenerationResult {
-  startGeneration: (videoBlob: Blob, styleDirective: string) => Promise<string | null>;
+  startGeneration: (videoBlob: Blob, styleDirective: string) => Promise<{ jobId: string; videoUrl: string } | null>;
   jobStatus: JobStatus | null;
   isPolling: boolean;
   stopPolling: () => void;
   resetJob: () => void;
+  uploadedVideoUrl: string | null;
 }
 
 // Simulated progress messages
@@ -31,11 +32,12 @@ const PROGRESS_MESSAGES = [
 ];
 
 export function useAsyncGeneration(
-  onComplete: (code: string, title?: string) => void,
+  onComplete: (code: string, title?: string, videoUrl?: string) => void,
   onError: (error: string) => void
 ): UseAsyncGenerationResult {
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
   const [isPolling, setIsPolling] = useState(false);
+  const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string | null>(null);
   const progressRef = useRef<NodeJS.Timeout | null>(null);
 
   // Cleanup on unmount
@@ -135,13 +137,17 @@ export function useAsyncGeneration(
       setJobStatus({ status: "processing", progress: 15, message: "Uploading video..." });
       
       // Upload directly to Supabase Storage (bypasses Vercel WAF!)
+      // Supabase signed URLs use PUT with the file as body
       const uploadRes = await fetch(urlData.signedUrl, {
         method: "PUT",
         headers: {
-          "Content-Type": videoBlob.type,
+          "Content-Type": videoBlob.type || "video/mp4",
+          "x-upsert": "true",
         },
         body: videoBlob,
       });
+      
+      console.log("[useAsyncGeneration] Supabase upload response:", uploadRes.status, uploadRes.statusText);
 
       if (!uploadRes.ok) {
         const uploadError = await uploadRes.text();
@@ -153,7 +159,8 @@ export function useAsyncGeneration(
       }
 
       console.log("[useAsyncGeneration] Video uploaded to Supabase:", urlData.publicUrl);
-      const uploadedVideoUrl = urlData.publicUrl;
+      const videoUrl = urlData.publicUrl;
+      setUploadedVideoUrl(videoUrl);
 
       // STEP 3: Start generation with video URL (JSON body, not FormData)
       setJobStatus({ status: "processing", progress: 30, message: "Starting generation..." });
@@ -171,7 +178,7 @@ export function useAsyncGeneration(
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          videoUrl: uploadedVideoUrl,
+          videoUrl: videoUrl,
           styleDirective,
         }),
       });
@@ -227,10 +234,10 @@ export function useAsyncGeneration(
         });
         setIsPolling(false);
         
-        // Call completion handler
-        onComplete(data.code, data.title);
+        // Call completion handler with video URL
+        onComplete(data.code, data.title, videoUrl);
         
-        return data.jobId;
+        return { jobId: data.jobId, videoUrl };
       } else {
         setJobStatus({
           status: "failed",
@@ -277,5 +284,6 @@ export function useAsyncGeneration(
     isPolling,
     stopPolling,
     resetJob,
+    uploadedVideoUrl,
   };
 }
