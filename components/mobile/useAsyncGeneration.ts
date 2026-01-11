@@ -75,7 +75,7 @@ export function useAsyncGeneration(
 
   // Start generation - calls API and waits for result
   // SAME FLOW AS DESKTOP: spend credits first, then generate
-  const startGeneration = useCallback(async (videoBlob: Blob, styleDirective: string): Promise<string | null> => {
+  const startGeneration = useCallback(async (videoBlob: Blob, styleDirective: string): Promise<{ jobId: string; videoUrl: string } | null> => {
     try {
       // Reset state
       setJobStatus({ status: "processing", progress: 5, message: "Checking credits..." });
