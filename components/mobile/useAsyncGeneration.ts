@@ -30,8 +30,35 @@ export function useAsyncGeneration(
   const [isPolling, setIsPolling] = useState(false);
   const progressRef = useRef<NodeJS.Timeout | null>(null);
 
-  // ... cleanup effect ...
-  // ... progress simulation ...
+  // Simulate progress while waiting for server
+  const startProgressSimulation = useCallback(() => {
+    let stepIndex = 0;
+    const messages = [
+      "Analyzing content...",
+      "Reconstructing UI...",
+      "Generating code...",
+      "Applying styles...",
+      "Finalizing..."
+    ];
+    
+    progressRef.current = setInterval(() => {
+      if (stepIndex < messages.length) {
+        setJobStatus(prev => prev ? {
+          ...prev,
+          progress: 30 + (stepIndex * 15), // Start from 30%
+          message: messages[stepIndex],
+        } : null);
+        stepIndex++;
+      }
+    }, 3000);
+  }, []);
+
+  const stopProgressSimulation = useCallback(() => {
+    if (progressRef.current) {
+      clearInterval(progressRef.current);
+      progressRef.current = null;
+    }
+  }, []);
 
   // Start generation - calls API with EXISTING video URL
   const startGeneration = useCallback(async (videoUrl: string, styleDirective: string): Promise<{ jobId: string; videoUrl: string } | null> => {
