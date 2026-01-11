@@ -187,11 +187,13 @@ export default function MobilePreviewView({
   // Preview state - fullscreen iframe
   return (
     <div className="flex-1 relative bg-white">
-      {/* Fullscreen iframe */}
+      {/* Fullscreen iframe - key forces re-render when URL changes */}
       <iframe
+        key={previewUrl}
         src={previewUrl}
         className="absolute inset-0 w-full h-full border-0"
         title="Preview"
+        sandbox="allow-scripts allow-same-origin"
       />
       
       {/* Floating share button */}

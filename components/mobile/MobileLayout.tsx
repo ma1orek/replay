@@ -46,13 +46,22 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
     // Store the code
     setGeneratedCode(code);
     
+    // Log code preview for debugging
+    console.log("[MobileLayout] Code received, length:", code.length);
+    console.log("[MobileLayout] Code starts with:", code.substring(0, 200));
+    
     // Create preview URL from code
-    const blob = new Blob([code], { type: "text/html" });
+    const blob = new Blob([code], { type: "text/html; charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    console.log("[MobileLayout] Preview URL created:", url);
+    console.log("[MobileLayout] Preview URL created:", url, "blob size:", blob.size);
+    
+    // Update state synchronously to ensure proper rendering
     setPreviewUrl(url);
     setHasGenerated(true);
     setIsProcessing(false);
+    
+    // Switch to preview tab after state updates
+    setActiveTab("preview");
     
     // Update project name from AI
     const finalTitle = (title && title !== "Untitled Project") ? title : projectName;
