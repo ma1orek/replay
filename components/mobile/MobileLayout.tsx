@@ -21,7 +21,7 @@ export default function MobileLayout({ user, onLogin, onGenerate }: MobileLayout
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [generationProgress, setGenerationProgress] = useState(0);
-  const [processingMessage, setProcessingMessage] = useState("Preparing...");
+  const [processingMessage, setProcessingMessage] = useState("");
   
   const videoProcessor = useMobileVideoProcessor();
   
@@ -29,7 +29,6 @@ export default function MobileLayout({ user, onLogin, onGenerate }: MobileLayout
   useEffect(() => {
     const pendingVideoId = localStorage.getItem("replay_pending_mobile_video");
     if (pendingVideoId && user) {
-      // User just logged in - could restore pending generation here
       localStorage.removeItem("replay_pending_mobile_video");
     }
   }, [user]);
@@ -41,6 +40,8 @@ export default function MobileLayout({ user, onLogin, onGenerate }: MobileLayout
     setView("processing");
     setProcessingMessage("Optimizing video...");
     setGenerationProgress(0);
+    setVideoBlob(blob);
+    setVideoName(name);
     
     // Process video (compress if needed)
     const result = await videoProcessor.processVideo(blob, name);
@@ -49,9 +50,6 @@ export default function MobileLayout({ user, onLogin, onGenerate }: MobileLayout
       setView("home");
       return;
     }
-    
-    setVideoBlob(result.blob);
-    setVideoName(name);
     
     // Now generate code
     setProcessingMessage("Sending to AI...");
@@ -81,6 +79,8 @@ export default function MobileLayout({ user, onLogin, onGenerate }: MobileLayout
     setView("processing");
     setProcessingMessage("Analyzing video...");
     setGenerationProgress(0);
+    setVideoBlob(file);
+    setVideoName(file.name.replace(/\.[^.]+$/, ""));
     
     // Process video
     const result = await videoProcessor.processVideo(file, file.name);
@@ -89,9 +89,6 @@ export default function MobileLayout({ user, onLogin, onGenerate }: MobileLayout
       setView("home");
       return;
     }
-    
-    setVideoBlob(result.blob);
-    setVideoName(file.name.replace(/\.[^.]+$/, ""));
     
     // Generate code
     setProcessingMessage("Reconstructing UI...");
@@ -127,7 +124,6 @@ export default function MobileLayout({ user, onLogin, onGenerate }: MobileLayout
   
   // Handle auth for lazy-auth flow
   const handleAuthRequest = useCallback(() => {
-    // Store current state before redirect
     if (videoBlob) {
       localStorage.setItem("replay_pending_mobile_video", "pending");
     }
@@ -136,21 +132,21 @@ export default function MobileLayout({ user, onLogin, onGenerate }: MobileLayout
   
   // Calculate combined progress
   const combinedProgress = videoProcessor.state === "compressing" 
-    ? videoProcessor.progress * 0.5 
+    ? videoProcessor.progress * 0.4  // 0-40%
     : videoProcessor.state === "uploading" || videoProcessor.state === "done"
-    ? 50 + generationProgress * 0.5
+    ? 40 + generationProgress * 0.6  // 40-100%
     : generationProgress;
   
   // Get processing message
   const getMessage = () => {
-    if (videoProcessor.state === "analyzing") return "Analyzing video format...";
-    if (videoProcessor.state === "compressing") return "Optimizing for upload...";
-    if (videoProcessor.state === "uploading") return "Sending to AI Engine...";
+    if (videoProcessor.state === "analyzing") return "Analyzing format...";
+    if (videoProcessor.state === "compressing") return "Compressing video...";
+    if (videoProcessor.state === "uploading") return "Uploading...";
     return processingMessage;
   };
   
   return (
-    <div className="fixed inset-0 bg-black flex flex-col">
+    <div className="fixed inset-0 bg-black">
       {view === "home" && (
         <MobileHome
           onVideoCapture={handleVideoCapture}
