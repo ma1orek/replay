@@ -4,43 +4,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { transmuteVideoToCode } from "@/actions/transmute";
 import { CREDIT_COSTS } from "@/lib/credits/context";
+import { getJobStorage, setJob, updateJob, type GenerationJob } from "@/lib/jobStorage";
 
-// Import job storage from status route
-declare global {
-  var generationJobs: Map<string, {
-    status: "pending" | "processing" | "complete" | "failed";
-    progress: number;
-    message: string;
-    code?: string;
-    title?: string;
-    error?: string;
-    userId: string;
-    createdAt: number;
-  }>;
-}
-
-if (!global.generationJobs) {
-  global.generationJobs = new Map();
-}
-
-// Helper to update job status
-async function updateJobStatus(
+// Helper to update job status (in-memory + database)
+async function updateJobStatusFullFull(
   jobId: string,
   status: "pending" | "processing" | "complete" | "failed",
   progress: number,
   message: string,
   extra?: { code?: string; title?: string; error?: string }
 ) {
-  const job = global.generationJobs.get(jobId);
-  if (job) {
-    global.generationJobs.set(jobId, {
-      ...job,
-      status,
-      progress,
-      message,
-      ...extra,
-    });
-  }
+  // Update in-memory
+  updateJob(jobId, {
+    status,
+    progress,
+    message,
+    ...extra,
+  });
 
   // Also update database if available
   const admin = createAdminClient();
@@ -74,7 +54,7 @@ export async function POST(request: NextRequest) {
     console.log(`[generate/process] Starting job ${jobId}`);
 
     // Initialize job in memory
-    global.generationJobs.set(jobId, {
+    setJob(jobId, {
       status: "processing",
       progress: 10,
       message: "Initializing...",
@@ -83,7 +63,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Update status: Spending credits
-    await updateJobStatus(jobId, "processing", 20, "Verifying credits...");
+    await updateJobStatusFullFull(jobId, "processing", 20, "Verifying credits...");
 
     // Spend credits
     const admin = createAdminClient();
@@ -96,7 +76,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (!creditData || creditData.balance < CREDIT_COSTS.VIDEO_GENERATE) {
-        await updateJobStatus(jobId, "failed", 0, "Insufficient credits", {
+        await updateJobStatusFullFull(jobId, "failed", 0, "Insufficient credits", {
           error: "Not enough credits for generation",
         });
         return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
@@ -110,12 +90,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Update status: Processing video
-    await updateJobStatus(jobId, "processing", 40, "Analyzing video...");
+    await updateJobStatusFull(jobId, "processing", 40, "Analyzing video...");
 
     // Call the actual generation
     console.log(`[generate/process] Calling transmuteVideoToCode for job ${jobId}`);
     
-    await updateJobStatus(jobId, "processing", 60, "Reconstructing user interface...");
+    await updateJobStatusFull(jobId, "processing", 60, "Reconstructing user interface...");
 
     const result = await transmuteVideoToCode({
       videoUrl,
@@ -135,7 +115,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      await updateJobStatus(jobId, "complete", 100, "Generation complete!", {
+      await updateJobStatusFull(jobId, "complete", 100, "Generation complete!", {
         code: result.code,
         title,
       });
@@ -143,7 +123,7 @@ export async function POST(request: NextRequest) {
       console.log(`[generate/process] Job ${jobId} completed successfully`);
       return NextResponse.json({ success: true, jobId });
     } else {
-      await updateJobStatus(jobId, "failed", 0, "Generation failed", {
+      await updateJobStatusFull(jobId, "failed", 0, "Generation failed", {
         error: result.error || "No code returned",
       });
 
@@ -158,7 +138,7 @@ export async function POST(request: NextRequest) {
     try {
       const body = await request.clone().json();
       if (body.jobId) {
-        await updateJobStatus(body.jobId, "failed", 0, "Processing error", {
+        await updateJobStatusFull(body.jobId, "failed", 0, "Processing error", {
           error: error instanceof Error ? error.message : "Unknown error",
         });
       }
