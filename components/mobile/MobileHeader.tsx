@@ -1,14 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, Check, X } from "lucide-react";
+import { ChevronLeft, Check, X, CreditCard, History, Settings } from "lucide-react";
 
 interface MobileHeaderProps {
   projectName: string;
   onProjectNameChange: (name: string) => void;
   isPro: boolean;
   plan: string;
+  credits?: number;
   onBack: () => void;
+  onOpenCreditsModal?: () => void;
 }
 
 export default function MobileHeader({ 
@@ -16,10 +18,13 @@ export default function MobileHeader({
   onProjectNameChange, 
   isPro,
   plan,
-  onBack
+  credits,
+  onBack,
+  onOpenCreditsModal
 }: MobileHeaderProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(projectName);
+  const [showQuickMenu, setShowQuickMenu] = useState(false);
   
   const handleSave = () => {
     if (editValue.trim()) {
@@ -90,16 +95,74 @@ export default function MobileHeader({
         )}
       </div>
       
-      {/* Right - Only Plan badge (PRO/Free) */}
-      <div className="flex items-center">
-        {isPro ? (
-          <span className="px-2.5 py-1 rounded text-[10px] font-bold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase tracking-wide">
-            {getPlanDisplay()}
-          </span>
-        ) : (
-          <span className="px-2.5 py-1 rounded text-[10px] font-medium bg-white/10 text-white/50 uppercase">
-            Free
-          </span>
+      {/* Right - Plan badge (clickable for PRO menu) */}
+      <div className="flex items-center relative">
+        <button 
+          onClick={() => {
+            if (onOpenCreditsModal) {
+              onOpenCreditsModal();
+            } else {
+              setShowQuickMenu(!showQuickMenu);
+            }
+          }}
+          className="focus:outline-none"
+        >
+          {isPro ? (
+            <span className="px-2.5 py-1 rounded text-[10px] font-bold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase tracking-wide">
+              {getPlanDisplay()}
+            </span>
+          ) : (
+            <span className="px-2.5 py-1 rounded text-[10px] font-medium bg-white/10 text-white/50 uppercase">
+              Free
+            </span>
+          )}
+        </button>
+        
+        {/* Quick menu dropdown */}
+        {showQuickMenu && (
+          <>
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 z-40" 
+              onClick={() => setShowQuickMenu(false)} 
+            />
+            {/* Menu */}
+            <div className="absolute top-full right-0 mt-2 w-48 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden">
+              <div className="p-3 border-b border-white/5">
+                <p className="text-xs text-white/40 uppercase tracking-wider">Account</p>
+                <p className="text-sm text-white font-medium mt-1">{getPlanDisplay()}</p>
+                {credits !== undefined && (
+                  <p className="text-xs text-white/50 mt-0.5">{credits} credits remaining</p>
+                )}
+              </div>
+              <div className="py-1">
+                <button 
+                  onClick={() => {
+                    setShowQuickMenu(false);
+                    if (onOpenCreditsModal) onOpenCreditsModal();
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-white/70 hover:bg-white/5"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  Manage Credits
+                </button>
+                <button 
+                  onClick={() => setShowQuickMenu(false)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-white/70 hover:bg-white/5"
+                >
+                  <History className="w-4 h-4" />
+                  History
+                </button>
+                <button 
+                  onClick={() => setShowQuickMenu(false)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-white/70 hover:bg-white/5"
+                >
+                  <Settings className="w-4 h-4" />
+                  Settings
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </header>

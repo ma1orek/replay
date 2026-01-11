@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Camera, Upload, X, RefreshCw } from "lucide-react";
+import StyleInjector from "@/components/StyleInjector";
 
 interface MobileConfigureViewProps {
   videoBlob: Blob | null;
@@ -93,7 +94,8 @@ export default function MobileConfigureView({
     recorder.onstop = () => {
       if (chunksRef.current.length > 0) {
         const blob = new Blob(chunksRef.current, { type: mime });
-        onVideoCapture(blob, `scan-${Date.now()}`);
+        // Use "New Project" as default - AI will generate proper name after generation
+        onVideoCapture(blob, "New Project");
       }
       stopCamera();
     };
@@ -232,17 +234,15 @@ export default function MobileConfigureView({
         />
       </div>
       
-      {/* Style */}
+      {/* Style - using StyleInjector from desktop */}
       <div className="mb-8">
         <label className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3 block">
           Style <span className="text-white/20">(optional)</span>
         </label>
-        <input
-          type="text"
+        <StyleInjector
           value={style}
-          onChange={(e) => onStyleChange(e.target.value)}
-          placeholder="E.g., Modern glassmorphism, Apple-style, Minimal dark..."
-          className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/25 text-sm focus:outline-none focus:border-[#FF6E3C]/50"
+          onChange={onStyleChange}
+          disabled={isProcessing}
         />
       </div>
       

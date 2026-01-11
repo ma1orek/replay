@@ -11,16 +11,18 @@ interface MobileLayoutProps {
   user: any;
   isPro: boolean;
   plan: string;
+  credits?: number;
   creditsLoading?: boolean;
   onLogin: () => void;
-  onGenerate: (videoBlob: Blob, videoName: string) => Promise<{ code: string; previewUrl: string } | null>;
+  onGenerate: (videoBlob: Blob, styleDirective: string) => Promise<{ code: string; previewUrl: string; title?: string } | null>;
+  onOpenCreditsModal?: () => void;
 }
 
 // Keys for localStorage
 const STORAGE_KEY_VIDEO = "replay_mobile_pending_video";
 const STORAGE_KEY_NAME = "replay_mobile_pending_name";
 
-export default function MobileLayout({ user, isPro, plan, creditsLoading, onLogin, onGenerate }: MobileLayoutProps) {
+export default function MobileLayout({ user, isPro, plan, credits, creditsLoading, onLogin, onGenerate, onOpenCreditsModal }: MobileLayoutProps) {
   const [activeTab, setActiveTab] = useState<"configure" | "preview">("configure");
   const [projectName, setProjectName] = useState("New Project");
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
@@ -145,16 +147,21 @@ export default function MobileLayout({ user, isPro, plan, creditsLoading, onLogi
     setActiveTab("preview");
     
     try {
-      // Skip compression - send raw video directly (like desktop does)
       setProcessingProgress(20);
       setProcessingMessage("Uploading video...");
       
       console.log("[MobileLayout] Starting generation with blob:", videoBlob.size, videoBlob.type);
       
+      // Build style directive from user inputs (like desktop)
+      let styleDirective = style || "Modern, clean design with Tailwind CSS";
+      if (context.trim()) {
+        styleDirective += `. Additional context: ${context.trim()}`;
+      }
+      
       setProcessingProgress(40);
       setProcessingMessage("Reconstructing user interface...");
       
-      const result = await onGenerate(videoBlob, projectName);
+      const result = await onGenerate(videoBlob, styleDirective);
       
       console.log("[MobileLayout] Generation result:", result);
       
@@ -169,27 +176,28 @@ export default function MobileLayout({ user, isPro, plan, creditsLoading, onLogi
         setProcessingMessage("Complete!");
         setHasGenerated(true);
         
-        // Update project name if we have generated code with a title
-        // (will be handled by parent)
+        // Update project name from AI-generated title (like desktop)
+        if (result.title && result.title !== "Untitled Project") {
+          setProjectName(result.title);
+          console.log("[MobileLayout] Set project name from AI:", result.title);
+        }
       } else {
         // Generation failed - go back to configure
         console.error("[MobileLayout] Generation failed - no result");
         setActiveTab("configure");
         setProcessingMessage("");
         setIsProcessing(false);
-        // Error toast already shown by onGenerate
       }
       
     } catch (err) {
       console.error("[MobileLayout] Error:", err);
-      // Show error to user
       alert(`Generation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
       setActiveTab("configure");
       setProcessingMessage("");
     } finally {
       setIsProcessing(false);
     }
-  }, [videoBlob, user, onLogin, saveVideoForLogin, onGenerate, projectName, creditsLoading]);
+  }, [videoBlob, user, onLogin, saveVideoForLogin, onGenerate, creditsLoading, style, context]);
   
   // Handle back - goes back in flow or clears video
   const handleBack = useCallback(() => {
@@ -224,7 +232,9 @@ export default function MobileLayout({ user, isPro, plan, creditsLoading, onLogi
           onProjectNameChange={setProjectName}
           isPro={isPro}
           plan={plan}
+          credits={credits}
           onBack={handleBack}
+          onOpenCreditsModal={onOpenCreditsModal}
         />
       )}
       

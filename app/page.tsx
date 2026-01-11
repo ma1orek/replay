@@ -6353,8 +6353,8 @@ export const shadows = {
   };
 
   // MOBILE GENERATION HANDLER - EXACTLY like desktop
-  const handleMobileGenerate = useCallback(async (videoBlob: Blob, videoName: string): Promise<{ code: string; previewUrl: string } | null> => {
-    console.log("[MOBILE] Starting generation...", { blobSize: videoBlob.size, blobType: videoBlob.type });
+  const handleMobileGenerate = useCallback(async (videoBlob: Blob, styleDirective: string): Promise<{ code: string; previewUrl: string; title?: string } | null> => {
+    console.log("[MOBILE] Starting generation...", { blobSize: videoBlob.size, blobType: videoBlob.type, styleDirective });
     
     try {
       // 1. Spend credits (same as desktop)
@@ -6424,10 +6424,10 @@ export const shadows = {
       console.log("[MOBILE] Upload complete:", publicUrl);
       
       // 4. Generate code (same as desktop)
-      console.log("[MOBILE] Step 3: Calling transmuteVideoToCode...");
+      console.log("[MOBILE] Step 3: Calling transmuteVideoToCode with styleDirective:", styleDirective);
       const result = await transmuteVideoToCode({
         videoUrl: publicUrl,
-        styleDirective: "Modern, clean design with Tailwind CSS",
+        styleDirective: styleDirective,
       });
       
       console.log("[MOBILE] Generation result:", { success: result.success, hasCode: !!result.code, codeLength: result.code?.length });
@@ -6435,12 +6435,24 @@ export const shadows = {
       if (result.success && result.code) {
         const blob = new Blob([result.code], { type: "text/html" });
         const previewUrl = URL.createObjectURL(blob);
-        console.log("[MOBILE] Success! Preview URL created");
-        return { code: result.code, previewUrl };
+        
+        // Extract project title from code (same as desktop extractProjectName)
+        let title: string | undefined;
+        const titleMatch = result.code.match(/<title[^>]*>([^<]+)<\/title>/i);
+        if (titleMatch && titleMatch[1]) {
+          const extractedTitle = titleMatch[1].trim();
+          if (extractedTitle && extractedTitle.length > 0 && extractedTitle.length < 50 && !extractedTitle.toLowerCase().includes('untitled')) {
+            title = extractedTitle;
+            console.log("[MOBILE] Extracted title from code:", title);
+          }
+        }
+        
+        console.log("[MOBILE] Success! Preview URL created, title:", title);
+        return { code: result.code, previewUrl, title };
       }
       
       console.error("[MOBILE] Generation returned no code:", result);
-      showToast("Generation failed - no code returned", "error");
+      showToast(result.error || "Generation failed - no code returned", "error");
       return null;
       
     } catch (err) {
@@ -6451,7 +6463,6 @@ export const shadows = {
   }, [refreshCredits, showToast]);
 
   // ====== DEVICE DETECTION LOADING ======
-  // Show loading while detecting device type
   if (isMobile === null) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -6461,8 +6472,6 @@ export const shadows = {
   }
 
   // ====== MOBILE HARD FORK ======
-  // Mobile users get COMPLETELY DIFFERENT APP
-  // They NEVER see ANY desktop elements
   if (isMobile === true) {
     return (
       <>
@@ -6470,12 +6479,12 @@ export const shadows = {
           user={user}
           isPro={isPaidPlan}
           plan={membership?.plan || "free"}
+          credits={userTotalCredits}
           creditsLoading={creditsLoading}
           onLogin={() => setShowAuthModal(true)}
           onGenerate={handleMobileGenerate}
+          onOpenCreditsModal={() => setShowProfileMenu(true)}
         />
-        
-        {/* Auth Modal for mobile */}
         <AuthModal
           isOpen={showAuthModal}
           onClose={() => {
@@ -6485,8 +6494,6 @@ export const shadows = {
           title="Sign in to continue"
           description="Your scans and credits are saved to your account."
         />
-        
-        {/* Out of Credits Modal for mobile */}
         <OutOfCreditsModal
           isOpen={showOutOfCreditsModal}
           onClose={() => setShowOutOfCreditsModal(false)}
@@ -6497,7 +6504,7 @@ export const shadows = {
     );
   }
 
-  // ====== DESKTOP APP (isMobile === false) ======
+  // ====== DESKTOP APP ======
   return (
     <div className="h-screen flex flex-col bg-[#050505] overflow-hidden font-poppins">
       <div className="gradient-bg" />
