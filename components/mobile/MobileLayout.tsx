@@ -6,6 +6,7 @@ import MobileConfigureView from "./MobileConfigureView";
 import MobilePreviewView from "./MobilePreviewView";
 import FloatingIsland from "./FloatingIsland";
 import { useAsyncGeneration } from "./useAsyncGeneration";
+import { useMobileVideoProcessor } from "./useMobileVideoProcessor";
 
 interface MobileLayoutProps {
   user: any;
@@ -37,6 +38,9 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
   const [generationError, setGenerationError] = useState<string | null>(null);
   
   const pendingLoginRef = useRef(false);
+  
+  // Video Processor (FFmpeg + Direct Upload)
+  const { processAndUpload, status: uploadStatus, reset: resetUpload } = useMobileVideoProcessor();
 
   // Handle generation completion
   const handleGenerationComplete = useCallback((code: string, title?: string, videoUrl?: string) => {
@@ -201,26 +205,57 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
     setIsProcessing(true);
     setActiveTab("preview");
     
-    console.log("[MobileLayout] Starting async generation with blob:", videoBlob.size, videoBlob.type);
+    console.log("[MobileLayout] Starting pipeline with blob:", videoBlob.size, videoBlob.type);
     
-    // Build style directive from user inputs
-    let styleDirective = style || "Modern, clean design with Tailwind CSS";
-    if (context.trim()) {
-      styleDirective += `. Additional context: ${context.trim()}`;
-    }
-    
-    // Start async generation - will poll for result
-    // User can now lock screen, generation continues on server
-    const result = await startGeneration(videoBlob, styleDirective);
-    
-    if (!result) {
-      // Error already handled by hook
+    try {
+      // 1. COMPRESS & UPLOAD (The "WhatsApp" Pipeline)
+      // This happens entirely on the client (FFmpeg) -> Supabase (Direct)
+      // Bypasses Vercel's 4.5MB limit and 403 blocks
+      let finalVideoUrl: string;
+      
+      // If we already have a URL (e.g. from previous upload), use it? 
+      // For now, always re-upload to ensure freshness, unless it's a URL-based flow (not implemented)
+      
+      // Convert Blob to File if needed
+      const videoFile = videoBlob instanceof File 
+        ? videoBlob 
+        : new File([videoBlob], "recording.mp4", { type: "video/mp4" });
+        
+      console.log("[MobileLayout] Step 1: Compressing & Uploading...");
+      finalVideoUrl = await processAndUpload(videoFile);
+      
+      if (!finalVideoUrl) {
+        throw new Error("Upload failed - no URL returned");
+      }
+      
+      console.log("[MobileLayout] Step 1 Complete. URL:", finalVideoUrl);
+
+      // Build style directive from user inputs
+      let styleDirective = style || "Modern, clean design with Tailwind CSS";
+      if (context.trim()) {
+        styleDirective += `. Additional context: ${context.trim()}`;
+      }
+
+      // 2. GENERATE (AI)
+      // Send ONLY the URL to the API
+      console.log("[MobileLayout] Step 2: Starting AI Generation...");
+      const result = await startGeneration(finalVideoUrl, styleDirective);
+      
+      if (!result) {
+        // Error already handled by hook
+        setIsProcessing(false);
+        setActiveTab("configure");
+      }
+      
+    } catch (error: any) {
+      console.error("[MobileLayout] Pipeline Error:", error);
+      setGenerationError(error.message || "Processing failed");
       setIsProcessing(false);
       setActiveTab("configure");
+      alert(`Error: ${error.message || "Processing failed"}`);
     }
     
-    // isProcessing will be set to false by handleGenerationComplete or handleGenerationError
-  }, [videoBlob, user, onLogin, saveVideoForLogin, creditsLoading, style, context, startGeneration]);
+  }, [videoBlob, user, onLogin, saveVideoForLogin, creditsLoading, style, context, processAndUpload, startGeneration]);
   
   // Handle back - goes back in flow or to landing page
   const handleBack = useCallback(() => {
@@ -236,10 +271,24 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
     }
   }, [activeTab, isProcessing, videoBlob, handleRemoveVideo]);
   
-  // Calculate progress from job status (server-side async processing)
-  const processingProgress = jobStatus?.progress || 0;
-  const processingMessage = jobStatus?.message || "Starting...";
-  
+  // Calculate progress combining both hooks
+  let processingProgress = 0;
+  let processingMessage = "Starting...";
+
+  if (uploadStatus.stage === "compressing" || uploadStatus.stage === "uploading") {
+    // Phase 1: Upload (0-30% of total perceived progress)
+    processingProgress = Math.round(uploadStatus.progress * 0.3); 
+    processingMessage = uploadStatus.message;
+  } else if (jobStatus) {
+    // Phase 2: Generation (30-100% of total perceived progress)
+    // Map 0-100 from jobStatus to 30-100 total
+    processingProgress = 30 + Math.round(jobStatus.progress * 0.7);
+    processingMessage = jobStatus.message;
+  } else if (isProcessing) {
+    // Fallback
+    processingMessage = "Initializing...";
+  }
+
   return (
     <div className="fixed inset-0 bg-black flex flex-col overflow-hidden">
       {/* Header - always visible in configure, hidden in preview when not processing */}
