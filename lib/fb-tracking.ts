@@ -55,6 +55,15 @@ function generateEventId(eventName: string): string {
   return `${eventName}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
+// Helper to get cookie by name
+function getCookie(name: string): string | undefined {
+  if (typeof document === "undefined") return undefined;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift();
+  return undefined;
+}
+
 // Track event on both Pixel (client) and CAPI (server) with deduplication
 export async function trackFBEvent(
   eventName: EventName, 
@@ -83,6 +92,9 @@ export async function trackFBEvent(
 
   // 2. Send to Conversions API (server-side)
   try {
+    const fbc = getCookie("_fbc");
+    const fbp = getCookie("_fbp");
+
     await fetch("/api/fb-events", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -95,6 +107,8 @@ export async function trackFBEvent(
         userId: options.userId,
         sourceUrl: typeof window !== "undefined" ? window.location.href : undefined,
         eventId, // Same ID for deduplication
+        fbc,
+        fbp,
         customData: {
           currency: options.currency || "USD",
           value: options.value,

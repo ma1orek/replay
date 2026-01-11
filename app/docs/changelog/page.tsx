@@ -3,6 +3,108 @@ import { Clock, Sparkles, Bug, Wrench, ArrowUp, Bell } from "lucide-react";
 
 const changelog = [
   {
+    date: "January 10, 2026",
+    version: "1.7.0",
+    changes: [
+      {
+        type: "feature",
+        title: "Redesigned Loading State",
+        description: "Beautiful skeleton loader with animated Replay logo during generation. Rotating pro tips educate users while they wait. Smooth animations that don't restart."
+      },
+      {
+        type: "feature",
+        title: "Spotlight Background Effects",
+        description: "Subtle animated spotlight effects on landing page for premium visual depth. Dynamic light beams move gently across the background."
+      },
+      {
+        type: "improvement",
+        title: "FlipWords Hero Animation",
+        description: "Smoother text transitions in hero section. Reduced gap between word changes by 50%. Uses popLayout mode for seamless text swaps."
+      },
+      {
+        type: "improvement",
+        title: "Edit with AI UI Overhaul",
+        description: "Removed nested box design - now single clean frame with live code streaming. Header shows status and line count, code area streams in real-time."
+      },
+      {
+        type: "improvement",
+        title: "Reconstruct Button",
+        description: "Larger, more prominent button with simple play icon. Better disabled/active states. Smaller Configuration text to improve visual hierarchy."
+      },
+      {
+        type: "fix",
+        title: "Skeleton Animation Restart",
+        description: "Fixed skeleton loader restarting animation when analysis lines load. Now uses staggered CSS animations that run smoothly throughout generation."
+      },
+      {
+        type: "fix",
+        title: "Tip Color Accessibility",
+        description: "Changed loading tip color from red/pink to blue. Red was confusing users (red = error). Tips now centered with better contrast."
+      },
+    ]
+  },
+  {
+    date: "January 9, 2026",
+    version: "1.6.0",
+    changes: [
+      {
+        type: "feature",
+        title: "Mobile-Optimized Landing Page",
+        description: "Complete mobile redesign: simplified hero animation, removed scroll-blocking effects, stacked card layout, background videos with pointer-events-none."
+      },
+      {
+        type: "feature",
+        title: "Profile Menu Modal",
+        description: "Profile button now opens dropdown modal on both landing and tool pages. Shows credits, plan, settings link, and sign out - consistent across app."
+      },
+      {
+        type: "feature",
+        title: "Hover Glow on Cards",
+        description: "Subtle orange glow effect on card hover for interactive feel. Uses exact brand color #FF6E3C. Disabled on mobile to prevent scroll issues."
+      },
+      {
+        type: "feature",
+        title: "Moving Border Button Effect",
+        description: "Premium animated border effect component for CTAs. Orange gradient border that moves around the button continuously."
+      },
+      {
+        type: "improvement",
+        title: "Extended Video Limit",
+        description: "Free accounts now get 5-minute video limit (up from 30 seconds). Better testing experience based on user feedback."
+      },
+      {
+        type: "improvement",
+        title: "Text Contrast Accessibility",
+        description: "Improved contrast throughout landing page. Upload icons, configuration text, and other elements now more visible."
+      },
+      {
+        type: "improvement",
+        title: "RetroGrid Positioning",
+        description: "Background grid animation now stays in hero section only. Fixed issue where it scrolled with the page."
+      },
+      {
+        type: "improvement",
+        title: "Card Styling Overhaul",
+        description: "All cards restyled to match Pricing card aesthetic. Darker backgrounds, grain texture overlay, consistent border styling."
+      },
+      {
+        type: "fix",
+        title: "Hero Text Line Break",
+        description: "Fixed 'Production-Ready Code' breaking to 2 lines. Added whitespace-nowrap and max-width constraints. Text stays on single line on desktop."
+      },
+      {
+        type: "fix",
+        title: "Video Autoplay on Mobile",
+        description: "Background videos now properly autoplay, loop, and are muted on mobile. Added preload='auto' for faster loading."
+      },
+      {
+        type: "fix",
+        title: "GlowCard Mobile Scroll Block",
+        description: "Removed glow animation on mobile that was blocking scroll. Cards now use static styling on touch devices."
+      },
+    ]
+  },
+  {
     date: "January 8, 2026",
     version: "1.5.0",
     changes: [

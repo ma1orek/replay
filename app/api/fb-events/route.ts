@@ -68,7 +68,9 @@ export async function POST(request: NextRequest) {
       userId,
       sourceUrl,
       customData,
-      eventId
+      eventId,
+      fbc,
+      fbp
     } = body;
 
     if (!eventName) {
@@ -95,6 +97,8 @@ export async function POST(request: NextRequest) {
         client_ip_address: clientIp,
         client_user_agent: userAgent,
         external_id: userId ? hashData(userId) || undefined : undefined,
+        fbc: fbc || undefined,
+        fbp: fbp || undefined,
       },
       custom_data: customData || {},
       event_id: eventId || `${eventName}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,

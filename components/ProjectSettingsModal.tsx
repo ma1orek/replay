@@ -355,23 +355,15 @@ export default function ProjectSettingsModal({
   if (!isOpen) return null;
 
   return (
-    <AnimatePresence>
-      {/* Full-screen on mobile, centered modal on desktop */}
       <div className="fixed inset-0 z-50 flex items-center justify-center md:p-4">
-        {/* Backdrop */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        {/* Backdrop - no animation on mobile */}
+        <div
+          className="absolute inset-0 bg-black/80 md:backdrop-blur-sm"
           onClick={onClose}
         />
 
-        {/* Modal - fullscreen on mobile */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        {/* Modal - fullscreen on mobile, no animations */}
+        <div
           className="relative w-full h-full md:h-auto md:max-h-[90vh] md:max-w-4xl bg-[#0a0a0a] md:rounded-2xl md:border md:border-white/10 overflow-hidden shadow-2xl flex flex-col"
         >
           {/* Header */}
@@ -958,9 +950,8 @@ USING (true);`}
               </AnimatePresence>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
-    </AnimatePresence>
   );
 }
 

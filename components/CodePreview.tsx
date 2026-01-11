@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Highlight, themes } from "prism-react-renderer";
-import { Copy, Check, Download, Code2, Eye, Maximize2, ExternalLink } from "lucide-react";
+import { Copy, Check, Download, Code2, Eye, Maximize2, ExternalLink, ThumbsUp, ThumbsDown, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface CodePreviewProps {
@@ -15,6 +15,8 @@ export default function CodePreview({ code, isStreaming = false }: CodePreviewPr
   const [copied, setCopied] = useState(false);
   const [view, setView] = useState<"code" | "preview" | "split">("split");
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [feedback, setFeedback] = useState<"like" | "dislike" | null>(null);
+  const [showFeedbackInput, setShowFeedbackInput] = useState(false);
 
   const lineCount = useMemo(() => code.split("\n").length, [code]);
   
@@ -53,6 +55,17 @@ export default function CodePreview({ code, isStreaming = false }: CodePreviewPr
   const openInNewTab = () => {
     if (previewUrl) {
       window.open(previewUrl, "_blank");
+    }
+  };
+
+  const handleFeedback = (type: "like" | "dislike") => {
+    setFeedback(type);
+    if (type === "dislike") {
+      setShowFeedbackInput(true);
+    } else {
+      setShowFeedbackInput(false);
+      // Here you would typically send the feedback to your backend
+      console.log("Feedback recorded:", type);
     }
   };
 
@@ -104,6 +117,30 @@ export default function CodePreview({ code, isStreaming = false }: CodePreviewPr
         </div>
 
         <div className="flex items-center gap-1">
+           {/* Feedback Buttons */}
+           <div className="flex items-center gap-1 mr-2 border-r border-border-subtle pr-2">
+            <button 
+              onClick={() => handleFeedback("like")} 
+              className={cn(
+                "p-1.5 hover:bg-surface-3 rounded transition-colors",
+                feedback === "like" ? "text-green-500" : "text-text-secondary"
+              )}
+              title="Good generation"
+            >
+              <ThumbsUp className="w-3.5 h-3.5" />
+            </button>
+            <button 
+              onClick={() => handleFeedback("dislike")} 
+              className={cn(
+                "p-1.5 hover:bg-surface-3 rounded transition-colors",
+                feedback === "dislike" ? "text-red-500" : "text-text-secondary"
+              )}
+              title="Bad generation"
+            >
+              <ThumbsDown className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
           <button onClick={handleCopy} className="p-1.5 hover:bg-surface-3 rounded transition-colors" title="Copy">
             {copied ? <Check className="w-4 h-4 text-neural-green" /> : <Copy className="w-4 h-4 text-text-secondary" />}
           </button>
@@ -120,7 +157,7 @@ export default function CodePreview({ code, isStreaming = false }: CodePreviewPr
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         {/* Code Panel */}
         {(view === "code" || view === "split") && (
           <div className={cn("overflow-auto", view === "split" ? "w-1/2 border-r border-border-subtle" : "w-full")}>
@@ -164,6 +201,44 @@ export default function CodePreview({ code, isStreaming = false }: CodePreviewPr
               </div>
             )}
           </div>
+        )}
+
+        {/* Feedback Input Popup */}
+        {showFeedbackInput && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="absolute top-2 right-2 z-20 bg-surface-2 border border-border-subtle rounded-xl p-3 shadow-xl w-64"
+          >
+            <div className="flex items-center gap-2 mb-2 text-text-primary text-xs font-medium">
+              <MessageSquare className="w-3 h-3 text-red-500" />
+              What went wrong?
+            </div>
+            <textarea 
+              className="w-full bg-surface-3 border border-border-subtle rounded-lg p-2 text-xs text-text-primary focus:outline-none focus:border-red-500/50 mb-2"
+              rows={3}
+              placeholder="Layout broken, wrong colors..."
+              autoFocus
+            />
+            <div className="flex justify-end gap-2">
+              <button 
+                onClick={() => setShowFeedbackInput(false)}
+                className="px-2 py-1 text-[10px] text-text-secondary hover:text-text-primary"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  setShowFeedbackInput(false);
+                  console.log("Feedback details sent");
+                  // Add logic to send details
+                }}
+                className="px-2 py-1 text-[10px] bg-red-500 text-white rounded hover:bg-red-600"
+              >
+                Send
+              </button>
+            </div>
+          </motion.div>
         )}
       </div>
 

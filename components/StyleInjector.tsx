@@ -22,7 +22,7 @@ const PLACEHOLDER_EXAMPLES = [
 ];
 
 // Style preview component - renders CSS-based visual thumbnail
-const StylePreview = ({ styleId }: { styleId: string }) => {
+export const StylePreview = ({ styleId }: { styleId: string }) => {
   const previewStyles: Record<string, React.ReactNode> = {
     "auto-detect": (
       <div className="w-full h-full bg-gradient-to-br from-[#FF6E3C]/30 via-purple-500/20 to-cyan-500/20 relative overflow-hidden">
@@ -862,7 +862,7 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = Math.max(52, Math.min(textareaRef.current.scrollHeight, 150)) + 'px';
+      textareaRef.current.style.height = Math.max(60, Math.min(textareaRef.current.scrollHeight, 200)) + 'px';
     }
   }, [value]);
 
@@ -963,21 +963,21 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
         className={cn(
-          "w-full flex items-center gap-2 px-2 py-2 rounded-lg text-left transition-colors bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.1]",
+          "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors bg-[#0A0A0A] border border-white/[0.08] hover:border-white/15",
           isOpen && "border-[#FF6E3C]/30 bg-white/[0.05]",
           disabled && "opacity-50 cursor-not-allowed"
         )}
       >
         {selectedPreset && <StylePreview styleId={selectedPreset.id} />}
         <div className="flex-1 min-w-0">
-          <span className={cn("text-xs block", selectedPreset ? "text-white/80" : "text-white/40")}>
+          <span className={cn("text-sm block", selectedPreset ? "text-white" : "text-white/25")}>
             {selectedPreset ? selectedPreset.name : "Select a style..."}
           </span>
           {selectedPreset && (
-            <span className="text-[9px] text-white/30 truncate block">{selectedPreset.desc}</span>
+            <span className="text-xs text-white/30 truncate block">{selectedPreset.desc}</span>
           )}
         </div>
-        <ChevronDown className={cn("w-3.5 h-3.5 text-white/40 transition-transform flex-shrink-0", isOpen && "rotate-180")} />
+        <ChevronDown className={cn("w-4 h-4 text-white/40 transition-transform flex-shrink-0", isOpen && "rotate-180")} />
       </button>
 
       {/* Collapsible Panel */}
@@ -1147,7 +1147,7 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
             disabled={disabled}
             rows={2}
             className={cn(
-              "w-full px-3 py-2.5 text-xs text-white/80 placeholder:text-white/20 placeholder:text-[11px] bg-white/[0.03] border border-white/[0.06] rounded-lg resize-none focus:outline-none focus:border-white/[0.12] transition-colors min-h-[52px]",
+              "w-full px-2.5 py-2 text-[11px] text-white/70 placeholder:text-white/25 bg-white/[0.02] border border-white/[0.05] rounded-lg resize-y focus:outline-none focus:border-white/10 transition-colors min-h-[60px] max-h-[200px]",
               disabled && "opacity-50 cursor-not-allowed"
             )}
           />
