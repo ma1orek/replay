@@ -49,8 +49,12 @@ export function useMobileVideoProcessor() {
   }, []);
 
   const processAndUpload = useCallback(async (file: File) => {
+    let blobToUpload: Blob | File = file;
+    let contentType = file.type;
+    let filename = file.name;
+
+    // 1. COMPRESSION PHASE (With Fallback)
     try {
-      // 1. COMPRESSION PHASE
       setStatus({ stage: "compressing", progress: 0, message: "Initializing compressor..." });
       
       const ffmpeg = await loadFFmpeg();
@@ -91,10 +95,20 @@ export function useMobileVideoProcessor() {
       const data = await ffmpeg.readFile(outputName);
       // Ensure we treat it as Uint8Array then get buffer
       const u8 = data instanceof Uint8Array ? data : new Uint8Array(data as any);
-      const compressedBlob = new Blob([u8], { type: "video/mp4" });
+      blobToUpload = new Blob([u8], { type: "video/mp4" });
+      contentType = "video/mp4";
+      filename = "compressed_video.mp4";
       
-      console.log(`Compressed: ${file.size} -> ${compressedBlob.size} bytes`);
+      console.log(`Compressed: ${file.size} -> ${blobToUpload.size} bytes`);
       
+    } catch (ffmpegError) {
+      console.warn("FFmpeg compression failed, falling back to original file upload:", ffmpegError);
+      // Fallback: Use original file
+      // No change to blobToUpload, contentType, filename
+      setStatus({ stage: "compressing", progress: 100, message: "Compression skipped (using original)..." });
+    }
+
+    try {
       // 2. UPLOAD PHASE (Direct to Supabase via Signed URL)
       setStatus({ stage: "uploading", progress: 0, message: "Preparing upload..." });
       
@@ -103,8 +117,8 @@ export function useMobileVideoProcessor() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          filename: "compressed_video.mp4",
-          contentType: "video/mp4",
+          filename: filename,
+          contentType: contentType,
         }),
       });
       
@@ -112,12 +126,12 @@ export function useMobileVideoProcessor() {
       const { signedUrl, publicUrl } = await urlRes.json();
       
       // Upload to Storage
-      setStatus({ stage: "uploading", progress: 20, message: "Uploading optimized video..." });
+      setStatus({ stage: "uploading", progress: 20, message: "Uploading video..." });
       
       const uploadRes = await fetch(signedUrl, {
         method: "PUT",
-        headers: { "Content-Type": "video/mp4" },
-        body: compressedBlob,
+        headers: { "Content-Type": contentType },
+        body: blobToUpload,
       });
       
       if (!uploadRes.ok) throw new Error("Upload failed");
