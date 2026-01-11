@@ -202,7 +202,7 @@ export default function MobileConfigureView({
                   <Camera className="w-7 h-7 text-[#FF6E3C]" />
                 </div>
                 <span className="text-white/80 font-medium text-sm">Record</span>
-                <span className="text-white/30 text-xs mt-1">Point at UI</span>
+                <span className="text-white/30 text-xs mt-1">Record any video</span>
               </button>
               
               <button
