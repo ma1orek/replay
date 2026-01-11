@@ -2094,6 +2094,40 @@ IMPORTANT: The current year is 2026, NOT 2024 or 2025. Use modern, cutting-edge 
 
 ---
 
+**🚨🚨🚨 CRITICAL MANDATORY RULES - OUTPUT REJECTION IF VIOLATED 🚨🚨🚨**
+
+**RULE A: ZERO STATS = INSTANT REJECTION**
+⛔ BANNED: "0", "0+", "0%", "0ms", "0 users", "0 years", "0 countries"
+✅ USE: "10K+", "98%", "<1ms", "1.3M+ users", "15+ years", "50+ countries"
+If you cannot read the number → INVENT a realistic impressive number!
+
+**RULE B: NON-LOOPING ANIMATIONS = INSTANT REJECTION**
+ALL marquee/carousel/scroll animations MUST:
+- Use CSS \`animation: name Xs linear infinite;\` - THE WORD "infinite" IS MANDATORY
+- DUPLICATE the content so there's no gap when it loops back
+- NEVER use animation-iteration-count with a number
+
+CORRECT MARQUEE CODE (copy exactly):
+\`\`\`html
+<div class="overflow-hidden">
+  <div class="flex animate-marquee whitespace-nowrap">
+    <div class="flex gap-8">[CONTENT]</div>
+    <div class="flex gap-8">[SAME CONTENT DUPLICATED]</div>
+  </div>
+</div>
+<style>
+@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+.animate-marquee { animation: marquee 30s linear infinite; display: flex; width: max-content; }
+</style>
+\`\`\`
+
+**RULE C: VARIETY - DON'T USE SAME COMPONENTS**
+- For FAQ: Rotate between Accordion, Expandable Cards, Tabs, Side-by-Side
+- For Testimonials: Rotate between Marquee, Grid, 3D Carousel, Masonry
+- For Stats: Use animated NumberTicker, not static text
+
+---
+
 **⛔⛔⛔ ABSOLUTE RULE #0 - 100% COMPLETE CONTENT RECONSTRUCTION ⛔⛔⛔**
 
 **YOU MUST REPRODUCE EVERY SINGLE PIECE OF CONTENT FROM THE VIDEO!**
