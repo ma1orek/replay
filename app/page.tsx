@@ -6361,6 +6361,50 @@ export const shadows = {
     );
   }
 
+  // ====== MOBILE SAVE GENERATION HANDLER ======
+  const handleMobileSaveGeneration = useCallback((data: { title: string; code: string; videoUrl?: string }) => {
+    console.log("[MOBILE] Saving generation to history:", data.title);
+    
+    // Create initial version
+    const initialVersion: GenerationVersion = {
+      id: generateId(),
+      timestamp: Date.now(),
+      label: "Initial generation",
+      code: data.code,
+      flowNodes: [],
+      flowEdges: [],
+      styleInfo: null,
+    };
+    
+    // Create generation record (same structure as desktop)
+    const newGeneration: GenerationRecord = {
+      id: generateId(),
+      title: data.title,
+      autoTitle: true,
+      timestamp: Date.now(),
+      status: "complete",
+      code: data.code,
+      styleDirective: "Mobile generation",
+      refinements: "",
+      flowNodes: [],
+      flowEdges: [],
+      styleInfo: null,
+      videoUrl: data.videoUrl,
+      versions: [initialVersion],
+      costCredits: CREDIT_COSTS.VIDEO_GENERATE,
+    };
+    
+    // Add to local state
+    setGenerations(prev => [...prev, newGeneration]);
+    setActiveGeneration(newGeneration);
+    setGeneratedCode(data.code);
+    
+    // Save to Supabase for cross-device sync
+    saveGenerationToSupabase(newGeneration);
+    
+    console.log("[MOBILE] Generation saved:", newGeneration.id);
+  }, [saveGenerationToSupabase]);
+
   // ====== MOBILE HARD FORK ======
   // Mobile uses server-side async processing (like Bolt/Lovable)
   // User can lock screen - generation continues on server
@@ -6376,6 +6420,7 @@ export const shadows = {
           onLogin={() => setShowAuthModal(true)}
           onOpenCreditsModal={() => setShowProfileMenu(true)}
           onCreditsRefresh={refreshCredits}
+          onSaveGeneration={handleMobileSaveGeneration}
         />
         <AuthModal
           isOpen={showAuthModal}
