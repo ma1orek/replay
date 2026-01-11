@@ -37,8 +37,38 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
   const [hasGenerated, setHasGenerated] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
   
-  const pendingLoginRef = useRef(false);
-  
+  // Wake Lock implementation to prevent screen from turning off during processing
+  useEffect(() => {
+    let wakeLock: any = null;
+
+    const requestWakeLock = async () => {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await (navigator as any).wakeLock.request('screen');
+          console.log('Wake Lock is active');
+        }
+      } catch (err) {
+        console.error(`${err.name}, ${err.message}`);
+      }
+    };
+
+    if (isProcessing) {
+      requestWakeLock();
+    } else {
+      if (wakeLock) {
+        wakeLock.release();
+        wakeLock = null;
+      }
+    }
+
+    return () => {
+      if (wakeLock) {
+        wakeLock.release();
+        wakeLock = null;
+      }
+    };
+  }, [isProcessing]);
+
   // Video Processor (FFmpeg + Direct Upload)
   const { processAndUpload, status: uploadStatus, reset: resetUpload } = useMobileVideoProcessor();
 
