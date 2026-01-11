@@ -10212,55 +10212,43 @@ export default function GeneratedPage() {
               <MobileScanner
                 onVideoCapture={async (blob, name) => {
                   setIsMobileScanning(true);
-                  setCompressionProgress(0);
+                  setCompressionProgress(20);
                   try {
-                    // Compress video using FFmpeg if needed
-                    const { needsCompression } = await import("@/lib/video-compress");
-                    let processedBlob = blob;
-                    
-                    if (needsCompression(blob, 4)) {
-                      setCompressionProgress(10);
-                      const { convertToMP4 } = await import("@/lib/ffmpeg-converter");
-                      processedBlob = await convertToMP4(blob, (p) => setCompressionProgress(10 + p * 0.7));
-                    }
-                    
-                    setCompressionProgress(80);
-                    await addVideoToFlows(processedBlob, name);
+                    // Add video directly - compression happens server-side
+                    setCompressionProgress(50);
+                    await addVideoToFlows(blob, name);
                     setCompressionProgress(100);
                     
-                    // Auto-start generation after capture
+                    // Auto-start generation after short delay
                     setTimeout(() => {
                       setIsMobileScanning(false);
-                      handleGenerate();
-                    }, 500);
+                      if (flows.length > 0 || blob) {
+                        handleGenerate();
+                      }
+                    }, 300);
                   } catch (err) {
-                    console.error("Video processing error:", err);
+                    console.error("Video capture error:", err);
                     setIsMobileScanning(false);
-                    showToast("Failed to process video", "error");
+                    showToast("Failed to add video", "error");
                   }
                 }}
                 onVideoUpload={async (file) => {
                   setIsMobileScanning(true);
-                  setCompressionProgress(0);
+                  setCompressionProgress(20);
                   try {
-                    const blob = new Blob([await file.arrayBuffer()], { type: file.type });
-                    const { needsCompression } = await import("@/lib/video-compress");
-                    let processedBlob = blob;
-                    
-                    if (needsCompression(blob, 4)) {
-                      setCompressionProgress(10);
-                      const { convertToMP4 } = await import("@/lib/ffmpeg-converter");
-                      processedBlob = await convertToMP4(blob, (p) => setCompressionProgress(10 + p * 0.7));
-                    }
-                    
-                    setCompressionProgress(80);
-                    await addVideoToFlows(processedBlob, file.name.replace(/\.[^.]+$/, ""));
+                    // Simple: just add the file as blob
+                    setCompressionProgress(50);
+                    const blob = file;
+                    await addVideoToFlows(blob, file.name.replace(/\.[^.]+$/, ""));
                     setCompressionProgress(100);
-                    setIsMobileScanning(false);
+                    
+                    setTimeout(() => {
+                      setIsMobileScanning(false);
+                    }, 300);
                   } catch (err) {
                     console.error("Video upload error:", err);
                     setIsMobileScanning(false);
-                    showToast("Failed to process video", "error");
+                    showToast("Failed to add video", "error");
                   }
                 }}
                 isProcessing={isMobileScanning}
