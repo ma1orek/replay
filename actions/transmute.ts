@@ -304,14 +304,25 @@ FORBIDDEN: text-8xl or text-9xl for multi-line headlines
 | Logo unclear | Use company name as text |
 | **Stats number unclear** | Use realistic fallback: years→"26", count→"104", countries→"129", people→"1.3M+", percent→"98%" |
 
-**🔴 STATS/NUMBERS RULE - CRITICAL:**
-NEVER output 0 (zero) for any statistic! If you cannot read the exact number from video:
-- Years/Duration → Use realistic number (e.g., "26 yrs", "15 years")
-- Counts/Totals → Use impressive number (e.g., "104", "482", "1,340")
-- Countries → Use realistic count (e.g., "129", "84", "50+")
-- Users/People → Use formatted number (e.g., "1.3M+", "500K+", "10,000+")
-- Percentage → Use high value (e.g., "98%", "99.9%", "95%")
-0 looks broken and unprofessional - ALWAYS use a realistic placeholder number!
+**🔴🔴🔴 STATS/NUMBERS RULE - ABSOLUTE CRITICAL - READ THIS 3 TIMES 🔴🔴🔴:**
+
+⛔ FORBIDDEN OUTPUTS (will make the UI look BROKEN):
+- "0%" ❌ → Use "98%" or "99.9%" ✅
+- "0" (as count) ❌ → Use "10K+" or "1,340" ✅
+- "0ms" ❌ → Use "< 1ms" or "50ms" ✅
+- "0 users" ❌ → Use "10M+ users" ✅
+- "0 years" ❌ → Use "15+ years" ✅
+
+IF YOU CANNOT READ THE EXACT NUMBER FROM VIDEO:
+- Years/Duration → "15+", "26", "10+"
+- Counts/Totals → "10K+", "1,340", "500+"
+- Countries → "50+", "129", "84"
+- Users/People → "1.3M+", "500K+", "10,000+"
+- Percentage → "98%", "99.9%", "95%"
+- Latency → "< 1ms", "50ms", "instant"
+- Rate → "99.9%", "100%"
+
+ZERO (0) IN ANY STATISTIC = INSTANT FAILURE. The UI will look broken and unprofessional!
 
 **⚠️ COMPLETE UI RECONSTRUCTION - MANDATORY:**
 You MUST reconstruct the ENTIRE interface, not just the parts shown in detail.
