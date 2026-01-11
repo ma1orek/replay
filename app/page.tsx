@@ -6362,6 +6362,7 @@ export const shadows = {
       const spendRes = await fetch("/api/credits/spend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include", // Ensure auth cookies are sent on mobile Safari
         body: JSON.stringify({
           cost: CREDIT_COSTS.VIDEO_GENERATE,
           reason: "video_generate",
@@ -6401,6 +6402,7 @@ export const shadows = {
       const urlRes = await fetch("/api/upload-video/get-url", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           filename: `mobile-${Date.now()}.${fileExt}`,
           contentType: videoType.startsWith("video/") ? videoType : "video/mp4",
