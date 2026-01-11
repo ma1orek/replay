@@ -6352,43 +6352,47 @@ export const shadows = {
     });
   };
 
-  // MOBILE GENERATION HANDLER - EXACT same logic as desktop
+  // MOBILE GENERATION HANDLER - Calls spend API directly (API validates credits)
   const handleMobileGenerate = useCallback(async (videoBlob: Blob, videoName: string): Promise<{ code: string; previewUrl: string } | null> => {
     try {
-      // Debug log to see what's happening
-      console.log("[MOBILE] Credits check:", { userTotalCredits, required: CREDIT_COSTS.VIDEO_GENERATE, canAffordResult: canAfford(CREDIT_COSTS.VIDEO_GENERATE) });
+      // Skip client-side credit check - let API handle it
+      // This avoids stale closure issues with userTotalCredits
+      // The API will return success:false if not enough credits
       
-      // Check credits - same as desktop
-      if (userTotalCredits < CREDIT_COSTS.VIDEO_GENERATE) {
-        console.log("[MOBILE] Not enough credits:", userTotalCredits, "<", CREDIT_COSTS.VIDEO_GENERATE);
-        setShowOutOfCreditsModal(true);
+      const spendRes = await fetch("/api/credits/spend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cost: CREDIT_COSTS.VIDEO_GENERATE,
+          reason: "video_generate",
+          referenceId: `gen_${Date.now()}`,
+        }),
+      });
+      
+      console.log("[MOBILE] Spend response status:", spendRes.status);
+      
+      // Handle auth error
+      if (spendRes.status === 401) {
+        console.log("[MOBILE] Not authenticated");
+        setShowAuthModal(true);
         return null;
       }
       
-      // Spend credits - EXACTLY like desktop
-      try {
-        const spendRes = await fetch("/api/credits/spend", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            cost: CREDIT_COSTS.VIDEO_GENERATE,
-            reason: "video_generate",
-            referenceId: `gen_${Date.now()}`,
-          }),
-        });
-        const spendData = await spendRes.json();
-        console.log("[MOBILE] Spend result:", spendData);
-        if (!spendData.success) {
-          console.log("[MOBILE] Spend failed:", spendData);
+      const spendData = await spendRes.json();
+      console.log("[MOBILE] Spend result:", spendData);
+      
+      if (!spendData.success) {
+        console.log("[MOBILE] Spend failed - showing modal. Error:", spendData.error);
+        // Only show out of credits if it's actually a credits issue
+        if (spendData.error?.includes("credit") || spendData.error?.includes("insufficient")) {
           setShowOutOfCreditsModal(true);
-          return null;
+        } else {
+          showToast(spendData.error || "Failed to process", "error");
         }
-        refreshCredits();
-      } catch (error) {
-        console.error("[MOBILE] Failed to spend credits:", error);
-        showToast("Failed to process payment", "error");
         return null;
       }
+      
+      refreshCredits();
       
       // Upload video to Supabase
       const videoType = videoBlob.type || "video/webm";
@@ -6443,7 +6447,7 @@ export const shadows = {
       showToast("Something went wrong", "error");
       return null;
     }
-  }, [canAfford, refreshCredits, showToast, userTotalCredits]);
+  }, [refreshCredits, showToast]);
 
   // ====== DEVICE DETECTION LOADING ======
   // Show loading while detecting device type
