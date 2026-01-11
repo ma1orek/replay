@@ -4,10 +4,10 @@ import { useState, useEffect } from "react";
 
 /**
  * Hook to detect if the user is on a mobile device
- * Uses both screen width and user agent for accurate detection
+ * Returns null during SSR/hydration, then true/false after mount
  */
-export function useIsMobile(): boolean {
-  const [isMobile, setIsMobile] = useState(false);
+export function useIsMobile(): boolean | null {
+  const [isMobile, setIsMobile] = useState<boolean | null>(null);
   
   useEffect(() => {
     const checkMobile = () => {
@@ -37,32 +37,6 @@ export function useIsMobile(): boolean {
     
     checkMobile();
     
-    // Re-check on resize (for dev tools testing)
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
-  
-  return isMobile;
-}
-
-/**
- * SSR-safe version that defaults to desktop
- */
-export function useIsMobileSSR(): boolean | null {
-  const [isMobile, setIsMobile] = useState<boolean | null>(null);
-  
-  useEffect(() => {
-    const checkMobile = () => {
-      const isSmallScreen = window.innerWidth < 768;
-      const userAgent = navigator.userAgent.toLowerCase();
-      const mobileKeywords = ["android", "iphone", "ipad", "mobile"];
-      const isMobileUA = mobileKeywords.some(keyword => userAgent.includes(keyword));
-      const hasTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-      
-      setIsMobile(isSmallScreen || (isMobileUA && hasTouch));
-    };
-    
-    checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);

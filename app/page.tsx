@@ -6433,10 +6433,20 @@ export const shadows = {
     }
   }, [canAfford, refreshCredits, showToast]);
 
+  // ====== DEVICE DETECTION LOADING ======
+  // Show loading while detecting device type
+  if (isMobile === null) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="w-10 h-10 border-2 border-[#FF6E3C] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   // ====== MOBILE HARD FORK ======
-  // Mobile users get a completely different experience
-  // They NEVER see the desktop IDE
-  if (isMobile) {
+  // Mobile users get COMPLETELY DIFFERENT APP
+  // They NEVER see ANY desktop elements
+  if (isMobile === true) {
     return (
       <>
         <MobileLayout
@@ -6467,7 +6477,7 @@ export const shadows = {
     );
   }
 
-  // ====== DESKTOP APP ======
+  // ====== DESKTOP APP (isMobile === false) ======
   return (
     <div className="h-screen flex flex-col bg-[#050505] overflow-hidden font-poppins">
       <div className="gradient-bg" />
