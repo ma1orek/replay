@@ -19,16 +19,8 @@ interface UseAsyncGenerationResult {
   stopPolling: () => void;
   resetJob: () => void;
   uploadedVideoUrl: string | null;
+  checkForPendingJob: () => void; // Expose recovery function
 }
-
-// Simulated progress messages
-const PROGRESS_MESSAGES = [
-  "Analyzing content...",
-  "Reconstructing UI...",
-  "Generating code...",
-  "Applying styles...",
-  "Finalizing..."
-];
 
 const STORAGE_KEY_JOB = "replay_mobile_pending_job";
 
@@ -41,7 +33,14 @@ export function useAsyncGeneration(
   const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string | null>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const currentJobIdRef = useRef<string | null>(null);
-  const hasRecoveredRef = useRef(false);
+  
+  // Store callbacks in refs to avoid stale closures
+  const onCompleteRef = useRef(onComplete);
+  const onErrorRef = useRef(onError);
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+    onErrorRef.current = onError;
+  }, [onComplete, onError]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -52,76 +51,6 @@ export function useAsyncGeneration(
     };
   }, []);
 
-  // Recovery: Check for pending job on mount (after screen wake)
-  useEffect(() => {
-    if (hasRecoveredRef.current) return;
-    hasRecoveredRef.current = true;
-    
-    const stored = localStorage.getItem(STORAGE_KEY_JOB);
-    if (stored) {
-      try {
-        const { jobId, videoUrl } = JSON.parse(stored);
-        if (jobId) {
-          console.log("[useAsyncGeneration] Recovering pending job:", jobId);
-          // Check job status immediately
-          checkAndRecoverJob(jobId, videoUrl);
-        }
-      } catch (e) {
-        localStorage.removeItem(STORAGE_KEY_JOB);
-      }
-    }
-  }, []);
-  
-  // Check job status and recover
-  const checkAndRecoverJob = async (jobId: string, videoUrl: string) => {
-    try {
-      const res = await fetch(`/api/generations?id=${jobId}`);
-      if (!res.ok) {
-        localStorage.removeItem(STORAGE_KEY_JOB);
-        return;
-      }
-      
-      const data = await res.json();
-      if (!data.success || !data.generation) {
-        localStorage.removeItem(STORAGE_KEY_JOB);
-        return;
-      }
-      
-      const gen = data.generation;
-      
-      if (gen.status === "complete" && gen.output_code) {
-        console.log("[useAsyncGeneration] Job already complete, recovering...");
-        localStorage.removeItem(STORAGE_KEY_JOB);
-        setJobStatus({
-          status: "complete",
-          progress: 100,
-          message: "Complete!",
-          code: gen.output_code,
-          title: gen.title,
-        });
-        onComplete(gen.output_code, gen.title, videoUrl);
-      } else if (gen.status === "failed") {
-        localStorage.removeItem(STORAGE_KEY_JOB);
-        setJobStatus({
-          status: "failed",
-          progress: 0,
-          message: "Generation failed",
-          error: gen.error || "Server processing failed",
-        });
-      } else if (gen.status === "running") {
-        // Still processing, resume polling
-        console.log("[useAsyncGeneration] Job still running, resuming poll...");
-        setJobStatus({ status: "processing", progress: 50, message: "Resuming..." });
-        currentJobIdRef.current = jobId;
-        setUploadedVideoUrl(videoUrl);
-        startPolling(jobId, videoUrl);
-      }
-    } catch (err) {
-      console.error("[useAsyncGeneration] Recovery failed:", err);
-      localStorage.removeItem(STORAGE_KEY_JOB);
-    }
-  };
-
   const stopPolling = useCallback(() => {
     if (pollRef.current) {
       clearInterval(pollRef.current);
@@ -130,7 +59,7 @@ export function useAsyncGeneration(
     setIsPolling(false);
   }, []);
 
-  // Poll status from server
+  // Poll status from server (uses refs for callbacks to avoid stale closures)
   const pollStatus = useCallback(async (jobId: string, videoUrl: string) => {
     if (!jobId) return;
     
@@ -154,24 +83,26 @@ export function useAsyncGeneration(
       if (gen.status === "complete") {
         stopPolling();
         localStorage.removeItem(STORAGE_KEY_JOB); // Clear pending job
+        const code = gen.output_code || gen.code;
         setJobStatus({
           status: "complete",
           progress: 100,
           message: "Complete!",
-          code: gen.output_code || gen.code,
+          code,
           title: gen.title,
         });
-        onComplete(gen.output_code || gen.code, gen.title, videoUrl);
+        onCompleteRef.current(code, gen.title, videoUrl);
       } else if (gen.status === "failed") {
         stopPolling();
         localStorage.removeItem(STORAGE_KEY_JOB); // Clear pending job
+        const errorMsg = gen.error || "Server processing failed";
         setJobStatus({
           status: "failed",
           progress: 0,
           message: "Generation failed",
-          error: gen.error || "Server processing failed",
+          error: errorMsg,
         });
-        onError(gen.error || "Generation failed on server");
+        onErrorRef.current(errorMsg);
       } else {
         // Still processing
         // Just update message/progress slightly
@@ -192,7 +123,7 @@ export function useAsyncGeneration(
       console.warn("Polling failed:", err);
       // Don't stop polling on transient errors
     }
-  }, [stopPolling, onComplete, onError]);
+  }, [stopPolling]);
 
   // Start polling loop
   const startPolling = useCallback((jobId: string, videoUrl: string) => {
@@ -204,6 +135,69 @@ export function useAsyncGeneration(
       pollStatus(jobId, videoUrl);
     }, 3000); // Check every 3s
   }, [stopPolling, pollStatus]);
+
+  // Check for pending job (can be called externally on visibility change)
+  const checkForPendingJob = useCallback(async () => {
+    const stored = localStorage.getItem(STORAGE_KEY_JOB);
+    if (!stored) return;
+    
+    try {
+      const { jobId, videoUrl } = JSON.parse(stored);
+      if (!jobId) return;
+      
+      console.log("[useAsyncGeneration] Checking pending job:", jobId);
+      
+      const res = await fetch(`/api/generations?id=${jobId}`);
+      if (!res.ok) {
+        localStorage.removeItem(STORAGE_KEY_JOB);
+        return;
+      }
+      
+      const data = await res.json();
+      if (!data.success || !data.generation) {
+        localStorage.removeItem(STORAGE_KEY_JOB);
+        return;
+      }
+      
+      const gen = data.generation;
+      
+      if (gen.status === "complete" && gen.output_code) {
+        console.log("[useAsyncGeneration] RECOVERED complete job!");
+        localStorage.removeItem(STORAGE_KEY_JOB);
+        setJobStatus({
+          status: "complete",
+          progress: 100,
+          message: "Complete!",
+          code: gen.output_code,
+          title: gen.title,
+        });
+        onCompleteRef.current(gen.output_code, gen.title, videoUrl);
+      } else if (gen.status === "failed") {
+        localStorage.removeItem(STORAGE_KEY_JOB);
+        setJobStatus({
+          status: "failed",
+          progress: 0,
+          message: "Generation failed",
+          error: gen.error || "Server processing failed",
+        });
+      } else if (gen.status === "running") {
+        // Still processing, resume polling
+        console.log("[useAsyncGeneration] Job still running, resuming poll...");
+        setJobStatus({ status: "processing", progress: 50, message: "Resuming..." });
+        currentJobIdRef.current = jobId;
+        setUploadedVideoUrl(videoUrl);
+        startPolling(jobId, videoUrl);
+      }
+    } catch (err) {
+      console.error("[useAsyncGeneration] Recovery check failed:", err);
+      localStorage.removeItem(STORAGE_KEY_JOB);
+    }
+  }, [startPolling]);
+
+  // Auto-check on mount
+  useEffect(() => {
+    checkForPendingJob();
+  }, [checkForPendingJob]);
 
   // Start generation - Calls Async Endpoint
   const startGeneration = useCallback(async (videoUrl: string, styleDirective: string): Promise<{ jobId: string; videoUrl: string } | null> => {
@@ -229,7 +223,7 @@ export function useAsyncGeneration(
       if (!spendRes.ok || !spendData.success) {
         const errorMsg = spendData.error || "Insufficient credits";
         setJobStatus({ status: "failed", progress: 0, message: errorMsg, error: errorMsg });
-        onError(errorMsg);
+        onErrorRef.current(errorMsg);
         return null;
       }
 
@@ -253,7 +247,7 @@ export function useAsyncGeneration(
       if (!res.ok || !data.success) {
         const errorMsg = data.error || "Failed to start job";
         setJobStatus({ status: "failed", progress: 0, message: errorMsg, error: errorMsg });
-        onError(errorMsg);
+        onErrorRef.current(errorMsg);
         return null;
       }
 
@@ -271,7 +265,7 @@ export function useAsyncGeneration(
           code: data.code,
           title: data.title,
         });
-        onComplete(data.code, data.title, videoUrl);
+        onCompleteRef.current(data.code, data.title, videoUrl);
         return { jobId, videoUrl };
       }
       
@@ -288,10 +282,10 @@ export function useAsyncGeneration(
       console.error("[useAsyncGeneration] Error:", err);
       const errorMsg = err instanceof Error ? err.message : "Failed to start";
       setJobStatus({ status: "failed", progress: 0, message: errorMsg, error: errorMsg });
-      onError(errorMsg);
+      onErrorRef.current(errorMsg);
       return null;
     }
-  }, [onError, startPolling]);
+  }, [startPolling]);
 
   // Reset job state
   const resetJob = useCallback(() => {
@@ -308,5 +302,6 @@ export function useAsyncGeneration(
     stopPolling,
     resetJob,
     uploadedVideoUrl,
+    checkForPendingJob,
   };
 }

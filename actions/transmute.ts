@@ -2094,37 +2094,83 @@ IMPORTANT: The current year is 2026, NOT 2024 or 2025. Use modern, cutting-edge 
 
 ---
 
-**🚨🚨🚨 CRITICAL MANDATORY RULES - OUTPUT REJECTION IF VIOLATED 🚨🚨🚨**
+**🚨🚨🚨 ABSOLUTE CRITICAL RULES - OUTPUT REJECTION IF VIOLATED 🚨🚨🚨**
 
 **RULE A: ZERO STATS = INSTANT REJECTION**
 ⛔ BANNED: "0", "0+", "0%", "0ms", "0 users", "0 years", "0 countries"
 ✅ USE: "10K+", "98%", "<1ms", "1.3M+ users", "15+ years", "50+ countries"
 If you cannot read the number → INVENT a realistic impressive number!
 
-**RULE B: NON-LOOPING ANIMATIONS = INSTANT REJECTION**
-ALL marquee/carousel/scroll animations MUST:
-- Use CSS \`animation: name Xs linear infinite;\` - THE WORD "infinite" IS MANDATORY
-- DUPLICATE the content so there's no gap when it loops back
-- NEVER use animation-iteration-count with a number
+**RULE B: ⚠️⚠️⚠️ SCROLLING LOGOS/TEXT MUST LOOP INFINITELY ⚠️⚠️⚠️**
 
-CORRECT MARQUEE CODE (copy exactly):
+IF VIDEO SHOWS SCROLLING LOGOS, COMPANY NAMES, OR TRUST BADGES:
+YOU **MUST** USE THIS EXACT IMPLEMENTATION - NO MODIFICATIONS!
+
 \`\`\`html
-<div class="overflow-hidden">
-  <div class="flex animate-marquee whitespace-nowrap">
-    <div class="flex gap-8">[CONTENT]</div>
-    <div class="flex gap-8">[SAME CONTENT DUPLICATED]</div>
+<!-- LOGO MARQUEE - COPY THIS EXACTLY -->
+<section class="py-8 bg-black overflow-hidden border-y border-white/10">
+  <div class="logo-scroll-container">
+    <div class="logo-scroll-track">
+      <!-- FIRST SET OF LOGOS -->
+      <div class="logo-set">
+        <span class="logo-item">MKBHD</span>
+        <span class="logo-item">LINUS MEDIA</span>
+        <span class="logo-item">THE VERGE</span>
+        <span class="logo-item">TECHRADAR</span>
+        <span class="logo-item">WIRED</span>
+        <span class="logo-item">ENGADGET</span>
+      </div>
+      <!-- DUPLICATE SET - REQUIRED FOR SEAMLESS LOOP -->
+      <div class="logo-set">
+        <span class="logo-item">MKBHD</span>
+        <span class="logo-item">LINUS MEDIA</span>
+        <span class="logo-item">THE VERGE</span>
+        <span class="logo-item">TECHRADAR</span>
+        <span class="logo-item">WIRED</span>
+        <span class="logo-item">ENGADGET</span>
+      </div>
+    </div>
   </div>
-</div>
+</section>
+
 <style>
-@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-.animate-marquee { animation: marquee 30s linear infinite; display: flex; width: max-content; }
+.logo-scroll-container { width: 100%; overflow: hidden; }
+.logo-scroll-track { 
+  display: flex; 
+  width: max-content;
+  animation: scroll-left 25s linear infinite;
+}
+.logo-set { display: flex; gap: 4rem; padding: 0 2rem; }
+.logo-item { 
+  font-size: 0.875rem; 
+  font-weight: 500; 
+  color: rgba(255,255,255,0.5); 
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+@keyframes scroll-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
 </style>
 \`\`\`
 
-**RULE C: VARIETY - DON'T USE SAME COMPONENTS**
-- For FAQ: Rotate between Accordion, Expandable Cards, Tabs, Side-by-Side
-- For Testimonials: Rotate between Marquee, Grid, 3D Carousel, Masonry
-- For Stats: Use animated NumberTicker, not static text
+**CRITICAL MARQUEE REQUIREMENTS:**
+✅ \`animation: scroll-left 25s linear infinite\` - THE WORD "infinite" IS MANDATORY
+✅ Content MUST be duplicated (two .logo-set divs with IDENTICAL content)
+✅ translateX(-50%) - moves exactly half (to where duplicate begins)
+✅ width: max-content on track
+❌ NEVER use JavaScript for scrolling
+❌ NEVER use animation-iteration-count with a number
+❌ NEVER have only one set of logos (causes jump/gap)
+
+**RULE C: VARIETY - DON'T USE SAME COMPONENTS EVERY TIME**
+Rotate your component choices based on content:
+- For FAQ: Use Accordion (50%), Expandable Cards (25%), Tabs (15%), Side-by-Side (10%)
+- For Testimonials: Use Marquee (30%), Grid (30%), 3D Carousel (20%), Masonry (20%)
+- For Stats: Use animated NumberTicker with CountUp effect
+- For Logo bars: Use Marquee (seamless scroll) - NEVER static grid
 
 ---
 
