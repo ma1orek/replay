@@ -25,52 +25,66 @@ export async function POST(request: NextRequest) {
 
     console.log(`[generate/start] User ${user.id} starting generation`);
 
-    // 2. Parse form data
-    const formData = await request.formData();
-    const videoFile = formData.get("video") as File | null;
-    const styleDirective = formData.get("styleDirective") as string || "Modern, clean design";
-    
-    if (!videoFile) {
-      return NextResponse.json({ error: "No video provided" }, { status: 400 });
-    }
+    // 2. Parse request - supports both FormData (with file) and JSON (with URL)
+    const contentType = request.headers.get("content-type") || "";
+    let videoUrl: string;
+    let styleDirective: string = "Modern, clean design";
+    const jobId = generateId();
 
-    console.log(`[generate/start] Video received: ${videoFile.size} bytes, ${videoFile.type}`);
-
-    // 3. Get admin client for storage upload
+    // Get admin client for storage upload (if needed)
     const admin = createAdminClient();
     if (!admin) {
       console.error("[generate/start] Admin client is null - check SUPABASE_SERVICE_ROLE_KEY");
       return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
     }
 
-    // NOTE: Credits are spent by the frontend before calling this endpoint
-    // This matches the desktop flow: frontend calls /api/credits/spend, then starts generation
+    if (contentType.includes("application/json")) {
+      // JSON body with pre-uploaded video URL
+      const body = await request.json();
+      videoUrl = body.videoUrl;
+      styleDirective = body.styleDirective || styleDirective;
+      
+      if (!videoUrl) {
+        return NextResponse.json({ error: "No videoUrl provided" }, { status: 400 });
+      }
+      console.log(`[generate/start] Using pre-uploaded video: ${videoUrl}`);
+    } else {
+      // FormData with video file - upload to storage first
+      const formData = await request.formData();
+      const videoFile = formData.get("video") as File | null;
+      styleDirective = formData.get("styleDirective") as string || styleDirective;
+      
+      if (!videoFile) {
+        return NextResponse.json({ error: "No video provided" }, { status: 400 });
+      }
 
-    // 4. Upload video to Supabase Storage
-    const jobId = generateId();
-    const fileExt = videoFile.type.includes("webm") ? "webm" : "mp4";
-    const fileName = `mobile-jobs/${jobId}.${fileExt}`;
-    const arrayBuffer = await videoFile.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+      console.log(`[generate/start] Video file received: ${videoFile.size} bytes, ${videoFile.type}`);
 
-    const { error: uploadError } = await admin.storage
-      .from("videos")
-      .upload(fileName, buffer, {
-        contentType: videoFile.type,
-        upsert: true,
-      });
+      // Upload video to Supabase Storage
+      const fileExt = videoFile.type.includes("webm") ? "webm" : "mp4";
+      const fileName = `mobile-jobs/${jobId}.${fileExt}`;
+      const arrayBuffer = await videoFile.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
 
-    if (uploadError) {
-      console.error("[generate/start] Upload error:", uploadError);
-      // Note: Credits already spent - no refund (same as desktop behavior)
-      return NextResponse.json({ error: "Failed to upload video" }, { status: 500 });
+      const { error: uploadError } = await admin.storage
+        .from("videos")
+        .upload(fileName, buffer, {
+          contentType: videoFile.type,
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error("[generate/start] Upload error:", uploadError);
+        return NextResponse.json({ error: "Failed to upload video" }, { status: 500 });
+      }
+
+      // Get public URL
+      const { data: urlData } = admin.storage.from("videos").getPublicUrl(fileName);
+      videoUrl = urlData.publicUrl;
+      console.log(`[generate/start] Video uploaded: ${videoUrl}`);
     }
 
-    // Get public URL
-    const { data: urlData } = admin.storage.from("videos").getPublicUrl(fileName);
-    const videoUrl = urlData.publicUrl;
-
-    console.log(`[generate/start] Video uploaded: ${videoUrl}`);
+    // NOTE: Credits are spent by the frontend before calling this endpoint
 
     // 5. Generate code
     console.log(`[generate/start] Calling transmuteVideoToCode...`);
