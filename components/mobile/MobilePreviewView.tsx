@@ -53,6 +53,29 @@ export default function MobilePreviewView({
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
   const [isMessageTransitioning, setIsMessageTransitioning] = useState(false);
   const [isTipTransitioning, setIsTipTransitioning] = useState(false);
+  const [hasShownInitialModal, setHasShownInitialModal] = useState(false);
+  const [showShareHint, setShowShareHint] = useState(false);
+  
+  // Auto-show modal after generation completes (first time only)
+  useEffect(() => {
+    if (!isProcessing && (previewUrl || previewCode) && !hasShownInitialModal) {
+      // Small delay to let user see the preview first
+      const timer = setTimeout(() => {
+        setShowShareModal(true);
+        setHasShownInitialModal(true);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [isProcessing, previewUrl, previewCode, hasShownInitialModal]);
+  
+  // Show share hint for 5 seconds after modal closes
+  useEffect(() => {
+    if (!showShareModal && hasShownInitialModal) {
+      setShowShareHint(true);
+      const timer = setTimeout(() => setShowShareHint(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showShareModal, hasShownInitialModal]);
   
   // Rotate messages - same as desktop
   useEffect(() => {
@@ -222,13 +245,22 @@ export default function MobilePreviewView({
         />
       ) : null}
       
-      {/* Floating share button */}
+      {/* Floating share button - more visible with orange accent */}
       <button
         onClick={handleShare}
-        className="absolute top-4 right-4 w-12 h-12 rounded-full bg-black/60 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-xl z-10"
+        className="absolute top-4 right-4 w-14 h-14 rounded-full bg-gradient-to-br from-[#FF6E3C] to-[#FF8F5C] flex items-center justify-center shadow-xl z-10 animate-pulse-slow"
+        style={{ animationDuration: '2s' }}
       >
-        <Share2 className="w-5 h-5 text-white" />
+        <Share2 className="w-6 h-6 text-white" />
       </button>
+      
+      {/* Tooltip hint - shows for 5 seconds after modal closes */}
+      {showShareHint && !showShareModal && (
+        <div className="absolute top-20 right-4 bg-black/90 backdrop-blur-xl rounded-xl px-3 py-2 text-xs text-white/80 z-10 shadow-lg border border-white/10 animate-bounce-subtle">
+          <div className="absolute -top-2 right-5 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[8px] border-b-black/90" />
+          Tap to share ✨
+        </div>
+      )}
       
       {/* Share Modal */}
       {showShareModal && (
@@ -258,10 +290,39 @@ export default function MobilePreviewView({
               </div>
             </div>
             
-            <div className="text-center mb-6">
-              <h3 className="text-xl font-bold text-white mb-2">Project Synced! 🚀</h3>
-              <p className="text-white/50 text-sm">
-                Open <span className="text-[#FF6E3C]">replay.build</span> on desktop to edit code and export.
+            <div className="mb-6">
+              <h3 className="text-xl font-bold text-white mb-4 text-center">Project Synced! 🚀</h3>
+              <p className="text-white/60 text-sm mb-4 text-center">
+                Unlock Full Power on Desktop:
+              </p>
+              <div className="space-y-2.5 text-sm">
+                <div className="flex items-center gap-3 text-white/80">
+                  <div className="w-6 h-6 rounded-lg bg-[#FF6E3C]/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-xs">💻</span>
+                  </div>
+                  <span>Full production-ready code</span>
+                </div>
+                <div className="flex items-center gap-3 text-white/80">
+                  <div className="w-6 h-6 rounded-lg bg-[#FF6E3C]/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-xs">✨</span>
+                  </div>
+                  <span>Edit with AI (Chat & Refine)</span>
+                </div>
+                <div className="flex items-center gap-3 text-white/80">
+                  <div className="w-6 h-6 rounded-lg bg-[#FF6E3C]/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-xs">🗺️</span>
+                  </div>
+                  <span>Visual Flow Map</span>
+                </div>
+                <div className="flex items-center gap-3 text-white/80">
+                  <div className="w-6 h-6 rounded-lg bg-[#FF6E3C]/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-xs">🎨</span>
+                  </div>
+                  <span>Design System & Export</span>
+                </div>
+              </div>
+              <p className="text-white/40 text-xs mt-4 text-center">
+                Everything is synced & ready on <span className="text-[#FF6E3C]">replay.build</span>
               </p>
             </div>
             
