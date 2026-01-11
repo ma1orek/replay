@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, Zap, Check, X } from "lucide-react";
+import { ChevronLeft, Check, X } from "lucide-react";
 
 interface MobileHeaderProps {
   projectName: string;
   onProjectNameChange: (name: string) => void;
-  credits: number;
   isPro: boolean;
   plan: string;
   onBack: () => void;
@@ -16,7 +15,6 @@ interface MobileHeaderProps {
 export default function MobileHeader({ 
   projectName, 
   onProjectNameChange, 
-  credits, 
   isPro,
   plan,
   onBack,
@@ -42,7 +40,7 @@ export default function MobileHeader({
     if (isPro) {
       if (plan === "agency") return "Agency";
       if (plan === "enterprise") return "Enterprise";
-      return "Pro";
+      return "PRO";
     }
     return "Free";
   };
@@ -96,24 +94,17 @@ export default function MobileHeader({
         )}
       </div>
       
-      {/* Right - Plan badge + Credits */}
-      <div className="flex items-center gap-2">
-        {/* Plan badge like desktop */}
+      {/* Right - Only Plan badge (PRO/Free) */}
+      <div className="flex items-center">
         {isPro ? (
-          <span className="px-2 py-1 rounded text-[10px] font-bold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase">
+          <span className="px-2.5 py-1 rounded text-[10px] font-bold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase tracking-wide">
             {getPlanDisplay()}
           </span>
         ) : (
-          <span className="px-2 py-1 rounded text-[10px] font-medium bg-white/10 text-white/50 uppercase">
+          <span className="px-2.5 py-1 rounded text-[10px] font-medium bg-white/10 text-white/50 uppercase">
             Free
           </span>
         )}
-        
-        {/* Credits */}
-        <div className="flex items-center gap-1 text-white/60">
-          <Zap className="w-3.5 h-3.5 text-[#FF6E3C]" />
-          <span className="text-xs font-medium">{credits}</span>
-        </div>
       </div>
     </header>
   );

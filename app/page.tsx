@@ -799,7 +799,7 @@ function ReplayToolContent() {
   const searchParams = useSearchParams();
   const { pending, clearPending } = usePendingFlow();
   const { user, isLoading: authLoading, signOut } = useAuth();
-  const { totalCredits: userTotalCredits, wallet, membership, canAfford, refreshCredits } = useCredits();
+  const { totalCredits: userTotalCredits, wallet, membership, canAfford, refreshCredits, isLoading: creditsLoading } = useCredits();
   const { profile } = useProfile();
   const { toast, showToast, hideToast } = useToast();
   
@@ -6355,13 +6355,16 @@ export const shadows = {
   // MOBILE GENERATION HANDLER - Simplified flow for mobile
   const handleMobileGenerate = useCallback(async (videoBlob: Blob, videoName: string): Promise<{ code: string; previewUrl: string } | null> => {
     try {
-      // Check credits
-      if (!canAfford(CREDIT_COSTS.VIDEO_GENERATE)) {
+      // For PRO users, skip client-side check - let API handle it
+      // This avoids race conditions where credits haven't loaded yet
+      const isPro = membership?.plan && membership.plan !== "free";
+      
+      if (!isPro && !creditsLoading && !canAfford(CREDIT_COSTS.VIDEO_GENERATE)) {
         setShowOutOfCreditsModal(true);
         return null;
       }
       
-      // Spend credits
+      // Spend credits via API (server validates actual balance)
       const spendRes = await fetch("/api/credits/spend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -6431,7 +6434,7 @@ export const shadows = {
       showToast("Something went wrong", "error");
       return null;
     }
-  }, [canAfford, refreshCredits, showToast]);
+  }, [canAfford, refreshCredits, showToast, membership, creditsLoading]);
 
   // ====== DEVICE DETECTION LOADING ======
   // Show loading while detecting device type
@@ -6451,7 +6454,6 @@ export const shadows = {
       <>
         <MobileLayout
           user={user}
-          credits={userTotalCredits}
           isPro={isPaidPlan}
           plan={membership?.plan || "free"}
           onLogin={() => setShowAuthModal(true)}
