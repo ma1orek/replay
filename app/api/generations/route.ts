@@ -169,117 +169,68 @@ export async function POST(request: NextRequest) {
       publishedSlug
     } = body;
 
-    // Check if generation already exists (update) or new (insert)
-    const { data: existing } = await adminSupabase
+    // Use UPSERT to avoid race conditions (duplicate key errors)
+    // This atomically inserts or updates based on the primary key
+    const upsertData: any = {
+      id,
+      user_id: user.id,
+      title: title || 'Untitled Project',
+      status: status || 'complete',
+      cost_credits: costCredits || 75,
+      input_video_url: videoUrl,
+      input_context: refinements,
+      input_style: styleDirective,
+      output_code: code,
+      output_architecture: { flowNodes, flowEdges },
+      output_design_system: styleInfo,
+      versions: versions || [],
+      completed_at: status === 'complete' ? new Date().toISOString() : null,
+    };
+    
+    // Only add token_usage if provided
+    if (tokenUsage) {
+      upsertData.token_usage = tokenUsage;
+    }
+    
+    // Only add published_slug if provided
+    if (publishedSlug) {
+      upsertData.published_slug = publishedSlug;
+    }
+    
+    console.log("Upserting generation:", id);
+    
+    let { data, error } = await adminSupabase
       .from("generations")
-      .select("id")
-      .eq("id", id)
-      .eq("user_id", user.id)
+      .upsert(upsertData, { 
+        onConflict: 'id',
+        ignoreDuplicates: false 
+      })
+      .select()
       .single();
 
-    if (existing) {
-      // Update existing generation
-      const updateData: any = {
-        title: title || 'Untitled Project',
-        status: status || 'complete',
-        output_code: code,
-        input_style: styleDirective,
-        input_context: refinements,
-        output_architecture: { flowNodes, flowEdges },
-        output_design_system: styleInfo,
-        versions: versions || [],
-        completed_at: status === 'complete' ? new Date().toISOString() : null,
-      };
-      
-      // Only update token_usage if provided (don't overwrite with null)
-      if (tokenUsage) {
-        updateData.token_usage = tokenUsage;
-      }
-      
-      // Try to update with published_slug first, then retry without if column doesn't exist
-      if (publishedSlug) {
-        updateData.published_slug = publishedSlug;
-      }
-      
-      let { error } = await adminSupabase
+    // If error is about missing column, retry without published_slug
+    if (error && error.message?.includes('published_slug')) {
+      console.warn("published_slug column missing, retrying upsert without it");
+      delete upsertData.published_slug;
+      const retryResult = await adminSupabase
         .from("generations")
-        .update(updateData)
-        .eq("id", id)
-        .eq("user_id", user.id);
-
-      // If error is about missing column, retry without published_slug
-      if (error && error.message?.includes('published_slug')) {
-        console.warn("published_slug column missing, retrying without it");
-        delete updateData.published_slug;
-        const retryResult = await adminSupabase
-          .from("generations")
-          .update(updateData)
-          .eq("id", id)
-          .eq("user_id", user.id);
-        error = retryResult.error;
-      }
-
-      if (error) {
-        console.error("Error updating generation:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
-      }
-
-      return NextResponse.json({ success: true, id, action: "updated" });
-    } else {
-      // Insert new generation
-      console.log("Inserting new generation with id:", id);
-      
-      const insertData: any = {
-        id,
-        user_id: user.id,
-        title: title || 'Untitled Project',
-        status: status || 'complete',
-        cost_credits: costCredits || 75, // Default to generation cost (75)
-        input_video_url: videoUrl,
-        input_context: refinements,
-        input_style: styleDirective,
-        output_code: code,
-        output_architecture: { flowNodes, flowEdges },
-        output_design_system: styleInfo,
-        versions: versions || [],
-        token_usage: tokenUsage || null,
-        completed_at: status === 'complete' ? new Date().toISOString() : null,
-      };
-      
-      // Only add published_slug if provided
-      if (publishedSlug) {
-        insertData.published_slug = publishedSlug;
-      }
-      
-      console.log("Insert data prepared, attempting insert...");
-      
-      let { data, error } = await adminSupabase
-        .from("generations")
-        .insert(insertData)
+        .upsert(upsertData, { 
+          onConflict: 'id',
+          ignoreDuplicates: false 
+        })
         .select()
         .single();
-
-      // If error is about missing column, retry without published_slug
-      if (error && error.message?.includes('published_slug')) {
-        console.warn("published_slug column missing, retrying insert without it");
-        delete insertData.published_slug;
-        const retryResult = await adminSupabase
-          .from("generations")
-          .insert(insertData)
-          .select()
-          .single();
-        data = retryResult.data;
-        error = retryResult.error;
-      }
-
-      if (error) {
-        console.error("Error inserting generation:", JSON.stringify(error, null, 2));
-        return NextResponse.json({ error: error.message, details: error }, { status: 500 });
-      }
-
-      console.log("Generation inserted successfully:", data?.id);
-      return NextResponse.json({ success: true, id: data.id, action: "created" });
+      data = retryResult.data;
+      error = retryResult.error;
     }
+
+    if (error) {
+      console.error("Error upserting generation:", JSON.stringify(error, null, 2));
+      return NextResponse.json({ error: error.message, details: error }, { status: 500 });
+    }
+
+    console.log("Generation saved successfully:", data?.id);
+    return NextResponse.json({ success: true, id: data?.id || id, action: "saved" });
 
   } catch (error: any) {
     console.error("Error in generations POST:", error);
