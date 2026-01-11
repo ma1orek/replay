@@ -211,9 +211,9 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
     
     // Start async generation - will poll for result
     // User can now lock screen, generation continues on server
-    const jobId = await startGeneration(videoBlob, styleDirective);
+    const result = await startGeneration(videoBlob, styleDirective);
     
-    if (!jobId) {
+    if (!result) {
       // Error already handled by hook
       setIsProcessing(false);
       setActiveTab("configure");
