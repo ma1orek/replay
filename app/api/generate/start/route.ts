@@ -34,35 +34,38 @@ export async function POST(request: NextRequest) {
 
     console.log(`[generate/start] Video received: ${videoFile.size} bytes, ${videoFile.type}`);
 
-    // 3. Spend credits using RPC (same as desktop)
-    const admin = createAdminClient();
-    if (!admin) {
-      return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
-    }
-
-    // Use the same RPC function as /api/credits/spend
-    const { data: spendResult, error: spendError } = await admin.rpc("spend_credits", {
-      p_user_id: user.id,
-      p_cost: CREDIT_COSTS.VIDEO_GENERATE,
-      p_reason: "video_generate",
-      p_reference_id: `mobile_gen_${Date.now()}`,
+    // 3. Spend credits - call internal API (same path as desktop)
+    const spendResponse = await fetch(new URL("/api/credits/spend", request.url).toString(), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        // Forward auth cookies
+        "Cookie": request.headers.get("cookie") || "",
+      },
+      body: JSON.stringify({
+        cost: CREDIT_COSTS.VIDEO_GENERATE,
+        reason: "video_generate",
+        referenceId: `mobile_gen_${Date.now()}`,
+      }),
     });
 
-    if (spendError) {
-      console.error("[generate/start] Credit spend RPC error:", spendError);
-      return NextResponse.json({ error: spendError.message }, { status: 500 });
-    }
+    const spendResult = await spendResponse.json();
 
-    if (!spendResult?.success) {
-      console.log("[generate/start] Insufficient credits:", spendResult);
+    if (!spendResponse.ok || !spendResult.success) {
+      console.log("[generate/start] Credit spend failed:", spendResult);
       return NextResponse.json({ 
         error: spendResult?.error || "Insufficient credits",
         required: CREDIT_COSTS.VIDEO_GENERATE,
         available: spendResult?.remaining || 0
-      }, { status: 402 });
+      }, { status: spendResponse.status === 400 ? 402 : spendResponse.status });
     }
 
     console.log(`[generate/start] Credits spent: ${CREDIT_COSTS.VIDEO_GENERATE}, remaining: ${spendResult.remaining}`);
+
+    const admin = createAdminClient();
+    if (!admin) {
+      return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+    }
 
     // 4. Upload video to Supabase Storage
     const jobId = generateId();
