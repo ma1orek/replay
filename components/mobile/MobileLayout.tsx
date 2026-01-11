@@ -11,6 +11,7 @@ interface MobileLayoutProps {
   user: any;
   isPro: boolean;
   plan: string;
+  creditsLoading?: boolean;
   onLogin: () => void;
   onGenerate: (videoBlob: Blob, videoName: string) => Promise<{ code: string; previewUrl: string } | null>;
 }
@@ -19,7 +20,7 @@ interface MobileLayoutProps {
 const STORAGE_KEY_VIDEO = "replay_mobile_pending_video";
 const STORAGE_KEY_NAME = "replay_mobile_pending_name";
 
-export default function MobileLayout({ user, isPro, plan, onLogin, onGenerate }: MobileLayoutProps) {
+export default function MobileLayout({ user, isPro, plan, creditsLoading, onLogin, onGenerate }: MobileLayoutProps) {
   const [activeTab, setActiveTab] = useState<"configure" | "preview">("configure");
   const [projectName, setProjectName] = useState("New Project");
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
@@ -132,6 +133,12 @@ export default function MobileLayout({ user, isPro, plan, onLogin, onGenerate }:
       return;
     }
     
+    // Wait for credits to load
+    if (creditsLoading) {
+      console.log("[MOBILE] Waiting for credits to load...");
+      return;
+    }
+    
     setIsProcessing(true);
     setProcessingProgress(0);
     setProcessingMessage("Preparing...");
@@ -178,7 +185,7 @@ export default function MobileLayout({ user, isPro, plan, onLogin, onGenerate }:
     } finally {
       setIsProcessing(false);
     }
-  }, [videoBlob, user, onLogin, saveVideoForLogin, videoProcessor, onGenerate, projectName]);
+  }, [videoBlob, user, onLogin, saveVideoForLogin, videoProcessor, onGenerate, projectName, creditsLoading]);
   
   // Handle back - goes back in flow or clears video
   const handleBack = useCallback(() => {
