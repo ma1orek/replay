@@ -2,27 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient, createAdminClient } from "@/lib/supabase/server";
-
-// In-memory job storage (fallback if DB not available)
-// In production, use Redis/Supabase/etc.
-declare global {
-  var generationJobs: Map<string, {
-    status: "pending" | "processing" | "complete" | "failed";
-    progress: number;
-    message: string;
-    code?: string;
-    title?: string;
-    error?: string;
-    userId: string;
-    createdAt: number;
-  }>;
-}
-
-if (!global.generationJobs) {
-  global.generationJobs = new Map();
-}
-
-export { global as jobStorage };
+import { getJobStorage } from "@/lib/jobStorage";
 
 // GET /api/generate/status/[jobId]
 // Returns current status of generation job
@@ -46,7 +26,7 @@ export async function GET(
     }
 
     // Try to get from in-memory storage first (faster)
-    const memoryJob = global.generationJobs.get(jobId);
+    const memoryJob = getJobStorage().get(jobId);
     if (memoryJob) {
       // Verify user owns this job
       if (memoryJob.userId !== user.id) {
