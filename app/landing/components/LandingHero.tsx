@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown, MousePointer2, Settings, Upload, Video, Wand2, Zap, Smartphone, Sparkles, Palette } from "lucide-react";
+import { Check, ChevronDown, MousePointer2, Settings, Upload, Video, Wand2, Zap, Smartphone, Sparkles, Palette, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 import StyleInjector from "@/components/StyleInjector";
 import AuthModal from "@/components/modals/AuthModal";
@@ -12,6 +12,7 @@ import { useAuth } from "@/lib/auth/context";
 import { FlipWords } from "@/components/ui/flip-words";
 import { GlowCard } from "@/components/ui/spotlight-card";
 import { Button as MovingBorderButton } from "@/components/ui/moving-border";
+import useIsMobile from "@/lib/useIsMobile";
 
 function useSupportedRecorderMime() {
   return useMemo(() => {
@@ -36,6 +37,7 @@ export default function LandingHero() {
   const router = useRouter();
   const { setPending } = usePendingFlow();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -233,7 +235,49 @@ export default function LandingHero() {
                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                     </button>
                   </div>
+                ) : isMobile ? (
+                  /* MOBILE: Two-section layout like tool */
+                  <div className="w-full rounded-xl border-2 border-dashed border-white/10 bg-white/[0.02] overflow-hidden">
+                    <div className="flex">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); isRecording ? stopRecording() : startRecording(); }}
+                        className={cn(
+                          "flex-1 flex flex-col items-center justify-center py-8 border-r border-white/10 active:bg-white/5",
+                          isRecording && "bg-red-500/10"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-12 h-12 rounded-2xl flex items-center justify-center mb-2.5",
+                          isRecording ? "bg-red-500/20" : "bg-[#FF6E3C]/10"
+                        )}>
+                          {isRecording ? (
+                            <div className="w-6 h-6 rounded-sm bg-red-500 animate-pulse" />
+                          ) : (
+                            <Camera className="w-6 h-6 text-[#FF6E3C]" />
+                          )}
+                        </div>
+                        <span className="text-white/80 font-medium text-sm">
+                          {isRecording ? "Stop" : "Record"}
+                        </span>
+                        <span className="text-white/30 text-[11px] mt-0.5">
+                          {isRecording ? "Recording..." : "Record any video"}
+                        </span>
+                      </button>
+                      
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onBrowse(); }}
+                        className="flex-1 flex flex-col items-center justify-center py-8 active:bg-white/5"
+                      >
+                        <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mb-2.5">
+                          <Upload className="w-6 h-6 text-white/60" />
+                        </div>
+                        <span className="text-white/80 font-medium text-sm">Upload</span>
+                        <span className="text-white/30 text-[11px] mt-0.5">Screen recording</span>
+                      </button>
+                    </div>
+                  </div>
                 ) : (
+                  /* DESKTOP: Original drop zone layout */
                   <>
                     <div className="w-12 h-12 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
                       <Upload className="w-5 h-5 text-white/50" />
@@ -242,30 +286,30 @@ export default function LandingHero() {
                       <p className="text-sm font-medium text-white/80">Drop video here</p>
                       <p className="text-xs text-white/50 mt-1 font-mono">or click to browse</p>
                     </div>
+                    
+                    <div className="flex items-center gap-2 mt-1">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onBrowse(); }}
+                        className="px-3 py-1.5 rounded-md text-[11px] font-medium bg-white/[0.04] text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition-all flex items-center gap-1.5 border border-white/[0.06]"
+                      >
+                        <Upload className="w-3 h-3" />
+                        Upload
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); isRecording ? stopRecording() : startRecording(); }}
+                        className={cn(
+                          "px-3 py-1.5 rounded-md text-[11px] font-medium transition-all flex items-center gap-1.5 border",
+                          isRecording 
+                            ? "bg-red-500/10 border-red-500/30 text-red-400" 
+                            : "bg-white/[0.04] border-white/[0.06] text-white/60 hover:bg-white/[0.08] hover:text-white/80"
+                        )}
+                      >
+                        <div className={cn("w-1.5 h-1.5 rounded-full bg-red-500", isRecording && "animate-pulse")} />
+                        {isRecording ? "Stop" : "Record"}
+                      </button>
+                    </div>
                   </>
                 )}
-                
-                <div className="flex items-center gap-2 mt-1">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onBrowse(); }}
-                    className="px-3 py-1.5 rounded-md text-[11px] font-medium bg-white/[0.04] text-white/60 hover:bg-white/[0.08] hover:text-white/80 transition-all flex items-center gap-1.5 border border-white/[0.06]"
-                  >
-                    <Upload className="w-3 h-3" />
-                    Upload
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); isRecording ? stopRecording() : startRecording(); }}
-                    className={cn(
-                      "px-3 py-1.5 rounded-md text-[11px] font-medium transition-all flex items-center gap-1.5 border",
-                      isRecording 
-                        ? "bg-red-500/10 border-red-500/30 text-red-400" 
-                        : "bg-white/[0.04] border-white/[0.06] text-white/60 hover:bg-white/[0.08] hover:text-white/80"
-                    )}
-                  >
-                    <div className={cn("w-1.5 h-1.5 rounded-full bg-red-500", isRecording && "animate-pulse")} />
-                    {isRecording ? "Stop" : "Record"}
-                  </button>
-                </div>
               </div>
               
               {/* 2. CONFIGURATION - Simple text link */}
