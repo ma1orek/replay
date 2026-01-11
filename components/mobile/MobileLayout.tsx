@@ -120,10 +120,23 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
   }, []);
 
   // Async generation hook - uses server-side processing with polling
-  const { startGeneration, jobStatus, isPolling, resetJob } = useAsyncGeneration(
+  const { startGeneration, jobStatus, isPolling, resetJob, checkForPendingJob } = useAsyncGeneration(
     handleGenerationComplete,
     handleGenerationError
   );
+
+  // Listen for page visibility changes to recover pending jobs
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        console.log("[MobileLayout] Page became visible, checking for pending jobs...");
+        checkForPendingJob();
+      }
+    };
+    
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [checkForPendingJob]);
   
   // Restore video from localStorage after login
   useEffect(() => {
