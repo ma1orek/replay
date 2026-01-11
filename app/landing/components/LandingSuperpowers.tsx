@@ -7,20 +7,23 @@ export default function LandingSuperpowers() {
 
   // Force autoplay on mobile - iOS Safari needs explicit play() call
   useEffect(() => {
-    const playVideos = () => {
+    const playAllVideos = () => {
       videoRefs.current.forEach(video => {
         if (video) {
-          video.play().catch(() => {
-            // Silent catch - video might not be ready or in viewport
-          });
+          video.play().catch(() => {});
         }
       });
     };
 
     // Try to play immediately
-    playVideos();
+    playAllVideos();
+    
+    // Try again after short delays (videos might not be ready)
+    const t1 = setTimeout(playAllVideos, 100);
+    const t2 = setTimeout(playAllVideos, 500);
+    const t3 = setTimeout(playAllVideos, 1000);
 
-    // Also try when scrolling (for lazy loading)
+    // Also use IntersectionObserver for videos that come into view later
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -36,7 +39,21 @@ export default function LandingSuperpowers() {
       if (video) observer.observe(video);
     });
 
-    return () => observer.disconnect();
+    // Handle page visibility change (when user returns to tab)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        playAllVideos();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, []);
 
   const powers = [
@@ -99,6 +116,8 @@ export default function LandingSuperpowers() {
                   loop
                   playsInline
                   preload="auto"
+                  onLoadedData={(e) => (e.target as HTMLVideoElement).play().catch(() => {})}
+                  onCanPlay={(e) => (e.target as HTMLVideoElement).play().catch(() => {})}
                   className="w-full h-full object-cover mix-blend-screen opacity-60 md:opacity-80 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
                 />
                 {/* Gradient: transparent at top, black at bottom for text */}
