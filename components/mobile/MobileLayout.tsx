@@ -16,13 +16,14 @@ interface MobileLayoutProps {
   onLogin: () => void;
   onOpenCreditsModal?: () => void;
   onCreditsRefresh?: () => void;
+  onSaveGeneration?: (data: { title: string; code: string; videoUrl?: string }) => void;
 }
 
 // Keys for localStorage
 const STORAGE_KEY_VIDEO = "replay_mobile_pending_video";
 const STORAGE_KEY_NAME = "replay_mobile_pending_name";
 
-export default function MobileLayout({ user, isPro, plan, credits, creditsLoading, onLogin, onOpenCreditsModal, onCreditsRefresh }: MobileLayoutProps) {
+export default function MobileLayout({ user, isPro, plan, credits, creditsLoading, onLogin, onOpenCreditsModal, onCreditsRefresh, onSaveGeneration }: MobileLayoutProps) {
   const [activeTab, setActiveTab] = useState<"configure" | "preview">("configure");
   const [projectName, setProjectName] = useState("New Project");
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
@@ -30,30 +31,48 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
   const [context, setContext] = useState("");
   const [style, setStyle] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
   
   const pendingLoginRef = useRef(false);
+  const uploadedVideoUrlRef = useRef<string | null>(null);
 
   // Handle generation completion
   const handleGenerationComplete = useCallback((code: string, title?: string) => {
-    console.log("[MobileLayout] Generation complete!", { codeLength: code.length, title });
+    console.log("[MobileLayout] Generation complete!", { codeLength: code.length, title, codePreview: code.substring(0, 200) });
+    
+    // Store the code
+    setGeneratedCode(code);
     
     // Create preview URL from code
     const blob = new Blob([code], { type: "text/html" });
-    setPreviewUrl(URL.createObjectURL(blob));
+    const url = URL.createObjectURL(blob);
+    console.log("[MobileLayout] Preview URL created:", url);
+    setPreviewUrl(url);
     setHasGenerated(true);
     setIsProcessing(false);
     
     // Update project name from AI
+    const finalTitle = (title && title !== "Untitled Project") ? title : projectName;
     if (title && title !== "Untitled Project") {
       setProjectName(title);
     }
     
+    // Save generation to history
+    if (onSaveGeneration) {
+      console.log("[MobileLayout] Saving generation to history...");
+      onSaveGeneration({
+        title: finalTitle,
+        code,
+        videoUrl: uploadedVideoUrlRef.current || undefined,
+      });
+    }
+    
     // Refresh credits
     if (onCreditsRefresh) onCreditsRefresh();
-  }, [onCreditsRefresh]);
+  }, [onCreditsRefresh, onSaveGeneration, projectName]);
 
   // Handle generation error
   const handleGenerationError = useCallback((error: string) => {
