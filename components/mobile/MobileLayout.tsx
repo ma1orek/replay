@@ -38,6 +38,7 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
   const [generationError, setGenerationError] = useState<string | null>(null);
   
   // Wake Lock implementation to prevent screen from turning off during processing
+  // This is critical for keeping the compression/upload process alive
   useEffect(() => {
     let wakeLock: any = null;
 
