@@ -167,19 +167,29 @@ export default function LandingHero() {
     
     const recorder = new MediaRecorder(streamRef.current, { mimeType: mime, videoBitsPerSecond: 2500000 });
     recorder.ondataavailable = (e) => { if (e.data.size > 0) mobileCameraChunksRef.current.push(e.data); };
-    recorder.onstop = () => {
+    recorder.onstop = async () => {
       if (mobileCameraChunksRef.current.length > 0) {
         const blob = new Blob(mobileCameraChunksRef.current, { type: mime });
-        setFlowBlob(blob, "Recording");
+        // Save to pending flow and redirect to tool
+        await setPending({
+          blob,
+          name: "Recording",
+          context: context.trim(),
+          styleDirective: styleDirective?.trim() || "Auto-Detect",
+          createdAt: Date.now(),
+        });
+        stopMobileCamera();
+        router.push("/tool");
+      } else {
+        stopMobileCamera();
       }
-      stopMobileCamera();
     };
     
     recorderRef.current = recorder;
     recorder.start(500);
     setIsRecording(true);
     mobileCameraTimerRef.current = setInterval(() => setMobileRecordingTime(p => p + 1), 1000);
-  }, [setFlowBlob, stopMobileCamera]);
+  }, [stopMobileCamera, setPending, router, context, styleDirective]);
 
   const stopMobileCameraRecording = useCallback(() => {
     if (mobileCameraTimerRef.current) clearInterval(mobileCameraTimerRef.current);
