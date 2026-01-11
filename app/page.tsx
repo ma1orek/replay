@@ -6352,16 +6352,8 @@ export const shadows = {
     });
   };
 
-  // ====== DEVICE DETECTION LOADING ======
-  if (isMobile === null) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-10 h-10 border-2 border-[#FF6E3C] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   // ====== MOBILE SAVE GENERATION HANDLER ======
+  // Must be defined BEFORE any early returns to follow React hooks rules
   const handleMobileSaveGeneration = useCallback((data: { title: string; code: string; videoUrl?: string }) => {
     console.log("[MOBILE] Saving generation to history:", data.title);
     
@@ -6404,6 +6396,15 @@ export const shadows = {
     
     console.log("[MOBILE] Generation saved:", newGeneration.id);
   }, [saveGenerationToSupabase]);
+
+  // ====== DEVICE DETECTION LOADING ======
+  if (isMobile === null) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="w-10 h-10 border-2 border-[#FF6E3C] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   // ====== MOBILE HARD FORK ======
   // Mobile uses server-side async processing (like Bolt/Lovable)
