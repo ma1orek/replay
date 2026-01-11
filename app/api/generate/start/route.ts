@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient, createAdminClient } from "@/lib/supabase/server";
 import { generateId } from "@/lib/utils";
 import { transmuteVideoToCode } from "@/actions/transmute";
-import { CREDIT_COSTS } from "@/lib/credits/context";
 
 // POST /api/generate/start
 // Accepts video, processes it, returns result
-// This is synchronous - mobile waits for result
+// IMPORTANT: Credits should be spent by the frontend BEFORE calling this endpoint
+// (same pattern as desktop - frontend calls /api/credits/spend first)
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   
@@ -32,38 +32,15 @@ export async function POST(request: NextRequest) {
 
     console.log(`[generate/start] Video received: ${videoFile.size} bytes, ${videoFile.type}`);
 
-    // 3. Spend credits - SAME CODE as /api/credits/spend (copy-paste to avoid internal fetch issues)
+    // 3. Get admin client for storage upload
     const admin = createAdminClient();
     if (!admin) {
       console.error("[generate/start] Admin client is null - check SUPABASE_SERVICE_ROLE_KEY");
       return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
     }
 
-    console.log(`[generate/start] Calling spend_credits RPC for user ${user.id}, cost ${CREDIT_COSTS.VIDEO_GENERATE}`);
-
-    const { data: spendData, error: spendError } = await admin.rpc("spend_credits", {
-      p_user_id: user.id,
-      p_cost: CREDIT_COSTS.VIDEO_GENERATE,
-      p_reason: "video_generate",
-      p_reference_id: `mobile_gen_${Date.now()}`,
-    });
-
-    console.log("[generate/start] RPC response:", { spendData, spendError });
-
-    if (spendError) {
-      console.error("[generate/start] Credit spend RPC error:", JSON.stringify(spendError, null, 2));
-      return NextResponse.json({ error: spendError.message }, { status: 500 });
-    }
-
-    if (!spendData?.success) {
-      console.log("[generate/start] Insufficient credits - spendData:", JSON.stringify(spendData, null, 2));
-      return NextResponse.json(
-        { error: spendData?.error || "Insufficient credits", ...spendData },
-        { status: 402 }
-      );
-    }
-
-    console.log(`[generate/start] Credits spent: ${CREDIT_COSTS.VIDEO_GENERATE}, remaining: ${spendData.remaining}`);
+    // NOTE: Credits are spent by the frontend before calling this endpoint
+    // This matches the desktop flow: frontend calls /api/credits/spend, then starts generation
 
     // 4. Upload video to Supabase Storage
     const jobId = generateId();
