@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Camera, Upload, X, RefreshCw, ChevronDown } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Camera, Upload, X, RefreshCw } from "lucide-react";
 
 interface MobileConfigureViewProps {
   videoBlob: Blob | null;
@@ -17,14 +16,6 @@ interface MobileConfigureViewProps {
   onReconstruct: () => void;
   isProcessing: boolean;
 }
-
-const STYLE_PRESETS = [
-  { id: "auto", name: "Auto-detect" },
-  { id: "modern", name: "Modern & Clean" },
-  { id: "glassmorphism", name: "Glassmorphism" },
-  { id: "brutalism", name: "Neo-Brutalism" },
-  { id: "minimal", name: "Minimal" },
-];
 
 export default function MobileConfigureView({
   videoBlob,
@@ -42,7 +33,6 @@ export default function MobileConfigureView({
   const [showCamera, setShowCamera] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [showStyleDropdown, setShowStyleDropdown] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const previewVideoRef = useRef<HTMLVideoElement>(null);
@@ -128,8 +118,6 @@ export default function MobileConfigureView({
   
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
   
-  const selectedStyle = STYLE_PRESETS.find(s => s.id === style) || STYLE_PRESETS[0];
-  
   // Camera overlay
   if (showCamera) {
     return (
@@ -167,7 +155,7 @@ export default function MobileConfigureView({
   }
   
   return (
-    <div className="flex-1 overflow-auto p-4 pb-32">
+    <div className="flex-1 overflow-y-auto p-4 pb-8">
       {/* Video Box */}
       <div className="mb-6">
         <label className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3 block">
@@ -188,7 +176,7 @@ export default function MobileConfigureView({
             />
             <button
               onClick={onRemoveVideo}
-              className="absolute top-3 right-3 p-2 rounded-full bg-black/60 backdrop-blur-sm text-white/80 hover:text-white"
+              className="absolute top-3 right-3 p-2 rounded-full bg-black/60 backdrop-blur-sm text-white/80"
             >
               <X className="w-4 h-4" />
             </button>
@@ -206,7 +194,7 @@ export default function MobileConfigureView({
             <div className="flex">
               <button
                 onClick={startCamera}
-                className="flex-1 flex flex-col items-center justify-center py-10 hover:bg-white/5 transition-colors border-r border-white/10"
+                className="flex-1 flex flex-col items-center justify-center py-10 active:bg-white/5 border-r border-white/10"
               >
                 <div className="w-14 h-14 rounded-2xl bg-[#FF6E3C]/10 flex items-center justify-center mb-3">
                   <Camera className="w-7 h-7 text-[#FF6E3C]" />
@@ -217,7 +205,7 @@ export default function MobileConfigureView({
               
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="flex-1 flex flex-col items-center justify-center py-10 hover:bg-white/5 transition-colors"
+                className="flex-1 flex flex-col items-center justify-center py-10 active:bg-white/5"
               >
                 <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center mb-3">
                   <Upload className="w-7 h-7 text-white/60" />
@@ -239,7 +227,7 @@ export default function MobileConfigureView({
           value={context}
           onChange={(e) => onContextChange(e.target.value)}
           placeholder="E.g., Make the buttons rounded, use blue accent color..."
-          className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/25 text-sm resize-none focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
+          className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/25 text-sm resize-none focus:outline-none focus:border-[#FF6E3C]/50"
           rows={3}
         />
       </div>
@@ -247,52 +235,24 @@ export default function MobileConfigureView({
       {/* Style */}
       <div className="mb-8">
         <label className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3 block">
-          Style
+          Style <span className="text-white/20">(optional)</span>
         </label>
-        <button
-          onClick={() => setShowStyleDropdown(!showStyleDropdown)}
-          className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm"
-        >
-          <span>{selectedStyle.name}</span>
-          <ChevronDown className={`w-4 h-4 text-white/50 transition-transform ${showStyleDropdown ? "rotate-180" : ""}`} />
-        </button>
-        
-        <AnimatePresence>
-          {showStyleDropdown && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="mt-2 rounded-xl bg-[#111] border border-white/10 overflow-hidden"
-            >
-              {STYLE_PRESETS.map((preset) => (
-                <button
-                  key={preset.id}
-                  onClick={() => {
-                    onStyleChange(preset.id);
-                    setShowStyleDropdown(false);
-                  }}
-                  className={`w-full px-4 py-3 text-left text-sm transition-colors ${
-                    style === preset.id 
-                      ? "bg-[#FF6E3C]/10 text-[#FF6E3C]" 
-                      : "text-white/70 hover:bg-white/5"
-                  }`}
-                >
-                  {preset.name}
-                </button>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <input
+          type="text"
+          value={style}
+          onChange={(e) => onStyleChange(e.target.value)}
+          placeholder="E.g., Modern glassmorphism, Apple-style, Minimal dark..."
+          className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/25 text-sm focus:outline-none focus:border-[#FF6E3C]/50"
+        />
       </div>
       
       {/* Reconstruct button */}
       <button
         onClick={onReconstruct}
         disabled={!videoBlob || isProcessing}
-        className={`w-full py-4 rounded-xl font-bold text-base transition-all ${
+        className={`w-full py-4 rounded-xl font-bold text-base ${
           videoBlob && !isProcessing
-            ? "bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white shadow-lg shadow-[#FF6E3C]/20"
+            ? "bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white"
             : "bg-white/10 text-white/30 cursor-not-allowed"
         }`}
       >

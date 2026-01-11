@@ -6451,6 +6451,9 @@ export const shadows = {
       <>
         <MobileLayout
           user={user}
+          credits={userTotalCredits}
+          isPro={isPaidPlan}
+          plan={membership?.plan || "free"}
           onLogin={() => setShowAuthModal(true)}
           onGenerate={handleMobileGenerate}
         />
