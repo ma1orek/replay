@@ -157,7 +157,7 @@ export default function MobileConfigureView({
   }
   
   return (
-    <div className="flex-1 overflow-y-auto p-4 pb-8">
+    <div className="flex-1 overflow-y-auto p-4 pb-36">
       {/* Video Box */}
       <div className="mb-6">
         <label className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3 block">
