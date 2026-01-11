@@ -12,7 +12,7 @@ import { useAuth } from "@/lib/auth/context";
 import { FlipWords } from "@/components/ui/flip-words";
 import { GlowCard } from "@/components/ui/spotlight-card";
 import { Button as MovingBorderButton } from "@/components/ui/moving-border";
-import useIsMobile from "@/lib/useIsMobile";
+import { useIsMobile } from "@/lib/useIsMobile";
 
 function useSupportedRecorderMime() {
   return useMemo(() => {
