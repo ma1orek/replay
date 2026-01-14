@@ -6924,16 +6924,41 @@ export const shadows = {
       <div className="grain-overlay" />
       <div className="vignette" />
       
-      {/* Desktop Header */}
-      <header className="relative z-20 hidden md:flex items-center justify-between px-5 py-3 border-b border-white/5 bg-black/60 backdrop-blur-xl">
-        <a href="/" className="hover:opacity-80 transition-opacity">
+      {/* Desktop Header - Unified with Tabs */}
+      <header className="relative z-20 hidden md:flex items-center justify-between px-4 py-2 border-b border-white/5 bg-black/60 backdrop-blur-xl">
+        {/* Left: Logo */}
+        <a href="/" className="hover:opacity-80 transition-opacity flex-shrink-0">
           <Logo />
         </a>
-        <div className="flex items-center gap-4">
+        
+        {/* Center: Navigation Tabs */}
+        <div className="flex items-center gap-1 bg-black/40 rounded-lg p-0.5">
+          {[
+            { id: "preview", icon: Eye, label: "Preview" },
+            { id: "code", icon: Code, label: "Code" },
+            { id: "flow", icon: GitBranch, label: "Flow" },
+            { id: "design", icon: Paintbrush, label: "Design System" },
+            { id: "input", icon: FileInput, label: "Input" },
+          ].map((tab) => (
+            <button 
+              key={tab.id} 
+              onClick={() => setViewMode(tab.id as ViewMode)} 
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors", 
+                viewMode === tab.id ? "bg-white/10 text-white" : "text-white/40 hover:text-white/60"
+              )}
+            >
+              <tab.icon className="w-3.5 h-3.5" />{tab.label}
+            </button>
+          ))}
+        </div>
+        
+        {/* Right: User, Refresh, Publish */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* User Menu */}
           <div className="relative" ref={profileMenuRef}>
             {user ? (
               <>
-                {/* Display name logic: full_name → email prefix → 'User' */}
                 {(() => {
                   const meta = user.user_metadata;
                   const displayName = meta?.full_name || meta?.name || user.email?.split('@')[0] || 'User';
@@ -6943,7 +6968,7 @@ export const shadows = {
                       onClick={() => setShowProfileMenu(!showProfileMenu)}
                       className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/5 transition-colors"
                     >
-                      <span className="text-sm font-medium text-white/80 max-w-[120px] truncate">{displayName}</span>
+                      <span className="text-xs font-medium text-white/80 max-w-[100px] truncate">{displayName}</span>
                       {isPaidPlan ? (
                         <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase">
                           {plan === "agency" ? "Agency" : plan === "enterprise" ? "Enterprise" : "Pro"}
@@ -6957,7 +6982,7 @@ export const shadows = {
                   );
                 })()}
                 
-                {/* Profile Dropdown - same as landing */}
+                {/* Profile Dropdown */}
                 <AnimatePresence>
                   {showProfileMenu && (
                     <motion.div
@@ -7014,10 +7039,10 @@ export const shadows = {
                       
                       {/* Your Projects */}
                       <button 
-                        onClick={() => { setShowProfileMenu(false); setShowHistoryMode(true); }}
+                        onClick={() => { setShowProfileMenu(false); setSidebarView("projects"); }}
                         className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/5 transition-colors"
                       >
-                        <History className="w-4 h-4 opacity-50" />
+                        <Folder className="w-4 h-4 opacity-50" />
                         Your Projects
                       </button>
                       
@@ -7048,12 +7073,60 @@ export const shadows = {
             ) : (
               <button
                 onClick={() => setShowAuthModal(true)}
-                className="px-4 py-2 rounded-lg bg-[#FF6E3C] text-white text-sm font-medium hover:bg-[#FF8F5C] transition-colors"
+                className="px-3 py-1.5 rounded-lg bg-white/10 text-white text-xs font-medium hover:bg-white/20 transition-colors"
               >
                 Sign in
               </button>
             )}
           </div>
+          
+          {/* Refresh button */}
+          <button 
+            onClick={() => refreshCredits()}
+            className="p-1.5 rounded-lg hover:bg-white/5 transition-colors"
+            title="Refresh"
+          >
+            <RefreshCw className="w-4 h-4 text-white/40" />
+          </button>
+          
+          {/* Publish button */}
+          <button
+            onClick={() => {
+              if (!user || isDemoMode) {
+                setShowAuthModal(true);
+                showToast("Sign up free to publish. You get 2 free generations!", "info");
+                return;
+              }
+              if (!isPaidPlan) {
+                setUpgradeFeature("publish");
+                setShowUpgradeModal(true);
+                return;
+              }
+              if (!editableCode) return;
+              handlePublish();
+            }}
+            disabled={isPublishing || !editableCode}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5",
+              editableCode && isPaidPlan
+                ? "bg-[#FF6E3C] hover:bg-[#FF8F5C] text-white"
+                : "bg-white/10 text-white/50 hover:bg-white/20"
+            )}
+          >
+            {isPublishing ? (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Publishing...
+              </>
+            ) : publishedUrl ? (
+              <>
+                <ExternalLink className="w-3 h-3" />
+                Published
+              </>
+            ) : (
+              "Publish"
+            )}
+          </button>
         </div>
       </header>
       
@@ -7186,22 +7259,33 @@ export const shadows = {
 
       <div className="flex-1 flex overflow-hidden relative z-10">
         {/* Left Panel - Hidden on mobile */}
-        <div className="hidden md:flex w-[200px] border-r border-white/5 bg-black/40 backdrop-blur-sm flex-col">
+        <div className="hidden md:flex w-[340px] border-r border-white/5 bg-black/40 backdrop-blur-sm flex-col">
           
-          {/* YOUR PROJECTS Header - Always visible, toggles view */}
-          <div 
-            className="flex-shrink-0 px-4 py-3 border-b border-white/5 cursor-pointer hover:bg-white/[0.02] transition-colors"
-            onClick={() => setSidebarView(sidebarView === "projects" ? "detail" : "projects")}
-          >
+          {/* PROJECT Header with dropdown arrow */}
+          <div className="flex-shrink-0 px-4 py-3 border-b border-white/5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Folder className="w-4 h-4 text-white/40" />
-                <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Your Projects</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-medium text-white/40 uppercase tracking-wider mb-1">Project</p>
+                <div 
+                  className="flex items-center gap-2 cursor-pointer group"
+                  onClick={() => setSidebarView(sidebarView === "projects" ? "detail" : "projects")}
+                >
+                  <span className="text-sm font-medium text-white/80 truncate group-hover:text-white transition-colors">
+                    {generationTitle || "Untitled Project"}
+                  </span>
+                  <ChevronDown className={cn(
+                    "w-4 h-4 text-white/30 transition-transform flex-shrink-0",
+                    sidebarView === "projects" && "rotate-180"
+                  )} />
+                </div>
               </div>
-              <ChevronRight className={cn(
-                "w-4 h-4 text-white/30 transition-transform",
-                sidebarView === "projects" && "rotate-90"
-              )} />
+              <button 
+                onClick={() => setSidebarView("projects")}
+                className="p-1.5 rounded-lg hover:bg-white/5 transition-colors"
+                title="View all projects"
+              >
+                <ChevronRight className="w-4 h-4 text-white/30" />
+              </button>
             </div>
           </div>
           
@@ -8804,21 +8888,8 @@ export const shadows = {
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col bg-[#0a0a0a] min-w-0 overflow-hidden">
-          {/* Desktop Tabs */}
-          <div className="hidden md:flex items-center justify-between px-4 py-2 border-b border-white/5 bg-black/40">
-            <div className="flex items-center gap-1 bg-black/40 rounded-lg p-0.5">
-              {[
-                { id: "preview", icon: Eye, label: "Preview" },
-                { id: "code", icon: Code, label: "Code" },
-                { id: "flow", icon: GitBranch, label: "Flow" },
-                { id: "design", icon: Paintbrush, label: "Design System" },
-                { id: "input", icon: FileInput, label: "Input" },
-              ].map((tab) => (
-                <button key={tab.id} onClick={() => setViewMode(tab.id as ViewMode)} className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors", viewMode === tab.id ? "bg-white/10 text-white" : "text-white/40 hover:text-white/60")}>
-                  <tab.icon className="w-3.5 h-3.5" />{tab.label}
-                </button>
-              ))}
-            </div>
+          {/* Tab-Specific Options Bar - Center aligned */}
+          <div className="hidden md:flex items-center justify-center px-4 py-1.5 border-b border-white/5 bg-black/20 min-h-[40px]">
             <div className="flex items-center gap-2">
               {viewMode === "flow" && (
                 <div className="flex items-center gap-1 mr-2">
