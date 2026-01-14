@@ -9131,14 +9131,14 @@ Try these prompts in Cursor or v0:
                           )}>
                             Agent Mode
                           </span>
-                          {/* Info tooltip */}
+                          {/* Info tooltip - positioned below */}
                           <div className="relative group">
                             <Info className="w-3 h-3 text-white/30 cursor-help" />
-                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 p-2.5 bg-[#1a1a1a] border border-white/10 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                            <div className="absolute left-0 top-full mt-2 w-64 p-2.5 bg-[#1a1a1a] border border-white/10 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                              <div className="absolute left-2 -top-1 w-2 h-2 bg-[#1a1a1a] border-l border-t border-white/10 rotate-45" />
                               <p className="text-[10px] text-white/70 leading-relaxed">
                                 Adds hidden context markers to the code. Optimized for <span className="text-white font-medium">Cursor</span>, <span className="text-white font-medium">Windsurf</span>, and <span className="text-white font-medium">Copilot</span> to understand your UI intent instantly.
                               </p>
-                              <div className="absolute left-1/2 -translate-x-1/2 top-full -mt-1 w-2 h-2 bg-[#1a1a1a] border-r border-b border-white/10 rotate-45" />
                             </div>
                           </div>
                         </div>
