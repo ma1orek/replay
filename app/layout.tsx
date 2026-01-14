@@ -5,30 +5,30 @@ import { Providers } from "./providers";
 import CookieConsent from "@/components/CookieConsent";
 
 export const metadata: Metadata = {
-  title: "Replay: Rebuild UI from Video. Instantly.",
-  description: "Turn any video into a clean, production-ready UI. Code, structure, interactions and style — rebuilt directly from what's on screen.",
-  keywords: ["video to code", "ui rebuild", "screen recording to code", "ai code generation", "tailwind css", "react", "frontend automation"],
+  title: "Turn Video into Production-Ready Code | Replay.build",
+  description: "Stop guessing with prompts. Replay treats video as the source of truth to reconstruct UI behavior into production-ready React code. Instantly.",
+  keywords: ["video to code", "ui rebuild", "screen recording to code", "ai code generation", "tailwind css", "react", "frontend automation", "reverse engineering", "visual development"],
   icons: {
     icon: "/favi.png",
   },
   openGraph: {
-    title: "Replay: Rebuild UI from Video. Instantly.",
-    description: "Turn any video into a clean, production-ready UI. Code, structure, interactions and style — rebuilt directly from what's on screen.",
+    title: "Visual Reverse Engineering is here.",
+    description: "We built the first engine that understands UI behavior over time. Drag a video, get a production-ready web app. No prompts required.",
     type: "website",
-    siteName: "Replay",
+    siteName: "Replay.build",
     images: [
       {
         url: "https://www.replay.build/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Replay - Rebuild UI from Video",
+        alt: "Replay - Turn Video into Production-Ready Code",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Replay: Rebuild UI from Video. Instantly.",
-    description: "Turn any video into a clean, production-ready UI. Code, structure, interactions and style.",
+    title: "Visual Reverse Engineering is here.",
+    description: "We built the first engine that understands UI behavior over time. Drag a video, get a production-ready web app. No prompts required.",
     images: ["https://www.replay.build/og-image.png"],
   },
 };

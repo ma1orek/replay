@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, Code, Download, ExternalLink, Database, Sparkles, X, Zap, Check } from "lucide-react";
-import Link from "next/link";
+import { Lock, Code, Download, ExternalLink, Database, Sparkles, X, Zap, Check, Loader2 } from "lucide-react";
+import { useAuth } from "@/lib/auth/context";
+import AuthModal from "./AuthModal";
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -48,9 +50,59 @@ const proFeatures = [
   "Priority support",
 ];
 
+// Default Pro tier ($25/mo)
+const DEFAULT_PRO_PRICE_ID = "price_1SotL1Axch1s4iBGWMvO0JBZ";
+const DEFAULT_PRO_TIER_ID = "pro25";
+const DEFAULT_PRO_CREDITS = 1500;
+
 export default function UpgradeModal({ isOpen, onClose, feature = "general" }: UpgradeModalProps) {
   const featureInfo = featureMessages[feature];
   const FeatureIcon = featureInfo.icon;
+  const { user } = useAuth();
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  const handleUpgrade = async () => {
+    // If not logged in, show auth modal first
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    setIsCheckingOut(true);
+    try {
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "subscription",
+          priceId: DEFAULT_PRO_PRICE_ID,
+          tierId: DEFAULT_PRO_TIER_ID,
+          credits: DEFAULT_PRO_CREDITS,
+          interval: "monthly"
+        }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else if (data.error) {
+        console.error("Checkout error:", data.error);
+        alert("Failed to start checkout: " + data.error);
+      }
+    } catch (error) {
+      console.error("Checkout error:", error);
+      alert("Failed to start checkout. Please try again.");
+    } finally {
+      setIsCheckingOut(false);
+    }
+  };
+
+  // Handle auth success - proceed with checkout
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false);
+    // Small delay to let auth state update
+    setTimeout(() => handleUpgrade(), 100);
+  };
 
   return (
     <AnimatePresence>
@@ -114,12 +166,20 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
 
               {/* CTA - goes directly to Stripe checkout */}
               <div className="p-6 pt-2 space-y-3">
-                <a
-                  href="/api/billing/checkout?plan=pro"
-                  className="block w-full py-3.5 rounded-xl bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white text-sm font-semibold text-center hover:opacity-90 transition-opacity"
+                <button
+                  onClick={handleUpgrade}
+                  disabled={isCheckingOut}
+                  className="block w-full py-3.5 rounded-xl bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white text-sm font-semibold text-center hover:opacity-90 transition-opacity disabled:opacity-50"
                 >
-                  Upgrade to Pro
-                </a>
+                  {isCheckingOut ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Processing...
+                    </span>
+                  ) : (
+                    "Upgrade to Pro"
+                  )}
+                </button>
                 <p className="text-center text-[11px] text-white/40">
                   Includes commercial license. Cancel anytime.
                 </p>
@@ -132,6 +192,15 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
               </div>
             </div>
           </motion.div>
+
+          {/* Auth Modal */}
+          <AuthModal
+            isOpen={showAuthModal}
+            onClose={() => setShowAuthModal(false)}
+            onSuccess={handleAuthSuccess}
+            title="Sign in to upgrade"
+            description="You need to be signed in to subscribe to Pro."
+          />
         </>
       )}
     </AnimatePresence>

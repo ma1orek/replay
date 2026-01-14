@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { email, credits = 150 } = body;
+    const { email, credits = 100 } = body;
 
     if (!email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });

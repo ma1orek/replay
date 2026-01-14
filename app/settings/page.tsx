@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -27,6 +27,8 @@ import {
   VolumeX,
   ChevronDown,
   Palette,
+  Building2,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/context";
 import { useCredits, PLAN_LIMITS, CREDIT_COSTS } from "@/lib/credits/context";
@@ -53,76 +55,120 @@ const TABS = [
   { id: "preferences", label: "Preferences", icon: Settings },
 ];
 
-const PLANS = [
+// Elastic "PRO" Subscription Tiers with Stripe Price IDs (Lovable-style)
+const PRICING_TIERS = [
   {
-    id: "free",
-    name: "Free",
-    price: "$0",
-    priceYearly: "$0",
-    tagline: "For getting started",
-    credits: 150,
-    features: [
-      "150 credits (one-time)",
-      "~2 rebuilds",
-      "Interactive preview",
-      "Code preview (blurred)",
-      "Public projects only",
-    ],
-    cta: "Current plan",
+    id: 'pro25',
+    label: "10 Generations",
+    credits: 1500,
+    monthlyPrice: 25,
+    stripePriceId_Monthly: "price_1SotL1Axch1s4iBGWMvO0JBZ",
+    yearlyPriceMonthly: 20,
+    yearlyPriceTotal: 240,
+    yearlySavings: "$60",
+    stripePriceId_Yearly: "price_1SotSpAxch1s4iBGbDC8je02",
   },
   {
-    id: "pro",
-    name: "Pro",
-    price: "$35",
-    priceYearly: "$378",
-    tagline: "For creators",
-    credits: 3000,
+    id: 'pro50',
+    label: "22 Generations",
+    credits: 3300,
+    monthlyPrice: 50,
+    stripePriceId_Monthly: "price_1SotLqAxch1s4iBG1ViXkfc2",
+    yearlyPriceTotal: 480,
+    yearlyPriceMonthly: 40,
+    yearlySavings: "$120",
+    stripePriceId_Yearly: "price_1SotT5Axch1s4iBGUt6BTDDf",
+  },
+  {
+    id: 'pro100',
+    label: "50 Generations",
+    credits: 7500,
     popular: true,
-    features: [
-      "3,000 credits / month",
-      "~40 rebuilds / month",
-      "Full code access",
-      "Download & Copy",
-      "Publish to web",
-      "Rollover up to 600 credits",
-    ],
-    cta: "Upgrade",
+    monthlyPrice: 100,
+    stripePriceId_Monthly: "price_1SotMYAxch1s4iBGLZZ7ATBs",
+    yearlyPriceTotal: 960,
+    yearlyPriceMonthly: 80,
+    yearlySavings: "$240",
+    stripePriceId_Yearly: "price_1SotTJAxch1s4iBGYRBGTHK6",
   },
   {
-    id: "enterprise",
-    name: "Enterprise",
-    price: "Custom",
-    priceYearly: "Custom",
-    tagline: "For teams & orgs",
-    credits: "Custom",
-    features: [
-      "Custom credit allocation",
-      "Team seats (custom)",
-      "Priority processing",
-      "SSO / SAML (coming soon)",
-      "Dedicated support & SLA",
-      "API access (coming soon)",
-    ],
-    cta: "Contact sales",
+    id: 'pro200',
+    label: "110 Generations",
+    credits: 16500,
+    monthlyPrice: 200,
+    stripePriceId_Monthly: "price_1SotN4Axch1s4iBGUJEfzznw",
+    yearlyPriceTotal: 1920,
+    yearlyPriceMonthly: 160,
+    yearlySavings: "$480",
+    stripePriceId_Yearly: "price_1SotTdAxch1s4iBGpyDigl9b",
   },
+  {
+    id: 'pro300',
+    label: "170 Generations",
+    credits: 25500,
+    monthlyPrice: 300,
+    stripePriceId_Monthly: "price_1SotNMAxch1s4iBGzRD7B7VI",
+    yearlyPriceTotal: 2880,
+    yearlyPriceMonthly: 240,
+    yearlySavings: "$720",
+    stripePriceId_Yearly: "price_1SotTqAxch1s4iBGgaWwuU0Z",
+  },
+  {
+    id: 'pro500',
+    label: "300 Generations",
+    credits: 45000,
+    monthlyPrice: 500,
+    stripePriceId_Monthly: "price_1SotNuAxch1s4iBGPl81sHqx",
+    yearlyPriceTotal: 4800,
+    yearlyPriceMonthly: 400,
+    yearlySavings: "$1,200",
+    stripePriceId_Yearly: "price_1SotU1Axch1s4iBGC1uEWWXN",
+  },
+  {
+    id: 'pro1000',
+    label: "640 Generations",
+    credits: 96000,
+    monthlyPrice: 1000,
+    stripePriceId_Monthly: "price_1SotO9Axch1s4iBGCDE83jPv",
+    yearlyPriceTotal: 9600,
+    yearlyPriceMonthly: 800,
+    yearlySavings: "$2,400",
+    stripePriceId_Yearly: "price_1SotUEAxch1s4iBGUqWwl9Db",
+  },
+  {
+    id: 'pro2000',
+    label: "1,500 Generations",
+    credits: 225000,
+    monthlyPrice: 2000,
+    stripePriceId_Monthly: "price_1SotOOAxch1s4iBGWiUHzG1M",
+    yearlyPriceTotal: 19200,
+    yearlyPriceMonthly: 1600,
+    yearlySavings: "$4,800",
+    stripePriceId_Yearly: "price_1SotV0Axch1s4iBGZYfILH0H",
+  }
 ];
 
+// One-time top-ups (reduced credits to make subscription more attractive)
 const TOPUPS = [
-  { amount: 20, credits: 2000, label: "$20", creditsLabel: "2,000 credits" },
-  { amount: 50, credits: 5500, label: "$50", creditsLabel: "5,500 credits" },
-  { amount: 100, credits: 12000, label: "$100", creditsLabel: "12,000 credits" },
+  { amount: 20, credits: 900, label: "$20", creditsLabel: "900 credits", gens: "~6 gens" },
+  { amount: 50, credits: 2400, label: "$50", creditsLabel: "2,400 credits", gens: "~16 gens" },
+  { amount: 100, credits: 5250, label: "$100", creditsLabel: "5,250 credits", gens: "~35 gens" },
 ];
 
 function SettingsContent() {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "account");
-  const [billingInterval, setBillingInterval] = useState<"monthly" | "yearly">("monthly");
+  const [billingInterval, setBillingInterval] = useState<"monthly" | "yearly">("monthly"); // Default to monthly
+  const [selectedTierIndex, setSelectedTierIndex] = useState(0); // Default to $25 tier (index 0)
+  const [tierDropdownOpen, setTierDropdownOpen] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState<string | null>(null);
   const [testMessage, setTestMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [showEnterpriseModal, setShowEnterpriseModal] = useState(false);
   const [isManagingSubscription, setIsManagingSubscription] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncDebug, setSyncDebug] = useState<any>(null);
+  
+  const selectedTier = PRICING_TIERS[selectedTierIndex];
   
   // Profile states
   const [isEditingName, setIsEditingName] = useState(false);
@@ -299,9 +345,9 @@ function SettingsContent() {
   }, [searchParams]);
 
   const handleCheckout = async (type: "subscription" | "topup", options: any) => {
-    setIsCheckingOut(options.plan || options.topupAmount?.toString());
+    setIsCheckingOut(options.plan || options.topupAmount?.toString() || "pro");
     try {
-      const res = await fetch("/api/stripe/checkout", {
+      const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type, ...options }),
@@ -309,12 +355,28 @@ function SettingsContent() {
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
+      } else if (data.error) {
+        setTestMessage({ type: "error", text: data.error });
       }
     } catch (error) {
       console.error("Checkout error:", error);
+      setTestMessage({ type: "error", text: "Failed to start checkout" });
     } finally {
       setIsCheckingOut(null);
     }
+  };
+  
+  const handleProSubscription = () => {
+    const priceId = billingInterval === "yearly" 
+      ? selectedTier.stripePriceId_Yearly 
+      : selectedTier.stripePriceId_Monthly;
+    
+    handleCheckout("subscription", {
+      priceId,
+      tierId: selectedTier.id,
+      credits: selectedTier.credits,
+      interval: billingInterval,
+    });
   };
 
   const handleManageSubscription = async () => {
@@ -564,7 +626,6 @@ function SettingsContent() {
               </div>
             )}
             
-
             {/* Current plan banner */}
             <div className="p-6 rounded-xl border border-white/10 bg-gradient-to-r from-[#FF6E3C]/10 to-transparent">
               <div className="flex items-center justify-between flex-wrap gap-4">
@@ -582,7 +643,6 @@ function SettingsContent() {
                     <p className="text-sm text-white/50">Credits remaining</p>
                     <p className="text-2xl font-semibold">{totalCredits.toLocaleString()}</p>
                   </div>
-                  {/* Sync button - useful if webhook failed */}
                   <button
                     onClick={handleSyncSubscription}
                     disabled={isSyncing}
@@ -616,115 +676,246 @@ function SettingsContent() {
               </div>
             </div>
             
-            {/* Credit note */}
-            <p className="text-xs text-white/40 text-center">
-              Credits are consumed per reconstruction — Replay rebuilds flow + structure + code + design system in one run.
-            </p>
-
             {/* Billing toggle */}
             <div className="flex items-center justify-center gap-3">
-              <span className={cn("text-sm", billingInterval === "monthly" ? "text-white" : "text-white/40")}>
+              <span className={cn("text-sm font-medium transition-colors", billingInterval === "monthly" ? "text-white" : "text-white/40")}>
                 Monthly
               </span>
               <button
                 onClick={() => setBillingInterval(billingInterval === "monthly" ? "yearly" : "monthly")}
-                className="relative w-12 h-6 rounded-full bg-white/10 transition-colors"
+                className="relative w-12 h-6 rounded-full bg-white/10 border border-white/10 transition-all hover:border-white/20"
               >
                 <div
                   className={cn(
-                    "absolute top-1 w-4 h-4 rounded-full bg-[#FF6E3C] transition-all",
+                    "absolute top-1 w-4 h-4 rounded-full bg-[#FF6E3C] transition-all duration-200",
                     billingInterval === "yearly" ? "left-7" : "left-1"
                   )}
                 />
               </button>
-              <span className={cn("text-sm", billingInterval === "yearly" ? "text-white" : "text-white/40")}>
+              <span className={cn("text-sm font-medium transition-colors", billingInterval === "yearly" ? "text-white" : "text-white/40")}>
                 Yearly
               </span>
-              {billingInterval === "yearly" && (
-                <span className="ml-2 px-2 py-0.5 rounded-full bg-[#FF6E3C]/20 text-xs text-[#FF6E3C]">
-                  Save 10%
-                </span>
-              )}
             </div>
 
-            {/* Plan cards */}
-            <div className="grid md:grid-cols-3 gap-4">
-              {PLANS.map((plan) => (
-                <div
-                  key={plan.id}
-                  className={cn(
-                    "relative p-6 rounded-xl border transition-all",
-                    plan.popular
-                      ? "border-[#FF6E3C]/50 bg-[#FF6E3C]/5"
-                      : "border-white/10 bg-white/[0.02]",
-                    currentPlan === plan.id && "ring-2 ring-[#FF6E3C]"
-                  )}
-                >
-                  {plan.popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-[#FF6E3C] text-xs font-medium text-white">
-                      Most popular
-                    </div>
-                  )}
-
-                  <div className="mb-4">
-                    <h3 className="text-lg font-semibold">{plan.name}</h3>
-                    <p className="text-xs text-white/40">{plan.tagline}</p>
+            {/* Pricing Cards Grid - Lovable Style */}
+            <div className="grid lg:grid-cols-3 gap-6 mt-8 lg:mt-12 items-stretch">
+              {/* FREE Card */}
+              <div className={cn(
+                "p-6 rounded-2xl bg-white/[0.02] border backdrop-blur-sm h-full flex flex-col",
+                currentPlan === "free" ? "border-emerald-500/50 ring-1 ring-emerald-500/30" : "border-white/[0.08]"
+              )}>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
+                    <Zap className="w-4 h-4 text-white/60" />
                   </div>
-
-                  <div className="mb-6">
-                    <span className="text-3xl font-bold">
-                      {billingInterval === "yearly" ? plan.priceYearly : plan.price}
-                    </span>
-                    <span className="text-white/40 text-sm">
-                      /{billingInterval === "yearly" ? "year" : "mo"}
-                    </span>
-                  </div>
-
-                  <ul className="space-y-2 mb-6">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2 text-sm text-white/70">
-                        <Check className="w-4 h-4 text-[#FF6E3C] shrink-0 mt-0.5" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-
-                  {currentPlan === plan.id ? (
-                    <button
-                      disabled
-                      className="w-full py-2.5 rounded-lg bg-white/5 text-white/40 text-sm font-medium cursor-default"
-                    >
-                      Current plan
-                    </button>
-                  ) : plan.id === "free" ? (
-                    <button
-                      disabled
-                      className="w-full py-2.5 rounded-lg bg-white/5 text-white/40 text-sm font-medium cursor-default"
-                    >
-                      Included
-                    </button>
-                  ) : plan.id === "enterprise" ? (
-                    <Link
-                      href="/contact"
-                      className="w-full py-2.5 rounded-lg bg-white/10 text-white text-sm font-medium hover:bg-white/20 transition-colors block text-center"
-                    >
-                      Contact sales
-                    </Link>
-                  ) : (
-                    <button
-                      onClick={() => handleCheckout("subscription", { plan: plan.id, interval: billingInterval })}
-                      disabled={isCheckingOut === plan.id}
-                      className="w-full py-2.5 rounded-lg bg-[#FF6E3C] text-white text-sm font-medium hover:bg-[#FF8F5C] transition-colors disabled:opacity-50"
-                    >
-                      {isCheckingOut === plan.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                      ) : (
-                        "Upgrade"
-                      )}
-                    </button>
-                  )}
+                  <span className="text-sm font-medium text-white/60">Free</span>
                 </div>
-              ))}
+                
+                <div className="mb-1">
+                  <span className="text-4xl font-bold text-white">$0</span>
+                </div>
+                <p className="text-sm text-white/40 mb-6">Forever free to start</p>
+                
+                <div className="space-y-3 mb-6 flex-grow">
+                  {[
+                    "100 credits / month",
+                    "~1 generation",
+                    "Preview only",
+                    "Public projects only",
+                    "Community support",
+                  ].map((f) => (
+                    <div key={f} className="flex items-center gap-3 text-sm text-white/60">
+                      <Check className="w-4 h-4 text-white/40 shrink-0" />
+                      {f}
+                    </div>
+                  ))}
+                </div>
+                
+                {currentPlan === "free" ? (
+                  <div className="w-full py-2.5 rounded-xl text-sm font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center justify-center gap-2 mt-auto">
+                    <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                    Active Plan
+                  </div>
+                ) : (
+                  <button
+                    disabled
+                    className="w-full py-2.5 rounded-xl text-sm font-medium bg-white/[0.05] text-white/40 border border-white/[0.08] cursor-default mt-auto"
+                  >
+                    Included
+                  </button>
+                )}
+              </div>
+
+              {/* PRO Card - Elastic with Dropdown */}
+              <div className="relative pt-4">
+                <div className="absolute -top-1 left-1/2 -translate-x-1/2 z-10">
+                  <div className="px-4 py-1.5 rounded-full bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-xs font-semibold text-white shadow-lg shadow-[#FF6E3C]/30">
+                    Most Popular
+                  </div>
+                </div>
+                
+                <div className={cn(
+                  "h-full p-6 rounded-2xl bg-gradient-to-b from-[#FF6E3C]/10 to-transparent border backdrop-blur-sm relative overflow-hidden flex flex-col",
+                  currentPlan === "pro" ? "border-[#FF6E3C] ring-2 ring-[#FF6E3C]" : "border-[#FF6E3C]/30"
+                )}>
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#FF6E3C]/5 to-transparent pointer-events-none" />
+                  
+                  <div className="relative flex-grow flex flex-col">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-8 h-8 rounded-lg bg-[#FF6E3C]/20 flex items-center justify-center">
+                        <Sparkles className="w-4 h-4 text-[#FF6E3C]" />
+                      </div>
+                      <span className="text-sm font-medium text-[#FF6E3C]">Pro</span>
+                    </div>
+                    
+                    {/* Price Display */}
+                    <div className="mb-1 flex items-baseline gap-2">
+                      <span className="text-4xl font-bold text-white">
+                        ${billingInterval === "yearly" ? selectedTier.yearlyPriceMonthly : selectedTier.monthlyPrice}
+                      </span>
+                      <span className="text-white/40">/mo</span>
+                    </div>
+                    
+                    {/* Savings Badge - only show on yearly */}
+                    {billingInterval === "yearly" && (
+                      <div className="mb-4">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/20 text-xs font-semibold text-emerald-400">
+                          Save {selectedTier.yearlySavings}
+                        </span>
+                      </div>
+                    )}
+                    {billingInterval !== "yearly" && <div className="mb-4" />}
+
+                    {/* Capacity Dropdown */}
+                    <div className="relative mb-6">
+                      <label className="block text-xs font-medium text-white/50 mb-2">Capacity</label>
+                      <button
+                        onClick={() => setTierDropdownOpen(!tierDropdownOpen)}
+                        className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-sm text-white hover:border-white/20 transition-all"
+                      >
+                        <span>{selectedTier.credits.toLocaleString()} credits</span>
+                        <ChevronDown className={cn("w-4 h-4 text-white/40 transition-transform", tierDropdownOpen && "rotate-180")} />
+                      </button>
+                      
+                      <AnimatePresence>
+                        {tierDropdownOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="absolute top-full left-0 right-0 mt-2 py-2 rounded-xl bg-[#0a0a0a] border border-white/10 shadow-xl z-50 max-h-64 overflow-y-auto"
+                          >
+                            {PRICING_TIERS.map((tier, idx) => (
+                              <button
+                                key={tier.id}
+                                onClick={() => {
+                                  setSelectedTierIndex(idx);
+                                  setTierDropdownOpen(false);
+                                }}
+                                className={cn(
+                                  "w-full px-4 py-2.5 text-left text-sm hover:bg-white/5 transition-colors",
+                                  idx === selectedTierIndex && "bg-[#FF6E3C]/10 text-[#FF6E3C]"
+                                )}
+                              >
+                                {tier.credits.toLocaleString()} credits
+                              </button>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Features */}
+                    <div className="space-y-2.5 mb-6 flex-grow">
+                      {[
+                        "Everything in Free, plus:",
+                        `${selectedTier.credits.toLocaleString()} credits / month`,
+                        `~${Math.floor(selectedTier.credits / 75)} generations`,
+                        "Private projects",
+                        "Full code access & export",
+                        "Publish to web",
+                        "Credits roll over",
+                      ].map((f, idx) => (
+                        <div key={f} className={cn("flex items-center gap-3 text-sm", idx === 0 ? "text-[#FF6E3C] font-medium" : "text-white/70")}>
+                          <Check className="w-4 h-4 text-[#FF6E3C] shrink-0" />
+                          {f}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {currentPlan === "pro" ? (
+                      <button
+                        onClick={handleManageSubscription}
+                        disabled={isManagingSubscription}
+                        className="w-full py-3 rounded-xl text-sm font-semibold transition-all bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 flex items-center justify-center gap-2"
+                      >
+                        {isManagingSubscription ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <>
+                            <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                            Manage Plan
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleProSubscription}
+                        disabled={isCheckingOut === "pro"}
+                        className="w-full py-3 rounded-xl text-sm font-semibold transition-all bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white hover:opacity-90 disabled:opacity-50 shadow-lg shadow-[#FF6E3C]/30"
+                      >
+                        {isCheckingOut === "pro" ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            Processing...
+                          </span>
+                        ) : (
+                          "Subscribe"
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ENTERPRISE Card */}
+              <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.08] backdrop-blur-sm h-full flex flex-col">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
+                    <Building2 className="w-4 h-4 text-white/60" />
+                  </div>
+                  <span className="text-sm font-medium text-white/60">Enterprise</span>
+                </div>
+                
+                <div className="mb-1">
+                  <span className="text-4xl font-bold text-white">Custom</span>
+                </div>
+                <p className="text-sm text-white/40 mb-6">For teams & organizations</p>
+                
+                <div className="space-y-3 mb-6 flex-grow">
+                  {[
+                    "Everything in Pro, plus:",
+                    "Custom credit allocation",
+                    "Team seats",
+                    "Priority processing",
+                    "SSO / SAML",
+                    "Dedicated support & SLA",
+                    "API access",
+                  ].map((f, idx) => (
+                    <div key={f} className={cn("flex items-center gap-3 text-sm", idx === 0 ? "text-white/80 font-medium" : "text-white/60")}>
+                      <Check className="w-4 h-4 text-white/40 shrink-0" />
+                      {f}
+                    </div>
+                  ))}
+                </div>
+                
+                <Link
+                  href="/contact"
+                  className="block w-full text-center py-2.5 rounded-xl text-sm font-medium transition-all bg-white/[0.05] text-white/70 hover:bg-white/[0.08] border border-white/[0.08] mt-auto"
+                >
+                  Contact Sales
+                </Link>
+              </div>
             </div>
             
             {/* Terms disclaimer */}
@@ -831,14 +1022,15 @@ function SettingsContent() {
 
             {/* Buy credits */}
             <div className="p-6 rounded-xl border border-white/10 bg-white/[0.02]">
-              <h2 className="text-lg font-medium mb-4">Buy credits</h2>
+              <h2 className="text-lg font-medium mb-2">Buy credits</h2>
+              <p className="text-xs text-white/40 mb-4">One-time credit packs for extra capacity</p>
               <div className="grid grid-cols-3 gap-4">
                 {TOPUPS.map((topup) => (
                   <button
                     key={topup.amount}
                     onClick={() => handleCheckout("topup", { topupAmount: topup.amount })}
                     disabled={isCheckingOut === topup.amount.toString()}
-                    className="relative p-6 rounded-xl border border-white/10 bg-white/[0.02] transition-all hover:border-white/20 hover:bg-white/[0.04]"
+                    className="relative p-6 rounded-xl border border-white/10 bg-white/[0.02] transition-all hover:border-white/20 hover:bg-white/[0.04] disabled:opacity-50"
                   >
                     {isCheckingOut === topup.amount.toString() ? (
                       <Loader2 className="w-5 h-5 animate-spin mx-auto" />
@@ -846,6 +1038,7 @@ function SettingsContent() {
                       <>
                         <p className="text-2xl font-bold mb-1">{topup.label}</p>
                         <p className="text-sm text-white/50">{topup.creditsLabel}</p>
+                        <p className="text-[10px] text-white/30">{topup.gens}</p>
                       </>
                     )}
                   </button>

@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, Check, X, CreditCard, History, Settings } from "lucide-react";
+import { ChevronLeft, Check, X, CreditCard, History, Settings, LogIn } from "lucide-react";
 
 interface MobileHeaderProps {
   projectName: string;
   onProjectNameChange: (name: string) => void;
+  user: any;
   isPro: boolean;
   plan: string;
   credits?: number;
   onBack: () => void;
+  onLogin?: () => void;
   onOpenCreditsModal?: () => void;
   onOpenHistory?: () => void;
   onOpenSettings?: () => void;
@@ -18,10 +20,12 @@ interface MobileHeaderProps {
 export default function MobileHeader({ 
   projectName, 
   onProjectNameChange, 
+  user,
   isPro,
   plan,
   credits,
   onBack,
+  onLogin,
   onOpenCreditsModal,
   onOpenHistory,
   onOpenSettings,
@@ -99,75 +103,94 @@ export default function MobileHeader({
         )}
       </div>
       
-      {/* Right - Plan badge (clickable for PRO menu) */}
+      {/* Right - Sign in button or Plan badge */}
       <div className="flex items-center relative">
-        <button 
-          onClick={() => setShowQuickMenu(!showQuickMenu)}
-          className="focus:outline-none active:scale-95 transition-transform"
-        >
-          {isPro ? (
-            <span className="px-2.5 py-1 rounded text-[10px] font-bold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase tracking-wide">
-              {getPlanDisplay()}
-            </span>
-          ) : (
-            <span className="px-2.5 py-1 rounded text-[10px] font-medium bg-white/10 text-white/50 uppercase">
-              Free
-            </span>
-          )}
-        </button>
-        
-        {/* Quick menu dropdown */}
-        {showQuickMenu && (
+        {!user ? (
+          // Not logged in - show Sign in button
+          <button 
+            onClick={onLogin}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FF6E3C] text-white text-xs font-medium active:scale-95 transition-transform"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            Sign in
+          </button>
+        ) : (
+          // Logged in - show plan badge with menu
           <>
-            {/* Backdrop */}
-            <div 
-              className="fixed inset-0 z-40" 
-              onClick={() => setShowQuickMenu(false)} 
-            />
-            {/* Menu */}
-            <div className="absolute top-full right-0 mt-2 w-48 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden">
-              <div className="p-3 border-b border-white/5">
-                <p className="text-xs text-white/40 uppercase tracking-wider">Account</p>
-                <p className="text-sm text-white font-medium mt-1">{getPlanDisplay()}</p>
-                {credits !== undefined && (
-                  <p className="text-xs text-white/50 mt-0.5">{credits} credits remaining</p>
-                )}
-              </div>
-              <div className="py-1">
-                <button 
-                  onClick={() => {
-                    setShowQuickMenu(false);
-                    if (onOpenCreditsModal) onOpenCreditsModal();
-                  }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-white/70 hover:bg-white/5"
-                >
-                  <CreditCard className="w-4 h-4" />
-                  Manage Credits
-                </button>
-                <button 
-                  onClick={() => {
-                    setShowQuickMenu(false);
-                    if (onOpenHistory) onOpenHistory();
-                    else window.location.href = "/tool";
-                  }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-white/70 hover:bg-white/5"
-                >
-                  <History className="w-4 h-4" />
-                  Your Projects
-                </button>
-                <button 
-                  onClick={() => {
-                    setShowQuickMenu(false);
-                    if (onOpenSettings) onOpenSettings();
-                    else window.location.href = "/settings";
-                  }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-white/70 hover:bg-white/5"
-                >
-                  <Settings className="w-4 h-4" />
-                  Settings
-                </button>
-              </div>
-            </div>
+            <button 
+              onClick={() => setShowQuickMenu(!showQuickMenu)}
+              className="focus:outline-none active:scale-95 transition-transform"
+            >
+              {isPro ? (
+                <span className="px-2.5 py-1 rounded text-[10px] font-bold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase tracking-wide">
+                  {getPlanDisplay()}
+                </span>
+              ) : (
+                <span className="px-2.5 py-1 rounded text-[10px] font-medium bg-white/10 text-white/50 uppercase">
+                  Free
+                </span>
+              )}
+            </button>
+            
+            {/* Quick menu dropdown */}
+            {showQuickMenu && (
+              <>
+                {/* Backdrop */}
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setShowQuickMenu(false)} 
+                />
+                {/* Menu */}
+                <div className="absolute top-full right-0 mt-2 w-48 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden">
+                  <div className="p-3 border-b border-white/5">
+                    <p className="text-xs text-white/40 uppercase tracking-wider">Account</p>
+                    <p className="text-sm text-white font-medium mt-1">{getPlanDisplay()}</p>
+                    {credits !== undefined && (
+                      <p className="text-xs text-white/50 mt-0.5">{credits} credits remaining</p>
+                    )}
+                  </div>
+                  <div className="py-1">
+                    <button 
+                      onClick={() => {
+                        setShowQuickMenu(false);
+                        // Redirect to settings with credits tab
+                        window.location.href = "/settings?tab=credits";
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-white/70 hover:bg-white/5"
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      Manage Credits
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setShowQuickMenu(false);
+                        // Use callback if available (no page reload), fallback to navigation
+                        if (onOpenHistory) {
+                          onOpenHistory();
+                        } else {
+                          window.location.href = "/?projects=true";
+                        }
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-white/70 hover:bg-white/5"
+                    >
+                      <History className="w-4 h-4" />
+                      Your Projects
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setShowQuickMenu(false);
+                        // Redirect to settings
+                        window.location.href = "/settings";
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-white/70 hover:bg-white/5"
+                    >
+                      <Settings className="w-4 h-4" />
+                      Settings
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </>
         )}
       </div>

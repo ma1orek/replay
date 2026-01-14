@@ -36,7 +36,7 @@ if (process.env.STRIPE_CREDITS_PRICE_ID_12000) {
 
 // Plan monthly credits
 export const PLAN_CREDITS: Record<string, number> = {
-  free: 150,
+  free: 100,
   pro: 3000,
   enterprise: 50000,
 };

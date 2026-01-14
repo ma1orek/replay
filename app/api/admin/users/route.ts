@@ -52,7 +52,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { userId, membership } = body;
+    const { userId, membership, planTier, credits } = body;
 
     if (!userId) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400 });
@@ -67,11 +67,15 @@ export async function PATCH(request: NextRequest) {
         .eq("user_id", userId)
         .single();
 
+      const membershipData: any = { 
+        plan: membership,
+      };
+
       if (existingMembership) {
         // Update existing membership
         const { error: updateError } = await adminSupabase
           .from("memberships")
-          .update({ plan: membership })
+          .update(membershipData)
           .eq("user_id", userId);
 
         if (updateError) {
@@ -84,7 +88,7 @@ export async function PATCH(request: NextRequest) {
           .from("memberships")
           .insert({ 
             user_id: userId, 
-            plan: membership,
+            ...membershipData,
             created_at: new Date().toISOString()
           });
 
@@ -93,10 +97,35 @@ export async function PATCH(request: NextRequest) {
           return NextResponse.json({ error: insertError.message }, { status: 500 });
         }
       }
+      
+      // If credits are specified, also update the user's credits
+      if (credits && typeof credits === "number") {
+        const { data: wallet } = await adminSupabase
+          .from("credit_wallets")
+          .select("*")
+          .eq("user_id", userId)
+          .single();
+          
+        if (wallet) {
+          await adminSupabase
+            .from("credit_wallets")
+            .update({ monthly_credits: credits })
+            .eq("user_id", userId);
+        } else {
+          await adminSupabase
+            .from("credit_wallets")
+            .insert({
+              user_id: userId,
+              monthly_credits: credits,
+              topup_credits: 0,
+              rollover_credits: 0
+            });
+        }
+      }
 
       return NextResponse.json({ 
         success: true, 
-        message: `User membership set to ${membership}` 
+        message: `User set to ${planTier || membership}${credits ? ` with ${credits} credits` : ''}` 
       });
     }
 

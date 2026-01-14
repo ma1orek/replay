@@ -1,0 +1,185 @@
+# REPLAY.BUILD - GŁÓWNY PROMPT AI DO GENERACJI STRON
+# ====================================================
+# Ten plik zawiera kompletny prompt używany przez AI do generowania kodu z wideo.
+# Edytuj ten plik i zaktualizuj w actions/transmute.ts (linia 42-1864)
+# ====================================================
+
+## LOKALIZACJA W KODZIE:
+## Plik: actions/transmute.ts
+## Zmienna: const SYSTEM_PROMPT = `...`
+## Linie: 42-1864
+
+====================================================
+GŁÓWNE SEKCJE PROMPTA:
+====================================================
+
+1. ⚠️ EMERGENCY RULES (linie 44-103)
+   - ABSOLUTE BANS: Zero stats, non-looping animations, same layouts
+   - LIBRARY ENFORCEMENT: NumberTicker, Marquee, FAQ variety
+   - STAT NUMBER FALLBACKS
+   - ANIMATION PATTERNS (muszą być infinite!)
+
+2. 🔒 PART 1: TECH STACK & LIBRARIES (linie 109-159)
+   - Core Stack Table (Charts, Icons, Animations, UI, Backgrounds...)
+   - Creative Freedom philosophy
+   - Forbidden libraries
+
+3. 🔒 SECTION 1.5: UI COMPONENT LIBRARIES (linie 161-303)
+   - VARIETY REQUIREMENT - tabela co rotować
+   - CULT UI, LUXE UI, ANIMATA, ELDORA UI components
+   - ACETERNITY UI + MAGIC UI components
+   - BACKGROUNDS & EFFECTS table
+   - CARD COMPONENTS table
+   - TEXT ANIMATIONS table
+   - BUTTONS table
+   - HOVER CONTRAST RULE
+
+4. 🔒 SECTION 7: HERO SECTION RULES (linie 304-344)
+   - Structure (Badge, H1, Subtitle, CTA, Social Proof)
+   - Headline Sizing table
+   - Background choices
+   - Hero requirements
+
+5. 🔒 SECTION 2: CONTENT EXTRACTION (linie 345-402)
+   - ZERO TOLERANCE rules
+   - FORBIDDEN list (Lorem ipsum, empty sections...)
+   - Fallback Rules
+   - STATS/NUMBERS RULE
+
+6. 🔒 SECTION 3: RESPONSIVE (linie 471-493)
+   - Breakpoints
+   - Responsive Patterns
+   - FORBIDDEN (fixed widths, horizontal scroll...)
+
+7. 🔒 SECTION 6: MINIMUM CONTENT REQUIREMENTS (linie 494-515)
+   - Tabela: FAQ 5-6, Logos 6-10, Testimonials 3-4...
+
+8. 📢 MARQUEE / LOGO CAROUSEL (linie 516-582)
+   - Dokładny kod HTML + CSS
+   - CRITICAL RULES
+
+9. 🔒 SECTION 4: INTERACTIVE COMPONENTS (linie 583-661)
+   - Carousels/Sliders rules
+   - Galleries rules
+   - Accordions/FAQ rules + ANIMATION RULES
+   - Tabs, Modals, Dropdowns, Mobile Navigation
+
+10. 🎨 ACETERNITY UI & MAGIC UI PATTERNS (linie 663-1028)
+    - HERO BACKGROUNDS (Grid, Spotlight, Aurora)
+    - TYPOGRAPHY & TEXT EFFECTS
+    - LAYOUTS & GRIDS (Bento Grid, Infinite Moving Cards)
+    - INTERACTIVE ELEMENTS
+    - MAGIC UI ADDITIONS
+    - DECISION LOGIC
+
+11. 🔒 SECTION 5: ANIMATION RULES (linie 1031-1102)
+    - Timing Standards table
+    - Blur-Fade Reveal
+    - Scroll Animations
+    - Number Counters
+    - Hover States
+    - LOOPING ANIMATIONS (CRITICAL!)
+
+12. OUTPUT FORMAT & TEMPLATE (linie 1103-1433)
+    - Multi-page Alpine.js structure
+    - Enterprise/Government App handling
+    - Font Selection table
+    - Complete HTML template with CSS
+
+13. 🔒 SECTION 15: VISUAL ENHANCEMENTS (linie 1449-1488)
+    - Required components per element
+    - BORING OUTPUT = FAILURE table
+    - FORBIDDEN list
+
+14. 🔒 SECTION 8: NAVIGATION RULES (linie 1489-1533)
+    - STICKY NAV - NO WHITE LINE (critical fix!)
+    - Desktop/Mobile/Scroll Behavior
+
+15. 🔒 SECTION 9: IMAGES (linie 1534-1562)
+    - Placeholders (picsum.photos, pravatar.cc)
+    - Image Rules
+    - FORBIDDEN
+
+16. 🔒 SECTION 10: FORMS (linie 1563-1583)
+
+17. 🔒 SECTION 11: ACCESSIBILITY (linie 1584-1599)
+
+18. 🔒 SECTION 16: STYLE OVERRIDE RULES (linie 1600-1621)
+
+19. ✅ SECTION 17: VERIFICATION CHECKLIST (linie 1622-1656)
+
+20. 🚨 FAILURE CONDITIONS (linie 1657-1670)
+    Lista 10 powodów odrzucenia outputu
+
+21. 🔒 CRITICAL FIXES (linie 1671-1863)
+    - FIX 1: SMART COMPONENT DISPLAY RULES
+    - FIX 1.5: FAQ/ACCORDION animation pattern
+    - FIX 1.6: MARQUEE pattern
+    - FIX 2: SLIDERS
+    - FIX 3: ROTATING TEXT
+    - FIX 4: SMOOTH TRANSITIONS
+    - FIX 4: ANIMATED PARTICLES
+    - CREATIVE FREEDOM section
+    - COMPONENT PAIRING IDEAS
+    - Final FAILURE CONDITIONS (17 items)
+
+====================================================
+NAJWAŻNIEJSZE PROBLEMY DO NAPRAWY:
+====================================================
+
+## PROBLEM 1: Marquee/Logo scroll nakłada się na siebie
+ROZWIĄZANIE: Sekcja "FIX 1.6: MARQUEE" (linia ~1733)
+- MUSI mieć overflow-hidden na zewnątrz
+- MUSI mieć width: max-content na wewnątrz
+- MUSI mieć shrink-0 na grupach
+- MUSI mieć gap-16 (4rem) między itemami
+- MUSI zduplikować content!
+
+## PROBLEM 2: FAQ bez animacji
+ROZWIĄZANIE: Sekcja "FIX 1.5: FAQ/ACCORDION" (linia ~1705)
+- MUSI używać x-transition z enter/leave
+- Chevron MUSI się obracać (rotate-180)
+- NIGDY instant show/hide
+
+## PROBLEM 3: Slider nie działa / zatrzymuje się
+ROZWIĄZANIE: Sekcja "FIX 2: SLIDERS" (linia ~1782)
+- Używaj Swiper.js z loop: true
+- autoplay: { disableOnInteraction: false }
+
+## PROBLEM 4: Sticky nav z białą linią
+ROZWIĄZANIE: Sekcja "8.1 STICKY NAV" (linia ~1491)
+- Initial: transparent, NO border
+- After scroll: bg-black/80, backdrop-blur, subtle border
+
+## PROBLEM 5: Statyczne liczby zamiast animowanych
+ROZWIĄZANIE: Sekcja "NUMBER TICKER" (linia ~954)
+- Zawsze używaj animowanego countera
+- NIGDY statycznych "0", "0+" etc.
+
+## PROBLEM 6: Brak różnorodności - te same komponenty
+ROZWIĄZANIE: Sekcja "VARIETY REQUIREMENT" (linia ~165)
+- Rotuj między: Accordion, Expandable Cards, Tabs dla FAQ
+- Rotuj między: Carousel, Grid, Masonry dla Testimonials
+- KAŻDY projekt powinien być UNIKALNY
+
+====================================================
+JAK EDYTOWAĆ:
+====================================================
+
+1. Otwórz plik: actions/transmute.ts
+2. Znajdź: const SYSTEM_PROMPT = `...` (linia 42)
+3. Edytuj zawartość między `` (backticks)
+4. Zapisz plik
+5. Deploy: npx vercel --prod --yes
+
+====================================================
+TIPS:
+====================================================
+
+- Używaj emoji dla sekcji (🔒, ⚠️, ❌, ✅, 🚨)
+- Tabele markdown są parsowane
+- Code blocks z ```html/css/js``` są ważne
+- CRITICAL/FORBIDDEN słowa kluczowe są interpretowane
+- Dodawaj przykłady kodu - AI je kopiuje
+
+====================================================

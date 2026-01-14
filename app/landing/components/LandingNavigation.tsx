@@ -9,7 +9,6 @@ import AuthModal from "@/components/modals/AuthModal";
 import { useAuth } from "@/lib/auth/context";
 import { useCredits } from "@/lib/credits/context";
 import { useProfile } from "@/lib/profile/context";
-import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { label: "How it works", href: "#how-it-works" },
@@ -96,152 +95,167 @@ export default function LandingNavigation() {
           <div className="flex items-center gap-3">
             {/* Auth Section */}
             {user ? (
-              <div className="relative" ref={profileMenuRef}>
-                <button 
-                  onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors"
-                >
-                  <span className="text-sm font-medium text-white/80 max-w-[120px] truncate">{displayName}</span>
-                  {isPaidPlan ? (
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase">
-                      {plan === "agency" ? "Agency" : plan === "enterprise" ? "Enterprise" : "Pro"}
-                    </span>
-                  ) : (
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-white/50 uppercase">
-                      Free
-                    </span>
-                  )}
-                </button>
-                
-                {/* Profile Dropdown - same as tool */}
-                <AnimatePresence>
-                  {showProfileMenu && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -5, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -5, scale: 0.95 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full mt-2 w-64 bg-[#0A0A0A] border border-white/10 rounded-xl shadow-xl overflow-hidden z-50"
-                    >
-                      {/* Credits section */}
-                      {(() => {
-                        const maxCredits = plan === "agency" ? 10000 : plan === "pro" ? 3000 : 150;
-                        const percentage = Math.min(100, (totalCredits / maxCredits) * 100);
-                        return (
-                          <Link 
-                            href="/settings?tab=plans"
-                            onClick={() => setShowProfileMenu(false)}
-                            className="block p-4 hover:bg-white/5 transition-colors border-b border-white/5"
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm text-white">{totalCredits} credits</span>
-                                {isPaidPlan ? (
-                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase">
-                                    {plan === "agency" ? "Agency" : plan === "enterprise" ? "Enterprise" : "Pro"}
-                                  </span>
-                                ) : (
-                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-white/50 uppercase">
-                                    Free
-                                  </span>
-                                )}
-                              </div>
-                              <ChevronRight className="w-4 h-4 text-white/40" />
-                            </div>
-                            <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] rounded-full transition-all"
-                                style={{ width: `${percentage}%` }}
-                              />
-                            </div>
-                            {isPaidPlan ? (
-                              <div className="mt-2">
-                                <span className="text-xs text-white/40">Add credits →</span>
-                              </div>
-                            ) : (
-                              <div className="mt-2">
-                                <span className="text-xs text-[#FF6E3C] font-medium">Upgrade →</span>
-                              </div>
-                            )}
-                          </Link>
-                        );
-                      })()}
-                      
-                      {/* Your Projects */}
-                      <Link 
-                        href="/tool"
-                        onClick={() => setShowProfileMenu(false)}
-                        className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/5 transition-colors"
+              <>
+                {/* Desktop: Name + Badge + Profile Dropdown */}
+                <div className="relative hidden sm:block" ref={profileMenuRef}>
+                  <button 
+                    onClick={() => setShowProfileMenu(!showProfileMenu)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors"
+                  >
+                    <span className="text-sm font-medium text-white/80 max-w-[120px] truncate">{displayName}</span>
+                    {isPaidPlan ? (
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase">
+                        {plan === "agency" ? "Agency" : plan === "enterprise" ? "Enterprise" : "Pro"}
+                      </span>
+                    ) : (
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-white/50 uppercase">
+                        Free
+                      </span>
+                    )}
+                  </button>
+                  
+                  {/* Profile Dropdown */}
+                  <AnimatePresence>
+                    {showProfileMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -5, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -5, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 top-full mt-2 w-64 bg-[#0A0A0A] border border-white/10 rounded-xl shadow-xl overflow-hidden z-50"
                       >
-                        <History className="w-4 h-4 opacity-50" />
-                        Your Projects
-                      </Link>
-                      
-                      {/* Settings */}
-                      <Link 
-                        href="/settings"
-                        onClick={() => setShowProfileMenu(false)}
-                        className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/5 transition-colors"
-                      >
-                        <Settings className="w-4 h-4 opacity-50" />
-                        Settings
-                      </Link>
-                      
-                      {/* Sign out */}
-                      <div className="border-t border-white/5">
-                        <button 
-                          onClick={() => { setShowProfileMenu(false); signOut(); }}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/5 transition-colors"
+                        {/* Credits section */}
+                        {(() => {
+                          const maxCredits = plan === "agency" ? 10000 : plan === "pro" ? 3000 : 100;
+                          const percentage = Math.min(100, (totalCredits / maxCredits) * 100);
+                          return (
+                            <Link 
+                              href="/settings?tab=plans"
+                              onClick={() => setShowProfileMenu(false)}
+                              className="block p-4 hover:bg-white/5 transition-colors border-b border-white/5"
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-white">{totalCredits} credits</span>
+                                  {isPaidPlan ? (
+                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase">
+                                      {plan === "agency" ? "Agency" : plan === "enterprise" ? "Enterprise" : "Pro"}
+                                    </span>
+                                  ) : (
+                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-white/50 uppercase">
+                                      Free
+                                    </span>
+                                  )}
+                                </div>
+                                <ChevronRight className="w-4 h-4 text-white/40" />
+                              </div>
+                              <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] rounded-full transition-all"
+                                  style={{ width: `${percentage}%` }}
+                                />
+                              </div>
+                              {isPaidPlan ? (
+                                <div className="mt-2">
+                                  <span className="text-xs text-white/40">Add credits →</span>
+                                </div>
+                              ) : (
+                                <div className="mt-2">
+                                  <span className="text-xs text-[#FF6E3C] font-medium">Upgrade →</span>
+                                </div>
+                              )}
+                            </Link>
+                          );
+                        })()}
+                        
+                        <Link 
+                          href="/tool"
+                          onClick={() => setShowProfileMenu(false)}
+                          className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/5 transition-colors"
                         >
-                          <LogOut className="w-4 h-4 opacity-50" />
-                          Sign out
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                          <History className="w-4 h-4 opacity-50" />
+                          Your Projects
+                        </Link>
+                        <Link 
+                          href="/settings"
+                          onClick={() => setShowProfileMenu(false)}
+                          className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/5 transition-colors"
+                        >
+                          <Settings className="w-4 h-4 opacity-50" />
+                          Settings
+                        </Link>
+                        <div className="border-t border-white/5">
+                          <button 
+                            onClick={() => { setShowProfileMenu(false); signOut(); }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/5 transition-colors"
+                          >
+                            <LogOut className="w-4 h-4 opacity-50" />
+                            Sign out
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+                
+                {/* Desktop: Launch App button */}
+                <Link
+                  href="/tool"
+                  className="hidden sm:flex px-4 py-2.5 rounded-xl text-sm font-medium bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white hover:opacity-90 transition-opacity"
+                >
+                  Launch App
+                </Link>
+                
+                {/* Mobile: Only Launch App + Menu (no name/badge) */}
+                <div className="flex items-center gap-2 sm:hidden">
+                  <Link
+                    href="/tool"
+                    className="px-3 py-2 rounded-lg text-xs font-medium bg-[#FF6E3C] text-white"
+                  >
+                    Launch App
+                  </Link>
+                  <button
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="p-2 rounded-lg hover:bg-white/5 transition-colors"
+                  >
+                    {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                  </button>
+                </div>
+              </>
             ) : (
-              <button
-                onClick={() => setShowAuthModal(true)}
-                disabled={authLoading}
-                className="hidden sm:flex px-4 py-2 rounded-xl text-sm text-white/70 border border-white/10 hover:border-white/20 hover:text-white transition-colors"
-              >
-                Sign in
-              </button>
+              <>
+                {/* Desktop: Sign in + Try Free */}
+                <button
+                  onClick={() => setShowAuthModal(true)}
+                  disabled={authLoading}
+                  className="hidden sm:flex px-4 py-2 rounded-xl text-sm text-white/70 border border-white/10 hover:border-white/20 hover:text-white transition-colors"
+                >
+                  Sign in
+                </button>
+                <Link
+                  href="/tool"
+                  className="hidden sm:flex px-4 py-2.5 rounded-xl text-sm font-medium bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white hover:opacity-90 transition-opacity"
+                >
+                  Try Replay Free
+                </Link>
+                
+                {/* Mobile CTA + Menu */}
+                <div className="flex items-center gap-2 sm:hidden">
+                  <Link
+                    href="/tool"
+                    className="px-3 py-2 rounded-lg text-xs font-medium bg-[#FF6E3C] text-white"
+                  >
+                    Try Free
+                  </Link>
+                  <button
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="p-2 rounded-lg hover:bg-white/5 transition-colors"
+                  >
+                    {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                  </button>
+                </div>
+              </>
             )}
-            
-            {/* Desktop CTA */}
-            <Link
-              href="/tool"
-              className="hidden sm:flex px-4 py-2.5 rounded-xl text-sm font-medium bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white hover:opacity-90 transition-opacity"
-            >
-              Try Replay Free
-            </Link>
-            
-            {/* Mobile CTA + Menu */}
-            <div className="flex items-center gap-2 sm:hidden">
-              <Link
-                href="/tool"
-                className="px-3 py-2 rounded-lg text-xs font-medium bg-[#FF6E3C] text-white"
-              >
-                Try Free
-              </Link>
-              <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="p-2 rounded-lg hover:bg-white/5 transition-colors"
-              >
-                {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </button>
-            </div>
-            
-            {/* Desktop menu button (hidden) */}
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="hidden"
-            >
-              {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
           </div>
         </div>
 
@@ -281,7 +295,7 @@ export default function LandingNavigation() {
                     <div className="pt-2 border-t border-white/5 mt-2">
                       {/* Credits section */}
                       {(() => {
-                        const maxCredits = plan === "agency" ? 10000 : plan === "pro" ? 3000 : 150;
+                        const maxCredits = plan === "agency" ? 10000 : plan === "pro" ? 3000 : 100;
                         const percentage = Math.min(100, (totalCredits / maxCredits) * 100);
                         return (
                           <Link 

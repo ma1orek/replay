@@ -19,13 +19,15 @@ interface MobileLayoutProps {
   onOpenCreditsModal?: () => void;
   onCreditsRefresh?: () => void;
   onSaveGeneration?: (data: { title: string; code: string; videoUrl?: string }) => void;
+  onOpenHistory?: () => void;
 }
 
 // Keys for localStorage
 const STORAGE_KEY_VIDEO = "replay_mobile_pending_video";
 const STORAGE_KEY_NAME = "replay_mobile_pending_name";
+const STORAGE_KEY_LOAD_PROJECT = "replay_mobile_load_project";
 
-export default function MobileLayout({ user, isPro, plan, credits, creditsLoading, onLogin, onOpenCreditsModal, onCreditsRefresh, onSaveGeneration }: MobileLayoutProps) {
+export default function MobileLayout({ user, isPro, plan, credits, creditsLoading, onLogin, onOpenCreditsModal, onCreditsRefresh, onSaveGeneration, onOpenHistory }: MobileLayoutProps) {
   const searchParams = useSearchParams();
   const autoStartCamera = searchParams?.get("camera") === "true";
   
@@ -42,8 +44,49 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [loadedProjectId, setLoadedProjectId] = useState<string | null>(null);
   
   const pendingLoginRef = useRef(false);
+  
+  // Check for project to load from history
+  useEffect(() => {
+    const loadProjectData = localStorage.getItem(STORAGE_KEY_LOAD_PROJECT);
+    console.log("[MobileLayout] Checking for project to load, found:", !!loadProjectData);
+    if (loadProjectData) {
+      try {
+        const project = JSON.parse(loadProjectData);
+        console.log("[MobileLayout] Loading project from history:", project.title, "videoUrl:", project.videoUrl);
+        
+        // Set project data
+        setProjectName(project.title || "Loaded Project");
+        setLoadedProjectId(project.id);
+        
+        // Always set videoUrl if it exists (even if no code)
+        if (project.videoUrl) {
+          console.log("[MobileLayout] Setting videoUrl:", project.videoUrl);
+          setVideoUrl(project.videoUrl);
+        }
+        
+        if (project.code) {
+          setGeneratedCode(project.code);
+          const blob = new Blob([project.code], { type: "text/html" });
+          setPreviewUrl(URL.createObjectURL(blob));
+          setHasGenerated(true);
+          setActiveTab("preview");
+        }
+        
+        if (project.publishedSlug) {
+          setPublishedUrl(`https://www.replay.build/p/${project.publishedSlug}`);
+        }
+        
+        // Clear the storage
+        localStorage.removeItem(STORAGE_KEY_LOAD_PROJECT);
+      } catch (e) {
+        console.error("[MobileLayout] Failed to load project:", e);
+        localStorage.removeItem(STORAGE_KEY_LOAD_PROJECT);
+      }
+    }
+  }, []);
 
   // Wake Lock implementation to prevent screen from turning off during processing
   // This is critical for keeping the compression/upload process alive
@@ -175,14 +218,15 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
   }, [user, videoBlob]);
   
   // Create video URL when blob changes
+  // Create blob URL for video recording
+  // NOTE: Don't reset videoUrl to null when videoBlob is null - it might be loaded from a project
   useEffect(() => {
     if (videoBlob) {
       const url = URL.createObjectURL(videoBlob);
       setVideoUrl(url);
       return () => URL.revokeObjectURL(url);
-    } else {
-      setVideoUrl(null);
     }
+    // Don't set videoUrl to null here - it could be from a loaded project (Cloudinary URL)
   }, [videoBlob]);
   
   // Handle video capture
@@ -229,12 +273,15 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
   
   // Reconstruct - the main action (uses async server-side processing)
   const handleReconstruct = useCallback(async () => {
-    if (!videoBlob) return;
+    // Need either a videoBlob (new recording) or videoUrl (loaded project)
+    if (!videoBlob && !videoUrl) return;
     
     // Check if user is logged in
     if (!user) {
-      pendingLoginRef.current = true;
-      await saveVideoForLogin();
+      if (videoBlob) {
+        pendingLoginRef.current = true;
+        await saveVideoForLogin();
+      }
       onLogin();
       return;
     }
@@ -250,30 +297,33 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
     setIsProcessing(true);
     setActiveTab("preview");
     
-    console.log("[MobileLayout] Starting pipeline with blob:", videoBlob.size, videoBlob.type);
-    
     try {
-      // 1. COMPRESS & UPLOAD (The "WhatsApp" Pipeline)
-      // This happens entirely on the client (FFmpeg) -> Supabase (Direct)
-      // Bypasses Vercel's 4.5MB limit and 403 blocks
       let finalVideoUrl: string;
       
-      // If we already have a URL (e.g. from previous upload), use it? 
-      // For now, always re-upload to ensure freshness, unless it's a URL-based flow (not implemented)
-      
-      // Convert Blob to File if needed
-      const videoFile = videoBlob instanceof File 
-        ? videoBlob 
-        : new File([videoBlob], "recording.mp4", { type: "video/mp4" });
+      if (videoBlob) {
+        // NEW RECORDING: Compress & Upload
+        console.log("[MobileLayout] Starting pipeline with blob:", videoBlob.size, videoBlob.type);
         
-      console.log("[MobileLayout] Step 1: Compressing & Uploading...");
-      finalVideoUrl = await processAndUpload(videoFile);
-      
-      if (!finalVideoUrl) {
-        throw new Error("Upload failed - no URL returned");
+        // Convert Blob to File if needed
+        const videoFile = videoBlob instanceof File 
+          ? videoBlob 
+          : new File([videoBlob], "recording.mp4", { type: "video/mp4" });
+          
+        console.log("[MobileLayout] Step 1: Compressing & Uploading...");
+        finalVideoUrl = await processAndUpload(videoFile);
+        
+        if (!finalVideoUrl) {
+          throw new Error("Upload failed - no URL returned");
+        }
+        
+        console.log("[MobileLayout] Step 1 Complete. URL:", finalVideoUrl);
+      } else if (videoUrl) {
+        // LOADED PROJECT: Use existing URL
+        console.log("[MobileLayout] Using existing video URL:", videoUrl);
+        finalVideoUrl = videoUrl;
+      } else {
+        throw new Error("No video available");
       }
-      
-      console.log("[MobileLayout] Step 1 Complete. URL:", finalVideoUrl);
 
       // Build style directive from user inputs
       // Empty style = Auto-Detect (AI analyzes video and matches its visual style)
@@ -303,7 +353,7 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
       alert(`Error: ${error.message || "Processing failed"}`);
     }
     
-  }, [videoBlob, user, onLogin, saveVideoForLogin, creditsLoading, style, context, processAndUpload, startGeneration]);
+  }, [videoBlob, videoUrl, user, onLogin, saveVideoForLogin, creditsLoading, style, context, processAndUpload, startGeneration]);
   
   // Handle back - goes back in flow or to landing page
   const handleBack = useCallback(() => {
@@ -381,11 +431,14 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
         <MobileHeader
           projectName={projectName}
           onProjectNameChange={setProjectName}
+          user={user}
           isPro={isPro}
           plan={plan}
           credits={credits}
           onBack={handleBack}
+          onLogin={onLogin}
           onOpenCreditsModal={onOpenCreditsModal}
+          onOpenHistory={onOpenHistory}
         />
       )}
       
@@ -405,6 +458,7 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
             onReconstruct={handleReconstruct}
             isProcessing={isProcessing}
             autoStartCamera={autoStartCamera}
+            isLoadedProject={!!loadedProjectId}
           />
         ) : (
           <MobilePreviewView

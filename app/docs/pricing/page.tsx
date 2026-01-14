@@ -60,7 +60,7 @@ export default function PricingPage() {
             <ul className="space-y-2 text-sm text-white/70 mb-6">
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-green-400" />
-                <span>150 credits (one-time)</span>
+                <span>100 credits / month</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-green-400" />
@@ -218,7 +218,7 @@ export default function PricingPage() {
           </div>
           <div className="p-4 rounded-xl bg-white/5 border border-white/10">
             <h4 className="font-medium text-white mb-1">What's the difference between Free and Pro?</h4>
-            <p className="text-sm text-white/60">Free: 150 credits one-time, basic features. Pro: 3,000 credits/month, all export formats, rollover credits, priority processing, and all 30+ style presets.</p>
+            <p className="text-sm text-white/60">Free: 100 credits/month, preview only. Pro: 3,000+ credits/month, full code access & export, rollover credits, priority processing, and all 30+ style presets.</p>
           </div>
           <div className="p-4 rounded-xl bg-white/5 border border-white/10">
             <h4 className="font-medium text-white mb-1">What payment methods do you accept?</h4>

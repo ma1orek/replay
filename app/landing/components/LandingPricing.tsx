@@ -1,30 +1,133 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { motion, useInView } from "framer-motion";
+import { motion, useInView, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check } from "lucide-react";
+import { Check, ChevronDown, Sparkles, Zap, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AuthModal from "@/components/modals/AuthModal";
 import { useAuth } from "@/lib/auth/context";
-import { GlowCard } from "@/components/ui/spotlight-card";
+
+// Elastic "PRO" Subscription Tiers with Stripe Price IDs
+const PRICING_TIERS = [
+  {
+    id: 'pro25',
+    label: "10 Generations",
+    credits: 1500,
+    monthlyPrice: 25,
+    stripePriceId_Monthly: "price_1SotL1Axch1s4iBGWMvO0JBZ",
+    yearlyPriceMonthly: 20,
+    yearlyPriceTotal: 240,
+    yearlySavings: "$60",
+    stripePriceId_Yearly: "price_1SotSpAxch1s4iBGbDC8je02",
+  },
+  {
+    id: 'pro50',
+    label: "22 Generations",
+    credits: 3300,
+    monthlyPrice: 50,
+    stripePriceId_Monthly: "price_1SotLqAxch1s4iBG1ViXkfc2",
+    yearlyPriceTotal: 480,
+    yearlyPriceMonthly: 40,
+    yearlySavings: "$120",
+    stripePriceId_Yearly: "price_1SotT5Axch1s4iBGUt6BTDDf",
+  },
+  {
+    id: 'pro100',
+    label: "50 Generations",
+    credits: 7500,
+    popular: true,
+    monthlyPrice: 100,
+    stripePriceId_Monthly: "price_1SotMYAxch1s4iBGLZZ7ATBs",
+    yearlyPriceTotal: 960,
+    yearlyPriceMonthly: 80,
+    yearlySavings: "$240",
+    stripePriceId_Yearly: "price_1SotTJAxch1s4iBGYRBGTHK6",
+  },
+  {
+    id: 'pro200',
+    label: "110 Generations",
+    credits: 16500,
+    monthlyPrice: 200,
+    stripePriceId_Monthly: "price_1SotN4Axch1s4iBGUJEfzznw",
+    yearlyPriceTotal: 1920,
+    yearlyPriceMonthly: 160,
+    yearlySavings: "$480",
+    stripePriceId_Yearly: "price_1SotTdAxch1s4iBGpyDigl9b",
+  },
+  {
+    id: 'pro300',
+    label: "170 Generations",
+    credits: 25500,
+    monthlyPrice: 300,
+    stripePriceId_Monthly: "price_1SotNMAxch1s4iBGzRD7B7VI",
+    yearlyPriceTotal: 2880,
+    yearlyPriceMonthly: 240,
+    yearlySavings: "$720",
+    stripePriceId_Yearly: "price_1SotTqAxch1s4iBGgaWwuU0Z",
+  },
+  {
+    id: 'pro500',
+    label: "300 Generations",
+    credits: 45000,
+    monthlyPrice: 500,
+    stripePriceId_Monthly: "price_1SotNuAxch1s4iBGPl81sHqx",
+    yearlyPriceTotal: 4800,
+    yearlyPriceMonthly: 400,
+    yearlySavings: "$1,200",
+    stripePriceId_Yearly: "price_1SotU1Axch1s4iBGC1uEWWXN",
+  },
+  {
+    id: 'pro1000',
+    label: "640 Generations",
+    credits: 96000,
+    monthlyPrice: 1000,
+    stripePriceId_Monthly: "price_1SotO9Axch1s4iBGCDE83jPv",
+    yearlyPriceTotal: 9600,
+    yearlyPriceMonthly: 800,
+    yearlySavings: "$2,400",
+    stripePriceId_Yearly: "price_1SotUEAxch1s4iBGUqWwl9Db",
+  },
+  {
+    id: 'pro2000',
+    label: "1,500 Generations",
+    credits: 225000,
+    monthlyPrice: 2000,
+    stripePriceId_Monthly: "price_1SotOOAxch1s4iBGWiUHzG1M",
+    yearlyPriceTotal: 19200,
+    yearlyPriceMonthly: 1600,
+    yearlySavings: "$4,800",
+    stripePriceId_Yearly: "price_1SotV0Axch1s4iBGZYfILH0H",
+  }
+];
+
+// One-time top-ups (reduced credits to make subscription more attractive)
+const TOPUPS = [
+  { amount: 20, price: "$20", credits: "900", gens: "~6" },
+  { amount: 50, price: "$50", credits: "2,400", gens: "~16" },
+  { amount: 100, price: "$100", credits: "5,250", gens: "~35" },
+];
 
 export default function LandingPricing() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
-  const [isYearly, setIsYearly] = useState(false);
+  const [isAnnual, setIsAnnual] = useState(false); // Default to monthly
+  const [selectedTierIndex, setSelectedTierIndex] = useState(0); // Default to $25 tier (index 0)
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState<string | null>(null);
-  const [pendingAction, setPendingAction] = useState<{ type: "subscription" | "topup"; amount?: number } | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ type: "subscription" | "topup"; amount?: number; priceId?: string } | null>(null);
   const { user } = useAuth();
   const router = useRouter();
+
+  const selectedTier = PRICING_TIERS[selectedTierIndex];
 
   // Handle pending action after successful auth
   useEffect(() => {
     if (user && pendingAction) {
-      if (pendingAction.type === "subscription") {
-        handleProSubscription();
+      if (pendingAction.type === "subscription" && pendingAction.priceId) {
+        handleProSubscription(pendingAction.priceId);
       } else if (pendingAction.type === "topup" && pendingAction.amount) {
         handleBuyCredits(pendingAction.amount);
       }
@@ -32,10 +135,11 @@ export default function LandingPricing() {
     }
   }, [user, pendingAction]);
 
-  const handleProSubscription = async () => {
-    // If not logged in, show auth modal and set pending action
+  const handleProSubscription = async (priceId?: string) => {
+    const stripePriceId = priceId || (isAnnual ? selectedTier.stripePriceId_Yearly : selectedTier.stripePriceId_Monthly);
+    
     if (!user) {
-      setPendingAction({ type: "subscription" });
+      setPendingAction({ type: "subscription", priceId: stripePriceId });
       setShowAuthModal(true);
       return;
     }
@@ -46,8 +150,11 @@ export default function LandingPricing() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          type: "subscription", 
-          interval: isYearly ? "yearly" : "monthly" 
+          type: "subscription",
+          priceId: stripePriceId,
+          tierId: selectedTier.id,
+          credits: selectedTier.credits,
+          interval: isAnnual ? "yearly" : "monthly"
         }),
       });
       const data = await res.json();
@@ -65,7 +172,6 @@ export default function LandingPricing() {
   };
 
   const handleBuyCredits = async (amount: number) => {
-    // If not logged in, show auth modal and set pending action
     if (!user) {
       setPendingAction({ type: "topup", amount });
       setShowAuthModal(true);
@@ -98,188 +204,283 @@ export default function LandingPricing() {
     }
   };
 
-  const TOPUPS = [
-    { amount: 20, price: "$20", credits: "2,000" },
-    { amount: 50, price: "$50", credits: "5,500" },
-    { amount: 100, price: "$100", credits: "12,000" },
-  ];
-
-  const plans = [
-    { 
-      name: "Free", 
-      price: "$0",
-      priceYearly: "$0",
-      tagline: "For getting started", 
-      features: [
-        "150 credits (one-time)",
-        "~2 rebuilds",
-        "Interactive preview",
-        "Preview-only",
-        "Public projects only",
-      ],
-      cta: "Try Replay Free",
-    },
-    { 
-      name: "Pro", 
-      price: "$35",
-      priceYearly: "$378",
-      tagline: "For builders", 
-      features: [
-        "3,000 credits / month",
-        "~40 rebuilds / month",
-        "Full code access",
-        "Download & Copy",
-        "Publish to web",
-        "Rollover up to 600 credits",
-      ], 
-      popular: true,
-      cta: "Upgrade",
-    },
-    { 
-      name: "Enterprise", 
-      price: "Custom",
-      priceYearly: "Custom",
-      tagline: "For teams & orgs", 
-      features: [
-        "Custom credit allocation",
-        "Team seats (custom)",
-        "Priority processing",
-        "SSO / SAML (coming soon)",
-        "Dedicated support & SLA",
-        "API access (coming soon)",
-      ],
-      cta: "Contact sales",
-    },
-  ];
+  // Display price based on billing period
+  const displayPrice = isAnnual ? selectedTier.yearlyPriceMonthly : selectedTier.monthlyPrice;
 
   return (
     <section id="pricing" ref={ref} className="relative z-10 py-32">
-      <div className="mx-auto max-w-7xl px-6">
+      <div className="mx-auto max-w-6xl px-6">
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
           className="text-center mb-12"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#FF6E3C]/10 border border-[#FF6E3C]/20 mb-4">
-            <span className="w-2 h-2 rounded-full bg-[#FF6E3C] animate-pulse" />
-            <span className="text-xs font-medium text-[#FF6E3C]">Early Access Pricing</span>
-          </div>
           <h2 className="text-4xl sm:text-5xl font-bold mb-4">
-            Start for free. Upgrade for power.
+            Pricing
           </h2>
-          <p className="text-white/50 mb-2">Pay only for what you generate.</p>
-          <p className="text-xs text-white/30">Credits are consumed per reconstruction — not per prompt. One run = flow + structure + code + design system.</p>
+          <p className="text-white/50 text-lg max-w-2xl mx-auto">
+            Start for free. Upgrade for private projects and massive capacity. Unused credits always roll over.
+          </p>
         </motion.div>
 
-        {/* Billing toggle */}
+        {/* Billing Toggle */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={isInView ? { opacity: 1 } : {}}
           transition={{ delay: 0.2 }}
           className="flex items-center justify-center gap-3 mb-12"
         >
-          <span className={cn("text-sm", !isYearly ? "text-white" : "text-white/40")}>Monthly</span>
+          <span className={cn("text-sm font-medium transition-colors", !isAnnual ? "text-white" : "text-white/40")}>
+            Monthly
+          </span>
           <button
-            onClick={() => setIsYearly(!isYearly)}
-            className="relative w-12 h-6 rounded-full bg-white/10 transition-colors"
+            onClick={() => setIsAnnual(!isAnnual)}
+            className="relative w-12 h-6 rounded-full bg-white/10 border border-white/10 transition-all hover:border-white/20"
           >
-            <div className={cn(
-              "absolute top-1 w-4 h-4 rounded-full bg-[#FF6E3C] transition-all",
-              isYearly ? "left-7" : "left-1"
-            )} />
+            <div
+              className={cn(
+                "absolute top-1 w-4 h-4 rounded-full bg-[#FF6E3C] transition-all duration-200",
+                isAnnual ? "left-7" : "left-1"
+              )}
+            />
           </button>
-          <span className={cn("text-sm", isYearly ? "text-white" : "text-white/40")}>Yearly</span>
-          <span className="ml-2 px-2 py-0.5 rounded-full bg-[#FF6E3C]/20 text-xs text-[#FF6E3C]">Save 10%</span>
+          <span className={cn("text-sm font-medium transition-colors", isAnnual ? "text-white" : "text-white/40")}>
+            Yearly
+          </span>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {plans.map((plan, i) => (
-            <motion.div
-              key={plan.name}
-              initial={{ opacity: 0, y: 40 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.8, delay: i * 0.1 }}
-              className="relative"
-            >
-              <GlowCard glowColor="orange" customSize className="h-full !p-8">
-                {plan.popular && (
-                  <div className="absolute top-4 right-4 px-3 py-1 rounded-lg bg-[#FF6E3C] text-xs font-medium text-white z-10">
-                    Most popular
+        {/* Pricing Cards Grid */}
+        <div className="grid lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          
+          {/* FREE Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.8, delay: 0 }}
+            className="relative"
+          >
+            <div className="h-full p-8 rounded-2xl bg-white/[0.02] border border-white/[0.08] backdrop-blur-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
+                  <Zap className="w-4 h-4 text-white/60" />
+                </div>
+                <span className="text-sm font-medium text-white/60">Free</span>
+              </div>
+              
+              <div className="mb-1">
+                <span className="text-5xl font-bold text-white">$0</span>
+              </div>
+              <p className="text-sm text-white/40 mb-6">Forever free to start</p>
+              
+              <div className="space-y-3 mb-8">
+                {[
+                  "100 credits / month",
+                  "~1 generation",
+                  "Preview only",
+                  "Public projects only",
+                  "Community support",
+                ].map((f) => (
+                  <div key={f} className="flex items-center gap-3 text-sm text-white/60">
+                    <Check className="w-4 h-4 text-white/40 shrink-0" />
+                    {f}
+                  </div>
+                ))}
+              </div>
+              
+              <button
+                onClick={handleGetStarted}
+                className="w-full py-3.5 rounded-xl text-sm font-medium transition-all bg-white/[0.05] text-white/70 hover:bg-white/[0.08] border border-white/[0.08]"
+              >
+                Get Started
+              </button>
+            </div>
+          </motion.div>
+
+          {/* PRO Card - Elastic */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.8, delay: 0.1 }}
+            className="relative lg:-mt-4 lg:mb-4"
+          >
+            {/* Popular Badge */}
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+              <div className="px-4 py-1.5 rounded-full bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-xs font-semibold text-white shadow-lg shadow-[#FF6E3C]/30">
+                Most Popular
+              </div>
+            </div>
+            
+            <div className="h-full p-8 rounded-2xl bg-gradient-to-b from-[#FF6E3C]/10 to-transparent border border-[#FF6E3C]/30 backdrop-blur-sm relative overflow-hidden">
+              {/* Glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-b from-[#FF6E3C]/5 to-transparent pointer-events-none" />
+              
+              <div className="relative">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-[#FF6E3C]/20 flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-[#FF6E3C]" />
+                  </div>
+                  <span className="text-sm font-medium text-[#FF6E3C]">Pro</span>
+                </div>
+                
+                {/* Price Display */}
+                <div className="mb-1 flex items-baseline gap-2">
+                  <span className="text-5xl font-bold text-white">${displayPrice}</span>
+                  <span className="text-white/40">/mo</span>
+                </div>
+                
+                {/* Savings Badge - only show on yearly */}
+                {isAnnual && (
+                  <div className="mb-4">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/20 text-xs font-semibold text-emerald-400">
+                      Save {selectedTier.yearlySavings}
+                    </span>
                   </div>
                 )}
-                
-                <div className="text-sm text-white/50 mb-2">{plan.name}</div>
-                <div className="mb-1">
-                  <span className="text-4xl font-bold text-white">
-                    {isYearly ? plan.priceYearly : plan.price}
-                  </span>
-                  <span className="text-white/40 text-sm">/{isYearly ? "year" : "mo"}</span>
+                {!isAnnual && <div className="mb-4" />}
+
+                {/* Capacity Dropdown */}
+                <div className="relative mb-6">
+                  <label className="block text-xs font-medium text-white/50 mb-2">Capacity</label>
+                    <button
+                        onClick={() => setDropdownOpen(!dropdownOpen)}
+                        className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-sm text-white hover:border-white/20 transition-all"
+                      >
+                        <span>{selectedTier.credits.toLocaleString()} credits</span>
+                        <ChevronDown className={cn("w-4 h-4 text-white/40 transition-transform", dropdownOpen && "rotate-180")} />
+                      </button>
+                      
+                      <AnimatePresence>
+                        {dropdownOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="absolute top-full left-0 right-0 mt-2 py-2 rounded-xl bg-[#0a0a0a] border border-white/10 shadow-xl z-50 max-h-64 overflow-y-auto"
+                          >
+                            {PRICING_TIERS.map((tier, idx) => (
+                              <button
+                                key={tier.id}
+                                onClick={() => {
+                                  setSelectedTierIndex(idx);
+                                  setDropdownOpen(false);
+                                }}
+                                className={cn(
+                                  "w-full px-4 py-2.5 text-left text-sm hover:bg-white/5 transition-colors",
+                                  idx === selectedTierIndex && "bg-[#FF6E3C]/10 text-[#FF6E3C]"
+                                )}
+                              >
+                                {tier.credits.toLocaleString()} credits
+                              </button>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                 </div>
-                <div className="text-xs text-white/30 mb-6">{plan.tagline}</div>
-                
-                <div className="space-y-3 mb-8">
-                  {plan.features.map((f) => (
-                    <div key={f} className="flex items-center gap-3 text-sm text-white/60">
-                      <Check className="w-4 h-4 text-[#FF6E3C] shrink-0" />
-                      {f}
+
+                    {/* Features */}
+                    <div className="space-y-3 mb-8">
+                      {[
+                        "Everything in Free, plus:",
+                        `${selectedTier.credits.toLocaleString()} credits / month`,
+                        `~${Math.floor(selectedTier.credits / 75)} generations`,
+                        "Private projects",
+                        "Full code access & export",
+                        "Publish to web",
+                        "Credits roll over",
+                      ].map((f, idx) => (
+                        <div key={f} className={cn("flex items-center gap-3 text-sm", idx === 0 ? "text-[#FF6E3C] font-medium" : "text-white/70")}>
+                          <Check className="w-4 h-4 text-[#FF6E3C] shrink-0" />
+                          {f}
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
                 
-                {plan.name === "Enterprise" ? (
-                  <Link
-                    href="/contact"
-                    className="block w-full text-center py-3.5 rounded-xl text-sm font-medium transition-all bg-white/[0.05] text-white/70 hover:bg-white/[0.08] border border-white/[0.08]"
-                  >
-                    {plan.cta}
-                  </Link>
-                ) : plan.name === "Pro" ? (
-                  <button
-                    onClick={handleProSubscription}
-                    disabled={isCheckingOut === "pro"}
-                    className={cn(
-                      "w-full text-center py-3.5 rounded-xl text-sm font-medium transition-all disabled:opacity-50",
-                      "bg-[#FF6E3C] text-white hover:bg-[#FF8F5C]"
-                    )}
-                  >
-                    {isCheckingOut === "pro" ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Processing...
-                      </span>
-                    ) : (
-                      plan.cta
-                    )}
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleGetStarted}
-                    className="w-full text-center py-3.5 rounded-xl text-sm font-medium transition-all bg-white/[0.05] text-white/70 hover:bg-white/[0.08] border border-white/[0.08]"
-                  >
-                    {plan.cta}
-                  </button>
-                )}
-              </GlowCard>
-            </motion.div>
-          ))}
+                <button
+                  onClick={() => handleProSubscription()}
+                  disabled={isCheckingOut === "pro"}
+                  className="w-full py-3.5 rounded-xl text-sm font-semibold transition-all bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white hover:opacity-90 disabled:opacity-50 shadow-lg shadow-[#FF6E3C]/30"
+                >
+                  {isCheckingOut === "pro" ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Processing...
+                    </span>
+                  ) : (
+                    "Subscribe"
+                  )}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* ENTERPRISE Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="relative"
+          >
+            <div className="h-full p-8 rounded-2xl bg-white/[0.02] border border-white/[0.08] backdrop-blur-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
+                  <Building2 className="w-4 h-4 text-white/60" />
+                </div>
+                <span className="text-sm font-medium text-white/60">Enterprise</span>
+              </div>
+              
+              <div className="mb-1">
+                <span className="text-5xl font-bold text-white">Custom</span>
+              </div>
+              <p className="text-sm text-white/40 mb-6">For teams & organizations</p>
+              
+              <div className="space-y-3 mb-8">
+                {[
+                  "Everything in Pro, plus:",
+                  "Custom credit allocation",
+                  "Team seats",
+                  "Priority processing",
+                  "SSO / SAML",
+                  "Dedicated support & SLA",
+                  "API access",
+                ].map((f, idx) => (
+                  <div key={f} className={cn("flex items-center gap-3 text-sm", idx === 0 ? "text-white/80 font-medium" : "text-white/60")}>
+                    <Check className="w-4 h-4 text-white/40 shrink-0" />
+                    {f}
+                  </div>
+                ))}
+              </div>
+              
+              <Link
+                href="/contact"
+                className="block w-full text-center py-3.5 rounded-xl text-sm font-medium transition-all bg-white/[0.05] text-white/70 hover:bg-white/[0.08] border border-white/[0.08]"
+              >
+                Contact Sales
+              </Link>
+            </div>
+          </motion.div>
         </div>
 
-        {/* Top-ups block */}
+        {/* One-time Top-ups */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.5 }}
-          className="mt-12 max-w-2xl mx-auto text-center"
+          className="mt-16 max-w-3xl mx-auto"
         >
-          <p className="text-sm text-white/50 mb-4">Buy credits anytime</p>
-          <div className="flex items-center justify-center gap-4">
+          <div className="text-center mb-6">
+            <h3 className="text-lg font-semibold text-white/80 mb-2">Need extra credits?</h3>
+            <p className="text-sm text-white/40">Buy one-time credit packs anytime</p>
+          </div>
+          
+          <div className="flex flex-wrap items-center justify-center gap-4">
             {TOPUPS.map((pkg) => (
               <button
                 key={pkg.amount}
                 onClick={() => handleBuyCredits(pkg.amount)}
                 disabled={isCheckingOut === pkg.amount.toString()}
-                className="relative px-6 py-4 rounded-xl border border-white/10 bg-white/[0.02] transition-all hover:border-white/20 hover:bg-white/[0.04] disabled:opacity-50"
+                className="relative px-8 py-5 rounded-xl border border-white/10 bg-white/[0.02] transition-all hover:border-white/20 hover:bg-white/[0.04] disabled:opacity-50 min-w-[140px]"
               >
                 {isCheckingOut === pkg.amount.toString() ? (
                   <div className="flex items-center justify-center">
@@ -287,8 +488,9 @@ export default function LandingPricing() {
                   </div>
                 ) : (
                   <>
-                    <div className="text-lg font-bold text-white">{pkg.price}</div>
+                    <div className="text-2xl font-bold text-white mb-1">{pkg.price}</div>
                     <div className="text-xs text-white/50">{pkg.credits} credits</div>
+                    <div className="text-[10px] text-white/30">{pkg.gens} gens</div>
                   </>
                 )}
               </button>
@@ -296,20 +498,20 @@ export default function LandingPricing() {
           </div>
         </motion.div>
 
-        {/* Auth Modal for credits purchase */}
+        {/* Auth Modal */}
         <AuthModal
           isOpen={showAuthModal}
           onClose={() => setShowAuthModal(false)}
-          title="Sign in to buy credits"
-          description="You need to be signed in to purchase credits."
+          title="Sign in to continue"
+          description="You need to be signed in to subscribe or buy credits."
         />
         
-        {/* Terms disclaimer */}
+        {/* Terms */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={isInView ? { opacity: 1 } : {}}
           transition={{ delay: 0.6 }}
-          className="text-xs text-white/30 text-center mt-8"
+          className="text-xs text-white/30 text-center mt-10"
         >
           By subscribing, you agree to our{" "}
           <Link href="/terms" className="text-white/50 hover:text-white/70 underline">Terms of Service</Link>

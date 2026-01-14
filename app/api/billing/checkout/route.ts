@@ -11,10 +11,32 @@ function getStripe() {
 
 // Map top-up amounts to price IDs and credit amounts
 const TOPUP_MAP: Record<number, { priceId: string; credits: number }> = {
-  20: { priceId: process.env.STRIPE_CREDITS_PRICE_ID_2000 || "", credits: 2000 },
-  50: { priceId: process.env.STRIPE_CREDITS_PRICE_ID_5500 || "", credits: 5500 },
-  100: { priceId: process.env.STRIPE_CREDITS_PRICE_ID_12000 || "", credits: 12000 },
+  20: { priceId: process.env.STRIPE_CREDITS_PRICE_ID_2000 || "", credits: 900 },
+  50: { priceId: process.env.STRIPE_CREDITS_PRICE_ID_5500 || "", credits: 2400 },
+  100: { priceId: process.env.STRIPE_CREDITS_PRICE_ID_12000 || "", credits: 5250 },
 };
+
+// Valid Stripe Price IDs for subscriptions (for validation)
+const VALID_SUBSCRIPTION_PRICE_IDS = new Set([
+  // Monthly
+  "price_1SotL1Axch1s4iBGWMvO0JBZ",
+  "price_1SotLqAxch1s4iBG1ViXkfc2",
+  "price_1SotMYAxch1s4iBGLZZ7ATBs",
+  "price_1SotN4Axch1s4iBGUJEfzznw",
+  "price_1SotNMAxch1s4iBGzRD7B7VI",
+  "price_1SotNuAxch1s4iBGPl81sHqx",
+  "price_1SotO9Axch1s4iBGCDE83jPv",
+  "price_1SotOOAxch1s4iBGWiUHzG1M",
+  // Yearly
+  "price_1SotSpAxch1s4iBGbDC8je02",
+  "price_1SotT5Axch1s4iBGUt6BTDDf",
+  "price_1SotTJAxch1s4iBGYRBGTHK6",
+  "price_1SotTdAxch1s4iBGpyDigl9b",
+  "price_1SotTqAxch1s4iBGgaWwuU0Z",
+  "price_1SotU1Axch1s4iBGC1uEWWXN",
+  "price_1SotUEAxch1s4iBGUqWwl9Db",
+  "price_1SotV0Axch1s4iBGZYfILH0H",
+]);
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { type, plan, interval, topupAmount } = body;
+    const { type, priceId, tierId, credits, interval, topupAmount } = body;
 
     // Get user's membership
     const { data: membership } = await supabase
@@ -55,13 +77,27 @@ export async function POST(request: NextRequest) {
         .eq("user_id", user.id);
     }
 
-    // Handle subscription checkout (Pro plan)
+    // Handle subscription checkout (Pro plan with elastic pricing)
     if (type === "subscription") {
-      const priceId = interval === "yearly" 
-        ? process.env.STRIPE_PRO_PRICE_ID_YEARLY 
-        : process.env.STRIPE_PRO_PRICE_ID_MONTHLY;
+      // Use priceId from frontend if provided and valid
+      let finalPriceId = priceId;
+      
+      // Validate priceId if provided
+      if (priceId && !VALID_SUBSCRIPTION_PRICE_IDS.has(priceId)) {
+        // Fallback to env vars if invalid
+        finalPriceId = interval === "yearly" 
+          ? process.env.STRIPE_PRO_PRICE_ID_YEARLY 
+          : process.env.STRIPE_PRO_PRICE_ID_MONTHLY;
+      }
+      
+      // Final fallback to env vars
+      if (!finalPriceId) {
+        finalPriceId = interval === "yearly" 
+          ? process.env.STRIPE_PRO_PRICE_ID_YEARLY 
+          : process.env.STRIPE_PRO_PRICE_ID_MONTHLY;
+      }
 
-      if (!priceId) {
+      if (!finalPriceId) {
         return NextResponse.json({ error: "Price ID not configured" }, { status: 500 });
       }
 
@@ -71,7 +107,7 @@ export async function POST(request: NextRequest) {
         payment_method_types: ["card"],
         line_items: [
           {
-            price: priceId,
+            price: finalPriceId,
             quantity: 1,
           },
         ],
@@ -80,6 +116,9 @@ export async function POST(request: NextRequest) {
         subscription_data: {
           metadata: {
             supabase_user_id: user.id,
+            tier_id: tierId || "pro",
+            credits_amount: credits?.toString() || "0",
+            interval: interval || "monthly",
           },
         },
       });

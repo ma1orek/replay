@@ -113,9 +113,9 @@ export async function POST(request: NextRequest) {
         .eq("user_id", user.id)
         .single();
       
-      // Only upgrade credits if currently at free tier level (150 or less)
+      // Only upgrade credits if currently at free tier level (100 or less)
       // This prevents abuse where users click Sync to reset their credits
-      if (currentWallet && currentWallet.monthly_credits <= 150) {
+      if (currentWallet && currentWallet.monthly_credits <= 100) {
         const { error: creditsError } = await adminSupabase
           .from("credit_wallets")
           .update({

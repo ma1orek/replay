@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // User doesn't have a wallet - create one with 150 free credits
+    // User doesn't have a wallet - create one with 100 free credits
     console.log(`Creating wallet for user ${user.id} (${user.email})`);
     
     // First, ensure membership exists
@@ -64,12 +64,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create credit wallet with 150 free credits
+    // Create credit wallet with 100 free credits
     const { data: newWallet, error: walletError } = await adminClient
       .from("credit_wallets")
       .insert({
         user_id: user.id,
-        monthly_credits: 150,
+        monthly_credits: 100,
         rollover_credits: 0,
         topup_credits: 0
       })
@@ -91,18 +91,18 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         type: "credit",
         bucket: "monthly",
-        amount: 150,
+        amount: 100,
         reason: "signup_bonus",
         reference_id: "initial_grant_manual"
       });
 
-    console.log(`Created wallet with 150 credits for user ${user.email}`);
+    console.log(`Created wallet with 100 credits for user ${user.email}`);
 
     return NextResponse.json({ 
       success: true, 
-      message: "Wallet created with 150 free credits",
+      message: "Wallet created with 100 free credits",
       wallet: newWallet,
-      totalCredits: 150
+      totalCredits: 100
     });
 
   } catch (error: any) {

@@ -191,11 +191,11 @@ BEGIN
   
   -- Create credit wallet with free tier credits
   INSERT INTO public.credit_wallets (user_id, monthly_credits, rollover_credits, topup_credits)
-  VALUES (NEW.id, 150, 0, 0);
+  VALUES (NEW.id, 100, 0, 0);
   
   -- Add ledger entry for signup bonus
   INSERT INTO public.credit_ledger (user_id, type, bucket, amount, reason, reference_id)
-  VALUES (NEW.id, 'credit', 'monthly', 150, 'signup_bonus', 'initial_grant');
+  VALUES (NEW.id, 'credit', 'monthly', 100, 'signup_bonus', 'initial_grant');
   
   RETURN NEW;
 END;
