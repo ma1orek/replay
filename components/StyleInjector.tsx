@@ -2756,7 +2756,7 @@ Below hero: bg-white sections, bg-gray-50 cards, bg-gray-900 footer.
 Colors: text-gray-900, bg-violet-600 buttons.`, category: "shader" },
 
   // === PASTEL CLOUD 3D - Spline in hero ===
-  { id: "pastel-cloud-3d", name: "Pastel Cloud 3D", desc: "Spline 3D hero • Clean sections", fullDesc: `🚨 PASTEL CLOUD 3D - USE THIS EXACT HTML STRUCTURE:
+  { id: "pastel-cloud-3d", name: "Pastel Cloud 3D", desc: "Spline 3D background • Glassmorphism", fullDesc: `🚨 PASTEL CLOUD 3D - COPY THIS EXACT CODE:
 
 <!DOCTYPE html>
 <html lang="en">
@@ -2767,44 +2767,57 @@ Colors: text-gray-900, bg-violet-600 buttons.`, category: "shader" },
   <script src="https://cdn.tailwindcss.com"></script>
   <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.35/build/spline-viewer.js"></script>
 </head>
-<body class="bg-white">
-  
-  <!-- HERO with 3D Spline background -->
-  <section class="relative min-h-screen overflow-hidden">
-    <spline-viewer url="https://prod.spline.design/H0rV8YuyqNW4BOJ9/scene.splinecode" class="absolute inset-0 w-full h-full"></spline-viewer>
-    <div class="relative z-10 min-h-screen flex flex-col items-center justify-center text-center px-6 pt-20">
-      <h1 class="text-6xl md:text-7xl font-bold text-gray-900 mb-6">Headline</h1>
-      <p class="text-gray-700 text-xl max-w-2xl mb-10">Description text</p>
-      <button class="px-8 py-4 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-full shadow-xl">CTA Button</button>
-    </div>
-  </section>
+<body class="bg-transparent min-h-screen">
 
-  <!-- Features - SOLID white background -->
-  <section class="py-24 px-6 bg-white">
-    <div class="max-w-6xl mx-auto">
-      <h2 class="text-4xl font-bold text-gray-900 text-center mb-16">Features</h2>
-      <div class="grid md:grid-cols-3 gap-8">
-        <div class="bg-gray-50 rounded-2xl p-8 border border-gray-100">
+  <!-- 🚨 SPLINE 3D BACKGROUND - FIXED, BEHIND EVERYTHING -->
+  <spline-viewer 
+    url="https://prod.spline.design/H0rV8YuyqNW4BOJ9/scene.splinecode"
+    style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;"
+  ></spline-viewer>
+
+  <!-- CONTENT - All content goes here with z-index above Spline -->
+  <div class="relative z-10">
+    
+    <!-- Nav -->
+    <nav class="fixed top-0 left-0 right-0 z-50 px-6 py-4 bg-white/20 backdrop-blur-md">
+      <div class="max-w-7xl mx-auto flex items-center justify-between">
+        <div class="text-xl font-bold text-gray-900">Logo</div>
+        <button class="px-6 py-2.5 bg-violet-600 text-white rounded-full font-medium">CTA</button>
+      </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="min-h-screen flex flex-col items-center justify-center text-center px-6 pt-20">
+      <h1 class="text-6xl md:text-7xl font-bold text-gray-900 mb-6">Headline</h1>
+      <p class="text-gray-700 text-xl max-w-2xl mb-10">Description</p>
+      <button class="px-8 py-4 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-full shadow-xl">CTA</button>
+    </section>
+
+    <!-- Features with glass cards -->
+    <section class="py-24 px-6">
+      <div class="max-w-6xl mx-auto grid md:grid-cols-3 gap-8">
+        <div class="bg-white/40 backdrop-blur-md rounded-2xl p-8 border border-white/50">
           <h3 class="text-xl font-bold text-gray-900 mb-2">Feature</h3>
-          <p class="text-gray-600">Description</p>
+          <p class="text-gray-700">Description</p>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Footer -->
-  <footer class="py-12 px-6 bg-gray-900">
-    <p class="text-center text-gray-400">© 2024</p>
-  </footer>
+    <!-- Footer -->
+    <footer class="py-12 px-6 bg-gray-900/80 backdrop-blur-md">
+      <p class="text-center text-gray-400">© 2024</p>
+    </footer>
 
+  </div>
 </body>
 </html>
 
-⚠️ CRITICAL - DO NOT CHANGE:
-1. The <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.35/build/spline-viewer.js"></script> MUST be in <head>
-2. The <spline-viewer url="https://prod.spline.design/H0rV8YuyqNW4BOJ9/scene.splinecode"> MUST be inside hero section with class="absolute inset-0 w-full h-full"
-3. Hero section MUST have class="relative min-h-screen overflow-hidden"
-4. Sections BELOW hero MUST have solid backgrounds (bg-white, bg-gray-50) NOT transparent`, category: "shader" },
+⚠️ CRITICAL RULES:
+1. Body MUST be bg-transparent (NOT bg-white!)
+2. spline-viewer MUST have style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;"
+3. All content wrapped in div with class="relative z-10"
+4. Use glassmorphism: bg-white/40 backdrop-blur-md for cards
+5. Script MUST be in <head>`, category: "shader" },
 
   // === SUPER HERO - ANIMATED LIQUID BACKGROUNDS ===
   { id: "super-hero", name: "Super Hero", desc: "Liquid Gradient • Animated Blob • Premium Hero", fullDesc: `SUPER HERO - Animated liquid gradient backgrounds like Framer's AnimatedLiquidBackground.
