@@ -2054,117 +2054,116 @@ Bold, dynamic, eye-catching.
 ⚠️ MANDATORY: Preserve ALL content from video.`, category: "shader" },
   { id: "noise-gradient", name: "Dynamic Noise Gradient", desc: "Canvas Grain • Perlin • Aurora", fullDesc: "AWWWARDS STYLE: Elegant dark canvas with subtle animated aurora gradient. Background: solid #0a0a0a. Add ONE flowing gradient overlay using CSS animation. Grain texture at 3% opacity for premium feel. Clean modern typography (Inter/Geist). Glassmorphism cards with backdrop-blur. Smooth micro-interactions on all interactive elements.", category: "shader" },
   { id: "stripe-aurora", name: "Stripe Aurora", desc: "Stripe.com Style • Gradient Blobs • Glass Cards", fullDesc: "AWWWARDS STYLE: Inspired by Stripe.com. LIGHT background (#ffffff or #fafafa). Multiple soft gradient BLOBS positioned around the page (not overlapping content). Blobs use: absolute positioning, large blur (80-150px), low opacity (0.3-0.5), colors: blue-500, purple-500, pink-500, orange-400. Content sits on TOP with white/glass cards. Clean Inter/SF Pro typography. Subtle shadows. Cards have white bg with very subtle border. Premium SaaS aesthetic.", category: "light" },
-  { id: "liquid-metal", name: "Liquid Metal", desc: "Chrome Text • Animated Shine • Premium Hero", fullDesc: `LIQUID METAL - Chrome metallic text effect for premium hero sections. Inspired by Framer's LiquidMetal component.
+  { id: "liquid-metal", name: "Liquid Metal", desc: "Chrome Text • Animated Shine • Premium Hero", fullDesc: `LIQUID METAL - Chrome metallic text effect like Framer's LiquidMetal component.
 
-HERO TEXT EFFECT: Headlines rendered with liquid chrome/metallic appearance. The text looks like molten silver or mercury with animated shine.
+⚠️ CRITICAL: You MUST include this EXACT CSS in a <style> tag. This creates the animated chrome/metallic text effect.
 
-CSS IMPLEMENTATION FOR LIQUID METAL TEXT:
+STEP 1 - Add this CSS in <style> tag:
 \`\`\`css
-.liquid-metal-text {
-  /* Base metallic gradient */
-  background: linear-gradient(
-    135deg,
-    #1a1a1a 0%,
-    #4a4a4a 10%,
-    #f5f5f5 20%,
-    #8a8a8a 30%,
-    #2a2a2a 40%,
-    #6a6a6a 50%,
-    #e5e5e5 60%,
-    #3a3a3a 70%,
-    #9a9a9a 80%,
-    #1a1a1a 90%,
-    #5a5a5a 100%
-  );
-  background-size: 200% 200%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: metalShine 8s ease-in-out infinite;
-  filter: drop-shadow(0 2px 4px rgba(255,255,255,0.1))
-          drop-shadow(0 4px 8px rgba(0,0,0,0.3));
-}
+<style>
+  @keyframes metalShine {
+    0% { background-position: 200% 50%; }
+    100% { background-position: -200% 50%; }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  .liquid-metal {
+    background: linear-gradient(
+      90deg,
+      #1a1a1a 0%,
+      #4a4a4a 15%,
+      #f5f5f5 30%,
+      #8a8a8a 45%,
+      #f5f5f5 55%,
+      #4a4a4a 70%,
+      #1a1a1a 85%,
+      #4a4a4a 100%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: metalShine 8s linear infinite;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+  }
+  .metal-glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(255,255,255,0.1) 0%, transparent 70%);
+    pointer-events: none;
+  }
+</style>
+\`\`\`
 
-@keyframes metalShine {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
+STEP 2 - Hero section structure:
+\`\`\`html
+<section class="relative min-h-screen bg-black flex items-center justify-center overflow-hidden">
+  <!-- Ambient glow behind text -->
+  <div class="metal-glow"></div>
+  
+  <!-- Content -->
+  <div class="relative z-10 text-center px-6">
+    <h1 class="liquid-metal text-6xl md:text-8xl font-black tracking-tight">
+      YOUR HEADLINE
+    </h1>
+    <p class="mt-6 text-xl text-white/60 max-w-2xl mx-auto">
+      Your subheadline text here
+    </p>
+    
+    <!-- Metallic border button -->
+    <div class="mt-10 flex gap-4 justify-center">
+      <button class="px-8 py-4 bg-gradient-to-r from-white/10 to-white/5 border border-white/20 text-white rounded-full hover:border-white/40 transition-all">
+        Get Started
+      </button>
+    </div>
+  </div>
+</section>
+\`\`\`
 
-/* Alternative: Liquid mercury effect */
+ALTERNATIVE - Mercury/Liquid Silver effect:
+\`\`\`css
 .mercury-text {
   background: linear-gradient(
     90deg,
     #b8c6db 0%,
-    #f5f7fa 25%,
-    #c3cfe2 50%,
-    #f5f7fa 75%,
+    #f5f7fa 20%,
+    #ffffff 40%,
+    #c3cfe2 60%,
+    #f5f7fa 80%,
     #b8c6db 100%
   );
   background-size: 300% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: mercuryFlow 6s linear infinite;
-}
-
-@keyframes mercuryFlow {
-  0% { background-position: 0% 0%; }
-  100% { background-position: 300% 0%; }
+  animation: metalShine 6s linear infinite;
 }
 \`\`\`
 
-COLORS: 
-- Background: Deep black #000000 or very dark gray #0A0A0A
-- Text gradient: Silver spectrum (#1a1a1a → #f5f5f5 → #4a4a4a)
-- Accents: Subtle white glow, chrome reflections
-- CTA buttons: Metallic gradient borders, glass fill
+COLORS:
+- Background: Pure black #000000 or #0A0A0A
+- Text uses metallic gradient (silver/chrome)
+- Accents: White at 10-20% opacity
 
-TYPOGRAPHY: 
-- Headlines: Heavy weight (700-900), large size (text-6xl to text-8xl)
-- Font: Inter, SF Pro Display, or Geist - clean geometric sans-serif
-- Letter-spacing: -0.02em to -0.04em (tight)
-- Text should be BIG for the metallic effect to shine
+TYPOGRAPHY:
+- Font: Use font-black (900 weight) for maximum effect
+- Size: text-6xl to text-8xl (MUST be large)
+- Tracking: tracking-tight or tracking-tighter
+- The metallic effect only looks good on BIG text
 
-LAYOUT:
-- Full viewport hero with centered content
-- Dark background to contrast with chrome text
-- Minimal elements - let the metal text be the star
-- Generous whitespace around headline
-
-BACKGROUND OPTIONS:
-Option A - Pure Dark: background: #000000 with subtle noise at 0.02 opacity
-Option B - Gradient Dark: radial-gradient(ellipse at center, #1a1a2e 0%, #000000 100%)
-Option C - Animated Mesh: Dark base with subtle animated gradient blobs at 0.1-0.2 opacity
-
-ANIMATIONS:
-- Shine sweep: gradient moves across text (6-10s)
-- Subtle float: text translateY 2-4px (8s)
-- On hover: shine speed increases
-- Staggered letter reveal on load
-- CTA buttons: border gradient rotates
-
-METALLIC BUTTONS:
-\`\`\`css
-.metal-button {
-  background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
-  border: 1px solid transparent;
-  position: relative;
-}
-.metal-button::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  background: linear-gradient(135deg, #4a4a4a, #8a8a8a, #4a4a4a);
-  border-radius: inherit;
-  z-index: -1;
-}
-\`\`\`
+BACKGROUND VARIATIONS:
+1. Pure black: bg-black
+2. With gradient: bg-gradient-to-br from-black via-[#0a0a1a] to-black
+3. With subtle orb: Add single blurred circle at 10% opacity
 
 ⚠️ MANDATORY:
-- Preserve ALL content from video
-- Chrome effect works best on LARGE text
-- Keep background dark for contrast
-- Don't overuse - one headline with effect is enough`, category: "shader" },
+- MUST include the <style> tag with @keyframes metalShine
+- MUST use the .liquid-metal class on headline
+- Background MUST be dark (black or near-black)
+- Text MUST be large (text-6xl minimum)
+- Preserve ALL content from video`, category: "shader" },
   { id: "typography-mask", name: "Typography Hero", desc: "Giant Letters • Image Reveal • Editorial", fullDesc: "AWWWARDS STYLE: Bold editorial typography. Massive headline text (text-[15vw] or larger) as hero element. Text can have gradient fill or image texture via background-clip. Dark or light background depending on context. Strong typographic hierarchy. Magazine/editorial aesthetic. Generous whitespace.", category: "creative" },
   { id: "path-follower", name: "Roadmap Timeline", desc: "SVG Path • Progress Line • Scroll Story", fullDesc: "AWWWARDS STYLE: Clean timeline/roadmap design. Vertical or horizontal line connecting sections. Each section is a card/milestone along the path. Line can be animated with stroke-dashoffset on scroll. Subtle dots or icons mark each point. Clean minimal aesthetic. Works great for product stories, company history, feature roadmaps.", category: "motion" },
   
@@ -2673,128 +2672,132 @@ ANIMATIONS: Fade in up (y: 20px → 0), border draw (width 0% → 100%), button 
 - Count screens in video and ensure ALL are represented`, category: "light" },
   
   // === SUPER HERO - ANIMATED LIQUID BACKGROUNDS ===
-  { id: "super-hero", name: "Super Hero", desc: "Liquid Gradient • Animated Blob • Premium Hero", fullDesc: `SUPER HERO - Animated liquid gradient backgrounds. Premium startup landing aesthetic.
+  { id: "super-hero", name: "Super Hero", desc: "Liquid Gradient • Animated Blob • Premium Hero", fullDesc: `SUPER HERO - Animated liquid gradient backgrounds like Framer's AnimatedLiquidBackground.
 
-HERO BACKGROUND: Full viewport animated liquid gradient background. Use ONE of these 6 variations:
+⚠️ CRITICAL: You MUST include this EXACT CSS in a <style> tag and the orb divs in the hero section. This creates the animated liquid background effect.
 
-VARIATION 1 - COSMIC PURPLE:
-- Deep space gradient: #0F0720 → #1A0B3E → #2D1B69
-- Floating orbs: purple #8B5CF6, pink #EC4899, blue #3B82F6
-- Orbs blur(100px) with mix-blend-mode: screen
-- Animation: Each orb floats in unique path, 15-25s duration, infinite
-
-VARIATION 2 - OCEAN TEAL:
-- Deep ocean: #042F2E → #0F766E → #14B8A6
-- Floating orbs: teal #14B8A6, cyan #06B6D4, emerald #10B981
-- Subtle wave motion overlay
-- Animation: Gentle drift like underwater, 20-30s
-
-VARIATION 3 - SUNSET WARMTH:
-- Warm gradient: #1F1005 → #7C2D12 → #EA580C
-- Floating orbs: orange #F97316, amber #F59E0B, rose #FB7185
-- Glow intensifies at center
-- Animation: Pulsing warmth, 12-18s
-
-VARIATION 4 - MIDNIGHT BLUE:
-- Dark blue: #020617 → #0F172A → #1E3A8A
-- Floating orbs: blue #3B82F6, indigo #6366F1, sky #0EA5E9
-- Northern lights effect with vertical streaks
-- Animation: Slow aurora drift, 25-35s
-
-VARIATION 5 - NEON CYBER:
-- Pure black #000000 base
-- Floating orbs: magenta #FF00FF, cyan #00FFFF, lime #ADFF2F
-- High contrast, harsh glow edges
-- Animation: Fast chaotic movement, 8-12s
-
-VARIATION 6 - MINIMAL MONO:
-- Near-white #FAFAFA or near-black #0A0A0A
-- Single subtle gradient orb in brand color
-- Ultra-minimal, almost invisible
-- Animation: Barely perceptible drift, 30-40s
-
-CSS IMPLEMENTATION (Use for all variations):
+STEP 1 - Add this CSS in <style> tag at the top of your code:
 \`\`\`css
-.hero-bg {
-  position: relative;
-  overflow: hidden;
-  background: var(--bg-gradient);
-}
-
-.hero-bg::before,
-.hero-bg::after,
-.hero-bg .orb {
-  content: '';
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(100px);
-  mix-blend-mode: screen;
-  animation: float var(--duration) ease-in-out infinite;
-}
-
-.orb-1 {
-  width: 600px; height: 600px;
-  background: var(--orb-color-1);
-  top: -200px; left: -100px;
-  animation-delay: 0s;
-}
-
-.orb-2 {
-  width: 500px; height: 500px;
-  background: var(--orb-color-2);
-  bottom: -150px; right: -100px;
-  animation-delay: -5s;
-}
-
-.orb-3 {
-  width: 400px; height: 400px;
-  background: var(--orb-color-3);
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  animation-delay: -10s;
-}
-
-@keyframes float {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  25% { transform: translate(50px, -30px) scale(1.05); }
-  50% { transform: translate(-30px, 50px) scale(0.95); }
-  75% { transform: translate(-50px, -20px) scale(1.02); }
-}
+<style>
+  @keyframes blob1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(80px, -50px) scale(1.1); }
+    50% { transform: translate(-40px, 80px) scale(0.9); }
+    75% { transform: translate(-80px, -30px) scale(1.05); }
+  }
+  @keyframes blob2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(-70px, 40px) scale(1.15); }
+    66% { transform: translate(50px, -60px) scale(0.85); }
+  }
+  @keyframes blob3 {
+    0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+    50% { transform: translate(60px, 60px) scale(1.1) rotate(180deg); }
+  }
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.7;
+    will-change: transform;
+    pointer-events: none;
+  }
+  .orb-1 {
+    width: 600px; height: 600px;
+    background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+    top: -150px; left: -150px;
+    animation: blob1 20s ease-in-out infinite;
+  }
+  .orb-2 {
+    width: 500px; height: 500px;
+    background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+    bottom: -100px; right: -100px;
+    animation: blob2 25s ease-in-out infinite;
+  }
+  .orb-3 {
+    width: 450px; height: 450px;
+    background: linear-gradient(135deg, #EC4899 0%, #F97316 100%);
+    top: 40%; left: 50%;
+    animation: blob3 18s ease-in-out infinite;
+  }
+</style>
 \`\`\`
 
-COLORS: Choose based on variation. Text always high contrast - white on dark, dark on light.
+STEP 2 - Hero section structure (MUST include the orb divs):
+\`\`\`html
+<section class="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#0F0720] via-[#1A0B3E] to-[#0F0720]">
+  <!-- Animated Liquid Background Orbs - MUST INCLUDE -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  
+  <!-- Content Container - above orbs -->
+  <div class="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 text-center">
+    <!-- Your content here -->
+  </div>
+</section>
+\`\`\`
 
-TYPOGRAPHY: Modern sans-serif (Inter, SF Pro, Geist). Headlines: weight 600-700, large (text-5xl to text-7xl), tight tracking (-0.02em). Subheadlines: weight 400, text-xl, lower opacity.
+COLOR VARIATIONS (change orb gradients and section background):
 
-LAYOUT: Full viewport hero (min-h-screen). Content centered with max-w-4xl. Generous padding. Clear CTA buttons.
+COSMIC PURPLE (default):
+- Section bg: from-[#0F0720] via-[#1A0B3E] to-[#0F0720]
+- Orb 1: #8B5CF6 → #EC4899 (purple to pink)
+- Orb 2: #3B82F6 → #8B5CF6 (blue to purple)
+- Orb 3: #EC4899 → #F97316 (pink to orange)
 
-KEY EFFECTS:
-- Animated gradient orbs in background (3-4 orbs)
-- Each orb: border-radius: 50%, filter: blur(100px), mix-blend-mode: screen
-- Glass effect on cards: bg-white/10 backdrop-blur-xl
-- Subtle grain overlay: noise texture at 0.02 opacity
-- Content floats above with z-index
+OCEAN TEAL:
+- Section bg: from-[#042F2E] via-[#0F766E] to-[#042F2E]
+- Orb 1: #14B8A6 → #06B6D4 (teal to cyan)
+- Orb 2: #06B6D4 → #10B981 (cyan to emerald)
+- Orb 3: #10B981 → #14B8A6 (emerald to teal)
 
-ANIMATIONS:
-- Orbs FLOAT: translateX/Y in circular paths, 15-30s infinite
-- Orbs PULSE: scale 0.95 → 1.05 slowly
-- Text FADE IN: opacity 0 → 1, translateY 20px → 0
-- Staggered reveal: 100-200ms delay between elements
-- CTA buttons: subtle glow pulse on hover
+SUNSET WARMTH:
+- Section bg: from-[#1F1005] via-[#7C2D12] to-[#1F1005]
+- Orb 1: #F97316 → #FB7185 (orange to rose)
+- Orb 2: #F59E0B → #F97316 (amber to orange)
+- Orb 3: #FB7185 → #EF4444 (rose to red)
 
-GLASS CARDS (if needed):
-- bg-white/5 or bg-black/5 (based on theme)
-- backdrop-blur-2xl
-- border border-white/10
-- rounded-2xl to rounded-3xl
-- Shadow with brand color tint
+MIDNIGHT BLUE:
+- Section bg: from-[#020617] via-[#0F172A] to-[#020617]
+- Orb 1: #3B82F6 → #6366F1 (blue to indigo)
+- Orb 2: #6366F1 → #0EA5E9 (indigo to sky)
+- Orb 3: #0EA5E9 → #3B82F6 (sky to blue)
 
-⚠️ MANDATORY: 
-- Preserve ALL content from video
-- Background animation should NOT distract from content
-- Keep animation smooth (60fps) - use will-change: transform
-- Provide fallback for reduced-motion preference
-- Choose variation that MATCHES the mood of the video content`, category: "creative" },
+NEON CYBER:
+- Section bg: #000000
+- Orb 1: #FF00FF → #00FFFF (magenta to cyan)
+- Orb 2: #00FFFF → #ADFF2F (cyan to lime)
+- Orb 3: #ADFF2F → #FF00FF (lime to magenta)
+
+TYPOGRAPHY: 
+- Headlines: text-5xl md:text-7xl font-bold text-white
+- Subheadlines: text-xl text-white/70 max-w-2xl
+- Use Inter, system-ui, or sans-serif font
+
+GLASS CARDS (for feature sections):
+\`\`\`html
+<div class="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+  <!-- Card content -->
+</div>
+\`\`\`
+
+CTA BUTTONS:
+\`\`\`html
+<button class="px-8 py-4 bg-white text-[#0F0720] font-semibold rounded-full hover:bg-white/90 transition-all">
+  Get Started
+</button>
+<button class="px-8 py-4 bg-white/10 text-white border border-white/20 rounded-full hover:bg-white/20 transition-all">
+  Learn More
+</button>
+\`\`\`
+
+⚠️ MANDATORY:
+- MUST include the <style> tag with @keyframes
+- MUST include the 3 orb divs in the hero section
+- Content MUST have relative z-10 to appear above orbs
+- Section MUST have overflow-hidden
+- Preserve ALL content from video`, category: "creative" },
 ];
 
 export default function StyleInjector({ value, onChange, disabled, referenceImage, onReferenceImageChange }: StyleInjectorProps) {
