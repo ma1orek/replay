@@ -461,6 +461,7 @@ interface ChatMessage {
 type ViewMode = "preview" | "code" | "flow" | "design" | "input";
 type SidebarMode = "config" | "chat";
 type SidebarTab = "chat" | "tree" | "style";
+type SidebarView = "projects" | "detail"; // New: toggle between project list and detail view
 
 // Different loading messages for each tab - extended for longer generations
 const STREAMING_MESSAGES_PREVIEW = [
@@ -1128,6 +1129,8 @@ function ReplayToolContent() {
   // Agentic Chat Sidebar
   const [sidebarMode, setSidebarMode] = useState<SidebarMode>("config");
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>("chat");
+  const [sidebarView, setSidebarView] = useState<SidebarView>("detail"); // projects list vs detail view
+  const [projectMenuOpen, setProjectMenuOpen] = useState<string | null>(null); // context menu for projects
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
@@ -7183,28 +7186,31 @@ export const shadows = {
 
       <div className="flex-1 flex overflow-hidden relative z-10">
         {/* Left Panel - Hidden on mobile */}
-        <div className="hidden md:flex w-[340px] border-r border-white/5 bg-black/40 backdrop-blur-sm flex-col">
+        <div className="hidden md:flex w-[200px] border-r border-white/5 bg-black/40 backdrop-blur-sm flex-col">
           
-          {/* HISTORY MODE */}
-          {showHistoryMode ? (
+          {/* YOUR PROJECTS Header - Always visible, toggles view */}
+          <div 
+            className="flex-shrink-0 px-4 py-3 border-b border-white/5 cursor-pointer hover:bg-white/[0.02] transition-colors"
+            onClick={() => setSidebarView(sidebarView === "projects" ? "detail" : "projects")}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Folder className="w-4 h-4 text-white/40" />
+                <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Your Projects</span>
+              </div>
+              <ChevronRight className={cn(
+                "w-4 h-4 text-white/30 transition-transform",
+                sidebarView === "projects" && "rotate-90"
+              )} />
+            </div>
+          </div>
+          
+          {/* PROJECTS LIST VIEW */}
+          {sidebarView === "projects" ? (
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-              {/* History Header - One line: History + Back */}
-              <div className="flex-shrink-0 p-4 border-b border-white/5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <History className="w-4 h-4 text-white/40" />
-                    <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Your Projects</span>
-                  </div>
-                  <button 
-                    onClick={() => setShowHistoryMode(false)}
-                    className="flex items-center gap-1 text-xs text-white/50 hover:text-white transition-colors"
-                  >
-                    <span>Back</span>
-                    <ChevronRight className="w-3 h-3" />
-                  </button>
-                </div>
-                {/* Search */}
-                <div className="mt-3 relative">
+              {/* Search */}
+              <div className="px-3 py-2 border-b border-white/5">
+                <div className="relative">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
                   <input
                     type="text"
@@ -7328,7 +7334,7 @@ export const shadows = {
                                 regenerateThumbnail(newFlowId, genToLoad.videoUrl);
                               }
                             }
-                            setShowHistoryMode(false);
+                            setSidebarView("detail"); // Switch to detail view
                             setGenerationComplete(true);
                             setSidebarMode("chat");
                             setMobilePanel("chat"); // Also switch mobile to chat
@@ -7403,22 +7409,52 @@ export const shadows = {
                                 >
                                   <button
                                     onClick={() => { 
-                                      setRenamingId(gen.id); 
-                                      setRenameValue(gen.title); 
                                       setHistoryMenuOpen(null);
+                                      // Load this generation and open settings
+                                      setActiveGeneration(gen);
+                                      setShowProjectSettings(true);
                                     }}
                                     className="w-full px-3 py-2 text-left text-xs text-white/70 hover:bg-white/5 flex items-center gap-2"
                                   >
-                                    <Pencil className="w-3 h-3" /> Rename
+                                    <Settings className="w-3 h-3" /> Settings
                                   </button>
                                   <button
-                                    onClick={() => duplicateGeneration(gen)}
+                                    onClick={() => {
+                                      setHistoryMenuOpen(null);
+                                      duplicateGeneration(gen);
+                                    }}
                                     className="w-full px-3 py-2 text-left text-xs text-white/70 hover:bg-white/5 flex items-center gap-2"
                                   >
                                     <Copy className="w-3 h-3" /> Duplicate
                                   </button>
                                   <button
-                                    onClick={() => confirmDeleteGeneration(gen.id, gen.title)}
+                                    onClick={() => {
+                                      setHistoryMenuOpen(null);
+                                      // Export - download the project
+                                      if (!isPaidPlan) {
+                                        setUpgradeFeature("download");
+                                        setShowUpgradeModal(true);
+                                      } else if (gen.code) {
+                                        const blob = new Blob([gen.code], { type: "text/html" });
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement("a");
+                                        a.href = url;
+                                        a.download = `${gen.title || "project"}.html`;
+                                        a.click();
+                                        URL.revokeObjectURL(url);
+                                        showToast("Project exported!", "success");
+                                      }
+                                    }}
+                                    className="w-full px-3 py-2 text-left text-xs text-white/70 hover:bg-white/5 flex items-center gap-2"
+                                  >
+                                    <Download className="w-3 h-3" /> Export
+                                  </button>
+                                  <div className="border-t border-white/5 my-1" />
+                                  <button
+                                    onClick={() => {
+                                      setHistoryMenuOpen(null);
+                                      confirmDeleteGeneration(gen.id, gen.title);
+                                    }}
                                     className="w-full px-3 py-2 text-left text-xs text-red-400/80 hover:bg-red-500/10 flex items-center gap-2"
                                   >
                                     <Trash2 className="w-3 h-3" /> Delete
@@ -7565,8 +7601,42 @@ export const shadows = {
                   </div>
                 )}
               </div>
+              
+              {/* New Project Button */}
+              <div className="flex-shrink-0 p-3 border-t border-white/5">
+                <button
+                  onClick={() => {
+                    // Create new project
+                    setGeneratedCode(null);
+                    setDisplayedCode("");
+                    setEditableCode("");
+                    setPreviewUrl(null);
+                    setGenerationComplete(false);
+                    setSidebarMode("config");
+                    setChatMessages([]);
+                    setActiveGeneration(null);
+                    setGenerationTitle("Untitled Project");
+                    setFlowNodes([]);
+                    setFlowEdges([]);
+                    setStyleInfo(null);
+                    setPublishedUrl(null);
+                    setStyleDirective(getDefaultStyleName());
+                    setStyleReferenceImage(null);
+                    setFlows([]);
+                    setSelectedFlowId(null);
+                    setSidebarView("detail");
+                    localStorage.removeItem("replay_sidebar_mode");
+                    localStorage.removeItem("replay_generated_code");
+                    localStorage.removeItem("replay_generation_title");
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs text-white/50 hover:text-white/70 hover:bg-white/[0.05] transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>New Project</span>
+                </button>
+              </div>
             </div>
-          ) : sidebarMode === "chat" && generationComplete ? (
+          ) : sidebarView === "detail" && sidebarMode === "chat" && generationComplete ? (
             /* AGENTIC CHAT MODE - After Generation - With Tabs */
             <div className="flex-1 flex flex-col min-h-0">
               {/* Header: Project Name + Actions */}
@@ -7595,8 +7665,8 @@ export const shadows = {
                   <button onClick={() => { setGeneratedCode(null); setDisplayedCode(""); setEditableCode(""); setPreviewUrl(null); setGenerationComplete(false); setSidebarMode("config"); setChatMessages([]); setActiveGeneration(null); setGenerationTitle("Untitled Project"); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_sidebar_mode"); localStorage.removeItem("replay_generated_code"); localStorage.removeItem("replay_generation_title"); }} className="p-1 rounded hover:bg-white/5" title="New">
                     <Plus className="w-3.5 h-3.5 text-white/30 hover:text-white/50" />
                   </button>
-                  <button onClick={() => setShowHistoryMode(true)} className="p-1 rounded hover:bg-white/5" title="Your Projects">
-                    <History className="w-3.5 h-3.5 text-white/30 hover:text-white/50" />
+                  <button onClick={() => setSidebarView("projects")} className="p-1 rounded hover:bg-white/5" title="Your Projects">
+                    <Folder className="w-3.5 h-3.5 text-white/30 hover:text-white/50" />
                   </button>
                   <button onClick={() => setShowProjectSettings(true)} className="p-1 rounded hover:bg-white/5" title="Settings">
                     <Settings className="w-3.5 h-3.5 text-white/30 hover:text-white/50" />
@@ -8255,7 +8325,7 @@ export const shadows = {
                 </div>
               )}
             </div>
-          ) : (
+          ) : sidebarView === "detail" ? (
             /* CONFIG MODE - Before Generation */
             <div 
               className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar"
@@ -8321,11 +8391,11 @@ export const shadows = {
                     <Plus className="w-4 h-4 text-white/40 group-hover:text-white/60" />
                   </button>
                   <button 
-                    onClick={() => setShowHistoryMode(true)}
+                    onClick={() => setSidebarView("projects")}
                     className="p-1.5 rounded-lg hover:bg-white/5 transition-colors group"
-                    title="View history"
+                    title="View projects"
                   >
-                    <History className="w-4 h-4 text-white/40 group-hover:text-white/60" />
+                    <Folder className="w-4 h-4 text-white/40 group-hover:text-white/60" />
                   </button>
                   <button 
                     onClick={() => setShowProjectSettings(true)}
@@ -8729,7 +8799,7 @@ export const shadows = {
                 </div>
               </div>
             </div>
-          )}
+          ) : null}
         </div>
 
         {/* Main Content */}
