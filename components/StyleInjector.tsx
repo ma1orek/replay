@@ -40,6 +40,8 @@ const STYLE_TOOLTIPS: Record<string, string> = {
   "neomorphism": "Soft, extruded UI elements that appear to push out from the background. Subtle shadows create depth.",
   "retro-pixel": "Nostalgic pixel art and retro gaming aesthetic. 8-bit vibes with modern polish.",
   "cyberpunk": "Neon-soaked cyberpunk aesthetic. Glowing accents, dark backgrounds, futuristic typography.",
+  "void-terminal": "Dark command center interface. Futuristic spaceship OS aesthetic with modular bento grid, monospace numbering, and reveal animations.",
+  "ivory-command": "Light command center on warm ivory. Architectural precision with modular grid, electric blue accents, and clean system interface aesthetic.",
 };
 
 function getStyleTooltip(preset: { id: string; name: string; desc: string }): string {
@@ -111,6 +113,22 @@ export const StylePreview = ({ styleId }: { styleId: string }) => {
         {/* System text */}
         <div className="absolute top-1 left-1 text-[4px] font-mono text-[#777]">// 01</div>
         <div className="absolute bottom-1 right-1 text-[4px] font-bold text-[#E6E6E6] uppercase tracking-tight">SYS</div>
+      </div>
+    ),
+    "ivory-command": (
+      <div className="w-full h-full bg-[#FAFAF8] relative overflow-hidden">
+        {/* Grid lines */}
+        <div className="absolute inset-0 grid grid-cols-2 grid-rows-2">
+          <div className="border-r border-b border-[#E8E8E5]" />
+          <div className="border-b border-[#E8E8E5]" />
+          <div className="border-r border-[#E8E8E5]" />
+          <div />
+        </div>
+        {/* System text */}
+        <div className="absolute top-1 left-1 text-[4px] font-mono text-[#999]">— 01</div>
+        <div className="absolute bottom-1 right-1 text-[4px] font-bold text-[#1A1A1A] uppercase tracking-tight">SYS</div>
+        {/* Accent dot */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[#0066FF]" />
       </div>
     ),
     "aura-glass": (
@@ -1484,6 +1502,51 @@ ANIMATIONS:
 - Each screen = separate section with working navigation links between them
 - Style changes APPEARANCE only, NEVER removes content or screens
 - Count screens in video and ensure ALL are represented`, category: "dark" },
+  { id: "ivory-command", name: "Ivory Command System", desc: "Light Terminal • Modular Grid • Blue Accent", fullDesc: `LIGHT COMMAND CENTER - Clean, architectural system interface on ivory.
+
+COLORS: Bg #FAFAF8 (warm ivory), text #1A1A1A (near-black), meta #888888 (gray), borders #E8E8E5. Primary accent #0066FF (electric blue). Secondary accent #FF3B30 (signal red) for alerts/highlights. NO gradients - pure flat precision.
+
+TYPOGRAPHY:
+- PRIMARY: Inter/SF Pro, UPPERCASE headings, weight 600-700, tracking -0.02em, text-5xl to text-8xl for hero.
+- SECONDARY: IBM Plex Mono/JetBrains Mono for — 01 numbering, timestamps, status. Size 11-13px, color #888.
+- CONTRAST: Extremely tight tracking on large text (-0.04em), spacious line-height on body (1.6).
+
+LAYOUT: Modular "Bento Box" grid. EVERY section has visible border-bottom and/or border-right (1px #E8E8E5). Large padding p-8 to p-12. Asymmetric 60/40 or 70/30 splits.
+
+KEY SECTIONS:
+- HERO: Massive brand name with blue accent dot. Status line "— SYSTEM ACTIVE / 2024". Clean empty space.
+- NAV: Technical style [ Home ] [ Work ] [ About ] with underline on hover.
+- PROJECTS: Grid cards with image hover reveal. Number labels "01 / 04".
+- FEATURES: Icon + text rows with thin separators. Blue accent on hover.
+- MARQUEE: "SERVICES • CAPABILITIES • INDEX •" infinite scroll.
+- STATS: Large numbers (300+) with small labels below.
+- FOOTER: Minimal with social icons and copyright.
+
+HOVER EFFECTS:
+- Cards: subtle shadow-lg appears, border darkens to #CCC
+- Links: underline draws left→right (width 0→100%)
+- Images: slight scale(1.02) with overflow hidden
+- Buttons: bg fills from left with accent color
+
+ANIMATIONS:
+- TEXT REVEAL: headings animate from bottom (translateY 100%→0) inside overflow:hidden
+- SCROLL TRIGGER: borders draw/expand width 0%→100%
+- STAGGER: children fade in with 50ms delay
+- SMOOTH SCROLL: Lenis-style inertia momentum
+- MARQUEE: infinite horizontal scroll, pauseOnHover
+
+SIGNATURE DETAILS:
+- Blue dot accent on key elements (•)
+- Thin 1px borders everywhere creating grid
+- Monospace timestamps/numbers contrast with clean sans-serif
+- Generous whitespace - let elements breathe
+- Subtle drop shadows only on interactive elements
+
+⚠️ MANDATORY FLOW PRESERVATION:
+- If video shows MULTIPLE SCREENS/PAGES → create SEPARATE navigable sections
+- Each screen = separate section with working navigation links between them
+- Style changes APPEARANCE only, NEVER removes content or screens
+- Count screens in video and ensure ALL are represented`, category: "light" },
   { id: "aura-glass", name: "High-End Dark Glass", desc: "Aurora Glow • Spotlight • Premium", fullDesc: `PREMIUM DARK GLASS - High-end SaaS aesthetic.
 
 COLORS: Solid #050505 black bg. Text white #ffffff. Muted #a1a1aa. Accent glow: purple rgba(139,92,246,0.12), cyan rgba(6,182,212,0.08).
