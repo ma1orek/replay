@@ -1015,28 +1015,115 @@ const STYLE_PRESETS = [
   { id: "style-reference", name: "Style Reference", desc: "Upload image, copy its style", fullDesc: "Apply the visual style from the reference image: use its color palette, typography, spacing, border-radius, and overall aesthetic.", category: null },
   
   // === CREATIVE & EXPERIMENTAL ===
-  { id: "particle-brain", name: "Particle Brain", desc: "AI Cloud • 50k Points • WebGL", fullDesc: `NEURAL NETWORK PARTICLE AESTHETIC - AI meets data visualization.
+  { id: "particle-brain", name: "Particle Brain", desc: "AI Cloud • 50k Points • WebGL", fullDesc: `PARTICLE BRAIN - A living neural network rendered in light. Where AI visualization becomes art.
 
-COLORS: Deep black #0a0a0a bg, particles in cyan #00fff2 and magenta #ff00ff with purple #8b5cf6 connections.
+THE SOUL: You're looking at a digital consciousness awakening. Thousands of particles forming connections, synapses firing, thoughts materializing in real-time. This is what it would look like if you could see an AI think. Not cold and robotic - alive, organic, breathing with data.
 
-TYPOGRAPHY: Geist Mono for headlines, weight 300-400 (light), UPPERCASE with extreme tracking (0.3em). Body in Inter light.
+COLORS (The Neural Palette):
+- Background: #030303 (deeper than black, the void of digital space)
+- Primary particles: #00FFF2 (electric cyan - the synapses)
+- Secondary particles: #FF00FF (neural magenta - the signals)
+- Connection lines: #8B5CF6 (purple - the pathways)
+- Glow aura: rgba(0,255,242,0.3) (cyan haze)
+- Text: #FAFAFA (bright white emerging from darkness)
+- Muted: #525252 (context fades into background)
 
-LAYOUT: Full-viewport hero with particle cloud animation. Content floats above. Minimal sections, maximum impact.
+TYPOGRAPHY:
+- Headlines: Geist Mono or JetBrains Mono
+- Weight: 300-400 (LIGHT - the future is weightless)
+- Hero: text-7xl to text-[10rem], UPPERCASE
+- Tracking: 0.2em to 0.4em (extreme letter-spacing)
+- Body: Inter Light (300), generous line-height 2.0
+- Numbers/Data: Monospace, with subtle glow effect
 
-KEY EFFECTS:
-- CSS PARTICLES: 200+ tiny divs (2-4px) with absolute positioning, animation: float 3-8s infinite ease-in-out with random delays
-- Each particle: background: radial-gradient(circle, #00fff2 0%, transparent 70%)
-- Connection lines: Thin 1px divs connecting nearby particles
-- MOUSE INTERACTION: particles repel from cursor using CSS custom properties
-- Glow effect: box-shadow: 0 0 20px currentColor
+LAYOUT:
+- Hero: 100vh with particle field as entire background
+- Content: Floats ABOVE the particle layer (z-index: 10+)
+- Sections: bg-transparent, content visible through particles
+- Cards: bg-black/80 backdrop-blur-xl for readability
+- Max-width: 6xl for content, particles extend edge-to-edge
 
-ANIMATIONS:
-- Particles float with sin wave (translateY + subtle rotate)
-- On scroll: particles drift and scatter
-- On hover: nearby particles explode outward
-- Subtle RGB chromatic aberration on text
+THE PARTICLE SYSTEM (Heart of the Style):
+Create 150-300 particles using CSS (no canvas needed):
+\`\`\`css
+.particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: radial-gradient(circle, var(--particle-color) 0%, transparent 70%);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--particle-color), 0 0 20px var(--particle-color);
+  animation: float var(--duration) ease-in-out infinite;
+  animation-delay: var(--delay);
+}
 
-⚠️ MANDATORY: Preserve ALL content from video.`, category: "creative" },
+@keyframes float {
+  0%, 100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.6; }
+  25% { transform: translateY(-20px) translateX(10px) scale(1.1); opacity: 1; }
+  50% { transform: translateY(-10px) translateX(-5px) scale(0.9); opacity: 0.8; }
+  75% { transform: translateY(-30px) translateX(-15px) scale(1.05); opacity: 0.9; }
+}
+\`\`\`
+
+PARTICLE DISTRIBUTION:
+- Randomly positioned across viewport
+- --duration: random between 4s-12s
+- --delay: random between 0s-5s
+- Colors alternate between cyan (#00FFF2) and magenta (#FF00FF)
+- Cluster density higher in center, sparse at edges
+
+CONNECTION LINES:
+- Thin 1px lines connecting nearby particles
+- background: linear-gradient(90deg, transparent, #8B5CF6, transparent)
+- Animate opacity 0→0.3→0 over 3-5s
+- Only connect particles within 150px of each other
+
+NEURAL GLOW EFFECTS:
+- Text shadow: 0 0 30px rgba(0,255,242,0.5)
+- Cards: border border-cyan-500/20
+- Buttons: Cyan border with magenta glow on hover
+- Hero text: Animated gradient from cyan to magenta
+
+ANIMATIONS (Organic, Alive):
+- PARTICLE FLOAT: Each particle moves independently, different speeds
+- SYNAPTIC PULSE: Random particles "fire" - scale 1→1.5→1, brightness spike
+- CONNECTION FLASH: Lines brighten momentarily like signal transmission
+- SCROLL PARALLAX: Particles move at 0.2x scroll speed (floating effect)
+- TEXT EMERGENCE: Letters fade in with 50ms stagger + subtle y movement
+- CHROMATIC ABERRATION: On hover, text shifts RGB channels by 1-2px
+
+MOUSE INTERACTION:
+Track cursor position and create repulsion effect:
+\`\`\`javascript
+// Particles within 100px of cursor move away
+// Creates "pushing through water" effect
+// Use CSS custom properties for performance
+\`\`\`
+
+SIGNATURE ELEMENTS:
+- Floating particle cloud behind all content
+- Neural network visualization in hero
+- Data points that pulse and connect
+- Glowing CTA buttons with particle trail on hover
+- Stats that appear to be "processing" with flickering numbers
+- Section transitions where particles scatter and reform
+
+THE WOW FACTOR:
+- Page loads with particles assembling from chaos into form
+- Cursor creates ripples through the particle field
+- Scrolling feels like moving through a digital brain
+- Random "thought pulses" - clusters of particles brighten together
+- Content emerges from the neural noise
+
+This is not a website. This is consciousness visualized. Data made beautiful.
+
+⚠️ CONTENT RULES:
+- Extract ALL content from video: headlines, features, sections, data
+- Keep the exact structure and flow from video
+- Particles are BACKGROUND - content from video floats above
+- Every section from video must exist
+- Numbers and statistics from video must be preserved
+- Transform ONLY the visual style, never remove content`, category: "creative" },
   { id: "old-money", name: "Old Money Heritage", desc: "Cream • Gold Serif • Classic", fullDesc: `OLD MONEY LUXURY - Generational wealth aesthetics.
 
 COLORS: Cream #F5F0E8 bg, rich navy #1C2331 text, gold accents #C9A962 and #B8860B. Burgundy #722F37 for subtle highlights.
@@ -1567,29 +1654,103 @@ ANIMATIONS:
 - No aggressive motion
 
 ⚠️ MANDATORY: Preserve ALL content from video.`, category: "dark" },
-  { id: "void-spotlight", name: "Void Spotlight", desc: "Deep Void • Mouse Glow • Heavy", fullDesc: `VOID SPOTLIGHT - Heavy dark minimalism with interactive light.
+  { id: "void-spotlight", name: "Void Spotlight", desc: "Deep Void • Mouse Glow • Heavy", fullDesc: `VOID SPOTLIGHT - The absence of light IS the design. Heavy, deliberate, cinematic darkness.
 
-COLORS: Pure black #000000 background. Text #e5e5e5 (not pure white). Borders appear only on hover. NO colors except white/black.
+THE SOUL: Picture a theater moments before the show. Pure darkness. Then a single spotlight cuts through, revealing only what matters. Everything else exists but remains hidden until you seek it. This is anti-design at its most intentional - the void itself is the aesthetic.
 
-TYPOGRAPHY: System UI or Inter. Weight 400-500. Clean, minimal. Large hero text, small body.
+COLORS (Strictly Enforced):
+- Background: #000000 (TRUE black, no gray, no blue tint)
+- Primary text: #E5E5E5 (warm off-white, NOT pure #fff)
+- Secondary text: #737373 (medium gray, barely visible)
+- Spotlight glow: rgba(255,255,255,0.08) center, fading to transparent
+- Borders: transparent by default, #333333 on hover
+- NO accent colors. This is monochrome only.
 
-LAYOUT: Sparse, heavy. Few elements. Maximum negative space. Content floats in void.
+TYPOGRAPHY:
+- Headlines: Inter or System UI, weight 300-400 (LIGHT, not bold)
+- Hero: text-7xl to text-9xl, tracking -0.04em (super tight)
+- Body: weight 400, text-lg, line-height 1.8 (airy)
+- Micro: 10-11px, uppercase, tracking-[0.2em], color #525252
+- Numbers: Tabular, weight 300
 
-KEY EFFECTS:
-- Cards invisible until hover: border border-transparent hover:border-white/20
-- Optional: CSS spotlight that follows mouse using custom properties
-- Very subtle gradient on hero area only
-- High contrast but minimal decoration
+THE VOID PHILOSOPHY:
+- Maximum negative space - let elements BREATHE
+- Content floats in absolute darkness
+- Borders and outlines are INVISIBLE until interaction
+- Nothing decorative. Every pixel earns its place.
+- The empty space is as designed as the content
 
-ANIMATIONS:
-- Borders fade in on hover (300ms)
-- Content reveals slowly from darkness
-- Optional: radial-gradient follows cursor position
-- Everything feels heavy, deliberate
+LAYOUT:
+- Hero: 100vh with single massive headline, nothing else visible initially
+- Sections: py-40 to py-56 (extreme spacing)
+- Content width: max-w-4xl or narrower
+- Elements spaced far apart, isolated in the void
+- Grid: Invisible until hover reveals structure
 
-The void is the design. Light reveals content on demand.
+THE SPOTLIGHT EFFECT (Critical!):
+Create a mouse-following spotlight using CSS custom properties:
+\`\`\`css
+.spotlight-container {
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+  background: radial-gradient(
+    600px circle at var(--mouse-x) var(--mouse-y),
+    rgba(255,255,255,0.06) 0%,
+    transparent 40%
+  );
+}
+\`\`\`
+Update --mouse-x and --mouse-y with JavaScript mousemove.
 
-⚠️ MANDATORY: Preserve ALL content from video.`, category: "dark" },
+INVISIBLE CARDS:
+- Default state: bg-transparent border border-transparent
+- Hover state: border-white/10, bg-white/[0.02]
+- Transition: 500ms ease-out (SLOW, deliberate)
+- No shadows, no glow - just subtle border reveal
+- Content inside fades from opacity 0.6 to 1
+
+SIGNATURE ELEMENTS:
+- Floating text that appears to hover in void
+- Cards that don't exist until you find them
+- Thin hairline borders that draw themselves on scroll
+- Single-word headlines with massive tracking
+- Footer that's barely visible until scrolled to
+
+ANIMATIONS (Heavy, Slow, Deliberate):
+- SPOTLIGHT FOLLOW: Smooth cursor tracking with 0.1 lerp factor
+- BORDER REVEAL: width 0% → 100% on scroll, 1.5s duration
+- FADE FROM VOID: opacity 0 + blur(20px) → opacity 1 + blur(0), 800ms
+- HOVER EMERGENCE: 500ms ease-out, feels like surfacing from deep water
+- TEXT REVEAL: Mask animation revealing text letter by letter
+- NO BOUNCY ANIMATIONS - everything moves with weight and purpose
+
+SCROLL BEHAVIOR:
+- Lenis smooth scroll with 0.08 lerp (heavy inertia)
+- Elements fade in SLOWLY as they enter viewport
+- Parallax at 0.1 factor (barely perceptible)
+- Sections feel like rooms you're walking through in darkness
+
+MICRO-INTERACTIONS:
+- Buttons: No visible border until hover, then hairline appears
+- Links: Opacity 0.5 → 1, underline draws from center outward
+- Cards: Entire card is a hover target, content brightens together
+- Cursor: Consider custom cursor that's just a subtle glow
+
+THE WOW FACTOR:
+- The first impression is... nothing. Pure black screen.
+- Then your cursor moves and light follows
+- Content emerges from the void like secrets being revealed
+- The minimalism is so extreme it becomes maximalism
+- Users feel like they're discovering hidden content
+
+This is not dark mode. This is the void. The absence is the presence.
+
+⚠️ CONTENT RULES:
+- Extract ALL content from video: headlines, features, sections
+- Keep the exact structure and flow from video
+- Transform ONLY the visual style - hide it in darkness, but keep ALL of it
+- Every section from video exists, just revealed through interaction
+- Numbers and data from video must be preserved exactly`, category: "dark" },
   { id: "dark-cosmos", name: "Dark Cosmos", desc: "Purple/Cyan Glow • Glass • Float", fullDesc: `COSMIC DARK - Space-inspired glass morphism.
 
 COLORS: Deep black #030303 bg. Two corner glows: purple rgba(139,92,246,0.1), cyan rgba(6,182,212,0.08). Text white, muted #9ca3af.
@@ -2662,7 +2823,89 @@ Recording stopped unexpectedly. System crash frozen in time.
   
   // === PREMIUM SAAS LANDING ===
   { id: "molten-aurora", name: "Molten Aurora SaaS", desc: "Volcanic Glow • Dark Glass • Orange Beam", fullDesc: "CRITICAL: Background is solid #0a0a0a black. Add ONE subtle orange/amber radial gradient at bottom center using CSS: background: radial-gradient(ellipse 80% 50% at 50% 100%, rgba(251,146,60,0.15) 0%, transparent 70%). Cards have bg-white/5 backdrop-blur-xl border border-white/10. Orange CTA button. NO overlapping backgrounds, NO multiple gradient layers, keep it minimal and clean.", category: "dark" },
-  { id: "midnight-aurora", name: "Midnight Aurora Fintech", desc: "Purple Glow • Neon Streaks • Blue Accent", fullDesc: "CRITICAL: Background is solid #050510 dark blue-black. Add ONE subtle purple glow at bottom: background: radial-gradient(ellipse 100% 40% at 50% 100%, rgba(139,92,246,0.12) 0%, transparent 60%). Glass cards with bg-white/5 backdrop-blur-xl. Blue/purple accent colors. NO overlapping elements, clean hierarchy.", category: "dark" },
+  { id: "midnight-aurora", name: "Midnight Aurora Fintech", desc: "Purple Glow • Neon Streaks • Blue Accent", fullDesc: `MIDNIGHT AURORA FINTECH - Premium dark fintech with ethereal purple northern lights.
+
+THE SOUL: Imagine standing in Iceland at midnight, watching purple aurora borealis dance across the sky. That cosmic, otherworldly glow bleeding into a premium banking interface. This is where Nordic mysticism meets Wall Street precision.
+
+COLORS (Non-negotiable):
+- Background: #050510 (deep space blue-black, NOT pure black)
+- Primary text: #F8FAFC (crisp white with blue undertone)
+- Secondary text: #94A3B8 (slate gray)
+- Aurora purple: #8B5CF6 (primary accent)
+- Aurora blue: #3B82F6 (secondary accent)
+- Aurora pink: #EC4899 (highlights)
+- Success green: #10B981 (for positive numbers)
+- Card surfaces: rgba(255,255,255,0.03)
+
+TYPOGRAPHY:
+- Headlines: Inter or SF Pro, weight 600-700, tracking -0.02em
+- Hero size: text-6xl to text-8xl with gradient text effect
+- Body: Inter weight 400, text-base, line-height 1.7
+- Numbers/Data: Tabular nums, JetBrains Mono for financial figures
+- Micro text: 11px, uppercase, tracking-widest for labels
+
+LAYOUT:
+- Hero: Full viewport with aurora glow at bottom
+- Content: max-w-7xl centered, generous py-24 to py-32 sections
+- Cards: Glass morphism floating above the void
+- Grid: 12-column for data, asymmetric for features
+- Dashboard elements: Bento-style grid with varying card sizes
+
+THE AURORA EFFECT (Critical!):
+Create the northern lights glow using layered gradients:
+\`\`\`css
+background: 
+  radial-gradient(ellipse 80% 50% at 20% 100%, rgba(139,92,246,0.15) 0%, transparent 50%),
+  radial-gradient(ellipse 60% 40% at 80% 100%, rgba(59,130,246,0.1) 0%, transparent 40%),
+  radial-gradient(ellipse 100% 30% at 50% 100%, rgba(236,72,153,0.08) 0%, transparent 35%),
+  #050510;
+\`\`\`
+
+GLASS CARDS:
+- bg-white/[0.03] backdrop-blur-xl
+- border border-white/[0.08]
+- rounded-2xl
+- Hover: border-white/[0.15], shadow-lg shadow-purple-500/10
+- Inner glow on focus: box-shadow: inset 0 1px 0 rgba(255,255,255,0.1)
+
+SIGNATURE ELEMENTS:
+- Neon streaks: Thin 1px lines with gradient from purple to blue, animate horizontally
+- Floating particles: Tiny dots (2-3px) drifting upward slowly, opacity 0.3-0.6
+- Data visualization: Glowing line charts with purple/blue gradients
+- Stats cards: Large numbers with animated counting effect
+- Progress bars: Gradient fill with subtle pulse animation
+
+ANIMATIONS (2026 Trends):
+- AURORA DRIFT: Background gradients slowly shift position (30s infinite)
+- CARD ENTRANCE: Fade up + scale 0.95→1, stagger 100ms, ease-out-expo
+- HOVER GLOW: Border and shadow transition 400ms ease-out
+- NUMBER COUNT: Counting animation for stats (2s ease-out)
+- PARTICLE FLOAT: translateY with sin wave, 8-15s infinite, random delays
+- STREAK ANIMATION: Horizontal line moves across, 3s infinite, with trail effect
+- SCROLL REVEAL: Elements fade in from bottom with blur(10px)→blur(0)
+
+MICRO-INTERACTIONS:
+- Buttons: Scale 0.98 on press, glow intensifies on hover
+- Cards: Slight 3D tilt on hover (transform: perspective(1000px) rotateX(2deg))
+- Links: Underline draws from left to right
+- Toggles: Smooth 300ms with spring physics
+- Charts: Data points glow on hover with tooltip
+
+THE WOW FACTOR:
+- Hero headline with animated gradient text (purple→blue→pink cycle)
+- Floating 3D credit card that rotates slowly
+- Real-time ticker with glowing numbers
+- Aurora that responds subtly to scroll position
+- Glass morphism depth that feels truly premium
+
+This is not just dark mode. This is the night sky wrapped around a billion-dollar fintech.
+
+⚠️ CONTENT RULES:
+- Extract ALL content from video: headlines, features, stats, testimonials
+- Keep the exact structure and flow from video
+- Transform ONLY the visual style, never remove sections
+- If video shows 5 features, output must have 5 features
+- Numbers from video must be preserved exactly`, category: "dark" },
   { id: "airy-blue-aura", name: "Airy Blue Aura SaaS", desc: "White Void • Blue Blob • Highlight Pill", fullDesc: "White #ffffff background. ONE soft blue blob in hero: div with absolute positioning, w-[600px] h-[400px] bg-blue-400/20 rounded-full blur-[100px]. Clean Inter font. Headline pill highlight uses bg-blue-100 px-3 py-1 rounded-full inline. Indigo CTA.", category: "light" },
   { id: "halftone-beam", name: "Halftone Solar Beam Studio", desc: "Dot Matrix • Grid • Massive Wordmark", fullDesc: "Background #0a0a0a. Hero has ONE orange gradient beam: background: linear-gradient(180deg, transparent 0%, rgba(251,146,60,0.08) 50%, transparent 100%). Massive text-[12vw] font-black headline. Subtle dot pattern overlay at 3% opacity. NO overlapping gradients.", category: "dark" },
   { id: "mono-wave", name: "Monochrome Typographic Wave", desc: "Black White • Marquee Band • Editorial", fullDesc: "Pure black #000 background with white text. ONE horizontal marquee band crossing viewport with continuous scrolling text (CSS animation translateX, 30s linear infinite). Text inside marquee is white, band background can be white with black text. Editorial typography.", category: "creative" },
