@@ -559,6 +559,32 @@ export const StylePreview = ({ styleId }: { styleId: string }) => {
         </div>
       </div>
     ),
+    "pastel-cloud-3d": (
+      <div className="w-full h-full relative overflow-hidden">
+        {/* Hero with 3D effect */}
+        <div className="absolute top-0 left-0 right-0 h-1/2" style={{ background: 'linear-gradient(135deg, #fce7f3 0%, #ddd6fe 30%, #c7d2fe 60%, #a5f3fc 100%)' }}>
+          <motion.div
+            className="absolute w-6 h-6 rounded-full"
+            style={{
+              background: 'radial-gradient(circle at 30% 30%, #fff 0%, #c084fc 50%, #7c3aed 100%)',
+              top: '25%',
+              left: '25%',
+            }}
+            animate={{ scale: [1, 1.2, 1], y: [0, -3, 0] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </div>
+        {/* White section below */}
+        <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-white">
+          <div className="flex gap-1 justify-center pt-1">
+            <div className="w-3 h-2 bg-gray-100 rounded-sm"></div>
+            <div className="w-3 h-2 bg-gray-100 rounded-sm"></div>
+          </div>
+        </div>
+        {/* 3D badge */}
+        <div className="absolute top-1 right-1 text-[4px] font-bold text-violet-600 bg-white/90 px-1 rounded">3D</div>
+      </div>
+    ),
     "liquid-metal": (
       <div className="w-full h-full bg-black relative overflow-hidden flex items-center justify-center">
         {/* Chrome/Mercury sphere */}
@@ -2709,54 +2735,55 @@ ANIMATIONS: Fade in up (y: 20px → 0), border draw (width 0% → 100%), button 
 - Style changes APPEARANCE only, NEVER removes content or screens
 - Count screens in video and ensure ALL are represented`, category: "light" },
   
-  // === PASTEL CLOUD - CSS gradient hero, no Spline ===
-  { id: "pastel-cloud", name: "Pastel Cloud", desc: "Animated gradient hero • Clean sections", fullDesc: `PASTEL CLOUD STYLE - Dreamy gradient hero with clean page below.
+  // === PASTEL CLOUD - CSS gradient hero ===
+  { id: "pastel-cloud", name: "Pastel Cloud", desc: "Animated gradient hero • Clean sections", fullDesc: `PASTEL CLOUD - Dreamy gradient hero, clean page below.
 
-HERO SECTION - Use CSS animated gradient (NOT Spline, NOT fixed background):
+HERO with animated gradient (ONLY in hero, NOT full page):
 <section class="relative min-h-screen overflow-hidden">
-  <!-- Animated gradient background - ONLY in hero -->
   <div class="absolute inset-0 bg-gradient-to-br from-pink-200 via-purple-200 to-cyan-200 animate-gradient-shift"></div>
-  <!-- Floating orbs for depth -->
   <div class="absolute top-20 left-10 w-72 h-72 bg-pink-300/50 rounded-full blur-3xl animate-pulse"></div>
-  <div class="absolute bottom-20 right-10 w-96 h-96 bg-purple-300/50 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
-  <div class="absolute top-1/2 left-1/2 w-64 h-64 bg-cyan-300/40 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
-  <!-- Hero content -->
-  <div class="relative z-10 flex flex-col items-center justify-center min-h-screen text-center px-6">
-    <h1 class="text-6xl font-bold text-gray-900">Headline</h1>
-    <p class="text-gray-700 text-xl mt-4">Description</p>
-    <button class="mt-8 px-8 py-4 bg-violet-600 text-white rounded-full font-semibold shadow-xl hover:bg-violet-700">CTA</button>
+  <div class="absolute bottom-20 right-10 w-96 h-96 bg-purple-300/50 rounded-full blur-3xl animate-pulse"></div>
+  <div class="relative z-10 min-h-screen flex flex-col items-center justify-center text-center px-6">
+    <!-- content here -->
   </div>
 </section>
 
-Add this CSS in <style> tag:
-<style>
-@keyframes gradient-shift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-.animate-gradient-shift {
-  background-size: 200% 200%;
-  animation: gradient-shift 8s ease infinite;
-}
-</style>
+CSS in <style>:
+@keyframes gradient-shift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+.animate-gradient-shift { background-size:200% 200%; animation:gradient-shift 8s ease infinite; }
 
-SECTIONS BELOW HERO - Normal solid backgrounds:
-- Features: bg-white with bg-gray-50 cards
-- CTA: bg-gradient-to-br from-violet-50 to-pink-50 (subtle, NOT animated)
-- Footer: bg-gray-900 text-white
+Below hero: bg-white sections, bg-gray-50 cards, bg-gray-900 footer.
+Colors: text-gray-900, bg-violet-600 buttons.`, category: "shader" },
 
-COLOR PALETTE:
-- Text: text-gray-900, text-gray-700, text-gray-600
-- Buttons: bg-violet-600 hover:bg-violet-700
-- Cards: bg-gray-50 border border-gray-100 rounded-2xl
-- Accent icons: bg-gradient-to-br from-violet-500 to-purple-600
+  // === PASTEL CLOUD 3D - Spline in hero ===
+  { id: "pastel-cloud-3d", name: "Pastel Cloud 3D", desc: "Spline 3D hero • Clean sections", fullDesc: `PASTEL CLOUD 3D - Spline 3D in hero ONLY, clean page below.
 
-CRITICAL RULES:
-1. Gradient background ONLY in hero section (position: relative, NOT fixed!)
-2. Hero has overflow-hidden to contain the gradient and orbs
-3. Sections below hero use SOLID backgrounds (bg-white, bg-gray-50)
-4. NO transparent backgrounds outside hero
-5. Body is bg-white`, category: "shader" },
+⚠️ MUST ADD THIS SCRIPT IN <head>:
+<script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.35/build/spline-viewer.js"></script>
+
+HERO with Spline (ONLY in hero section!):
+<section class="relative min-h-screen overflow-hidden">
+  <spline-viewer class="absolute inset-0 w-full h-full" url="https://prod.spline.design/H0rV8YuyqNW4BOJ9/scene.splinecode"></spline-viewer>
+  <div class="relative z-10 min-h-screen flex flex-col items-center justify-center text-center px-6">
+    <h1 class="text-6xl font-bold text-gray-900">Headline</h1>
+    <p class="text-gray-700 text-xl mt-4">Description</p>
+    <button class="mt-8 px-8 py-4 bg-violet-600 text-white rounded-full font-semibold shadow-xl">CTA</button>
+  </div>
+</section>
+
+BELOW HERO - Normal backgrounds (NOT transparent!):
+<section class="py-24 px-6 bg-white">Features with bg-gray-50 cards</section>
+<section class="py-24 px-6 bg-gradient-to-br from-violet-50 to-pink-50">CTA</section>
+<footer class="py-12 px-6 bg-gray-900 text-white">Footer</footer>
+
+CRITICAL:
+1. Script MUST be in <head>
+2. spline-viewer inside hero section ONLY (class="absolute inset-0")
+3. Hero has overflow-hidden
+4. Sections below have SOLID backgrounds (bg-white, bg-gray-50)
+5. Body is bg-white
+
+Colors: text-gray-900, text-gray-700, bg-violet-600 buttons, bg-gray-50 cards.`, category: "shader" },
 
   // === SUPER HERO - ANIMATED LIQUID BACKGROUNDS ===
   { id: "super-hero", name: "Super Hero", desc: "Liquid Gradient • Animated Blob • Premium Hero", fullDesc: `SUPER HERO - Animated liquid gradient backgrounds like Framer's AnimatedLiquidBackground.
