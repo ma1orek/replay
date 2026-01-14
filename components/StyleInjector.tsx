@@ -3357,11 +3357,7 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
             }}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            placeholder={
-              selectedPreset?.id === "custom" 
-                ? (isFocused ? "Describe your style..." : animatedPlaceholder)
-                : "Add refinements... (e.g., 'make it more minimal', 'use blue accents')"
-            }
+            placeholder={isFocused ? "Describe your style..." : animatedPlaceholder}
             disabled={disabled}
             rows={2}
             className={cn(
@@ -3369,11 +3365,6 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
               disabled && "opacity-50 cursor-not-allowed"
             )}
           />
-          {selectedPreset && selectedPreset.id !== "custom" && (
-            <p className="text-[9px] text-white/20 mt-1">
-              ✨ Add your own refinements to "{selectedPreset.name}" style
-            </p>
-          )}
         </div>
       )}
     </div>
