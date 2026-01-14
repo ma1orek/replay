@@ -521,45 +521,32 @@ export const StylePreview = ({ styleId }: { styleId: string }) => {
         <div className="absolute inset-1.5 bg-white/80 backdrop-blur-sm rounded-sm border border-gray-200/50" />
       </div>
     ),
-    "perlin-noise-3d": (
-      <div className="w-full h-full relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fce7f3 0%, #ddd6fe 30%, #c7d2fe 60%, #a5f3fc 100%)' }}>
-        {/* Pastel gradient blobs */}
-        <motion.div
-          className="absolute w-8 h-8 rounded-full"
-          style={{
-            background: 'radial-gradient(ellipse at 30% 30%, #f9a8d4 0%, #c084fc 100%)',
-            filter: 'blur(6px)',
-            opacity: 0.7,
-            top: '10%',
-            left: '10%',
-          }}
-          animate={{ 
-            scale: [1, 1.2, 1],
-            x: [0, 5, 0],
-            y: [0, 3, 0],
-          }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute w-6 h-6 rounded-full"
-          style={{
-            background: 'radial-gradient(ellipse at 70% 70%, #67e8f9 0%, #a78bfa 100%)',
-            filter: 'blur(5px)',
-            opacity: 0.6,
-            bottom: '15%',
-            right: '10%',
-          }}
-          animate={{ 
-            scale: [1.1, 0.9, 1.1],
-            x: [0, -4, 0],
-            y: [0, -3, 0],
-          }}
-          transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-        />
-        {/* Glass card preview */}
-        <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 bg-white/40 backdrop-blur-sm rounded px-2 py-0.5 border border-white/50">
-          <span className="text-[4px] font-bold text-indigo-900">3D</span>
+    "pastel-cloud": (
+      <div className="w-full h-full relative overflow-hidden">
+        {/* Hero section with pastel gradient */}
+        <div className="absolute top-0 left-0 right-0 h-1/2" style={{ background: 'linear-gradient(135deg, #fce7f3 0%, #ddd6fe 30%, #c7d2fe 60%, #a5f3fc 100%)' }}>
+          <motion.div
+            className="absolute w-6 h-6 rounded-full"
+            style={{
+              background: 'radial-gradient(ellipse at 30% 30%, #f9a8d4 0%, #c084fc 100%)',
+              filter: 'blur(4px)',
+              opacity: 0.7,
+              top: '20%',
+              left: '15%',
+            }}
+            animate={{ scale: [1, 1.2, 1], x: [0, 3, 0] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          />
         </div>
+        {/* White section below */}
+        <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-white">
+          <div className="flex gap-1 justify-center pt-1">
+            <div className="w-3 h-2 bg-gray-100 rounded-sm"></div>
+            <div className="w-3 h-2 bg-gray-100 rounded-sm"></div>
+          </div>
+        </div>
+        {/* 3D badge */}
+        <div className="absolute top-1 right-1 text-[4px] font-bold text-violet-600 bg-white/80 px-1 rounded">3D</div>
       </div>
     ),
     "liquid-metal": (
@@ -2712,8 +2699,8 @@ ANIMATIONS: Fade in up (y: 20px → 0), border draw (width 0% → 100%), button 
 - Style changes APPEARANCE only, NEVER removes content or screens
 - Count screens in video and ensure ALL are represented`, category: "light" },
   
-  // === SPLINE 3D BACKGROUNDS (Pastel Cloud) ===
-  { id: "perlin-noise-3d", name: "Pastel Cloud 3D", desc: "Spline 3D • Soft Gradient • Glassmorphism", fullDesc: `⚠️ CRITICAL: BUILD THE PAGE EXACTLY THIS WAY FOR 3D BACKGROUND TO WORK!
+  // === SPLINE 3D - HERO ONLY ===
+  { id: "pastel-cloud", name: "Pastel Cloud", desc: "Spline 3D Hero • Clean sections below", fullDesc: `⚠️ SPLINE 3D IN HERO ONLY - Normal page below!
 
 <!DOCTYPE html>
 <html lang="en">
@@ -2724,86 +2711,109 @@ ANIMATIONS: Fade in up (y: 20px → 0), border draw (width 0% → 100%), button 
   <script src="https://cdn.tailwindcss.com"></script>
   <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.35/build/spline-viewer.js"></script>
 </head>
-<body class="bg-transparent min-h-screen">
+<body class="bg-white">
 
-  <!-- ⚠️ 3D BACKGROUND - MUST BE FIRST, z-[-1] SO IT'S BEHIND CONTENT -->
-  <div class="fixed inset-0 z-[-1] w-full h-full pointer-events-none">
-    <spline-viewer url="https://prod.spline.design/H0rV8YuyqNW4BOJ9/scene.splinecode"></spline-viewer>
-  </div>
-
-  <!-- CONTENT - Everything else goes here -->
-  <div class="relative z-10">
-    
-    <!-- Nav with glass effect -->
-    <nav class="fixed top-0 left-0 right-0 z-50 px-6 py-4 bg-white/20 backdrop-blur-md border-b border-white/30">
-      <div class="max-w-7xl mx-auto flex items-center justify-between">
-        <div class="text-xl font-bold text-indigo-950">Logo</div>
-        <div class="hidden md:flex items-center gap-8">
-          <a href="#" class="text-slate-700 hover:text-indigo-900 transition">Link</a>
-        </div>
-        <button class="px-6 py-2.5 bg-white/50 hover:bg-white/70 text-indigo-900 border border-white/60 backdrop-blur-sm rounded-full font-medium shadow-lg transition">
-          CTA
-        </button>
+  <!-- NAV - Fixed, glass on hero, solid after scroll -->
+  <nav class="fixed top-0 left-0 right-0 z-50 px-6 py-4 bg-white/80 backdrop-blur-md border-b border-gray-100">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="text-xl font-bold text-gray-900">Logo</div>
+      <div class="hidden md:flex items-center gap-8">
+        <a href="#" class="text-gray-600 hover:text-gray-900 transition">Link</a>
       </div>
-    </nav>
-    
-    <!-- Hero -->
-    <section class="min-h-screen flex flex-col items-center justify-center text-center px-6 pt-20">
-      <h1 class="text-5xl md:text-7xl font-bold text-indigo-950 mb-6 tracking-tight drop-shadow-sm">
-        Headline Here
+      <button class="px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-full font-medium shadow-lg transition">
+        Get Started
+      </button>
+    </div>
+  </nav>
+
+  <!-- ⚠️ HERO WITH SPLINE BACKGROUND - Spline ONLY here! -->
+  <section class="relative min-h-screen overflow-hidden">
+    <!-- Spline 3D - absolute within hero only -->
+    <div class="absolute inset-0 z-0">
+      <spline-viewer url="https://prod.spline.design/H0rV8YuyqNW4BOJ9/scene.splinecode" style="width:100%;height:100%;"></spline-viewer>
+    </div>
+    <!-- Hero content -->
+    <div class="relative z-10 flex flex-col items-center justify-center min-h-screen text-center px-6 pt-20">
+      <h1 class="text-5xl md:text-7xl font-bold text-gray-900 mb-6 tracking-tight">
+        Your Headline
       </h1>
-      <p class="text-slate-700 text-xl max-w-2xl mb-10">
-        Description text
+      <p class="text-gray-700 text-xl max-w-2xl mb-10">
+        Description text here
       </p>
       <div class="flex flex-wrap gap-4 justify-center">
-        <button class="px-8 py-4 bg-gradient-to-r from-pink-400 via-purple-400 to-indigo-400 text-white font-semibold rounded-full shadow-xl hover:shadow-2xl transition">
+        <button class="px-8 py-4 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-full shadow-xl transition">
           Primary CTA
         </button>
-        <button class="px-8 py-4 bg-white/40 backdrop-blur-md text-indigo-900 font-semibold rounded-full border border-white/50 hover:bg-white/60 transition">
-          Secondary
+        <button class="px-8 py-4 bg-white/70 backdrop-blur-sm text-gray-800 font-semibold rounded-full border border-gray-200 hover:bg-white transition">
+          Learn More
         </button>
       </div>
-    </section>
-    
-    <!-- Cards with glassmorphism -->
-    <section class="py-24 px-6">
-      <div class="max-w-6xl mx-auto grid md:grid-cols-3 gap-6">
-        <div class="bg-white/30 backdrop-blur-md border border-white/40 shadow-xl rounded-2xl p-8">
-          <div class="w-12 h-12 bg-gradient-to-br from-pink-300 to-purple-400 rounded-xl mb-4"></div>
-          <h3 class="text-xl font-bold text-indigo-950 mb-2">Feature</h3>
-          <p class="text-slate-600">Description</p>
+    </div>
+  </section>
+
+  <!-- FEATURES - Normal white background, clean design -->
+  <section class="py-24 px-6 bg-white">
+    <div class="max-w-6xl mx-auto">
+      <h2 class="text-4xl font-bold text-gray-900 text-center mb-16">Features</h2>
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="bg-gray-50 rounded-2xl p-8 border border-gray-100">
+          <div class="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl mb-4"></div>
+          <h3 class="text-xl font-bold text-gray-900 mb-2">Feature One</h3>
+          <p class="text-gray-600">Description here</p>
+        </div>
+        <div class="bg-gray-50 rounded-2xl p-8 border border-gray-100">
+          <div class="w-12 h-12 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl mb-4"></div>
+          <h3 class="text-xl font-bold text-gray-900 mb-2">Feature Two</h3>
+          <p class="text-gray-600">Description here</p>
+        </div>
+        <div class="bg-gray-50 rounded-2xl p-8 border border-gray-100">
+          <div class="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl mb-4"></div>
+          <h3 class="text-xl font-bold text-gray-900 mb-2">Feature Three</h3>
+          <p class="text-gray-600">Description here</p>
         </div>
       </div>
-    </section>
-    
-  </div>
+    </div>
+  </section>
+
+  <!-- CTA Section - Subtle gradient -->
+  <section class="py-24 px-6 bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50">
+    <div class="max-w-4xl mx-auto text-center">
+      <h2 class="text-4xl font-bold text-gray-900 mb-6">Ready to start?</h2>
+      <p class="text-gray-600 text-lg mb-8">Get started today</p>
+      <button class="px-10 py-4 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-full shadow-xl transition">
+        Get Started Free
+      </button>
+    </div>
+  </section>
+
+  <!-- Footer - Clean -->
+  <footer class="py-12 px-6 bg-gray-900 text-white">
+    <div class="max-w-6xl mx-auto text-center">
+      <p class="text-gray-400">© 2024 Company. All rights reserved.</p>
+    </div>
+  </footer>
+
 </body>
 </html>
 
-⚠️ MANDATORY RULES:
-1. Body MUST be: bg-transparent (NOT bg-white, NOT bg-slate-50!)
-2. Spline container MUST be: fixed inset-0 z-[-1] (NEGATIVE z-index!)
-3. Content wrapper MUST be: relative z-10
-4. Script version: @1.12.35
+⚠️ KEY RULES:
+1. Spline is ONLY in hero section (absolute, not fixed!)
+2. Body is bg-white - normal page
+3. Sections below hero have normal backgrounds (bg-white, bg-gray-50)
+4. Hero has relative + overflow-hidden to contain Spline
 
-🎨 COLOR PALETTE (Pastel Glassmorphism):
-- Body: bg-transparent (NEVER solid colors!)
-- Text: text-indigo-950 or text-slate-800 (dark for contrast)
-- Glass cards: bg-white/30 backdrop-blur-md border border-white/40
-- Glass nav: bg-white/20 backdrop-blur-md border-b border-white/30
-- Buttons: bg-white/50 hover:bg-white/70 OR gradient from-pink-400 to-indigo-400
-- Accent gradients: from-pink-300 via-purple-300 to-indigo-300
+🎨 COLOR PALETTE:
+- Hero text: text-gray-900 (dark, readable on pastel)
+- Body text: text-gray-600
+- Primary buttons: bg-violet-600 (matches Spline purples)
+- Cards: bg-gray-50 border-gray-100
+- Accent section: bg-gradient-to-br from-violet-50 to-pink-50
+- Footer: bg-gray-900
 
-❌ DO NOT USE:
-- bg-white, bg-black, bg-slate-50 on body or main containers
-- Solid backgrounds that hide the 3D layer
-- z-index: 0 for spline (must be negative!)
-
-✅ ALWAYS USE:
-- bg-transparent for body
-- bg-white/30 with backdrop-blur for glass effect
-- Dark text colors for readability
-- Soft pastel gradients for accents`, category: "shader" },
+✅ STRUCTURE:
+- Hero: relative + Spline absolute inset-0 z-0 + content z-10
+- Below hero: Normal sections with solid backgrounds
+- No glass effect below hero - clean, professional look`, category: "shader" },
 
   // === SUPER HERO - ANIMATED LIQUID BACKGROUNDS ===
   { id: "super-hero", name: "Super Hero", desc: "Liquid Gradient • Animated Blob • Premium Hero", fullDesc: `SUPER HERO - Animated liquid gradient backgrounds like Framer's AnimatedLiquidBackground.
