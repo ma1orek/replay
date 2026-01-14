@@ -2711,61 +2711,103 @@ ANIMATIONS: Fade in up (y: 20px → 0), border draw (width 0% → 100%), button 
 - Count screens in video and ensure ALL are represented`, category: "light" },
   
   // === SPLINE 3D BACKGROUNDS (Works in iframe!) ===
-  { id: "perlin-noise-3d", name: "Perlin Noise 3D", desc: "Spline 3D • Real-time WebGL • No npm needed", fullDesc: `⚠️ MANDATORY: USE SPLINE 3D BACKGROUND - This is the EXACT code structure you MUST use:
+  { id: "perlin-noise-3d", name: "Perlin Noise 3D", desc: "Spline 3D • Pastel Gradient • Dreamy Aesthetic", fullDesc: `⚠️ CRITICAL: COPY THIS EXACT HTML STRUCTURE - Spline 3D pastel gradient background
+
+The background is a dreamy pastel gradient (pink, purple, cyan, cream). All UI must match this aesthetic.
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.54/build/spline-viewer.js"></script>
   <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', system-ui, sans-serif; }
     spline-viewer { width: 100%; height: 100%; display: block; }
   </style>
 </head>
-<body class="bg-black min-h-screen overflow-hidden relative m-0 p-0">
+<body class="min-h-screen overflow-x-hidden">
   
-  <!-- ⚠️ REQUIRED: Spline 3D Background - DO NOT REMOVE -->
-  <div class="fixed inset-0 z-0">
-    <spline-viewer url="https://prod.spline.design/H0rV8YuyqNW4BOJ9/scene.splinecode"></spline-viewer>
-  </div>
+  <!-- ⚠️ REQUIRED: Spline 3D Background -->
+  <spline-viewer 
+    url="https://prod.spline.design/H0rV8YuyqNW4BOJ9/scene.splinecode"
+    style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;"
+  ></spline-viewer>
   
-  <!-- Content on top of 3D background -->
-  <div class="relative z-10 min-h-screen">
+  <!-- Content Layer - all content goes here -->
+  <div style="position: relative; z-index: 10;">
+    
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 px-6 py-4">
+      <div class="max-w-7xl mx-auto flex items-center justify-between">
+        <div class="text-xl font-bold text-slate-800">Logo</div>
+        <div class="hidden md:flex items-center gap-8">
+          <a href="#" class="text-slate-700 hover:text-slate-900 transition">Link</a>
+        </div>
+        <button class="px-6 py-2.5 bg-slate-900 text-white rounded-full font-medium hover:bg-slate-800 transition shadow-lg">
+          CTA
+        </button>
+      </div>
+    </nav>
+    
     <!-- Hero Section -->
-    <section class="min-h-screen flex flex-col items-center justify-center text-center px-6 pointer-events-none">
-      <h1 class="text-5xl md:text-7xl font-bold text-white mb-6 tracking-tight drop-shadow-2xl">
-        <!-- Your headline here -->
+    <section class="min-h-screen flex flex-col items-center justify-center text-center px-6 pt-20">
+      <h1 class="text-5xl md:text-7xl font-bold text-slate-900 mb-6 tracking-tight">
+        Your Headline
       </h1>
-      <p class="text-white/70 text-xl max-w-2xl mb-10 drop-shadow-lg">
-        <!-- Your description here -->
+      <p class="text-slate-600 text-xl max-w-2xl mb-10">
+        Your description text here
       </p>
-      <div class="flex gap-4 pointer-events-auto">
-        <button class="px-8 py-4 bg-white text-black font-semibold rounded-full hover:scale-105 transition-transform">
-          Get Started
+      <div class="flex flex-wrap gap-4 justify-center">
+        <button class="px-8 py-4 bg-slate-900 text-white font-semibold rounded-full hover:bg-slate-800 transition shadow-xl">
+          Primary CTA
+        </button>
+        <button class="px-8 py-4 bg-white/60 backdrop-blur-sm text-slate-800 font-semibold rounded-full border border-white/50 hover:bg-white/80 transition">
+          Secondary
         </button>
       </div>
     </section>
     
-    <!-- Other sections go here with bg-black/80 backdrop-blur for readability -->
+    <!-- Feature Section with Glass Cards -->
+    <section class="py-24 px-6">
+      <div class="max-w-6xl mx-auto grid md:grid-cols-3 gap-6">
+        <div class="bg-white/40 backdrop-blur-xl rounded-3xl p-8 border border-white/50 shadow-xl">
+          <div class="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-500 rounded-2xl mb-4"></div>
+          <h3 class="text-xl font-bold text-slate-900 mb-2">Feature</h3>
+          <p class="text-slate-600">Description</p>
+        </div>
+      </div>
+    </section>
+    
   </div>
-  
 </body>
 </html>
 
+COLOR PALETTE (matches pastel Spline background):
+- Headlines: text-slate-900 (dark gray, NOT black)
+- Body text: text-slate-600 or text-slate-700
+- Primary buttons: bg-slate-900 text-white
+- Secondary buttons: bg-white/60 backdrop-blur-sm text-slate-800 border-white/50
+- Glass cards: bg-white/40 backdrop-blur-xl border-white/50 rounded-3xl
+- Accent gradients: from-pink-400 to-purple-500, from-cyan-400 to-blue-500
+
 KEY RULES:
-1. The <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.54/build/spline-viewer.js"></script> MUST be in <head>
-2. The <spline-viewer url="https://prod.spline.design/H0rV8YuyqNW4BOJ9/scene.splinecode"></spline-viewer> MUST be present
-3. Spline container: fixed inset-0 z-0
-4. Content: relative z-10 with pointer-events-none (buttons: pointer-events-auto)
-5. Text needs drop-shadow for readability over 3D
+1. spline-viewer MUST have: position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;
+2. Content wrapper MUST have: position: relative; z-index: 10;
+3. Use DARK text (slate-900, slate-700) on this LIGHT pastel background
+4. Cards must be GLASS: bg-white/40 backdrop-blur-xl
+5. Buttons: rounded-full with shadow-xl
+6. NO black backgrounds - the Spline IS the background
 
-COLORS: bg-black, text-white, text-white/70
-BUTTONS: bg-white text-black rounded-full OR bg-white/10 border border-white/20
-CARDS: bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl
+TYPOGRAPHY:
+- Headlines: text-5xl md:text-7xl font-bold text-slate-900
+- Body: text-lg text-slate-600
+- Clean, modern sans-serif
 
-This creates real-time WebGL 3D animated background that works in any iframe without npm!`, category: "shader" },
+This creates a dreamy, premium aesthetic with real-time 3D animated pastel gradients!`, category: "shader" },
 
   // === SUPER HERO - ANIMATED LIQUID BACKGROUNDS ===
   { id: "super-hero", name: "Super Hero", desc: "Liquid Gradient • Animated Blob • Premium Hero", fullDesc: `SUPER HERO - Animated liquid gradient backgrounds like Framer's AnimatedLiquidBackground.
