@@ -6,6 +6,7 @@ import { X, Mail, Loader2, ArrowLeft, Eye, EyeOff, Lock } from "lucide-react";
 import { useAuth } from "@/lib/auth/context";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
+import FocusLock from "react-focus-lock";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -322,14 +323,21 @@ export default function AuthModal({
             transition={{ duration: 0.2, ease: "easeOut" }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div className="relative w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl">
-              {/* Close button */}
-              <button
-                onClick={handleClose}
-                className="absolute right-3 top-3 md:right-4 md:top-4 p-2 rounded-lg hover:bg-white/5 transition-colors"
+            <FocusLock returnFocus>
+              <div 
+                className="relative w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="auth-modal-title"
               >
-                <X className="w-5 h-5 text-white/40" />
-              </button>
+                {/* Close button */}
+                <button
+                  onClick={handleClose}
+                  className="absolute right-3 top-3 md:right-4 md:top-4 p-2 rounded-lg hover:bg-white/5 transition-colors focus-ring-strong"
+                  aria-label="Close modal"
+                >
+                  <X className="w-5 h-5 text-white/40" />
+                </button>
 
               {/* Replay Logo */}
               <div className="flex justify-center mb-6">
@@ -338,7 +346,7 @@ export default function AuthModal({
 
               {/* Content */}
               <div className="text-center mb-8">
-                <h2 className="text-xl font-semibold text-white mb-2">{title}</h2>
+                <h2 id="auth-modal-title" className="text-xl font-semibold text-white mb-2">{title}</h2>
                 <p className="text-sm text-white/50">{description}</p>
               </div>
 
@@ -347,7 +355,8 @@ export default function AuthModal({
                 <div className="text-center py-4">
                   <button
                     onClick={handleBack}
-                    className="absolute left-3 top-3 md:left-4 md:top-4 p-2 rounded-lg hover:bg-white/5 transition-colors"
+                    className="absolute left-3 top-3 md:left-4 md:top-4 p-2 rounded-lg hover:bg-white/5 transition-colors focus-ring-strong"
+                    aria-label="Go back"
                   >
                     <ArrowLeft className="w-5 h-5 text-white/40" />
                   </button>
@@ -406,7 +415,8 @@ export default function AuthModal({
                 <div className="space-y-3">
                   <button
                     onClick={handleBack}
-                    className="absolute left-3 top-3 md:left-4 md:top-4 p-2 rounded-lg hover:bg-white/5 transition-colors"
+                    className="absolute left-3 top-3 md:left-4 md:top-4 p-2 rounded-lg hover:bg-white/5 transition-colors focus-ring-strong"
+                    aria-label="Go back"
                   >
                     <ArrowLeft className="w-5 h-5 text-white/40" />
                   </button>
@@ -438,6 +448,7 @@ export default function AuthModal({
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-white/30 hover:text-white/50"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
@@ -478,7 +489,8 @@ export default function AuthModal({
                 <div className="space-y-3">
                   <button
                     onClick={handleBack}
-                    className="absolute left-3 top-3 md:left-4 md:top-4 p-2 rounded-lg hover:bg-white/5 transition-colors"
+                    className="absolute left-3 top-3 md:left-4 md:top-4 p-2 rounded-lg hover:bg-white/5 transition-colors focus-ring-strong"
+                    aria-label="Go back"
                   >
                     <ArrowLeft className="w-5 h-5 text-white/40" />
                   </button>
@@ -506,6 +518,7 @@ export default function AuthModal({
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-white/30 hover:text-white/50"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
@@ -616,7 +629,8 @@ export default function AuthModal({
                 <div className="space-y-3">
                   <button
                     onClick={handleBack}
-                    className="absolute left-3 top-3 md:left-4 md:top-4 p-2 rounded-lg hover:bg-white/5 transition-colors"
+                    className="absolute left-3 top-3 md:left-4 md:top-4 p-2 rounded-lg hover:bg-white/5 transition-colors focus-ring-strong"
+                    aria-label="Go back"
                   >
                     <ArrowLeft className="w-5 h-5 text-white/40" />
                   </button>
@@ -656,7 +670,8 @@ export default function AuthModal({
               <p className="mt-6 text-[10px] md:text-xs text-white/30 text-center">
                 By continuing, you agree to our Terms of Service and Privacy Policy.
               </p>
-            </div>
+              </div>
+            </FocusLock>
           </motion.div>
         </>
       )}

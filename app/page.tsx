@@ -8068,7 +8068,7 @@ export const shadows = {
                         </div>
                         <div className="space-y-1">
                           {flows.map((flow) => (
-                            <div key={flow.id} onClick={() => setSelectedFlowId(flow.id)} className={cn("flex items-center gap-2 p-2 rounded-lg cursor-pointer", selectedFlowId === flow.id ? "bg-[#FF6E3C]/10 border border-[#FF6E3C]/20" : "bg-white/[0.02] hover:bg-white/[0.04]")}>
+                            <button key={flow.id} onClick={() => setSelectedFlowId(flow.id)} className={cn("w-full flex items-center gap-2 p-2 rounded-lg cursor-pointer text-left", selectedFlowId === flow.id ? "bg-[#FF6E3C]/10 border border-[#FF6E3C]/20" : "bg-white/[0.02] hover:bg-white/[0.04]")} aria-label={`Select flow ${flow.title || flow.id}`}>
                               <div className="w-10 h-6 rounded overflow-hidden bg-white/5 flex-shrink-0">
                                 {flow.thumbnail ? <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" /> : <Film className="w-3 h-3 text-white/20 mx-auto mt-1.5" />}
                               </div>
@@ -8076,10 +8076,10 @@ export const shadows = {
                                 <p className="text-[11px] text-white/70 truncate">{flow.name}</p>
                                 <p className="text-[9px] text-white/30">{formatDuration(flow.duration)}</p>
                               </div>
-                              <button onClick={(e) => { e.stopPropagation(); setFlows(prev => prev.filter(f => f.id !== flow.id)); }} className="p-1 text-white/20 hover:text-red-400">
+                              <span onClick={(e) => { e.stopPropagation(); setFlows(prev => prev.filter(f => f.id !== flow.id)); }} className="p-1 text-white/20 hover:text-red-400" role="button" tabIndex={0} aria-label="Remove flow" onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setFlows(prev => prev.filter(f => f.id !== flow.id)); }}}>
                                 <Trash2 className="w-3 h-3" />
-                              </button>
-                            </div>
+                              </span>
+                            </button>
                           ))}
                         </div>
                       </>
@@ -8238,7 +8238,7 @@ export const shadows = {
                       </div>
                     </div>
                   ) : flows.map((flow) => (
-                    <div key={flow.id} onClick={() => setSelectedFlowId(flow.id)} className={cn("flow-item flex items-center gap-2.5 p-2 cursor-pointer group", selectedFlowId === flow.id && "selected")}>
+                    <button key={flow.id} onClick={() => setSelectedFlowId(flow.id)} className={cn("flow-item w-full flex items-center gap-2.5 p-2 cursor-pointer group text-left", selectedFlowId === flow.id && "selected")} aria-label={`Select flow ${flow.name}`}>
                       <div className="w-14 h-8 rounded overflow-hidden bg-white/5 flex-shrink-0 flex items-center justify-center">
                         {flow.thumbnail ? <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" /> : <Film className="w-3 h-3 text-white/20" />}
                       </div>
@@ -8248,8 +8248,8 @@ export const shadows = {
                           {formatDuration(flow.trimEnd - flow.trimStart)} / {formatDuration(flow.duration)}
                         </p>
                       </div>
-                      <button onClick={(e) => { e.stopPropagation(); removeFlow(flow.id); }} className="p-1 opacity-0 group-hover:opacity-100 hover:bg-white/10 rounded"><Trash2 className="w-3 h-3 text-white/40" /></button>
-                    </div>
+                      <span onClick={(e) => { e.stopPropagation(); removeFlow(flow.id); }} className="p-1 opacity-0 group-hover:opacity-100 hover:bg-white/10 rounded" role="button" tabIndex={0} aria-label="Remove flow" onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); removeFlow(flow.id); }}}><Trash2 className="w-3 h-3 text-white/40" /></span>
+                    </button>
                   ))}
                   
                   {/* Add video button */}
@@ -11809,7 +11809,7 @@ export default function GeneratedPage() {
                   {/* Video list */}
                   <div className="space-y-1.5 max-h-[120px] overflow-auto">
                     {flows.map((flow) => (
-                      <div key={flow.id} onClick={() => setSelectedFlowId(flow.id)} className={cn("flex items-center gap-2 p-2 rounded-lg cursor-pointer", selectedFlowId === flow.id ? "bg-[#FF6E3C]/10 border border-[#FF6E3C]/20" : "bg-white/[0.03] hover:bg-white/[0.05]")}>
+                      <button key={flow.id} onClick={() => setSelectedFlowId(flow.id)} className={cn("w-full flex items-center gap-2 p-2 rounded-lg cursor-pointer text-left", selectedFlowId === flow.id ? "bg-[#FF6E3C]/10 border border-[#FF6E3C]/20" : "bg-white/[0.03] hover:bg-white/[0.05]")} aria-label={`Select flow ${flow.name}`}>
                         <div className="w-10 h-6 rounded overflow-hidden bg-white/5 flex-shrink-0">
                           {flow.thumbnail ? <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" /> : <Film className="w-3 h-3 text-white/20 mx-auto mt-1.5" />}
                         </div>
@@ -11817,10 +11817,10 @@ export default function GeneratedPage() {
                           <p className="text-xs text-white/70 truncate">{flow.name}</p>
                           <p className="text-[10px] text-white/30">{formatDuration(flow.duration)}</p>
                         </div>
-                        <button onClick={(e) => { e.stopPropagation(); setFlows(prev => prev.filter(f => f.id !== flow.id)); }} className="p-1 text-white/20 hover:text-red-400">
+                        <span onClick={(e) => { e.stopPropagation(); setFlows(prev => prev.filter(f => f.id !== flow.id)); }} className="p-1 text-white/20 hover:text-red-400" role="button" tabIndex={0} aria-label="Remove flow" onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setFlows(prev => prev.filter(f => f.id !== flow.id)); }}}>
                           <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
+                        </span>
+                      </button>
                     ))}
                     {flows.length === 0 && (
                       <div className="text-center py-3 text-[10px] text-white/30">

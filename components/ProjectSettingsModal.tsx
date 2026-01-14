@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -20,6 +20,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
+import FocusLock from "react-focus-lock";
 
 // Types
 interface ProjectSettingsModalProps {
@@ -96,6 +97,14 @@ export default function ProjectSettingsModal({
 }: ProjectSettingsModalProps) {
   const [activeTab, setActiveTab] = useState("general");
   const [projectName, setProjectName] = useState(project.name);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Auto-focus close button when modal opens
+  useEffect(() => {
+    if (isOpen && closeButtonRef.current) {
+      closeButtonRef.current.focus();
+    }
+  }, [isOpen]);
 
   // Sync projectName with project.name when it changes (e.g., when opening modal for different project)
   useEffect(() => {
@@ -367,23 +376,29 @@ export default function ProjectSettingsModal({
           onClick={onClose}
         />
 
-        {/* Modal - fullscreen on mobile, no animations */}
-        <div
-          className="relative w-full h-full md:h-auto md:max-h-[90vh] md:max-w-4xl bg-[#0a0a0a] md:rounded-2xl md:border md:border-white/10 overflow-hidden shadow-2xl flex flex-col"
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 md:p-6 border-b border-white/10 flex-shrink-0">
-            <div className="min-w-0 flex-1">
-              <h2 className="text-lg md:text-xl font-semibold text-white truncate">Project Settings</h2>
-              <p className="text-xs md:text-sm text-white/50 mt-0.5 truncate">{project.name}</p>
+        <FocusLock returnFocus>
+          {/* Modal - fullscreen on mobile, no animations */}
+          <div
+            className="relative w-full h-full md:h-auto md:max-h-[90vh] md:max-w-4xl bg-[#0a0a0a] md:rounded-2xl md:border md:border-white/10 overflow-hidden shadow-2xl flex flex-col"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="project-settings-title"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 md:p-6 border-b border-white/10 flex-shrink-0">
+              <div className="min-w-0 flex-1">
+                <h2 id="project-settings-title" className="text-lg md:text-xl font-semibold text-white truncate">Project Settings</h2>
+                <p className="text-xs md:text-sm text-white/50 mt-0.5 truncate">{project.name}</p>
+              </div>
+              <button
+                ref={closeButtonRef}
+                onClick={onClose}
+                className="p-2 rounded-lg hover:bg-white/10 transition-colors flex-shrink-0 ml-2 focus-ring-strong"
+                aria-label="Close modal"
+              >
+                <X className="w-5 h-5 text-white/60" />
+              </button>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-white/10 transition-colors flex-shrink-0 ml-2"
-            >
-              <X className="w-5 h-5 text-white/60" />
-            </button>
-          </div>
 
           {/* Mobile Tabs - horizontal scrollable */}
           <div className="md:hidden flex-shrink-0 border-b border-white/10 overflow-x-auto scrollbar-hide">
@@ -476,6 +491,7 @@ export default function ProjectSettingsModal({
                         <button
                           onClick={() => navigator.clipboard.writeText(project.id)}
                           className="p-1.5 rounded-lg hover:bg-white/10 transition-colors flex-shrink-0"
+                          aria-label="Copy project ID"
                         >
                           <Copy className="w-4 h-4 text-white/50" />
                         </button>
@@ -539,6 +555,7 @@ export default function ProjectSettingsModal({
                         <button
                           onClick={() => setShowUrl(!showUrl)}
                           className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+                          aria-label={showUrl ? "Hide URL" : "Show URL"}
                         >
                           {showUrl ? (
                             <EyeOff className="w-4 h-4 text-white/50" />
@@ -574,6 +591,7 @@ export default function ProjectSettingsModal({
                         <button
                           onClick={() => setShowKey(!showKey)}
                           className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+                          aria-label={showKey ? "Hide API key" : "Show API key"}
                         >
                           {showKey ? (
                             <EyeOff className="w-4 h-4 text-white/50" />
@@ -955,7 +973,8 @@ USING (true);`}
               </AnimatePresence>
             </div>
           </div>
-        </div>
+          </div>
+        </FocusLock>
       </div>
   );
 }

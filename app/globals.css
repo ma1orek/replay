@@ -1034,18 +1034,44 @@ body {
   opacity: 0.5;
 }
 
-/* Remove default focus styles globally */
-textarea:focus,
-input:focus,
-select:focus,
-button:focus {
+/* ============================================
+   ACCESSIBILITY - Focus Visible Styles
+   ============================================ */
+
+/* Global focus-visible ring for all interactive elements */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #FF6E3C;
+  outline-offset: 2px;
+}
+
+/* Remove default outline, use custom ring instead */
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+textarea:focus:not(:focus-visible),
+select:focus:not(:focus-visible) {
   outline: none;
 }
 
-textarea:focus-visible,
+/* Override for inputs - subtle ring that doesn't clash with borders */
 input:focus-visible,
+textarea:focus-visible,
 select:focus-visible {
-  outline: none;
+  outline: 2px solid rgba(255, 110, 60, 0.5);
+  outline-offset: 1px;
+}
+
+/* High contrast focus for modal close buttons and important actions */
+.focus-ring-strong:focus-visible {
+  outline: 2px solid #FF6E3C;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(255, 110, 60, 0.2);
 }
 
 /* Button Styles */
