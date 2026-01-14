@@ -521,6 +521,45 @@ export const StylePreview = ({ styleId }: { styleId: string }) => {
         <div className="absolute inset-1.5 bg-white/80 backdrop-blur-sm rounded-sm border border-gray-200/50" />
       </div>
     ),
+    "perlin-noise-3d": (
+      <div className="w-full h-full bg-black relative overflow-hidden">
+        {/* 3D Perlin noise representation */}
+        <motion.div
+          className="absolute w-8 h-8 rounded-full"
+          style={{
+            background: 'radial-gradient(ellipse at 30% 30%, #a855f7 0%, #ec4899 50%, #3b82f6 100%)',
+            filter: 'blur(4px)',
+            top: '20%',
+            left: '20%',
+          }}
+          animate={{ 
+            scale: [1, 1.3, 1],
+            x: [0, 4, 0],
+            y: [0, 3, 0],
+          }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute w-6 h-6 rounded-full"
+          style={{
+            background: 'radial-gradient(ellipse at 70% 70%, #06b6d4 0%, #8b5cf6 100%)',
+            filter: 'blur(3px)',
+            bottom: '20%',
+            right: '10%',
+          }}
+          animate={{ 
+            scale: [1.2, 0.9, 1.2],
+            x: [0, -3, 0],
+            y: [0, -2, 0],
+          }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+        />
+        {/* 3D badge */}
+        <div className="absolute bottom-1 left-1 text-[4px] font-bold text-white/60 bg-white/10 px-1 rounded">3D</div>
+        {/* Content preview */}
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 text-[5px] font-bold text-white z-10">SPLINE</div>
+      </div>
+    ),
     "liquid-metal": (
       <div className="w-full h-full bg-black relative overflow-hidden flex items-center justify-center">
         {/* Chrome/Mercury sphere */}
@@ -2671,6 +2710,122 @@ ANIMATIONS: Fade in up (y: 20px → 0), border draw (width 0% → 100%), button 
 - Style changes APPEARANCE only, NEVER removes content or screens
 - Count screens in video and ensure ALL are represented`, category: "light" },
   
+  // === SPLINE 3D BACKGROUNDS (Works in iframe!) ===
+  { id: "perlin-noise-3d", name: "Perlin Noise 3D", desc: "Spline 3D • Real-time WebGL • No npm needed", fullDesc: `PERLIN NOISE 3D - Real-time 3D animated background using Spline. Works in iframe without npm!
+
+⚠️ CRITICAL: This style uses Spline which loads via CDN script tag. Copy this EXACTLY.
+
+STEP 1 - Add Spline script in <head>:
+\`\`\`html
+<script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.54/build/spline-viewer.js"></script>
+\`\`\`
+
+STEP 2 - Hero section with Spline 3D background:
+\`\`\`html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.54/build/spline-viewer.js"></script>
+  <style>
+    /* Hide Spline logo */
+    spline-viewer { width: 100%; height: 100%; }
+  </style>
+</head>
+<body class="bg-black min-h-screen overflow-hidden relative">
+  
+  <!-- 3D Spline Background -->
+  <div class="absolute inset-0 z-0">
+    <spline-viewer url="https://prod.spline.design/6Wq1Q7YGyM-iab9i/scene.splinecode"></spline-viewer>
+  </div>
+  
+  <!-- Content Layer -->
+  <div class="relative z-10 flex flex-col items-center justify-center min-h-screen text-center px-6 pointer-events-none">
+    <h1 class="text-6xl md:text-8xl font-bold text-white mb-6 tracking-tighter">
+      Your Headline
+      <span class="block text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
+        Gradient Text
+      </span>
+    </h1>
+    <p class="text-white/60 text-xl max-w-2xl mb-10">
+      Your description text here
+    </p>
+    <div class="flex gap-4 pointer-events-auto">
+      <button class="px-8 py-4 bg-white text-black font-semibold rounded-full hover:scale-105 transition">
+        Get Started
+      </button>
+      <button class="px-8 py-4 bg-white/10 text-white border border-white/20 rounded-full hover:bg-white/20 transition">
+        Learn More
+      </button>
+    </div>
+  </div>
+  
+</body>
+</html>
+\`\`\`
+
+AVAILABLE SPLINE SCENES (choose based on context):
+
+1. ABSTRACT GRADIENT BLOB (Purple/Pink - default):
+   url="https://prod.spline.design/6Wq1Q7YGyM-iab9i/scene.splinecode"
+   Best for: Creative, startup, modern SaaS
+
+2. DARK TECH PARTICLES:
+   url="https://prod.spline.design/pvM5KXDFT-VJzHQI/scene.splinecode"
+   Best for: Tech, AI, developer tools
+
+3. GEOMETRIC SHAPES:
+   url="https://prod.spline.design/Mq5kCGN1xqG0A8LP/scene.splinecode"
+   Best for: Architecture, design, portfolio
+
+4. LIQUID MORPH:
+   url="https://prod.spline.design/IBKl7yTNrgLU8H86/scene.splinecode"
+   Best for: Luxury, fashion, creative agency
+
+5. HOLOGRAPHIC:
+   url="https://prod.spline.design/qVlJmKCBUU9rTDJw/scene.splinecode"
+   Best for: Web3, crypto, futuristic
+
+HOW IT WORKS:
+- Spline viewer loads via CDN (no npm needed!)
+- The <spline-viewer> tag renders real-time 3D WebGL
+- Works perfectly in isolated iframes
+- No build step required
+
+STYLING THE CONTENT:
+- Content MUST have z-10 and pointer-events-none (except buttons)
+- Buttons need pointer-events-auto to be clickable
+- Use text-white for contrast against 3D background
+- Add drop-shadow-xl for text readability
+
+COLORS:
+- Background: bg-black or bg-[#0a0a0a]
+- Text: text-white, text-white/60 for secondary
+- Gradient text: bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent
+- Buttons: bg-white text-black OR bg-white/10 text-white border-white/20
+
+TYPOGRAPHY:
+- Headlines: text-6xl md:text-8xl font-bold tracking-tighter
+- Body: text-xl text-white/60
+- Use system fonts or Inter
+
+GLASS CARDS (for feature sections):
+\`\`\`html
+<div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8">
+  <!-- Card content -->
+</div>
+\`\`\`
+
+⚠️ MANDATORY:
+- MUST include the Spline script tag in <head>
+- MUST include <spline-viewer> with valid .splinecode URL
+- Content MUST have relative z-10
+- Background div MUST have absolute inset-0 z-0
+- Preserve ALL content from video
+- This creates Awwwards-level 3D effects!`, category: "shader" },
+
   // === SUPER HERO - ANIMATED LIQUID BACKGROUNDS ===
   { id: "super-hero", name: "Super Hero", desc: "Liquid Gradient • Animated Blob • Premium Hero", fullDesc: `SUPER HERO - Animated liquid gradient backgrounds like Framer's AnimatedLiquidBackground.
 
