@@ -8866,7 +8866,7 @@ export const shadows = {
                 {isMobilePreview ? <Monitor className="w-4 h-4" /> : <Smartphone className="w-4 h-4 text-white/60" />}
               </button>
               
-              {/* Publish button */}
+              {/* Publish button - always brand color */}
               <button
                 onClick={() => {
                   if (!user || isDemoMode) {
@@ -8882,13 +8882,8 @@ export const shadows = {
                   if (!editableCode) return;
                   handlePublish();
                 }}
-                disabled={isPublishing || !editableCode}
-                className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5",
-                  editableCode && isPaidPlan
-                    ? "bg-[#FF6E3C] hover:bg-[#FF8F5C] text-white"
-                    : "bg-white/10 text-white/50 hover:bg-white/20"
-                )}
+                disabled={isPublishing}
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#FF6E3C] hover:bg-[#FF8F5C] text-white transition-colors flex items-center gap-1.5 disabled:opacity-50"
               >
                 {isPublishing ? (
                   <>
