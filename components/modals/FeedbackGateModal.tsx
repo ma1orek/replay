@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ThumbsUp, Meh, ThumbsDown, Send, Loader2 } from "lucide-react";
 import Logo from "@/components/Logo";
+import FocusLock from "react-focus-lock";
 
 interface FeedbackGateModalProps {
   isOpen: boolean;
@@ -24,6 +25,14 @@ export default function FeedbackGateModal({
   const [feedback, setFeedback] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Auto-focus close button when modal opens
+  useEffect(() => {
+    if (isOpen && closeButtonRef.current) {
+      closeButtonRef.current.focus();
+    }
+  }, [isOpen]);
 
   const handleSubmit = async () => {
     if (!rating) return;
@@ -102,14 +111,22 @@ export default function FeedbackGateModal({
             transition={{ duration: 0.2, ease: "easeOut" }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div className="relative w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl p-6 shadow-2xl">
-              {/* Close button */}
-              <button
-                onClick={handleClose}
-                className="absolute right-3 top-3 p-2 rounded-lg hover:bg-white/5 transition-colors"
+            <FocusLock returnFocus>
+              <div 
+                className="relative w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl p-6 shadow-2xl"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="feedback-modal-title"
               >
-                <X className="w-5 h-5 text-white/40" />
-              </button>
+                {/* Close button */}
+                <button
+                  ref={closeButtonRef}
+                  onClick={handleClose}
+                  className="absolute right-3 top-3 p-2 rounded-lg hover:bg-white/5 transition-colors focus-ring-strong"
+                  aria-label="Close modal"
+                >
+                  <X className="w-5 h-5 text-white/40" />
+                </button>
 
               {/* Logo */}
               <div className="flex justify-center mb-6">
@@ -132,7 +149,7 @@ export default function FeedbackGateModal({
                 <>
                   {/* Content */}
                   <div className="text-center mb-6">
-                    <h2 className="text-xl font-semibold text-white mb-2">
+                    <h2 id="feedback-modal-title" className="text-xl font-semibold text-white mb-2">
                       Did this match what you expected?
                     </h2>
                     <p className="text-sm text-white/40">
@@ -202,7 +219,8 @@ export default function FeedbackGateModal({
                   </button>
                 </>
               )}
-            </div>
+              </div>
+            </FocusLock>
           </motion.div>
         </>
       )}

@@ -1,9 +1,11 @@
 "use client";
 
+import { useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Zap, CreditCard, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import Logo from "@/components/Logo";
+import FocusLock from "react-focus-lock";
 
 interface OutOfCreditsModalProps {
   isOpen: boolean;
@@ -18,6 +20,15 @@ export default function OutOfCreditsModal({
   requiredCredits = 75,
   availableCredits = 0,
 }: OutOfCreditsModalProps) {
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Auto-focus close button when modal opens
+  useEffect(() => {
+    if (isOpen && closeButtonRef.current) {
+      closeButtonRef.current.focus();
+    }
+  }, [isOpen]);
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -39,14 +50,22 @@ export default function OutOfCreditsModal({
             transition={{ duration: 0.2, ease: "easeOut" }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div className="relative w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl">
-              {/* Close button */}
-              <button
-                onClick={onClose}
-                className="absolute right-3 top-3 md:right-4 md:top-4 p-2 rounded-lg hover:bg-white/5 transition-colors"
+            <FocusLock returnFocus>
+              <div 
+                className="relative w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="credits-modal-title"
               >
-                <X className="w-5 h-5 text-white/40" />
-              </button>
+                {/* Close button */}
+                <button
+                  ref={closeButtonRef}
+                  onClick={onClose}
+                  className="absolute right-3 top-3 md:right-4 md:top-4 p-2 rounded-lg hover:bg-white/5 transition-colors focus-ring-strong"
+                  aria-label="Close modal"
+                >
+                  <X className="w-5 h-5 text-white/40" />
+                </button>
 
               {/* Logo */}
               <div className="flex justify-center mb-6">
@@ -55,7 +74,7 @@ export default function OutOfCreditsModal({
 
               {/* Content */}
               <div className="text-center mb-8">
-                <h2 className="text-xl font-semibold text-white mb-2">
+                <h2 id="credits-modal-title" className="text-xl font-semibold text-white mb-2">
                   You're out of credits
                 </h2>
                 <p className="text-sm text-white/50">
@@ -117,7 +136,8 @@ export default function OutOfCreditsModal({
                   ))}
                 </div>
               </div>
-            </div>
+              </div>
+            </FocusLock>
           </motion.div>
         </>
       )}

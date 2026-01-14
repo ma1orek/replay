@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Lock, Code, Download, ExternalLink, Database, Sparkles, X, Zap, Check, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth/context";
 import AuthModal from "./AuthModal";
+import FocusLock from "react-focus-lock";
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -61,6 +62,14 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
   const { user } = useAuth();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Auto-focus close button when modal opens
+  useEffect(() => {
+    if (isOpen && closeButtonRef.current) {
+      closeButtonRef.current.focus();
+    }
+  }, [isOpen]);
 
   const handleUpgrade = async () => {
     // If not logged in, show auth modal first
@@ -125,24 +134,30 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
             transition={{ duration: 0.2 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div 
-              className="relative w-full max-w-md bg-[#111] border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Close button - properly positioned */}
-              <button
-                onClick={onClose}
-                className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-white/10 transition-colors z-10"
+            <FocusLock returnFocus>
+              <div 
+                className="relative w-full max-w-md bg-[#111] border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="upgrade-modal-title"
               >
-                <X className="w-4 h-4 text-white/60" />
-              </button>
+                {/* Close button - properly positioned */}
+                <button
+                  ref={closeButtonRef}
+                  onClick={onClose}
+                  className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-white/10 transition-colors z-10 focus-ring-strong"
+                  aria-label="Close modal"
+                >
+                  <X className="w-4 h-4 text-white/60" />
+                </button>
 
               {/* Header */}
               <div className="relative p-6 pb-4 text-center">
                 <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 border border-[#FF6E3C]/20 flex items-center justify-center">
                   <Lock className="w-7 h-7 text-[#FF6E3C]" />
                 </div>
-                <h2 className="text-xl font-bold text-white mb-2">{featureInfo.title}</h2>
+                <h2 id="upgrade-modal-title" className="text-xl font-bold text-white mb-2">{featureInfo.title}</h2>
                 <p className="text-sm text-white/60">{featureInfo.description}</p>
               </div>
 
@@ -190,7 +205,8 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
                   Maybe later
                 </button>
               </div>
-            </div>
+              </div>
+            </FocusLock>
           </motion.div>
 
           {/* Auth Modal */}
