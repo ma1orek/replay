@@ -522,67 +522,30 @@ export const StylePreview = ({ styleId }: { styleId: string }) => {
       </div>
     ),
     "pastel-cloud": (
-      <div className="w-full h-full relative overflow-hidden">
-        {/* Hero section with pastel gradient */}
-        <div className="absolute top-0 left-0 right-0 h-1/2" style={{ background: 'linear-gradient(135deg, #fce7f3 0%, #ddd6fe 30%, #c7d2fe 60%, #a5f3fc 100%)' }}>
-          <motion.div
-            className="absolute w-5 h-5 rounded-full"
-            style={{
-              background: '#f9a8d4',
-              filter: 'blur(4px)',
-              opacity: 0.6,
-              top: '20%',
-              left: '15%',
-            }}
-            animate={{ scale: [1, 1.3, 1] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <motion.div
-            className="absolute w-4 h-4 rounded-full"
-            style={{
-              background: '#a5f3fc',
-              filter: 'blur(3px)',
-              opacity: 0.5,
-              bottom: '10%',
-              right: '20%',
-            }}
-            animate={{ scale: [1.2, 0.9, 1.2] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-          />
-        </div>
-        {/* White section below */}
-        <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-white">
-          <div className="flex gap-1 justify-center pt-1">
-            <div className="w-3 h-2 bg-gray-100 rounded-sm"></div>
-            <div className="w-3 h-2 bg-gray-100 rounded-sm"></div>
-          </div>
-        </div>
-      </div>
-    ),
-    "pastel-cloud-3d": (
-      <div className="w-full h-full relative overflow-hidden">
-        {/* Hero with 3D effect */}
-        <div className="absolute top-0 left-0 right-0 h-1/2" style={{ background: 'linear-gradient(135deg, #fce7f3 0%, #ddd6fe 30%, #c7d2fe 60%, #a5f3fc 100%)' }}>
-          <motion.div
-            className="absolute w-6 h-6 rounded-full"
-            style={{
-              background: 'radial-gradient(circle at 30% 30%, #fff 0%, #c084fc 50%, #7c3aed 100%)',
-              top: '25%',
-              left: '25%',
-            }}
-            animate={{ scale: [1, 1.2, 1], y: [0, -3, 0] }}
-            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-          />
-        </div>
-        {/* White section below */}
-        <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-white">
-          <div className="flex gap-1 justify-center pt-1">
-            <div className="w-3 h-2 bg-gray-100 rounded-sm"></div>
-            <div className="w-3 h-2 bg-gray-100 rounded-sm"></div>
-          </div>
-        </div>
-        {/* 3D badge */}
-        <div className="absolute top-1 right-1 text-[4px] font-bold text-violet-600 bg-white/90 px-1 rounded">3D</div>
+      <div className="w-full h-full relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fce7f3 0%, #ddd6fe 30%, #c7d2fe 60%, #a5f3fc 100%)' }}>
+        <motion.div
+          className="absolute w-6 h-6 rounded-full"
+          style={{
+            background: 'radial-gradient(circle at 30% 30%, #fff 0%, #c084fc 50%, #7c3aed 100%)',
+            filter: 'blur(2px)',
+            top: '20%',
+            left: '20%',
+          }}
+          animate={{ scale: [1, 1.3, 1], y: [0, -2, 0] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute w-4 h-4 rounded-full"
+          style={{
+            background: 'radial-gradient(circle at 30% 30%, #fff 0%, #67e8f9 100%)',
+            filter: 'blur(2px)',
+            bottom: '25%',
+            right: '20%',
+          }}
+          animate={{ scale: [1.2, 0.9, 1.2] }}
+          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+        />
+        <div className="absolute top-1 right-1 text-[4px] font-bold text-violet-700 bg-white/80 px-1 rounded">3D</div>
       </div>
     ),
     "liquid-metal": (
@@ -2735,28 +2698,8 @@ ANIMATIONS: Fade in up (y: 20px → 0), border draw (width 0% → 100%), button 
 - Style changes APPEARANCE only, NEVER removes content or screens
 - Count screens in video and ensure ALL are represented`, category: "light" },
   
-  // === PASTEL CLOUD - CSS gradient hero ===
-  { id: "pastel-cloud", name: "Pastel Cloud", desc: "Animated gradient hero • Clean sections", fullDesc: `PASTEL CLOUD - Dreamy gradient hero, clean page below.
-
-HERO with animated gradient (ONLY in hero, NOT full page):
-<section class="relative min-h-screen overflow-hidden">
-  <div class="absolute inset-0 bg-gradient-to-br from-pink-200 via-purple-200 to-cyan-200 animate-gradient-shift"></div>
-  <div class="absolute top-20 left-10 w-72 h-72 bg-pink-300/50 rounded-full blur-3xl animate-pulse"></div>
-  <div class="absolute bottom-20 right-10 w-96 h-96 bg-purple-300/50 rounded-full blur-3xl animate-pulse"></div>
-  <div class="relative z-10 min-h-screen flex flex-col items-center justify-center text-center px-6">
-    <!-- content here -->
-  </div>
-</section>
-
-CSS in <style>:
-@keyframes gradient-shift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
-.animate-gradient-shift { background-size:200% 200%; animation:gradient-shift 8s ease infinite; }
-
-Below hero: bg-white sections, bg-gray-50 cards, bg-gray-900 footer.
-Colors: text-gray-900, bg-violet-600 buttons.`, category: "shader" },
-
-  // === PASTEL CLOUD 3D - Spline in hero ===
-  { id: "pastel-cloud-3d", name: "Pastel Cloud 3D", desc: "Spline 3D background • Glassmorphism", fullDesc: `🚨 PASTEL CLOUD 3D - COPY THIS EXACT CODE:
+  // === PASTEL CLOUD - Spline 3D ===
+  { id: "pastel-cloud", name: "Pastel Cloud", desc: "Spline 3D background • Glassmorphism", fullDesc: `🚨 SPLINE 3D BACKGROUND - MUST USE THIS EXACT CODE:
 
 <!DOCTYPE html>
 <html lang="en">
