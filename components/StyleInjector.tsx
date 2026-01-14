@@ -660,37 +660,6 @@ export const StylePreview = ({ styleId }: { styleId: string }) => {
       </div>
     ),
     // === NEW SHADER & ANIMATION STYLES ===
-    "liquid-metal": (
-      <div className="w-full h-full bg-black relative overflow-hidden flex items-center justify-center">
-        {/* Chrome metallic text */}
-        <motion.div
-          className="text-[8px] font-black tracking-tight"
-          style={{
-            background: 'linear-gradient(135deg, #1a1a1a 0%, #6a6a6a 20%, #f5f5f5 40%, #4a4a4a 60%, #e5e5e5 80%, #2a2a2a 100%)',
-            backgroundSize: '200% 200%',
-            WebkitBackgroundClip: 'text',
-            backgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}
-          animate={{ 
-            backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
-          }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        >
-          METAL
-        </motion.div>
-        {/* Subtle glow behind */}
-        <div 
-          className="absolute w-6 h-2 rounded-full opacity-20"
-          style={{ 
-            background: 'radial-gradient(ellipse, rgba(255,255,255,0.3) 0%, transparent 70%)',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)'
-          }}
-        />
-      </div>
-    ),
     "liquid-neon": (
       <div className="w-full h-full bg-black relative overflow-hidden">
         <motion.div
@@ -2085,7 +2054,117 @@ Bold, dynamic, eye-catching.
 ⚠️ MANDATORY: Preserve ALL content from video.`, category: "shader" },
   { id: "noise-gradient", name: "Dynamic Noise Gradient", desc: "Canvas Grain • Perlin • Aurora", fullDesc: "AWWWARDS STYLE: Elegant dark canvas with subtle animated aurora gradient. Background: solid #0a0a0a. Add ONE flowing gradient overlay using CSS animation. Grain texture at 3% opacity for premium feel. Clean modern typography (Inter/Geist). Glassmorphism cards with backdrop-blur. Smooth micro-interactions on all interactive elements.", category: "shader" },
   { id: "stripe-aurora", name: "Stripe Aurora", desc: "Stripe.com Style • Gradient Blobs • Glass Cards", fullDesc: "AWWWARDS STYLE: Inspired by Stripe.com. LIGHT background (#ffffff or #fafafa). Multiple soft gradient BLOBS positioned around the page (not overlapping content). Blobs use: absolute positioning, large blur (80-150px), low opacity (0.3-0.5), colors: blue-500, purple-500, pink-500, orange-400. Content sits on TOP with white/glass cards. Clean Inter/SF Pro typography. Subtle shadows. Cards have white bg with very subtle border. Premium SaaS aesthetic.", category: "light" },
-  { id: "liquid-metal", name: "Liquid Metal", desc: "Chrome Aesthetic • Metallic Reflections • Y2K", fullDesc: "AWWWARDS STYLE: Futuristic chrome/mercury aesthetic. Dark background #000 or #0a0a0a. Metallic elements use CSS gradients: linear-gradient(135deg, #1a1a1a 0%, #666 25%, #fff 50%, #666 75%, #1a1a1a 100%). Text can have metallic shine effect using background-clip: text. Cards have metallic borders with subtle white glow. Y2K futurism meets modern minimalism. Bold typography.", category: "dark" },
+  { id: "liquid-metal", name: "Liquid Metal", desc: "Chrome Text • Animated Shine • Premium Hero", fullDesc: `LIQUID METAL - Chrome metallic text effect for premium hero sections. Inspired by Framer's LiquidMetal component.
+
+HERO TEXT EFFECT: Headlines rendered with liquid chrome/metallic appearance. The text looks like molten silver or mercury with animated shine.
+
+CSS IMPLEMENTATION FOR LIQUID METAL TEXT:
+\`\`\`css
+.liquid-metal-text {
+  /* Base metallic gradient */
+  background: linear-gradient(
+    135deg,
+    #1a1a1a 0%,
+    #4a4a4a 10%,
+    #f5f5f5 20%,
+    #8a8a8a 30%,
+    #2a2a2a 40%,
+    #6a6a6a 50%,
+    #e5e5e5 60%,
+    #3a3a3a 70%,
+    #9a9a9a 80%,
+    #1a1a1a 90%,
+    #5a5a5a 100%
+  );
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: metalShine 8s ease-in-out infinite;
+  filter: drop-shadow(0 2px 4px rgba(255,255,255,0.1))
+          drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+}
+
+@keyframes metalShine {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Alternative: Liquid mercury effect */
+.mercury-text {
+  background: linear-gradient(
+    90deg,
+    #b8c6db 0%,
+    #f5f7fa 25%,
+    #c3cfe2 50%,
+    #f5f7fa 75%,
+    #b8c6db 100%
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: mercuryFlow 6s linear infinite;
+}
+
+@keyframes mercuryFlow {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 300% 0%; }
+}
+\`\`\`
+
+COLORS: 
+- Background: Deep black #000000 or very dark gray #0A0A0A
+- Text gradient: Silver spectrum (#1a1a1a → #f5f5f5 → #4a4a4a)
+- Accents: Subtle white glow, chrome reflections
+- CTA buttons: Metallic gradient borders, glass fill
+
+TYPOGRAPHY: 
+- Headlines: Heavy weight (700-900), large size (text-6xl to text-8xl)
+- Font: Inter, SF Pro Display, or Geist - clean geometric sans-serif
+- Letter-spacing: -0.02em to -0.04em (tight)
+- Text should be BIG for the metallic effect to shine
+
+LAYOUT:
+- Full viewport hero with centered content
+- Dark background to contrast with chrome text
+- Minimal elements - let the metal text be the star
+- Generous whitespace around headline
+
+BACKGROUND OPTIONS:
+Option A - Pure Dark: background: #000000 with subtle noise at 0.02 opacity
+Option B - Gradient Dark: radial-gradient(ellipse at center, #1a1a2e 0%, #000000 100%)
+Option C - Animated Mesh: Dark base with subtle animated gradient blobs at 0.1-0.2 opacity
+
+ANIMATIONS:
+- Shine sweep: gradient moves across text (6-10s)
+- Subtle float: text translateY 2-4px (8s)
+- On hover: shine speed increases
+- Staggered letter reveal on load
+- CTA buttons: border gradient rotates
+
+METALLIC BUTTONS:
+\`\`\`css
+.metal-button {
+  background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+  border: 1px solid transparent;
+  position: relative;
+}
+.metal-button::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(135deg, #4a4a4a, #8a8a8a, #4a4a4a);
+  border-radius: inherit;
+  z-index: -1;
+}
+\`\`\`
+
+⚠️ MANDATORY:
+- Preserve ALL content from video
+- Chrome effect works best on LARGE text
+- Keep background dark for contrast
+- Don't overuse - one headline with effect is enough`, category: "shader" },
   { id: "typography-mask", name: "Typography Hero", desc: "Giant Letters • Image Reveal • Editorial", fullDesc: "AWWWARDS STYLE: Bold editorial typography. Massive headline text (text-[15vw] or larger) as hero element. Text can have gradient fill or image texture via background-clip. Dark or light background depending on context. Strong typographic hierarchy. Magazine/editorial aesthetic. Generous whitespace.", category: "creative" },
   { id: "path-follower", name: "Roadmap Timeline", desc: "SVG Path • Progress Line • Scroll Story", fullDesc: "AWWWARDS STYLE: Clean timeline/roadmap design. Vertical or horizontal line connecting sections. Each section is a card/milestone along the path. Line can be animated with stroke-dashoffset on scroll. Subtle dots or icons mark each point. Clean minimal aesthetic. Works great for product stories, company history, feature roadmaps.", category: "motion" },
   
@@ -2530,136 +2609,6 @@ ANIMATIONS:
 ⚠️ MANDATORY: Preserve ALL content from video. Style changes appearance only.`, category: "brand" },
   
   // === NEW SHADER & ANIMATION STYLES ===
-  { id: "liquid-metal", name: "Liquid Metal", desc: "Chrome Text • Metallic Shine • Premium", fullDesc: `LIQUID METAL - Chrome metallic text effect for premium hero sections.
-
-HERO TEXT EFFECT: Headlines rendered with liquid chrome/metallic appearance. The text looks like molten silver or mercury.
-
-CSS IMPLEMENTATION FOR LIQUID METAL TEXT:
-\`\`\`css
-.liquid-metal-text {
-  /* Base metallic gradient */
-  background: linear-gradient(
-    135deg,
-    #1a1a1a 0%,
-    #4a4a4a 10%,
-    #f5f5f5 20%,
-    #8a8a8a 30%,
-    #2a2a2a 40%,
-    #6a6a6a 50%,
-    #e5e5e5 60%,
-    #3a3a3a 70%,
-    #9a9a9a 80%,
-    #1a1a1a 90%,
-    #5a5a5a 100%
-  );
-  background-size: 200% 200%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: metalShine 8s ease-in-out infinite;
-  
-  /* Chrome-like reflections */
-  filter: drop-shadow(0 2px 4px rgba(255,255,255,0.1))
-          drop-shadow(0 4px 8px rgba(0,0,0,0.3));
-}
-
-@keyframes metalShine {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-/* Alternative: Liquid mercury effect */
-.mercury-text {
-  background: linear-gradient(
-    90deg,
-    #b8c6db 0%,
-    #f5f7fa 25%,
-    #c3cfe2 50%,
-    #f5f7fa 75%,
-    #b8c6db 100%
-  );
-  background-size: 300% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: mercuryFlow 6s linear infinite;
-}
-
-@keyframes mercuryFlow {
-  0% { background-position: 0% 0%; }
-  100% { background-position: 300% 0%; }
-}
-\`\`\`
-
-COLORS: 
-- Background: Deep black #000000 or very dark gray #0A0A0A
-- Text gradient: Silver spectrum (#1a1a1a → #f5f5f5 → #4a4a4a)
-- Accents: Subtle white glow, chrome reflections
-- CTA buttons: Metallic gradient borders, glass fill
-
-TYPOGRAPHY: 
-- Headlines: Heavy weight (700-900), large size (text-6xl to text-8xl)
-- Font: Inter, SF Pro Display, or Geist - clean geometric sans-serif
-- Letter-spacing: -0.02em to -0.04em (tight)
-- Text should be BIG for the metallic effect to shine
-
-LAYOUT:
-- Full viewport hero with centered content
-- Dark background to contrast with chrome text
-- Minimal elements - let the metal text be the star
-- Generous whitespace around headline
-
-KEY EFFECTS:
-- METALLIC TEXT: Multi-stop gradient with background-clip: text
-- SHINE ANIMATION: background-position animates left to right
-- REFLECTION: Subtle drop-shadow with white and black
-- CHROME BORDER: Linear gradient border on buttons/cards
-- AMBIENT GLOW: Soft radial gradient behind text
-
-BACKGROUND OPTIONS:
-Option A - Pure Dark:
-- background: #000000
-- Subtle noise texture at 0.02 opacity
-
-Option B - Gradient Dark:
-- background: radial-gradient(ellipse at center, #1a1a2e 0%, #000000 100%)
-- Creates depth behind chrome text
-
-Option C - Animated Mesh:
-- Dark base with subtle animated gradient blobs
-- Very low opacity (0.1-0.2) so text pops
-
-ANIMATIONS:
-- Shine sweep: gradient moves across text (6-10s)
-- Subtle float: text translateY 2-4px (8s)
-- On hover: shine speed increases
-- Staggered letter reveal on load
-- CTA buttons: border gradient rotates
-
-BUTTONS/CARDS:
-\`\`\`css
-.metal-button {
-  background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
-  border: 1px solid transparent;
-  background-clip: padding-box;
-  position: relative;
-}
-.metal-button::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  background: linear-gradient(135deg, #4a4a4a, #8a8a8a, #4a4a4a);
-  border-radius: inherit;
-  z-index: -1;
-}
-\`\`\`
-
-⚠️ MANDATORY:
-- Preserve ALL content from video
-- Chrome effect works best on LARGE text
-- Keep background dark for contrast
-- Don't overuse - one headline with effect is enough
-- Provide fallback for browsers without gradient text support`, category: "shader" },
   { id: "liquid-neon", name: "Liquid Neon", desc: "WebGL Metaballs • Lava Lamp • Glow", fullDesc: "CRITICAL: Black #000 background. Neon effect using CSS: Single animated blob with filter: blur(40px) and gradient colors. OR use radial-gradient blobs that animate position. Text has neon glow: text-shadow: 0 0 20px rgba(255,0,255,0.5). Keep layout clean, no overlapping blobs.", category: "shader" },
   { id: "matrix-rain", name: "Matrix Rain", desc: "Falling Code • Scramble Text • Hacker", fullDesc: "CRITICAL: Pure black #000 background. Green #00ff00 monospace text. Matrix rain effect: CSS animation with translateY on columns of characters, staggered delays. Or use a single canvas-style div with animated characters. Headlines can have scramble effect on load. NO overlapping elements.", category: "creative" },
   { id: "gradient-bar-waitlist", name: "Gradient Bar Waitlist", desc: "Orange Bars • Pulse • Startup", fullDesc: "Animated gradient bars rising from bottom with pulse animation. Dark premium background, waitlist form, social proof avatars. Space Grotesk font.", category: "dark" },
