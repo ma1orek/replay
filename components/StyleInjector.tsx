@@ -2623,7 +2623,8 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
 
   const handleSelectPreset = (preset: typeof STYLE_PRESETS[0]) => {
     if (preset.id === "custom") {
-      onChange("");
+      // Set to "Custom" so it's recognized as selected (not empty which defaults to auto-detect)
+      onChange("Custom");
       // Clear reference image when switching away from style-reference
       onReferenceImageChange?.(null);
     } else if (preset.id === "style-reference") {
