@@ -6924,211 +6924,7 @@ export const shadows = {
       <div className="grain-overlay" />
       <div className="vignette" />
       
-      {/* Desktop Header - Unified with Tabs */}
-      <header className="relative z-20 hidden md:flex items-center justify-between px-4 py-2 border-b border-white/5 bg-black/60 backdrop-blur-xl">
-        {/* Left: Logo */}
-        <a href="/" className="hover:opacity-80 transition-opacity flex-shrink-0">
-          <Logo />
-        </a>
-        
-        {/* Center: Navigation Tabs */}
-        <div className="flex items-center gap-1 bg-black/40 rounded-lg p-0.5">
-          {[
-            { id: "preview", icon: Eye, label: "Preview" },
-            { id: "code", icon: Code, label: "Code" },
-            { id: "flow", icon: GitBranch, label: "Flow" },
-            { id: "design", icon: Paintbrush, label: "Design System" },
-            { id: "input", icon: FileInput, label: "Input" },
-          ].map((tab) => (
-            <button 
-              key={tab.id} 
-              onClick={() => setViewMode(tab.id as ViewMode)} 
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors", 
-                viewMode === tab.id ? "bg-white/10 text-white" : "text-white/40 hover:text-white/60"
-              )}
-            >
-              <tab.icon className="w-3.5 h-3.5" />{tab.label}
-            </button>
-          ))}
-        </div>
-        
-        {/* Right: User, Refresh, Publish */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {/* User Menu */}
-          <div className="relative" ref={profileMenuRef}>
-            {user ? (
-              <>
-                {(() => {
-                  const meta = user.user_metadata;
-                  const displayName = meta?.full_name || meta?.name || user.email?.split('@')[0] || 'User';
-                  const plan = membership?.plan || "free";
-                  return (
-                    <button 
-                      onClick={() => setShowProfileMenu(!showProfileMenu)}
-                      className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/5 transition-colors"
-                    >
-                      <span className="text-xs font-medium text-white/80 max-w-[100px] truncate">{displayName}</span>
-                      {isPaidPlan ? (
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase">
-                          {plan === "agency" ? "Agency" : plan === "enterprise" ? "Enterprise" : "Pro"}
-                        </span>
-                      ) : (
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-white/50 uppercase">
-                          Free
-                        </span>
-                      )}
-                    </button>
-                  );
-                })()}
-                
-                {/* Profile Dropdown */}
-                <AnimatePresence>
-                  {showProfileMenu && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -5, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -5, scale: 0.95 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full mt-2 w-64 bg-[#0A0A0A] border border-white/10 rounded-xl shadow-xl overflow-hidden z-50"
-                    >
-                      {/* Credits section */}
-                      {(() => {
-                        const plan = membership?.plan || "free";
-                        const maxCredits = plan === "agency" ? 10000 : plan === "pro" ? 3000 : 100;
-                        const percentage = Math.min(100, (userTotalCredits / maxCredits) * 100);
-                        return (
-                          <Link 
-                            href="/settings?tab=plans"
-                            onClick={() => setShowProfileMenu(false)}
-                            className="block p-4 hover:bg-white/5 transition-colors border-b border-white/5"
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm text-white">{userTotalCredits} credits</span>
-                                {isPaidPlan ? (
-                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase">
-                                    {plan === "agency" ? "Agency" : plan === "enterprise" ? "Enterprise" : "Pro"}
-                                  </span>
-                                ) : (
-                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-white/50 uppercase">
-                                    Free
-                                  </span>
-                                )}
-                              </div>
-                              <ChevronRight className="w-4 h-4 text-white/40" />
-                            </div>
-                            <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] rounded-full transition-all"
-                                style={{ width: `${percentage}%` }}
-                              />
-                            </div>
-                            {isPaidPlan ? (
-                              <div className="mt-2">
-                                <span className="text-xs text-white/40">Add credits →</span>
-                              </div>
-                            ) : (
-                              <div className="mt-2">
-                                <span className="text-xs text-[#FF6E3C] font-medium">Upgrade →</span>
-                              </div>
-                            )}
-                          </Link>
-                        );
-                      })()}
-                      
-                      {/* Your Projects */}
-                      <button 
-                        onClick={() => { setShowProfileMenu(false); setSidebarView("projects"); }}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/5 transition-colors"
-                      >
-                        <Folder className="w-4 h-4 opacity-50" />
-                        Your Projects
-                      </button>
-                      
-                      {/* Settings */}
-                      <Link 
-                        href="/settings"
-                        onClick={() => setShowProfileMenu(false)}
-                        className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/5 transition-colors"
-                      >
-                        <Settings className="w-4 h-4 opacity-50" />
-                        Settings
-                      </Link>
-                      
-                      {/* Sign out */}
-                      <div className="border-t border-white/5">
-                        <button 
-                          onClick={() => { setShowProfileMenu(false); signOut(); }}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/5 transition-colors"
-                        >
-                          <LogOut className="w-4 h-4 opacity-50" />
-                          Sign out
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </>
-            ) : (
-              <button
-                onClick={() => setShowAuthModal(true)}
-                className="px-3 py-1.5 rounded-lg bg-white/10 text-white text-xs font-medium hover:bg-white/20 transition-colors"
-              >
-                Sign in
-              </button>
-            )}
-          </div>
-          
-          {/* Refresh button */}
-          <button 
-            onClick={() => refreshCredits()}
-            className="p-1.5 rounded-lg hover:bg-white/5 transition-colors"
-            title="Refresh"
-          >
-            <RefreshCw className="w-4 h-4 text-white/40" />
-          </button>
-          
-          {/* Publish button */}
-          <button
-            onClick={() => {
-              if (!user || isDemoMode) {
-                setShowAuthModal(true);
-                showToast("Sign up free to publish. You get 2 free generations!", "info");
-                return;
-              }
-              if (!isPaidPlan) {
-                setUpgradeFeature("publish");
-                setShowUpgradeModal(true);
-                return;
-              }
-              if (!editableCode) return;
-              handlePublish();
-            }}
-            disabled={isPublishing || !editableCode}
-            className={cn(
-              "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5",
-              editableCode && isPaidPlan
-                ? "bg-[#FF6E3C] hover:bg-[#FF8F5C] text-white"
-                : "bg-white/10 text-white/50 hover:bg-white/20"
-            )}
-          >
-            {isPublishing ? (
-              <>
-                <Loader2 className="w-3 h-3 animate-spin" />
-                Publishing...
-              </>
-            ) : publishedUrl ? (
-              <>
-                <ExternalLink className="w-3 h-3" />
-                Published
-              </>
-            ) : (
-              "Publish"
-            )}
-          </button>
-        </div>
-      </header>
+      {/* Desktop Header removed - Logo now in sidebar, tabs in work area */}
       
       {/* Mobile Header - Fixed - Hide when panels with own headers are open */}
       {!(mobilePanel === "chat" && generatedCode) && mobilePanel !== "preview" && mobilePanel !== "code" && mobilePanel !== "flow" && mobilePanel !== "design" && mobilePanel !== "input" && (
@@ -7261,32 +7057,28 @@ export const shadows = {
         {/* Left Panel - Hidden on mobile */}
         <div className="hidden md:flex w-[340px] border-r border-white/5 bg-black/40 backdrop-blur-sm flex-col">
           
-          {/* PROJECT Header with dropdown arrow */}
+          {/* Logo */}
           <div className="flex-shrink-0 px-4 py-3 border-b border-white/5">
-            <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-medium text-white/40 uppercase tracking-wider mb-1">Project</p>
-                <div 
-                  className="flex items-center gap-2 cursor-pointer group"
-                  onClick={() => setSidebarView(sidebarView === "projects" ? "detail" : "projects")}
-                >
-                  <span className="text-sm font-medium text-white/80 truncate group-hover:text-white transition-colors">
-                    {generationTitle || "Untitled Project"}
-                  </span>
-                  <ChevronDown className={cn(
-                    "w-4 h-4 text-white/30 transition-transform flex-shrink-0",
-                    sidebarView === "projects" && "rotate-180"
-                  )} />
-                </div>
-              </div>
-              <button 
-                onClick={() => setSidebarView("projects")}
-                className="p-1.5 rounded-lg hover:bg-white/5 transition-colors"
-                title="View all projects"
-              >
-                <ChevronRight className="w-4 h-4 text-white/30" />
-              </button>
-            </div>
+            <a href="/" className="hover:opacity-80 transition-opacity">
+              <Logo />
+            </a>
+          </div>
+          
+          {/* PROJECT Header - Name + Arrow Right to open projects */}
+          <div className="flex-shrink-0 px-4 py-2.5 border-b border-white/5">
+            <p className="text-[10px] font-medium text-white/40 uppercase tracking-wider mb-1">Project</p>
+            <button 
+              className="flex items-center justify-between w-full group"
+              onClick={() => setSidebarView(sidebarView === "projects" ? "detail" : "projects")}
+            >
+              <span className="text-sm font-medium text-white/80 truncate group-hover:text-white transition-colors">
+                {generationTitle || "Untitled Project"}
+              </span>
+              <ChevronRight className={cn(
+                "w-4 h-4 text-white/30 transition-transform flex-shrink-0",
+                sidebarView === "projects" && "rotate-90"
+              )} />
+            </button>
           </div>
           
           {/* PROJECTS LIST VIEW */}
@@ -7723,40 +7515,6 @@ export const shadows = {
           ) : sidebarView === "detail" && sidebarMode === "chat" && generationComplete ? (
             /* AGENTIC CHAT MODE - After Generation - With Tabs */
             <div className="flex-1 flex flex-col min-h-0">
-              {/* Header: Project Name + Actions */}
-              <div className="flex-shrink-0 px-3 py-2.5 border-b border-white/5">
-                <div className="flex items-center gap-1.5">
-                  <div className="flex-1 min-w-0 flex items-center gap-1 group">
-                    <input 
-                      ref={titleInputRef}
-                      type="text"
-                      value={generationTitle}
-                      onChange={(e) => {
-                        const newTitle = e.target.value;
-                        setGenerationTitle(newTitle);
-                        if (activeGeneration) {
-                          setActiveGeneration(prev => prev ? { ...prev, title: newTitle } : null);
-                          setGenerations(prev => prev.map(g => 
-                            g.id === activeGeneration.id ? { ...g, title: newTitle } : g
-                          ));
-                        }
-                      }}
-                      className="flex-1 min-w-0 text-xs font-medium text-white/70 bg-transparent border-none focus:outline-none truncate hover:text-white transition-colors cursor-text"
-                      placeholder="Untitled Project"
-                    />
-                    <Pencil className="w-2.5 h-2.5 text-white/20 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-                  </div>
-                  <button onClick={() => { setGeneratedCode(null); setDisplayedCode(""); setEditableCode(""); setPreviewUrl(null); setGenerationComplete(false); setSidebarMode("config"); setChatMessages([]); setActiveGeneration(null); setGenerationTitle("Untitled Project"); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_sidebar_mode"); localStorage.removeItem("replay_generated_code"); localStorage.removeItem("replay_generation_title"); }} className="p-1 rounded hover:bg-white/5" title="New">
-                    <Plus className="w-3.5 h-3.5 text-white/30 hover:text-white/50" />
-                  </button>
-                  <button onClick={() => setSidebarView("projects")} className="p-1 rounded hover:bg-white/5" title="Your Projects">
-                    <Folder className="w-3.5 h-3.5 text-white/30 hover:text-white/50" />
-                  </button>
-                  <button onClick={() => setShowProjectSettings(true)} className="p-1 rounded hover:bg-white/5" title="Settings">
-                    <Settings className="w-3.5 h-3.5 text-white/30 hover:text-white/50" />
-                  </button>
-                </div>
-              </div>
               
               {/* Tabs: Replay AI | Settings */}
               <div className="flex-shrink-0 px-3 py-2 border-b border-white/5">
@@ -8888,8 +8646,31 @@ export const shadows = {
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col bg-[#0a0a0a] min-w-0 overflow-hidden">
-          {/* Tab-Specific Options Bar - Center aligned */}
-          <div className="hidden md:flex items-center justify-center px-4 py-1.5 border-b border-white/5 bg-black/20 min-h-[40px]">
+          {/* Desktop Top Bar: Tabs Left | Options Center | User/Actions Right */}
+          <div className="hidden md:flex items-center justify-between px-3 py-2 border-b border-white/5 bg-black/40">
+            {/* Left: Navigation Tabs */}
+            <div className="flex items-center gap-1 bg-black/40 rounded-lg p-0.5">
+              {[
+                { id: "preview", icon: Eye, label: "Preview" },
+                { id: "code", icon: Code, label: "Code" },
+                { id: "flow", icon: GitBranch, label: "Flow" },
+                { id: "design", icon: Paintbrush, label: "Design System" },
+                { id: "input", icon: FileInput, label: "Input" },
+              ].map((tab) => (
+                <button 
+                  key={tab.id} 
+                  onClick={() => setViewMode(tab.id as ViewMode)} 
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors", 
+                    viewMode === tab.id ? "bg-white/10 text-white" : "text-white/40 hover:text-white/60"
+                  )}
+                >
+                  <tab.icon className="w-3.5 h-3.5" />{tab.label}
+                </button>
+              ))}
+            </div>
+            
+            {/* Center: Tab-specific options */}
             <div className="flex items-center gap-2">
               {viewMode === "flow" && (
                 <div className="flex items-center gap-1 mr-2">
@@ -9128,6 +8909,191 @@ export const shadows = {
                   </div>
                 </>
               )}
+            </div>
+            
+            {/* Right: User Menu + Refresh + Mobile + Publish */}
+            <div className="flex items-center gap-2">
+              {/* User Menu */}
+              <div className="relative" ref={profileMenuRef}>
+                {user ? (
+                  <>
+                    {(() => {
+                      const meta = user.user_metadata;
+                      const displayName = meta?.full_name || meta?.name || user.email?.split('@')[0] || 'User';
+                      const plan = membership?.plan || "free";
+                      return (
+                        <button 
+                          onClick={() => setShowProfileMenu(!showProfileMenu)}
+                          className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/5 transition-colors"
+                        >
+                          <span className="text-xs font-medium text-white/80 max-w-[80px] truncate">{displayName}</span>
+                          {isPaidPlan ? (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase">
+                              {plan === "agency" ? "Agency" : plan === "enterprise" ? "Enterprise" : "Pro"}
+                            </span>
+                          ) : (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-white/50 uppercase">
+                              Free
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })()}
+                    
+                    {/* Profile Dropdown */}
+                    <AnimatePresence>
+                      {showProfileMenu && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -5, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -5, scale: 0.95 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute right-0 top-full mt-2 w-64 bg-[#0A0A0A] border border-white/10 rounded-xl shadow-xl overflow-hidden z-50"
+                        >
+                          {/* Credits section */}
+                          {(() => {
+                            const plan = membership?.plan || "free";
+                            const maxCredits = plan === "agency" ? 10000 : plan === "pro" ? 3000 : 100;
+                            const percentage = Math.min(100, (userTotalCredits / maxCredits) * 100);
+                            return (
+                              <Link 
+                                href="/settings?tab=plans"
+                                onClick={() => setShowProfileMenu(false)}
+                                className="block p-4 hover:bg-white/5 transition-colors border-b border-white/5"
+                              >
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm text-white">{userTotalCredits} credits</span>
+                                    {isPaidPlan ? (
+                                      <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase">
+                                        {plan === "agency" ? "Agency" : plan === "enterprise" ? "Enterprise" : "Pro"}
+                                      </span>
+                                    ) : (
+                                      <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-white/50 uppercase">
+                                        Free
+                                      </span>
+                                    )}
+                                  </div>
+                                  <ChevronRight className="w-4 h-4 text-white/40" />
+                                </div>
+                                <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                  <div 
+                                    className="h-full bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] rounded-full transition-all"
+                                    style={{ width: `${percentage}%` }}
+                                  />
+                                </div>
+                                {isPaidPlan ? (
+                                  <div className="mt-2">
+                                    <span className="text-xs text-white/40">Add credits →</span>
+                                  </div>
+                                ) : (
+                                  <div className="mt-2">
+                                    <span className="text-xs text-[#FF6E3C] font-medium">Upgrade →</span>
+                                  </div>
+                                )}
+                              </Link>
+                            );
+                          })()}
+                          
+                          {/* Your Projects */}
+                          <button 
+                            onClick={() => { setShowProfileMenu(false); setSidebarView("projects"); }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/5 transition-colors"
+                          >
+                            <Folder className="w-4 h-4 opacity-50" />
+                            Your Projects
+                          </button>
+                          
+                          {/* Settings */}
+                          <Link 
+                            href="/settings"
+                            onClick={() => setShowProfileMenu(false)}
+                            className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/5 transition-colors"
+                          >
+                            <Settings className="w-4 h-4 opacity-50" />
+                            Settings
+                          </Link>
+                          
+                          {/* Sign out */}
+                          <div className="border-t border-white/5">
+                            <button 
+                              onClick={() => { setShowProfileMenu(false); signOut(); }}
+                              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/5 transition-colors"
+                            >
+                              <LogOut className="w-4 h-4 opacity-50" />
+                              Sign out
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setShowAuthModal(true)}
+                    className="px-3 py-1.5 rounded-lg bg-white/10 text-white text-xs font-medium hover:bg-white/20 transition-colors"
+                  >
+                    Sign in
+                  </button>
+                )}
+              </div>
+              
+              {/* Refresh button */}
+              <button 
+                onClick={handleRefresh}
+                className="p-1.5 rounded-lg hover:bg-white/5 transition-colors"
+                title="Refresh preview"
+              >
+                <RefreshCw className="w-4 h-4 text-white/40" />
+              </button>
+              
+              {/* Mobile toggle */}
+              <button 
+                onClick={() => setIsMobilePreview(!isMobilePreview)} 
+                className={cn("p-1.5 rounded-lg transition-colors", isMobilePreview ? "bg-[#FF6E3C]/20 text-[#FF6E3C]" : "hover:bg-white/5")} 
+                title={isMobilePreview ? "Desktop view" : "Mobile view"}
+              >
+                {isMobilePreview ? <Monitor className="w-4 h-4" /> : <Smartphone className="w-4 h-4 text-white/40" />}
+              </button>
+              
+              {/* Publish button */}
+              <button
+                onClick={() => {
+                  if (!user || isDemoMode) {
+                    setShowAuthModal(true);
+                    showToast("Sign up free to publish. You get 2 free generations!", "info");
+                    return;
+                  }
+                  if (!isPaidPlan) {
+                    setUpgradeFeature("publish");
+                    setShowUpgradeModal(true);
+                    return;
+                  }
+                  if (!editableCode) return;
+                  handlePublish();
+                }}
+                disabled={isPublishing || !editableCode}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5",
+                  editableCode && isPaidPlan
+                    ? "bg-[#FF6E3C] hover:bg-[#FF8F5C] text-white"
+                    : "bg-white/10 text-white/50 hover:bg-white/20"
+                )}
+              >
+                {isPublishing ? (
+                  <>
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Publishing...
+                  </>
+                ) : publishedUrl ? (
+                  <>
+                    <ExternalLink className="w-3 h-3" />
+                    Published
+                  </>
+                ) : (
+                  "Publish"
+                )}
+              </button>
             </div>
           </div>
 
