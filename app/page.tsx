@@ -9078,7 +9078,7 @@ Try these prompts in Cursor or v0:
                 {displayedCode && (
                   <div className="flex-shrink-0 border-b border-white/5 bg-[#0c0c0c] px-3 py-2">
                     <div className="flex items-center justify-between gap-3">
-                      {/* Left: Mode toggle - Single-file / Componentized */}
+                      {/* Left: Mode toggle - Single-file / Componentized + Agent Mode */}
                       <div className="flex items-center gap-3">
                         <div className="flex items-center bg-black/50 rounded-lg p-0.5">
                           <button
@@ -9108,76 +9108,73 @@ Try these prompts in Cursor or v0:
                           </button>
                         </div>
                         
-                        {/* Agent Mode Toggle */}
-                        <button
-                          onClick={() => setAgentMode(!agentMode)}
-                          className={cn(
-                            "flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all border",
-                            agentMode 
-                              ? "bg-[#FF6E3C]/10 border-[#FF6E3C]/30 text-[#FF6E3C]" 
-                              : "bg-black/30 border-white/10 text-white/40 hover:text-white/60 hover:border-white/20"
-                          )}
-                          title="Enable Agent Mode to add AI context markers for Cursor/v0"
-                        >
-                          <span className="text-sm">🤖</span>
-                          <span>Agent Mode</span>
+                        {/* Agent Mode Toggle - Clean minimal design */}
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => setAgentMode(!agentMode)}
+                            className={cn(
+                              "relative w-8 h-4 rounded-full transition-all",
+                              agentMode 
+                                ? "bg-[#FF6E3C]" 
+                                : "bg-white/20"
+                            )}
+                            aria-label="Toggle Agent Mode"
+                          >
+                            <span className={cn(
+                              "absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-all",
+                              agentMode ? "left-[18px]" : "left-0.5"
+                            )} />
+                          </button>
                           <span className={cn(
-                            "px-1 py-0.5 rounded text-[8px] font-bold",
-                            agentMode ? "bg-[#FF6E3C]/20 text-[#FF6E3C]" : "bg-white/10 text-white/30"
+                            "text-[10px] font-medium",
+                            agentMode ? "text-white" : "text-white/40"
                           )}>
-                            {agentMode ? "ON" : "OFF"}
+                            Agent Mode
                           </span>
-                        </button>
+                          {/* Info tooltip */}
+                          <div className="relative group">
+                            <Info className="w-3 h-3 text-white/30 cursor-help" />
+                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 p-2.5 bg-[#1a1a1a] border border-white/10 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                              <p className="text-[10px] text-white/70 leading-relaxed">
+                                Adds hidden context markers to the code. Optimized for <span className="text-white font-medium">Cursor</span>, <span className="text-white font-medium">Windsurf</span>, and <span className="text-white font-medium">Copilot</span> to understand your UI intent instantly.
+                              </p>
+                              <div className="absolute left-1/2 -translate-x-1/2 top-full -mt-1 w-2 h-2 bg-[#1a1a1a] border-r border-b border-white/10 rotate-45" />
+                            </div>
+                          </div>
+                        </div>
                       </div>
                       
-                      {/* Right: Actions - Copy (with dropdown) & Download */}
+                      {/* Right: Actions - Copy for AI dropdown & Download */}
                       <div className="flex items-center gap-1.5">
-                        {/* Copy Button with Dropdown */}
+                        {/* Copy for AI - Single dropdown button */}
                         <div className="relative">
-                          <div className="flex items-center">
-                            <button 
-                              onClick={() => {
-                                // Demo mode: require sign up
-                                if (isDemoMode && !user) {
-                                  setShowAuthModal(true);
-                                  showToast("Sign up free to copy code. You get 1 free generation!", "info");
-                                  return;
-                                }
-                                if (!isPaidPlan) {
-                                  setUpgradeFeature("code");
-                                  setShowUpgradeModal(true);
-                                } else {
-                                  const content = agentMode ? getAgentPackCode(getActiveFileContent()) : getActiveFileContent();
-                                  navigator.clipboard.writeText(content);
-                                  showToast(agentMode ? "Agent Pack copied! Paste into Cursor" : "Code copied to clipboard", "success");
-                                }
-                              }}
-                              className={cn(
-                                "flex items-center gap-1 px-2 py-1 rounded-l text-[10px] transition-colors",
-                                agentMode 
-                                  ? "bg-[#FF6E3C]/10 text-[#FF6E3C] hover:bg-[#FF6E3C]/20 border border-[#FF6E3C]/30 border-r-0" 
-                                  : "text-white/40 hover:text-white/60 hover:bg-white/5",
-                                !isPaidPlan && "opacity-50"
-                              )}
-                            >
-                              {!isPaidPlan && <Lock className="w-2.5 h-2.5" />}
-                              <Copy className="w-3 h-3" />
-                              <span>{agentMode ? "Copy for AI" : "Copy"}</span>
-                            </button>
-                            <button
-                              onClick={() => setShowCopyDropdown(!showCopyDropdown)}
-                              className={cn(
-                                "px-1 py-1 rounded-r text-[10px] transition-colors",
-                                agentMode 
-                                  ? "bg-[#FF6E3C]/10 text-[#FF6E3C] hover:bg-[#FF6E3C]/20 border border-[#FF6E3C]/30 border-l-0" 
-                                  : "text-white/40 hover:text-white/60 hover:bg-white/5",
-                                !isPaidPlan && "opacity-50"
-                              )}
-                              disabled={!isPaidPlan}
-                            >
-                              <ChevronDown className="w-3 h-3" />
-                            </button>
-                          </div>
+                          <button 
+                            onClick={() => {
+                              if (isDemoMode && !user) {
+                                setShowAuthModal(true);
+                                showToast("Sign up free to copy code. You get 1 free generation!", "info");
+                                return;
+                              }
+                              if (!isPaidPlan) {
+                                setUpgradeFeature("code");
+                                setShowUpgradeModal(true);
+                              } else {
+                                setShowCopyDropdown(!showCopyDropdown);
+                              }
+                            }}
+                            className={cn(
+                              "flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-colors",
+                              agentMode 
+                                ? "bg-[#FF6E3C]/10 text-[#FF6E3C] hover:bg-[#FF6E3C]/20 border border-[#FF6E3C]/30" 
+                                : "text-white/40 hover:text-white/60 hover:bg-white/5",
+                              !isPaidPlan && "opacity-50"
+                            )}
+                          >
+                            {!isPaidPlan && <Lock className="w-2.5 h-2.5" />}
+                            <Copy className="w-3 h-3" />
+                            <span>Copy for AI</span>
+                            <ChevronDown className="w-3 h-3" />
+                          </button>
                           
                           {/* Copy Dropdown Menu */}
                           {showCopyDropdown && isPaidPlan && (
@@ -9211,13 +9208,19 @@ Try these prompts in Cursor or v0:
                                       showToast("Agent Pack copied! Paste into Cursor", "success");
                                       setShowCopyDropdown(false);
                                     }}
-                                    className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-[11px] text-white/70 hover:bg-[#FF6E3C]/10 hover:text-[#FF6E3C] transition-colors text-left"
+                                    className={cn(
+                                      "w-full flex items-center gap-2 px-3 py-2 rounded-md text-[11px] transition-colors text-left",
+                                      agentMode 
+                                        ? "bg-[#FF6E3C]/10 text-[#FF6E3C]" 
+                                        : "text-white/70 hover:bg-[#FF6E3C]/10 hover:text-[#FF6E3C]"
+                                    )}
                                   >
-                                    <span className="text-base">🤖</span>
+                                    <Sparkles className="w-3.5 h-3.5" />
                                     <div>
-                                      <div className="font-medium">Copy for Cursor / v0</div>
-                                      <div className="text-[9px] text-white/40">With AI context & instructions</div>
+                                      <div className="font-medium">Copy for AI Editors</div>
+                                      <div className="text-[9px] opacity-60">With context markers & instructions</div>
                                     </div>
+                                    {agentMode && <Check className="w-3 h-3 ml-auto" />}
                                   </button>
                                   
                                   <div className="border-t border-white/5 my-1" />
@@ -9263,24 +9266,6 @@ Try these prompts in Cursor or v0:
                         </button>
                       </div>
                     </div>
-                    
-                    {/* Agent Mode Banner - Shows when active */}
-                    {agentMode && (
-                      <div className="mt-2 p-2 rounded-lg bg-[#FF6E3C]/5 border border-[#FF6E3C]/20 flex items-center gap-2">
-                        <span className="text-sm">🤖</span>
-                        <span className="text-[10px] text-[#FF6E3C]/80">
-                          <span className="font-medium">Agent Mode ON</span> — Code includes AI context markers. Copy and paste into Cursor for smart editing.
-                        </span>
-                        <a 
-                          href="https://cursor.sh" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="ml-auto text-[9px] text-[#FF6E3C] hover:underline flex items-center gap-1"
-                        >
-                          Get Cursor <ExternalLink className="w-2.5 h-2.5" />
-                        </a>
-                      </div>
-                    )}
                   </div>
                 )}
                 
@@ -9351,8 +9336,8 @@ Try these prompts in Cursor or v0:
                           </span>
                         )}
                         {agentMode && (
-                          <span className="px-1.5 py-0.5 rounded text-[8px] bg-[#FF6E3C]/10 text-[#FF6E3C] border border-[#FF6E3C]/20 flex items-center gap-1">
-                            🤖 AGENT
+                          <span className="px-1.5 py-0.5 rounded text-[8px] bg-[#FF6E3C]/10 text-[#FF6E3C] border border-[#FF6E3C]/20">
+                            AGENT
                           </span>
                         )}
                         {generatedFiles.find(f => f.path === activeFilePath)?.lineCount && (
