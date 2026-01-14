@@ -2721,7 +2721,25 @@ You MUST use this HTML structure for the Hero. Do NOT add background colors (bg-
 3. REST OF THE PAGE:
 - After the Hero section, revert to a standard, clean design.
 - Use "bg-white" or "bg-gray-50" for subsequent sections.
-- Do NOT apply the 3D effect to the whole body.`, category: "shader" },
+- Do NOT apply the 3D effect to the whole body.
+
+4. COLOR PALETTE (to complement the pastel 3D gradient):
+- Hero text: text-gray-900 or text-gray-800 (dark for contrast on pastel)
+- Body text: text-gray-600
+- Primary buttons: bg-violet-600 hover:bg-violet-700 (matches Spline purples)
+- Secondary buttons: bg-white/70 backdrop-blur-sm text-gray-800 border-gray-200
+- Cards below hero: bg-white or bg-gray-50 with border-gray-100
+- Accent gradients: from-violet-50 to-pink-50 (subtle, for CTA sections)
+- Footer: bg-gray-900 text-white
+
+5. TYPOGRAPHY:
+- Headlines: text-5xl md:text-7xl font-bold tracking-tight
+- Subheadlines: text-xl text-gray-700
+- Clean, modern sans-serif look
+
+6. NAV:
+- Fixed nav with bg-white/80 backdrop-blur-md for glass effect over hero
+- Solid after scrolling past hero`, category: "shader" },
 
   // === SUPER HERO - ANIMATED LIQUID BACKGROUNDS ===
   { id: "super-hero", name: "Super Hero", desc: "Liquid Gradient • Animated Blob • Premium Hero", fullDesc: `SUPER HERO - Animated liquid gradient backgrounds like Framer's AnimatedLiquidBackground.
