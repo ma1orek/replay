@@ -859,6 +859,50 @@ export const StylePreview = ({ styleId }: { styleId: string }) => {
         </div>
       </div>
     ),
+    "super-hero": (
+      <div className="w-full h-full bg-gradient-to-br from-[#0F0720] via-[#1A0B3E] to-[#2D1B69] relative overflow-hidden">
+        {/* Animated liquid orbs */}
+        <motion.div
+          className="absolute w-6 h-6 rounded-full bg-purple-500/60"
+          style={{ filter: 'blur(8px)', top: '-4px', left: '-4px' }}
+          animate={{ 
+            x: [0, 8, 0], 
+            y: [0, 4, 0],
+            scale: [1, 1.1, 1]
+          }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute w-5 h-5 rounded-full bg-pink-500/50"
+          style={{ filter: 'blur(6px)', bottom: '-2px', right: '-2px' }}
+          animate={{ 
+            x: [0, -6, 0], 
+            y: [0, -4, 0],
+            scale: [1, 0.9, 1]
+          }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+        />
+        <motion.div
+          className="absolute w-4 h-4 rounded-full bg-blue-500/40"
+          style={{ filter: 'blur(5px)', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
+          animate={{ 
+            scale: [0.8, 1.2, 0.8],
+            opacity: [0.4, 0.7, 0.4]
+          }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+        />
+        {/* Content preview */}
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 text-center z-10">
+          <div className="text-[4px] font-bold text-white/90">HERO</div>
+        </div>
+        {/* CTA button */}
+        <motion.div
+          className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-1 rounded-full bg-white/20 backdrop-blur-sm border border-white/30"
+          animate={{ opacity: [0.6, 1, 0.6] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
+      </div>
+    ),
   };
 
   return (
@@ -2517,6 +2561,130 @@ ANIMATIONS: Fade in up (y: 20px → 0), border draw (width 0% → 100%), button 
 - Each screen = separate section with working navigation links between them
 - Style changes APPEARANCE only, NEVER removes content or screens
 - Count screens in video and ensure ALL are represented`, category: "light" },
+  
+  // === SUPER HERO - ANIMATED LIQUID BACKGROUNDS ===
+  { id: "super-hero", name: "Super Hero", desc: "Liquid Gradient • Animated Blob • Premium Hero", fullDesc: `SUPER HERO - Animated liquid gradient backgrounds. Premium startup landing aesthetic.
+
+HERO BACKGROUND: Full viewport animated liquid gradient background. Use ONE of these 6 variations:
+
+VARIATION 1 - COSMIC PURPLE:
+- Deep space gradient: #0F0720 → #1A0B3E → #2D1B69
+- Floating orbs: purple #8B5CF6, pink #EC4899, blue #3B82F6
+- Orbs blur(100px) with mix-blend-mode: screen
+- Animation: Each orb floats in unique path, 15-25s duration, infinite
+
+VARIATION 2 - OCEAN TEAL:
+- Deep ocean: #042F2E → #0F766E → #14B8A6
+- Floating orbs: teal #14B8A6, cyan #06B6D4, emerald #10B981
+- Subtle wave motion overlay
+- Animation: Gentle drift like underwater, 20-30s
+
+VARIATION 3 - SUNSET WARMTH:
+- Warm gradient: #1F1005 → #7C2D12 → #EA580C
+- Floating orbs: orange #F97316, amber #F59E0B, rose #FB7185
+- Glow intensifies at center
+- Animation: Pulsing warmth, 12-18s
+
+VARIATION 4 - MIDNIGHT BLUE:
+- Dark blue: #020617 → #0F172A → #1E3A8A
+- Floating orbs: blue #3B82F6, indigo #6366F1, sky #0EA5E9
+- Northern lights effect with vertical streaks
+- Animation: Slow aurora drift, 25-35s
+
+VARIATION 5 - NEON CYBER:
+- Pure black #000000 base
+- Floating orbs: magenta #FF00FF, cyan #00FFFF, lime #ADFF2F
+- High contrast, harsh glow edges
+- Animation: Fast chaotic movement, 8-12s
+
+VARIATION 6 - MINIMAL MONO:
+- Near-white #FAFAFA or near-black #0A0A0A
+- Single subtle gradient orb in brand color
+- Ultra-minimal, almost invisible
+- Animation: Barely perceptible drift, 30-40s
+
+CSS IMPLEMENTATION (Use for all variations):
+\`\`\`css
+.hero-bg {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-gradient);
+}
+
+.hero-bg::before,
+.hero-bg::after,
+.hero-bg .orb {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  mix-blend-mode: screen;
+  animation: float var(--duration) ease-in-out infinite;
+}
+
+.orb-1 {
+  width: 600px; height: 600px;
+  background: var(--orb-color-1);
+  top: -200px; left: -100px;
+  animation-delay: 0s;
+}
+
+.orb-2 {
+  width: 500px; height: 500px;
+  background: var(--orb-color-2);
+  bottom: -150px; right: -100px;
+  animation-delay: -5s;
+}
+
+.orb-3 {
+  width: 400px; height: 400px;
+  background: var(--orb-color-3);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  animation-delay: -10s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(50px, -30px) scale(1.05); }
+  50% { transform: translate(-30px, 50px) scale(0.95); }
+  75% { transform: translate(-50px, -20px) scale(1.02); }
+}
+\`\`\`
+
+COLORS: Choose based on variation. Text always high contrast - white on dark, dark on light.
+
+TYPOGRAPHY: Modern sans-serif (Inter, SF Pro, Geist). Headlines: weight 600-700, large (text-5xl to text-7xl), tight tracking (-0.02em). Subheadlines: weight 400, text-xl, lower opacity.
+
+LAYOUT: Full viewport hero (min-h-screen). Content centered with max-w-4xl. Generous padding. Clear CTA buttons.
+
+KEY EFFECTS:
+- Animated gradient orbs in background (3-4 orbs)
+- Each orb: border-radius: 50%, filter: blur(100px), mix-blend-mode: screen
+- Glass effect on cards: bg-white/10 backdrop-blur-xl
+- Subtle grain overlay: noise texture at 0.02 opacity
+- Content floats above with z-index
+
+ANIMATIONS:
+- Orbs FLOAT: translateX/Y in circular paths, 15-30s infinite
+- Orbs PULSE: scale 0.95 → 1.05 slowly
+- Text FADE IN: opacity 0 → 1, translateY 20px → 0
+- Staggered reveal: 100-200ms delay between elements
+- CTA buttons: subtle glow pulse on hover
+
+GLASS CARDS (if needed):
+- bg-white/5 or bg-black/5 (based on theme)
+- backdrop-blur-2xl
+- border border-white/10
+- rounded-2xl to rounded-3xl
+- Shadow with brand color tint
+
+⚠️ MANDATORY: 
+- Preserve ALL content from video
+- Background animation should NOT distract from content
+- Keep animation smooth (60fps) - use will-change: transform
+- Provide fallback for reduced-motion preference
+- Choose variation that MATCHES the mood of the video content`, category: "creative" },
 ];
 
 export default function StyleInjector({ value, onChange, disabled, referenceImage, onReferenceImageChange }: StyleInjectorProps) {
