@@ -2699,21 +2699,22 @@ ANIMATIONS: Fade in up (y: 20px → 0), border draw (width 0% → 100%), button 
 - Count screens in video and ensure ALL are represented`, category: "light" },
   
   // === PASTEL CLOUD - Spline 3D ===
-  { id: "pastel-cloud", name: "Pastel Cloud", desc: "Spline 3D background", fullDesc: `🚨🚨🚨 MANDATORY: ADD SPLINE 3D BACKGROUND 🚨🚨🚨
+  { id: "pastel-cloud", name: "Pastel Cloud", desc: "Spline 3D background", fullDesc: `🚨 SPLINE 3D BACKGROUND - CRITICAL VISIBILITY RULES 🚨
 
-YOU MUST ADD THESE TWO THINGS:
-
-1. IN <head> ADD:
+1. ADD IN <head>:
 <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.35/build/spline-viewer.js"></script>
 
-2. FIRST ELEMENT IN <body> (before any other content):
+2. ADD AS FIRST IN <body>:
 <spline-viewer url="https://prod.spline.design/H0rV8YuyqNW4BOJ9/scene.splinecode" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;"></spline-viewer>
 
-3. Body class: bg-transparent (NOT bg-white!)
+⚠️ VISIBILITY RULES - VERY IMPORTANT:
+❌ NEVER use bg-white, bg-black, bg-gray-*, bg-slate-* on <body>, <section>, <main>, <div> wrappers
+❌ NEVER add solid background colors - they HIDE the 3D effect!
+✅ Body MUST be: bg-transparent
+✅ All sections MUST be: bg-transparent
+✅ Cards/buttons use ONLY: bg-white/20 backdrop-blur-md (glassmorphism)
 
-4. Wrap all content in: <div class="relative z-10">...</div>
-
-DO NOT USE CSS GRADIENTS. USE SPLINE.`, category: "shader" },
+If you add ANY solid background, the Spline 3D will be INVISIBLE!`, category: "shader" },
 
   // === SUPER HERO - ANIMATED LIQUID BACKGROUNDS ===
   { id: "super-hero", name: "Super Hero", desc: "Liquid Gradient • Animated Blob • Premium Hero", fullDesc: `SUPER HERO - Animated liquid gradient backgrounds like Framer's AnimatedLiquidBackground.
