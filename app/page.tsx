@@ -7057,26 +7057,28 @@ export const shadows = {
         {/* Left Panel - Hidden on mobile */}
         <div className="hidden md:flex w-[340px] border-r border-white/5 bg-black/40 backdrop-blur-sm flex-col">
           
-          {/* Logo */}
-          <div className="flex-shrink-0 px-4 py-3 border-b border-white/5">
+          {/* Logo - same height as main top bar (h-12) */}
+          <div className="flex-shrink-0 h-12 px-4 flex items-center border-b border-white/5">
             <a href="/" className="hover:opacity-80 transition-opacity">
               <Logo />
             </a>
           </div>
           
-          {/* PROJECT Header - Name + Arrow Right to open projects */}
-          <div className="flex-shrink-0 px-4 py-2.5 border-b border-white/5">
-            <p className="text-[10px] font-medium text-white/40 uppercase tracking-wider mb-1">Project</p>
+          {/* PROJECT Header - Clickable button to open projects dropdown */}
+          <div className="flex-shrink-0 px-4 py-3 border-b border-white/5">
             <button 
-              className="flex items-center justify-between w-full group"
+              className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 hover:border-white/15 transition-all group"
               onClick={() => setSidebarView(sidebarView === "projects" ? "detail" : "projects")}
             >
-              <span className="text-sm font-medium text-white/80 truncate group-hover:text-white transition-colors">
-                {generationTitle || "Untitled Project"}
-              </span>
-              <ChevronRight className={cn(
-                "w-4 h-4 text-white/30 transition-transform flex-shrink-0",
-                sidebarView === "projects" && "rotate-90"
+              <div className="flex flex-col items-start min-w-0">
+                <span className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Project</span>
+                <span className="text-sm font-medium text-white truncate max-w-[230px]">
+                  {generationTitle || "Untitled Project"}
+                </span>
+              </div>
+              <ChevronDown className={cn(
+                "w-4 h-4 text-white/50 transition-transform flex-shrink-0 group-hover:text-white/70",
+                sidebarView === "projects" && "rotate-180"
               )} />
             </button>
           </div>
@@ -7084,8 +7086,45 @@ export const shadows = {
           {/* PROJECTS LIST VIEW */}
           {sidebarView === "projects" ? (
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              {/* + Create New Project - at the top, highlighted */}
+              <div className="flex-shrink-0 px-3 pt-3 pb-2">
+                <button
+                  onClick={() => {
+                    // Create new project
+                    setGeneratedCode(null);
+                    setDisplayedCode("");
+                    setEditableCode("");
+                    setPreviewUrl(null);
+                    setGenerationComplete(false);
+                    setSidebarMode("config");
+                    setChatMessages([]);
+                    setActiveGeneration(null);
+                    setGenerationTitle("Untitled Project");
+                    setFlowNodes([]);
+                    setFlowEdges([]);
+                    setStyleInfo(null);
+                    setPublishedUrl(null);
+                    setStyleDirective(getDefaultStyleName());
+                    setStyleReferenceImage(null);
+                    setFlows([]);
+                    setSelectedFlowId(null);
+                    setSidebarView("detail");
+                    localStorage.removeItem("replay_sidebar_mode");
+                    localStorage.removeItem("replay_generated_code");
+                    localStorage.removeItem("replay_generation_title");
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-[#FF6E3C]/10 border border-[#FF6E3C]/20 text-sm font-medium text-[#FF6E3C] hover:bg-[#FF6E3C]/20 hover:border-[#FF6E3C]/30 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create New Project</span>
+                </button>
+              </div>
+              
+              {/* Divider */}
+              <div className="border-b border-white/10 mx-3" />
+              
               {/* Search */}
-              <div className="px-3 py-2 border-b border-white/5">
+              <div className="px-3 py-2">
                 <div className="relative">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
                   <input
@@ -7487,40 +7526,6 @@ export const shadows = {
                     ))}
                   </div>
                 )}
-              </div>
-              
-              {/* New Project Button */}
-              <div className="flex-shrink-0 p-3 border-t border-white/5">
-                <button
-                  onClick={() => {
-                    // Create new project
-                    setGeneratedCode(null);
-                    setDisplayedCode("");
-                    setEditableCode("");
-                    setPreviewUrl(null);
-                    setGenerationComplete(false);
-                    setSidebarMode("config");
-                    setChatMessages([]);
-                    setActiveGeneration(null);
-                    setGenerationTitle("Untitled Project");
-                    setFlowNodes([]);
-                    setFlowEdges([]);
-                    setStyleInfo(null);
-                    setPublishedUrl(null);
-                    setStyleDirective(getDefaultStyleName());
-                    setStyleReferenceImage(null);
-                    setFlows([]);
-                    setSelectedFlowId(null);
-                    setSidebarView("detail");
-                    localStorage.removeItem("replay_sidebar_mode");
-                    localStorage.removeItem("replay_generated_code");
-                    localStorage.removeItem("replay_generation_title");
-                  }}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs text-white/50 hover:text-white/70 hover:bg-white/[0.05] transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>New Project</span>
-                </button>
               </div>
             </div>
           ) : sidebarView === "detail" && sidebarMode === "chat" && generationComplete ? (
@@ -8689,27 +8694,6 @@ export const shadows = {
                           <MousePointer className="w-3 h-3" /> Select
                         </button>
                       </div>
-                      
-                      <button 
-                        onClick={() => {
-                          // If there are pending edits, apply them to preview before switching
-                          if (pendingTextEdits.length > 0 && editableCode) {
-                            let tempCode = editableCode;
-                            for (const edit of pendingTextEdits) {
-                              const escapedOriginal = edit.originalText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                              const regex = new RegExp(`(>\\s*)${escapedOriginal}(\\s*<)`, 'g');
-                              tempCode = tempCode.replace(regex, `$1${edit.newText}$2`);
-                            }
-                            if (previewUrl) URL.revokeObjectURL(previewUrl);
-                            setPreviewUrl(URL.createObjectURL(new Blob([tempCode], { type: "text/html" })));
-                          }
-                          setIsMobilePreview(!isMobilePreview);
-                        }} 
-                        className={cn("btn-black p-1.5 rounded-lg", isMobilePreview && "bg-[#FF6E3C]/20 text-[#FF6E3C]")} 
-                        title={isMobilePreview ? "Desktop view" : "Mobile view"}
-                      >
-                        {isMobilePreview ? <Monitor className="w-3.5 h-3.5" /> : <Smartphone className="w-3.5 h-3.5" />}
-                      </button>
                     </>
                   )}
                 </>
