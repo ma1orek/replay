@@ -110,13 +110,13 @@ Deploy your UI to the web instantly. Share the link with anyone.
 
 | Plan | Price | Credits/Month | Best For |
 |------|-------|---------------|----------|
-| **Free** | $0 | 100 | Getting started |
-| **Pro** | $35/mo | 3,000 | Creators & indie hackers |
+| **Free** | $0 | 75 (one-time) | Try it out - 1 free generation |
+| **Pro** | $25/mo | 1,500 | Creators & indie hackers |
 | **Enterprise** | Custom | Unlimited | Teams & agencies |
 
 **Credit Costs:**
 - 🎬 Video generation: **75 credits**
-- ✨ AI edit/refine: **25 credits**
+- ✨ AI edit/refine: **3 credits**
 
 **Top-ups available:**
 - $20 → 2,000 credits
@@ -259,6 +259,10 @@ replay/
 - [x] Style reference mode (copy from image)
 - [x] Delete confirmation modals
 - [x] Extended history (500 projects)
+- [x] Full keyboard navigation (WCAG)
+- [x] Focus trap for modals
+- [x] Redesigned project dropdown
+- [x] Quick rename from project list
 - [ ] Figma plugin
 - [ ] Component library export
 - [ ] Team collaboration

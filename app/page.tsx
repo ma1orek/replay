@@ -1658,7 +1658,7 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
 **Try it yourself:**
 1. Click tabs above to explore Code, Flow, Design System
 2. Sign up free to upload your own video
-3. Get 2 free generations - no credit card required!
+3. Get 1 free generation - no credit card required!
 
 *Ready to reconstruct your own interfaces?*`,
               timestamp: Date.now()
@@ -6401,7 +6401,7 @@ export const shadows = {
     // Demo mode: require sign up to download
     if (isDemoMode && !user) {
       setShowAuthModal(true);
-      showToast("Sign up free to download code. You get 2 free generations!", "info");
+      showToast("Sign up free to download code. You get 1 free generation!", "info");
       return;
     }
     
@@ -6423,7 +6423,7 @@ export const shadows = {
     // Demo mode: require sign up to publish
     if (isDemoMode && !user) {
       setShowAuthModal(true);
-      showToast("Sign up free to publish. You get 2 free generations!", "info");
+      showToast("Sign up free to publish. You get 1 free generation!", "info");
       return;
     }
     
@@ -7724,7 +7724,7 @@ export const shadows = {
                         <div 
                           onClick={() => {
                             setShowAuthModal(true);
-                            showToast("Sign up free to edit with AI. Get 2 free generations!", "info");
+                            showToast("Sign up free to edit with AI. Get 1 free generation!", "info");
                           }}
                           className="absolute inset-0 z-10 cursor-pointer flex items-center justify-center bg-black/40 backdrop-blur-[2px] rounded-xl"
                         >
@@ -7745,7 +7745,7 @@ export const shadows = {
                             // Auth check - only block non-logged users
                             if (!user) {
                               setShowAuthModal(true);
-                              showToast("Sign up free to edit with AI. Get 2 free generations!", "info");
+                              showToast("Sign up free to edit with AI. Get 1 free generation!", "info");
                               return;
                             }
                             const userMsg: ChatMessage = { id: generateId(), role: "user", content: chatInput, timestamp: Date.now(), attachments: selectedElement ? [{ type: "element", label: selectedElement }] : editImages.length > 0 ? editImages.map(img => ({ type: "image" as const, label: img.name })) : undefined };
@@ -8142,7 +8142,7 @@ export const shadows = {
                         // Require login for Supabase connection
                         if (!user || isDemoMode) {
                           setShowAuthModal(true);
-                          showToast("Sign up free to connect Supabase. Get 2 free generations!", "info");
+                          showToast("Sign up free to connect Supabase. Get 1 free generation!", "info");
                           return;
                         }
                         // Require paid plan for Supabase
@@ -8855,7 +8855,7 @@ export const shadows = {
                 onClick={() => {
                   if (!user || isDemoMode) {
                     setShowAuthModal(true);
-                    showToast("Sign up free to publish. You get 2 free generations!", "info");
+                    showToast("Sign up free to publish. You get 1 free generation!", "info");
                     return;
                   }
                   if (!isPaidPlan) {
@@ -8981,7 +8981,7 @@ export const shadows = {
                             // Demo mode: require sign up
                             if (isDemoMode && !user) {
                               setShowAuthModal(true);
-                              showToast("Sign up free to copy code. You get 2 free generations!", "info");
+                              showToast("Sign up free to copy code. You get 1 free generation!", "info");
                               return;
                             }
                             if (!isPaidPlan) {
@@ -9655,7 +9655,7 @@ export default function GeneratedPage() {
                                       // Auth check for Reconstruct
                                       if (!user || isDemoMode) {
                                         setShowAuthModal(true);
-                                        showToast("Sign up free to reconstruct pages. Get 2 free generations!", "info");
+                                        showToast("Sign up free to reconstruct pages. Get 1 free generation!", "info");
                                         return;
                                       }
                                       if (isEditing) return;
@@ -9677,7 +9677,7 @@ export default function GeneratedPage() {
                                       // Auth check for Generate
                                       if (!user || isDemoMode) {
                                         setShowAuthModal(true);
-                                        showToast("Sign up free to generate pages. Get 2 free generations!", "info");
+                                        showToast("Sign up free to generate pages. Get 1 free generation!", "info");
                                         return;
                                       }
                                       if (isEditing) return;
@@ -11893,7 +11893,7 @@ export default function GeneratedPage() {
                 <div 
                   onClick={() => {
                     setShowAuthModal(true);
-                    showToast("Sign up free to edit with AI. Get 2 free generations!", "info");
+                    showToast("Sign up free to edit with AI. Get 1 free generation!", "info");
                   }}
                   className="absolute inset-0 z-10 cursor-pointer flex items-center justify-center bg-black/60 backdrop-blur-[2px]"
                 >
@@ -11927,7 +11927,7 @@ export default function GeneratedPage() {
                         // Auth check on mobile - block non-logged users AND demo mode
                         if (!user || isDemoMode) {
                           setShowAuthModal(true);
-                          showToast("Sign up free to edit with AI. Get 2 free generations!", "info");
+                          showToast("Sign up free to edit with AI. Get 1 free generation!", "info");
                           return;
                         }
                         const userMsg: ChatMessage = { id: generateId(), role: "user", content: chatInput, timestamp: Date.now(), attachments: editImages.length > 0 ? editImages.map(img => ({ type: "image" as const, label: img.name })) : undefined };

@@ -60,11 +60,11 @@ export default function PricingPage() {
             <ul className="space-y-2 text-sm text-white/70 mb-6">
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-green-400" />
-                <span>100 credits / month</span>
+                <span>75 credits (one-time)</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-green-400" />
-                <span>~2 rebuilds</span>
+                <span>1 free generation</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-green-400" />
@@ -99,17 +99,17 @@ export default function PricingPage() {
               <p className="text-sm text-white/50">For creators</p>
             </div>
             <div className="mb-4">
-              <span className="text-4xl font-bold text-white">$35</span>
+              <span className="text-4xl font-bold text-white">$25</span>
               <span className="text-white/50">/mo</span>
             </div>
             <ul className="space-y-2 text-sm text-white/70 mb-6">
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-green-400" />
-                <span>3,000 credits / month</span>
+                <span>1,500 credits / month</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-green-400" />
-                <span>~40 rebuilds / month</span>
+                <span>~20 rebuilds / month</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-green-400" />
