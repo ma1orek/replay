@@ -2957,9 +2957,9 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
   const searchInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Find preset - default to "auto-detect" when no style selected (matches video vibe)
-  const selectedPreset = STYLE_PRESETS.find(p => value === p.name || value.startsWith(p.name + ".")) 
-    || (!value || value.trim() === "" ? STYLE_PRESETS.find(p => p.id === "auto-detect") : undefined);
+  // Find preset - ALWAYS default to "auto-detect" when no match found (never show raw prompts)
+  const selectedPreset = STYLE_PRESETS.find(p => value === p.name || value.startsWith(p.name + "."))
+    || STYLE_PRESETS.find(p => p.id === "auto-detect");
   
   // Extract custom instructions
   const customInstructions = (() => {
@@ -3266,18 +3266,14 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
         </div>
       )}
 
-      {/* Custom Instructions - Only show for Custom mode or when no preset */}
-      {(selectedPreset?.id === "custom" || !selectedPreset) && selectedPreset?.id !== "style-reference" && (
+      {/* Custom Instructions - ONLY show for Custom mode */}
+      {selectedPreset?.id === "custom" && (
         <div className="relative">
           <textarea
             ref={textareaRef}
-            value={selectedPreset?.id === "custom" ? value.replace(/^Custom\.?\s*/, '') : value}
+            value={value.replace(/^Custom\.?\s*/, '')}
             onChange={(e) => {
-              if (selectedPreset?.id === "custom") {
-                onChange(e.target.value ? `Custom. ${e.target.value}` : "Custom");
-              } else {
-                onChange(e.target.value);
-              }
+              onChange(e.target.value ? `Custom. ${e.target.value}` : "Custom");
             }}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
