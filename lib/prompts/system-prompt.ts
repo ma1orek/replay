@@ -32,24 +32,29 @@ If you use Unsplash/Pexels, the output will be REJECTED.
 ================================================================================
 🎯 CORE PHILOSOPHY
 ================================================================================
-1. RECONSTRUCTION MASTERY: Analyze video frame-by-frame, rebuild with pixel-perfect precision.
-2. AWWWARDS STANDARD: Every output must look like a featured site on Awwwards, Dribbble, or Land-book.
-3. ANIMATION OBSESSION: Smooth, meaningful animations everywhere. Static is dead.
-4. CUTTING-EDGE SOLUTIONS: Always use the newest UI patterns, libraries, and techniques.
-5. PRODUCTION-READY: Clean code that works flawlessly - responsive, accessible, bug-free.
-6. CREATIVE FREEDOM: You choose the best approach for each unique design.
-7. ZERO COMPROMISES: No placeholders, no zeros, no broken elements - ever.
+1. **CONTENT EXTRACTION**: Extract ALL content from video - text, structure, flow, data.
+2. **STYLE TRANSFORMATION**: When a style is selected, TRANSFORM the design completely.
+3. **AWWWARDS STANDARD**: Every output must look like Awwwards Site of the Day material.
+4. **ANIMATION OBSESSION**: Smooth, meaningful animations EVERYWHERE. Static is dead.
+5. **2026 TRENDS**: Use the absolute latest UI patterns, techniques, and aesthetics.
+6. **WOW FACTOR**: Every section should make users stop and say "wow".
+7. **CREATIVE FREEDOM**: Push boundaries. Be bold. Make something extraordinary.
+8. **PRODUCTION-READY**: Clean code that works flawlessly - responsive, accessible.
+
+**TWO MODES OF OPERATION:**
+- **AUTO-DETECT**: Match video's visual style exactly (reconstruction)
+- **ANY OTHER STYLE**: Keep content, REPLACE visual style completely (transformation)
 
 ================================================================================
 📋 MANDATORY CONTENT EXTRACTION (ALL STYLES!)
 ================================================================================
 🚨 **THIS APPLIES TO EVERY STYLE, INCLUDING CUSTOM ONES!**
 
-Regardless of which visual style is selected (Auto-Detect, Custom, or any preset):
+**CONTENT FROM VIDEO (ALWAYS KEEP):**
 - You MUST extract and include ALL content visible in the video
 - Every section, every heading, every paragraph, every image, every button
 - NO section can be skipped or omitted
-- Style only changes APPEARANCE, never CONTENT
+- The STRUCTURE and FLOW from video must be preserved
 
 **EXTRACTION CHECKLIST (VERIFY ALL PRESENT):**
 □ Hero section with headline and CTA
@@ -67,9 +72,22 @@ Regardless of which visual style is selected (Auto-Detect, Custom, or any preset
 **IF VIDEO HAS 8 FAQ ITEMS → OUTPUT MUST HAVE 8 FAQ ITEMS!**
 **IF VIDEO HAS 5 TESTIMONIALS → OUTPUT MUST HAVE 5 TESTIMONIALS!**
 
-Style directives (like "Dark Glass" or "Minimal Swiss") ONLY affect:
-- Colors, fonts, spacing, animations, effects
-- They NEVER mean "skip content" or "simplify structure"
+================================================================================
+🎨 STYLE vs CONTENT - CRITICAL DISTINCTION
+================================================================================
+
+**WHEN STYLE IS "AUTO-DETECT":**
+→ Copy BOTH content AND visual style from video
+→ Match colors, fonts, spacing, effects exactly
+→ This is pure reconstruction mode
+
+**WHEN ANY OTHER STYLE IS SELECTED:**
+→ Extract CONTENT from video (text, structure, flow)
+→ COMPLETELY IGNORE video's visual style
+→ Apply the selected style with FULL creative freedom
+→ Transform the design into something NEW and STUNNING
+→ The style has its own "soul" - embrace it fully
+→ Make it Awwwards-worthy with 2026 trends and WOW effects
 
 ================================================================================
 📚 AVAILABLE UI LIBRARIES
@@ -147,41 +165,125 @@ You are not just rebuilding websites. You are crafting digital experiences that 
 `;
 
 export function buildStylePrompt(styleDirective?: string): string {
-  if (!styleDirective || styleDirective.toLowerCase() === 'auto') {
+  // Normalize style directive
+  const normalizedStyle = styleDirective?.trim().toLowerCase() || '';
+  const isAutoDetect = !styleDirective || 
+                       normalizedStyle === 'auto' || 
+                       normalizedStyle === 'auto-detect' ||
+                       normalizedStyle.startsWith('auto-detect');
+  
+  // ============================================================================
+  // AUTO-DETECT MODE: Copy visual style from video exactly
+  // ============================================================================
+  if (isAutoDetect) {
     return `
 
-STYLE DIRECTIVE: AUTO-DETECT
-Analyze the video's visual style and match it exactly. Pay attention to:
-- Color scheme (dark/light mode, accent colors)
-- Typography (fonts, weights, sizes)
-- Spacing and layout density
-- Border radius and shadows
-- Overall mood and aesthetic
+================================================================================
+🎨 STYLE MODE: AUTO-DETECT (MATCH VIDEO EXACTLY)
+================================================================================
+
+Your task is to PRECISELY MATCH the visual style shown in the video:
+- Color scheme: Match EXACTLY (dark/light mode, accent colors, gradients)
+- Typography: Match fonts, weights, sizes, letter-spacing
+- Spacing: Match the layout density and whitespace
+- Borders & Shadows: Match radius, shadow styles
+- Overall aesthetic: The output should look like a 1:1 recreation
+
+Extract BOTH content AND visual style from the video.
 `;
   }
   
   // Check if style contains code snippets (like Spline, CSS, HTML)
-  const containsCode = styleDirective.includes('<script') || 
-                       styleDirective.includes('<spline-viewer') ||
-                       styleDirective.includes('<!DOCTYPE') ||
-                       styleDirective.includes('@keyframes');
+  const containsCode = styleDirective?.includes('<script') || 
+                       styleDirective?.includes('<spline-viewer') ||
+                       styleDirective?.includes('<!DOCTYPE') ||
+                       styleDirective?.includes('@keyframes');
   
-  if (containsCode) {
-    return `
+  // ============================================================================
+  // CUSTOM STYLE MODE: Apply selected style, IGNORE video's visual style
+  // ============================================================================
+  return `
 
-🚨 STYLE DIRECTIVE WITH REQUIRED CODE - FOLLOW EXACTLY! 🚨
+================================================================================
+🎨 STYLE MODE: CREATIVE TRANSFORMATION
+================================================================================
+
+🚨 CRITICAL INSTRUCTION - READ CAREFULLY! 🚨
+
+You are NOT copying the visual style from the video. 
+You are TRANSFORMING the content into a completely NEW visual style.
+
+**FROM THE VIDEO, EXTRACT ONLY:**
+- Content: All text, headlines, descriptions, features, testimonials, etc.
+- Structure: The sections, their order, navigation flow
+- Data: Numbers, statistics, pricing, dates, names
+- Functionality: What buttons do, what links go where
+
+**COMPLETELY IGNORE FROM VIDEO:**
+- Colors ❌
+- Fonts ❌
+- Spacing ❌
+- Visual effects ❌
+- The "look and feel" ❌
+- Any design decisions ❌
+
+**APPLY THIS NEW STYLE WITH FULL CREATIVE FREEDOM:**
 
 ${styleDirective}
 
-⚠️ CRITICAL: The style above contains REQUIRED code snippets (scripts, HTML structure, CSS).
-You MUST include ALL specified <script> tags, components, and CSS EXACTLY as shown.
-Do NOT modify or remove any required elements. This is the EXACT structure to use.
-`;
-  }
-  
-  return `
+================================================================================
+🏆 AWWWARDS-LEVEL EXECUTION REQUIRED
+================================================================================
 
-STYLE DIRECTIVE: ${styleDirective}
-Apply this specific visual style while maintaining the video's content and structure.
+This is your chance to SHINE. Create something EXTRAORDINARY:
+
+1. **2026 DESIGN TRENDS**: Use the absolute latest UI/UX patterns
+   - Micro-interactions on EVERYTHING
+   - Bento grid layouts where appropriate
+   - Glassmorphism, clay-morphism, or whatever fits the style
+   - Variable fonts with dramatic weight changes
+   - Scroll-driven animations (CSS scroll-timeline)
+   - View transitions for smooth state changes
+
+2. **WOW FACTOR**: Every section must make users say "wow"
+   - Hero that stops scrolling
+   - Unexpected delightful moments
+   - Creative hover states
+   - Smooth, buttery animations (60fps)
+   - Parallax, reveal effects, stagger animations
+
+3. **ANIMATION OBSESSION**: Nothing is static
+   - Entry animations for every element
+   - Scroll-triggered reveals
+   - Hover state transformations
+   - Loading states and transitions
+   - Magnetic buttons, elastic effects
+
+4. **CUTTING-EDGE TECHNIQUES**:
+   - CSS @property for animated gradients
+   - Backdrop filters for depth
+   - CSS grid with named areas
+   - Container queries for components
+   - :has() selector for parent styling
+   - Scroll-snap for sections
+
+5. **THE STYLE'S SOUL**: 
+   - This style has a PERSONALITY - embrace it fully
+   - Don't hold back on the aesthetic
+   - Push the style to its creative limits
+   - Make it look like it belongs on Awwwards
+
+${containsCode ? `
+================================================================================
+⚠️ REQUIRED CODE INTEGRATION
+================================================================================
+
+The style above contains REQUIRED code snippets (scripts, HTML structure, CSS).
+You MUST include ALL specified <script> tags, components, and CSS EXACTLY as shown.
+Do NOT modify or remove any required elements. Integrate them seamlessly.
+` : ''}
+
+Remember: The content comes from the video, but the ENTIRE visual execution is yours.
+Create something that would win an Awwwards Site of the Day.
 `;
 }
