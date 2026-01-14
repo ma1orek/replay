@@ -522,19 +522,20 @@ export const StylePreview = ({ styleId }: { styleId: string }) => {
       </div>
     ),
     "perlin-noise-3d": (
-      <div className="w-full h-full bg-black relative overflow-hidden">
-        {/* 3D Perlin noise representation */}
+      <div className="w-full h-full relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fce7f3 0%, #ddd6fe 30%, #c7d2fe 60%, #a5f3fc 100%)' }}>
+        {/* Pastel gradient blobs */}
         <motion.div
           className="absolute w-8 h-8 rounded-full"
           style={{
-            background: 'radial-gradient(ellipse at 30% 30%, #a855f7 0%, #ec4899 50%, #3b82f6 100%)',
-            filter: 'blur(4px)',
-            top: '20%',
-            left: '20%',
+            background: 'radial-gradient(ellipse at 30% 30%, #f9a8d4 0%, #c084fc 100%)',
+            filter: 'blur(6px)',
+            opacity: 0.7,
+            top: '10%',
+            left: '10%',
           }}
           animate={{ 
-            scale: [1, 1.3, 1],
-            x: [0, 4, 0],
+            scale: [1, 1.2, 1],
+            x: [0, 5, 0],
             y: [0, 3, 0],
           }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
@@ -542,22 +543,23 @@ export const StylePreview = ({ styleId }: { styleId: string }) => {
         <motion.div
           className="absolute w-6 h-6 rounded-full"
           style={{
-            background: 'radial-gradient(ellipse at 70% 70%, #06b6d4 0%, #8b5cf6 100%)',
-            filter: 'blur(3px)',
-            bottom: '20%',
+            background: 'radial-gradient(ellipse at 70% 70%, #67e8f9 0%, #a78bfa 100%)',
+            filter: 'blur(5px)',
+            opacity: 0.6,
+            bottom: '15%',
             right: '10%',
           }}
           animate={{ 
-            scale: [1.2, 0.9, 1.2],
-            x: [0, -3, 0],
-            y: [0, -2, 0],
+            scale: [1.1, 0.9, 1.1],
+            x: [0, -4, 0],
+            y: [0, -3, 0],
           }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+          transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
         />
-        {/* 3D badge */}
-        <div className="absolute bottom-1 left-1 text-[4px] font-bold text-white/60 bg-white/10 px-1 rounded">3D</div>
-        {/* Content preview */}
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 text-[5px] font-bold text-white z-10">SPLINE</div>
+        {/* Glass card preview */}
+        <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 bg-white/40 backdrop-blur-sm rounded px-2 py-0.5 border border-white/50">
+          <span className="text-[4px] font-bold text-indigo-900">3D</span>
+        </div>
       </div>
     ),
     "liquid-metal": (
@@ -2710,10 +2712,8 @@ ANIMATIONS: Fade in up (y: 20px → 0), border draw (width 0% → 100%), button 
 - Style changes APPEARANCE only, NEVER removes content or screens
 - Count screens in video and ensure ALL are represented`, category: "light" },
   
-  // === SPLINE 3D BACKGROUNDS (Works in iframe!) ===
-  { id: "perlin-noise-3d", name: "Perlin Noise 3D", desc: "Spline 3D • Pastel Gradient • Dreamy Aesthetic", fullDesc: `⚠️ CRITICAL: COPY THIS EXACT HTML STRUCTURE - Spline 3D pastel gradient background
-
-The background is a dreamy pastel gradient (pink, purple, cyan, cream). All UI must match this aesthetic.
+  // === SPLINE 3D BACKGROUNDS (Pastel Cloud) ===
+  { id: "perlin-noise-3d", name: "Pastel Cloud 3D", desc: "Spline 3D • Soft Gradient • Glassmorphism", fullDesc: `⚠️ CRITICAL: BUILD THE PAGE EXACTLY THIS WAY FOR 3D BACKGROUND TO WORK!
 
 <!DOCTYPE html>
 <html lang="en">
@@ -2722,61 +2722,55 @@ The background is a dreamy pastel gradient (pink, purple, cyan, cream). All UI m
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Page</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.54/build/spline-viewer.js"></script>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Inter', system-ui, sans-serif; }
-    spline-viewer { width: 100%; height: 100%; display: block; }
-  </style>
+  <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.35/build/spline-viewer.js"></script>
 </head>
-<body class="min-h-screen overflow-x-hidden">
-  
-  <!-- ⚠️ REQUIRED: Spline 3D Background -->
-  <spline-viewer 
-    url="https://prod.spline.design/H0rV8YuyqNW4BOJ9/scene.splinecode"
-    style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;"
-  ></spline-viewer>
-  
-  <!-- Content Layer - all content goes here -->
-  <div style="position: relative; z-index: 10;">
+<body class="bg-transparent min-h-screen">
+
+  <!-- ⚠️ 3D BACKGROUND - MUST BE FIRST, z-[-1] SO IT'S BEHIND CONTENT -->
+  <div class="fixed inset-0 z-[-1] w-full h-full pointer-events-none">
+    <spline-viewer url="https://prod.spline.design/H0rV8YuyqNW4BOJ9/scene.splinecode"></spline-viewer>
+  </div>
+
+  <!-- CONTENT - Everything else goes here -->
+  <div class="relative z-10">
     
-    <!-- Navigation -->
-    <nav class="fixed top-0 left-0 right-0 z-50 px-6 py-4">
+    <!-- Nav with glass effect -->
+    <nav class="fixed top-0 left-0 right-0 z-50 px-6 py-4 bg-white/20 backdrop-blur-md border-b border-white/30">
       <div class="max-w-7xl mx-auto flex items-center justify-between">
-        <div class="text-xl font-bold text-slate-800">Logo</div>
+        <div class="text-xl font-bold text-indigo-950">Logo</div>
         <div class="hidden md:flex items-center gap-8">
-          <a href="#" class="text-slate-700 hover:text-slate-900 transition">Link</a>
+          <a href="#" class="text-slate-700 hover:text-indigo-900 transition">Link</a>
         </div>
-        <button class="px-6 py-2.5 bg-slate-900 text-white rounded-full font-medium hover:bg-slate-800 transition shadow-lg">
+        <button class="px-6 py-2.5 bg-white/50 hover:bg-white/70 text-indigo-900 border border-white/60 backdrop-blur-sm rounded-full font-medium shadow-lg transition">
           CTA
         </button>
       </div>
     </nav>
     
-    <!-- Hero Section -->
+    <!-- Hero -->
     <section class="min-h-screen flex flex-col items-center justify-center text-center px-6 pt-20">
-      <h1 class="text-5xl md:text-7xl font-bold text-slate-900 mb-6 tracking-tight">
-        Your Headline
+      <h1 class="text-5xl md:text-7xl font-bold text-indigo-950 mb-6 tracking-tight drop-shadow-sm">
+        Headline Here
       </h1>
-      <p class="text-slate-600 text-xl max-w-2xl mb-10">
-        Your description text here
+      <p class="text-slate-700 text-xl max-w-2xl mb-10">
+        Description text
       </p>
       <div class="flex flex-wrap gap-4 justify-center">
-        <button class="px-8 py-4 bg-slate-900 text-white font-semibold rounded-full hover:bg-slate-800 transition shadow-xl">
+        <button class="px-8 py-4 bg-gradient-to-r from-pink-400 via-purple-400 to-indigo-400 text-white font-semibold rounded-full shadow-xl hover:shadow-2xl transition">
           Primary CTA
         </button>
-        <button class="px-8 py-4 bg-white/60 backdrop-blur-sm text-slate-800 font-semibold rounded-full border border-white/50 hover:bg-white/80 transition">
+        <button class="px-8 py-4 bg-white/40 backdrop-blur-md text-indigo-900 font-semibold rounded-full border border-white/50 hover:bg-white/60 transition">
           Secondary
         </button>
       </div>
     </section>
     
-    <!-- Feature Section with Glass Cards -->
+    <!-- Cards with glassmorphism -->
     <section class="py-24 px-6">
       <div class="max-w-6xl mx-auto grid md:grid-cols-3 gap-6">
-        <div class="bg-white/40 backdrop-blur-xl rounded-3xl p-8 border border-white/50 shadow-xl">
-          <div class="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-500 rounded-2xl mb-4"></div>
-          <h3 class="text-xl font-bold text-slate-900 mb-2">Feature</h3>
+        <div class="bg-white/30 backdrop-blur-md border border-white/40 shadow-xl rounded-2xl p-8">
+          <div class="w-12 h-12 bg-gradient-to-br from-pink-300 to-purple-400 rounded-xl mb-4"></div>
+          <h3 class="text-xl font-bold text-indigo-950 mb-2">Feature</h3>
           <p class="text-slate-600">Description</p>
         </div>
       </div>
@@ -2786,28 +2780,30 @@ The background is a dreamy pastel gradient (pink, purple, cyan, cream). All UI m
 </body>
 </html>
 
-COLOR PALETTE (matches pastel Spline background):
-- Headlines: text-slate-900 (dark gray, NOT black)
-- Body text: text-slate-600 or text-slate-700
-- Primary buttons: bg-slate-900 text-white
-- Secondary buttons: bg-white/60 backdrop-blur-sm text-slate-800 border-white/50
-- Glass cards: bg-white/40 backdrop-blur-xl border-white/50 rounded-3xl
-- Accent gradients: from-pink-400 to-purple-500, from-cyan-400 to-blue-500
+⚠️ MANDATORY RULES:
+1. Body MUST be: bg-transparent (NOT bg-white, NOT bg-slate-50!)
+2. Spline container MUST be: fixed inset-0 z-[-1] (NEGATIVE z-index!)
+3. Content wrapper MUST be: relative z-10
+4. Script version: @1.12.35
 
-KEY RULES:
-1. spline-viewer MUST have: position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;
-2. Content wrapper MUST have: position: relative; z-index: 10;
-3. Use DARK text (slate-900, slate-700) on this LIGHT pastel background
-4. Cards must be GLASS: bg-white/40 backdrop-blur-xl
-5. Buttons: rounded-full with shadow-xl
-6. NO black backgrounds - the Spline IS the background
+🎨 COLOR PALETTE (Pastel Glassmorphism):
+- Body: bg-transparent (NEVER solid colors!)
+- Text: text-indigo-950 or text-slate-800 (dark for contrast)
+- Glass cards: bg-white/30 backdrop-blur-md border border-white/40
+- Glass nav: bg-white/20 backdrop-blur-md border-b border-white/30
+- Buttons: bg-white/50 hover:bg-white/70 OR gradient from-pink-400 to-indigo-400
+- Accent gradients: from-pink-300 via-purple-300 to-indigo-300
 
-TYPOGRAPHY:
-- Headlines: text-5xl md:text-7xl font-bold text-slate-900
-- Body: text-lg text-slate-600
-- Clean, modern sans-serif
+❌ DO NOT USE:
+- bg-white, bg-black, bg-slate-50 on body or main containers
+- Solid backgrounds that hide the 3D layer
+- z-index: 0 for spline (must be negative!)
 
-This creates a dreamy, premium aesthetic with real-time 3D animated pastel gradients!`, category: "shader" },
+✅ ALWAYS USE:
+- bg-transparent for body
+- bg-white/30 with backdrop-blur for glass effect
+- Dark text colors for readability
+- Soft pastel gradients for accents`, category: "shader" },
 
   // === SUPER HERO - ANIMATED LIQUID BACKGROUNDS ===
   { id: "super-hero", name: "Super Hero", desc: "Liquid Gradient • Animated Blob • Premium Hero", fullDesc: `SUPER HERO - Animated liquid gradient backgrounds like Framer's AnimatedLiquidBackground.
