@@ -32,7 +32,7 @@ interface CreditsContextType {
 // Plan limits
 export const PLAN_LIMITS: Record<string, { monthlyCredits: number; rolloverCap: number; rolloverExpiry: number }> = {
   free: {
-    monthlyCredits: 150,
+    monthlyCredits: 100,
     rolloverCap: 0,
     rolloverExpiry: 0,
   },

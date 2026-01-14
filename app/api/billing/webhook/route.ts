@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
           await supabase
             .from("credit_wallets")
             .update({
-              monthly_credits: 150,
+              monthly_credits: 100,
               rollover_credits: 0,
               updated_at: new Date().toISOString(),
             })

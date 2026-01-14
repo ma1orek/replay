@@ -16,8 +16,26 @@ import { Spotlight } from "@/components/ui/spotlight-new";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Replay: Rebuild UI from Video. Instantly.",
-  description: "Turn any video into a clean, production-ready UI. Code, structure, interactions and style — rebuilt directly from what's on screen.",
+  title: "Turn Video into Production-Ready Code | Replay.build",
+  description: "Stop guessing with prompts. Replay treats video as the source of truth to reconstruct UI behavior into production-ready React code. Instantly.",
+  openGraph: {
+    title: "Visual Reverse Engineering is here.",
+    description: "We built the first engine that understands UI behavior over time. Drag a video, get a production-ready web app. No prompts required.",
+    images: [
+      {
+        url: "https://www.replay.build/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Replay - Turn Video into Production-Ready Code",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Visual Reverse Engineering is here.",
+    description: "We built the first engine that understands UI behavior over time. Drag a video, get a production-ready web app. No prompts required.",
+    images: ["https://www.replay.build/og-image.png"],
+  },
 };
 
 export default function LandingPage() {

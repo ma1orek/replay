@@ -16,7 +16,7 @@ const faqs = [
   },
   { 
     q: "How many credits does a generation cost?", 
-    a: "Each video-to-code generation costs 75 credits. AI edits and refinements cost 25 credits each. Free accounts get 150 credits one-time (~2 generations). Pro accounts get 3,000 credits/month (~40 generations). You can also buy credits anytime." 
+    a: "Each video-to-code generation costs 75 credits. AI edits and refinements cost 25 credits each. Free accounts get 100 credits/month (~1 generation). Pro accounts get 1,500-225,000 credits/month depending on tier. You can also buy credits anytime." 
   },
   { 
     q: "Can I really upload a video of a physical object?",
@@ -44,7 +44,7 @@ const faqs = [
   },
   { 
     q: "What's the difference between Free and Pro?", 
-    a: "Free: 150 credits (one-time), interactive preview only, code view is blurred. Pro ($35/month): 3,000 credits/month, full code access, download & copy, publish to web, rollover credits (up to 600). Both plans include all 30+ style presets and AI editing." 
+    a: "Free: 100 credits/month, preview only, public projects. Pro (from $25/month): 1,500+ credits/month, full code access & export, publish to web, private projects, rollover credits. Both plans include all 30+ style presets and AI editing." 
   },
   { 
     q: "Can I cancel my subscription anytime?", 

@@ -45,15 +45,24 @@ export async function POST(request: NextRequest) {
           send("status", { message: "Thinking...", phase: "plan" });
           
           const model = genAI.getGenerativeModel({
-            model: "gemini-2.0-flash",
-            generationConfig: { temperature: 0.7, maxOutputTokens: 300 },
+            model: "gemini-3-flash-preview",
+            generationConfig: { temperature: 0.7, maxOutputTokens: 500 },
           });
 
           const pageCount = (currentCode.match(/x-show=["']currentPage/gi) || []).length || 1;
-          const planPrompt = `You are Replay. Keep responses SHORT (1-2 sentences).
-PROJECT: ${pageCount} page(s), ~${Math.round(currentCode.length/1000)}KB
-USER: ${editRequest}
-Reply briefly and helpfully.`;
+          const planPrompt = `Jesteś Replay - przyjaznym asystentem.
+
+ZASADY:
+- Mów PROSTO, jak do kumpla
+- Krótko (1-2 zdania max)
+- Po polsku jeśli user pisze po polsku
+- Bez technicznego żargonu
+- Bądź pomocny i konkretny
+
+PROJEKT: ${pageCount} strona/y, ~${Math.round(currentCode.length/1000)}KB
+PYTANIE: ${editRequest}
+
+Odpowiedz krótko i przyjaźnie:`;
 
           const result = await model.generateContentStream([{ text: planPrompt }]);
           
@@ -71,20 +80,8 @@ Reply briefly and helpfully.`;
 
         // EDIT MODE - Full code generation with streaming status
         
-        // Detect if this is a simple request that can use faster model
-        const simplePatterns = [
-          /change.*text/i, /zmień.*tekst/i, /zmien.*tekst/i,
-          /change.*color/i, /zmień.*kolor/i, /zmien.*kolor/i,
-          /change.*font/i, /zmień.*czcionk/i,
-          /make.*bigger/i, /make.*smaller/i, /zrób.*większ/i, /zrób.*mniejsz/i,
-          /add.*text/i, /dodaj.*tekst/i,
-          /remove.*text/i, /usuń.*tekst/i, /usun.*tekst/i,
-          /change.*title/i, /zmień.*tytuł/i,
-          /rename/i, /zmień.*nazw/i,
-          /update.*text/i, /zaktualizuj.*tekst/i,
-        ];
-        const isSimpleRequest = simplePatterns.some(p => p.test(editRequest)) && editRequest.length < 100;
-        const modelToUse = isSimpleRequest ? "gemini-2.0-flash" : "gemini-2.0-flash"; // Both fast for now
+        // Always use the best model for code editing - reliability is critical
+        const modelToUse = "gemini-3-flash-preview";
         
         send("status", { message: "Understanding your code structure...", phase: "analyze" });
         await delay(200);
@@ -132,8 +129,8 @@ Reply briefly and helpfully.`;
         send("status", { message: "Generating code with AI...", phase: "ai" });
 
         const model = genAI.getGenerativeModel({
-          model: "gemini-2.0-flash", // Faster model for streaming
-          generationConfig: { temperature: 0.8, maxOutputTokens: 100000 },
+          model: modelToUse, // gemini-2.5-flash-preview for fast editing
+          generationConfig: { temperature: 0.7, maxOutputTokens: 100000 },
         });
 
         // Build prompt
@@ -149,14 +146,51 @@ Reply briefly and helpfully.`;
 
         send("status", { message: "Writing code...", phase: "writing" });
 
-        // Stream the response with real-time code chunks
-        const result = await model.generateContentStream(parts);
+        // Stream the response with real-time code chunks and timeout protection
+        let result;
+        try {
+          // Set a timeout for the stream initialization
+          const streamPromise = model.generateContentStream(parts);
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Stream initialization timeout")), 30000)
+          );
+          result = await Promise.race([streamPromise, timeoutPromise]) as any;
+        } catch (streamError) {
+          console.error("[Stream Edit] Stream init error:", streamError);
+          // Fallback to non-streaming for reliability
+          send("status", { message: "Switching to reliable mode...", phase: "fallback" });
+          try {
+            const fallbackResult = await model.generateContent(parts);
+            const fallbackCode = fallbackResult.response.text();
+            const extractedCode = extractCode(fallbackCode);
+            if (extractedCode) {
+              send("complete", { code: extractedCode, summary: "Code updated successfully" });
+            } else {
+              send("error", { error: "Failed to generate valid code" });
+            }
+            controller.close();
+            return;
+          } catch (fallbackError) {
+            send("error", { error: "AI generation failed. Please try again." });
+            controller.close();
+            return;
+          }
+        }
         
         let fullCode = "";
         let chunkCount = 0;
         let lastSentLength = 0;
+        let lastChunkTime = Date.now();
+        const CHUNK_TIMEOUT = 15000; // 15s timeout between chunks
         
         for await (const chunk of result.stream) {
+          // Check for timeout between chunks
+          if (Date.now() - lastChunkTime > CHUNK_TIMEOUT) {
+            console.error("[Stream Edit] Chunk timeout - no data for 15s");
+            break;
+          }
+          lastChunkTime = Date.now();
+          
           const text = chunk.text();
           fullCode += text;
           chunkCount++;
@@ -357,25 +391,25 @@ function generateChangeSummary(oldCode: string, newCode: string, request: string
   const oldPages = (oldCode.match(/x-show=["']currentPage\s*===?\s*["'][^"']+["']/gi) || []).length;
   const newPages = (newCode.match(/x-show=["']currentPage\s*===?\s*["'][^"']+["']/gi) || []).length;
   if (newPages > oldPages) {
-    summaryParts.push(`Added ${newPages - oldPages} new page(s)`);
+    summaryParts.push(`Dodano ${newPages - oldPages} stron/ę`);
   }
   
   // Check for new sections
   const oldSections = (oldCode.match(/<section/gi) || []).length;
   const newSections = (newCode.match(/<section/gi) || []).length;
   if (newSections > oldSections) {
-    summaryParts.push(`Added ${newSections - oldSections} section(s)`);
+    summaryParts.push(`Dodano ${newSections - oldSections} sekcji`);
   }
   
   // Line changes
   if (lineDiff > 10) {
-    summaryParts.push(`+${lineDiff} lines`);
+    summaryParts.push(`+${lineDiff} linii`);
   } else if (lineDiff < -10) {
-    summaryParts.push(`${lineDiff} lines`);
+    summaryParts.push(`${lineDiff} linii`);
   }
   
   if (summaryParts.length === 0) {
-    summaryParts.push("Code updated successfully");
+    summaryParts.push("Gotowe!");
   }
   
   return summaryParts.join(" • ");
@@ -388,16 +422,16 @@ function generateClarifyingQuestion(request: string, code: string): string {
   const hasTextRef = /text|tekst|tytuł|nagłówek|title|heading/i.test(request);
   const hasSizeRef = /bigger|smaller|większ|mniejsz|size|rozmiar/i.test(request);
   
-  let question = "Hmm, nie do końca rozumiem. ";
+  let question = "Hej, mógłbyś doprecyzować? ";
   
   if (hasColorRef && !hasElementRef) {
-    question += "Który element chcesz zmienić? Możesz użyć @ i kliknąć element w preview, albo opisz go dokładniej (np. 'przycisk główny', 'nagłówek', 'tło strony').";
+    question += "Który element zmienić? Napisz np. 'przycisk główny' albo 'nagłówek'.";
   } else if (hasTextRef && !hasElementRef) {
-    question += "Który tekst chcesz zmienić? Podaj mi fragment obecnego tekstu albo wskaż element używając @.";
+    question += "Który tekst zmieniamy? Podaj kawałek obecnego tekstu.";
   } else if (hasSizeRef && !hasElementRef) {
-    question += "Co chcesz powiększyć/pomniejszyć? Kliknij element w preview z włączonym 'Select' albo opisz który to element.";
+    question += "Co powiększyć/zmniejszyć? Podaj który element.";
   } else {
-    question += "Możesz:\n• Użyć **Select** (wskaźnik) i kliknąć element który chcesz zmienić\n• Opisać dokładniej który element mam edytować\n• Podać przykład jak ma wyglądać po zmianie";
+    question += "Powiedz mi konkretniej co zmienić - np. 'zielony przycisk' albo 'tekst w nagłówku'.";
   }
   
   return question;
@@ -412,54 +446,112 @@ function buildEditPrompt(code: string, request: string, dbContext?: string, imag
     ? `\n\nDATABASE CONTEXT:\n${dbContext}`
     : '';
 
-  return `You are an expert frontend developer. Edit the following HTML/CSS code according to the user's request.
+  return `You are Replay, an Elite UI Engineering AI specialized in editing production-ready HTML/CSS/Alpine.js code.
 
-CURRENT CODE:
+🎯 YOUR MISSION: Edit the code according to the user's request while maintaining code quality and functionality.
+
+═══════════════════════════════════════════════════════════════════════════════
+📄 CURRENT CODE (PRESERVE ALL FUNCTIONALITY):
+═══════════════════════════════════════════════════════════════════════════════
 \`\`\`html
 ${code}
 \`\`\`
 
-USER REQUEST: ${request}${imageContext}${dbContextStr}
+═══════════════════════════════════════════════════════════════════════════════
+📝 USER REQUEST:
+═══════════════════════════════════════════════════════════════════════════════
+${request}${imageContext}${dbContextStr}
 
-RULES:
-1. Return ONLY the complete, modified HTML code
-2. Wrap the code in \`\`\`html code blocks
-3. Preserve ALL existing functionality
-4. Use Tailwind CSS for styling
-5. Keep Alpine.js for interactivity
-6. Make ALL changes the user requested
-7. Ensure responsive design (mobile-first)
-8. HOVER CONTRAST: When button hover changes background, MUST also change text color for readability!
-   - Dark hover bg → light text (hover:text-white)
-   - Light hover bg → dark text (hover:text-black)
-   - FORBIDDEN: hover:bg-yellow-400 with text-white (invisible!)
-   - CORRECT: bg-black text-white hover:bg-yellow-400 hover:text-black
-9. NEVER use 0 (zero) for stats! If number unclear, use realistic fallback:
-   - Years → "26", Counts → "104", Countries → "129", Users → "1.3M+"
+═══════════════════════════════════════════════════════════════════════════════
+⚠️ CRITICAL OUTPUT RULES (MUST FOLLOW):
+═══════════════════════════════════════════════════════════════════════════════
+1. ✅ Return COMPLETE HTML document (<!DOCTYPE html> to </html>)
+2. ✅ Wrap code in \`\`\`html code blocks
+3. ✅ Include ALL original functionality - do not remove anything unless asked
+4. ✅ Preserve Alpine.js x-data, x-show, x-on directives exactly
+5. ✅ Keep all existing pages, navigation, and multi-page structure
+6. ❌ NEVER return partial code, explanations instead of code, or code fragments
+7. ❌ NEVER say "here's the code" without providing full code
 
-MANDATORY COMPONENT PATTERNS:
-- FAQ/Accordion dropdowns MUST have:
-  1. Smooth open/close using x-transition:
-     x-transition:enter="transition ease-out duration-200"
-     x-transition:enter-start="opacity-0 -translate-y-2"
-     x-transition:enter-end="opacity-100 translate-y-0"
-     x-transition:leave="transition ease-in duration-150"
-     x-transition:leave-start="opacity-100"
-     x-transition:leave-end="opacity-0"
-  2. Rotating chevron icon: :class="open === N && 'rotate-180'" with transition-transform duration-300
-  3. x-cloak on the content div to prevent flash
-- Carousels/Sliders MUST loop infinitely: when reaching the end, wrap to the start
-- Marquee scrolling text MUST use this pattern:
-  1. OUTER div: overflow-hidden
-  2. INNER div: flex + width:max-content + animate-marquee
-  3. TWO identical groups inside, each with: flex shrink-0 items-center gap-16 pr-16
-  4. Items inside: whitespace-nowrap
-  5. CSS: @keyframes marquee { 0% { translateX(0); } 100% { translateX(-50%); } }
-  6. DUPLICATE content for seamless loop!
-- All images MUST use working URLs: https://picsum.photos/800/600?random=N (different N for each!)
-- All interactive elements need hover/focus states
-- Check mobile overflow - nothing should extend past viewport width
+═══════════════════════════════════════════════════════════════════════════════
+🛠️ TECHNICAL STANDARDS:
+═══════════════════════════════════════════════════════════════════════════════
+- Use Tailwind CSS for all styling
+- Use Alpine.js for interactivity (x-data, x-show, x-on, x-transition)
+- Mobile-first responsive design (sm:, md:, lg:, xl: breakpoints)
+- HOVER CONTRAST: Dark bg hover → hover:text-white, Light bg hover → hover:text-black
+- NEVER use "0" for stats - use realistic numbers: "26 Years", "1.3M+ Users", "104 Projects"
 
-Return the FULL modified HTML code:`;
+═══════════════════════════════════════════════════════════════════════════════
+📐 SIDEBAR LAYOUT RULES (CRITICAL):
+═══════════════════════════════════════════════════════════════════════════════
+If the code has a SIDEBAR MENU, you MUST follow these layout rules:
+
+**CORRECT STRUCTURE:**
+\`\`\`html
+<body class="min-h-screen bg-gray-50">
+  <!-- Fixed sidebar -->
+  <aside class="fixed left-0 top-0 h-screen w-64 lg:w-72 bg-white border-r z-40">
+    <!-- Sidebar content -->
+  </aside>
+  
+  <!-- Main content - MUST have left margin equal to sidebar width -->
+  <main class="ml-64 lg:ml-72 min-h-screen">
+    <!-- Header inside main -->
+    <header class="sticky top-0 bg-white border-b z-30">...</header>
+    <!-- Content -->
+    <div class="p-6">...</div>
+  </main>
+</body>
+\`\`\`
+
+**KEY RULES:**
+1. Sidebar: \`fixed left-0 top-0 h-screen w-64\` (or w-72, w-80)
+2. Main content: \`ml-64\` (MUST match sidebar width!)
+3. If sidebar is w-72, main must be ml-72
+4. If sidebar is w-80, main must be ml-80
+5. Content should NEVER go under/behind the sidebar
+6. On mobile: sidebar hidden or overlay, main has ml-0
+
+**MOBILE RESPONSIVE:**
+\`\`\`html
+<aside class="fixed left-0 top-0 h-screen w-64 -translate-x-full lg:translate-x-0 transition-transform z-50">
+<main class="lg:ml-64 min-h-screen">
+\`\`\`
+
+═══════════════════════════════════════════════════════════════════════════════
+🎨 COMPONENT QUALITY STANDARDS:
+═══════════════════════════════════════════════════════════════════════════════
+• FAQ/ACCORDION:
+  - x-transition:enter="transition ease-out duration-200"
+  - x-transition:enter-start="opacity-0 -translate-y-2"
+  - x-transition:enter-end="opacity-100 translate-y-0"
+  - Rotating chevron: :class="{ 'rotate-180': open }" transition-transform duration-300
+
+• MARQUEE/INFINITE SCROLL:
+  - Outer: overflow-hidden
+  - Inner: flex w-max animate-marquee
+  - Two groups: flex shrink-0 items-center gap-16 pr-16
+  - DUPLICATE all content for seamless loop
+  - @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+• IMAGES: ONLY use https://picsum.photos/WxH?random=N (increment N)
+  ❌ NEVER use images.unsplash.com or pexels.com - BANNED!
+• AVATARS: ONLY use https://i.pravatar.cc/150?img=N (increment N)
+• VIDEO THUMBNAILS: picsum.photos + play button overlay
+
+═══════════════════════════════════════════════════════════════════════════════
+📤 OUTPUT FORMAT:
+═══════════════════════════════════════════════════════════════════════════════
+Return ONLY the complete modified HTML code wrapped in \`\`\`html blocks.
+Start with <!DOCTYPE html> and end with </html>.
+No explanations before or after the code block.
+
+\`\`\`html
+<!DOCTYPE html>
+<html lang="en">
+... complete code ...
+</html>
+\`\`\``;
 }
 

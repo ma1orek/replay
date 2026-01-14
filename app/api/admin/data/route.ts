@@ -135,6 +135,8 @@ export async function GET(request: NextRequest) {
         token_usage: gen.token_usage || null,
         code: gen.output_code || null, // Include generated code for preview (stored as output_code)
         video_url: gen.input_video_url || null, // Include source video URL (stored as input_video_url)
+        design_system: gen.output_design_system || null, // Design system info
+        architecture: gen.output_architecture || null, // Flow nodes and edges
       };
     });
 

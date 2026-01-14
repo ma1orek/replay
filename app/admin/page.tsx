@@ -10,7 +10,8 @@ import {
   Calendar, ArrowUpRight, Filter, Download,
   User, Mail, Shield, AlertTriangle, Loader2,
   DollarSign, Cpu, MessageSquare, ThumbsUp, ThumbsDown, Meh,
-  Play, FileText, PenSquare, Trash2, Plus, Send, Sparkles, Check, X, ExternalLink
+  Play, FileText, PenSquare, Trash2, Plus, Send, Sparkles, Check, X, ExternalLink,
+  Layers, GitBranch, Monitor, Maximize2, Copy
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
@@ -38,6 +39,16 @@ interface GenerationData {
   code?: string;
   title?: string;
   video_url?: string;
+  design_system?: {
+    colors?: string[];
+    fonts?: string[];
+    styleName?: string;
+    stylePreset?: string;
+  } | null;
+  architecture?: {
+    flowNodes?: Array<{ id: string; type?: string; data?: { label?: string } }>;
+    flowEdges?: Array<{ id: string; source: string; target: string }>;
+  } | null;
 }
 
 interface Stats {
@@ -86,11 +97,10 @@ interface BlogPost {
   published_at: string | null;
 }
 
-// Gemini API cost estimation (based on approximate pricing)
-// gemini-3-pro: ~$0.00125 per 1K input tokens, ~$0.005 per 1K output tokens
-// Average video generation uses ~40-50K input tokens (video), ~10-15K output tokens (code)
-// Estimated: (45K * 0.00125) + (12K * 0.005) = ~$0.056 + ~$0.060 = ~$0.12 per generation
-const ESTIMATED_COST_PER_GENERATION_USD = 0.12; // ~$0.12 per generation (conservative)
+// Gemini API cost estimation (based on actual usage)
+// gemini-3-pro: Higher token costs for video analysis + code generation
+// Average video generation: ~$0.40 per generation (video processing + output)
+const ESTIMATED_COST_PER_GENERATION_USD = 0.40; // $0.40 per generation
 const USD_TO_PLN = 4.05;
 
 export default function AdminPage() {
@@ -103,6 +113,12 @@ export default function AdminPage() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [adminToken, setAdminToken] = useState<string | null>(null);
   
+  // Plan selection modal state
+  const [planModalOpen, setPlanModalOpen] = useState(false);
+  const [planModalUser, setPlanModalUser] = useState<{ id: string; email: string; membership: string } | null>(null);
+  const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
+  const [isUpdatingPlan, setIsUpdatingPlan] = useState(false);
+  
   const [users, setUsers] = useState<UserData[]>([]);
   const [generations, setGenerations] = useState<GenerationData[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -114,6 +130,7 @@ export default function AdminPage() {
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [dataLoading, setDataLoading] = useState(false);
   const [previewGeneration, setPreviewGeneration] = useState<GenerationData | null>(null);
+  const [previewTab, setPreviewTab] = useState<"preview" | "input" | "code" | "design" | "flow">("preview");
   
   // Content Engine state
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
@@ -130,6 +147,17 @@ export default function AdminPage() {
   const [autoMode, setAutoMode] = useState(true); // Auto-generate mode (AI picks topics)
   const [autoCount, setAutoCount] = useState(10); // Number of articles to auto-generate
   const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0, currentTitle: "" });
+  
+  // Toast message for styled alerts
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Auto-dismiss toast after 4 seconds
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => setToastMessage(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
 
   // Load admin data with token
   const loadAdminData = useCallback(async (token: string) => {
@@ -258,7 +286,7 @@ export default function AdminPage() {
     
     // Auto mode validation  
     if (autoMode && autoCount < 1) {
-      alert("Enter at least 1 article");
+      setToastMessage("❌ Enter at least 1 article");
       return;
     }
 
@@ -403,12 +431,12 @@ export default function AdminPage() {
   const fixUserCredits = async (userEmail: string) => {
     if (!adminToken) return;
     
-    const credits = prompt(`Enter credits to set for ${userEmail}:`, "150");
+    const credits = prompt(`Enter credits to set for ${userEmail}:`, "100");
     if (!credits) return;
     
     const creditsNum = parseInt(credits, 10);
     if (isNaN(creditsNum) || creditsNum < 0) {
-      alert("Invalid credits amount");
+      setToastMessage("❌ Invalid credits amount");
       return;
     }
     
@@ -425,21 +453,46 @@ export default function AdminPage() {
       const data = await response.json();
       
       if (response.ok && data.success) {
-        alert(`✅ Credits updated for ${userEmail}\n\nPrevious: ${data.previousCredits ?? 0}\nNew: ${creditsNum}`);
+        setToastMessage(`✅ Credits updated for ${userEmail} (${data.previousCredits ?? 0} → ${creditsNum})`);
         refreshData();
       } else {
-        alert(`❌ Failed: ${data.error || "Unknown error"}`);
+        setToastMessage(`❌ Failed: ${data.error || "Unknown error"}`);
       }
     } catch (err: any) {
-      alert(`❌ Error: ${err.message}`);
+      setToastMessage(`❌ Error: ${err.message}`);
     }
   };
 
-  // Toggle PRO status for a user
-  const toggleUserPro = async (userId: string, currentMembership: string) => {
-    if (!adminToken) return;
+  // Available Pro tiers for admin assignment
+  const PRO_TIERS = [
+    { id: "free", label: "Free", credits: 100 },
+    { id: "pro25", label: "Pro 25", credits: 1500 },
+    { id: "pro50", label: "Pro 50", credits: 3300 },
+    { id: "pro100", label: "Pro 100", credits: 7500 },
+    { id: "pro200", label: "Pro 200", credits: 16500 },
+    { id: "pro300", label: "Pro 300", credits: 25500 },
+    { id: "pro500", label: "Pro 500", credits: 45000 },
+    { id: "pro1000", label: "Pro 1000", credits: 96000 },
+    { id: "pro2000", label: "Pro 2000", credits: 225000 },
+  ];
+
+  // Open plan selection modal
+  const openPlanModal = (userId: string, userEmail: string, currentMembership: string) => {
+    const currentIndex = PRO_TIERS.findIndex(t => 
+      t.id === currentMembership || (currentMembership === "pro" && t.id === "pro100")
+    );
+    setSelectedPlanIndex(currentIndex >= 0 ? currentIndex : 0);
+    setPlanModalUser({ id: userId, email: userEmail, membership: currentMembership });
+    setPlanModalOpen(true);
+  };
+
+  // Apply selected plan
+  const applySelectedPlan = async () => {
+    if (!adminToken || !planModalUser) return;
     
-    const newMembership = currentMembership === "pro" ? "free" : "pro";
+    setIsUpdatingPlan(true);
+    const selectedTier = PRO_TIERS[selectedPlanIndex];
+    const newMembership = selectedTier.id === "free" ? "free" : "pro";
     
     try {
       const response = await fetch("/api/admin/users", {
@@ -448,21 +501,30 @@ export default function AdminPage() {
           "Authorization": `Bearer ${adminToken}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ userId, membership: newMembership })
+        body: JSON.stringify({ 
+          userId: planModalUser.id, 
+          membership: newMembership,
+          credits: selectedTier.credits
+        })
       });
       
       const data = await response.json();
       
       if (response.ok && data.success) {
-        // Update local state
         setUsers(prev => prev.map(u => 
-          u.id === userId ? { ...u, membership: newMembership } : u
+          u.id === planModalUser.id ? { ...u, membership: newMembership } : u
         ));
+        setToastMessage(`✅ ${planModalUser.email} updated to ${selectedTier.label}`);
+        setPlanModalOpen(false);
+        setPlanModalUser(null);
+        refreshData();
       } else {
-        alert(`❌ Failed: ${data.error || "Unknown error"}`);
+        setToastMessage(`❌ Failed: ${data.error || "Unknown error"}`);
       }
     } catch (err: any) {
-      alert(`❌ Error: ${err.message}`);
+      setToastMessage(`❌ Error: ${err.message}`);
+    } finally {
+      setIsUpdatingPlan(false);
     }
   };
 
@@ -475,7 +537,7 @@ export default function AdminPage() {
     
     const creditsNum = parseInt(credits, 10);
     if (isNaN(creditsNum)) {
-      alert("Invalid credits amount");
+      setToastMessage("❌ Invalid credits amount");
       return;
     }
     
@@ -492,16 +554,20 @@ export default function AdminPage() {
       const data = await response.json();
       
       if (response.ok && data.success) {
-        // Update local state
+        // Update local state - wallet returns topup_credits, monthly_credits etc
+        const wallet = data.wallet;
+        const totalCredits = (wallet?.monthly_credits || 0) + (wallet?.rollover_credits || 0) + (wallet?.topup_credits || 0);
         setUsers(prev => prev.map(u => 
-          u.id === userId ? { ...u, credits_free: data.user.credits_free } : u
+          u.id === userId ? { ...u, credits_free: totalCredits } : u
         ));
-        alert(`✅ Added ${creditsNum} credits to ${userEmail}`);
+        // Refresh data to show updated credits
+        refreshData();
+        setToastMessage(`✅ Added ${creditsNum} credits to ${userEmail}`);
       } else {
-        alert(`❌ Failed: ${data.error || "Unknown error"}`);
+        setToastMessage(`❌ Failed: ${data.error || "Unknown error"}`);
       }
     } catch (err: any) {
-      alert(`❌ Error: ${err.message}`);
+      setToastMessage(`❌ Error: ${err.message}`);
     }
   };
 
@@ -939,7 +1005,7 @@ export default function AdminPage() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              toggleUserPro(user.id, user.membership || "free");
+                              openPlanModal(user.id, user.email, user.membership || "free");
                             }}
                             className={cn(
                               "text-xs px-2 py-1 rounded-full transition-colors cursor-pointer hover:opacity-80",
@@ -947,7 +1013,7 @@ export default function AdminPage() {
                                 ? "bg-[#FF6E3C]/20 text-[#FF6E3C] hover:bg-[#FF6E3C]/30" 
                                 : "bg-white/5 text-white/50 hover:bg-white/10"
                             )}
-                            title="Click to toggle PRO status"
+                            title="Click to set user plan tier"
                           >
                             {user.membership === "pro" ? "⭐ PRO" : "free"}
                           </button>
@@ -1512,7 +1578,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                               <button
                                 onClick={() => {
                                   navigator.clipboard.writeText(result.content);
-                                  alert("Content copied to clipboard!");
+                                  setToastMessage("✅ Content copied to clipboard!");
                                 }}
                                 className="px-2 py-1 text-xs bg-white/5 text-white/60 rounded hover:bg-white/10 transition-colors"
                               >
@@ -1716,115 +1782,608 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
         )}
       </AnimatePresence>
       
-      {/* Preview Modal */}
+      {/* Preview Modal - Fullscreen with Tabs */}
       <AnimatePresence>
         {previewGeneration && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black z-50 flex flex-col"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-[#0a0a0a]">
+              <div className="flex items-center gap-4">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center">
+                  <Code className="w-4 h-4 text-[#FF6E3C]" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-white">{previewGeneration.title || "Generation Preview"}</h3>
+                  <p className="text-xs text-white/50">
+                    {previewGeneration.user_email} • {new Date(previewGeneration.created_at).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              
+              {/* Tabs */}
+              <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1">
+                {[
+                  { id: "preview", label: "Preview", icon: Monitor },
+                  { id: "input", label: "Input", icon: Video },
+                  { id: "code", label: "Code", icon: Code },
+                  { id: "design", label: "Design System", icon: Palette },
+                  { id: "flow", label: "Flow Map", icon: GitBranch },
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setPreviewTab(tab.id as any)}
+                    className={cn(
+                      "px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all",
+                      previewTab === tab.id
+                        ? "bg-[#FF6E3C] text-white"
+                        : "text-white/50 hover:text-white/70 hover:bg-white/5"
+                    )}
+                  >
+                    <tab.icon className="w-4 h-4" />
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    if (previewGeneration.code) {
+                      navigator.clipboard.writeText(previewGeneration.code);
+                      setToastMessage("✅ Code copied to clipboard!");
+                    }
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 hover:text-white transition-colors text-sm"
+                >
+                  <Copy className="w-4 h-4" />
+                  Copy
+                </button>
+                <button
+                  onClick={() => {
+                    if (previewGeneration.code) {
+                      const blob = new Blob([previewGeneration.code], { type: "text/html" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `generation-${previewGeneration.id.slice(0, 8)}.html`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 hover:text-white transition-colors text-sm"
+                >
+                  <Download className="w-4 h-4" />
+                  Download
+                </button>
+                <button
+                  onClick={() => {
+                    setPreviewGeneration(null);
+                    setPreviewTab("preview");
+                  }}
+                  className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+                >
+                  <X className="w-5 h-5 text-white/60" />
+                </button>
+              </div>
+            </div>
+            
+            {/* Content Area - Fullscreen */}
+            <div className="flex-1 overflow-hidden">
+              {/* Preview Tab */}
+              {previewTab === "preview" && (
+                <div className="w-full h-full bg-white">
+                  {previewGeneration.code ? (
+                    <iframe
+                      srcDoc={previewGeneration.code}
+                      className="w-full h-full border-0"
+                      sandbox="allow-scripts allow-same-origin"
+                      title="Generation Preview"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-black/30">
+                      No preview available
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Input Tab - Video */}
+              {previewTab === "input" && (
+                <div className="w-full h-full flex items-center justify-center bg-[#0a0a0a] p-8">
+                  {previewGeneration.video_url ? (
+                    <div className="max-w-4xl w-full">
+                      <video
+                        src={previewGeneration.video_url}
+                        controls
+                        className="w-full rounded-2xl shadow-2xl"
+                        style={{ maxHeight: "70vh" }}
+                      />
+                      <div className="mt-4 flex items-center justify-between">
+                        <div className="flex items-center gap-4 text-sm text-white/50">
+                          <span>Duration: {previewGeneration.video_duration || "N/A"}s</span>
+                          <span>Style: {previewGeneration.style_directive || "Auto-Detect"}</span>
+                        </div>
+                        <a 
+                          href={previewGeneration.video_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#FF6E3C]/20 text-[#FF6E3C] hover:bg-[#FF6E3C]/30 transition-colors text-sm"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                          Open in New Tab
+                        </a>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <div className="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4">
+                        <Video className="w-8 h-8 text-white/30" />
+                      </div>
+                      <p className="text-white/50">No input video available</p>
+                      <p className="text-white/30 text-sm mt-1">Video might have been deleted or not saved</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Code Tab */}
+              {previewTab === "code" && (
+                <div className="w-full h-full overflow-auto bg-[#0d0d0d] p-6">
+                  <div className="max-w-6xl mx-auto">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <Code className="w-5 h-5 text-[#FF6E3C]" />
+                        <span className="text-white/70 text-sm">
+                          Generated HTML • {previewGeneration.code?.length.toLocaleString() || 0} characters
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (previewGeneration.code) {
+                            navigator.clipboard.writeText(previewGeneration.code);
+                            setToastMessage("✅ Code copied to clipboard!");
+                          }
+                        }}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 text-sm"
+                      >
+                        <Copy className="w-4 h-4" />
+                        Copy Code
+                      </button>
+                    </div>
+                    <pre className="p-6 bg-black/50 rounded-xl border border-white/10 text-sm text-white/70 font-mono whitespace-pre-wrap overflow-x-auto">
+                      {previewGeneration.code || "No code available"}
+                    </pre>
+                  </div>
+                </div>
+              )}
+              
+              {/* Design System Tab */}
+              {previewTab === "design" && (
+                <div className="w-full h-full overflow-auto bg-[#0a0a0a] p-8">
+                  <div className="max-w-4xl mx-auto">
+                    <div className="flex items-center gap-3 mb-6">
+                      <Palette className="w-5 h-5 text-[#FF6E3C]" />
+                      <h3 className="text-lg font-semibold text-white">Design System</h3>
+                    </div>
+                    
+                    {(() => {
+                      // Use stored design system if available, otherwise extract from code
+                      const ds = previewGeneration.design_system;
+                      
+                      // Try to extract colors from the code as fallback
+                      const colorMatches = previewGeneration.code?.match(/(#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}|rgb\([^)]+\)|rgba\([^)]+\))/g) || [];
+                      const extractedColors = [...new Set(colorMatches)].slice(0, 12);
+                      const colors = ds?.colors?.length ? ds.colors : extractedColors;
+                      
+                      // Try to extract font families from code as fallback
+                      const fontMatches = previewGeneration.code?.match(/font-family:\s*['"]?([^'";\n]+)/gi) || [];
+                      const extractedFonts = [...new Set(fontMatches.map(f => f.replace(/font-family:\s*['"]?/i, '').trim()))].slice(0, 4);
+                      const fonts = ds?.fonts?.length ? ds.fonts : extractedFonts;
+                      
+                      return (
+                        <div className="space-y-8">
+                          {/* Style Preset Banner */}
+                          {(ds?.styleName || ds?.stylePreset) && (
+                            <div className="bg-gradient-to-r from-[#FF6E3C]/20 to-[#FF8F5C]/10 rounded-2xl p-6 border border-[#FF6E3C]/30">
+                              <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-xl bg-[#FF6E3C]/30 flex items-center justify-center">
+                                  <Sparkles className="w-6 h-6 text-[#FF6E3C]" />
+                                </div>
+                                <div>
+                                  <h4 className="text-lg font-semibold text-white">{ds?.styleName || ds?.stylePreset}</h4>
+                                  <p className="text-sm text-white/50">Applied style preset</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Colors */}
+                          <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                            <h4 className="text-sm font-medium text-white/70 mb-4">
+                              {ds?.colors?.length ? "Design Colors" : "Extracted Colors"}
+                            </h4>
+                            <div className="grid grid-cols-6 gap-3">
+                              {colors.length > 0 ? colors.map((color: string, i: number) => (
+                                <button
+                                  key={i}
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(color);
+                                    setToastMessage(`✅ Copied: ${color}`);
+                                  }}
+                                  className="group"
+                                >
+                                  <div 
+                                    className="w-full aspect-square rounded-xl border border-white/10 mb-2 group-hover:scale-105 transition-transform"
+                                    style={{ backgroundColor: color }}
+                                  />
+                                  <span className="text-[10px] text-white/40 font-mono">{color}</span>
+                                </button>
+                              )) : (
+                                <p className="col-span-6 text-white/30 text-sm">No colors detected</p>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Typography */}
+                          <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                            <h4 className="text-sm font-medium text-white/70 mb-4">Typography</h4>
+                            {fonts.length > 0 ? (
+                              <div className="space-y-3">
+                                {fonts.map((font: string, i: number) => (
+                                  <div key={i} className="flex items-center justify-between p-3 bg-black/30 rounded-lg">
+                                    <span className="text-white/70" style={{ fontFamily: font }}>{font}</span>
+                                    <button
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(font);
+                                        setToastMessage(`✅ Copied: ${font}`);
+                                      }}
+                                      className="text-xs text-white/40 hover:text-white/60"
+                                    >
+                                      <Copy className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-white/30 text-sm">No fonts detected</p>
+                            )}
+                          </div>
+                          
+                          {/* Generation Info */}
+                          <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                            <h4 className="text-sm font-medium text-white/70 mb-4">Generation Info</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="p-3 bg-black/30 rounded-lg">
+                                <span className="text-xs text-white/40">Style Directive</span>
+                                <p className="text-white/70 mt-1">{previewGeneration.style_directive || "Auto-Detect"}</p>
+                              </div>
+                              <div className="p-3 bg-black/30 rounded-lg">
+                                <span className="text-xs text-white/40">Credits Used</span>
+                                <p className="text-[#FF6E3C] mt-1">{previewGeneration.credits_used}</p>
+                              </div>
+                              <div className="p-3 bg-black/30 rounded-lg">
+                                <span className="text-xs text-white/40">Status</span>
+                                <p className={cn("mt-1", previewGeneration.status === "complete" ? "text-green-400" : "text-yellow-400")}>
+                                  {previewGeneration.status}
+                                </p>
+                              </div>
+                              <div className="p-3 bg-black/30 rounded-lg">
+                                <span className="text-xs text-white/40">Code Size</span>
+                                <p className="text-white/70 mt-1">{((previewGeneration.code?.length || 0) / 1024).toFixed(1)} KB</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
+              
+              {/* Flow Map Tab */}
+              {previewTab === "flow" && (
+                <div className="w-full h-full overflow-auto bg-[#0a0a0a] p-8">
+                  <div className="max-w-5xl mx-auto">
+                    <div className="flex items-center gap-3 mb-6">
+                      <GitBranch className="w-5 h-5 text-[#FF6E3C]" />
+                      <h3 className="text-lg font-semibold text-white">Flow Map</h3>
+                    </div>
+                    
+                    {(() => {
+                      const arch = previewGeneration.architecture;
+                      const flowNodes = arch?.flowNodes || [];
+                      const flowEdges = arch?.flowEdges || [];
+                      
+                      // Fallback: Extract section IDs from code
+                      const sectionMatches = previewGeneration.code?.match(/id=["']([^"']+)["']/g) || [];
+                      const sections = sectionMatches.map(m => m.replace(/id=["']|["']/g, '')).filter(s => s.length > 1 && s.length < 30);
+                      const uniqueSections = [...new Set(sections)].slice(0, 10);
+                      
+                      // Extract links
+                      const linkMatches = previewGeneration.code?.match(/href=["']#([^"']+)["']/g) || [];
+                      const links = linkMatches.map(m => m.replace(/href=["']#|["']/g, ''));
+                      
+                      const hasStoredFlow = flowNodes.length > 0;
+                      
+                      return (
+                        <div className="space-y-6">
+                          {/* Visual Flow Diagram */}
+                          {hasStoredFlow && (
+                            <div className="bg-gradient-to-br from-[#FF6E3C]/10 to-transparent rounded-2xl p-6 border border-[#FF6E3C]/20">
+                              <h4 className="text-sm font-medium text-white/70 mb-4 flex items-center gap-2">
+                                <Layers className="w-4 h-4 text-[#FF6E3C]" />
+                                Stored Flow Architecture
+                              </h4>
+                              <div className="relative">
+                                {/* Simple flow visualization */}
+                                <div className="flex flex-wrap gap-4 justify-center">
+                                  {flowNodes.map((node: any, i: number) => (
+                                    <div 
+                                      key={node.id || i}
+                                      className="relative"
+                                    >
+                                      <div className={cn(
+                                        "px-4 py-3 rounded-xl border text-center min-w-[120px]",
+                                        node.type === "screen" || node.type === "page"
+                                          ? "bg-[#FF6E3C]/20 border-[#FF6E3C]/50 text-white"
+                                          : "bg-white/5 border-white/20 text-white/70"
+                                      )}>
+                                        <span className="text-xs text-white/40 block mb-1">
+                                          {node.type || "node"}
+                                        </span>
+                                        <span className="text-sm font-medium">
+                                          {node.data?.label || node.id}
+                                        </span>
+                                      </div>
+                                      {/* Connection indicator */}
+                                      {i < flowNodes.length - 1 && (
+                                        <div className="absolute -right-4 top-1/2 transform translate-x-full -translate-y-1/2 text-white/30">
+                                          →
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                                {flowEdges.length > 0 && (
+                                  <p className="text-xs text-white/40 text-center mt-4">
+                                    {flowEdges.length} connection{flowEdges.length !== 1 ? 's' : ''} between screens
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Page Sections */}
+                          <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                            <h4 className="text-sm font-medium text-white/70 mb-4">
+                              {hasStoredFlow ? "HTML Sections" : "Detected Sections"}
+                            </h4>
+                            {uniqueSections.length > 0 ? (
+                              <div className="grid grid-cols-2 gap-3">
+                                {uniqueSections.map((section, i) => (
+                                  <div key={i} className="flex items-center gap-3 p-3 bg-black/30 rounded-lg">
+                                    <div className="w-8 h-8 rounded-lg bg-[#FF6E3C]/20 flex items-center justify-center text-[#FF6E3C] text-sm font-bold shrink-0">
+                                      {i + 1}
+                                    </div>
+                                    <div className="flex-1 flex items-center justify-between min-w-0">
+                                      <span className="text-white/70 font-mono text-sm truncate">#{section}</span>
+                                      {links.includes(section) && (
+                                        <span className="text-[10px] text-green-400 bg-green-500/20 px-2 py-0.5 rounded shrink-0 ml-2">
+                                          nav link
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-white/30 text-sm">No sections with IDs detected</p>
+                            )}
+                          </div>
+                          
+                          {/* Navigation Links */}
+                          <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                            <h4 className="text-sm font-medium text-white/70 mb-4">Navigation Links</h4>
+                            {links.length > 0 ? (
+                              <div className="flex flex-wrap gap-2">
+                                {[...new Set(links)].map((link, i) => (
+                                  <span 
+                                    key={i}
+                                    className="px-3 py-1.5 bg-black/30 rounded-lg text-sm text-white/60 font-mono"
+                                  >
+                                    → #{link}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-white/30 text-sm">No internal navigation links detected</p>
+                            )}
+                          </div>
+                          
+                          {/* Structure Analysis */}
+                          <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                            <h4 className="text-sm font-medium text-white/70 mb-4">Structure Analysis</h4>
+                            <div className="grid grid-cols-4 gap-4">
+                              {hasStoredFlow && (
+                                <>
+                                  <div className="p-4 bg-[#FF6E3C]/10 rounded-lg text-center border border-[#FF6E3C]/20">
+                                    <p className="text-2xl font-bold text-[#FF6E3C]">{flowNodes.length}</p>
+                                    <p className="text-xs text-white/40 mt-1">Flow Nodes</p>
+                                  </div>
+                                  <div className="p-4 bg-[#FF6E3C]/10 rounded-lg text-center border border-[#FF6E3C]/20">
+                                    <p className="text-2xl font-bold text-[#FF6E3C]">{flowEdges.length}</p>
+                                    <p className="text-xs text-white/40 mt-1">Connections</p>
+                                  </div>
+                                </>
+                              )}
+                              <div className="p-4 bg-black/30 rounded-lg text-center">
+                                <p className="text-2xl font-bold text-white">{uniqueSections.length}</p>
+                                <p className="text-xs text-white/40 mt-1">HTML Sections</p>
+                              </div>
+                              <div className="p-4 bg-black/30 rounded-lg text-center">
+                                <p className="text-2xl font-bold text-white">{[...new Set(links)].length}</p>
+                                <p className="text-xs text-white/40 mt-1">Nav Links</p>
+                              </div>
+                              <div className="p-4 bg-black/30 rounded-lg text-center">
+                                <p className="text-2xl font-bold text-white">
+                                  {(previewGeneration.code?.match(/<img/gi) || []).length}
+                                </p>
+                                <p className="text-xs text-white/40 mt-1">Images</p>
+                              </div>
+                              <div className="p-4 bg-black/30 rounded-lg text-center">
+                                <p className="text-2xl font-bold text-white">
+                                  {(previewGeneration.code?.match(/<button/gi) || []).length}
+                                </p>
+                                <p className="text-xs text-white/40 mt-1">Buttons</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Footer with meta info */}
+            <div className="px-4 py-2 border-t border-white/10 bg-[#0a0a0a] flex items-center gap-6 text-xs text-white/50">
+              <span>ID: <span className="text-white/70 font-mono">{previewGeneration.id.slice(0, 12)}...</span></span>
+              <span>Style: <span className="text-white/70">{previewGeneration.style_directive || "Auto-Detect"}</span></span>
+              <span>Status: <span className={previewGeneration.status === "complete" ? "text-green-400" : "text-yellow-400"}>{previewGeneration.status}</span></span>
+              <span>Credits: <span className="text-[#FF6E3C]">{previewGeneration.credits_used}</span></span>
+              <span>Duration: <span className="text-white/70">{previewGeneration.video_duration || "N/A"}s</span></span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Plan Selection Modal */}
+      <AnimatePresence>
+        {planModalOpen && planModalUser && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setPreviewGeneration(null)}
+            onClick={() => !isUpdatingPlan && setPlanModalOpen(false)}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-[#0a0a0a] border border-white/10 rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden"
               onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md bg-[#111] border border-white/10 rounded-2xl overflow-hidden"
             >
-              {/* Header */}
-              <div className="flex items-center justify-between p-4 border-b border-white/10">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center">
-                    <Code className="w-5 h-5 text-[#FF6E3C]" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">{previewGeneration.title || "Generation Preview"}</h3>
-                    <p className="text-xs text-white/50">
-                      {previewGeneration.user_email} • {new Date(previewGeneration.created_at).toLocaleString()}
-                    </p>
-                  </div>
+              {/* Modal Header */}
+              <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Set User Plan</h3>
+                  <p className="text-sm text-white/50">{planModalUser.email}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      if (previewGeneration.code) {
-                        const blob = new Blob([previewGeneration.code], { type: "text/html" });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = `generation-${previewGeneration.id.slice(0, 8)}.html`;
-                        a.click();
-                        URL.revokeObjectURL(url);
-                      }
-                    }}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 hover:text-white transition-colors text-sm"
-                  >
-                    <Download className="w-4 h-4" />
-                    Download HTML
-                  </button>
-                  <button
-                    onClick={() => setPreviewGeneration(null)}
-                    className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-                  >
-                    <span className="text-white/60 text-xl">×</span>
-                  </button>
+                <button
+                  onClick={() => !isUpdatingPlan && setPlanModalOpen(false)}
+                  className="p-2 rounded-lg hover:bg-white/5 transition-colors"
+                >
+                  <X className="w-5 h-5 text-white/50" />
+                </button>
+              </div>
+              
+              {/* Plan Options */}
+              <div className="p-4 max-h-[400px] overflow-y-auto">
+                <div className="space-y-2">
+                  {PRO_TIERS.map((tier, idx) => (
+                    <button
+                      key={tier.id}
+                      onClick={() => setSelectedPlanIndex(idx)}
+                      className={cn(
+                        "w-full px-4 py-3 rounded-xl text-left transition-all flex items-center justify-between",
+                        selectedPlanIndex === idx
+                          ? "bg-[#FF6E3C]/20 border border-[#FF6E3C]/50"
+                          : "bg-white/5 border border-white/10 hover:bg-white/10"
+                      )}
+                    >
+                      <div>
+                        <p className={cn(
+                          "font-medium",
+                          selectedPlanIndex === idx ? "text-[#FF6E3C]" : "text-white"
+                        )}>
+                          {tier.label}
+                        </p>
+                        <p className="text-sm text-white/50">{tier.credits.toLocaleString()} credits / month</p>
+                      </div>
+                      {selectedPlanIndex === idx && (
+                        <div className="w-6 h-6 rounded-full bg-[#FF6E3C] flex items-center justify-center">
+                          <Check className="w-4 h-4 text-white" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
                 </div>
               </div>
               
-              {/* Content */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 h-[calc(90vh-80px)]">
-                {/* Preview iframe */}
-                <div className="border-r border-white/10 p-4 h-full">
-                  <div className="text-xs text-white/40 mb-2 flex items-center gap-2">
-                    <Eye className="w-3.5 h-3.5" />
-                    Live Preview
-                  </div>
-                  <div className="bg-white rounded-lg overflow-hidden h-[calc(100%-24px)]">
-                    {previewGeneration.code && (
-                      <iframe
-                        srcDoc={previewGeneration.code}
-                        className="w-full h-full border-0"
-                        sandbox="allow-scripts allow-same-origin"
-                        title="Generation Preview"
-                      />
-                    )}
-                  </div>
-                </div>
-                
-                {/* Code view */}
-                <div className="p-4 h-full overflow-hidden flex flex-col">
-                  <div className="text-xs text-white/40 mb-2 flex items-center gap-2">
-                    <Code className="w-3.5 h-3.5" />
-                    Generated Code ({previewGeneration.code?.length.toLocaleString() || 0} chars)
-                  </div>
-                  <div className="flex-1 bg-[#0d0d0d] rounded-lg overflow-auto">
-                    <pre className="p-4 text-xs text-white/70 font-mono whitespace-pre-wrap break-all">
-                      {previewGeneration.code || "No code available"}
-                    </pre>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Meta info */}
-              <div className="p-4 border-t border-white/10 flex items-center gap-6 text-xs text-white/50">
-                <span>Style: <span className="text-white/70">{previewGeneration.style_directive || "Default"}</span></span>
-                <span>Status: <span className={previewGeneration.status === "complete" ? "text-green-400" : "text-yellow-400"}>{previewGeneration.status}</span></span>
-                <span>Credits: <span className="text-[#FF6E3C]">{previewGeneration.credits_used}</span></span>
-                {previewGeneration.video_url && (
-                  <a 
-                    href={previewGeneration.video_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-[#FF6E3C] hover:underline flex items-center gap-1"
-                  >
-                    <Video className="w-3.5 h-3.5" />
-                    View Source Video
-                  </a>
-                )}
+              {/* Modal Footer */}
+              <div className="px-6 py-4 border-t border-white/10 flex items-center justify-end gap-3">
+                <button
+                  onClick={() => setPlanModalOpen(false)}
+                  disabled={isUpdatingPlan}
+                  className="px-4 py-2.5 rounded-xl text-sm font-medium text-white/70 hover:bg-white/5 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={applySelectedPlan}
+                  disabled={isUpdatingPlan}
+                  className="px-5 py-2.5 rounded-xl text-sm font-medium bg-[#FF6E3C] text-white hover:bg-[#FF8F5C] transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isUpdatingPlan ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      Apply Plan
+                    </>
+                  )}
+                </button>
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Toast notification */}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, y: 50, x: "-50%" }}
+            className="fixed bottom-6 left-1/2 z-50 px-5 py-3 bg-[#111] border border-white/10 rounded-xl shadow-xl flex items-center gap-3"
+          >
+            {toastMessage.startsWith("✅") ? (
+              <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                <Check className="w-4 h-4 text-emerald-400" />
+              </div>
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center">
+                <X className="w-4 h-4 text-red-400" />
+              </div>
+            )}
+            <span className="text-sm text-white">{toastMessage.replace(/^(✅|❌)\s*/, '')}</span>
+            <button 
+              onClick={() => setToastMessage(null)}
+              className="p-1 rounded-lg hover:bg-white/10"
+            >
+              <X className="w-4 h-4 text-white/40" />
+            </button>
           </motion.div>
         )}
       </AnimatePresence>

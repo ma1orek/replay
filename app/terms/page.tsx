@@ -127,7 +127,7 @@ export default function TermsPage() {
               </li>
               <li className="flex items-start gap-3">
                 <span className="text-[#FF6E3C] mt-1">•</span>
-                <span>Free accounts receive 150 one-time credits</span>
+                <span>Free accounts receive 100 credits per month</span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="text-[#FF6E3C] mt-1">•</span>

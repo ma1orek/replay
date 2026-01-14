@@ -50,7 +50,7 @@ export function FinalCTA() {
             </Link>
             
             <p className="mt-4 text-sm text-white/40">
-              No credit card required • <span className="text-[#FF6E3C]">150 Credits</span> included
+              No credit card required • <span className="text-[#FF6E3C]">100 Credits</span> included
             </p>
           </div>
         </GlowCard>

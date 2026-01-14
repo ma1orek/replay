@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Share2, Check, ExternalLink, Smartphone, Monitor, ArrowRight, X } from "lucide-react";
+import { Share2, Check, ExternalLink, Smartphone, Monitor, ArrowRight, X, Code, Sparkles, Map, Palette, Rocket } from "lucide-react";
 
 // Loading messages - same as desktop
 const STREAMING_MESSAGES = [
@@ -270,13 +270,13 @@ export default function MobilePreviewView({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md bg-[#0a0a0a] rounded-t-3xl border-t border-white/10 p-6 pb-10"
+            className="relative w-full max-w-md bg-[#0a0a0a] rounded-t-3xl border-t border-white/10 p-6 pb-10"
           >
             <button
               onClick={() => setShowShareModal(false)}
-              className="absolute top-4 right-4 p-2"
+              className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 transition-colors"
             >
-              <X className="w-5 h-5 text-white/40" />
+              <X className="w-5 h-5 text-white/60" />
             </button>
             
             {/* Icon */}
@@ -291,32 +291,34 @@ export default function MobilePreviewView({
             </div>
             
             <div className="mb-6">
-              <h3 className="text-xl font-bold text-white mb-4 text-center">Project Synced! 🚀</h3>
+              <h3 className="text-xl font-bold text-white mb-4 text-center flex items-center justify-center gap-2">
+                Project Synced! <Rocket className="w-5 h-5 text-[#FF6E3C]" />
+              </h3>
               <p className="text-white/60 text-sm mb-4 text-center">
                 Unlock Full Power on Desktop:
               </p>
               <div className="space-y-2.5 text-sm">
                 <div className="flex items-center gap-3 text-white/80">
                   <div className="w-6 h-6 rounded-lg bg-[#FF6E3C]/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs">💻</span>
+                    <Code className="w-3.5 h-3.5 text-[#FF6E3C]" />
                   </div>
                   <span>Full production-ready code</span>
                 </div>
                 <div className="flex items-center gap-3 text-white/80">
                   <div className="w-6 h-6 rounded-lg bg-[#FF6E3C]/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs">✨</span>
+                    <Sparkles className="w-3.5 h-3.5 text-[#FF6E3C]" />
                   </div>
                   <span>Edit with AI (Chat & Refine)</span>
                 </div>
                 <div className="flex items-center gap-3 text-white/80">
                   <div className="w-6 h-6 rounded-lg bg-[#FF6E3C]/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs">🗺️</span>
+                    <Map className="w-3.5 h-3.5 text-[#FF6E3C]" />
                   </div>
                   <span>Visual Flow Map</span>
                 </div>
                 <div className="flex items-center gap-3 text-white/80">
                   <div className="w-6 h-6 rounded-lg bg-[#FF6E3C]/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs">🎨</span>
+                    <Palette className="w-3.5 h-3.5 text-[#FF6E3C]" />
                   </div>
                   <span>Design System & Export</span>
                 </div>

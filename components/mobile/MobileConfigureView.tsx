@@ -17,6 +17,7 @@ interface MobileConfigureViewProps {
   onReconstruct: () => void;
   isProcessing: boolean;
   autoStartCamera?: boolean;
+  isLoadedProject?: boolean;
 }
 
 export default function MobileConfigureView({
@@ -28,6 +29,7 @@ export default function MobileConfigureView({
   context,
   onContextChange,
   style,
+  isLoadedProject = false,
   onStyleChange,
   onReconstruct,
   isProcessing,
@@ -178,8 +180,8 @@ export default function MobileConfigureView({
           Input Video
         </label>
         
-        {videoBlob && videoUrl ? (
-          // Filled state
+        {videoUrl ? (
+          // Filled state - either from blob or loaded from history
           <div className="relative rounded-2xl overflow-hidden bg-white/5 border border-white/10">
             <video
               ref={previewVideoRef}
@@ -190,12 +192,21 @@ export default function MobileConfigureView({
               loop
               autoPlay
             />
-            <button
-              onClick={onRemoveVideo}
-              className="absolute top-3 right-3 p-2 rounded-full bg-black/60 backdrop-blur-sm text-white/80"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            {videoBlob && (
+              // Only show remove button for new recordings, not loaded projects
+              <button
+                onClick={onRemoveVideo}
+                className="absolute top-3 right-3 p-2 rounded-full bg-black/60 backdrop-blur-sm text-white/80"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+            {!videoBlob && (
+              // Show indicator for loaded project video
+              <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white/70 text-xs font-medium">
+                Original Input
+              </div>
+            )}
             <button
               onClick={() => fileInputRef.current?.click()}
               className="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm text-white/80 text-xs"
@@ -263,9 +274,9 @@ export default function MobileConfigureView({
       {/* Reconstruct button */}
       <button
         onClick={onReconstruct}
-        disabled={!videoBlob || isProcessing}
+        disabled={(!videoBlob && !isLoadedProject) || isProcessing}
         className={`w-full py-4 rounded-xl font-bold text-base ${
-          videoBlob && !isProcessing
+          (videoBlob || isLoadedProject) && !isProcessing
             ? "bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white"
             : "bg-white/10 text-white/30 cursor-not-allowed"
         }`}

@@ -110,7 +110,7 @@ Deploy your UI to the web instantly. Share the link with anyone.
 
 | Plan | Price | Credits/Month | Best For |
 |------|-------|---------------|----------|
-| **Free** | $0 | 150 | Getting started |
+| **Free** | $0 | 100 | Getting started |
 | **Pro** | $35/mo | 3,000 | Creators & indie hackers |
 | **Enterprise** | Custom | Unlimited | Teams & agencies |
 

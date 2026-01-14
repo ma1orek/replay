@@ -10,6 +10,7 @@ import Logo from "@/components/Logo";
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
   title?: string;
   description?: string;
 }
@@ -19,6 +20,7 @@ type AuthMode = "select" | "email-otp" | "email-password" | "otp-verify" | "otp-
 export default function AuthModal({
   isOpen,
   onClose,
+  onSuccess,
   title = "Sign in to generate",
   description = "Your credits and projects are saved to your account.",
 }: AuthModalProps) {
@@ -96,7 +98,7 @@ export default function AuthModal({
     if (result.error) {
       setError(result.error);
     } else {
-      handleClose();
+      handleAuthSuccess();
     }
     
     setIsLoading(false);
@@ -215,7 +217,7 @@ export default function AuthModal({
           if (signInResult.error) {
             setError(signInResult.error);
           } else {
-            handleClose();
+            handleAuthSuccess();
           }
         } else {
           setError(data.error || "Invalid code");
@@ -236,7 +238,7 @@ export default function AuthModal({
         setOtpCode(["", "", "", "", "", ""]);
         otpRefs.current[0]?.focus();
       } else {
-        handleClose();
+        handleAuthSuccess();
       }
     }
     
@@ -286,6 +288,17 @@ export default function AuthModal({
     setError(null);
     setSuccessMessage(null);
     onClose();
+  };
+
+  const handleAuthSuccess = () => {
+    setEmail("");
+    setPassword("");
+    setAuthMode("select");
+    setOtpCode(["", "", "", "", "", ""]);
+    setError(null);
+    setSuccessMessage(null);
+    onClose();
+    onSuccess?.();
   };
 
   return (
