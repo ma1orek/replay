@@ -7286,8 +7286,19 @@ export const shadows = {
                                   <button
                                     onClick={() => { 
                                       setHistoryMenuOpen(null);
+                                      // Start renaming this project
+                                      setRenamingId(gen.id);
+                                    }}
+                                    className="w-full px-3 py-2 text-left text-xs text-white/70 hover:bg-white/5 flex items-center gap-2"
+                                  >
+                                    <Pencil className="w-3 h-3" /> Edit Name
+                                  </button>
+                                  <button
+                                    onClick={() => { 
+                                      setHistoryMenuOpen(null);
                                       // Load this generation and open settings
                                       setActiveGeneration(gen);
+                                      setGenerationTitle(gen.title || "Untitled Project");
                                       setShowProjectSettings(true);
                                     }}
                                     className="w-full px-3 py-2 text-left text-xs text-white/70 hover:bg-white/5 flex items-center gap-2"
