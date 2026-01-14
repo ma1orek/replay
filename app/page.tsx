@@ -8068,7 +8068,7 @@ export const shadows = {
                         </div>
                         <div className="space-y-1">
                           {flows.map((flow) => (
-                            <button key={flow.id} onClick={() => setSelectedFlowId(flow.id)} className={cn("w-full flex items-center gap-2 p-2 rounded-lg cursor-pointer text-left", selectedFlowId === flow.id ? "bg-[#FF6E3C]/10 border border-[#FF6E3C]/20" : "bg-white/[0.02] hover:bg-white/[0.04]")} aria-label={`Select flow ${flow.title || flow.id}`}>
+                            <button key={flow.id} onClick={() => setSelectedFlowId(flow.id)} className={cn("w-full flex items-center gap-2 p-2 rounded-lg cursor-pointer text-left", selectedFlowId === flow.id ? "bg-[#FF6E3C]/10 border border-[#FF6E3C]/20" : "bg-white/[0.02] hover:bg-white/[0.04]")} aria-label={`Select flow ${flow.name || flow.id}`}>
                               <div className="w-10 h-6 rounded overflow-hidden bg-white/5 flex-shrink-0">
                                 {flow.thumbnail ? <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" /> : <Film className="w-3 h-3 text-white/20 mx-auto mt-1.5" />}
                               </div>
