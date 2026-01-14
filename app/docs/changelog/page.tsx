@@ -3,6 +3,47 @@ import { Clock, Sparkles, Bug, Wrench, ArrowUp, Bell } from "lucide-react";
 
 const changelog = [
   {
+    date: "January 14, 2026",
+    version: "1.8.0",
+    changes: [
+      {
+        type: "feature",
+        title: "Accessibility Improvements (WCAG)",
+        description: "Full keyboard navigation support. Focus trap for all modals - TAB never escapes open modals. Visible focus rings on all interactive elements. aria-labels on icon-only buttons."
+      },
+      {
+        type: "feature",
+        title: "Project Dropdown Redesign",
+        description: "New clickable Project button with ChevronDown icon, visible background and border. 'Create New Project' at top of dropdown (highlighted in brand color). Better visual hierarchy."
+      },
+      {
+        type: "feature",
+        title: "Edit Name Quick Action",
+        description: "Quickly rename projects from context menu in project list. No need to open settings modal for simple rename."
+      },
+      {
+        type: "improvement",
+        title: "Unified Desktop Layout",
+        description: "Aligned top bars - Logo section and main top bar now same height (h-12). Removed duplicate mobile view toggle from center. Publish button always in brand color."
+      },
+      {
+        type: "improvement",
+        title: "Semantic HTML Refactor",
+        description: "Converted clickable divs to semantic buttons for keyboard accessibility. All interactive elements now reachable via TAB key."
+      },
+      {
+        type: "fix",
+        title: "Project Settings Modal Name",
+        description: "Settings modal now correctly displays actual project name instead of 'Untitled Project' when opened."
+      },
+      {
+        type: "fix",
+        title: "Focus Lock Library",
+        description: "Added react-focus-lock to prevent focus escaping modals. Returns focus to trigger button on close."
+      },
+    ]
+  },
+  {
     date: "January 10, 2026",
     version: "1.7.0",
     changes: [
