@@ -2756,34 +2756,55 @@ Below hero: bg-white sections, bg-gray-50 cards, bg-gray-900 footer.
 Colors: text-gray-900, bg-violet-600 buttons.`, category: "shader" },
 
   // === PASTEL CLOUD 3D - Spline in hero ===
-  { id: "pastel-cloud-3d", name: "Pastel Cloud 3D", desc: "Spline 3D hero • Clean sections", fullDesc: `PASTEL CLOUD 3D - Spline 3D in hero ONLY, clean page below.
+  { id: "pastel-cloud-3d", name: "Pastel Cloud 3D", desc: "Spline 3D hero • Clean sections", fullDesc: `🚨 PASTEL CLOUD 3D - USE THIS EXACT HTML STRUCTURE:
 
-⚠️ MUST ADD THIS SCRIPT IN <head>:
-<script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.35/build/spline-viewer.js"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.35/build/spline-viewer.js"></script>
+</head>
+<body class="bg-white">
+  
+  <!-- HERO with 3D Spline background -->
+  <section class="relative min-h-screen overflow-hidden">
+    <spline-viewer url="https://prod.spline.design/H0rV8YuyqNW4BOJ9/scene.splinecode" class="absolute inset-0 w-full h-full"></spline-viewer>
+    <div class="relative z-10 min-h-screen flex flex-col items-center justify-center text-center px-6 pt-20">
+      <h1 class="text-6xl md:text-7xl font-bold text-gray-900 mb-6">Headline</h1>
+      <p class="text-gray-700 text-xl max-w-2xl mb-10">Description text</p>
+      <button class="px-8 py-4 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-full shadow-xl">CTA Button</button>
+    </div>
+  </section>
 
-HERO with Spline (ONLY in hero section!):
-<section class="relative min-h-screen overflow-hidden">
-  <spline-viewer class="absolute inset-0 w-full h-full" url="https://prod.spline.design/H0rV8YuyqNW4BOJ9/scene.splinecode"></spline-viewer>
-  <div class="relative z-10 min-h-screen flex flex-col items-center justify-center text-center px-6">
-    <h1 class="text-6xl font-bold text-gray-900">Headline</h1>
-    <p class="text-gray-700 text-xl mt-4">Description</p>
-    <button class="mt-8 px-8 py-4 bg-violet-600 text-white rounded-full font-semibold shadow-xl">CTA</button>
-  </div>
-</section>
+  <!-- Features - SOLID white background -->
+  <section class="py-24 px-6 bg-white">
+    <div class="max-w-6xl mx-auto">
+      <h2 class="text-4xl font-bold text-gray-900 text-center mb-16">Features</h2>
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="bg-gray-50 rounded-2xl p-8 border border-gray-100">
+          <h3 class="text-xl font-bold text-gray-900 mb-2">Feature</h3>
+          <p class="text-gray-600">Description</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
-BELOW HERO - Normal backgrounds (NOT transparent!):
-<section class="py-24 px-6 bg-white">Features with bg-gray-50 cards</section>
-<section class="py-24 px-6 bg-gradient-to-br from-violet-50 to-pink-50">CTA</section>
-<footer class="py-12 px-6 bg-gray-900 text-white">Footer</footer>
+  <!-- Footer -->
+  <footer class="py-12 px-6 bg-gray-900">
+    <p class="text-center text-gray-400">© 2024</p>
+  </footer>
 
-CRITICAL:
-1. Script MUST be in <head>
-2. spline-viewer inside hero section ONLY (class="absolute inset-0")
-3. Hero has overflow-hidden
-4. Sections below have SOLID backgrounds (bg-white, bg-gray-50)
-5. Body is bg-white
+</body>
+</html>
 
-Colors: text-gray-900, text-gray-700, bg-violet-600 buttons, bg-gray-50 cards.`, category: "shader" },
+⚠️ CRITICAL - DO NOT CHANGE:
+1. The <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.35/build/spline-viewer.js"></script> MUST be in <head>
+2. The <spline-viewer url="https://prod.spline.design/H0rV8YuyqNW4BOJ9/scene.splinecode"> MUST be inside hero section with class="absolute inset-0 w-full h-full"
+3. Hero section MUST have class="relative min-h-screen overflow-hidden"
+4. Sections BELOW hero MUST have solid backgrounds (bg-white, bg-gray-50) NOT transparent`, category: "shader" },
 
   // === SUPER HERO - ANIMATED LIQUID BACKGROUNDS ===
   { id: "super-hero", name: "Super Hero", desc: "Liquid Gradient • Animated Blob • Premium Hero", fullDesc: `SUPER HERO - Animated liquid gradient backgrounds like Framer's AnimatedLiquidBackground.
