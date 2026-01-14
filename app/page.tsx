@@ -1369,6 +1369,11 @@ function ReplayToolContent() {
     setGenerationComplete(true);
     setViewMode("preview");
     
+    // Clear streaming state
+    setStreamingStatus(null);
+    setStreamingCode(null);
+    setStreamingLines(0);
+    
     // Mark all components as done
     setAnalysisPhase(prev => prev ? {
       ...prev,
@@ -6935,6 +6940,59 @@ Try these prompts in Cursor or v0:
               </motion.p>
             </AnimatePresence>
           </div>
+
+          {/* Live Code Streaming - Shows code being written in real-time */}
+          {(streamingCode || streamingLines > 0) && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="w-full max-w-2xl mt-6 rounded-xl border border-white/[0.08] overflow-hidden"
+              style={{ background: '#0a0a0a' }}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.06]" style={{ background: '#0d0d0d' }}>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-[#FF6E3C] animate-pulse" />
+                  <span className="text-[10px] text-white/50 font-mono">
+                    {streamingStatus || "Writing code..."}
+                  </span>
+                  {streamingLines > 0 && (
+                    <span className="text-[9px] text-[#FF6E3C]/70 font-mono ml-2">
+                      {streamingLines} lines
+                    </span>
+                  )}
+                </div>
+              </div>
+              
+              {/* Live Code Display */}
+              <div className="p-3 h-[140px] overflow-hidden relative font-mono text-[10px] leading-relaxed">
+                <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-[#0a0a0a] to-transparent z-10" />
+                <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-[#0a0a0a] to-transparent z-10" />
+                <pre className="m-0 pt-2 whitespace-pre-wrap break-words">
+                  {streamingCode ? (
+                    streamingCode.split('\n').slice(-10).map((line, i) => (
+                      <div key={i} className="min-h-[14px]">
+                        {/* Syntax highlighting */}
+                        {line.split(/(<[^>]+>|"[^"]*"|'[^']*'|\/\*.*\*\/|\/\/.*$|{|}|\(|\)|class=|className=|style=|\b(?:const|let|var|function|return|if|else|for|while|import|export|from|default)\b)/g).map((part, j) => {
+                          if (!part) return null;
+                          if (part.startsWith('<') && part.endsWith('>')) return <span key={j} className="text-[#7fdbca]">{part}</span>;
+                          if (part.startsWith('"') || part.startsWith("'")) return <span key={j} className="text-[#ecc48d]">{part}</span>;
+                          if (part.startsWith('//') || part.startsWith('/*')) return <span key={j} className="text-[#637777]">{part}</span>;
+                          if (/^(const|let|var|function|return|if|else|for|while|import|export|from|default)$/.test(part)) return <span key={j} className="text-[#c792ea]">{part}</span>;
+                          if (part === 'class=' || part === 'className=' || part === 'style=') return <span key={j} className="text-[#addb67]">{part}</span>;
+                          if (part === '{' || part === '}' || part === '(' || part === ')') return <span key={j} className="text-[#ffd700]">{part}</span>;
+                          return <span key={j} className="text-[#d6deeb]">{part}</span>;
+                        })}
+                      </div>
+                    ))
+                  ) : (
+                    <span className="text-white/20">Waiting for code...</span>
+                  )}
+                  <span className="inline-block w-2 h-4 bg-[#FF6E3C] ml-0.5 animate-pulse" />
+                </pre>
+              </div>
+            </motion.div>
+          )}
         </div>
       </div>
     );
