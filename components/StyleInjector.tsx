@@ -522,31 +522,43 @@ export const StylePreview = ({ styleId }: { styleId: string }) => {
       </div>
     ),
     "pastel-cloud": (
-      <div className="w-full h-full relative overflow-hidden">
-        {/* Hero section with pastel gradient */}
-        <div className="absolute top-0 left-0 right-0 h-1/2" style={{ background: 'linear-gradient(135deg, #fce7f3 0%, #ddd6fe 30%, #c7d2fe 60%, #a5f3fc 100%)' }}>
+      <div className="w-full h-full relative overflow-hidden bg-black">
+        {/* Dark hero with metallic spheres */}
+        <div className="absolute inset-0">
+          {/* Chrome sphere 1 */}
           <motion.div
             className="absolute w-6 h-6 rounded-full"
             style={{
-              background: 'radial-gradient(ellipse at 30% 30%, #f9a8d4 0%, #c084fc 100%)',
-              filter: 'blur(4px)',
-              opacity: 0.7,
-              top: '20%',
-              left: '15%',
+              background: 'radial-gradient(ellipse at 30% 30%, #888 0%, #333 50%, #111 100%)',
+              boxShadow: '0 0 10px rgba(255,255,255,0.1), inset 0 0 5px rgba(255,255,255,0.2)',
+              top: '35%',
+              left: '40%',
             }}
-            animate={{ scale: [1, 1.2, 1], x: [0, 3, 0] }}
-            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            animate={{ scale: [1, 1.05, 1], y: [0, -2, 0] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          />
+          {/* Chrome sphere 2 */}
+          <motion.div
+            className="absolute w-3 h-3 rounded-full"
+            style={{
+              background: 'radial-gradient(ellipse at 30% 30%, #666 0%, #222 100%)',
+              boxShadow: '0 0 5px rgba(255,255,255,0.1)',
+              bottom: '25%',
+              left: '25%',
+            }}
+            animate={{ scale: [1.1, 0.95, 1.1] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
           />
         </div>
-        {/* White section below */}
-        <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-white">
+        {/* Dark section indicator */}
+        <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-zinc-900 border-t border-zinc-800">
           <div className="flex gap-1 justify-center pt-1">
-            <div className="w-3 h-2 bg-gray-100 rounded-sm"></div>
-            <div className="w-3 h-2 bg-gray-100 rounded-sm"></div>
+            <div className="w-3 h-1.5 bg-zinc-800 rounded-sm"></div>
+            <div className="w-3 h-1.5 bg-zinc-800 rounded-sm"></div>
           </div>
         </div>
         {/* 3D badge */}
-        <div className="absolute top-1 right-1 text-[4px] font-bold text-violet-600 bg-white/80 px-1 rounded">3D</div>
+        <div className="absolute top-1 right-1 text-[4px] font-bold text-white bg-white/10 px-1 rounded">3D</div>
       </div>
     ),
     "liquid-metal": (
@@ -2699,47 +2711,134 @@ ANIMATIONS: Fade in up (y: 20px → 0), border draw (width 0% → 100%), button 
 - Style changes APPEARANCE only, NEVER removes content or screens
 - Count screens in video and ensure ALL are represented`, category: "light" },
   
-  // === SPLINE 3D HERO (Strict Implementation) ===
-  { id: "pastel-cloud", name: "Spline 3D Hero", desc: "Real-time 3D Hero • Clean Layout Below", fullDesc: `⚠️ CRITICAL: IMPLEMENT SPLINE 3D IN HERO SECTION ONLY.
+  // === SPLINE 3D HERO - DARK METALLIC ===
+  { id: "pastel-cloud", name: "Spline 3D Hero", desc: "Dark 3D Hero • Chrome Spheres • Premium Dark UI", fullDesc: `⚠️ CRITICAL: SPLINE 3D HERO WITH DARK METALLIC AESTHETIC
 
-1. REQUIRED SCRIPT (Must be version 1.12.35):
+This is a PREMIUM DARK DESIGN with animated chrome/metallic 3D spheres on black background.
+The entire page must follow this dark, luxurious, high-end aesthetic.
+
+1. REQUIRED SCRIPT (version 1.12.35):
 <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.35/build/spline-viewer.js"></script>
 
-2. HERO SECTION STRUCTURE (Strict Layering):
-You MUST use this HTML structure for the Hero. Do NOT add background colors (bg-white/bg-black) to the hero container, or it will hide the 3D scene.
-
-<section class="relative w-full h-[80vh] min-h-[600px] flex items-center justify-center overflow-hidden">
+2. HERO SECTION STRUCTURE:
+<section class="relative w-full min-h-screen flex items-center justify-center overflow-hidden bg-black">
   <div class="absolute inset-0 z-0">
-    <spline-viewer url="https://prod.spline.design/H0rV8YuyqNW4BOJ9/scene.splinecode" class="w-full h-full"></spline-viewer>
+    <spline-viewer url="https://prod.spline.design/MaKNQVzd-3wXzWB6/scene.splinecode" class="w-full h-full"></spline-viewer>
   </div>
   
-  <div class="relative z-10 container mx-auto px-4">
-    <!-- Hero content here -->
+  <div class="relative z-10 container mx-auto px-6 text-center">
+    <h1 class="text-5xl md:text-7xl lg:text-8xl font-bold text-white mb-6 tracking-tight">
+      Your Headline
+    </h1>
+    <p class="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto mb-10">
+      Description text
+    </p>
+    <div class="flex flex-wrap gap-4 justify-center">
+      <button class="px-8 py-4 bg-white text-black font-semibold rounded-full hover:bg-gray-100 transition shadow-2xl">
+        Get Started
+      </button>
+      <button class="px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-full border border-white/20 hover:bg-white/20 transition">
+        Learn More
+      </button>
+    </div>
   </div>
 </section>
 
-3. REST OF THE PAGE:
-- After the Hero section, revert to a standard, clean design.
-- Use "bg-white" or "bg-gray-50" for subsequent sections.
-- Do NOT apply the 3D effect to the whole body.
+3. DARK COLOR PALETTE (MANDATORY):
+- Page background: bg-black or bg-zinc-950
+- Hero background: bg-black (transparent over Spline)
+- Primary text: text-white
+- Secondary text: text-gray-400 or text-zinc-400
+- Muted text: text-gray-500 or text-zinc-500
+- Primary buttons: bg-white text-black hover:bg-gray-100 (inverted for contrast)
+- Secondary buttons: bg-white/10 backdrop-blur text-white border-white/20
+- Cards: bg-zinc-900/80 backdrop-blur-md border border-zinc-800 rounded-2xl
+- Accent color: text-violet-400 or text-purple-400 (subtle metallic accent)
+- Gradients: from-violet-500/20 to-purple-500/20 (subtle glows)
 
-4. COLOR PALETTE (to complement the pastel 3D gradient):
-- Hero text: text-gray-900 or text-gray-800 (dark for contrast on pastel)
-- Body text: text-gray-600
-- Primary buttons: bg-violet-600 hover:bg-violet-700 (matches Spline purples)
-- Secondary buttons: bg-white/70 backdrop-blur-sm text-gray-800 border-gray-200
-- Cards below hero: bg-white or bg-gray-50 with border-gray-100
-- Accent gradients: from-violet-50 to-pink-50 (subtle, for CTA sections)
-- Footer: bg-gray-900 text-white
+4. SECTIONS BELOW HERO (Stay dark!):
+<section class="py-24 px-6 bg-zinc-950">
+  <div class="max-w-6xl mx-auto">
+    <h2 class="text-4xl md:text-5xl font-bold text-white text-center mb-16">Features</h2>
+    <div class="grid md:grid-cols-3 gap-8">
+      <div class="bg-zinc-900/60 backdrop-blur-md rounded-2xl p-8 border border-zinc-800 hover:border-zinc-700 transition">
+        <div class="w-14 h-14 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl mb-6 flex items-center justify-center">
+          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">...</svg>
+        </div>
+        <h3 class="text-xl font-bold text-white mb-3">Feature Title</h3>
+        <p class="text-gray-400">Feature description here</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-5. TYPOGRAPHY:
-- Headlines: text-5xl md:text-7xl font-bold tracking-tight
-- Subheadlines: text-xl text-gray-700
-- Clean, modern sans-serif look
+5. CTA SECTION:
+<section class="py-24 px-6 bg-gradient-to-b from-zinc-950 via-zinc-900 to-black">
+  <div class="max-w-4xl mx-auto text-center">
+    <h2 class="text-4xl md:text-5xl font-bold text-white mb-6">Ready to start?</h2>
+    <p class="text-gray-400 text-xl mb-10">Join thousands of users</p>
+    <button class="px-10 py-4 bg-white text-black font-semibold rounded-full hover:bg-gray-100 transition shadow-2xl shadow-white/10">
+      Get Started Free
+    </button>
+  </div>
+</section>
 
-6. NAV:
-- Fixed nav with bg-white/80 backdrop-blur-md for glass effect over hero
-- Solid after scrolling past hero`, category: "shader" },
+6. NAV (Dark glass):
+<nav class="fixed top-0 left-0 right-0 z-50 px-6 py-4 bg-black/60 backdrop-blur-xl border-b border-white/10">
+  <div class="max-w-7xl mx-auto flex items-center justify-between">
+    <div class="text-xl font-bold text-white">Logo</div>
+    <div class="hidden md:flex items-center gap-8">
+      <a href="#" class="text-gray-300 hover:text-white transition">Link</a>
+    </div>
+    <button class="px-6 py-2.5 bg-white text-black rounded-full font-medium hover:bg-gray-100 transition">
+      Get Started
+    </button>
+  </div>
+</nav>
+
+7. FOOTER:
+<footer class="py-16 px-6 bg-black border-t border-zinc-800">
+  <div class="max-w-6xl mx-auto">
+    <div class="grid md:grid-cols-4 gap-12 mb-12">
+      <div>
+        <div class="text-xl font-bold text-white mb-4">Logo</div>
+        <p class="text-gray-500">Company tagline</p>
+      </div>
+      <div>
+        <h4 class="text-white font-semibold mb-4">Product</h4>
+        <ul class="space-y-2">
+          <li><a href="#" class="text-gray-400 hover:text-white transition">Features</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="pt-8 border-t border-zinc-800 text-center text-gray-500">
+      © 2024 Company. All rights reserved.
+    </div>
+  </div>
+</footer>
+
+8. TYPOGRAPHY:
+- Headlines: text-5xl md:text-7xl font-bold text-white tracking-tight
+- Subheadlines: text-xl md:text-2xl text-gray-400
+- Body: text-base text-gray-400
+- Links: text-gray-300 hover:text-white
+- Use Inter, SF Pro, or system-ui fonts
+
+9. EFFECTS & DETAILS:
+- Subtle glow effects: shadow-2xl shadow-white/5
+- Glass cards: bg-zinc-900/60 backdrop-blur-md border-zinc-800
+- Hover states: border-zinc-700, bg-white/20
+- Rounded corners: rounded-2xl for cards, rounded-full for buttons
+- Transitions: transition on all interactive elements
+
+⚠️ IMPORTANT RULES:
+- ENTIRE PAGE must be dark (bg-black, bg-zinc-950)
+- NO white backgrounds anywhere
+- Hero has Spline as background, content on top
+- Cards and sections use semi-transparent dark backgrounds
+- White text on dark, gray-400 for secondary
+- Primary buttons are inverted (white bg, black text)
+- Premium, luxurious, high-end feel throughout`, category: "shader" },
 
   // === SUPER HERO - ANIMATED LIQUID BACKGROUNDS ===
   { id: "super-hero", name: "Super Hero", desc: "Liquid Gradient • Animated Blob • Premium Hero", fullDesc: `SUPER HERO - Animated liquid gradient backgrounds like Framer's AnimatedLiquidBackground.
