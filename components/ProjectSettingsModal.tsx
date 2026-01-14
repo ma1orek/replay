@@ -97,6 +97,11 @@ export default function ProjectSettingsModal({
   const [activeTab, setActiveTab] = useState("general");
   const [projectName, setProjectName] = useState(project.name);
 
+  // Sync projectName with project.name when it changes (e.g., when opening modal for different project)
+  useEffect(() => {
+    setProjectName(project.name);
+  }, [project.name, project.id]);
+
   // Secrets state
   const [supabaseUrl, setSupabaseUrl] = useState("");
   const [supabaseAnonKey, setSupabaseAnonKey] = useState("");
