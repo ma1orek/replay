@@ -4070,7 +4070,7 @@ This code was reconstructed from a video recording by Replay AI. It includes:
                               PAGE STRUCTURE
 ═══════════════════════════════════════════════════════════════════════════════
 
-${pages.map(p => '• ' + p.name + ' (' + (p.status === 'confirmed' ? '✅ Observed in video' : '⚠️ Detected in navigation') + ')').join('\n')}
+${pages.map(p => '• ' + p.name + ' (' + (p.status === 'observed' ? '✅ Observed in video' : '⚠️ Detected in navigation') + ')').join('\n')}
 
 ═══════════════════════════════════════════════════════════════════════════════
                               COMPONENTS
