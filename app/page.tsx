@@ -7536,7 +7536,7 @@ Try these prompts in Cursor or v0:
                               </p>
                             ) : (
                               <p className="text-[10px] text-white/25 truncate">
-                                <span className="text-white/15">Style:</span> {gen.styleDirective || "Auto-Detect"}
+                                <span className="text-white/15">Style:</span> {gen.styleDirective?.split('.')[0]?.split('⚠️')[0]?.trim() || "Auto-Detect"}
                               </p>
                             );
                           })()}
@@ -10778,7 +10778,7 @@ export default function GeneratedPage() {
                         </p>
                       ) : (
                         <p className="text-[10px] text-white/25 truncate">
-                          <span className="text-white/15">Style:</span> {gen.styleDirective || "Auto-Detect"}
+                          <span className="text-white/15">Style:</span> {gen.styleDirective?.split('.')[0]?.split('⚠️')[0]?.trim() || "Auto-Detect"}
                         </p>
                       )}
                     </div>

@@ -21,6 +21,31 @@ const PLACEHOLDER_EXAMPLES = [
   "Glassmorphism with vibrant mesh backgrounds",
 ];
 
+// Friendly tooltips for styles (not showing raw prompts)
+const STYLE_TOOLTIPS: Record<string, string> = {
+  "auto-detect": "AI automatically matches the visual style from your video. Best for recreating existing designs.",
+  "custom": "Describe your own style in the text area below. Full creative control.",
+  "style-reference": "Upload a reference image and AI will match its visual style.",
+  "pastel-cloud": "Premium dark UI with animated 3D chrome spheres in the hero. Creates a luxurious, high-end feel with metallic accents on black background. Perfect for tech, SaaS, and modern portfolios.",
+  "super-hero": "Animated liquid gradient backgrounds with flowing color blobs. Dynamic, eye-catching hero sections inspired by Framer's premium templates.",
+  "liquid-metal": "Chrome metallic text effects with animated shine. Perfect for bold headlines that demand attention.",
+  "corporate-clean": "Professional, trustworthy design for business websites. Clean typography, subtle shadows, and a polished corporate feel.",
+  "notion-minimal": "Ultra-clean Notion-inspired design. Focus on content with minimal distractions, perfect for documentation and productivity tools.",
+  "linear-dark": "Dark mode inspired by Linear's elegant UI. Subtle gradients, smooth animations, and sophisticated developer-focused aesthetic.",
+  "stripe-gradient": "Vibrant gradients inspired by Stripe. Modern, colorful, and conversion-optimized for fintech and SaaS.",
+  "apple-glass": "Frosted glass effects and smooth animations inspired by Apple. Premium, sleek, and attention to detail.",
+  "binary-contrast": "Bold black and white design. High contrast, typography-focused, perfect for portfolios and creative agencies.",
+  "brutalist": "Raw, unpolished brutalist aesthetic. Bold typography, harsh edges, anti-design movement inspired.",
+  "glassmorphism": "Frosted glass cards with vibrant backgrounds. Modern, trendy, perfect for dashboards and apps.",
+  "neomorphism": "Soft, extruded UI elements that appear to push out from the background. Subtle shadows create depth.",
+  "retro-pixel": "Nostalgic pixel art and retro gaming aesthetic. 8-bit vibes with modern polish.",
+  "cyberpunk": "Neon-soaked cyberpunk aesthetic. Glowing accents, dark backgrounds, futuristic typography.",
+};
+
+function getStyleTooltip(preset: { id: string; name: string; desc: string }): string {
+  return STYLE_TOOLTIPS[preset.id] || `${preset.name}: ${preset.desc}`;
+}
+
 // Style preview component - renders CSS-based visual thumbnail
 export const StylePreview = ({ styleId }: { styleId: string }) => {
   const previewStyles: Record<string, React.ReactNode> = {
@@ -3291,22 +3316,52 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
         </div>
       )}
 
-      {/* Custom Instructions - Only show for Custom mode or when no preset */}
-      {(selectedPreset?.id === "custom" || !selectedPreset) && selectedPreset?.id !== "style-reference" && (
+      {/* Custom Instructions - Show for ALL styles (except style-reference) to allow refinements */}
+      {selectedPreset?.id !== "style-reference" && (
         <div className="relative">
           <textarea
             ref={textareaRef}
-            value={selectedPreset?.id === "custom" ? value.replace(/^Custom\.?\s*/, '') : value}
-            onChange={(e) => {
+            value={(() => {
+              // Extract only custom refinements (user-added text after preset)
               if (selectedPreset?.id === "custom") {
-                onChange(e.target.value ? `Custom. ${e.target.value}` : "Custom");
+                return value.replace(/^Custom\.?\s*/, '');
+              }
+              // For other presets, extract text after the preset's fullDesc or name
+              if (selectedPreset?.fullDesc && value.includes(selectedPreset.fullDesc)) {
+                const afterFullDesc = value.split(selectedPreset.fullDesc)[1]?.trim() || '';
+                return afterFullDesc.replace(/^[.\s]+/, ''); // Remove leading dots/spaces
+              }
+              if (selectedPreset?.name && value.startsWith(selectedPreset.name)) {
+                const afterName = value.slice(selectedPreset.name.length).replace(/^[.\s]+/, '');
+                // Don't show the fullDesc as user input
+                if (selectedPreset?.fullDesc && afterName.startsWith(selectedPreset.fullDesc.slice(0, 50))) {
+                  return '';
+                }
+                return afterName;
+              }
+              return '';
+            })()}
+            onChange={(e) => {
+              const refinement = e.target.value.trim();
+              if (selectedPreset?.id === "custom") {
+                onChange(refinement ? `Custom. ${refinement}` : "Custom");
+              } else if (selectedPreset) {
+                // Append refinement to the preset's full style
+                const baseStyle = selectedPreset.fullDesc 
+                  ? `${selectedPreset.name}. ${selectedPreset.fullDesc}`
+                  : selectedPreset.name;
+                onChange(refinement ? `${baseStyle} ADDITIONAL USER INSTRUCTIONS: ${refinement}` : baseStyle);
               } else {
-                onChange(e.target.value);
+                onChange(refinement);
               }
             }}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            placeholder={isFocused ? "Describe your style..." : animatedPlaceholder}
+            placeholder={
+              selectedPreset?.id === "custom" 
+                ? (isFocused ? "Describe your style..." : animatedPlaceholder)
+                : "Add refinements... (e.g., 'make it more minimal', 'use blue accents')"
+            }
             disabled={disabled}
             rows={2}
             className={cn(
@@ -3314,6 +3369,11 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
               disabled && "opacity-50 cursor-not-allowed"
             )}
           />
+          {selectedPreset && selectedPreset.id !== "custom" && (
+            <p className="text-[9px] text-white/20 mt-1">
+              ✨ Add your own refinements to "{selectedPreset.name}" style
+            </p>
+          )}
         </div>
       )}
     </div>
@@ -3370,9 +3430,9 @@ function StyleItem({
         )}
       </div>
 
-      {/* Info Tooltip - shows short summary only */}
+      {/* Info Tooltip - shows friendly description */}
       <AnimatePresence>
-        {isInfoOpen && preset.fullDesc && (
+        {isInfoOpen && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
@@ -3380,11 +3440,9 @@ function StyleItem({
             className="overflow-hidden"
           >
             <div className="px-2 pb-2 pt-0">
-              <div className="text-[10px] text-white/50 leading-relaxed p-2 rounded-lg bg-white/[0.03] border border-white/[0.06] max-h-[100px] overflow-y-auto">
-                {/* Show only first ~200 chars for preview */}
-                {preset.fullDesc.length > 200 
-                  ? preset.fullDesc.slice(0, 200).replace(/\n.*$/, '') + "..." 
-                  : preset.fullDesc}
+              <div className="text-[10px] text-white/50 leading-relaxed p-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                {/* Show friendly description based on preset */}
+                {getStyleTooltip(preset)}
               </div>
             </div>
           </motion.div>
