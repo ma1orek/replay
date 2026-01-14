@@ -160,6 +160,25 @@ Analyze the video's visual style and match it exactly. Pay attention to:
 `;
   }
   
+  // Check if style contains code snippets (like Spline, CSS, HTML)
+  const containsCode = styleDirective.includes('<script') || 
+                       styleDirective.includes('<spline-viewer') ||
+                       styleDirective.includes('<!DOCTYPE') ||
+                       styleDirective.includes('@keyframes');
+  
+  if (containsCode) {
+    return `
+
+🚨 STYLE DIRECTIVE WITH REQUIRED CODE - FOLLOW EXACTLY! 🚨
+
+${styleDirective}
+
+⚠️ CRITICAL: The style above contains REQUIRED code snippets (scripts, HTML structure, CSS).
+You MUST include ALL specified <script> tags, components, and CSS EXACTLY as shown.
+Do NOT modify or remove any required elements. This is the EXACT structure to use.
+`;
+  }
+  
   return `
 
 STYLE DIRECTIVE: ${styleDirective}

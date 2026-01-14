@@ -2711,17 +2711,8 @@ ANIMATIONS: Fade in up (y: 20px → 0), border draw (width 0% → 100%), button 
 - Count screens in video and ensure ALL are represented`, category: "light" },
   
   // === SPLINE 3D BACKGROUNDS (Works in iframe!) ===
-  { id: "perlin-noise-3d", name: "Perlin Noise 3D", desc: "Spline 3D • Real-time WebGL • No npm needed", fullDesc: `PERLIN NOISE 3D - Real-time 3D animated background using Spline. Works in iframe without npm!
+  { id: "perlin-noise-3d", name: "Perlin Noise 3D", desc: "Spline 3D • Real-time WebGL • No npm needed", fullDesc: `⚠️ MANDATORY: USE SPLINE 3D BACKGROUND - This is the EXACT code structure you MUST use:
 
-⚠️ CRITICAL: This style uses Spline which loads via CDN script tag. Copy this EXACTLY.
-
-STEP 1 - Add Spline script in <head>:
-\`\`\`html
-<script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.54/build/spline-viewer.js"></script>
-\`\`\`
-
-STEP 2 - Hero section with Spline 3D background:
-\`\`\`html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2730,101 +2721,51 @@ STEP 2 - Hero section with Spline 3D background:
   <script src="https://cdn.tailwindcss.com"></script>
   <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.54/build/spline-viewer.js"></script>
   <style>
-    /* Hide Spline logo */
-    spline-viewer { width: 100%; height: 100%; }
+    spline-viewer { width: 100%; height: 100%; display: block; }
   </style>
 </head>
-<body class="bg-black min-h-screen overflow-hidden relative">
+<body class="bg-black min-h-screen overflow-hidden relative m-0 p-0">
   
-  <!-- 3D Spline Background -->
-  <div class="absolute inset-0 z-0">
-    <spline-viewer url="https://prod.spline.design/6Wq1Q7YGyM-iab9i/scene.splinecode"></spline-viewer>
+  <!-- ⚠️ REQUIRED: Spline 3D Background - DO NOT REMOVE -->
+  <div class="fixed inset-0 z-0">
+    <spline-viewer url="https://prod.spline.design/H0rV8YuyqNW4BOJ9/scene.splinecode"></spline-viewer>
   </div>
   
-  <!-- Content Layer -->
-  <div class="relative z-10 flex flex-col items-center justify-center min-h-screen text-center px-6 pointer-events-none">
-    <h1 class="text-6xl md:text-8xl font-bold text-white mb-6 tracking-tighter">
-      Your Headline
-      <span class="block text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
-        Gradient Text
-      </span>
-    </h1>
-    <p class="text-white/60 text-xl max-w-2xl mb-10">
-      Your description text here
-    </p>
-    <div class="flex gap-4 pointer-events-auto">
-      <button class="px-8 py-4 bg-white text-black font-semibold rounded-full hover:scale-105 transition">
-        Get Started
-      </button>
-      <button class="px-8 py-4 bg-white/10 text-white border border-white/20 rounded-full hover:bg-white/20 transition">
-        Learn More
-      </button>
-    </div>
+  <!-- Content on top of 3D background -->
+  <div class="relative z-10 min-h-screen">
+    <!-- Hero Section -->
+    <section class="min-h-screen flex flex-col items-center justify-center text-center px-6 pointer-events-none">
+      <h1 class="text-5xl md:text-7xl font-bold text-white mb-6 tracking-tight drop-shadow-2xl">
+        <!-- Your headline here -->
+      </h1>
+      <p class="text-white/70 text-xl max-w-2xl mb-10 drop-shadow-lg">
+        <!-- Your description here -->
+      </p>
+      <div class="flex gap-4 pointer-events-auto">
+        <button class="px-8 py-4 bg-white text-black font-semibold rounded-full hover:scale-105 transition-transform">
+          Get Started
+        </button>
+      </div>
+    </section>
+    
+    <!-- Other sections go here with bg-black/80 backdrop-blur for readability -->
   </div>
   
 </body>
 </html>
-\`\`\`
 
-AVAILABLE SPLINE SCENES (choose based on context):
+KEY RULES:
+1. The <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.54/build/spline-viewer.js"></script> MUST be in <head>
+2. The <spline-viewer url="https://prod.spline.design/H0rV8YuyqNW4BOJ9/scene.splinecode"></spline-viewer> MUST be present
+3. Spline container: fixed inset-0 z-0
+4. Content: relative z-10 with pointer-events-none (buttons: pointer-events-auto)
+5. Text needs drop-shadow for readability over 3D
 
-1. ABSTRACT GRADIENT BLOB (Purple/Pink - default):
-   url="https://prod.spline.design/6Wq1Q7YGyM-iab9i/scene.splinecode"
-   Best for: Creative, startup, modern SaaS
+COLORS: bg-black, text-white, text-white/70
+BUTTONS: bg-white text-black rounded-full OR bg-white/10 border border-white/20
+CARDS: bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl
 
-2. DARK TECH PARTICLES:
-   url="https://prod.spline.design/pvM5KXDFT-VJzHQI/scene.splinecode"
-   Best for: Tech, AI, developer tools
-
-3. GEOMETRIC SHAPES:
-   url="https://prod.spline.design/Mq5kCGN1xqG0A8LP/scene.splinecode"
-   Best for: Architecture, design, portfolio
-
-4. LIQUID MORPH:
-   url="https://prod.spline.design/IBKl7yTNrgLU8H86/scene.splinecode"
-   Best for: Luxury, fashion, creative agency
-
-5. HOLOGRAPHIC:
-   url="https://prod.spline.design/qVlJmKCBUU9rTDJw/scene.splinecode"
-   Best for: Web3, crypto, futuristic
-
-HOW IT WORKS:
-- Spline viewer loads via CDN (no npm needed!)
-- The <spline-viewer> tag renders real-time 3D WebGL
-- Works perfectly in isolated iframes
-- No build step required
-
-STYLING THE CONTENT:
-- Content MUST have z-10 and pointer-events-none (except buttons)
-- Buttons need pointer-events-auto to be clickable
-- Use text-white for contrast against 3D background
-- Add drop-shadow-xl for text readability
-
-COLORS:
-- Background: bg-black or bg-[#0a0a0a]
-- Text: text-white, text-white/60 for secondary
-- Gradient text: bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent
-- Buttons: bg-white text-black OR bg-white/10 text-white border-white/20
-
-TYPOGRAPHY:
-- Headlines: text-6xl md:text-8xl font-bold tracking-tighter
-- Body: text-xl text-white/60
-- Use system fonts or Inter
-
-GLASS CARDS (for feature sections):
-\`\`\`html
-<div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8">
-  <!-- Card content -->
-</div>
-\`\`\`
-
-⚠️ MANDATORY:
-- MUST include the Spline script tag in <head>
-- MUST include <spline-viewer> with valid .splinecode URL
-- Content MUST have relative z-10
-- Background div MUST have absolute inset-0 z-0
-- Preserve ALL content from video
-- This creates Awwwards-level 3D effects!`, category: "shader" },
+This creates real-time WebGL 3D animated background that works in any iframe without npm!`, category: "shader" },
 
   // === SUPER HERO - ANIMATED LIQUID BACKGROUNDS ===
   { id: "super-hero", name: "Super Hero", desc: "Liquid Gradient • Animated Blob • Premium Hero", fullDesc: `SUPER HERO - Animated liquid gradient backgrounds like Framer's AnimatedLiquidBackground.
@@ -3277,23 +3218,22 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
         </div>
       )}
 
-      {/* Custom Instructions - Hidden for Style Reference mode */}
-      {selectedPreset?.id !== "style-reference" && (
+      {/* Custom Instructions - Only show for Custom mode or when no preset */}
+      {(selectedPreset?.id === "custom" || !selectedPreset) && selectedPreset?.id !== "style-reference" && (
         <div className="relative">
           <textarea
             ref={textareaRef}
-            value={selectedPreset ? customInstructions : value}
+            value={selectedPreset?.id === "custom" ? value.replace(/^Custom\.?\s*/, '') : value}
             onChange={(e) => {
-              if (selectedPreset && selectedPreset.id !== "custom") {
-                const newValue = `${selectedPreset.name}. ${selectedPreset.fullDesc}${e.target.value ? `. ${e.target.value}` : ''}`;
-                onChange(newValue);
+              if (selectedPreset?.id === "custom") {
+                onChange(e.target.value ? `Custom. ${e.target.value}` : "Custom");
               } else {
                 onChange(e.target.value);
               }
             }}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            placeholder={isFocused ? "Add custom instructions..." : animatedPlaceholder}
+            placeholder={isFocused ? "Describe your style..." : animatedPlaceholder}
             disabled={disabled}
             rows={2}
             className={cn(
