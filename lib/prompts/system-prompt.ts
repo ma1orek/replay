@@ -371,54 +371,102 @@ SECTION-SPECIFIC REQUIREMENTS:
 • FOOTER: Subtle grid background + Hover effects on links
 
 ================================================================================
-📊 DASHBOARD & CHARTS REQUIREMENTS (CRITICAL!)
+📊 DASHBOARD & CHARTS - USE RECHARTS LIBRARY (MANDATORY!)
 ================================================================================
-When generating DASHBOARDS or ANALYTICS interfaces:
+🚨🚨🚨 CHARTS MUST USE RECHARTS CDN - NO CUSTOM CHARTS! 🚨🚨🚨
 
-**CHART SIZING (MUST FIT CONTAINER!):**
-- Charts MUST be responsive: width="100%" height="100%" with parent container min-height
-- Parent container MUST have explicit height: e.g., h-[300px], h-[400px], min-h-[250px]
-- Use flex/grid with proper sizing - NEVER let charts overflow their containers
-- Test mentally: does this chart FIT in this box? If not, reduce chart size!
+**MANDATORY RECHARTS CDN:**
+\`\`\`html
+<script src="https://cdn.jsdelivr.net/npm/recharts@2.12.7/umd/Recharts.min.js"></script>
+\`\`\`
+
+**USE THESE RECHARTS COMPONENTS ONLY:**
+- LineChart, AreaChart, BarChart, PieChart, RadarChart
+- ResponsiveContainer (ALWAYS wrap charts!)
+- XAxis, YAxis, CartesianGrid, Tooltip, Legend
+- Line, Area, Bar, Pie with gradients
+
+**CHART CONTAINER STRUCTURE (CRITICAL!):**
+\`\`\`html
+<!-- FIXED HEIGHT CONTAINER - MANDATORY! -->
+<div style="width: 100%; height: 300px; min-height: 250px;">
+  <div id="chart1"></div>
+</div>
+
+<script>
+const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } = Recharts;
+
+const data = [
+  { name: 'Jan', value: 400 },
+  { name: 'Feb', value: 300 },
+  { name: 'Mar', value: 600 },
+  { name: 'Apr', value: 800 },
+  { name: 'May', value: 500 }
+];
+
+// Render chart with ReactDOM
+const chartElement = React.createElement(ResponsiveContainer, { width: '100%', height: '100%' },
+  React.createElement(AreaChart, { data: data },
+    React.createElement('defs', null,
+      React.createElement('linearGradient', { id: 'colorValue', x1: '0', y1: '0', x2: '0', y2: '1' },
+        React.createElement('stop', { offset: '5%', stopColor: '#8b5cf6', stopOpacity: 0.8 }),
+        React.createElement('stop', { offset: '95%', stopColor: '#8b5cf6', stopOpacity: 0 })
+      )
+    ),
+    React.createElement(CartesianGrid, { strokeDasharray: '3 3', stroke: '#333' }),
+    React.createElement(XAxis, { dataKey: 'name', stroke: '#888' }),
+    React.createElement(YAxis, { stroke: '#888' }),
+    React.createElement(Tooltip, { 
+      contentStyle: { backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px' }
+    }),
+    React.createElement(Area, { 
+      type: 'monotone', 
+      dataKey: 'value', 
+      stroke: '#8b5cf6', 
+      fill: 'url(#colorValue)',
+      strokeWidth: 2,
+      isAnimationActive: true,
+      animationDuration: 1500,
+      animationEasing: 'ease-out'
+    })
+  )
+);
+
+ReactDOM.render(chartElement, document.getElementById('chart1'));
+</script>
+\`\`\`
+
+**CHART STYLING (MATCH DESIGN SYSTEM!):**
+- Dark theme: bg transparent, grid #333, axis #888
+- Light theme: bg transparent, grid #e5e5e5, axis #666
+- Gradient fills for areas (NOT solid colors)
+- Rounded tooltips with matching bg
+- Smooth curves: type="monotone"
 
 **CHART ANIMATIONS (MANDATORY!):**
-- Every chart MUST have entry animation: isAnimationActive={true}
-- animationBegin={0} animationDuration={1500} animationEasing="ease-out"
-- Stagger multiple charts: first chart 0ms, second 300ms, third 600ms delay
-- Use CSS animations for metric cards: @keyframes countUp for numbers
+- isAnimationActive: true
+- animationDuration: 1500
+- animationEasing: 'ease-out'
+- Stagger: delay 0ms, 300ms, 600ms for multiple charts
 
-**CHART STRUCTURE:**
-\`\`\`jsx
-<div className="bg-white/5 rounded-xl p-4 h-[300px]"> {/* FIXED HEIGHT CONTAINER */}
-  <ResponsiveContainer width="100%" height="100%">
-    <AreaChart data={data}>
-      <defs>
-        <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8}/>
-          <stop offset="95%" stopColor="#8884d8" stopOpacity={0}/>
-        </linearGradient>
-      </defs>
-      <XAxis dataKey="name" stroke="#666" />
-      <YAxis stroke="#666" />
-      <Tooltip />
-      <Area type="monotone" dataKey="value" stroke="#8884d8" fill="url(#colorValue)"
-        isAnimationActive={true} animationDuration={1500} />
-    </AreaChart>
-  </ResponsiveContainer>
+**METRIC CARDS WITH ANIMATED NUMBERS:**
+\`\`\`html
+<div class="metric-card" x-data="{ count: 0, target: 2500 }" x-init="
+  let interval = setInterval(() => {
+    if (count < target) count += Math.ceil(target / 50);
+    else { count = target; clearInterval(interval); }
+  }, 30)
+">
+  <span class="text-3xl font-bold" x-text="count.toLocaleString()"></span>
 </div>
 \`\`\`
 
-**METRIC CARDS:**
-- Animated number counters (CSS or Alpine.js)
-- Subtle pulse/glow effects on hover
-- Trend indicators (up/down arrows) with color
-- Mini sparklines in cards
-
-**❌ DASHBOARD REJECTIONS:**
-- Charts overflowing their containers
+**❌ INSTANT REJECTION:**
+- Charts overflowing containers (NO ResponsiveContainer)
 - Static charts without animations
-- Missing chart container heights
-- Flat/boring metric displays
+- Custom hand-drawn charts (USE RECHARTS!)
+- Missing container heights
+- Solid color fills instead of gradients
 
 ================================================================================
 🚨🚨🚨 MULTI-SCREEN / MULTI-PAGE VIDEO FLOW (CRITICAL!) 🚨🚨🚨
@@ -443,45 +491,75 @@ When analyzing a video, CAREFULLY detect if the user navigates between MULTIPLE 
 - Breaking navigation links that don't lead anywhere
 
 ================================================================================
-🎬 PAGE TRANSITION ANIMATIONS (MANDATORY!)
+🎬 PAGE TRANSITION ANIMATIONS (MANDATORY - NO EXCEPTIONS!)
 ================================================================================
-When user clicks navigation to switch between pages/screens, there MUST be smooth animations:
+🚨🚨🚨 EVERY PAGE/SCREEN SWITCH MUST HAVE SMOOTH ANIMATION! 🚨🚨🚨
 
-**IMPLEMENT USING ALPINE.JS x-transition:**
+When navigation links switch between pages (Overview → Transactions → Analytics etc.),
+the content MUST animate in/out smoothly. NO instant appearance/disappearance!
+
+**MANDATORY ALPINE.JS PAGE SYSTEM:**
 \`\`\`html
-<div x-show="currentPage === 'home'" 
-     x-transition:enter="transition ease-out duration-300"
-     x-transition:enter-start="opacity-0 transform translate-y-4"
-     x-transition:enter-end="opacity-100 transform translate-y-0"
-     x-transition:leave="transition ease-in duration-200"
-     x-transition:leave-start="opacity-100"
-     x-transition:leave-end="opacity-0">
-  <!-- Page content -->
+<div x-data="{ currentPage: 'overview' }">
+  <!-- Navigation -->
+  <nav>
+    <button @click="currentPage = 'overview'" :class="currentPage === 'overview' ? 'active' : ''">Overview</button>
+    <button @click="currentPage = 'transactions'" :class="currentPage === 'transactions' ? 'active' : ''">Transactions</button>
+    <button @click="currentPage = 'analytics'" :class="currentPage === 'analytics' ? 'active' : ''">Analytics</button>
+  </nav>
+
+  <!-- Page: Overview -->
+  <div x-show="currentPage === 'overview'"
+       x-transition:enter="transition ease-out duration-300"
+       x-transition:enter-start="opacity-0 transform translate-y-4"
+       x-transition:enter-end="opacity-100 transform translate-y-0"
+       x-transition:leave="transition ease-in duration-200"
+       x-transition:leave-start="opacity-100 transform translate-y-0"
+       x-transition:leave-end="opacity-0 transform -translate-y-4">
+    <!-- Overview content here -->
+  </div>
+
+  <!-- Page: Transactions -->
+  <div x-show="currentPage === 'transactions'"
+       x-transition:enter="transition ease-out duration-300"
+       x-transition:enter-start="opacity-0 transform translate-y-4"
+       x-transition:enter-end="opacity-100 transform translate-y-0"
+       x-transition:leave="transition ease-in duration-200"
+       x-transition:leave-start="opacity-100 transform translate-y-0"
+       x-transition:leave-end="opacity-0 transform -translate-y-4">
+    <!-- Transactions content here -->
+  </div>
+
+  <!-- Page: Analytics -->
+  <div x-show="currentPage === 'analytics'"
+       x-transition:enter="transition ease-out duration-300"
+       x-transition:enter-start="opacity-0 transform translate-y-4"
+       x-transition:enter-end="opacity-100 transform translate-y-0"
+       x-transition:leave="transition ease-in duration-200"
+       x-transition:leave-start="opacity-100 transform translate-y-0"
+       x-transition:leave-end="opacity-0 transform -translate-y-4">
+    <!-- Analytics content here -->
+  </div>
 </div>
 \`\`\`
 
-**OR USE CSS ANIMATIONS:**
-\`\`\`css
-.page-enter { animation: fadeSlideIn 0.4s ease-out forwards; }
-.page-exit { animation: fadeSlideOut 0.3s ease-in forwards; }
+**TRANSITION TIMING:**
+- Enter duration: 300ms (ease-out)
+- Leave duration: 200ms (ease-in)
+- Transform: translateY(4px) for subtle slide
+- Opacity: 0 → 1 for fade
 
-@keyframes fadeSlideIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeSlideOut {
-  from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(-10px); }
-}
+**ACTIVE STATE ON NAVIGATION:**
+\`\`\`html
+<button :class="currentPage === 'overview' ? 'bg-blue-500 text-white' : 'text-gray-400 hover:text-white'">
 \`\`\`
 
-**TRANSITION TYPES TO USE:**
-- Fade + Slide Up: Default for most pages
-- Fade + Scale: For modals, overlays
-- Slide Left/Right: For step-by-step flows
-- Crossfade: For image galleries
-
-**❌ REJECTION:** Pages that just appear/disappear instantly without animation
+**❌ INSTANT REJECTION CONDITIONS:**
+- Pages appear/disappear WITHOUT animation
+- No x-transition attributes on page containers
+- Missing x-show directives
+- Navigation doesn't update currentPage
+- Clicking nav does nothing visible
 
 ================================================================================
 📱 MOBILE-FIRST RESPONSIVENESS (MANDATORY!)
