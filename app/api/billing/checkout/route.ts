@@ -16,6 +16,10 @@ const TOPUP_MAP: Record<number, { priceId: string; credits: number }> = {
   100: { priceId: process.env.STRIPE_CREDITS_PRICE_ID_12000 || "", credits: 5250 },
 };
 
+// Starter Pack - $9 one-time for 300 credits
+const STARTER_PACK_PRICE_ID = process.env.STRIPE_STARTER_PACK_PRICE_ID || "price_1Spo05Axch1s4iBGydOPAd2i";
+const STARTER_PACK_CREDITS = 300;
+
 // Valid Stripe Price IDs for subscriptions (for validation)
 const VALID_SUBSCRIPTION_PRICE_IDS = new Set([
   // Monthly
@@ -150,6 +154,62 @@ export async function POST(request: NextRequest) {
           supabase_user_id: user.id,
           credits_amount: topup.credits.toString(),
           purchase_type: "topup",
+        },
+      });
+
+      return NextResponse.json({ url: session.url });
+    }
+
+    // Handle Starter Pack checkout ($9 one-time for 300 credits)
+    if (type === "starter") {
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        mode: "payment",
+        payment_method_types: ["card"],
+        line_items: [
+          {
+            price: STARTER_PACK_PRICE_ID,
+            quantity: 1,
+          },
+        ],
+        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/tool?success=starter`,
+        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/tool?canceled=1`,
+        metadata: {
+          supabase_user_id: user.id,
+          credits_amount: STARTER_PACK_CREDITS.toString(),
+          purchase_type: "starter_pack",
+        },
+      });
+
+      return NextResponse.json({ url: session.url });
+    }
+
+    // Handle Pro subscription from modal
+    if (type === "pro") {
+      const priceId = process.env.STRIPE_PRO_PRICE_ID_MONTHLY;
+      if (!priceId) {
+        return NextResponse.json({ error: "Pro price not configured" }, { status: 500 });
+      }
+
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        mode: "subscription",
+        payment_method_types: ["card"],
+        line_items: [
+          {
+            price: priceId,
+            quantity: 1,
+          },
+        ],
+        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/tool?success=pro`,
+        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/tool?canceled=1`,
+        subscription_data: {
+          metadata: {
+            supabase_user_id: user.id,
+            tier_id: "pro",
+            credits_amount: "3000",
+            interval: "monthly",
+          },
         },
       });
 
