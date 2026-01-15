@@ -1015,77 +1015,244 @@ const STYLE_PRESETS = [
   { id: "style-reference", name: "Style Reference", desc: "Upload image, copy its style", fullDesc: "Apply the visual style from the reference image: use its color palette, typography, spacing, border-radius, and overall aesthetic.", category: null },
   
   // === CREATIVE & EXPERIMENTAL ===
-  { id: "particle-brain", name: "Particle Brain", desc: "AI Cloud • 50k Points • WebGL", fullDesc: `NEURAL NETWORK PARTICLE AESTHETIC - AI meets data visualization.
+  { id: "particle-brain", name: "Particle Brain", desc: "AI Cloud • Neural Network • Glowing Stars", fullDesc: `🧠 NEURAL NETWORK PARTICLE AESTHETIC - AI meets data visualization.
 
-COLORS: Deep black #0a0a0a bg, particles in cyan #00fff2 and magenta #ff00ff with purple #8b5cf6 connections.
+═══════════════════════════════════════════════════════════════════════════════
+🎨 MANDATORY ACETERNITY COMPONENTS:
+═══════════════════════════════════════════════════════════════════════════════
+HERO: Use GLOWING STARS background (tiny white/cyan particles) + SPOTLIGHT effect following mouse
+CARDS: Use EVERVAULT CARD (scrambled text) for features + 3D CARD EFFECT for team/products  
+TEXT: Use TEXT GENERATE EFFECT for hero headline + ENCRYPTED TEXT for data labels
+BUTTONS: Use MOVING BORDER button for primary CTA + COMET CARD effect on hover
+NAV: Use FLOATING NAVBAR with backdrop-blur
 
-TYPOGRAPHY: Geist Mono for headlines, weight 300-400 (light), UPPERCASE with extreme tracking (0.3em). Body in Inter light.
+═══════════════════════════════════════════════════════════════════════════════
+🎨 COLOR PALETTE:
+═══════════════════════════════════════════════════════════════════════════════
+Background: Deep void #0a0a0a
+Primary glow: Cyan #00fff2 (neural connections)
+Secondary: Magenta #ff00ff (synapses firing)
+Tertiary: Purple #8b5cf6 (depth)
+Text: White #ffffff, muted #888888
 
-LAYOUT: Full-viewport hero with particle cloud animation. Content floats above. Minimal sections, maximum impact.
+═══════════════════════════════════════════════════════════════════════════════
+📝 TYPOGRAPHY:
+═══════════════════════════════════════════════════════════════════════════════
+Headlines: Geist Mono or Space Mono, weight 300-400, UPPERCASE, tracking 0.3em
+Body: Inter light weight 300-400
+Data labels: Monospace, 11-13px with cyan glow
 
-KEY EFFECTS:
-- CSS PARTICLES: 200+ tiny divs (2-4px) with absolute positioning, animation: float 3-8s infinite ease-in-out with random delays
-- Each particle: background: radial-gradient(circle, #00fff2 0%, transparent 70%)
-- Connection lines: Thin 1px divs connecting nearby particles
-- MOUSE INTERACTION: particles repel from cursor using CSS custom properties
-- Glow effect: box-shadow: 0 0 20px currentColor
+═══════════════════════════════════════════════════════════════════════════════
+✨ SIGNATURE EFFECTS (IMPLEMENT ALL!):
+═══════════════════════════════════════════════════════════════════════════════
+1. PARTICLE FIELD: 150+ small divs (2-4px) with:
+   - position: absolute at random positions
+   - background: radial-gradient(circle, #00fff2 0%, transparent 70%)
+   - animation: float 3-8s infinite ease-in-out (random delays)
+   - box-shadow: 0 0 10px currentColor for glow
 
-ANIMATIONS:
-- Particles float with sin wave (translateY + subtle rotate)
-- On scroll: particles drift and scatter
-- On hover: nearby particles explode outward
-- Subtle RGB chromatic aberration on text
+2. NEURAL CONNECTIONS: SVG lines between particles with:
+   - stroke-dasharray animation (drawing effect)
+   - opacity pulse animation
 
-⚠️ MANDATORY: Preserve ALL content from video.`, category: "creative" },
-  { id: "old-money", name: "Old Money Heritage", desc: "Cream • Gold Serif • Classic", fullDesc: `OLD MONEY LUXURY - Generational wealth aesthetics.
+3. MOUSE SPOTLIGHT: Radial gradient following cursor:
+   - background: radial-gradient(circle 200px at var(--x) var(--y), rgba(0,255,242,0.15), transparent)
+   - Updates position via mousemove event
 
-COLORS: Cream #F5F0E8 bg, rich navy #1C2331 text, gold accents #C9A962 and #B8860B. Burgundy #722F37 for subtle highlights.
+4. TEXT SCRAMBLE: Headlines reveal with character scramble:
+   - Random characters before settling to final text
+   - Cyan glow text-shadow: 0 0 10px #00fff2
 
-TYPOGRAPHY: Playfair Display for headlines - weight 400-600, NEVER bold. Italic for emphasis. Letter-spacing 0.02em. Body in Cormorant Garamond weight 400, 18-20px size.
+═══════════════════════════════════════════════════════════════════════════════
+🎬 REQUIRED ANIMATIONS:
+═══════════════════════════════════════════════════════════════════════════════
+- Hero headline: TEXT GENERATE EFFECT (letter by letter)
+- Particles: Continuous float with random offsets
+- Cards: EVERVAULT scramble on hover + 3D tilt
+- Scroll: Particles parallax at different speeds
+- Buttons: MOVING BORDER (gradient rotation)
 
-LAYOUT: Centered compositions, max-w-4xl. Generous margins (py-32 to py-48). Asymmetric image placements. Golden ratio proportions.
+⚠️ MANDATORY: Preserve ALL content from video. Apply this neural aesthetic to every section.`, category: "creative" },
+  { id: "old-money", name: "Old Money Heritage", desc: "Cream • Gold Serif • Classic", fullDesc: `👑 OLD MONEY LUXURY - Generational wealth aesthetics. Quiet confidence.
 
-KEY EFFECTS:
-- GRAIN OVERLAY: ::after pseudo with background-image: url("data:image/svg+xml,...") noise pattern, opacity 0.03
-- Gold borders: border-2 border-[#C9A962]/30
-- Subtle vignette: box-shadow: inset 0 0 100px rgba(0,0,0,0.1)
-- Cards on cream bg with hairline gold border
+═══════════════════════════════════════════════════════════════════════════════
+🎨 MANDATORY ACETERNITY COMPONENTS:
+═══════════════════════════════════════════════════════════════════════════════
+HERO: Use subtle DOTTED GLOW BACKGROUND (cream/gold) + CANVAS REVEAL EFFECT
+CARDS: Use FOCUS CARDS (elegant focus) + subtle GLARE CARD (gold shimmer)
+TEXT: Use slow TEXT REVEAL CARD + HERO HIGHLIGHT (gold underline)
+BUTTONS: Use refined HOVER BORDER GRADIENT (gold) - NO flashy effects
+NAV: Use simple elegant links - NO floating navbar, classic positioning
+SCROLL: Gentle parallax, NEVER aggressive - everything EARNED
 
-ANIMATIONS:
-- ULTRA SLOW: 1.5-2s duration minimum
-- Fade in only (no movement) with ease-out
-- Stagger 400ms between elements
-- Gold shimmer on hover: background-position animation
-- Text: subtle letter-spacing increase on hover
+═══════════════════════════════════════════════════════════════════════════════
+🎨 COLOR PALETTE:
+═══════════════════════════════════════════════════════════════════════════════
+Background: Rich cream #F5F0E8
+Text primary: Deep navy #1C2331
+Gold accent: #C9A962 (muted), #B8860B (rich)
+Burgundy: #722F37 (for ONE accent only)
+White: #FFFEF9 (warm)
+Borders: gold at 30% opacity
 
-Timeless, restrained, confident. Old money doesn't shout.
+═══════════════════════════════════════════════════════════════════════════════
+📝 TYPOGRAPHY:
+═══════════════════════════════════════════════════════════════════════════════
+Headlines: Playfair Display
+- Weight 400-600 (NEVER bold 700+)
+- Italic for emphasis
+- Letter-spacing 0.02em
 
-⚠️ MANDATORY: Preserve ALL content from video.`, category: "creative" },
-  { id: "tactical-hud", name: "Tactical HUD", desc: "Sci-Fi Game • Brackets • Scanning", fullDesc: `MILITARY HUD INTERFACE - Sci-fi command center aesthetic.
+Body: Cormorant Garamond
+- Weight 400
+- Size 18-20px
+- Generous line-height 1.8
 
-COLORS: Near-black #0B0B0F bg, HUD green #00FF41 primary, warning amber #FFB800, alert red #FF3333. Grid lines #1a1a24.
+Hierarchy through size and italic, NOT weight
 
-TYPOGRAPHY: JetBrains Mono or Share Tech Mono. UPPERCASE always. Weight 400-500. Tracking 0.15em. Sizes 10-14px for data, larger for critical info.
+═══════════════════════════════════════════════════════════════════════════════
+✨ SIGNATURE EFFECTS (IMPLEMENT ALL!):
+═══════════════════════════════════════════════════════════════════════════════
+1. GRAIN TEXTURE: Subtle paper overlay
+   - ::after pseudo-element
+   - Background: SVG noise pattern or CSS grain
+   - opacity: 0.03 (barely visible)
+   - mix-blend-mode: overlay
 
-LAYOUT: Full viewport with edge-aligned elements. Corner brackets in all four corners. Data readouts in fixed positions. Central content area.
+2. GOLD BORDERS: Refined metallic accents
+   - border-2 border-[#C9A962]/30
+   - Very subtle, not flashy
+   - Hairline precision
 
-KEY EFFECTS:
-- CORNER BRACKETS: Absolute positioned L-shaped borders in each corner, 30-50px
-- SCAN LINE: Horizontal line that sweeps down screen, animation: scan 4s linear infinite
-- Connecting lines: SVG lines between elements with stroke-dasharray animation
-- Data blocks: bg-[#00FF41]/5 border border-[#00FF41]/30 font-mono
-- Blinking cursors: animation: blink 1s step-end infinite
+3. VIGNETTE: Classic photography feel
+   - box-shadow: inset 0 0 100px rgba(0,0,0,0.1)
+   - Subtle darkening at edges
+   - Frames content elegantly
 
-ANIMATIONS:
-- Text TYPEWRITER: letters appear one by one
-- GLITCH: occasional translateX jitter with text-shadow RGB split
-- Scan line sweep: translateY(-100%) → translateY(100%)
-- Numbers SCRAMBLE on load before settling
-- Status dots BLINK at different intervals
+4. GOLD SHIMMER: Hover reveals luxury
+   - background: linear-gradient(90deg, #C9A962, #F5F0E8, #C9A962)
+   - background-size: 200%
+   - Slow position animation on hover
 
-AUDIO OPTIONAL: Beep sounds on interactions.
+═══════════════════════════════════════════════════════════════════════════════
+🎬 REQUIRED ANIMATIONS:
+═══════════════════════════════════════════════════════════════════════════════
+- Duration: ULTRA SLOW 1.5-2s minimum
+- Type: FADE ONLY - no movement
+- Easing: ease-out (decelerating)
+- Stagger: 400ms between elements
+- Hover: letter-spacing increase (+0.02em)
+- Gold: Shimmer position animation (4s)
+- NEVER bouncy, NEVER fast, NEVER aggressive
 
-⚠️ MANDATORY: Preserve ALL content from video.`, category: "creative" },
+═══════════════════════════════════════════════════════════════════════════════
+🏛️ OLD MONEY PRINCIPLES:
+═══════════════════════════════════════════════════════════════════════════════
+- Old money NEVER shouts
+- Confidence through restraint
+- Quality over quantity
+- Timeless over trendy
+- Earned, not bought
+- Golden ratio proportions
+- Generous whitespace (py-32 to py-48)
+- Max-w-4xl for intimate reading
+
+⚠️ THE FEELING: A family estate library. Leather chairs. Afternoon light through tall windows.`, category: "creative" },
+  { id: "tactical-hud", name: "Tactical HUD", desc: "Sci-Fi Game • Brackets • Scanning", fullDesc: `🎯 TACTICAL HUD INTERFACE - Military sci-fi command center aesthetic.
+
+═══════════════════════════════════════════════════════════════════════════════
+🎨 MANDATORY ACETERNITY COMPONENTS:
+═══════════════════════════════════════════════════════════════════════════════
+HERO: Use BACKGROUND BOXES (grid scan effect) + TRACING BEAM (targeting lines)
+CARDS: Use CARD SPOTLIGHT with green glow + technical BENTO GRID layout
+TEXT: Use TYPEWRITER EFFECT for data readouts + ENCRYPTED TEXT for status
+BUTTONS: Use STATEFUL BUTTON (armed/active/locked states) + MOVING BORDER (green)
+NAV: Corner-mounted brackets + FLOATING DOCK style icons
+EFFECTS: Use METEORS (green) for scanning + BACKGROUND LINES for grid
+
+═══════════════════════════════════════════════════════════════════════════════
+🎨 COLOR PALETTE:
+═══════════════════════════════════════════════════════════════════════════════
+Background: Near-black #0B0B0F
+Primary HUD: Green #00FF41
+Warning: Amber #FFB800
+Alert: Red #FF3333
+Grid lines: #1a1a24
+Text glow: rgba(0,255,65,0.5)
+Surface: bg-[#00FF41]/5
+
+═══════════════════════════════════════════════════════════════════════════════
+📝 TYPOGRAPHY:
+═══════════════════════════════════════════════════════════════════════════════
+Font: JetBrains Mono or Share Tech Mono (monospace ONLY)
+Case: UPPERCASE ALWAYS
+Weight: 400-500
+Tracking: 0.15em (wide)
+Data: 10-14px small readouts
+Critical: Larger for important info
+Glow: text-shadow: 0 0 10px currentColor
+
+═══════════════════════════════════════════════════════════════════════════════
+✨ SIGNATURE EFFECTS (IMPLEMENT ALL!):
+═══════════════════════════════════════════════════════════════════════════════
+1. CORNER BRACKETS: L-shaped targeting indicators
+   - Position: absolute in all four corners
+   - Size: 30-50px arms
+   - Border: 2px solid #00FF41
+   - Animation: Subtle pulse or blink
+
+2. SCAN LINE: Horizontal sweep across screen
+   - div with height: 2px, bg: linear-gradient(90deg, transparent, #00FF41, transparent)
+   - animation: scan 4s linear infinite
+   @keyframes scan {
+     0% { transform: translateY(-100vh) }
+     100% { transform: translateY(100vh) }
+   }
+
+3. DATA BLOCKS: Information panels
+   - bg-[#00FF41]/5 
+   - border border-[#00FF41]/30
+   - Monospace typography
+   - Blinking cursors after text
+
+4. TARGETING LINES: SVG connections
+   - stroke-dasharray animation (drawing)
+   - Connect related elements
+   - Animated stroke-dashoffset
+
+5. NUMBER SCRAMBLE: Data reveals with scramble
+   - Random digits before settling to final value
+   - Like computer decrypting data
+   - 500-1000ms duration
+
+═══════════════════════════════════════════════════════════════════════════════
+🎬 REQUIRED ANIMATIONS:
+═══════════════════════════════════════════════════════════════════════════════
+- Typewriter: Letters appear one by one with cursor
+- Scan line: Continuous vertical sweep
+- Brackets: Subtle blink or pulse
+- Numbers: Scramble before reveal
+- Status dots: Blink at different intervals (1s, 1.5s, 2s)
+- Glitch: Occasional RGB split text-shadow
+- Lines: SVG stroke drawing animation
+
+═══════════════════════════════════════════════════════════════════════════════
+🖥️ HUD LAYOUT STRUCTURE:
+═══════════════════════════════════════════════════════════════════════════════
+┌────────────────────────────────────────┐
+│ ┌─                              ─┐     │  ← Corner brackets
+│   [STATUS: ONLINE]   [UPTIME: 99%]     │  ← Top status bar
+│                                        │
+│        ╔═══════════════════╗          │
+│        ║  MAIN CONTENT     ║          │  ← Central display
+│        ║  TARGET ACQUIRED  ║          │
+│        ╚═══════════════════╝          │
+│                                        │
+│   [LAT: 40.7128]    [LONG: -74.0060]  │  ← Bottom data
+│ └─                              ─┘     │  ← Corner brackets
+└────────────────────────────────────────┘
+
+⚠️ THE FEELING: Fighter jet cockpit. Every pixel has tactical purpose. Military precision.`, category: "creative" },
   { id: "urban-grunge", name: "Urban Grunge", desc: "Concrete • Spray Paint • Street", fullDesc: `STREETWEAR BRUTALISM - Raw urban underground aesthetic.
 
 COLORS: Concrete gray #2A2A2A bg, off-white #E8E4E0 text, spray paint accents - neon pink #FF2D92, electric blue #00D4FF, acid green #ADFF2F.
@@ -1230,49 +1397,167 @@ Tactile, crafted, delightful.
 
 ⚠️ MANDATORY: Preserve ALL content from video.`, category: "creative" },
   
-  { id: "spatial-glass", name: "Spatial Glass", desc: "Vision Pro • 3D Tilt • Light", fullDesc: `APPLE VISION PRO AESTHETIC - Spatial computing glass UI.
+  { id: "spatial-glass", name: "Spatial Glass", desc: "Vision Pro • 3D Tilt • Light", fullDesc: `🥽 SPATIAL GLASS - Apple Vision Pro aesthetic. Floating in 3D space.
 
-COLORS: Dark environment #0A0A0F, glass surfaces bg-white/5 to bg-white/10. Subtle purple/blue ambient glow. Text white.
+═══════════════════════════════════════════════════════════════════════════════
+🎨 MANDATORY ACETERNITY COMPONENTS:
+═══════════════════════════════════════════════════════════════════════════════
+HERO: Use AURORA BACKGROUND (subtle purple/blue) + SPOTLIGHT following gaze
+CARDS: Use 3D CARD EFFECT (heavy tilt) + CARD SPOTLIGHT + GLARE CARD reflections
+TEXT: Use TEXT GENERATE EFFECT (spatial reveal) + FLIP WORDS floating
+BUTTONS: Use MOVING BORDER (glass edge) + depth lift on hover
+NAV: Use FLOATING DOCK (visionOS style) with magnification
+DEPTH: Use PARALLAX LAYERS at different Z positions
 
-TYPOGRAPHY: SF Pro Rounded or system-ui. Weight 500-600. Generous spacing. Floating labels in 3D space.
+═══════════════════════════════════════════════════════════════════════════════
+🎨 COLOR PALETTE:
+═══════════════════════════════════════════════════════════════════════════════
+Environment: Dark void #0A0A0F
+Glass surface: bg-white/5 to bg-white/10
+Ambient purple: rgba(139,92,246,0.08)
+Ambient blue: rgba(59,130,246,0.06)
+Text: Pure white #ffffff
+Specular: rgba(255,255,255,0.3)
+Shadow: rgba(0,0,0,0.5)
 
-LAYOUT: Cards float in 3D space with depth. Multiple layers at different Z positions. Perspective container.
+═══════════════════════════════════════════════════════════════════════════════
+📝 TYPOGRAPHY:
+═══════════════════════════════════════════════════════════════════════════════
+Font: SF Pro Rounded or system-ui
+Weight: 500-600 (medium)
+Generous spacing between elements
+Labels float in 3D space
+Depth through size variation
 
-KEY EFFECTS:
-- THICK GLASS: bg-white/8 backdrop-blur-[60px] rounded-3xl border border-white/20
-- REFLECTIONS: Gradient overlay simulating light source from top-left
-- AMBIENT GLOW: Soft colored shadows behind cards (purple/blue)
-- DEPTH LAYERS: transform: translateZ(10px) on nested elements
-- Specular highlight: Thin bright line on top edge
+═══════════════════════════════════════════════════════════════════════════════
+✨ SIGNATURE EFFECTS (IMPLEMENT ALL!):
+═══════════════════════════════════════════════════════════════════════════════
+1. THICK GLASS PANELS: Heavy glassmorphism
+   - bg-white/8 backdrop-blur-[60px]
+   - rounded-3xl
+   - border border-white/20
+   - box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5)
 
-ANIMATIONS:
-- MOUSE PARALLAX TILT: Cards rotateX/rotateY based on cursor position
-- Hover LIFT: translateZ increases, shadow expands
-- Ambient glow BREATHES: opacity animation 4s infinite
-- Smooth spring physics on all transitions
-- Content appears with depth (scale + translateZ)
+2. SPECULAR HIGHLIGHTS: Light reflections
+   - Top edge: bright 1px line (border-t border-white/30)
+   - Gradient overlay simulating top-left light source
+   - GLARE sweep effect on hover
 
-visionOS feel - everything floats, reacts to presence.
+3. 3D PARALLAX TILT: Cards react to mouse
+   - transform-style: preserve-3d on container
+   - rotateX/Y based on cursor position
+   - Smooth spring easing (not linear)
+   - Elements at different translateZ depths
 
-⚠️ MANDATORY: Preserve ALL content from video.`, category: "creative" },
-  { id: "kinetic-brutalism", name: "Kinetic Brutalism", desc: "15vw Type • Acid Yellow • Bold", fullDesc: `KINETIC BRUTALISM - The loudest voice in the room wins.
+4. AMBIENT GLOW: Soft colored halos
+   - Absolutely positioned gradient behind cards
+   - Purple/blue soft glow
+   - opacity animation 4s infinite (breathing)
 
-Imagine opening a website and getting PUNCHED by typography so massive it barely fits the screen. Headlines at 15-20vw that make you scroll sideways. Pure #000000 black void background with acid #E5FF00 yellow that SCREAMS. This isn't design - it's a statement.
+5. FLOATING DOCK: visionOS navigation
+   - Icons magnify on hover (scale)
+   - Neighbors also scale slightly
+   - Smooth spring physics
 
-THE VIBE: An angry punk poster meets high-end fashion editorial. Typography that moves with scroll velocity - the faster you scroll, the more it SKEWS and DISTORTS. Letters that animate individually like they're being typed by an aggressive machine. Sections that SLAM into view from off-screen.
+═══════════════════════════════════════════════════════════════════════════════
+🎬 REQUIRED ANIMATIONS:
+═══════════════════════════════════════════════════════════════════════════════
+- Cards: 3D tilt following mouse (spring physics)
+- Hover: translateZ lift + shadow expansion
+- Glow: Ambient breathing (opacity 0.8 → 1)
+- Entry: Fade + scale(0.95) + translateZ(0 → 10px)
+- Dock: Magnification on approach
+- All: Smooth spring easing, no abrupt motion
 
-SIGNATURE ELEMENTS:
-- Headlines so big they become abstract shapes
-- Text that physically reacts to scroll speed (skew, stretch, blur)
-- Instant color inversions on hover - no smooth transitions, just BAM
-- Thick brutal borders (4-8px) dividing sections like industrial zones
-- Zero rounded corners - everything sharp, everything aggressive
-- Sections alternate: black bg/yellow text → yellow bg/black text
-- Marquee strips of repeated text flying across the screen
+═══════════════════════════════════════════════════════════════════════════════
+🥽 VISIONOS PRINCIPLES:
+═══════════════════════════════════════════════════════════════════════════════
+- Everything FLOATS in space
+- Elements REACT to presence (mouse = gaze)
+- Depth through layers, not shadows alone
+- Light comes from above-left
+- Glass catches and bends light
+- Space is infinite, elements emerge from it
 
-THE FEELING: Walking into a Berlin techno club at 3am. Brutalist architecture meets motion graphics. Confidence without compromise.
+⚠️ THE FEELING: Wearing Vision Pro. Reaching out to touch floating glass panels.`, category: "creative" },
+  { id: "kinetic-brutalism", name: "Kinetic Brutalism", desc: "15vw Type • Acid Yellow • Bold", fullDesc: `⚡ KINETIC BRUTALISM - The loudest voice in the room wins. Pure aggression.
 
-⚠️ CRITICAL: Extract ALL content from the video. Style transforms appearance only.`, category: "creative" },
+═══════════════════════════════════════════════════════════════════════════════
+🎨 MANDATORY ACETERNITY COMPONENTS:
+═══════════════════════════════════════════════════════════════════════════════
+HERO: Use BACKGROUND LINES (vertical stark lines) + giant TYPEWRITER EFFECT for headline
+CARDS: Use WOBBLE CARD with aggressive shake + CARD HOVER EFFECT (color inversion)
+TEXT: Use TEXT GENERATE EFFECT (aggressive, fast) + LAYOUT TEXT FLIP between sections
+BUTTONS: Use STATEFUL BUTTON (instant state changes) + harsh HOVER effects (no transition!)
+NAV: Use stark horizontal bar, NO floating navbar - brutal static placement
+SCROLL: Use 3D MARQUEE for repeating text strips
+
+═══════════════════════════════════════════════════════════════════════════════
+🎨 COLOR PALETTE:
+═══════════════════════════════════════════════════════════════════════════════
+Background: Pure void #000000
+Primary: Acid yellow #E5FF00
+Text on black: #E5FF00 or #ffffff
+Text on yellow: #000000
+NO GRADIENTS - pure flat colors only
+NO GRAYS - pure black/white/yellow only
+
+═══════════════════════════════════════════════════════════════════════════════
+📝 TYPOGRAPHY:
+═══════════════════════════════════════════════════════════════════════════════
+Headlines: Impact, Anton, or Bebas Neue
+Size: MASSIVE 15-20vw for hero, text-7xl to text-9xl elsewhere
+Weight: 900 BLACK, never light
+Case: UPPERCASE ALWAYS
+Tracking: TIGHT -0.05em to -0.08em
+Distortion: Allow skew and stretch on scroll
+
+═══════════════════════════════════════════════════════════════════════════════
+✨ SIGNATURE EFFECTS (IMPLEMENT ALL!):
+═══════════════════════════════════════════════════════════════════════════════
+1. SCROLL VELOCITY SKEW: Text skews based on scroll speed
+   - @keyframes or JS to detect scroll delta
+   - transform: skewY(calc(var(--scroll-speed) * 10deg))
+   - The faster you scroll, the more text distorts
+
+2. COLOR INVERSION: Instant hover changes
+   - transition: none !important on hovers
+   - Black → Yellow, Yellow → Black instantly
+   - No smooth animations - brutal snaps
+
+3. 3D MARQUEE STRIPS: Repeating text bands
+   - Infinite horizontal scroll
+   - "SERVICES • PORTFOLIO • CONTACT •" repeating
+   - transform: rotate(-3deg) for angle
+
+4. BRUTAL BORDERS: Thick section dividers
+   - border-4 to border-8 solid
+   - Alternating sections: black bg/yellow border, yellow bg/black border
+
+5. LETTER ANIMATION: Individual letter reveals
+   - Each letter animates from bottom with slight rotation
+   - Fast, aggressive timing (100-200ms per letter)
+
+═══════════════════════════════════════════════════════════════════════════════
+🎬 REQUIRED ANIMATIONS:
+═══════════════════════════════════════════════════════════════════════════════
+- Headlines: SLAM in from off-screen (translateX or Y from ±100%)
+- Letters: Stagger animation from bottom, fast
+- Sections: Hard cuts, no fade - instant visibility
+- Marquee: Infinite scroll, varying speeds
+- Hover: INSTANT color flip (transition: none)
+- Scroll: Skew and stretch based on velocity
+
+═══════════════════════════════════════════════════════════════════════════════
+🚨 LAYOUT RULES:
+═══════════════════════════════════════════════════════════════════════════════
+- NO rounded corners (rounded-none everywhere)
+- Thick borders dividing everything
+- Alternating black/yellow sections
+- Headlines that break viewport bounds
+- Sharp, industrial, zero softness
+
+⚠️ THE FEELING: Berlin techno club at 3am. Brutalist architecture. Confidence without compromise.`, category: "creative" },
   { id: "gravity-physics", name: "Gravity Physics", desc: "Falling Tags • Drag & Throw • Bounce", fullDesc: `PHYSICS PLAYGROUND - Interactive falling elements.
 
 COLORS: Light bg #FAFAFA or dark #0a0a0a. Colorful physics objects: tags, pills, shapes in vibrant colors.
@@ -1412,26 +1697,68 @@ Think iPhone product page. Elegant. Focused. Cinematic.
 ⚠️ MANDATORY: Preserve ALL content from video.`, category: "creative" },
   
   // === DARK PREMIUM ===
-  { id: "linear", name: "Linear Dark", desc: "Linear.app • Clean Dark • Subtle Glow", fullDesc: `LINEAR.APP INSPIRED - Developer-focused dark elegance.
+  { id: "linear", name: "Linear Dark", desc: "Linear.app • Clean Dark • Subtle Glow", fullDesc: `⚡ LINEAR.APP INSPIRED - Developer-focused dark elegance with subtle polish.
 
-COLORS: Bg #0a0a0a (near-black), text #fafafa (off-white), muted #737373, borders #262626. Accent: subtle purple #8b5cf6 for links/highlights.
+═══════════════════════════════════════════════════════════════════════════════
+🎨 MANDATORY ACETERNITY COMPONENTS:
+═══════════════════════════════════════════════════════════════════════════════
+HERO: Use SPOTLIGHT effect (subtle purple glow following mouse) + BACKGROUND GRADIENT ANIMATION
+CARDS: Use CARD SPOTLIGHT effect + GLARE CARD on hover
+TEXT: Use TEXT GENERATE EFFECT for hero + subtle FLIP WORDS for features
+BUTTONS: Use HOVER BORDER GRADIENT + smooth state transitions
+NAV: Use FLOATING NAVBAR with glass blur
 
-TYPOGRAPHY: Inter font, -0.02em letter-spacing on headings. Light body weight (400), medium headings (500-600). Clean hierarchy.
+═══════════════════════════════════════════════════════════════════════════════
+🎨 COLOR PALETTE:
+═══════════════════════════════════════════════════════════════════════════════
+Background: Near-black #0a0a0a
+Surface: bg-white/[0.02] to bg-white/[0.05]
+Text: Off-white #fafafa
+Muted: #737373
+Borders: #262626
+Accent: Purple #8b5cf6 (used sparingly)
+Glow: rgba(139,92,246,0.1)
 
-LAYOUT: Clean sections with lots of breathing room. Cards have bg-white/[0.02] with border border-white/[0.06]. Rounded-xl corners. Generous padding p-6 to p-12.
+═══════════════════════════════════════════════════════════════════════════════
+📝 TYPOGRAPHY:
+═══════════════════════════════════════════════════════════════════════════════
+Font: Inter exclusively
+Headlines: Weight 500-600, tracking -0.02em
+Body: Weight 400, line-height 1.6
+Hierarchy: Clean, minimal, professional
 
-KEY EFFECTS:
-- Subtle glow on hover: box-shadow: 0 0 20px rgba(139,92,246,0.1)
-- Cards lift slightly on hover: transform: translateY(-2px)
-- Smooth 300ms transitions on everything
-- Gradient text for hero: bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text
+═══════════════════════════════════════════════════════════════════════════════
+✨ SIGNATURE EFFECTS (IMPLEMENT ALL!):
+═══════════════════════════════════════════════════════════════════════════════
+1. SUBTLE SPOTLIGHT: Mouse-following radial gradient
+   - background: radial-gradient(circle 400px at var(--x) var(--y), rgba(139,92,246,0.06), transparent)
+   - Very subtle, barely noticeable but adds depth
 
-ANIMATIONS: Fade in up (y: 10px → 0, opacity 0 → 1), stagger children by 50ms. No aggressive motion - everything feels calm and professional.
+2. CARD LIFT: Cards elevate on hover
+   - transform: translateY(-2px)
+   - box-shadow: 0 0 30px rgba(139,92,246,0.1)
+   - border-color transitions to brighter
 
-⚠️ MANDATORY FLOW PRESERVATION:
-- If video shows MULTIPLE SCREENS/PAGES → create SEPARATE navigable sections
-- Each screen = separate section with working navigation links between them
-- Style changes APPEARANCE only, NEVER removes content or screens`, category: "dark" },
+3. GRADIENT TEXT: Hero headline with shimmer
+   - background: linear-gradient(90deg, white, white/80, white)
+   - background-clip: text
+   - Subtle position animation for shimmer
+
+4. GLASS CARDS: Premium surface treatment
+   - bg-white/[0.03] backdrop-blur-xl
+   - border border-white/[0.08]
+   - rounded-xl shadow-2xl
+
+═══════════════════════════════════════════════════════════════════════════════
+🎬 REQUIRED ANIMATIONS:
+═══════════════════════════════════════════════════════════════════════════════
+- All elements: Fade in up (y: 10px → 0, opacity 0 → 1)
+- Stagger: Children animate with 50ms delay
+- Hover: Smooth 300ms transitions
+- Cards: CARD SPOTLIGHT effect (light follows mouse)
+- Duration: All animations 300-500ms, ease-out
+
+⚠️ MANDATORY: Clean, professional, calm. Every interaction feels polished.`, category: "dark" },
   { id: "binary-contrast", name: "Binary Contrast Editorial", desc: "Split Screen • Serif vs Mono • Binary", fullDesc: `DUALISTIC EDITORIAL - Human elegance vs Machine precision.
 
 CORE: Two worlds colliding. Alternating themes throughout page.
@@ -1479,29 +1806,97 @@ ANIMATIONS (GSAP + Lenis):
 - Each screen = separate section with working navigation links between them
 - Style changes APPEARANCE only, NEVER removes content or screens
 - Count screens in video and ensure ALL are represented`, category: "light" },
-  { id: "void-terminal", name: "Void Terminal System", desc: "Modular Grid • Monospace • GSAP Reveal", fullDesc: `DARK COMMAND CENTER - Futuristic spaceship OS interface.
+  { id: "void-terminal", name: "Void Terminal System", desc: "Modular Grid • Monospace • GSAP Reveal", fullDesc: `🖥️ DARK COMMAND CENTER - Futuristic spaceship OS interface. Military precision.
 
-COLORS: Bg #050505 (near-black), text #E6E6E6 (off-white), meta #777777 (gray), borders #1F1F1F. NO gradients - pure flat industrial.
+═══════════════════════════════════════════════════════════════════════════════
+🎨 MANDATORY ACETERNITY COMPONENTS:
+═══════════════════════════════════════════════════════════════════════════════
+HERO: Use BACKGROUND BOXES (subtle grid animation) + TEXT GENERATE EFFECT (typewriter)
+CARDS: Use BENTO GRID layout + CARD HOVER EFFECT with image reveal
+TEXT: Use TYPEWRITER EFFECT for status messages + TEXT REVEAL (from bottom mask)
+BUTTONS: Use stark HOVER BORDER + state feedback
+NAV: Use technical style with letter-spacing ["H O M E"] + FLOATING NAVBAR
+SCROLL: Use TRACING BEAM for progress + 3D MARQUEE for section headers
 
-TYPOGRAPHY:
-- PRIMARY: Inter/Helvetica, UPPERCASE headings, weight 700-800, tracking -0.03em, text-6xl to text-9xl for hero.
-- SECONDARY: Space Mono/JetBrains Mono for // 01 numbering, dates, labels. Size 11-13px, color #777.
+═══════════════════════════════════════════════════════════════════════════════
+🎨 COLOR PALETTE:
+═══════════════════════════════════════════════════════════════════════════════
+Background: Deep void #050505
+Text primary: Off-white #E6E6E6
+Text secondary: Terminal gray #777777
+Borders: Dark grid #1F1F1F
+NO gradients - pure flat industrial
+NO accent colors - monochrome only
 
-LAYOUT: Modular "Bento Box" grid. EVERY section has visible border-bottom and/or border-right (1px #1F1F1F). Large padding p-8 to p-12.
+═══════════════════════════════════════════════════════════════════════════════
+📝 TYPOGRAPHY:
+═══════════════════════════════════════════════════════════════════════════════
+PRIMARY: Inter or Helvetica
+- UPPERCASE headings always
+- Weight 700-800
+- Tracking -0.03em (tight)
+- Size: text-6xl to text-9xl for hero
 
-KEY SECTIONS: Massive brand name hero with system status ("// SYSTEM LOADED"), technical navigation ("H o m e"), project rows with hover image reveal, infinite marquee ("SERVICES / MODULE INDEX /"), numbered services grid, blockquote testimonials.
+SECONDARY: Space Mono or JetBrains Mono
+- For // prefixes, numbering (01, 02), dates, labels
+- Size 11-13px
+- Color #777777
+- Tracking 0.1em (wide)
 
-ANIMATIONS:
-- TEXT REVEAL: headings animate from bottom (translateY 100%→0) inside overflow:hidden
-- SCROLL TRIGGER: borders draw/expand width 0%→100%
-- SMOOTH SCROLL: inertia momentum
-- MARQUEE: infinite horizontal scroll
+═══════════════════════════════════════════════════════════════════════════════
+✨ SIGNATURE EFFECTS (IMPLEMENT ALL!):
+═══════════════════════════════════════════════════════════════════════════════
+1. MODULAR BENTO GRID: Every section has visible borders
+   - border-bottom: 1px solid #1F1F1F
+   - border-right: 1px solid #1F1F1F
+   - Creates technical grid appearance
+   - Large padding p-8 to p-12
 
-⚠️ MANDATORY FLOW PRESERVATION:
-- If video shows MULTIPLE SCREENS/PAGES → create SEPARATE navigable sections
-- Each screen = separate section with working navigation links between them
-- Style changes APPEARANCE only, NEVER removes content or screens
-- Count screens in video and ensure ALL are represented`, category: "dark" },
+2. TEXT REVEAL: Headlines animate from bottom
+   - Container: overflow: hidden
+   - Text: transform: translateY(100%) → translateY(0)
+   - Duration: 0.8s ease-out
+   - Stagger letters by 30ms
+
+3. SYSTEM STATUS: Technical labels throughout
+   - "// SYSTEM LOADED"
+   - "// 01 MODULE"
+   - Monospace, color #777
+   - TYPEWRITER animation on load
+
+4. IMAGE REVEAL ON HOVER: Project cards
+   - Image hidden by default (opacity 0 or clip-path)
+   - On hover: smooth reveal with scale
+   - Behind or beside text
+
+5. INFINITE MARQUEE: Section headers
+   - "SERVICES / MODULE INDEX / PORTFOLIO /"
+   - Continuous horizontal scroll
+   - Monospace typography
+
+═══════════════════════════════════════════════════════════════════════════════
+🎬 REQUIRED ANIMATIONS:
+═══════════════════════════════════════════════════════════════════════════════
+- Hero: TEXT GENERATE letter by letter + status typewriter
+- Borders: Draw/expand on scroll (width 0% → 100%)
+- Sections: Fade in from bottom with stagger
+- Marquee: Infinite smooth scroll
+- Hover: Image reveal + subtle lift
+- Scroll: TRACING BEAM progress indicator
+
+═══════════════════════════════════════════════════════════════════════════════
+📋 SECTION CHECKLIST:
+═══════════════════════════════════════════════════════════════════════════════
+□ Hero with massive brand name + "// SYSTEM STATUS"
+□ Technical navigation ["H O M E"] ["W O R K"] ["A B O U T"]
+□ Bento grid features/services with 01, 02, 03 numbering
+□ Project rows with hover image reveal
+□ Infinite marquee strip
+□ Stats section with large numbers
+□ Testimonials as blockquotes with — attribution
+□ Footer with technical credits
+
+⚠️ THE FEELING: Spaceship command center. Every pixel has purpose. Industrial precision.`, category: "dark" },
   { id: "ivory-command", name: "Ivory Command System", desc: "Light Terminal • Modular Grid • Blue Accent", fullDesc: `LIGHT COMMAND CENTER - Clean, architectural system interface on ivory.
 
 COLORS: Bg #FAFAF8 (warm ivory), text #1A1A1A (near-black), meta #888888 (gray), borders #E8E8E5. Primary accent #0066FF (electric blue). Secondary accent #FF3B30 (signal red) for alerts/highlights. NO gradients - pure flat precision.
@@ -1547,49 +1942,148 @@ SIGNATURE DETAILS:
 - Each screen = separate section with working navigation links between them
 - Style changes APPEARANCE only, NEVER removes content or screens
 - Count screens in video and ensure ALL are represented`, category: "light" },
-  { id: "aura-glass", name: "High-End Dark Glass", desc: "Aurora Glow • Spotlight • Premium", fullDesc: `PREMIUM DARK GLASS - High-end SaaS aesthetic.
+  { id: "aura-glass", name: "High-End Dark Glass", desc: "Aurora Glow • Spotlight • Premium", fullDesc: `💎 PREMIUM DARK GLASS - High-end SaaS aesthetic with aurora magic.
 
-COLORS: Solid #050505 black bg. Text white #ffffff. Muted #a1a1aa. Accent glow: purple rgba(139,92,246,0.12), cyan rgba(6,182,212,0.08).
+═══════════════════════════════════════════════════════════════════════════════
+🎨 MANDATORY ACETERNITY COMPONENTS:
+═══════════════════════════════════════════════════════════════════════════════
+HERO: Use AURORA BACKGROUND (purple/cyan gradient animation) + SPOTLIGHT following mouse
+CARDS: Use GLARE CARD effect + CARD SPOTLIGHT on hover + 3D CARD EFFECT tilt
+TEXT: Use TEXT GENERATE EFFECT for headline + COLOURFUL TEXT for highlights
+BUTTONS: Use MOVING BORDER (purple gradient) + HOVER BORDER GRADIENT
+NAV: Use FLOATING NAVBAR with heavy backdrop-blur
 
-TYPOGRAPHY: Inter or Geist. Headlines weight 500-600, not too bold. Body weight 400. Generous letter-spacing on small text.
+═══════════════════════════════════════════════════════════════════════════════
+🎨 COLOR PALETTE:
+═══════════════════════════════════════════════════════════════════════════════
+Background: Pure void #050505
+Aurora purple: rgba(139,92,246,0.12)
+Aurora cyan: rgba(6,182,212,0.08)
+Aurora rose: rgba(244,114,182,0.06)
+Text: Pure white #ffffff
+Muted: #a1a1aa
+Card surface: bg-white/[0.03]
+Borders: border-white/[0.08]
 
-LAYOUT: Single background gradient (NOT multiple divs). Centered content. Cards float on glass with generous p-8 padding.
+═══════════════════════════════════════════════════════════════════════════════
+📝 TYPOGRAPHY:
+═══════════════════════════════════════════════════════════════════════════════
+Font: Inter or Geist
+Headlines: Weight 500-600, never too bold
+Body: Weight 400, generous line-height
+Small text: Tracking 0.05em
 
-KEY EFFECTS:
-- ONE aurora gradient in background: background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(139,92,246,0.12) 0%, transparent 50%), radial-gradient(ellipse 40% 30% at 80% 20%, rgba(6,182,212,0.08) 0%, transparent 40%), #050505
-- Glass cards: bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-2xl
-- Subtle glow on card hover: shadow-lg shadow-purple-500/5
+═══════════════════════════════════════════════════════════════════════════════
+✨ SIGNATURE EFFECTS (IMPLEMENT ALL!):
+═══════════════════════════════════════════════════════════════════════════════
+1. AURORA BACKGROUND: Multiple animated gradient blobs
+   background: 
+     radial-gradient(ellipse 60% 40% at 50% 0%, rgba(139,92,246,0.12), transparent 50%),
+     radial-gradient(ellipse 40% 30% at 80% 20%, rgba(6,182,212,0.08), transparent 40%),
+     radial-gradient(ellipse 50% 35% at 20% 60%, rgba(244,114,182,0.06), transparent 45%),
+     #050505
+   - Add subtle background-position animation for floating effect
 
-ANIMATIONS:
-- Cards fade in from bottom
-- Hover: border brightens to border-white/15
-- Smooth 300ms transitions
-- No aggressive motion
+2. GLASS CARDS: Premium glassmorphism
+   - bg-white/[0.03] backdrop-blur-xl
+   - border border-white/[0.08] rounded-2xl
+   - shadow-2xl shadow-purple-500/5
 
-⚠️ MANDATORY: Preserve ALL content from video.`, category: "dark" },
-  { id: "void-spotlight", name: "Void Spotlight", desc: "Deep Void • Mouse Glow • Heavy", fullDesc: `VOID SPOTLIGHT - Heavy dark minimalism with interactive light.
+3. CARD GLOW: Hover reveals purple glow
+   - box-shadow: 0 0 40px rgba(139,92,246,0.15)
+   - border-color transitions to border-white/15
+   - Subtle scale(1.01) lift
 
-COLORS: Pure black #000000 background. Text #e5e5e5 (not pure white). Borders appear only on hover. NO colors except white/black.
+4. SPOTLIGHT: Mouse-following light on hero
+   - Radial gradient at cursor position
+   - Subtle but adds interactive depth
 
-TYPOGRAPHY: System UI or Inter. Weight 400-500. Clean, minimal. Large hero text, small body.
+═══════════════════════════════════════════════════════════════════════════════
+🎬 REQUIRED ANIMATIONS:
+═══════════════════════════════════════════════════════════════════════════════
+- Aurora: Slow background-position animation (20s infinite)
+- Cards: Fade in from bottom with stagger
+- Hover: Smooth 300ms glow reveal
+- Text: TEXT GENERATE for hero headline
+- All: Smooth, premium feel - no jerky motion
 
-LAYOUT: Sparse, heavy. Few elements. Maximum negative space. Content floats in void.
+⚠️ MANDATORY: Premium, elegant, luxurious. Every pixel screams quality.`, category: "dark" },
+  { id: "void-spotlight", name: "Void Spotlight", desc: "Deep Void • Mouse Glow • Heavy", fullDesc: `🔦 VOID SPOTLIGHT - Heavy dark minimalism. Light reveals content on demand.
 
-KEY EFFECTS:
-- Cards invisible until hover: border border-transparent hover:border-white/20
-- Optional: CSS spotlight that follows mouse using custom properties
-- Very subtle gradient on hero area only
-- High contrast but minimal decoration
+═══════════════════════════════════════════════════════════════════════════════
+🎨 MANDATORY ACETERNITY COMPONENTS:
+═══════════════════════════════════════════════════════════════════════════════
+HERO: Use SPOTLIGHT effect (bright mouse-following light) + CANVAS REVEAL EFFECT
+CARDS: Use FOCUS CARDS (blur siblings on focus) + invisible borders until hover
+TEXT: Use TEXT REVEAL CARD (content revealed by moving mask) + slow TEXT GENERATE
+BUTTONS: Invisible until hover, then HOVER BORDER GRADIENT reveals
+NAV: Minimal, barely visible until hover - use POINTER HIGHLIGHT effect
+SCROLL: Content emerges from void - LENS effect on hover areas
 
-ANIMATIONS:
-- Borders fade in on hover (300ms)
-- Content reveals slowly from darkness
-- Optional: radial-gradient follows cursor position
-- Everything feels heavy, deliberate
+═══════════════════════════════════════════════════════════════════════════════
+🎨 COLOR PALETTE:
+═══════════════════════════════════════════════════════════════════════════════
+Background: Pure black #000000 (TRUE void)
+Text: Soft white #e5e5e5 (not pure white)
+Borders: Invisible → white/20 on hover
+NO accent colors
+NO gradients except spotlight
+Pure monochrome existence
 
-The void is the design. Light reveals content on demand.
+═══════════════════════════════════════════════════════════════════════════════
+📝 TYPOGRAPHY:
+═══════════════════════════════════════════════════════════════════════════════
+Font: System UI or Inter
+Headlines: Weight 400-500 (not bold!), large size
+Body: Weight 400, small size
+Line-height: Generous 1.8
+Everything feels light, floating in void
 
-⚠️ MANDATORY: Preserve ALL content from video.`, category: "dark" },
+═══════════════════════════════════════════════════════════════════════════════
+✨ SIGNATURE EFFECTS (IMPLEMENT ALL!):
+═══════════════════════════════════════════════════════════════════════════════
+1. MOUSE SPOTLIGHT: Bright light following cursor
+   - background: radial-gradient(circle 300px at var(--x) var(--y), rgba(255,255,255,0.08), transparent)
+   - Updates position smoothly via mousemove
+   - Light source that reveals content
+
+2. INVISIBLE CARDS: Content hidden until interaction
+   - border: 1px solid transparent (invisible)
+   - hover:border-white/20 (reveals boundary)
+   - Content slightly dimmed, brightens on hover
+   - FOCUS CARDS effect (hover one, blur others)
+
+3. CANVAS REVEAL: Hero text revealed by spotlight
+   - Text starts very dim (opacity 0.3)
+   - Brightens where spotlight passes
+   - Creates discovery experience
+
+4. HEAVY TIMING: Everything deliberate
+   - Transitions: 400-600ms
+   - Easing: ease-out (decelerating)
+   - Feels weighty, precious
+
+═══════════════════════════════════════════════════════════════════════════════
+🎬 REQUIRED ANIMATIONS:
+═══════════════════════════════════════════════════════════════════════════════
+- Spotlight: Smooth cursor tracking
+- Borders: Fade in on hover (300-400ms)
+- Content: Slow reveal from darkness
+- Cards: FOCUS effect (blur siblings)
+- Everything: Heavy, deliberate, weighty
+- NO fast animations - everything earned
+
+═══════════════════════════════════════════════════════════════════════════════
+🚨 DESIGN PHILOSOPHY:
+═══════════════════════════════════════════════════════════════════════════════
+The VOID is the design. 
+Darkness is not absence, it's presence.
+Light is earned, not given.
+Every element emerges from nothing.
+Minimum decoration, maximum impact.
+Sparse. Heavy. Deliberate.
+
+⚠️ THE FEELING: Standing in complete darkness. Your flashlight reveals only what you point at.`, category: "dark" },
   { id: "dark-cosmos", name: "Dark Cosmos", desc: "Purple/Cyan Glow • Glass • Float", fullDesc: `COSMIC DARK - Space-inspired glass morphism.
 
 COLORS: Deep black #030303 bg. Two corner glows: purple rgba(139,92,246,0.1), cyan rgba(6,182,212,0.08). Text white, muted #9ca3af.
@@ -1610,25 +2104,89 @@ ANIMATIONS:
 - Smooth cosmic feel
 
 ⚠️ MANDATORY: Preserve ALL content from video.`, category: "dark" },
-  { id: "liquid-chrome", name: "Liquid Chrome", desc: "Metallic • Y2K • Reflections", fullDesc: `LIQUID CHROME - Mercury meets machine. The future imagined in 1999.
+  { id: "liquid-chrome", name: "Liquid Chrome", desc: "Metallic • Y2K • Reflections", fullDesc: `🪞 LIQUID CHROME - Mercury meets machine. Y2K futurism reborn.
 
-Picture this: A website that looks like it's made of liquid metal. Headlines that SHIMMER with animated chrome gradients - silver, white, gray flowing across the text like mercury dripping. The kind of aesthetic you'd see on a Y2K concept car or a Playstation 2 startup screen.
+═══════════════════════════════════════════════════════════════════════════════
+🎨 MANDATORY ACETERNITY COMPONENTS:
+═══════════════════════════════════════════════════════════════════════════════
+HERO: Use BACKGROUND GRADIENT ANIMATION (silver/white morphing) + GLARE CARD on surfaces
+CARDS: Use 3D CARD EFFECT (heavy perspective tilt) + metallic GLARE CARD shine sweep
+TEXT: Use COLOURFUL TEXT with chrome gradient + animated shine sweep effect
+BUTTONS: Use MOVING BORDER with silver gradient + COMET CARD trailing effect
+NAV: Use FLOATING NAVBAR with metallic blur + chrome accents
+SURFACES: Use CARD SPOTLIGHT with silver/white gradient following mouse
 
-THE VIBE: Deep void black (#000000) background. Everything metallic FLOATS against the darkness. Text that looks like it was forged from chrome - with real animated shine effects that sweep across continuously. Borders that catch light like polished steel.
+═══════════════════════════════════════════════════════════════════════════════
+🎨 COLOR PALETTE:
+═══════════════════════════════════════════════════════════════════════════════
+Background: Pure void #000000
+Chrome gradient: linear-gradient(90deg, #666, #fff, #888, #fff, #555)
+Silver: #C0C0C0
+Steel: #71797E
+Highlight: Pure white #ffffff
+Reflection: rgba(255,255,255,0.1)
+NO warm colors - cold metallic only
 
-SIGNATURE ELEMENTS:
-- Chrome/metallic gradient text that ANIMATES - the shine sweeps across endlessly
-- Reflective surfaces on cards - like looking at brushed aluminum
-- Geometric shapes with metallic edges
-- Futuristic typography (think sci-fi movie credits)
-- Elements that feel HEAVY and PRECIOUS - like touching cold metal
-- Subtle 3D transforms giving depth - things floating in space
-- Light reflections that move when you scroll
-- That distinctive Y2K "what will the future look like" optimism
+═══════════════════════════════════════════════════════════════════════════════
+📝 TYPOGRAPHY:
+═══════════════════════════════════════════════════════════════════════════════
+Headlines: Futuristic sans (Orbitron, Audiowide, or system-ui)
+Weight: 600-700 (bold but not black)
+Chrome text effect: background-clip: text with animated gradient
+Size: Large hero text, clean hierarchy
+Everything feels forged from metal
 
-THE FEELING: The lobby of a luxury spaceship. A car showroom in 2099. Chrome everything, darkness everywhere else.
+═══════════════════════════════════════════════════════════════════════════════
+✨ SIGNATURE EFFECTS (IMPLEMENT ALL!):
+═══════════════════════════════════════════════════════════════════════════════
+1. CHROME TEXT: Animated metallic shine on headlines
+   background: linear-gradient(90deg, #888 0%, #fff 25%, #888 50%, #fff 75%, #888 100%)
+   background-size: 200% 100%
+   background-clip: text
+   -webkit-text-fill-color: transparent
+   animation: chrome-shine 3s linear infinite
 
-⚠️ CRITICAL: Extract ALL content from the video. Style transforms appearance only.`, category: "dark" },
+   @keyframes chrome-shine {
+     0% { background-position: -100% 0 }
+     100% { background-position: 100% 0 }
+   }
+
+2. METALLIC CARDS: Brushed steel appearance
+   - background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 50%, #1a1a1a 100%)
+   - border: 1px solid rgba(255,255,255,0.1)
+   - Subtle inner glow: box-shadow: inset 0 1px 0 rgba(255,255,255,0.1)
+   - 3D tilt on hover following mouse
+
+3. GLARE SWEEP: Light reflection moves across surfaces
+   - Pseudo-element with diagonal white gradient
+   - Animates position on hover or continuously
+   - Creates liquid metal feel
+
+4. FLOATING DEPTH: Elements suspended in void
+   - transform: translateZ(10px) with preserve-3d
+   - Subtle shadow below for floating effect
+   - Parallax on scroll
+
+═══════════════════════════════════════════════════════════════════════════════
+🎬 REQUIRED ANIMATIONS:
+═══════════════════════════════════════════════════════════════════════════════
+- Chrome text: Continuous shine sweep (3s infinite)
+- Cards: 3D tilt following mouse position
+- Glare: Diagonal sweep on hover
+- Float: Subtle vertical movement (4s infinite)
+- Load: Elements emerge from darkness with scale
+- Scroll: Parallax layers at different speeds
+
+═══════════════════════════════════════════════════════════════════════════════
+🪞 MATERIAL PROPERTIES:
+═══════════════════════════════════════════════════════════════════════════════
+- Everything feels COLD and PRECIOUS
+- Weight and gravity to elements
+- Reflections on every surface
+- Edges catch light like polished steel
+- Y2K optimism - "what will 2099 look like?"
+
+⚠️ THE FEELING: The lobby of a luxury spaceship. A car showroom in 2099. Chrome everything, void everywhere else.`, category: "dark" },
   
   // === LIGHT & CLEAN ===
   { id: "swiss-grid", name: "Swiss Grid", desc: "Visible Grid • Massive Type • Sharp", fullDesc: `SWISS INTERNATIONAL STYLE - Precision typography on grid.
@@ -1675,38 +2233,138 @@ ANIMATIONS:
 This style is about what's NOT there. Emptiness is the feature.
 
 ⚠️ MANDATORY: Preserve ALL content from video.`, category: "light" },
-  { id: "soft-organic", name: "Soft Organic", desc: "Blobs • Pastel • Underwater", fullDesc: `ORGANIC SOFT UI - Underwater dreamscape aesthetic.
+  { id: "soft-organic", name: "Soft Organic", desc: "Blobs • Pastel • Underwater", fullDesc: `🫧 ORGANIC SOFT UI - Underwater dreamscape. Floating in clouds.
 
-COLORS: Cream bg #FFF5F5 or #F0F7FF. Pastel blobs: pink rgba(255,182,193,0.4), blue rgba(173,216,230,0.4), lavender rgba(230,190,255,0.3). Text #2d3748.
+═══════════════════════════════════════════════════════════════════════════════
+🎨 MANDATORY ACETERNITY COMPONENTS:
+═══════════════════════════════════════════════════════════════════════════════
+HERO: Use BACKGROUND GRADIENT ANIMATION (pastel blobs morphing) + WAVY BACKGROUND
+CARDS: Use WOBBLE CARD (soft bounce) + 3D CARD EFFECT with soft shadows
+TEXT: Use TEXT GENERATE EFFECT (soft, slow) + FLIP WORDS for testimonials
+BUTTONS: Use soft HOVER BORDER GRADIENT (pastel colors) + bouncy hover
+NAV: Use FLOATING NAVBAR with heavy blur + soft rounded
+SCROLL: Gentle parallax with floating elements
 
-TYPOGRAPHY: Rounded fonts - Nunito, Quicksand, or Poppins. Weight 500-600 for headings, 400 for body. Soft, friendly feel.
+═══════════════════════════════════════════════════════════════════════════════
+🎨 COLOR PALETTE:
+═══════════════════════════════════════════════════════════════════════════════
+Background: Soft cream #FFF5F5 or #F0F7FF
+Blob pink: rgba(255,182,193,0.4)
+Blob blue: rgba(173,216,230,0.4)
+Blob lavender: rgba(230,190,255,0.3)
+Blob mint: rgba(152,251,152,0.3)
+Text: Slate #2d3748
+Card bg: bg-white/60
 
-LAYOUT: Organic shapes, no sharp corners. Cards rounded-3xl. Content flows naturally. Overlapping elements OK.
+═══════════════════════════════════════════════════════════════════════════════
+📝 TYPOGRAPHY:
+═══════════════════════════════════════════════════════════════════════════════
+Font: Nunito, Quicksand, or Poppins (rounded, friendly)
+Headlines: Weight 600, soft large sizes
+Body: Weight 400, comfortable reading
+Everything feels approachable, soft, kind
 
-KEY EFFECTS:
-- ANIMATED BLOBS: Absolute divs with w-[400px] h-[400px] rounded-full blur-[80px], animate position slowly
-- Cards: bg-white/60 backdrop-blur-xl rounded-3xl shadow-xl
-- Floating elements with subtle up/down animation
-- Blob shapes using border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%
+═══════════════════════════════════════════════════════════════════════════════
+✨ SIGNATURE EFFECTS (IMPLEMENT ALL!):
+═══════════════════════════════════════════════════════════════════════════════
+1. ANIMATED BLOB BACKGROUND: Floating pastel shapes
+   - 3-5 large divs (400-600px)
+   - position: absolute, scattered
+   - border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%
+   - filter: blur(80px)
+   - animation: blob-drift 15-20s infinite ease-in-out
+   
+   @keyframes blob-drift {
+     0%, 100% { transform: translate(0, 0) rotate(0deg) }
+     33% { transform: translate(30px, -50px) rotate(5deg) }
+     66% { transform: translate(-20px, 20px) rotate(-3deg) }
+   }
 
-ANIMATIONS:
-- Blobs drift slowly (transform translate, 15-20s infinite)
-- Elements float up/down 10px (2-3s infinite ease-in-out)
-- Fade in with scale 0.95 → 1
-- Hover: slight lift and glow
+2. GLASS CARDS: Frosted soft panels
+   - bg-white/60 backdrop-blur-xl
+   - rounded-3xl
+   - shadow-xl (soft, diffused)
+   - NO hard borders
 
-⚠️ MANDATORY: Preserve ALL content from video.`, category: "light" },
-  { id: "ethereal-mesh", name: "Ethereal Mesh", desc: "Aurora Blobs • Soft SaaS • Modern", fullDesc: `ETHEREAL GRADIENT MESH - Modern SaaS dreaminess.
+3. FLOATING ELEMENTS: Gentle vertical motion
+   - animation: float 3-4s infinite ease-in-out
+   @keyframes float {
+     0%, 100% { transform: translateY(0) }
+     50% { transform: translateY(-10px) }
+   }
 
-COLORS: White #ffffff or soft gray #fafafa bg. Gradient blobs: violet rgba(139,92,246,0.15), cyan rgba(34,211,238,0.12), rose rgba(244,114,182,0.1). Text #1e293b.
+4. SOFT HOVER: Cards lift gently
+   - transform: translateY(-5px)
+   - box-shadow expands softly
+   - Scale 1.01 with ease
 
-TYPOGRAPHY: Inter or Satoshi. Clean modern feel. Headlines weight 600, body 400. Good hierarchy with size contrast.
+═══════════════════════════════════════════════════════════════════════════════
+🎬 REQUIRED ANIMATIONS:
+═══════════════════════════════════════════════════════════════════════════════
+- Blobs: Slow continuous drift (15-20s)
+- Cards: Float gently, lift on hover
+- Entry: Fade in with scale 0.95 → 1
+- Text: Soft TEXT GENERATE (slow reveal)
+- Everything: Ease-in-out, never harsh
+- Timing: Long durations (1-2s minimum)
 
-LAYOUT: Centered content max-w-6xl. Cards in grids. Hero section with mesh gradient behind. Clean spacing p-8 to p-16.
+⚠️ THE FEELING: Floating underwater. Soft clouds. Gentle, approachable, kind.`, category: "light" },
+  { id: "ethereal-mesh", name: "Ethereal Mesh", desc: "Aurora Blobs • Soft SaaS • Modern", fullDesc: `✨ ETHEREAL GRADIENT MESH - Modern SaaS dreaminess. Premium light aesthetic.
 
-KEY EFFECTS:
-- MESH GRADIENT: Multiple overlapping radial-gradients with different positions and colors, animated subtly
-- Glass cards: bg-white/80 backdrop-blur-xl border border-white/50 rounded-2xl shadow-lg
+═══════════════════════════════════════════════════════════════════════════════
+🎨 MANDATORY ACETERNITY COMPONENTS:
+═══════════════════════════════════════════════════════════════════════════════
+HERO: Use AURORA BACKGROUND (violet/cyan/rose mesh) + SPOTLIGHT (soft)
+CARDS: Use CARD HOVER EFFECT + GLARE CARD shine + 3D CARD EFFECT
+TEXT: Use TEXT GENERATE EFFECT + HERO HIGHLIGHT (gradient underline)
+BUTTONS: Use MOVING BORDER (gradient) + HOVER BORDER GRADIENT
+NAV: Use FLOATING NAVBAR with mesh blur backdrop
+SECTIONS: Use BENTO GRID layout for features
+
+═══════════════════════════════════════════════════════════════════════════════
+🎨 COLOR PALETTE:
+═══════════════════════════════════════════════════════════════════════════════
+Background: Pure white #ffffff or soft #fafafa
+Mesh violet: rgba(139,92,246,0.15)
+Mesh cyan: rgba(34,211,238,0.12)
+Mesh rose: rgba(244,114,182,0.1)
+Mesh emerald: rgba(16,185,129,0.08)
+Text: Dark slate #1e293b
+Card surface: bg-white/80
+
+═══════════════════════════════════════════════════════════════════════════════
+📝 TYPOGRAPHY:
+═══════════════════════════════════════════════════════════════════════════════
+Font: Inter or Satoshi
+Headlines: Weight 600, clean modern feel
+Body: Weight 400, comfortable reading
+Good hierarchy with clear size contrast
+Professional, trustworthy, modern
+
+═══════════════════════════════════════════════════════════════════════════════
+✨ SIGNATURE EFFECTS (IMPLEMENT ALL!):
+═══════════════════════════════════════════════════════════════════════════════
+1. MESH GRADIENT BACKGROUND: Overlapping gradient blobs
+   background:
+     radial-gradient(ellipse 50% 50% at 20% 20%, rgba(139,92,246,0.15), transparent),
+     radial-gradient(ellipse 40% 40% at 80% 30%, rgba(34,211,238,0.12), transparent),
+     radial-gradient(ellipse 45% 45% at 50% 70%, rgba(244,114,182,0.1), transparent),
+     #fafafa
+   - Subtle background-position animation for floating effect (30s infinite)
+
+2. GLASS CARDS: Premium light glassmorphism
+   - bg-white/80 backdrop-blur-xl
+   - border border-white/50
+   - rounded-2xl shadow-lg
+   - GLARE effect on hover (light sweep)
+
+3. GRADIENT HIGHLIGHTS: Text with color accent
+   - Hero words with HERO HIGHLIGHT effect
+   - Gradient underline that animates on reveal
+
+4. SMOOTH FLOATING: Elements with subtle motion
+   - Cards with gentle float animation
+   - Mesh background slowly morphs
 - Soft shadows: shadow-xl shadow-purple-500/5
 - Gradient borders using background-clip
 
@@ -2662,7 +3320,81 @@ Recording stopped unexpectedly. System crash frozen in time.
   
   // === PREMIUM SAAS LANDING ===
   { id: "molten-aurora", name: "Molten Aurora SaaS", desc: "Volcanic Glow • Dark Glass • Orange Beam", fullDesc: "CRITICAL: Background is solid #0a0a0a black. Add ONE subtle orange/amber radial gradient at bottom center using CSS: background: radial-gradient(ellipse 80% 50% at 50% 100%, rgba(251,146,60,0.15) 0%, transparent 70%). Cards have bg-white/5 backdrop-blur-xl border border-white/10. Orange CTA button. NO overlapping backgrounds, NO multiple gradient layers, keep it minimal and clean.", category: "dark" },
-  { id: "midnight-aurora", name: "Midnight Aurora Fintech", desc: "Purple Glow • Neon Streaks • Blue Accent", fullDesc: "CRITICAL: Background is solid #050510 dark blue-black. Add ONE subtle purple glow at bottom: background: radial-gradient(ellipse 100% 40% at 50% 100%, rgba(139,92,246,0.12) 0%, transparent 60%). Glass cards with bg-white/5 backdrop-blur-xl. Blue/purple accent colors. NO overlapping elements, clean hierarchy.", category: "dark" },
+  { id: "midnight-aurora", name: "Midnight Aurora Fintech", desc: "Purple Glow • Neon Streaks • Blue Accent", fullDesc: `🌌 MIDNIGHT AURORA FINTECH - Premium dark with aurora magic. Trust through elegance.
+
+═══════════════════════════════════════════════════════════════════════════════
+🎨 MANDATORY ACETERNITY COMPONENTS:
+═══════════════════════════════════════════════════════════════════════════════
+HERO: Use AURORA BACKGROUND (purple/blue at bottom) + SPOTLIGHT (subtle mouse glow)
+CARDS: Use CARD SPOTLIGHT + GLARE CARD shine + 3D CARD EFFECT on hover
+TEXT: Use TEXT GENERATE EFFECT + COLOURFUL TEXT for highlights (purple gradient)
+BUTTONS: Use MOVING BORDER (purple) + HOVER BORDER GRADIENT
+NAV: Use FLOATING NAVBAR with glass blur + purple accent on active
+CHARTS: Use animated entry (isAnimationActive) + gradient fills
+
+═══════════════════════════════════════════════════════════════════════════════
+🎨 COLOR PALETTE:
+═══════════════════════════════════════════════════════════════════════════════
+Background: Deep blue-black #050510 (NOT pure black)
+Aurora purple: rgba(139,92,246,0.12) at bottom
+Aurora blue: rgba(59,130,246,0.08)
+Text: Pure white #ffffff
+Muted: #a1a1aa
+Card surface: bg-white/5
+Accent: Purple #8b5cf6, Blue #3b82f6
+
+═══════════════════════════════════════════════════════════════════════════════
+📝 TYPOGRAPHY:
+═══════════════════════════════════════════════════════════════════════════════
+Font: Inter or Geist
+Headlines: Weight 500-600, clean modern
+Body: Weight 400, generous line-height
+Professional fintech feel
+
+═══════════════════════════════════════════════════════════════════════════════
+✨ SIGNATURE EFFECTS (IMPLEMENT ALL!):
+═══════════════════════════════════════════════════════════════════════════════
+1. AURORA GLOW: Bottom-mounted gradient
+   background: radial-gradient(ellipse 100% 40% at 50% 100%, rgba(139,92,246,0.12) 0%, transparent 60%), #050510
+   - Subtle purple glow emanating from bottom
+   - Do NOT make it too bright
+
+2. GLASS CARDS: Premium fintech surfaces
+   - bg-white/5 backdrop-blur-xl
+   - border border-white/10
+   - rounded-2xl
+   - CARD SPOTLIGHT on hover
+
+3. NEON STREAKS: Accent lines
+   - Thin 1-2px lines with purple/blue gradient
+   - Used sparingly for emphasis
+   - Animated glow on hover
+
+4. CLEAN HIERARCHY: Trust through clarity
+   - NO overlapping elements
+   - Clear spacing between sections
+   - Professional, not flashy
+
+═══════════════════════════════════════════════════════════════════════════════
+🎬 REQUIRED ANIMATIONS:
+═══════════════════════════════════════════════════════════════════════════════
+- Hero: TEXT GENERATE for headline
+- Cards: Fade in up with stagger
+- Aurora: Very subtle position animation (30s infinite)
+- Charts: Animated entry with delay stagger
+- Hover: CARD SPOTLIGHT + subtle lift
+- Duration: 300-500ms, smooth ease-out
+
+═══════════════════════════════════════════════════════════════════════════════
+💰 FINTECH PRINCIPLES:
+═══════════════════════════════════════════════════════════════════════════════
+- Trust through professionalism
+- Clean data presentation
+- Premium but not flashy
+- Confidence through restraint
+- Aurora adds magic without chaos
+
+⚠️ THE FEELING: A premium banking app at midnight. Trustworthy. Sophisticated. Magical.`, category: "dark" },
   { id: "airy-blue-aura", name: "Airy Blue Aura SaaS", desc: "White Void • Blue Blob • Highlight Pill", fullDesc: "White #ffffff background. ONE soft blue blob in hero: div with absolute positioning, w-[600px] h-[400px] bg-blue-400/20 rounded-full blur-[100px]. Clean Inter font. Headline pill highlight uses bg-blue-100 px-3 py-1 rounded-full inline. Indigo CTA.", category: "light" },
   { id: "halftone-beam", name: "Halftone Solar Beam Studio", desc: "Dot Matrix • Grid • Massive Wordmark", fullDesc: "Background #0a0a0a. Hero has ONE orange gradient beam: background: linear-gradient(180deg, transparent 0%, rgba(251,146,60,0.08) 50%, transparent 100%). Massive text-[12vw] font-black headline. Subtle dot pattern overlay at 3% opacity. NO overlapping gradients.", category: "dark" },
   { id: "mono-wave", name: "Monochrome Typographic Wave", desc: "Black White • Marquee Band • Editorial", fullDesc: "Pure black #000 background with white text. ONE horizontal marquee band crossing viewport with continuous scrolling text (CSS animation translateX, 30s linear infinite). Text inside marquee is white, band background can be white with black text. Editorial typography.", category: "creative" },
