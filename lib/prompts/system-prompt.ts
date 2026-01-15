@@ -678,60 +678,126 @@ SECTION-SPECIFIC REQUIREMENTS:
 • FOOTER: Subtle grid background + Hover effects on links
 
 ================================================================================
-📊 DASHBOARD & CHARTS - USE RECHARTS LIBRARY (MANDATORY!)
+📊 CHARTS & DATA VISUALIZATION PROTOCOL (MANDATORY!)
 ================================================================================
-🚨🚨🚨 CHARTS MUST USE RECHARTS CDN - NO CUSTOM CHARTS! 🚨🚨🚨
+🚨 CRITICAL: DO NOT ATTEMPT TO DRAW CHARTS WITH RAW SVG <PATH>!
+LLMs cannot calculate SVG paths accurately. You MUST use 'Recharts' library via CDN.
 
-**MANDATORY RECHARTS CDN:**
+**WHY RECHARTS IS PERFECT FOR AI:**
+- Most popular React chart library - AI knows its API perfectly
+- Declarative: Just write <AreaChart data={data}> and it works
+- ResponsiveContainer handles all sizing automatically
+- No math calculations needed (unlike D3.js)
+
+**MANDATORY CDN:**
 \`\`\`html
+<script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/recharts@2.12.7/umd/Recharts.min.js"></script>
 \`\`\`
 
-**USE THESE RECHARTS COMPONENTS ONLY:**
-- LineChart, AreaChart, BarChart, PieChart, RadarChart
-- ResponsiveContainer (ALWAYS wrap charts!)
-- XAxis, YAxis, CartesianGrid, Tooltip, Legend
-- Line, Area, Bar, Pie with gradients
+================================================================================
+🎨 DYNAMIC COLOR LOGIC (CRITICAL - NO HARDCODED PURPLE!)
+================================================================================
+🚨 DO NOT hardcode #8b5cf6 purple! Colors MUST match the selected style!
 
-**CHART CONTAINER STRUCTURE (CRITICAL!):**
+**ANALYZE THE STYLE AND PICK MATCHING COLORS:**
+- "Spotify" style → Bright Green (#1DB954)
+- "Orange Waitlist" style → Orange gradient (#f97316, #fb923c)
+- "Corporate Blue" style → Navy/Blue (#3b82f6, #1e40af)
+- "Fintech Dark" style → Cyan/Teal (#06b6d4, #14b8a6)
+- "Monochrome" style → Grayscale (#a1a1aa, #71717a)
+- "Retro Terminal" style → Matrix Green (#00ff00, #22c55e)
+- "Auto-Detect" → Extract dominant colors from video!
+
+**COLOR DEFINITION PATTERN (AI MUST DO THIS FIRST!):**
+\`\`\`javascript
+// 🎨 AI: ANALYZE STYLE AND DEFINE THESE COLORS!
+// Example for "Orange Fintech" style:
+const PRIMARY_COLOR = "#f97316";     // Main accent
+const PRIMARY_LIGHT = "#fb923c";     // Lighter variant
+const GRID_COLOR = "rgba(255,255,255,0.1)";  // Subtle grid
+const AXIS_COLOR = "rgba(255,255,255,0.5)";  // Axis labels
+\`\`\`
+
+================================================================================
+📈 CHART CODE PATTERN (COPY AND ADAPT!)
+================================================================================
 \`\`\`html
 <!-- FIXED HEIGHT CONTAINER - MANDATORY! -->
-<div style="width: 100%; height: 300px; min-height: 250px;">
-  <div id="chart1"></div>
+<div class="w-full p-4 bg-white/5 border border-white/10 rounded-xl">
+  <h3 class="text-sm font-medium opacity-70 mb-4">Analytics Overview</h3>
+  <div style="width: 100%; height: 280px;" id="mainChart"></div>
 </div>
 
 <script>
-const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } = Recharts;
+const { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } = Recharts;
 
-const data = [
-  { name: 'Jan', value: 400 },
-  { name: 'Feb', value: 300 },
-  { name: 'Mar', value: 600 },
-  { name: 'Apr', value: 800 },
-  { name: 'May', value: 500 }
+// 🎨 THEME COLORS - AI MUST ADAPT TO STYLE!
+const PRIMARY = "#f97316";  // ← CHANGE THIS based on style!
+const SECONDARY = "#06b6d4";
+
+// 📊 DATA - Extract from video or generate realistic data
+const chartData = [
+  { name: 'Mon', value: 4200, prev: 3800 },
+  { name: 'Tue', value: 3100, prev: 3200 },
+  { name: 'Wed', value: 5800, prev: 4100 },
+  { name: 'Thu', value: 4900, prev: 4300 },
+  { name: 'Fri', value: 6200, prev: 5100 },
+  { name: 'Sat', value: 7100, prev: 5900 },
+  { name: 'Sun', value: 5400, prev: 4800 },
 ];
 
-// Render chart with ReactDOM
-const chartElement = React.createElement(ResponsiveContainer, { width: '100%', height: '100%' },
-  React.createElement(AreaChart, { data: data },
+// 🎯 CHART ELEMENT
+const chart = React.createElement(ResponsiveContainer, { width: '100%', height: '100%' },
+  React.createElement(AreaChart, { data: chartData, margin: { top: 10, right: 10, left: -20, bottom: 0 } },
+    // GRADIENT DEFINITION - Makes charts look premium!
     React.createElement('defs', null,
-      React.createElement('linearGradient', { id: 'colorValue', x1: '0', y1: '0', x2: '0', y2: '1' },
-        React.createElement('stop', { offset: '5%', stopColor: '#8b5cf6', stopOpacity: 0.8 }),
-        React.createElement('stop', { offset: '95%', stopColor: '#8b5cf6', stopOpacity: 0 })
+      React.createElement('linearGradient', { id: 'primaryGrad', x1: '0', y1: '0', x2: '0', y2: '1' },
+        React.createElement('stop', { offset: '5%', stopColor: PRIMARY, stopOpacity: 0.6 }),
+        React.createElement('stop', { offset: '95%', stopColor: PRIMARY, stopOpacity: 0 })
       )
     ),
-    React.createElement(CartesianGrid, { strokeDasharray: '3 3', stroke: '#333' }),
-    React.createElement(XAxis, { dataKey: 'name', stroke: '#888' }),
-    React.createElement(YAxis, { stroke: '#888' }),
-    React.createElement(Tooltip, { 
-      contentStyle: { backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px' }
+    // GRID - Subtle, horizontal only
+    React.createElement(CartesianGrid, { 
+      strokeDasharray: '3 3', 
+      stroke: 'currentColor', 
+      strokeOpacity: 0.1, 
+      vertical: false 
     }),
+    // X AXIS - Clean, no lines
+    React.createElement(XAxis, { 
+      dataKey: 'name', 
+      axisLine: false, 
+      tickLine: false, 
+      tick: { fill: 'currentColor', opacity: 0.5, fontSize: 11 },
+      dy: 10
+    }),
+    // Y AXIS - Minimal
+    React.createElement(YAxis, { 
+      axisLine: false, 
+      tickLine: false, 
+      tick: { fill: 'currentColor', opacity: 0.5, fontSize: 11 },
+      tickFormatter: (v) => v >= 1000 ? (v/1000)+'k' : v
+    }),
+    // TOOLTIP - Styled to match theme
+    React.createElement(Tooltip, { 
+      contentStyle: { 
+        backgroundColor: '#111', 
+        border: '1px solid rgba(255,255,255,0.1)', 
+        borderRadius: '8px',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
+      },
+      itemStyle: { color: '#fff' },
+      cursor: { stroke: PRIMARY, strokeWidth: 1, strokeDasharray: '5 5' }
+    }),
+    // AREA - With gradient fill
     React.createElement(Area, { 
       type: 'monotone', 
       dataKey: 'value', 
-      stroke: '#8b5cf6', 
-      fill: 'url(#colorValue)',
-      strokeWidth: 2,
+      stroke: PRIMARY, 
+      strokeWidth: 2.5,
+      fill: 'url(#primaryGrad)',
       isAnimationActive: true,
       animationDuration: 1500,
       animationEasing: 'ease-out'
@@ -739,41 +805,84 @@ const chartElement = React.createElement(ResponsiveContainer, { width: '100%', h
   )
 );
 
-ReactDOM.render(chartElement, document.getElementById('chart1'));
+ReactDOM.render(chart, document.getElementById('mainChart'));
 </script>
 \`\`\`
 
-**CHART STYLING (MATCH DESIGN SYSTEM!):**
-- Dark theme: bg transparent, grid #333, axis #888
-- Light theme: bg transparent, grid #e5e5e5, axis #666
-- Gradient fills for areas (NOT solid colors)
-- Rounded tooltips with matching bg
-- Smooth curves: type="monotone"
+================================================================================
+📊 MULTIPLE CHART TYPES (Pick based on data!)
+================================================================================
 
-**CHART ANIMATIONS (MANDATORY!):**
-- isAnimationActive: true
-- animationDuration: 1500
-- animationEasing: 'ease-out'
-- Stagger: delay 0ms, 300ms, 600ms for multiple charts
+**BAR CHART (for comparisons):**
+\`\`\`javascript
+React.createElement(BarChart, { data: data },
+  React.createElement(Bar, { 
+    dataKey: 'value', 
+    fill: PRIMARY, 
+    radius: [4, 4, 0, 0],  // Rounded top corners
+    isAnimationActive: true 
+  })
+)
+\`\`\`
 
-**METRIC CARDS WITH ANIMATED NUMBERS:**
+**LINE CHART (for trends):**
+\`\`\`javascript
+React.createElement(LineChart, { data: data },
+  React.createElement(Line, { 
+    type: 'monotone', 
+    dataKey: 'value', 
+    stroke: PRIMARY, 
+    strokeWidth: 2,
+    dot: { fill: PRIMARY, strokeWidth: 0, r: 4 },
+    activeDot: { r: 6, fill: PRIMARY }
+  })
+)
+\`\`\`
+
+**PIE/DONUT CHART (for distribution):**
+\`\`\`javascript
+const COLORS = [PRIMARY, SECONDARY, '#a855f7', '#ec4899'];
+React.createElement(PieChart, null,
+  React.createElement(Pie, { 
+    data: pieData, 
+    dataKey: 'value', 
+    innerRadius: 60,  // Makes it donut
+    outerRadius: 100,
+    paddingAngle: 2
+  },
+    pieData.map((entry, i) => 
+      React.createElement(Cell, { key: i, fill: COLORS[i % COLORS.length] })
+    )
+  )
+)
+\`\`\`
+
+================================================================================
+📱 METRIC CARDS WITH ANIMATED NUMBERS
+================================================================================
 \`\`\`html
-<div class="metric-card" x-data="{ count: 0, target: 2500 }" x-init="
-  let interval = setInterval(() => {
-    if (count < target) count += Math.ceil(target / 50);
-    else { count = target; clearInterval(interval); }
-  }, 30)
-">
-  <span class="text-3xl font-bold" x-text="count.toLocaleString()"></span>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+  <div class="p-4 bg-white/5 rounded-xl border border-white/10"
+       x-data="{ v: 0, target: 24567 }" 
+       x-init="let i=setInterval(()=>{v+=Math.ceil((target-v)/12);if(v>=target){v=target;clearInterval(i)}},30)">
+    <p class="text-xs opacity-50 mb-1">Total Revenue</p>
+    <p class="text-2xl font-bold">$<span x-text="v.toLocaleString()">0</span></p>
+    <p class="text-xs text-green-400 mt-1">↑ 12.5%</p>
+  </div>
+  <!-- More metric cards... -->
 </div>
 \`\`\`
 
-**❌ INSTANT REJECTION:**
-- Charts overflowing containers (NO ResponsiveContainer)
-- Static charts without animations
-- Custom hand-drawn charts (USE RECHARTS!)
-- Missing container heights
-- Solid color fills instead of gradients
+================================================================================
+🚨 CHART RULES - INSTANT REJECTION CONDITIONS
+================================================================================
+❌ DO NOT use \`import\` - Use \`const { ... } = Recharts;\`
+❌ DO NOT draw SVG paths manually - AI cannot calculate curves!
+❌ DO NOT ignore the selected Visual Style when picking chart colors
+❌ DO NOT forget ResponsiveContainer - Charts will overflow!
+❌ DO NOT use solid color fills - Always use gradients!
+❌ DO NOT forget isAnimationActive: true - Charts must animate!
+❌ DO NOT use fixed pixel widths - Always percentage/responsive!
 
 ================================================================================
 🚨🚨🚨 MULTI-SCREEN / MULTI-PAGE VIDEO FLOW (CRITICAL!) 🚨🚨🚨
