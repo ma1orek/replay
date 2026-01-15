@@ -199,7 +199,35 @@ export const StylePreview = ({ styleId }: { styleId: string }) => {
         <div className="absolute inset-x-0 bottom-1 text-center text-[4px] text-white/40">scroll</div>
       </div>
     ),
-    // === CREATIVE STYLES ===
+    // === 10 NEW CREATIVE STYLES ===
+    "particle-brain": (
+      <div className="w-full h-full bg-black relative overflow-hidden">
+        <motion.div
+          className="absolute w-1 h-1 bg-cyan-400 rounded-full"
+          style={{ top: '30%', left: '40%' }}
+          animate={{ y: [0, -2, 0], opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute w-0.5 h-0.5 bg-cyan-300 rounded-full"
+          style={{ top: '50%', left: '55%' }}
+          animate={{ y: [0, 2, 0], opacity: [0.4, 0.9, 0.4] }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
+        />
+        <motion.div
+          className="absolute w-0.5 h-0.5 bg-cyan-500 rounded-full"
+          style={{ top: '60%', left: '35%' }}
+          animate={{ y: [0, -1.5, 0], opacity: [0.6, 1, 0.6] }}
+          transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
+        />
+        <motion.div
+          className="absolute w-[3px] h-[3px] bg-cyan-400/50 rounded-full blur-[1px]"
+          style={{ top: '40%', left: '45%' }}
+          animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.6, 0.3] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </div>
+    ),
     "old-money": (
       <div className="w-full h-full bg-[#F5F5DC] p-1 relative">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-200/20 to-transparent" />
@@ -987,6 +1015,28 @@ const STYLE_PRESETS = [
   { id: "style-reference", name: "Style Reference", desc: "Upload image, copy its style", fullDesc: "Apply the visual style from the reference image: use its color palette, typography, spacing, border-radius, and overall aesthetic.", category: null },
   
   // === CREATIVE & EXPERIMENTAL ===
+  { id: "particle-brain", name: "Particle Brain", desc: "AI Cloud • 50k Points • WebGL", fullDesc: `NEURAL NETWORK PARTICLE AESTHETIC - AI meets data visualization.
+
+COLORS: Deep black #0a0a0a bg, particles in cyan #00fff2 and magenta #ff00ff with purple #8b5cf6 connections.
+
+TYPOGRAPHY: Geist Mono for headlines, weight 300-400 (light), UPPERCASE with extreme tracking (0.3em). Body in Inter light.
+
+LAYOUT: Full-viewport hero with particle cloud animation. Content floats above. Minimal sections, maximum impact.
+
+KEY EFFECTS:
+- CSS PARTICLES: 200+ tiny divs (2-4px) with absolute positioning, animation: float 3-8s infinite ease-in-out with random delays
+- Each particle: background: radial-gradient(circle, #00fff2 0%, transparent 70%)
+- Connection lines: Thin 1px divs connecting nearby particles
+- MOUSE INTERACTION: particles repel from cursor using CSS custom properties
+- Glow effect: box-shadow: 0 0 20px currentColor
+
+ANIMATIONS:
+- Particles float with sin wave (translateY + subtle rotate)
+- On scroll: particles drift and scatter
+- On hover: nearby particles explode outward
+- Subtle RGB chromatic aberration on text
+
+⚠️ MANDATORY: Preserve ALL content from video.`, category: "creative" },
   { id: "old-money", name: "Old Money Heritage", desc: "Cream • Gold Serif • Classic", fullDesc: `OLD MONEY LUXURY - Generational wealth aesthetics.
 
 COLORS: Cream #F5F0E8 bg, rich navy #1C2331 text, gold accents #C9A962 and #B8860B. Burgundy #722F37 for subtle highlights.
@@ -1517,28 +1567,29 @@ ANIMATIONS:
 - No aggressive motion
 
 ⚠️ MANDATORY: Preserve ALL content from video.`, category: "dark" },
-  { id: "void-spotlight", name: "Void Spotlight", desc: "Deep Void • Mouse Glow • Heavy", fullDesc: `🚨 ABSOLUTE COLOR OVERRIDE - DO NOT USE ANY COLORS FROM VIDEO! 🚨
+  { id: "void-spotlight", name: "Void Spotlight", desc: "Deep Void • Mouse Glow • Heavy", fullDesc: `VOID SPOTLIGHT - Heavy dark minimalism with interactive light.
 
-MANDATORY COLORS (use ONLY these - MONOCHROME ONLY):
-- Background: #000000 (pure black)
-- Text: #E5E5E5 (off-white)
-- Muted: #737373 (gray)
-- Borders: transparent default, #333333 on hover
-- NO OTHER COLORS. No orange, no blue, no accent colors.
+COLORS: Pure black #000000 background. Text #e5e5e5 (not pure white). Borders appear only on hover. NO colors except white/black.
 
-STYLE: Pure black void. Extreme minimalism. Content emerges from darkness on hover.
+TYPOGRAPHY: System UI or Inter. Weight 400-500. Clean, minimal. Large hero text, small body.
 
-BACKGROUND: Pure #000000 black. Optional: subtle radial gradient spotlight that follows mouse.
+LAYOUT: Sparse, heavy. Few elements. Maximum negative space. Content floats in void.
 
-CARDS: bg-transparent border-transparent by default. On hover: border-white/10 bg-white/[0.02]. Slow 500ms transitions.
+KEY EFFECTS:
+- Cards invisible until hover: border border-transparent hover:border-white/20
+- Optional: CSS spotlight that follows mouse using custom properties
+- Very subtle gradient on hero area only
+- High contrast but minimal decoration
 
-TYPOGRAPHY: Inter, weight 300-400 (light). Very large hero text. Tight tracking -0.04em.
+ANIMATIONS:
+- Borders fade in on hover (300ms)
+- Content reveals slowly from darkness
+- Optional: radial-gradient follows cursor position
+- Everything feels heavy, deliberate
 
-LAYOUT: Maximum negative space. py-40 sections. max-w-4xl content. Elements isolated in void.
+The void is the design. Light reveals content on demand.
 
-ANIMATIONS: SLOW and HEAVY. 500-800ms transitions. Fade from darkness. No bouncy effects.
-
-⚠️ CONTENT: Keep ALL content from video. Change ONLY colors (to black/white/gray) and spacing.`, category: "dark" },
+⚠️ MANDATORY: Preserve ALL content from video.`, category: "dark" },
   { id: "dark-cosmos", name: "Dark Cosmos", desc: "Purple/Cyan Glow • Glass • Float", fullDesc: `COSMIC DARK - Space-inspired glass morphism.
 
 COLORS: Deep black #030303 bg. Two corner glows: purple rgba(139,92,246,0.1), cyan rgba(6,182,212,0.08). Text white, muted #9ca3af.
@@ -2611,28 +2662,7 @@ Recording stopped unexpectedly. System crash frozen in time.
   
   // === PREMIUM SAAS LANDING ===
   { id: "molten-aurora", name: "Molten Aurora SaaS", desc: "Volcanic Glow • Dark Glass • Orange Beam", fullDesc: "CRITICAL: Background is solid #0a0a0a black. Add ONE subtle orange/amber radial gradient at bottom center using CSS: background: radial-gradient(ellipse 80% 50% at 50% 100%, rgba(251,146,60,0.15) 0%, transparent 70%). Cards have bg-white/5 backdrop-blur-xl border border-white/10. Orange CTA button. NO overlapping backgrounds, NO multiple gradient layers, keep it minimal and clean.", category: "dark" },
-  { id: "midnight-aurora", name: "Midnight Aurora Fintech", desc: "Purple Glow • Neon Streaks • Blue Accent", fullDesc: `🚨 ABSOLUTE COLOR OVERRIDE - DO NOT USE ANY COLORS FROM VIDEO! 🚨
-
-MANDATORY COLORS (use ONLY these):
-- Background: #050510 (dark blue-black)
-- Text: #F8FAFC (white)
-- Muted: #94A3B8 (gray)
-- Accent 1: #8B5CF6 (purple)
-- Accent 2: #3B82F6 (blue)  
-- Buttons: #8B5CF6 (purple) with white text
-
-STYLE: Dark fintech with purple aurora glow at bottom of page.
-
-BACKGROUND: Add purple/blue glow at bottom:
-background: radial-gradient(ellipse 80% 50% at 50% 100%, rgba(139,92,246,0.15) 0%, transparent 50%), #050510;
-
-CARDS: bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-2xl
-
-TYPOGRAPHY: Inter font, weight 600 headlines, 400 body. Large hero text.
-
-ANIMATIONS: Fade-up on scroll, glow on hover, smooth transitions 300ms.
-
-⚠️ CONTENT: Keep ALL content from video (text, sections, numbers, flow). Change ONLY colors and style.`, category: "dark" },
+  { id: "midnight-aurora", name: "Midnight Aurora Fintech", desc: "Purple Glow • Neon Streaks • Blue Accent", fullDesc: "CRITICAL: Background is solid #050510 dark blue-black. Add ONE subtle purple glow at bottom: background: radial-gradient(ellipse 100% 40% at 50% 100%, rgba(139,92,246,0.12) 0%, transparent 60%). Glass cards with bg-white/5 backdrop-blur-xl. Blue/purple accent colors. NO overlapping elements, clean hierarchy.", category: "dark" },
   { id: "airy-blue-aura", name: "Airy Blue Aura SaaS", desc: "White Void • Blue Blob • Highlight Pill", fullDesc: "White #ffffff background. ONE soft blue blob in hero: div with absolute positioning, w-[600px] h-[400px] bg-blue-400/20 rounded-full blur-[100px]. Clean Inter font. Headline pill highlight uses bg-blue-100 px-3 py-1 rounded-full inline. Indigo CTA.", category: "light" },
   { id: "halftone-beam", name: "Halftone Solar Beam Studio", desc: "Dot Matrix • Grid • Massive Wordmark", fullDesc: "Background #0a0a0a. Hero has ONE orange gradient beam: background: linear-gradient(180deg, transparent 0%, rgba(251,146,60,0.08) 50%, transparent 100%). Massive text-[12vw] font-black headline. Subtle dot pattern overlay at 3% opacity. NO overlapping gradients.", category: "dark" },
   { id: "mono-wave", name: "Monochrome Typographic Wave", desc: "Black White • Marquee Band • Editorial", fullDesc: "Pure black #000 background with white text. ONE horizontal marquee band crossing viewport with continuous scrolling text (CSS animation translateX, 30s linear infinite). Text inside marquee is white, band background can be white with black text. Editorial typography.", category: "creative" },
