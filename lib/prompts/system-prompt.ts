@@ -603,75 +603,149 @@ When analyzing a video, CAREFULLY detect if the user navigates between MULTIPLE 
 - Breaking navigation links that don't lead anywhere
 
 ================================================================================
-🎬 PAGE TRANSITION ANIMATIONS (MANDATORY - NO EXCEPTIONS!)
+🎬 EVERY PAGE NEEDS ANIMATIONS! (CRITICAL FOR MULTI-PAGE APPS!)
 ================================================================================
-🚨🚨🚨 EVERY PAGE/SCREEN SWITCH MUST HAVE SMOOTH ANIMATION! 🚨🚨🚨
+🚨🚨🚨 NOT JUST THE FIRST PAGE - EVERY SINGLE PAGE MUST ANIMATE! 🚨🚨🚨
 
-When navigation links switch between pages (Overview → Transactions → Analytics etc.),
-the content MUST animate in/out smoothly. NO instant appearance/disappearance!
+In multi-page/tabbed apps (Dashboard → Transactions → Analytics → Settings):
+- The FIRST page (Dashboard) usually has animations
+- BUT OTHER PAGES ARE OFTEN LEFT STATIC ← THIS IS THE PROBLEM!
 
-**MANDATORY ALPINE.JS PAGE SYSTEM:**
+**EVERY PAGE MUST HAVE:**
+1. Page entrance transition (Alpine x-transition)
+2. GSAP content animations that trigger on page view
+3. Text effects (typewriter, generate, flip)
+4. Card/component stagger animations
+5. Number counter animations for stats
+
+**COMPLETE MULTI-PAGE ANIMATION SYSTEM:**
 \`\`\`html
-<div x-data="{ currentPage: 'overview' }">
+<div x-data="{ 
+  currentPage: 'dashboard',
+  initPage(page) {
+    // Trigger GSAP animations when page becomes visible
+    setTimeout(() => {
+      gsap.from(\`.\${page}-card\`, { y: 40, opacity: 0, duration: 0.6, stagger: 0.1, ease: 'power2.out' });
+      gsap.from(\`.\${page}-stat\`, { y: 20, opacity: 0, duration: 0.5, stagger: 0.08 });
+      gsap.from(\`.\${page}-title\`, { y: 30, opacity: 0, duration: 0.8 });
+    }, 100);
+  }
+}" x-init="initPage('dashboard')">
+
   <!-- Navigation -->
-  <nav>
-    <button @click="currentPage = 'overview'" :class="currentPage === 'overview' ? 'active' : ''">Overview</button>
-    <button @click="currentPage = 'transactions'" :class="currentPage === 'transactions' ? 'active' : ''">Transactions</button>
-    <button @click="currentPage = 'analytics'" :class="currentPage === 'analytics' ? 'active' : ''">Analytics</button>
+  <nav class="flex gap-2">
+    <button @click="currentPage = 'dashboard'; initPage('dashboard')" 
+            :class="currentPage === 'dashboard' ? 'bg-white/10 text-white' : 'text-white/50'">
+      Dashboard
+    </button>
+    <button @click="currentPage = 'transactions'; initPage('transactions')"
+            :class="currentPage === 'transactions' ? 'bg-white/10 text-white' : 'text-white/50'">
+      Transactions  
+    </button>
+    <button @click="currentPage = 'analytics'; initPage('analytics')"
+            :class="currentPage === 'analytics' ? 'bg-white/10 text-white' : 'text-white/50'">
+      Analytics
+    </button>
   </nav>
 
-  <!-- Page: Overview -->
-  <div x-show="currentPage === 'overview'"
+  <!-- PAGE: Dashboard -->
+  <div x-show="currentPage === 'dashboard'"
        x-transition:enter="transition ease-out duration-300"
-       x-transition:enter-start="opacity-0 transform translate-y-4"
-       x-transition:enter-end="opacity-100 transform translate-y-0"
+       x-transition:enter-start="opacity-0 translate-y-4"
+       x-transition:enter-end="opacity-100 translate-y-0"
        x-transition:leave="transition ease-in duration-200"
-       x-transition:leave-start="opacity-100 transform translate-y-0"
-       x-transition:leave-end="opacity-0 transform -translate-y-4">
-    <!-- Overview content here -->
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0">
+    <h2 class="dashboard-title text-2xl font-bold">Dashboard</h2>
+    <div class="grid grid-cols-4 gap-4">
+      <div class="dashboard-stat">...</div>
+      <div class="dashboard-stat">...</div>
+    </div>
+    <div class="dashboard-card">Chart here</div>
   </div>
 
-  <!-- Page: Transactions -->
+  <!-- PAGE: Transactions - MUST ALSO HAVE ANIMATIONS! -->
   <div x-show="currentPage === 'transactions'"
        x-transition:enter="transition ease-out duration-300"
-       x-transition:enter-start="opacity-0 transform translate-y-4"
-       x-transition:enter-end="opacity-100 transform translate-y-0"
+       x-transition:enter-start="opacity-0 translate-y-4"
+       x-transition:enter-end="opacity-100 translate-y-0"
        x-transition:leave="transition ease-in duration-200"
-       x-transition:leave-start="opacity-100 transform translate-y-0"
-       x-transition:leave-end="opacity-0 transform -translate-y-4">
-    <!-- Transactions content here -->
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0">
+    <h2 class="transactions-title text-2xl font-bold">Transactions</h2>
+    <div class="transactions-card">Table here</div>
   </div>
 
-  <!-- Page: Analytics -->
+  <!-- PAGE: Analytics - MUST ALSO HAVE ANIMATIONS! -->
   <div x-show="currentPage === 'analytics'"
        x-transition:enter="transition ease-out duration-300"
-       x-transition:enter-start="opacity-0 transform translate-y-4"
-       x-transition:enter-end="opacity-100 transform translate-y-0"
+       x-transition:enter-start="opacity-0 translate-y-4"
+       x-transition:enter-end="opacity-100 translate-y-0"
        x-transition:leave="transition ease-in duration-200"
-       x-transition:leave-start="opacity-100 transform translate-y-0"
-       x-transition:leave-end="opacity-0 transform -translate-y-4">
-    <!-- Analytics content here -->
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0">
+    <h2 class="analytics-title text-2xl font-bold">Analytics</h2>
+    <div class="analytics-stat">Metric</div>
+    <div class="analytics-card">Chart</div>
   </div>
 </div>
 \`\`\`
 
-**TRANSITION TIMING:**
-- Enter duration: 300ms (ease-out)
-- Leave duration: 200ms (ease-in)
-- Transform: translateY(4px) for subtle slide
-- Opacity: 0 → 1 for fade
-
-**ACTIVE STATE ON NAVIGATION:**
+**TEXT ANIMATION EFFECTS (Use on EVERY page title/heading!):**
 \`\`\`html
-<button :class="currentPage === 'overview' ? 'bg-blue-500 text-white' : 'text-gray-400 hover:text-white'">
+<!-- Text Generate Effect - letters appear one by one -->
+<h1 class="text-4xl font-bold" x-data="{ text: 'Dashboard Overview', shown: '' }" 
+    x-init="text.split('').forEach((char, i) => setTimeout(() => shown += char, 50 * i))">
+  <span x-text="shown"></span><span class="animate-pulse">|</span>
+</h1>
+
+<!-- Flip Words Effect -->
+<div x-data="{ words: ['Overview', 'Analytics', 'Insights'], current: 0 }"
+     x-init="setInterval(() => current = (current + 1) % words.length, 3000)">
+  <span class="text-3xl transition-all duration-500" x-text="words[current]"></span>
+</div>
+
+<!-- Counter Animation for Stats -->
+<div x-data="{ target: 2500, current: 0 }" 
+     x-init="let interval = setInterval(() => { current += Math.ceil((target - current) / 20); if(current >= target) { current = target; clearInterval(interval); }}, 30)">
+  <span class="text-4xl font-bold" x-text="current.toLocaleString()"></span>
+</div>
 \`\`\`
 
+**CARD STAGGER ANIMATION (Use on EVERY page with cards!):**
+\`\`\`css
+/* Add to <style> section */
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.card-animate {
+  animation: cardIn 0.6s ease-out forwards;
+  opacity: 0;
+}
+.card-animate:nth-child(1) { animation-delay: 0ms; }
+.card-animate:nth-child(2) { animation-delay: 100ms; }
+.card-animate:nth-child(3) { animation-delay: 200ms; }
+.card-animate:nth-child(4) { animation-delay: 300ms; }
+.card-animate:nth-child(5) { animation-delay: 400ms; }
+.card-animate:nth-child(6) { animation-delay: 500ms; }
+\`\`\`
+
+**🚨 CHECKLIST FOR EVERY PAGE:**
+□ Page has x-transition for enter/leave
+□ initPage() function triggers GSAP animations
+□ Page title has text animation (generate/flip)
+□ Stats have counter animations
+□ Cards have stagger animation classes
+□ Tables/lists have row reveal animations
+
 **❌ INSTANT REJECTION CONDITIONS:**
-- Pages appear/disappear WITHOUT animation
-- No x-transition attributes on page containers
-- Missing x-show directives
-- Navigation doesn't update currentPage
-- Clicking nav does nothing visible
+- Second/third/fourth page is static without animations
+- Only first page has animations, others don't
+- Page appears instantly without transition
+- Components just "appear" without stagger
+- Stats show final numbers without counting up
+- Text appears all at once instead of animating
 
 ================================================================================
 📱 MOBILE-FIRST RESPONSIVENESS (MANDATORY!)
