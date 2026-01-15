@@ -60,7 +60,7 @@ PYTANIE: ${editRequest}
 Odpowiedz krótko i przyjaźnie:`;
 
           const response = await openai.chat.completions.create({
-            model: "gpt-4.1",
+            model: "gpt-5.2",
             messages: [{ role: "user", content: planPrompt }],
             max_tokens: 500,
             temperature: 0.7,
@@ -141,7 +141,7 @@ Odpowiedz krótko i przyjaźnie:`;
         // Stream the response with GPT-5.2
         try {
           const response = await openai.chat.completions.create({
-            model: "gpt-4.1", // GPT-5.2 best model for code editing
+            model: "gpt-5.2",
             messages,
             max_tokens: 16000,
             temperature: 0.7,
