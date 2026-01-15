@@ -46,6 +46,76 @@ If you use Unsplash/Pexels, the output will be REJECTED.
 - **ANY OTHER STYLE**: Keep content, REPLACE visual style completely (transformation)
 
 ================================================================================
+🚨🚨🚨 ANIMATION IS MANDATORY ON EVERY PAGE - NO EXCEPTIONS! 🚨🚨🚨
+================================================================================
+**THE #1 PROBLEM: Only first page has animations, other pages are STATIC!**
+
+This is UNACCEPTABLE. In multi-page apps (Dashboard, Transactions, Analytics, Settings):
+- Dashboard page: Has beautiful animations ✅
+- Transactions page: STATIC - components just appear ❌ 
+- Analytics page: STATIC - no entrance effects ❌
+- Settings page: STATIC - boring and lifeless ❌
+
+**FIX: EVERY PAGE MUST HAVE THESE ANIMATIONS:**
+
+1. **PAGE ENTRANCE** - When switching tabs, content fades/slides in:
+\`\`\`html
+x-transition:enter="transition ease-out duration-300"
+x-transition:enter-start="opacity-0 translate-y-4"
+x-transition:enter-end="opacity-100 translate-y-0"
+\`\`\`
+
+2. **TEXT GENERATE EFFECT** - Every page title types out:
+\`\`\`html
+<h1 x-data="{text:'Transactions',shown:''}" 
+    x-init="text.split('').forEach((c,i)=>setTimeout(()=>shown+=c,40*i))">
+  <span x-text="shown"></span><span class="animate-pulse">|</span>
+</h1>
+\`\`\`
+
+3. **COUNTER ANIMATION** - Every stat number counts up:
+\`\`\`html
+<span x-data="{v:0,t:2500}" 
+      x-init="let i=setInterval(()=>{v+=Math.ceil((t-v)/15);if(v>=t){v=t;clearInterval(i)}},25)"
+      x-text="v.toLocaleString()">0</span>
+\`\`\`
+
+4. **CARD STAGGER** - Cards appear one by one with delay:
+\`\`\`css
+.card-stagger { animation: fadeUp 0.5s ease forwards; opacity: 0; }
+.card-stagger:nth-child(1) { animation-delay: 0ms; }
+.card-stagger:nth-child(2) { animation-delay: 80ms; }
+.card-stagger:nth-child(3) { animation-delay: 160ms; }
+.card-stagger:nth-child(4) { animation-delay: 240ms; }
+@keyframes fadeUp { to { opacity: 1; transform: translateY(0); } from { opacity: 0; transform: translateY(20px); } }
+\`\`\`
+
+5. **TABLE ROW REVEAL** - Table rows slide in sequentially:
+\`\`\`css
+.row-reveal { animation: rowIn 0.4s ease forwards; opacity: 0; }
+.row-reveal:nth-child(1) { animation-delay: 50ms; }
+.row-reveal:nth-child(2) { animation-delay: 100ms; }
+/* etc... */
+@keyframes rowIn { to { opacity: 1; transform: translateX(0); } from { opacity: 0; transform: translateX(-10px); } }
+\`\`\`
+
+6. **initPage() FUNCTION** - Trigger animations when page becomes visible:
+\`\`\`javascript
+function initPage(page) {
+  gsap.from(\`.\${page}-card\`, { y: 30, opacity: 0, duration: 0.5, stagger: 0.1 });
+  gsap.from(\`.\${page}-stat\`, { y: 20, opacity: 0, duration: 0.4, stagger: 0.08 });
+  gsap.from(\`.\${page}-row\`, { x: -20, opacity: 0, duration: 0.3, stagger: 0.05 });
+}
+// Call on nav click: @click="currentPage='transactions'; initPage('transactions')"
+\`\`\`
+
+**❌ REJECTION IF ANY PAGE IS STATIC:**
+- Clicking "Transactions" and content just appears = REJECTED
+- Clicking "Analytics" and stats show instantly = REJECTED  
+- Clicking "Settings" and forms appear without animation = REJECTED
+- ANY page without entrance animation = REJECTED
+
+================================================================================
 📋 MANDATORY CONTENT EXTRACTION - ZERO HALLUCINATION POLICY
 ================================================================================
 🚨🚨🚨 **CRITICAL: NO INVENTING CONTENT! NO HALLUCINATIONS!** 🚨🚨🚨
