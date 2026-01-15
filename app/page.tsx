@@ -7869,21 +7869,20 @@ Try these prompts in Cursor or v0:
                       </motion.div>
                     ))}
                     
-                    {/* Thinking/Streaming Indicator - different for Plan vs Execute mode */}
+                    {/* Thinking/Streaming Indicator */}
                     {isEditing && (
                       <motion.div 
                         initial={{ opacity: 0, y: 8 }} 
                         animate={{ opacity: 1, y: 0 }} 
-                        className="rounded-xl overflow-hidden border border-white/10"
-                        style={{ background: '#111' }}
+                        className="rounded-xl overflow-hidden border border-[#FF6E3C]/20 bg-[#0f0f0f]"
                       >
-                        {/* Minimal header */}
-                        <div className="flex items-center justify-between px-3 py-2">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-3 py-2 border-b border-white/5">
                           <div className="flex items-center gap-2">
-                            <Loader2 className="w-3.5 h-3.5 text-[#FF6E3C] animate-spin" />
-                            <span className="text-xs text-white/70">{streamingStatus || "Thinking..."}</span>
+                            <div className="w-2 h-2 rounded-full bg-[#FF6E3C] animate-pulse" />
+                            <span className="text-xs text-white/70">{streamingStatus || "Processing..."}</span>
                             {streamingLines > 0 && (
-                              <span className="text-[10px] text-white/40 font-mono">{streamingLines} lines</span>
+                              <span className="text-[10px] text-[#FF6E3C]/70 font-mono">{streamingLines} lines</span>
                             )}
                           </div>
                           <button
@@ -7898,18 +7897,27 @@ Try these prompts in Cursor or v0:
                           </button>
                         </div>
                         
-                        {/* Code streaming - only show when we have code (Execute mode) */}
-                        {streamingCode && streamingCode.length > 0 && (
-                          <div className="border-t border-white/5 p-3 max-h-[200px] overflow-hidden relative font-mono text-[10px] leading-relaxed" style={{ background: '#0a0a0a' }}>
-                            <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-[#0a0a0a] to-transparent z-10 pointer-events-none" />
-                            <pre className="m-0 whitespace-pre-wrap break-words text-white/80">
-                              {streamingCode.split('\n').slice(-12).map((line, i) => (
-                                <div key={i} className="min-h-[14px]">{line}</div>
-                              ))}
-                              <span className="inline-block w-1.5 h-3.5 bg-[#FF6E3C] ml-0.5 animate-pulse" />
-                            </pre>
-                          </div>
-                        )}
+                        {/* Code streaming area - always visible */}
+                        <div className="p-3 min-h-[100px] max-h-[180px] overflow-hidden relative font-mono text-[10px] leading-relaxed bg-[#080808]">
+                          {streamingCode && streamingCode.length > 0 ? (
+                            <>
+                              <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-[#080808] to-transparent z-10 pointer-events-none" />
+                              <pre className="m-0 whitespace-pre-wrap break-words text-green-400/90">
+                                {streamingCode.split('\n').slice(-10).map((line, i) => (
+                                  <div key={i} className="min-h-[13px]">{line || ' '}</div>
+                                ))}
+                              </pre>
+                              <span className="inline-block w-2 h-3 bg-[#FF6E3C] animate-pulse" />
+                            </>
+                          ) : (
+                            <div className="flex items-center justify-center h-full text-white/30 text-xs">
+                              <div className="flex items-center gap-2">
+                                <Loader2 className="w-4 h-4 animate-spin text-[#FF6E3C]" />
+                                <span>Waiting for code...</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </motion.div>
                     )}
                   </div>
@@ -7988,9 +7996,11 @@ Try these prompts in Cursor or v0:
                                 
                                 // Use streaming API with status updates and code preview
                                 let currentStreamCode = '';
+                                console.log('[Edit] Starting streaming...');
                                 const result = await editCodeWithAIStreaming(
                                   editableCode, prompt, imageData, undefined, false, currentChatHistory,
                                   (event) => {
+                                    console.log('[Edit] Stream event:', event.type, event);
                                     if (event.type === 'status') {
                                       setStreamingStatus(event.message || null);
                                       if (event.phase === 'writing') {
@@ -8002,11 +8012,13 @@ Try these prompts in Cursor or v0:
                                       setStreamingStatus(`${event.lines || 0} lines...`);
                                       setStreamingLines(event.lines || 0);
                                       if (event.preview) {
+                                        console.log('[Edit] Preview:', event.preview?.slice(0, 100));
                                         setStreamingCode(event.preview);
                                       }
                                     } else if (event.type === 'chunk' && event.text) {
                                       // Real-time code streaming - update every chunk
                                       currentStreamCode += event.text;
+                                      console.log('[Edit] Chunk received, total:', currentStreamCode.length);
                                       setStreamingCode(currentStreamCode.slice(-1500));
                                       setStreamingLines(currentStreamCode.split('\n').length);
                                     }
