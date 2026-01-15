@@ -12988,6 +12988,127 @@ export default function GeneratedPage() {
         </>
       )}
 
+      {/* Publish Modal */}
+      {showPublishModal && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200]" 
+            onClick={() => setShowPublishModal(false)}
+          />
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <div 
+              className="w-full max-w-md bg-[#111] border border-white/10 rounded-2xl p-6 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-[#FF6E3C]/20 flex items-center justify-center">
+                    <ExternalLink className="w-6 h-6 text-[#FF6E3C]" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">
+                      {publishedUrl ? "Project Published" : "Publish Project"}
+                    </h3>
+                    <p className="text-xs text-white/50">
+                      {publishedUrl ? "Your project is live!" : "Share with a public link"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowPublishModal(false)}
+                  className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+                >
+                  <X className="w-5 h-5 text-white/60" />
+                </button>
+              </div>
+              
+              {/* URL Display & Copy */}
+              {publishedUrl ? (
+                <div className="space-y-4">
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                    <p className="text-xs text-white/40 mb-2">Public URL</p>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={publishedUrl}
+                        readOnly
+                        className="flex-1 bg-transparent text-white text-sm font-mono truncate outline-none"
+                      />
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(publishedUrl);
+                          showToast("Link copied!", "success");
+                        }}
+                        className="px-3 py-2 rounded-lg bg-[#FF6E3C] text-white text-sm font-medium hover:bg-[#FF8F5C] transition-colors flex items-center gap-2"
+                      >
+                        <Copy className="w-4 h-4" />
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Actions */}
+                  <div className="flex gap-3">
+                    <a
+                      href={publishedUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 py-3 rounded-xl bg-white/5 text-white/80 text-sm font-medium hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Open Link
+                    </a>
+                    <button
+                      onClick={() => handlePublish()}
+                      disabled={isPublishing}
+                      className="flex-1 py-3 rounded-xl bg-[#FF6E3C] text-white text-sm font-medium hover:bg-[#FF8F5C] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {isPublishing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Updating...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="w-4 h-4" />
+                          Update
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-sm text-white/60">
+                    Publish your project to get a shareable link. Anyone with the link can view your creation.
+                  </p>
+                  
+                  <button
+                    onClick={() => handlePublish()}
+                    disabled={isPublishing}
+                    className="w-full py-4 rounded-xl bg-[#FF6E3C] text-white font-semibold hover:bg-[#FF8F5C] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isPublishing ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Publishing...
+                      </>
+                    ) : (
+                      <>
+                        <ExternalLink className="w-5 h-5" />
+                        Publish Now
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Mobile Recording Info Modal - Static, no animations */}
       {showMobileRecordingInfo && (
         <>
