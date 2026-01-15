@@ -385,6 +385,33 @@ function buildEditPrompt(code: string, request: string, dbContext?: string, hasI
     ? `\n\nDATABASE CONTEXT:\n${dbContext}`
     : '';
 
+  // Detect if this is a "Create new page" request (starts with @PageName)
+  const isCreatePageRequest = /^@[a-zA-Z0-9-_]+\s+(create|add|make|build)/i.test(request.trim());
+  const pageNameMatch = request.match(/^@([a-zA-Z0-9-_]+)/);
+  const pageName = pageNameMatch ? pageNameMatch[1].toLowerCase().replace(/[^a-z0-9]+/g, '-') : null;
+
+  // Special instructions for adding new pages
+  const pageCreationInstructions = isCreatePageRequest && pageName ? `
+═══════════════════════════════════════════════════════════════════════════════
+🆕 ADDING NEW PAGE: "${pageName}"
+═══════════════════════════════════════════════════════════════════════════════
+This is a NEW PAGE request. You must:
+1. ADD "${pageName}" to the Alpine.js x-data currentPage options (in the navigation if it exists)
+2. ADD a NEW x-show section: x-show="currentPage === '${pageName}'"
+3. CREATE full content for the "${pageName}" page matching the existing design
+4. ADD a navigation link to access this page (in sidebar/nav)
+5. KEEP ALL EXISTING PAGES INTACT - do NOT regenerate or modify them!
+
+⚠️ CRITICAL: The existing pages (home, dashboard, etc.) must remain EXACTLY as they are!
+Only ADD the new page section and navigation link.
+
+Example structure to ADD (insert before </body>):
+<!-- ═══════ ${pageName.toUpperCase()} PAGE ═══════ -->
+<main x-show="currentPage === '${pageName}'" x-transition ... >
+  ... NEW page content here ...
+</main>
+` : '';
+
   return `You are Replay, an Elite UI Engineering AI specialized in editing production-ready HTML/CSS/Alpine.js code.
 
 🎯 YOUR MISSION: Edit the code according to the user's request while maintaining code quality and functionality.
@@ -400,7 +427,7 @@ ${code}
 📝 USER REQUEST:
 ═══════════════════════════════════════════════════════════════════════════════
 ${request}${imageContext}${dbContextStr}
-
+${pageCreationInstructions}
 ═══════════════════════════════════════════════════════════════════════════════
 ⚠️ CRITICAL OUTPUT RULES (MUST FOLLOW):
 ═══════════════════════════════════════════════════════════════════════════════
@@ -411,6 +438,7 @@ ${request}${imageContext}${dbContextStr}
 5. ✅ Keep all existing pages, navigation, and multi-page structure
 6. ❌ NEVER return partial code, explanations instead of code, or code fragments
 7. ❌ NEVER say "here's the code" without providing full code
+8. ❌ NEVER regenerate existing pages when adding new ones
 
 ═══════════════════════════════════════════════════════════════════════════════
 🛠️ TECHNICAL STANDARDS:
