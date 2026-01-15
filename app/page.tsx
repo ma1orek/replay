@@ -1398,6 +1398,7 @@ function ReplayToolContent() {
     setSidebarMode("chat");
     setSidebarTab("chat");
     setMobilePanel("chat"); // Also switch mobile to chat
+    setGenerationComplete(true); // Mark generation as complete to show chat view
     
     // Generate AI summary message
     const componentCount = (code.match(/<(?:div|section|header|footer|nav|aside|main|article)[^>]*>/gi) || []).length;
@@ -5879,11 +5880,28 @@ Try these prompts in Cursor or v0:
       
       // Use STREAMING for real-time AI output when we have a video blob
       let result;
-      if (flow.videoBlob) {
-        console.log("[Generate] Using STREAMING mode with video blob");
+      let videoBlobToUse = flow.videoBlob;
+      
+      // If blob is empty but we have a URL, fetch the video first
+      if ((!videoBlobToUse || videoBlobToUse.size === 0) && flow.videoUrl) {
+        console.log("[Generate] Blob empty, fetching video from URL:", flow.videoUrl);
+        setStreamingStatus("📥 Loading video from storage...");
+        try {
+          const response = await fetch(flow.videoUrl);
+          if (response.ok) {
+            videoBlobToUse = await response.blob();
+            console.log("[Generate] Fetched video blob, size:", videoBlobToUse.size);
+          }
+        } catch (fetchError) {
+          console.error("[Generate] Failed to fetch video:", fetchError);
+        }
+      }
+      
+      if (videoBlobToUse && videoBlobToUse.size > 0) {
+        console.log("[Generate] Using STREAMING mode with video blob, size:", videoBlobToUse.size);
         try {
           result = await generateWithStreaming(
-            flow.videoBlob,
+            videoBlobToUse,
             fullStyleDirective,
             databaseContextStr || undefined,
             styleReferenceImage || undefined
@@ -10165,13 +10183,14 @@ export default function GeneratedPage() {
                           if (video.currentTime === 0) {
                             video.currentTime = 0.5;
                           }
-                          // Update duration if needed
+                          // Always update duration when we get valid metadata (fixes loaded projects showing wrong duration)
                           if (video.duration && isFinite(video.duration) && video.duration > 0) {
                             const newDuration = Math.round(video.duration);
-                            if (!selectedFlow.duration || !isFinite(selectedFlow.duration) || selectedFlow.duration <= 0) {
+                            // Update if duration changed or was a placeholder (30s default)
+                            if (newDuration !== selectedFlow.duration) {
                               setFlows(prev => prev.map(f => 
                                 f.id === selectedFlow.id 
-                                  ? { ...f, duration: newDuration, trimEnd: newDuration }
+                                  ? { ...f, duration: newDuration, trimEnd: Math.min(f.trimEnd, newDuration), trimStart: Math.min(f.trimStart, newDuration) }
                                   : f
                               ));
                             }

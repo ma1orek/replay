@@ -22,7 +22,7 @@ export async function compressVideo(
     quality?: number;
   } = {}
 ): Promise<CompressedVideo> {
-  const { maxSizeMB = 3, maxWidth = 854, quality = 0.6 } = options;
+  const { maxSizeMB = 4, maxWidth = 1920, quality = 0.8 } = options;
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
   const originalSize = videoBlob.size;
 
@@ -189,7 +189,7 @@ async function extractKeyFrames(
   const frameInterval = duration / numFrames;
 
   const canvas = document.createElement("canvas");
-  const maxWidth = 640;
+  const maxWidth = 1280;
   const aspectRatio = video.videoWidth / video.videoHeight;
   canvas.width = Math.min(video.videoWidth, maxWidth);
   canvas.height = Math.round(canvas.width / aspectRatio);
@@ -244,7 +244,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 /**
  * Quick check if video needs compression
  */
-export function needsCompression(blob: Blob, maxSizeMB: number = 3): boolean {
+export function needsCompression(blob: Blob, maxSizeMB: number = 4): boolean {
   return blob.size > maxSizeMB * 1024 * 1024;
 }
 

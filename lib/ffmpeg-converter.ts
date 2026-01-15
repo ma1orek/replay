@@ -53,16 +53,16 @@ export async function convertToMP4(
   // Convert to MP4 with H.264 codec
   // -c:v libx264 - use H.264 video codec
   // -preset ultrafast - fastest encoding (less compression but quick)
-  // -crf 28 - quality level (lower = better, 28 is good for mobile)
-  // -vf scale=-2:720 - scale to 720p height, auto width (divisible by 2)
+  // -crf 23 - quality level (lower = better, 23 is high quality)
+  // -vf scale=-2:1080 - scale to 1080p height, auto width (divisible by 2)
   // -c:a aac - use AAC audio codec
   // -movflags +faststart - optimize for streaming
   await ff.exec([
     "-i", inputFileName,
     "-c:v", "libx264",
     "-preset", "ultrafast",
-    "-crf", "28",
-    "-vf", "scale=-2:720",
+    "-crf", "23",
+    "-vf", "scale=-2:1080",
     "-c:a", "aac",
     "-b:a", "128k",
     "-movflags", "+faststart",
