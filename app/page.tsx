@@ -9242,34 +9242,36 @@ Try these prompts in Cursor or v0:
                         <div className="relative">
                           <button 
                             onClick={() => {
-                              if (isDemoMode && !user) {
+                              // Demo mode + no user -> Sign up
+                              if (!user) {
                                 setShowAuthModal(true);
-                                showToast("Sign up free to copy code. You get 1 free generation!", "info");
+                                showToast("Sign up free to export code. You get 1 free generation!", "info");
                                 return;
                               }
-                              if (!isPaidPlan) {
-                                setUpgradeFeature("code");
-                                setShowUpgradeModal(true);
-                              } else {
-                                setShowCopyDropdown(!showCopyDropdown);
+                              // User exists but no credits and not paid -> Show starter pack modal
+                              if (!isPaidPlan && userTotalCredits <= 0) {
+                                setShowOutOfCreditsModal(true);
+                                return;
                               }
+                              // User can export (paid OR has credits)
+                              setShowCopyDropdown(!showCopyDropdown);
                             }}
                             className={cn(
                               "flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-colors",
                               agentMode 
                                 ? "bg-[#FF6E3C]/10 text-[#FF6E3C] hover:bg-[#FF6E3C]/20 border border-[#FF6E3C]/30" 
                                 : "text-white/40 hover:text-white/60 hover:bg-white/5",
-                              !isPaidPlan && "opacity-50"
+                              (!user || (!isPaidPlan && userTotalCredits <= 0)) && "opacity-50"
                             )}
                           >
-                            {!isPaidPlan && <Lock className="w-2.5 h-2.5" />}
+                            {(!user || (!isPaidPlan && userTotalCredits <= 0)) && <Lock className="w-2.5 h-2.5" />}
                             <Copy className="w-3 h-3" />
                             <span>Copy for AI</span>
                             <ChevronDown className="w-3 h-3" />
                           </button>
                           
                           {/* Copy Dropdown Menu */}
-                          {showCopyDropdown && isPaidPlan && (
+                          {showCopyDropdown && user && (isPaidPlan || userTotalCredits > 0) && (
                             <>
                               <div 
                                 className="fixed inset-0 z-40" 
@@ -9340,19 +9342,26 @@ Try these prompts in Cursor or v0:
                         
                         <button 
                           onClick={() => {
-                            if (!isPaidPlan) {
-                              setUpgradeFeature("download");
-                              setShowUpgradeModal(true);
-                            } else {
-                              handleDownload();
+                            // No user -> Sign up
+                            if (!user) {
+                              setShowAuthModal(true);
+                              showToast("Sign up free to download code. You get 1 free generation!", "info");
+                              return;
                             }
+                            // No credits and not paid -> Show starter pack modal
+                            if (!isPaidPlan && userTotalCredits <= 0) {
+                              setShowOutOfCreditsModal(true);
+                              return;
+                            }
+                            // Allow download
+                            handleDownload();
                           }}
                           className={cn(
                             "flex items-center gap-1 px-2 py-1 rounded text-[10px] text-white/40 hover:text-white/60 hover:bg-white/5 transition-colors",
-                            !isPaidPlan && "opacity-50"
+                            (!user || (!isPaidPlan && userTotalCredits <= 0)) && "opacity-50"
                           )}
                         >
-                          {!isPaidPlan && <Lock className="w-2.5 h-2.5" />}
+                          {(!user || (!isPaidPlan && userTotalCredits <= 0)) && <Lock className="w-2.5 h-2.5" />}
                           <Download className="w-3 h-3" />
                           <span>Download</span>
                         </button>
@@ -11477,7 +11486,7 @@ export default function GeneratedPage() {
                   </div>
                 )}
                 
-                {/* Code display with syntax highlighting - Paywalled for free users */}
+                {/* Code display with syntax highlighting - Visible for all, export locked */}
                 <div className="flex-1 overflow-auto bg-[#0a0a0a] relative">
                   {generatingFilePath && generatingFilePath === activeFilePath ? (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-3">
@@ -11487,7 +11496,7 @@ export default function GeneratedPage() {
                         <p className="text-[10px] text-white/30 mt-0.5">{activeFilePath.split('/').pop()}</p>
                       </div>
                     </div>
-                  ) : isPaidPlan ? (
+                  ) : (
                     <Highlight 
                       theme={themes.nightOwl} 
                       code={getActiveFileContent()} 
@@ -11511,54 +11520,6 @@ export default function GeneratedPage() {
                         </pre>
                       )}
                     </Highlight>
-                  ) : (
-                    /* FREE USER - Show blurred code with unlock overlay */
-                    <div className="relative h-full">
-                      {/* Blurred background code */}
-                      <div className="blur-[6px] pointer-events-none select-none">
-                        <Highlight 
-                          theme={themes.nightOwl} 
-                          code={getActiveFileContent().slice(0, 1500) + "\n// ... more code ..."} 
-                          language="html"
-                        >
-                          {({ style, tokens, getLineProps, getTokenProps }) => (
-                            <pre className="p-3 text-[10px] leading-relaxed" style={{ ...style, background: "#0a0a0a" }}>
-                              {tokens.slice(0, 30).map((line, i) => (
-                                <div key={i} {...getLineProps({ line })}>
-                                  <span className="inline-block w-6 pr-2 text-right text-white/15 select-none text-[9px]">{i + 1}</span>
-                                  {line.map((token, key) => <span key={key} {...getTokenProps({ token })} />)}
-                                </div>
-                              ))}
-                            </pre>
-                          )}
-                        </Highlight>
-                      </div>
-                      
-                      {/* Unlock overlay */}
-                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/90 to-transparent">
-                        <div className="text-center p-6 max-w-sm">
-                          <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 border border-[#FF6E3C]/20 flex items-center justify-center">
-                            <Lock className="w-6 h-6 text-[#FF6E3C]" />
-                          </div>
-                          <h3 className="text-lg font-bold text-white mb-2">Unlock Source Code</h3>
-                          <p className="text-xs text-white/50 mb-4">Your code is ready. Upgrade to get full access.</p>
-                          <button
-                            onClick={handleUpgradeCheckout}
-                            disabled={isUpgradeCheckingOut}
-                            className="block w-full py-3 rounded-xl bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white text-sm font-semibold text-center disabled:opacity-50"
-                          >
-                            {isUpgradeCheckingOut ? (
-                              <span className="flex items-center justify-center gap-2">
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Processing...
-                              </span>
-                            ) : (
-                              "Upgrade to Pro"
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
                   )}
                 </div>
                 
