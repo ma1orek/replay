@@ -63,20 +63,20 @@ export default function LandingHero() {
   const [loadingDemo, setLoadingDemo] = useState<string | null>(null);
 
   const DEMOS = [
-    { 
-      id: 'dashboard', 
-      src: '/videodashboard.mp4', 
+    {
+      id: 'dashboard',
+      src: '/videodashboard.mp4',
       title: 'SaaS Dashboard',
-      flowId: 'flow_1768470161014_wk9oigfht',
+      flowId: 'flow_1768474261072_uclbwqzdc',
       from: 'Legacy SaaS Dashboard',
       to: 'Modern Analytics Tool',
       tag: 'Visual Refactor'
     },
-    { 
-      id: 'yc', 
-      src: '/yc (1).mp4', 
+    {
+      id: 'yc',
+      src: '/yc (1).mp4',
       title: 'YC Directory',
-      flowId: 'flow_1768436272939_5kj9xzshc',
+      flowId: 'flow_1768470467213_35dvc8tap',
       from: 'YC Directory',
       to: 'Next-Gen Layout',
       tag: 'Style Injection'
@@ -440,7 +440,7 @@ export default function LandingHero() {
             {/* Header */}
             <div className="text-center mb-6 relative">
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/[0.06]">
-                <Sparkles className="w-4 h-4 text-[#FF6E3C]" />
+                <Video className="w-4 h-4 text-[#FF6E3C]" />
                 <span className="text-sm font-medium text-white/80">NO VIDEO?</span>
                 <span className="text-sm text-white/40">Try instant examples</span>
               </span>
