@@ -251,12 +251,6 @@ export default function LandingHero() {
                     }
                   }}
                 >
-                  {/* Animated scan line effect */}
-                  <div className="absolute inset-0 overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
-                    <div className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-[#FF6E3C]/50 to-transparent animate-pulse" style={{ top: '30%' }} />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#FF6E3C]/5 via-transparent to-transparent" />
-                  </div>
-                  
                   {heroFlow.blob && heroFlow.previewUrl ? (
                     <div className="w-full max-w-sm aspect-video rounded-xl overflow-hidden border border-white/10 relative group/video">
                       <video 
@@ -429,7 +423,7 @@ export default function LandingHero() {
               </div>
               
               {/* === INTEGRATED SEPARATOR === */}
-              <div className="relative py-3">
+              <div className="relative py-5">
                 <div className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                 <div className="flex items-center justify-center">
                   <span className="flex items-center gap-2 text-sm bg-[#0a0a0a] px-4 relative z-10">
