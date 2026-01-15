@@ -109,6 +109,131 @@ function initPage(page) {
 // Call on nav click: @click="currentPage='transactions'; initPage('transactions')"
 \`\`\`
 
+================================================================================
+🎭 EVERY SECTION MUST LIVE - ANIMATION LIBRARY (Aceternity + Magic UI inspired)
+================================================================================
+
+**THE PAGE MUST BREATHE! NO STATIC ELEMENTS!**
+
+📝 **TEXT ANIMATIONS** (pick different ones for variety):
+
+1. **Text Generate Effect** - Letters appear one by one:
+\`\`\`html
+<h1 x-data="{text:'Welcome',shown:'',i:0}" 
+    x-init="setInterval(()=>{if(i<text.length){shown+=text[i];i++}},50)">
+  <span x-text="shown" class="bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent"></span>
+  <span class="animate-pulse text-blue-500">|</span>
+</h1>
+\`\`\`
+
+2. **Blur Fade In** - Text fades in with blur:
+\`\`\`css
+.blur-fade { animation: blurFade 0.8s ease forwards; }
+@keyframes blurFade {
+  from { opacity: 0; filter: blur(10px); transform: translateY(20px); }
+  to { opacity: 1; filter: blur(0); transform: translateY(0); }
+}
+\`\`\`
+
+3. **Word Rotate / Flip Words** - Cycling words:
+\`\`\`html
+<span x-data="{words:['Fast','Smart','Easy'],i:0}" 
+      x-init="setInterval(()=>i=(i+1)%words.length,2000)"
+      x-text="words[i]" 
+      x-transition:enter="transition ease-out duration-300"
+      class="text-blue-500"></span>
+\`\`\`
+
+4. **Scramble/Decrypt Effect** - Text scrambles before revealing:
+\`\`\`html
+<span x-data="{final:'Hello',shown:'',chars:'ABCDEF123',i:0}"
+      x-init="setInterval(()=>{if(i<final.length){shown=final.slice(0,i)+chars[Math.floor(Math.random()*chars.length)];setTimeout(()=>{shown=final.slice(0,i+1);i++},100)}},80)">
+  <span x-text="shown" class="font-mono"></span>
+</span>
+\`\`\`
+
+🎴 **SECTION/CARD ANIMATIONS**:
+
+1. **Stagger Fade Up** (for card grids):
+\`\`\`css
+.stagger-item { opacity: 0; animation: staggerUp 0.6s ease forwards; }
+.stagger-item:nth-child(1) { animation-delay: 0s; }
+.stagger-item:nth-child(2) { animation-delay: 0.1s; }
+.stagger-item:nth-child(3) { animation-delay: 0.2s; }
+.stagger-item:nth-child(4) { animation-delay: 0.3s; }
+.stagger-item:nth-child(5) { animation-delay: 0.4s; }
+.stagger-item:nth-child(6) { animation-delay: 0.5s; }
+@keyframes staggerUp {
+  from { opacity: 0; transform: translateY(30px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+\`\`\`
+
+2. **Blur Scale In** (for hero sections):
+\`\`\`css
+.blur-scale { animation: blurScale 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@keyframes blurScale {
+  from { opacity: 0; filter: blur(20px); transform: scale(0.9); }
+  to { opacity: 1; filter: blur(0); transform: scale(1); }
+}
+\`\`\`
+
+3. **Slide In From Side** (for sidebars, lists):
+\`\`\`css
+.slide-in { animation: slideIn 0.5s ease forwards; opacity: 0; }
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+\`\`\`
+
+🔢 **NUMBER/STAT ANIMATIONS**:
+
+1. **Count Up with Easing**:
+\`\`\`html
+<span x-data="{v:0,target:12500,duration:2000,start:Date.now()}"
+      x-init="(function tick(){const p=Math.min((Date.now()-start)/duration,1);v=Math.floor(target*p*p*(3-2*p));if(p<1)requestAnimationFrame(tick)})();"
+      x-text="'$'+v.toLocaleString()">$0</span>
+\`\`\`
+
+🌊 **SCROLL-TRIGGERED ANIMATIONS** (IntersectionObserver):
+
+\`\`\`html
+<div x-data="{visible:false}" 
+     x-intersect:enter="visible=true"
+     :class="visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'"
+     class="transition-all duration-700 ease-out">
+  <!-- Content appears when scrolled into view -->
+</div>
+\`\`\`
+
+🎨 **HOVER MICRO-INTERACTIONS**:
+
+\`\`\`css
+/* Card lift on hover */
+.hover-lift { transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.hover-lift:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+
+/* Glow pulse on hover */
+.hover-glow:hover { box-shadow: 0 0 30px rgba(99,102,241,0.4); }
+
+/* Border gradient animation */
+.border-animate { background: linear-gradient(90deg, #3b82f6, #8b5cf6, #3b82f6); background-size: 200%; animation: borderShift 3s linear infinite; }
+@keyframes borderShift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+\`\`\`
+
+⚠️ **MANDATORY ANIMATION CHECKLIST FOR EVERY PAGE:**
+□ Hero text has typing/generate effect
+□ Stats have counter animations
+□ Cards have stagger fade-in
+□ Sections have scroll-triggered reveal
+□ Buttons have hover effects
+□ Images have blur-scale entrance
+□ Tables have row-by-row reveal
+□ Navigation items have stagger animation
+□ Loading states have skeleton pulse
+\`\`\`
+
 **❌ REJECTION IF ANY PAGE IS STATIC:**
 - Clicking "Transactions" and content just appears = REJECTED
 - Clicking "Analytics" and stats show instantly = REJECTED  
