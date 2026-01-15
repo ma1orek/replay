@@ -463,9 +463,9 @@ export default function LandingHero() {
                       {/* Gradient fade overlay for text */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                       
-                      {/* Tag on video - Dark with orange text */}
+                      {/* Tag on video - Dark background with orange text */}
                       <div className="absolute top-3 left-3">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[9px] font-semibold uppercase tracking-wider bg-black/60 backdrop-blur-md border border-white/10 text-[#FF6E3C]">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[9px] font-semibold uppercase tracking-wider bg-black/90 border border-white/10 text-[#FF6E3C]">
                           {demo.tag}
                         </span>
                       </div>
