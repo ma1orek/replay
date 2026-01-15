@@ -10676,7 +10676,8 @@ export default function GeneratedPage() {
         )}
       </AnimatePresence>
       
-      {/* Mobile Bottom Navigation - 72px height, proper touch targets */}
+      {/* Mobile Bottom Navigation - 72px height, proper touch targets - HIDE in demo mode */}
+      {!isDemoMode && (
       <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-white/10 bg-[#0a0a0a] safe-area-pb" style={{ height: '72px' }}>
         <div className="flex items-center justify-around h-full px-1">
           {/* Show Chat tab when we have generated code, otherwise show Input */}
@@ -10749,6 +10750,7 @@ export default function GeneratedPage() {
           </button>
         </div>
       </div>
+      )}
       
       {/* Mobile History - Full Screen Overlay - Static */}
       {showHistoryMode && (
@@ -11272,50 +11274,69 @@ export default function GeneratedPage() {
       
       {/* Mobile Preview Panel - Static */}
       {mobilePanel === "preview" && !showHistoryMode && !showMobileMenu && (
-          <div className="fixed inset-x-0 bottom-[72px] top-0 z-30 md:hidden bg-[#0a0a0a] flex flex-col">
-            {/* Unified Mobile Header */}
-            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
-              <a href="/" className="flex-shrink-0 p-1.5 -ml-1.5">
-                <LogoIcon className="w-6 h-6" color="#FF6E3C" />
-              </a>
-              <input
-                type="text"
-                value={generationTitle}
-                onChange={(e) => setGenerationTitle(e.target.value)}
-                onBlur={() => {
-                  if (activeGeneration) {
-                    const updated = { ...activeGeneration, title: generationTitle };
-                    setActiveGeneration(updated);
-                    setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updated : g));
-                  }
-                }}
-                className="flex-1 min-w-0 text-sm font-medium text-white/80 bg-transparent focus:outline-none truncate"
-                placeholder="Untitled"
-              />
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
-                  <Plus className="w-5 h-5 text-white/50" />
-                </button>
-                <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Your Projects">
-                  <History className="w-5 h-5 text-white/50" />
-                </button>
-                <button onClick={() => setShowProjectSettings(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Settings">
-                  <Settings className="w-5 h-5 text-white/50" />
-                </button>
-                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="px-3 py-2 rounded-xl hover:bg-white/5 active:bg-white/10 min-h-[44px] flex items-center justify-center">
-                  {user ? (
-                    <span className={cn(
-                      "text-xs font-semibold uppercase",
-                      isPaidPlan ? "text-[#FF6E3C]" : "text-white/50"
-                    )}>
-                      {isPaidPlan ? (membership?.plan === "agency" ? "Agency" : "Pro") : "Free"}
-                    </span>
-                  ) : (
-                    <User className="w-5 h-5 text-white/50" />
-                  )}
+          <div className={cn(
+            "fixed inset-x-0 top-0 z-30 md:hidden bg-[#0a0a0a] flex flex-col",
+            isDemoMode ? "bottom-0" : "bottom-[72px]"
+          )}>
+            {/* Demo Mode Header - Simplified */}
+            {isDemoMode ? (
+              <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
+                <a href="/" className="flex items-center gap-2">
+                  <LogoIcon className="w-6 h-6" color="#FF6E3C" />
+                  <span className="text-sm font-semibold text-white/80">Replay Demo</span>
+                </a>
+                <button 
+                  onClick={() => setShowAuthModal(true)}
+                  className="px-4 py-2 rounded-lg bg-[#FF6E3C] text-white text-sm font-semibold"
+                >
+                  Try Free
                 </button>
               </div>
-            </div>
+            ) : (
+              /* Regular Mobile Header */
+              <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
+                <a href="/" className="flex-shrink-0 p-1.5 -ml-1.5">
+                  <LogoIcon className="w-6 h-6" color="#FF6E3C" />
+                </a>
+                <input
+                  type="text"
+                  value={generationTitle}
+                  onChange={(e) => setGenerationTitle(e.target.value)}
+                  onBlur={() => {
+                    if (activeGeneration) {
+                      const updated = { ...activeGeneration, title: generationTitle };
+                      setActiveGeneration(updated);
+                      setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updated : g));
+                    }
+                  }}
+                  className="flex-1 min-w-0 text-sm font-medium text-white/80 bg-transparent focus:outline-none truncate"
+                  placeholder="Untitled"
+                />
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
+                    <Plus className="w-5 h-5 text-white/50" />
+                  </button>
+                  <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Your Projects">
+                    <History className="w-5 h-5 text-white/50" />
+                  </button>
+                  <button onClick={() => setShowProjectSettings(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Settings">
+                    <Settings className="w-5 h-5 text-white/50" />
+                  </button>
+                  <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="px-3 py-2 rounded-xl hover:bg-white/5 active:bg-white/10 min-h-[44px] flex items-center justify-center">
+                    {user ? (
+                      <span className={cn(
+                        "text-xs font-semibold uppercase",
+                        isPaidPlan ? "text-[#FF6E3C]" : "text-white/50"
+                      )}>
+                        {isPaidPlan ? (membership?.plan === "agency" ? "Agency" : "Pro") : "Free"}
+                      </span>
+                    ) : (
+                      <User className="w-5 h-5 text-white/50" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
             
             {/* Content */}
             <div className="flex-1 overflow-hidden">
@@ -11347,6 +11368,29 @@ export default function GeneratedPage() {
                 </div>
               )}
             </div>
+            
+            {/* Demo Mode Bottom Banner */}
+            {isDemoMode && previewUrl && (
+              <div className="flex-shrink-0 p-4 border-t border-white/5 bg-gradient-to-t from-black to-transparent">
+                <div className="bg-white/[0.03] border border-white/10 rounded-xl p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-[#FF6E3C]/10 flex items-center justify-center flex-shrink-0">
+                      <Monitor className="w-5 h-5 text-[#FF6E3C]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-white">View full project on desktop</p>
+                      <p className="text-xs text-white/50 mt-0.5">Code, Flow Map, Design System & Edit with AI available on larger screens</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setShowAuthModal(true)}
+                    className="w-full mt-3 py-3 rounded-lg bg-[#FF6E3C] text-white text-sm font-semibold"
+                  >
+                    Sign up free to create your own
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
       )}
       
