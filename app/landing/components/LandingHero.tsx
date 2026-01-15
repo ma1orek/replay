@@ -216,274 +216,286 @@ export default function LandingHero() {
         className="relative w-full max-w-3xl mx-auto z-10 pb-8"
       >
         <div className="relative max-w-3xl mx-auto">
-          {/* Unified Glass Stack - Everything in one container */}
-          <GlowCard className="p-2 overflow-hidden" glowColor="orange" customSize>
+          
+          {/* THE UNIFIED MASTER CONSOLE */}
+          <div className="relative">
+            {/* Ambient glow behind the console */}
+            <div className="absolute -inset-4 bg-gradient-to-b from-[#FF6E3C]/5 via-[#FF6E3C]/3 to-transparent rounded-[40px] blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2/3 h-32 bg-[#FF6E3C]/10 blur-[80px] pointer-events-none" />
             
-            {/* Main Upload Panel - Premium Dark Design */}
-            <div className="rounded-2xl bg-gradient-to-b from-white/[0.03] to-transparent backdrop-blur-sm p-5 md:p-6 pb-4 md:pb-5 flex flex-col gap-3 overflow-hidden w-full max-w-full box-border">
+            {/* Main Console Container - Premium Glassmorphism */}
+            <div className="relative rounded-3xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] via-white/[0.02] to-black/40 backdrop-blur-xl shadow-2xl shadow-black/50 overflow-hidden">
               
-              {/* 1. DROPZONE - Compact */}
-              <div
-                className={cn(
-                  "relative rounded-xl bg-black/40 py-8 px-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all duration-300 group overflow-hidden",
-                  isDragging && "bg-[#FF6E3C]/5"
-                )}
-                onClick={onBrowse}
-                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setIsDragging(false);
-                  const file = e.dataTransfer.files?.[0];
-                  if (file) {
-                    setSelectedDemo(null);
-                    onFile(file);
-                  }
-                }}
-              >
-                {/* Subtle glow effect on hover */}
-                <div className={cn(
-                  "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none",
-                  isDragging && "opacity-100"
-                )}>
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#FF6E3C]/5 via-transparent to-transparent" />
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-gradient-to-r from-transparent via-[#FF6E3C]/30 to-transparent" />
-                </div>
+              {/* Inner highlight edge */}
+              <div className="absolute inset-[1px] rounded-[23px] border border-white/[0.05] pointer-events-none" />
+              
+              {/* === UPPER SECTION: Upload Panel === */}
+              <div className="p-5 md:p-6 pb-0">
                 
-                {heroFlow.blob && heroFlow.previewUrl ? (
-                  <div className="w-full max-w-sm aspect-video rounded-lg overflow-hidden border border-white/10 relative group/video">
-                    <video 
-                      src={heroFlow.previewUrl} 
-                      className="w-full h-full object-cover"
-                      muted
-                      playsInline
-                    />
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/video:opacity-100 transition-opacity">
-                      <p className="text-white text-sm font-medium">Click to replace</p>
-                    </div>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setHeroFlow({ blob: null, name: "", previewUrl: null });
-                      }}
-                      className="absolute top-2 right-2 p-1.5 bg-black/70 hover:bg-red-500/80 rounded-md text-white transition-colors"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                    </button>
+                {/* DROPZONE */}
+                <div
+                  className={cn(
+                    "relative rounded-2xl bg-black/50 border border-white/[0.06] py-8 px-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all duration-300 group overflow-hidden",
+                    isDragging && "border-[#FF6E3C]/40 bg-[#FF6E3C]/5"
+                  )}
+                  onClick={onBrowse}
+                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDragging(false);
+                    const file = e.dataTransfer.files?.[0];
+                    if (file) {
+                      setSelectedDemo(null);
+                      onFile(file);
+                    }
+                  }}
+                >
+                  {/* Animated scan line effect */}
+                  <div className="absolute inset-0 overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+                    <div className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-[#FF6E3C]/50 to-transparent animate-pulse" style={{ top: '30%' }} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#FF6E3C]/5 via-transparent to-transparent" />
                   </div>
-                ) : isMobile ? (
-                  /* MOBILE: Clean two options - NO frame */
-                  <div className="w-full flex gap-3">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); startMobileCamera(); }}
-                      className="flex-1 flex flex-col items-center justify-center py-8 rounded-xl bg-[#FF6E3C]/5 border border-[#FF6E3C]/20 active:bg-[#FF6E3C]/10 transition-colors"
-                    >
-                      <div className="w-14 h-14 rounded-2xl bg-[#FF6E3C]/10 flex items-center justify-center mb-2.5">
-                        <Camera className="w-7 h-7 text-[#FF6E3C]" />
+                  
+                  {heroFlow.blob && heroFlow.previewUrl ? (
+                    <div className="w-full max-w-sm aspect-video rounded-xl overflow-hidden border border-white/10 relative group/video">
+                      <video 
+                        src={heroFlow.previewUrl} 
+                        className="w-full h-full object-cover"
+                        muted
+                        playsInline
+                      />
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/video:opacity-100 transition-opacity">
+                        <p className="text-white text-sm font-medium">Click to replace</p>
                       </div>
-                      <span className="text-white/90 font-semibold text-sm">Record</span>
-                      <span className="text-white/40 text-[11px] mt-0.5">Any video</span>
-                    </button>
-                    
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onBrowse(); }}
-                      className="flex-1 flex flex-col items-center justify-center py-8 rounded-xl bg-white/[0.02] border border-white/10 active:bg-white/5 transition-colors"
-                    >
-                      <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center mb-2.5">
-                        <Upload className="w-7 h-7 text-white/60" />
-                      </div>
-                      <span className="text-white/90 font-semibold text-sm">Upload</span>
-                      <span className="text-white/40 text-[11px] mt-0.5">Recording</span>
-                    </button>
-                  </div>
-                ) : (
-                  /* DESKTOP: Bigger drop zone layout */
-                  <>
-                    <div className="w-16 h-16 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
-                      <Upload className="w-7 h-7 text-white/50" />
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setHeroFlow({ blob: null, name: "", previewUrl: null });
+                        }}
+                        className="absolute top-2 right-2 p-1.5 bg-black/70 hover:bg-red-500/80 rounded-md text-white transition-colors"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                      </button>
                     </div>
-                    <div className="text-center">
-                      <p className="text-lg font-semibold text-white/90">Drop video here</p>
-                      <p className="text-sm text-white/50 mt-1">or click to browse</p>
-                    </div>
-                    
-                    <div className="flex items-center gap-3 mt-2">
+                  ) : isMobile ? (
+                    <div className="w-full flex gap-3">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); startMobileCamera(); }}
+                        className="flex-1 flex flex-col items-center justify-center py-8 rounded-xl bg-[#FF6E3C]/5 border border-[#FF6E3C]/20 active:bg-[#FF6E3C]/10 transition-colors"
+                      >
+                        <div className="w-14 h-14 rounded-2xl bg-[#FF6E3C]/10 flex items-center justify-center mb-2.5">
+                          <Camera className="w-7 h-7 text-[#FF6E3C]" />
+                        </div>
+                        <span className="text-white/90 font-semibold text-sm">Record</span>
+                        <span className="text-white/40 text-[11px] mt-0.5">Any video</span>
+                      </button>
+                      
                       <button
                         onClick={(e) => { e.stopPropagation(); onBrowse(); }}
-                        className="px-5 py-2.5 rounded-lg text-sm font-medium bg-white/[0.04] text-white/70 hover:bg-white/[0.08] hover:text-white transition-all flex items-center gap-2 border border-white/[0.08]"
+                        className="flex-1 flex flex-col items-center justify-center py-8 rounded-xl bg-white/[0.02] border border-white/10 active:bg-white/5 transition-colors"
                       >
-                        <Upload className="w-4 h-4" />
-                        Upload
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); isRecording ? stopRecording() : startRecording(); }}
-                        className={cn(
-                          "px-5 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border",
-                          isRecording 
-                            ? "bg-red-500/10 border-red-500/30 text-red-400" 
-                            : "bg-white/[0.04] border-white/[0.08] text-white/70 hover:bg-white/[0.08] hover:text-white"
-                        )}
-                      >
-                        <div className={cn("w-2 h-2 rounded-full bg-red-500", isRecording && "animate-pulse")} />
-                        {isRecording ? "Stop" : "Record"}
+                        <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center mb-2.5">
+                          <Upload className="w-7 h-7 text-white/60" />
+                        </div>
+                        <span className="text-white/90 font-semibold text-sm">Upload</span>
+                        <span className="text-white/40 text-[11px] mt-0.5">Recording</span>
                       </button>
                     </div>
-                  </>
-                )}
-              </div>
-              
-              {/* 2. CONFIGURATION - Simple text link */}
-              <button 
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className="w-full py-1.5 flex items-center justify-center gap-1.5 text-white/40 hover:text-white/60 transition-colors text-xs"
-              >
-                <Settings className="w-3 h-3" />
-                <span>Configuration & Context</span>
-                <ChevronDown className={cn(
-                  "w-3 h-3 transition-transform duration-300",
-                  showAdvanced && "rotate-180"
-                )} />
-              </button>
-              
-              <AnimatePresence>
-                {showAdvanced && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.25, ease: "easeInOut" }}
-                    className="overflow-hidden w-full"
-                    style={{ maxWidth: '100%' }}
-                  >
-                    <div className="p-4 bg-black/30 rounded-xl border border-white/[0.06] space-y-4 mb-3 overflow-hidden w-full box-border">
-                      {/* Context Input */}
-                      <div className="w-full overflow-hidden">
-                        <label className="flex items-center gap-2 text-xs text-white/50 mb-2">
-                          <Sparkles className="w-3.5 h-3.5" />
-                          CONTEXT
-                        </label>
-                        <textarea
-                          value={context}
-                          onChange={(e) => setContext(e.target.value)}
-                          placeholder="Add data logic, constraints or details. Replay works without it — context just sharpens the result (optional)"
-                          rows={3}
-                          className="w-full max-w-full px-4 py-3 rounded-xl bg-[#0A0A0A] border border-white/[0.08] text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-white/15 transition-colors resize-none box-border"
-                        />
+                  ) : (
+                    <>
+                      <div className="w-16 h-16 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
+                        <Upload className="w-7 h-7 text-white/50" />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-lg font-semibold text-white/90">Drop video here</p>
+                        <p className="text-sm text-white/50 mt-1">or click to browse</p>
                       </div>
                       
-                      {/* Style Dropdown */}
-                      <div className="w-full overflow-hidden">
-                        <label className="flex items-center gap-2 text-xs text-white/50 mb-2">
-                          <Palette className="w-3.5 h-3.5" />
-                          STYLE
-                        </label>
-                        <StyleInjector
-                          value={styleDirective}
-                          onChange={setStyleDirective}
-                          onReferenceImageChange={setStyleReferenceImage}
-                        />
+                      <div className="flex items-center gap-3 mt-2">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onBrowse(); }}
+                          className="px-5 py-2.5 rounded-lg text-sm font-medium bg-white/[0.04] text-white/70 hover:bg-white/[0.08] hover:text-white transition-all flex items-center gap-2 border border-white/[0.08]"
+                        >
+                          <Upload className="w-4 h-4" />
+                          Upload
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); isRecording ? stopRecording() : startRecording(); }}
+                          className={cn(
+                            "px-5 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border",
+                            isRecording 
+                              ? "bg-red-500/10 border-red-500/30 text-red-400" 
+                              : "bg-white/[0.04] border-white/[0.08] text-white/70 hover:bg-white/[0.08] hover:text-white"
+                          )}
+                        >
+                          <div className={cn("w-2 h-2 rounded-full bg-red-500", isRecording && "animate-pulse")} />
+                          {isRecording ? "Stop" : "Record"}
+                        </button>
                       </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* 3. RECONSTRUCT BUTTON - Premium with Glow */}
-              <div className="relative mt-1">
-                {/* Animated glow under button */}
-                {heroFlow.blob && (
-                  <div className="absolute -inset-1 bg-gradient-to-r from-[#FF6E3C] to-[#FF8C5C] rounded-xl blur-lg opacity-40 group-hover:opacity-60 animate-pulse" />
-                )}
-                <button
-                  onClick={onSend}
-                  disabled={!heroFlow.blob}
-                  className={cn(
-                    "relative w-full h-14 rounded-xl font-semibold text-base transition-all duration-200",
-                    heroFlow.blob 
-                      ? "bg-[#FF6E3C] text-white hover:bg-[#FF7E4C] active:scale-[0.98] shadow-lg shadow-[#FF6E3C]/20"
-                      : "bg-white/[0.03] border border-white/10 text-white/30 cursor-not-allowed"
+                    </>
                   )}
+                </div>
+                
+                {/* CONFIGURATION */}
+                <button 
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className="w-full py-2.5 flex items-center justify-center gap-1.5 text-white/40 hover:text-white/60 transition-colors text-xs"
                 >
-                  <span className="relative flex items-center justify-center gap-2.5">
-                    {/* Replay Logo - Outline version */}
-                    <svg width="18" height="22" viewBox="0 0 82 109" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M68.099 37.2285C78.1678 43.042 78.168 57.5753 68.099 63.3887L29.5092 85.668C15.6602 93.6633 0.510418 77.4704 9.40857 64.1836L17.4017 52.248C18.1877 51.0745 18.1876 49.5427 17.4017 48.3691L9.40857 36.4336C0.509989 23.1467 15.6602 6.95306 29.5092 14.9482L68.099 37.2285Z" stroke="currentColor" strokeWidth="8" strokeLinejoin="round"/>
-                      <rect x="34.054" y="98.6841" width="48.6555" height="11.6182" rx="5.80909" transform="rotate(-30 34.054 98.6841)" fill="currentColor"/>
-                    </svg>
-                    Reconstruct
-                  </span>
+                  <Settings className="w-3 h-3" />
+                  <span>Configuration & Context</span>
+                  <ChevronDown className={cn("w-3 h-3 transition-transform duration-300", showAdvanced && "rotate-180")} />
                 </button>
+                
+                <AnimatePresence>
+                  {showAdvanced && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      className="overflow-hidden w-full"
+                    >
+                      <div className="p-4 bg-black/30 rounded-xl border border-white/[0.06] space-y-4 mb-3">
+                        <div className="w-full">
+                          <label className="flex items-center gap-2 text-xs text-white/50 mb-2">
+                            <Sparkles className="w-3.5 h-3.5" />
+                            CONTEXT
+                          </label>
+                          <textarea
+                            value={context}
+                            onChange={(e) => setContext(e.target.value)}
+                            placeholder="Add data logic, constraints or details. Replay works without it — context just sharpens the result (optional)"
+                            rows={3}
+                            className="w-full px-4 py-3 rounded-xl bg-[#0A0A0A] border border-white/[0.08] text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-white/15 transition-colors resize-none"
+                          />
+                        </div>
+                        
+                        <div className="w-full">
+                          <label className="flex items-center gap-2 text-xs text-white/50 mb-2">
+                            <Palette className="w-3.5 h-3.5" />
+                            STYLE
+                          </label>
+                          <StyleInjector
+                            value={styleDirective}
+                            onChange={setStyleDirective}
+                            onReferenceImageChange={setStyleReferenceImage}
+                          />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* RECONSTRUCT BUTTON */}
+                <div className="relative pb-5">
+                  {heroFlow.blob && (
+                    <div className="absolute -inset-1 bg-gradient-to-r from-[#FF6E3C] to-[#FF8C5C] rounded-xl blur-lg opacity-40 animate-pulse" />
+                  )}
+                  <button
+                    onClick={onSend}
+                    disabled={!heroFlow.blob}
+                    className={cn(
+                      "relative w-full h-14 rounded-xl font-semibold text-base transition-all duration-200",
+                      heroFlow.blob 
+                        ? "bg-[#FF6E3C] text-white hover:bg-[#FF7E4C] active:scale-[0.98] shadow-lg shadow-[#FF6E3C]/20"
+                        : "bg-white/[0.03] border border-white/10 text-white/30 cursor-not-allowed"
+                    )}
+                  >
+                    <span className="relative flex items-center justify-center gap-2.5">
+                      <svg width="18" height="22" viewBox="0 0 82 109" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M68.099 37.2285C78.1678 43.042 78.168 57.5753 68.099 63.3887L29.5092 85.668C15.6602 93.6633 0.510418 77.4704 9.40857 64.1836L17.4017 52.248C18.1877 51.0745 18.1876 49.5427 17.4017 48.3691L9.40857 36.4336C0.509989 23.1467 15.6602 6.95306 29.5092 14.9482L68.099 37.2285Z" stroke="currentColor" strokeWidth="8" strokeLinejoin="round"/>
+                        <rect x="34.054" y="98.6841" width="48.6555" height="11.6182" rx="5.80909" transform="rotate(-30 34.054 98.6841)" fill="currentColor"/>
+                      </svg>
+                      Reconstruct
+                    </span>
+                  </button>
+                </div>
+                
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="video/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) {
+                      setSelectedDemo(null);
+                      onFile(f);
+                    }
+                    e.currentTarget.value = "";
+                  }}
+                />
               </div>
               
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="video/*"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) {
-                    setSelectedDemo(null);
-                    onFile(f);
-                  }
-                  e.currentTarget.value = "";
-                }}
-              />
-              
-              {/* Separator - No Video section inside the card */}
-              <div className="flex items-center gap-3 pt-2">
-                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-                <span className="flex items-center gap-2 text-xs text-white/40">
-                  <Video className="w-3.5 h-3.5 text-[#FF6E3C]" />
-                  NO VIDEO? Try examples
-                </span>
-                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+              {/* === INTEGRATED SEPARATOR === */}
+              <div className="relative">
+                <div className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                <div className="flex items-center justify-center py-3">
+                  <span className="flex items-center gap-2 text-xs text-white/40 bg-[#0a0a0a] px-4 relative z-10">
+                    <Video className="w-3.5 h-3.5 text-[#FF6E3C]" />
+                    NO VIDEO? Try examples
+                  </span>
+                </div>
               </div>
               
-              {/* Demo boxes with video previews - integrated */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {DEMOS.map((demo) => (
+              {/* === LOWER SECTION: Seamless Demo Grid === */}
+              <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/[0.06]">
+                {DEMOS.map((demo, index) => (
                   <button
                     key={demo.id}
                     onClick={() => handleDemoSelect(demo)}
                     disabled={loadingDemo === demo.id}
                     className={cn(
-                      "group relative rounded-xl border transition-all duration-300 text-left overflow-hidden",
-                      selectedDemo === demo.id 
-                        ? "border-[#FF6E3C]/50" 
-                        : "border-white/[0.06] hover:border-white/20"
+                      "group relative text-left transition-all duration-300 overflow-hidden",
+                      "hover:bg-white/[0.02]",
+                      selectedDemo === demo.id && "bg-[#FF6E3C]/5"
                     )}
                   >
+                    {/* Cinematic hover glow */}
+                    <div className={cn(
+                      "absolute inset-x-0 -bottom-4 h-20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none blur-2xl",
+                      index === 0 && "bg-cyan-500/20",
+                      index === 1 && "bg-[#FF6E3C]/20",
+                      index === 2 && "bg-purple-500/20"
+                    )} />
+                    
                     {/* Video preview with fade overlay */}
-                    <div className="relative aspect-video w-full overflow-hidden rounded-t-xl">
+                    <div className="relative aspect-[16/10] w-full overflow-hidden">
                       <video 
                         src={demo.src}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         muted
                         loop
                         playsInline
                         autoPlay
                       />
                       {/* Gradient fade overlay for text */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                       
                       {/* Tag on video */}
-                      <div className="absolute top-2 left-2">
+                      <div className="absolute top-3 left-3">
                         <span className={cn(
-                          "inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-medium uppercase tracking-wider backdrop-blur-sm",
-                          selectedDemo === demo.id 
-                            ? "bg-[#FF6E3C]/80 text-white"
-                            : "bg-black/60 text-white/70"
+                          "inline-flex items-center gap-1 px-2 py-1 rounded-md text-[9px] font-semibold uppercase tracking-wider transition-all duration-300",
+                          "backdrop-blur-md border",
+                          index === 0 && "bg-cyan-500/20 border-cyan-500/30 text-cyan-300 group-hover:bg-cyan-500/30",
+                          index === 1 && "bg-[#FF6E3C]/20 border-[#FF6E3C]/30 text-[#FF6E3C] group-hover:bg-[#FF6E3C]/30",
+                          index === 2 && "bg-purple-500/20 border-purple-500/30 text-purple-300 group-hover:bg-purple-500/30"
                         )}>
                           {demo.tag}
                         </span>
                       </div>
                       
                       {/* Transformation text on video */}
-                      <div className="absolute bottom-2 left-2 right-2">
-                        <p className="text-[11px] text-white/60 mb-0.5">{demo.from}</p>
+                      <div className="absolute bottom-3 left-3 right-3">
+                        <p className="text-[11px] text-white/50 mb-0.5">{demo.from}</p>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[#FF6E3C] text-xs">→</span>
+                          <span className={cn(
+                            "text-xs transition-colors",
+                            index === 0 && "text-cyan-400",
+                            index === 1 && "text-[#FF6E3C]",
+                            index === 2 && "text-purple-400"
+                          )}>→</span>
                           <p className="text-xs font-semibold text-white">{demo.to}</p>
                         </div>
                       </div>
@@ -491,15 +503,21 @@ export default function LandingHero() {
                     
                     {/* Loading indicator */}
                     {loadingDemo === demo.id && (
-                      <div className="absolute inset-0 bg-black/80 flex items-center justify-center rounded-xl z-10">
-                        <div className="w-6 h-6 border-2 border-[#FF6E3C] border-t-transparent rounded-full animate-spin" />
+                      <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-10">
+                        <div className={cn(
+                          "w-6 h-6 border-2 border-t-transparent rounded-full animate-spin",
+                          index === 0 && "border-cyan-500",
+                          index === 1 && "border-[#FF6E3C]",
+                          index === 2 && "border-purple-500"
+                        )} />
                       </div>
                     )}
                   </button>
                 ))}
               </div>
+              
             </div>
-          </GlowCard>
+          </div>
           
         </div>
       </motion.div>
