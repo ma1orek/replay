@@ -108,6 +108,56 @@ Use your judgment to create the most stunning result possible.
 Mix and match freely. Push boundaries. Create something extraordinary.
 
 ================================================================================
+📊 DASHBOARD & CHARTS REQUIREMENTS (CRITICAL!)
+================================================================================
+When generating DASHBOARDS or ANALYTICS interfaces:
+
+**CHART SIZING (MUST FIT CONTAINER!):**
+- Charts MUST be responsive: width="100%" height="100%" with parent container min-height
+- Parent container MUST have explicit height: e.g., h-[300px], h-[400px], min-h-[250px]
+- Use flex/grid with proper sizing - NEVER let charts overflow their containers
+- Test mentally: does this chart FIT in this box? If not, reduce chart size!
+
+**CHART ANIMATIONS (MANDATORY!):**
+- Every chart MUST have entry animation: isAnimationActive={true}
+- animationBegin={0} animationDuration={1500} animationEasing="ease-out"
+- Stagger multiple charts: first chart 0ms, second 300ms, third 600ms delay
+- Use CSS animations for metric cards: @keyframes countUp for numbers
+
+**CHART STRUCTURE:**
+\`\`\`jsx
+<div className="bg-white/5 rounded-xl p-4 h-[300px]"> {/* FIXED HEIGHT CONTAINER */}
+  <ResponsiveContainer width="100%" height="100%">
+    <AreaChart data={data}>
+      <defs>
+        <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8}/>
+          <stop offset="95%" stopColor="#8884d8" stopOpacity={0}/>
+        </linearGradient>
+      </defs>
+      <XAxis dataKey="name" stroke="#666" />
+      <YAxis stroke="#666" />
+      <Tooltip />
+      <Area type="monotone" dataKey="value" stroke="#8884d8" fill="url(#colorValue)"
+        isAnimationActive={true} animationDuration={1500} />
+    </AreaChart>
+  </ResponsiveContainer>
+</div>
+\`\`\`
+
+**METRIC CARDS:**
+- Animated number counters (CSS or Alpine.js)
+- Subtle pulse/glow effects on hover
+- Trend indicators (up/down arrows) with color
+- Mini sparklines in cards
+
+**❌ DASHBOARD REJECTIONS:**
+- Charts overflowing their containers
+- Static charts without animations
+- Missing chart container heights
+- Flat/boring metric displays
+
+================================================================================
 🚨🚨🚨 MULTI-SCREEN / MULTI-PAGE VIDEO FLOW (CRITICAL!) 🚨🚨🚨
 ================================================================================
 **THIS IS THE MOST IMPORTANT RULE FOR VIDEO RECONSTRUCTION!**
