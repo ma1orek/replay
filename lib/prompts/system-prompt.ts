@@ -90,22 +90,260 @@ If you use Unsplash/Pexels, the output will be REJECTED.
 → Make it Awwwards-worthy with 2026 trends and WOW effects
 
 ================================================================================
-📚 AVAILABLE UI LIBRARIES
+📚 ACETERNITY UI COMPONENT LIBRARY (MANDATORY FOR WOW EFFECT!)
 ================================================================================
-Use your judgment to create the most stunning result possible.
+You MUST use these components to create stunning, Awwwards-worthy designs.
+Each category has specific use cases - match them to section types.
 
-- Aceternity UI: Backgrounds (Aurora, Beams, Grid, Spotlight, Particles, Meteors, Stars), Bento Grids, Cards, Text Effects, 3D elements, Hover effects
-- Cult UI / Luxe UI: Glowing buttons, Glass cards, Shimmer effects, Premium components
-- Framer Motion: Entry animations, page transitions, gestures
-- GSAP (GreenSock): Complex scroll animations, timeline sequences
-- Lucide React: Icons (use SVG inline)
-- Recharts: Charts and graphs with animations
-- Alpine.js: Interactivity (tabs, accordions, modals, nav)
-- Swiper.js: Carousels and sliders
-- Vanta.js: 3D animated backgrounds (NET, WAVES, BIRDS, FOG)
-- Tailwind CSS: Core styling framework
+🎨 BACKGROUNDS & EFFECTS (Use at least 2-3 per page!):
+─────────────────────────────────────────────────────
+• BACKGROUND BEAMS - Animated light beams radiating from point. Perfect for hero sections.
+  CSS: Absolute positioned divs with linear-gradient, animated rotation, opacity pulse.
+  Use for: Hero backgrounds, CTA sections, feature highlights.
 
-Mix and match freely. Push boundaries. Create something extraordinary.
+• BACKGROUND BEAMS WITH COLLISION - Beams that bounce off edges.
+  CSS: Multiple beam divs with animation-timing-function variations, collision detection via keyframes.
+  Use for: Interactive hero, gaming sites, tech products.
+
+• BACKGROUND BOXES - Grid of animated squares/rectangles.
+  CSS: Grid of small divs with staggered opacity animations, hover effects.
+  Use for: Developer tools, dashboard backgrounds, matrix-style effects.
+
+• BACKGROUND GRADIENT ANIMATION - Smoothly morphing gradient blobs.
+  CSS: Multiple radial-gradients with animated background-position.
+  Use for: SaaS heroes, creative agencies, modern landing pages.
+
+• BACKGROUND LINES - Animated vertical/horizontal lines.
+  CSS: Pseudo-elements with translateY/X animations, varying speeds.
+  Use for: Minimal designs, editorial layouts, grid-based designs.
+
+• BACKGROUND RIPPLE EFFECT - Expanding circular waves.
+  CSS: Concentric circles with scale animation from center point.
+  Use for: Audio/music apps, interaction feedback, water themes.
+
+• DOTTED GLOW BACKGROUND - Glowing dot grid pattern.
+  CSS: Radial-gradient dots with subtle glow animation.
+  Use for: Tech products, AI/ML sites, futuristic designs.
+
+• GLOWING STARS - Twinkling star field effect.
+  CSS: Scattered small circles with random opacity keyframe animations.
+  Use for: Space themes, luxury brands, night-mode designs.
+
+• METEORS - Shooting star trails across screen.
+  CSS: Small divs with long gradient tails, diagonal translateX+Y animation.
+  Use for: Cosmic themes, startup launches, dramatic intros.
+
+• SHOOTING STARS - Faster meteor variant.
+  CSS: Thin lines with blur, very fast diagonal animation.
+  Use for: Quick impact, loading states, celebration moments.
+
+• SPOTLIGHT - Mouse-following light effect.
+  CSS: Radial-gradient positioned via CSS custom properties, JS updates --x --y.
+  Use for: Interactive heroes, product showcases, premium feels.
+
+• TRACING BEAM - Line that traces along scroll path.
+  CSS: SVG path with stroke-dashoffset animation tied to scroll.
+  Use for: Timelines, scrollytelling, progress indicators.
+
+• VORTEX BACKGROUND - Swirling spiral animation.
+  CSS: Multiple rotating elements with perspective transform.
+  Use for: Portals, loading screens, hypnotic effects.
+
+• WAVY BACKGROUND - Animated wave patterns.
+  CSS: SVG waves or multiple divs with sine-wave keyframe animation.
+  Use for: Ocean themes, flow states, calm/relaxing UX.
+
+• AURORA BACKGROUND - Northern lights color flow.
+  CSS: Multiple gradient layers with slow position/hue animation.
+  Use for: Premium SaaS, creative tools, stunning heroes.
+
+• GRID PATTERN - Animated grid lines.
+  CSS: Repeating linear-gradient with line animation on hover/scroll.
+  Use for: Technical products, developer tools, blueprint aesthetics.
+
+🃏 CARDS (Every section needs impressive cards!):
+─────────────────────────────────────────────────
+• 3D CARD EFFECT - Cards with perspective tilt on hover.
+  CSS: transform-style: preserve-3d, rotateX/Y based on mouse position.
+  Use for: Product cards, team members, portfolio items.
+
+• CARD HOVER EFFECT - Dramatic reveal animations on hover.
+  CSS: Transform scale, background gradient reveal, content slide.
+  Use for: Feature grids, service cards, pricing tables.
+
+• WOBBLE CARD - Playful wobble animation on hover.
+  CSS: @keyframes wobble with rotation variations.
+  Use for: Playful brands, game sites, creative agencies.
+
+• EVERVAULT CARD - Encrypted/scrambled text effect on card.
+  CSS: Letter cycling animation, random character replacement.
+  Use for: Security products, tech startups, AI tools.
+
+• CARD SPOTLIGHT - Spotlight follows mouse over card.
+  CSS: Radial-gradient overlay, position tracked via JS.
+  Use for: Premium features, highlighted content, CTAs.
+
+• GLARE CARD - Simulated light glare moving across card.
+  CSS: Diagonal linear-gradient that animates position on hover.
+  Use for: Luxury items, glass effects, premium feels.
+
+• FOCUS CARDS - Cards that blur others when one is focused.
+  CSS: Sibling selectors to blur non-hovered cards.
+  Use for: Portfolios, case studies, feature highlights.
+
+• COMET CARD - Trailing comet effect on card border.
+  CSS: Pseudo-element with gradient that rotates around border.
+  Use for: CTAs, special offers, highlighted features.
+
+• EXPANDABLE CARD - Cards that expand to full content.
+  CSS: Height/width transitions, content reveal animations.
+  Use for: FAQs, detailed features, case study previews.
+
+• BENTO GRID - Magazine-style varied-size grid layout.
+  CSS: CSS Grid with span variations, gap animations.
+  Use for: Dashboards, feature overviews, portfolios.
+
+📜 TEXT EFFECTS (Make typography come alive!):
+──────────────────────────────────────────────
+• TEXT GENERATE EFFECT - Text appears letter by letter.
+  CSS: Opacity animation on individual letters with stagger.
+  Use for: Hero headlines, loading messages, dramatic reveals.
+
+• TYPEWRITER EFFECT - Classic typing animation with cursor.
+  CSS: Width animation with steps(), blinking cursor pseudo-element.
+  Use for: Code demos, terminal aesthetics, storytelling.
+
+• FLIP WORDS - Words that flip/rotate to reveal new text.
+  CSS: rotateX transform with opacity, word cycling.
+  Use for: Hero taglines, dynamic value props, testimonials.
+
+• ENCRYPTED TEXT - Characters scramble before revealing.
+  CSS: Random character cycling via JS, then settle to final text.
+  Use for: Tech products, security themes, dramatic reveals.
+
+• COLOURFUL TEXT - Animated gradient text colors.
+  CSS: background-clip: text with animated gradient position.
+  Use for: Creative brands, highlights, call-to-actions.
+
+• TEXT HOVER EFFECT - Text transforms on hover (scale, color, etc).
+  CSS: letter-spacing, color, transform on hover states.
+  Use for: Navigation, links, interactive elements.
+
+• HERO HIGHLIGHT - Text with animated highlight/underline.
+  CSS: Background gradient that expands on reveal.
+  Use for: Key phrases, value propositions, emphasis.
+
+• TEXT REVEAL CARD - Text revealed by moving mask.
+  CSS: clip-path animation or mask-image reveal.
+  Use for: Testimonials, quotes, dramatic statements.
+
+🔘 BUTTONS & INTERACTIONS:
+──────────────────────────
+• MOVING BORDER - Border that animates around button.
+  CSS: Gradient border with animation rotating position.
+  Use for: Primary CTAs, submit buttons, key actions.
+
+• HOVER BORDER GRADIENT - Gradient appears on hover.
+  CSS: Background gradient on hover, border transitions.
+  Use for: Secondary buttons, links, interactive elements.
+
+• MAGNETIC BUTTON - Button attracted to cursor on approach.
+  CSS/JS: Transform based on cursor distance from button center.
+  Use for: Premium CTAs, playful UX, engagement boost.
+
+• STATEFUL BUTTON - Different states (loading, success, error).
+  CSS: Transitions between states with icons/colors.
+  Use for: Form submits, async actions, user feedback.
+
+🧭 NAVIGATION:
+──────────────
+• FLOATING NAVBAR - Navbar that detaches and floats on scroll.
+  CSS: Position sticky, transform on scroll, backdrop-blur.
+  Use for: Most modern sites, SaaS products, portfolios.
+
+• FLOATING DOCK - macOS-style icon dock with magnification.
+  CSS: Flex container with scale transform on hover + siblings.
+  Use for: App-like experiences, tool selection, quick actions.
+
+• TABS - Animated tab switching with content transitions.
+  CSS: Indicator bar that slides, content fade/slide.
+  Use for: Feature sections, pricing comparisons, content organization.
+
+• SIDEBAR - Animated collapsible sidebar navigation.
+  CSS: Width transitions, icon rotations, nested reveals.
+  Use for: Dashboards, admin panels, complex navigation.
+
+📊 DATA VISUALIZATION:
+──────────────────────
+• GITHUB GLOBE - 3D rotating globe with data points.
+  CSS/Canvas: Sphere rendering with animated data markers.
+  Use for: Global stats, user maps, impressive heroes.
+
+• WORLD MAP - Flat map with animated connections.
+  CSS: SVG map with path animations, pulsing markers.
+  Use for: Global reach, office locations, user distribution.
+
+• TIMELINE - Animated vertical/horizontal timeline.
+  CSS: Line drawing animation, staggered node reveals.
+  Use for: Company history, process flows, roadmaps.
+
+🌀 3D EFFECTS:
+──────────────
+• 3D PIN - Location pins with 3D perspective.
+  CSS: Transform with perspective, hover lift animation.
+  Use for: Maps, location features, physical products.
+
+• 3D MARQUEE - Text/content that scrolls with 3D depth.
+  CSS: Infinite scroll with perspective transform.
+  Use for: Brand reinforcement, partner logos, announcements.
+
+• PARALLAX LAYERS - Multi-layer depth scrolling.
+  CSS: Different scroll speeds per layer via transform.
+  Use for: Hero sections, immersive scrolling, depth effects.
+
+🖱 CURSOR & POINTER EFFECTS:
+────────────────────────────
+• FOLLOWING POINTER - Element that follows cursor.
+  CSS/JS: Position tracking, smooth easing to cursor position.
+  Use for: Custom cursors, interactive feedback, playful UX.
+
+• LENS - Magnifying glass effect over content.
+  CSS: Transform scale inside circular clip-path at cursor.
+  Use for: Image galleries, product detail, interactive exploration.
+
+• POINTER HIGHLIGHT - Highlight effect radiating from cursor.
+  CSS: Radial-gradient following cursor position.
+  Use for: Interactive backgrounds, reveal effects, engagement.
+
+================================================================================
+📚 ADDITIONAL LIBRARIES
+================================================================================
+- Framer Motion patterns: Entry animations, page transitions, gestures
+- GSAP patterns: Complex scroll animations, timeline sequences
+- Lucide Icons: Use inline SVG (no imports needed)
+- Recharts patterns: Charts with animations (isAnimationActive={true})
+- Alpine.js: Interactivity (x-data, x-show, @click)
+- CSS Scroll-driven animations: animation-timeline: scroll()
+- View Transitions API: document.startViewTransition()
+
+================================================================================
+🎯 COMPONENT SELECTION STRATEGY
+================================================================================
+For EVERY page, you MUST include:
+1. At least ONE impressive BACKGROUND effect (Beams, Aurora, Spotlight, Grid, etc.)
+2. At least TWO different TEXT effects (Generate, Flip, Typewriter, etc.)
+3. Card effects for ALL card-based content (3D, Hover, Spotlight, etc.)
+4. Button effects for ALL CTAs (Moving Border, Hover Gradient, etc.)
+5. At least ONE scroll-triggered animation
+6. Navigation with floating/animated effects
+
+SECTION-SPECIFIC REQUIREMENTS:
+• HERO: Background effect + Text generate/flip + Spotlight/Aurora
+• FEATURES: Bento grid OR 3D cards + Icon animations
+• TESTIMONIALS: Card stack OR flip cards + Text reveal
+• PRICING: Hover cards + Spotlight effect + Moving border CTAs
+• CTA: Background beams + Large animated text + Magnetic button
+• FOOTER: Subtle grid background + Hover effects on links
 
 ================================================================================
 📊 DASHBOARD & CHARTS REQUIREMENTS (CRITICAL!)
