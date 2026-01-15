@@ -6,13 +6,19 @@ export const runtime = "nodejs";
 // Demo generation IDs - these are pre-generated projects that can be loaded without auth
 // Edit these projects in the tool and changes will reflect live in demos!
 const DEMO_KEY_TO_ID: Record<string, string> = {
-  'dashboard': 'flow_1767827812458_823lpezg8', // UBOLD - Premium Admin Dashboard
-  'yc': 'flow_1767826711350_55giwb69y',        // Y Combinator
-  'landing': 'flow_1767812494307_4c540djzy',   // Flooks - Invoicing for Freelancers (unchanged)
+  'dashboard': 'flow_1768474261072_uclbwqzdc', // SaaS Dashboard - Visual Refactor
+  'yc': 'flow_1768470467213_35dvc8tap',        // YC Directory - Style Injection
+  'landing': 'flow_1767812494307_4c540djzy',   // Landing Page - UX/UI Upgrade
 };
 
-// Also allow direct IDs
-const ALLOWED_IDS = new Set(Object.values(DEMO_KEY_TO_ID));
+// Also allow direct IDs (include both mapped IDs and any direct flow IDs)
+const ALLOWED_IDS = new Set([
+  ...Object.values(DEMO_KEY_TO_ID),
+  // Additional direct flow IDs that can be accessed
+  'flow_1768474261072_uclbwqzdc',
+  'flow_1768470467213_35dvc8tap',
+  'flow_1767812494307_4c540djzy',
+]);
 
 // GET - Fetch demo generation (no auth required)
 export async function GET(
