@@ -230,7 +230,7 @@ export default function LandingHero() {
               <div className="absolute inset-[1px] rounded-[23px] border border-white/[0.05] pointer-events-none" />
               
               {/* === UPPER SECTION: Upload Panel === */}
-              <div className="p-5 md:p-6 pb-0">
+              <div className="p-3 pb-0">
                 
                 {/* DROPZONE */}
                 <div
