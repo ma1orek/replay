@@ -62,7 +62,7 @@ Odpowiedz krótko i przyjaźnie:`;
           const response = await openai.chat.completions.create({
             model: "gpt-5.2",
             messages: [{ role: "user", content: planPrompt }],
-            max_tokens: 500,
+            max_completion_tokens: 500,
             temperature: 0.7,
             stream: true,
           });
@@ -143,7 +143,7 @@ Odpowiedz krótko i przyjaźnie:`;
           const response = await openai.chat.completions.create({
             model: "gpt-5.2",
             messages,
-            max_tokens: 16000,
+            max_completion_tokens: 16000,
             temperature: 0.7,
             stream: true,
           });
