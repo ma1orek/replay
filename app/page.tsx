@@ -9081,7 +9081,8 @@ Try these prompts in Cursor or v0:
                     return;
                   }
                   if (!editableCode) return;
-                  handlePublish();
+                  // Open publish modal (shows URL if already published, or publish button)
+                  handlePublishClick();
                 }}
                 disabled={isPublishing}
                 className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#FF6E3C] hover:bg-[#FF8F5C] text-white transition-colors flex items-center gap-1.5 disabled:opacity-50"
