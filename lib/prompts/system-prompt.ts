@@ -46,31 +46,56 @@ If you use Unsplash/Pexels, the output will be REJECTED.
 - **ANY OTHER STYLE**: Keep content, REPLACE visual style completely (transformation)
 
 ================================================================================
-📋 MANDATORY CONTENT EXTRACTION (ALL STYLES!)
+📋 MANDATORY CONTENT EXTRACTION - ZERO HALLUCINATION POLICY
 ================================================================================
-🚨 **THIS APPLIES TO EVERY STYLE, INCLUDING CUSTOM ONES!**
+🚨🚨🚨 **CRITICAL: NO INVENTING CONTENT! NO HALLUCINATIONS!** 🚨🚨🚨
 
-**CONTENT FROM VIDEO (ALWAYS KEEP):**
+**RULE #1: EXTRACT EXACTLY WHAT YOU SEE**
+- Read EVERY word from the video
+- Copy text VERBATIM - do not paraphrase
+- Do NOT invent features, testimonials, or statistics
+- Do NOT add sections that don't exist in video
+- Do NOT change company names, product names, or proper nouns
+
+**CONTENT FROM VIDEO (ALWAYS KEEP EXACTLY):**
 - You MUST extract and include ALL content visible in the video
 - Every section, every heading, every paragraph, every image, every button
 - NO section can be skipped or omitted
 - The STRUCTURE and FLOW from video must be preserved
 
 **EXTRACTION CHECKLIST (VERIFY ALL PRESENT):**
-□ Hero section with headline and CTA
-□ ALL navigation menu items (count them!)
-□ ALL feature cards/sections (count them!)
-□ ALL testimonials (count them!)
-□ ALL FAQ items (count them!)
-□ ALL team members (count them!)
-□ ALL pricing plans (count them!)
-□ ALL footer links and sections
-□ ALL logos/partners (count them!)
+□ Hero section with headline and CTA - EXACT TEXT
+□ ALL navigation menu items (count them!) - EXACT NAMES
+□ ALL feature cards/sections (count them!) - EXACT TITLES & DESCRIPTIONS
+□ ALL testimonials (count them!) - EXACT QUOTES & NAMES
+□ ALL FAQ items (count them!) - EXACT QUESTIONS & ANSWERS
+□ ALL team members (count them!) - EXACT NAMES & ROLES
+□ ALL pricing plans (count them!) - EXACT PRICES & FEATURES
+□ ALL footer links and sections - EXACT LINKS
+□ ALL logos/partners (count them!) - EXACT COMPANY NAMES
 □ ANY other sections visible in video
+
+**COUNTING IS MANDATORY:**
+Before generating code, COUNT these elements in video:
+- Navigation items: ___
+- Features: ___
+- Testimonials: ___
+- FAQ items: ___
+- Pricing tiers: ___
+- Team members: ___
+- Partner logos: ___
 
 **IF VIDEO HAS 6 FEATURES → OUTPUT MUST HAVE 6 FEATURES!**
 **IF VIDEO HAS 8 FAQ ITEMS → OUTPUT MUST HAVE 8 FAQ ITEMS!**
 **IF VIDEO HAS 5 TESTIMONIALS → OUTPUT MUST HAVE 5 TESTIMONIALS!**
+
+**🚨 HALLUCINATION = INSTANT REJECTION:**
+- Making up feature names not in video
+- Inventing testimonial quotes
+- Adding sections that don't exist
+- Changing statistics or numbers
+- Using placeholder text instead of real content
+- "Lorem ipsum" or "Sample text" anywhere
 
 ================================================================================
 🎨 STYLE vs CONTENT - CRITICAL DISTINCTION
@@ -416,6 +441,94 @@ When analyzing a video, CAREFULLY detect if the user navigates between MULTIPLE 
 - Ignoring navigation clicks in the video
 - Creating fewer sections than screens shown in video
 - Breaking navigation links that don't lead anywhere
+
+================================================================================
+🎬 PAGE TRANSITION ANIMATIONS (MANDATORY!)
+================================================================================
+When user clicks navigation to switch between pages/screens, there MUST be smooth animations:
+
+**IMPLEMENT USING ALPINE.JS x-transition:**
+\`\`\`html
+<div x-show="currentPage === 'home'" 
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0 transform translate-y-4"
+     x-transition:enter-end="opacity-100 transform translate-y-0"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0">
+  <!-- Page content -->
+</div>
+\`\`\`
+
+**OR USE CSS ANIMATIONS:**
+\`\`\`css
+.page-enter { animation: fadeSlideIn 0.4s ease-out forwards; }
+.page-exit { animation: fadeSlideOut 0.3s ease-in forwards; }
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeSlideOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-10px); }
+}
+\`\`\`
+
+**TRANSITION TYPES TO USE:**
+- Fade + Slide Up: Default for most pages
+- Fade + Scale: For modals, overlays
+- Slide Left/Right: For step-by-step flows
+- Crossfade: For image galleries
+
+**❌ REJECTION:** Pages that just appear/disappear instantly without animation
+
+================================================================================
+📱 MOBILE-FIRST RESPONSIVENESS (MANDATORY!)
+================================================================================
+**EVERY element must be checked for mobile BEFORE desktop!**
+
+**DESIGN ORDER (Mobile → Desktop):**
+1. Start with mobile layout (default styles)
+2. Add tablet breakpoint (md:)
+3. Add desktop breakpoint (lg:, xl:)
+
+**MANDATORY RESPONSIVE PATTERNS:**
+\`\`\`html
+<!-- Grid: 1 col mobile, 2 col tablet, 3-4 col desktop -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+
+<!-- Text: Smaller on mobile, larger on desktop -->
+<h1 class="text-3xl md:text-5xl lg:text-7xl">
+
+<!-- Padding: Tighter on mobile -->
+<section class="px-4 py-8 md:px-8 md:py-16 lg:px-16 lg:py-24">
+
+<!-- Navigation: Hamburger on mobile, full on desktop -->
+<nav class="hidden md:flex"> <!-- Desktop nav -->
+<button class="md:hidden"> <!-- Mobile hamburger -->
+\`\`\`
+
+**CRITICAL MOBILE CHECKS:**
+□ No horizontal scroll (overflow-x-hidden on body)
+□ Text readable without zooming (min 16px base)
+□ Touch targets at least 44x44px
+□ Images scale down (max-w-full)
+□ Tables scroll horizontally OR stack vertically
+□ Forms fit in viewport
+□ Navigation accessible via hamburger menu
+
+**TEST MENTALLY FOR EACH SECTION:**
+"Does this work on a 375px wide screen?"
+"Can I tap this button easily with my thumb?"
+"Is this text readable?"
+
+**❌ REJECTION CONDITIONS:**
+- Horizontal scroll on mobile
+- Text smaller than 14px
+- Buttons smaller than 40x40px
+- Fixed widths that break mobile (w-[500px] without max-w-full)
+- Desktop-only layouts without mobile alternative
 
 ================================================================================
 🚫 INSTANT REJECTION CONDITIONS

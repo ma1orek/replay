@@ -1253,31 +1253,38 @@ Glow: text-shadow: 0 0 10px currentColor
 └────────────────────────────────────────┘
 
 ⚠️ THE FEELING: Fighter jet cockpit. Every pixel has tactical purpose. Military precision.`, category: "creative" },
-  { id: "urban-grunge", name: "Urban Grunge", desc: "Concrete • Spray Paint • Street", fullDesc: `STREETWEAR BRUTALISM - Raw urban underground aesthetic.
+  { id: "urban-grunge", name: "Urban Grunge", desc: "Concrete • Spray Paint • Street", fullDesc: `🎨 STREETWEAR BRUTALISM - Raw urban underground aesthetic.
 
-COLORS: Concrete gray #2A2A2A bg, off-white #E8E4E0 text, spray paint accents - neon pink #FF2D92, electric blue #00D4FF, acid green #ADFF2F.
+═══════════════════════════════════════════════════════════════════════════════
+🎨 MANDATORY ACETERNITY COMPONENTS:
+═══════════════════════════════════════════════════════════════════════════════
+HERO: Use BACKGROUND BOXES (chaotic grid) + METEORS (paint splatter style)
+CARDS: Use WOBBLE CARD + DRAGGABLE CARD + sticker borders
+TEXT: Use TEXT GENERATE EFFECT (glitchy) + ENCRYPTED TEXT for reveals
+BUTTONS: Use rough HOVER BORDER + shake on hover
+NAV: Graffiti style, chaotic positioning
+SCROLL: STOP MOTION feel with steps() timing
 
-TYPOGRAPHY: Impact or Anton for headlines - condensed, BOLD, UPPERCASE. Body in Inter. Headlines can be HUGE (15-20vw) with rotation.
+═══════════════════════════════════════════════════════════════════════════════
+🎨 COLOR PALETTE:
+═══════════════════════════════════════════════════════════════════════════════
+Background: Concrete gray #2A2A2A
+Text: Off-white #E8E4E0
+Spray pink: #FF2D92
+Electric blue: #00D4FF
+Acid green: #ADFF2F
+Raw, dirty, street
 
-LAYOUT: Broken grid, overlapping elements intentional. Images at random angles (-5deg to 5deg rotate). Text breaks boundaries.
+═══════════════════════════════════════════════════════════════════════════════
+✨ SIGNATURE EFFECTS:
+═══════════════════════════════════════════════════════════════════════════════
+1. CONCRETE TEXTURE: Grainy noise background
+2. SPRAY PAINT: Radial gradients with hard edges
+3. STICKER BORDERS: box-shadow: 0 0 0 4px white
+4. DISTORTION: scaleY(1.2), perspective rotation
+5. JITTER: Random translateX/Y micro-movements
 
-KEY EFFECTS:
-- CONCRETE TEXTURE: Background with subtle noise pattern, grainy feel
-- SPRAY PAINT: Gradient splashes using radial-gradient with hard edges
-- Sticker aesthetic: Elements with rough white border (box-shadow: 0 0 0 4px white)
-- DISTORTED FONTS: transform: scaleY(1.2) or perspective with rotateX
-- mix-blend-mode: difference or exclusion on overlapping elements
-
-ANIMATIONS:
-- STOP MOTION: Steps timing function, jumpy movement
-- Elements JITTER: random small translateX/Y movements
-- Spray paint DRIP: gradient masks revealing content
-- Glitch: horizontal slice displacement
-- Shake on hover: animation: shake 0.5s ease-in-out
-
-Raw, rebellious, anti-design but intentional.
-
-⚠️ MANDATORY: Preserve ALL content from video.`, category: "creative" },
+⚠️ THE FEELING: Berlin warehouse. Rebellious. Anti-design but intentional.`, category: "creative" },
   { id: "ink-zen", name: "Ink & Zen", desc: "Japanese • Vertical • Sumi-e", fullDesc: `JAPANESE MINIMALISM - Sumi-e ink painting aesthetic.
 
 COLORS: Rice paper #FAF7F2 bg, ink black #1A1A1A text varying opacity (100%, 80%, 50% for hierarchy). Red seal accent #C41E3A used ONCE.
@@ -2084,26 +2091,36 @@ Minimum decoration, maximum impact.
 Sparse. Heavy. Deliberate.
 
 ⚠️ THE FEELING: Standing in complete darkness. Your flashlight reveals only what you point at.`, category: "dark" },
-  { id: "dark-cosmos", name: "Dark Cosmos", desc: "Purple/Cyan Glow • Glass • Float", fullDesc: `COSMIC DARK - Space-inspired glass morphism.
+  { id: "dark-cosmos", name: "Dark Cosmos", desc: "Purple/Cyan Glow • Glass • Float", fullDesc: `🌌 COSMIC DARK - Space-inspired glass morphism. Floating in the universe.
 
-COLORS: Deep black #030303 bg. Two corner glows: purple rgba(139,92,246,0.1), cyan rgba(6,182,212,0.08). Text white, muted #9ca3af.
+═══════════════════════════════════════════════════════════════════════════════
+🎨 MANDATORY ACETERNITY COMPONENTS:
+═══════════════════════════════════════════════════════════════════════════════
+HERO: Use GLOWING STARS background + AURORA BACKGROUND (purple/cyan corners)
+CARDS: Use 3D CARD EFFECT (floating) + CARD SPOTLIGHT + GLARE CARD
+TEXT: Use TEXT GENERATE EFFECT + COLOURFUL TEXT (cosmic gradient)
+BUTTONS: Use MOVING BORDER (purple/cyan) + float animation
+NAV: Use FLOATING NAVBAR with glass blur
+SCROLL: Parallax floating effect
 
-TYPOGRAPHY: Inter or Space Grotesk. Headlines weight 600, clean and modern. Body 400.
+═══════════════════════════════════════════════════════════════════════════════
+🎨 COLOR PALETTE:
+═══════════════════════════════════════════════════════════════════════════════
+Background: Deep black #030303
+Corner glow purple: rgba(139,92,246,0.1)
+Corner glow cyan: rgba(6,182,212,0.08)
+Text: White, muted #9ca3af
+Stars: Tiny white dots
 
-LAYOUT: Single combined background (NOT multiple divs). Cards float with depth. Generous spacing.
+═══════════════════════════════════════════════════════════════════════════════
+✨ SIGNATURE EFFECTS:
+═══════════════════════════════════════════════════════════════════════════════
+1. GLOWING STARS: Scattered tiny circles with opacity animation
+2. CORNER GLOWS: Two radial-gradients at 20%/20% and 80%/80%
+3. FLOATING CARDS: translateY animation 4-6s infinite
+4. GLASS: bg-white/5 backdrop-blur-xl border border-white/10
 
-KEY EFFECTS:
-- Combined corner glows: background: radial-gradient(circle at 20% 20%, rgba(139,92,246,0.1) 0%, transparent 30%), radial-gradient(circle at 80% 80%, rgba(6,182,212,0.08) 0%, transparent 30%), #030303
-- Floating cards: bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl
-- Stars effect: tiny white dots scattered (optional)
-
-ANIMATIONS:
-- Cards float slightly (translateY animation, 4-6s infinite)
-- Fade in with scale 0.98 → 1
-- Glow intensifies on hover
-- Smooth cosmic feel
-
-⚠️ MANDATORY: Preserve ALL content from video.`, category: "dark" },
+⚠️ THE FEELING: Floating in deep space. Peaceful, cosmic, infinite.`, category: "dark" },
   { id: "liquid-chrome", name: "Liquid Chrome", desc: "Metallic • Y2K • Reflections", fullDesc: `🪞 LIQUID CHROME - Mercury meets machine. Y2K futurism reborn.
 
 ═══════════════════════════════════════════════════════════════════════════════
@@ -2189,27 +2206,37 @@ Everything feels forged from metal
 ⚠️ THE FEELING: The lobby of a luxury spaceship. A car showroom in 2099. Chrome everything, void everywhere else.`, category: "dark" },
   
   // === LIGHT & CLEAN ===
-  { id: "swiss-grid", name: "Swiss Grid", desc: "Visible Grid • Massive Type • Sharp", fullDesc: `SWISS INTERNATIONAL STYLE - Precision typography on grid.
+  { id: "swiss-grid", name: "Swiss Grid", desc: "Visible Grid • Massive Type • Sharp", fullDesc: `📐 SWISS INTERNATIONAL STYLE - Precision typography on grid.
 
-COLORS: Pure white #ffffff bg, pure black #000000 text. Grid lines #e5e5e5 (1px). NO gradients, NO colors except black/white.
+═══════════════════════════════════════════════════════════════════════════════
+🎨 MANDATORY ACETERNITY COMPONENTS:
+═══════════════════════════════════════════════════════════════════════════════
+HERO: Use BACKGROUND LINES (visible grid) + GRID PATTERN
+CARDS: Use sharp BENTO GRID + CARD HOVER EFFECT (no rounded corners)
+TEXT: Use TEXT REVEAL CARD (mask from bottom) + TYPEWRITER for numbers
+BUTTONS: Use sharp HOVER BORDER (no radius) + precise animations
+NAV: Use precise spacing, NO floating - fixed position
+SCROLL: Grid lines draw with TRACING BEAM effect
 
-TYPOGRAPHY: Helvetica Neue or Inter. Headlines: weight 700-900, TIGHT tracking -0.04em, sizes text-6xl to text-9xl. Body: weight 400, 16-18px, line-height 1.5.
+═══════════════════════════════════════════════════════════════════════════════
+🎨 COLOR PALETTE:
+═══════════════════════════════════════════════════════════════════════════════
+Background: Pure white #ffffff
+Text: Pure black #000000
+Grid: #e5e5e5 (1px lines)
+Accent: Red #ff0000 (ONE element only)
+NO gradients, NO grays, pure B&W
 
-LAYOUT: VISIBLE grid lines (border-r border-b border-gray-200 on columns). 12-column grid. Asymmetric layouts 8/4 or 7/5. Text aligns to grid.
+═══════════════════════════════════════════════════════════════════════════════
+✨ SIGNATURE EFFECTS:
+═══════════════════════════════════════════════════════════════════════════════
+1. VISIBLE GRID: border-r border-b on columns
+2. MASSIVE TYPE: text-6xl to text-9xl, tracking -0.04em
+3. NUMBER LABELS: 01, 02, 03 in monospace
+4. SHARP CORNERS: rounded-none everywhere
+5. LINEAR TIMING: No bouncy - linear or ease-out only
 
-KEY EFFECTS:
-- Headlines split across columns
-- Numbered sections (01, 02, 03) in small mono
-- Red #ff0000 as ONLY accent (use sparingly - one element)
-- Sharp corners everywhere (rounded-none)
-
-ANIMATIONS:
-- Text reveals from bottom with mask (overflow-hidden + translateY)
-- Grid lines draw on scroll (width 0% → 100%)
-- Numbers count up
-- NO bouncy effects - all linear or ease-out
-
-⚠️ MANDATORY: Preserve ALL content from video.`, category: "light" },
+⚠️ THE FEELING: Swiss precision. Mathematical. Deliberate.`, category: "light" },
   { id: "silent-luxury", name: "Silent Luxury", desc: "Radical Minimal • White Void", fullDesc: `RADICAL MINIMALISM - Luxury through absence.
 
 COLORS: Pure white #ffffff everywhere. Text #000000 pure black. Nothing else. NO grays, NO colors.
@@ -2375,7 +2402,26 @@ ANIMATIONS:
 - Smooth 300ms transitions
 
 ⚠️ MANDATORY: Preserve ALL content from video.`, category: "light" },
-  { id: "neubrutalism", name: "Neo-Brutalism", desc: "Hard Shadow • Thick Border • Bouncy", fullDesc: `NEO-BRUTALISM - Bold, playful, unapologetic design.
+  { id: "neubrutalism", name: "Neo-Brutalism", desc: "Hard Shadow • Thick Border • Bouncy", fullDesc: `🎯 NEO-BRUTALISM - Bold, playful, unapologetic design.
+
+═══════════════════════════════════════════════════════════════════════════════
+🎨 MANDATORY ACETERNITY COMPONENTS:
+═══════════════════════════════════════════════════════════════════════════════
+HERO: Use solid color blocks + BACKGROUND BOXES (geometric)
+CARDS: Use WOBBLE CARD (bouncy) + thick borders + hard shadows
+TEXT: Use TEXT GENERATE EFFECT + large COLOURFUL TEXT
+BUTTONS: Hard shadow offset, NO gradients, bouncy hover
+NAV: Thick borders, bold colors
+SCROLL: Bouncy spring animations
+
+═══════════════════════════════════════════════════════════════════════════════
+✨ KEY EFFECTS:
+═══════════════════════════════════════════════════════════════════════════════
+- Hard shadows: box-shadow: 4px 4px 0 #000 (NO blur!)
+- Thick borders: border-4 border-black
+- Bouncy hover: scale(1.05) with spring easing
+- Bold colors: Primary yellows, pinks, blues
+- NO gradients, NO soft shadows
 
 COLORS: Bright backgrounds - #FFE566 yellow, #A7F3D0 mint, #FCA5A5 coral, #93C5FD blue. Black #000000 for borders and text. White for cards.
 
