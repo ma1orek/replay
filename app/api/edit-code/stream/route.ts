@@ -8,7 +8,7 @@ function getOpenAIKey() {
   return process.env.OPENAI_API_KEY || "";
 }
 
-// Server-Sent Events streaming for Edit with AI - Using OpenAI GPT-5.2
+// Server-Sent Events streaming for Edit with AI - Using OpenAI GPT-4o
 export async function POST(request: NextRequest) {
   const encoder = new TextEncoder();
   
@@ -60,9 +60,9 @@ PYTANIE: ${editRequest}
 Odpowiedz krótko i przyjaźnie:`;
 
           const response = await openai.chat.completions.create({
-            model: "gpt-5.2",
+            model: "gpt-4o",
             messages: [{ role: "user", content: planPrompt }],
-            max_completion_tokens: 500,
+            max_tokens: 500,
             temperature: 0.7,
             stream: true,
           });
@@ -120,7 +120,7 @@ Odpowiedz krótko i przyjaźnie:`;
           }
         }
 
-        send("status", { message: "Generating code with GPT-5.2...", phase: "ai" });
+        send("status", { message: "Generating code with GPT-4o...", phase: "ai" });
 
         // Build prompt
         const prompt = buildEditPrompt(currentCode, editRequest, databaseContext, validImages.length > 0);
@@ -138,12 +138,12 @@ Odpowiedz krótko i przyjaźnie:`;
 
         send("status", { message: "Writing code...", phase: "writing" });
 
-        // Stream the response with GPT-5.2
+        // Stream the response with GPT-4o
         try {
           const response = await openai.chat.completions.create({
-            model: "gpt-5.2",
+            model: "gpt-4o",
             messages,
-            max_completion_tokens: 16000,
+            max_tokens: 16000,
             temperature: 0.7,
             stream: true,
           });
