@@ -7868,43 +7868,46 @@ Try these prompts in Cursor or v0:
                       </motion.div>
                     ))}
                     
-                    {/* Thinking Indicator - Single clean frame */}
+                    {/* Thinking Indicator with LIVE CODE streaming */}
                     {isEditing && (
                       <motion.div 
                         initial={{ opacity: 0, y: 8 }} 
                         animate={{ opacity: 1, y: 0 }} 
-                        className="rounded-lg overflow-hidden border border-white/[0.08]"
+                        className="rounded-xl overflow-hidden border border-[#FF6E3C]/20"
                         style={{ background: '#0a0a0a' }}
                       >
-                        {/* Header - minimal */}
+                        {/* Header */}
                         <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.06]" style={{ background: '#0d0d0d' }}>
                           <div className="flex items-center gap-2">
-                            <Loader2 className="w-3 h-3 text-[#FF6E3C] animate-spin" />
-                            <span className="text-[10px] text-white/50">{streamingStatus || "Analyzing..."}</span>
-                            {streamingLines > 0 && (
-                              <span className="text-[9px] text-[#FF6E3C]/60 font-mono">{streamingLines} lines</span>
-                            )}
+                            <Loader2 className="w-3.5 h-3.5 text-[#FF6E3C] animate-spin" />
+                            <span className="text-[10px] font-medium text-[#FF6E3C]">{streamingStatus || "Generating..."}</span>
                           </div>
-                          <button
-                            onClick={() => {
-                              cancelAIRequest();
-                              setIsEditing(false);
-                              showToast("Request cancelled", "info");
-                            }}
-                            className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
+                          <div className="flex items-center gap-2">
+                            {streamingLines > 0 && (
+                              <span className="text-[10px] text-white/50 font-mono bg-white/5 px-2 py-0.5 rounded">{streamingLines} lines</span>
+                            )}
+                            <button
+                              onClick={() => {
+                                cancelAIRequest();
+                                setIsEditing(false);
+                                showToast("Request cancelled", "info");
+                              }}
+                              className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
                         </div>
                         
-                        {/* Code streaming - syntax highlighted */}
-                        <div className="p-3 h-[120px] overflow-hidden relative font-mono text-[10px] leading-relaxed">
-                          <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-[#0a0a0a] to-transparent z-10" />
-                          <pre className="m-0 pt-2 whitespace-pre-wrap break-words">
+                        {/* LIVE Code streaming - syntax highlighted */}
+                        <div className="p-3 h-[200px] overflow-hidden relative font-mono text-[10px] leading-relaxed">
+                          <div className="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-[#0a0a0a] to-transparent z-10" />
+                          <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-[#0a0a0a] to-transparent z-10" />
+                          <pre className="m-0 pt-4 pb-4 whitespace-pre-wrap break-words overflow-y-auto h-full custom-scrollbar">
                             {streamingCode ? (
-                              streamingCode.split('\n').slice(-8).map((line, i) => (
-                                <div key={i} className="min-h-[15px]">
-                                  {/* Basic syntax highlighting */}
+                              streamingCode.split('\n').slice(-15).map((line, i) => (
+                                <div key={i} className="min-h-[14px]">
+                                  {/* Syntax highlighting */}
                                   {line.split(/(<[^>]+>|"[^"]*"|'[^']*'|\/\*.*\*\/|\/\/.*$|{|}|\(|\)|class=|className=|style=|\b(?:const|let|var|function|return|if|else|for|while|import|export|from|default)\b)/g).map((part, j) => {
                                     if (!part) return null;
                                     if (part.startsWith('<') && part.endsWith('>')) return <span key={j} className="text-[#7fdbca]">{part}</span>;
@@ -7918,7 +7921,10 @@ Try these prompts in Cursor or v0:
                                 </div>
                               ))
                             ) : (
-                              <span className="text-white/30">Initializing...</span>
+                              <div className="flex items-center gap-2 text-white/30">
+                                <div className="w-2 h-2 bg-[#FF6E3C] rounded-full animate-pulse" />
+                                Preparing code...
+                              </div>
                             )}
                             <span className="inline-block w-2 h-4 bg-[#FF6E3C] ml-0.5 animate-pulse" />
                           </pre>
@@ -8019,7 +8025,7 @@ Try these prompts in Cursor or v0:
                                     } else if (event.type === 'chunk' && event.text) {
                                       // Real-time code streaming
                                       currentStreamCode += event.text;
-                                      setStreamingCode(currentStreamCode.slice(-400)); // Show last 400 chars
+                                      setStreamingCode(currentStreamCode.slice(-1500)); // Show last 1500 chars for better visibility
                                       setStreamingLines(currentStreamCode.split('\n').length);
                                     }
                                   }
@@ -9098,17 +9104,17 @@ Try these prompts in Cursor or v0:
           </div>
 
           <div className="flex-1 overflow-hidden flex flex-col relative bg-[#0a0a0a]">
-            {/* Preview - show loading during ANY generation phase, only show iframe when FULLY done */}
+            {/* Preview - show loading during generation, keep preview visible during editing */}
             {viewMode === "preview" && (
               <div className="flex-1 preview-container relative bg-[#0a0a0a] flex flex-col overflow-hidden" style={{ overscrollBehavior: 'none' }}>
-                {(isProcessing || isStreamingCode || isEditing) ? (
+                {(isProcessing || isStreamingCode) ? (
                   <div className="w-full h-full flex items-center justify-center bg-[#0a0a0a]">
                     <LoadingState />
                   </div>
                 ) : previewUrl ? (
                   <>
                     {/* Iframe container */}
-                    <div className={cn("flex-1 flex items-center justify-center bg-[#0a0a0a] overflow-hidden", isMobilePreview && "py-4")} style={{ overscrollBehavior: 'none' }}>
+                    <div className={cn("flex-1 flex items-center justify-center bg-[#0a0a0a] overflow-hidden relative", isMobilePreview && "py-4")} style={{ overscrollBehavior: 'none' }}>
                       <iframe 
                         key={previewUrl}
                         ref={previewIframeRef}
@@ -9118,15 +9124,25 @@ Try these prompts in Cursor or v0:
                           isMobilePreview 
                             ? "w-[375px] h-[667px] rounded-3xl shadow-2xl ring-4 ring-black/50" 
                             : "w-full h-full",
-                          isPointAndEdit && "cursor-crosshair"
+                          isPointAndEdit && "cursor-crosshair",
+                          isEditing && "opacity-50"
                         )} 
                         style={{ overscrollBehavior: 'none', backgroundColor: '#0a0a0a' }}
                         title="Preview" 
                         sandbox="allow-scripts allow-same-origin" 
                       />
+                      {/* Editing overlay indicator */}
+                      {isEditing && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div className="bg-black/80 backdrop-blur-sm px-6 py-4 rounded-2xl border border-white/10 flex items-center gap-3">
+                            <Loader2 className="w-5 h-5 text-[#FF6E3C] animate-spin" />
+                            <span className="text-white/80 text-sm font-medium">Applying changes...</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     
-                    {!showFloatingEdit && (
+                    {!showFloatingEdit && !isEditing && (
                       <button onClick={() => { setShowFloatingEdit(true); setIsDirectEditMode(false); }} className="floating-edit-btn flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium text-white/90">
                         <Sparkles className="w-4 h-4 text-[#FF6E3C]" /> Edit with AI
                       </button>
@@ -12303,7 +12319,7 @@ export default function GeneratedPage() {
                               } else if (event.type === 'chunk' && event.text) {
                                 // Real-time code streaming
                                 currentStreamCode += event.text;
-                                setStreamingCode(currentStreamCode.slice(-400)); // Show last 400 chars
+                                setStreamingCode(currentStreamCode.slice(-1500)); // Show last 1500 chars for better visibility
                                 setStreamingLines(currentStreamCode.split('\n').length);
                               }
                             }
