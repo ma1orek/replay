@@ -9186,7 +9186,7 @@ Try these prompts in Cursor or v0:
                           <button
                             onClick={() => handlePublish()}
                             disabled={isPublishing}
-                            className="flex-1 py-2.5 rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] text-white text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                            className="flex-1 py-2.5 rounded-lg bg-[#FF6E3C] hover:bg-[#FF8F5C] text-white text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                           >
                             {isPublishing ? (
                               <>
