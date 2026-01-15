@@ -63,9 +63,33 @@ export default function LandingHero() {
   const [loadingDemo, setLoadingDemo] = useState<string | null>(null);
 
   const DEMOS = [
-    { id: 'dashboard', src: '/dashboard (1).mp4', title: 'SaaS Dashboard', subtitle: 'Analytics & Charts' },
-    { id: 'yc', src: '/yc (1).mp4', title: 'YC Directory', subtitle: 'Startup Listings' },
-    { id: 'landing', src: '/lp (1).mp4', title: 'Landing Page', subtitle: 'Marketing Site' }
+    { 
+      id: 'dashboard', 
+      src: '/videodashboard.mp4', 
+      title: 'SaaS Dashboard',
+      flowId: 'flow_1768470161014_wk9oigfht',
+      from: 'Legacy SaaS Dashboard',
+      to: 'Modern Analytics Tool',
+      tag: 'Visual Refactor'
+    },
+    { 
+      id: 'yc', 
+      src: '/yc (1).mp4', 
+      title: 'YC Directory',
+      flowId: 'flow_1768436272939_5kj9xzshc',
+      from: 'YC Directory',
+      to: 'Next-Gen Layout',
+      tag: 'Style Injection'
+    },
+    { 
+      id: 'landing', 
+      src: '/lp (1).mp4', 
+      title: 'Landing Page',
+      flowId: null,
+      from: 'Generic Landing Page',
+      to: 'World-Class Design',
+      tag: 'UX/UI Upgrade'
+    }
   ];
 
   const checkIsMobile = useCallback(() => {
@@ -159,7 +183,12 @@ export default function LandingHero() {
   const handleDemoSelect = async (demo: typeof DEMOS[0]) => {
     setSelectedDemo(demo.id);
     setLoadingDemo(demo.id);
-    router.push(`/tool?demo=${demo.id}`);
+    // If demo has a specific flowId, use it; otherwise use the demo id
+    if (demo.flowId) {
+      router.push(`/tool?demo=${demo.flowId}`);
+    } else {
+      router.push(`/tool?demo=${demo.id}`);
+    }
   };
 
   return (
@@ -403,30 +432,74 @@ export default function LandingHero() {
             </div>
           </GlowCard>
           
-          {/* Separated "No video?" section */}
-          <div className="mt-6 border-t border-white/[0.05] pt-6">
-            <div className="flex flex-col md:flex-row items-center justify-center gap-4">
-              <span className="text-sm text-gray-500 font-mono uppercase tracking-wide">
-                <span className="font-bold text-gray-400">No video?</span> Try instant examples:
+          {/* Enhanced "No video?" section with transformation boxes */}
+          <div className="mt-8 relative">
+            {/* Gradient glow background */}
+            <div className="absolute inset-0 -m-4 bg-gradient-to-b from-transparent via-[#FF6E3C]/[0.03] to-transparent rounded-3xl blur-xl pointer-events-none" />
+            
+            {/* Header */}
+            <div className="text-center mb-6 relative">
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/[0.06]">
+                <Sparkles className="w-4 h-4 text-[#FF6E3C]" />
+                <span className="text-sm font-medium text-white/80">NO VIDEO?</span>
+                <span className="text-sm text-white/40">Try instant examples</span>
               </span>
-              <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
-                {DEMOS.map((demo) => (
-                  <button
-                    key={demo.id}
-                    onClick={() => handleDemoSelect(demo)}
-                    disabled={loadingDemo === demo.id}
-                    className={cn(
-                      "px-4 py-2 rounded-lg text-xs font-medium border transition-all whitespace-nowrap flex items-center gap-2",
+            </div>
+            
+            {/* Transformation boxes grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative">
+              {DEMOS.map((demo) => (
+                <button
+                  key={demo.id}
+                  onClick={() => handleDemoSelect(demo)}
+                  disabled={loadingDemo === demo.id}
+                  className={cn(
+                    "group relative p-4 rounded-xl border transition-all duration-300 text-left overflow-hidden",
+                    selectedDemo === demo.id 
+                      ? "bg-[#FF6E3C]/10 border-[#FF6E3C]/50" 
+                      : "bg-black/40 border-white/[0.06] hover:border-white/20 hover:bg-white/[0.02]"
+                  )}
+                >
+                  {/* Hover glow effect */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#FF6E3C]/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  
+                  {/* Tag */}
+                  <div className="relative mb-3">
+                    <span className={cn(
+                      "inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider",
                       selectedDemo === demo.id 
-                        ? "bg-[#FF6E3C]/10 border-[#FF6E3C] text-[#FF6E3C]" 
-                        : "bg-black/50 border-white/10 text-gray-400 hover:text-white hover:border-white/20"
-                    )}
-                  >
-                    {loadingDemo === demo.id && <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />}
-                    {demo.title}
-                  </button>
-                ))}
-              </div>
+                        ? "bg-[#FF6E3C]/20 text-[#FF6E3C]"
+                        : "bg-white/[0.05] text-white/50"
+                    )}>
+                      {demo.tag}
+                    </span>
+                  </div>
+                  
+                  {/* Transformation */}
+                  <div className="relative space-y-2">
+                    <p className="text-sm text-white/50 line-through decoration-white/20">{demo.from}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#FF6E3C] font-bold">→</span>
+                      <p className="text-sm font-semibold text-white">{demo.to}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Loading indicator */}
+                  {loadingDemo === demo.id && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-xl">
+                      <div className="w-6 h-6 border-2 border-[#FF6E3C] border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+            
+            {/* Scroll indicator */}
+            <div className="text-center mt-8">
+              <span className="text-xs text-white/30 flex items-center justify-center gap-2">
+                <ChevronDown className="w-4 h-4 animate-bounce" />
+                Scroll to explore
+              </span>
             </div>
           </div>
           
