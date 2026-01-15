@@ -429,39 +429,34 @@ export default function LandingHero() {
               </div>
               
               {/* === INTEGRATED SEPARATOR === */}
-              <div className="relative">
-                <div className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-                <div className="flex items-center justify-center py-3">
-                  <span className="flex items-center gap-2 text-xs text-white/40 bg-[#0a0a0a] px-4 relative z-10">
-                    <Video className="w-3.5 h-3.5 text-[#FF6E3C]" />
+              <div className="relative py-5">
+                <div className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                <div className="flex items-center justify-center">
+                  <span className="flex items-center gap-2.5 text-sm font-medium text-white/60 bg-[#0a0a0a] px-5 relative z-10">
+                    <Video className="w-4 h-4 text-[#FF6E3C]" />
                     NO VIDEO? Try examples
                   </span>
                 </div>
               </div>
               
-              {/* === LOWER SECTION: Seamless Demo Grid === */}
-              <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/[0.06]">
+              {/* === LOWER SECTION: Demo Grid with borders === */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 pt-0">
                 {DEMOS.map((demo, index) => (
                   <button
                     key={demo.id}
                     onClick={() => handleDemoSelect(demo)}
                     disabled={loadingDemo === demo.id}
                     className={cn(
-                      "group relative text-left transition-all duration-300 overflow-hidden",
-                      "hover:bg-white/[0.02]",
-                      selectedDemo === demo.id && "bg-[#FF6E3C]/5"
+                      "group relative text-left transition-all duration-300 overflow-hidden rounded-xl",
+                      "border border-white/10 hover:border-white/20",
+                      selectedDemo === demo.id && "border-[#FF6E3C]/50"
                     )}
                   >
                     {/* Cinematic hover glow */}
-                    <div className={cn(
-                      "absolute inset-x-0 -bottom-4 h-20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none blur-2xl",
-                      index === 0 && "bg-cyan-500/20",
-                      index === 1 && "bg-[#FF6E3C]/20",
-                      index === 2 && "bg-purple-500/20"
-                    )} />
+                    <div className="absolute inset-x-0 -bottom-4 h-20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none blur-2xl bg-[#FF6E3C]/20" />
                     
                     {/* Video preview with fade overlay */}
-                    <div className="relative aspect-[16/10] w-full overflow-hidden">
+                    <div className="relative aspect-[16/10] w-full overflow-hidden rounded-t-xl">
                       <video 
                         src={demo.src}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
@@ -473,15 +468,9 @@ export default function LandingHero() {
                       {/* Gradient fade overlay for text */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                       
-                      {/* Tag on video */}
+                      {/* Tag on video - Dark with orange text */}
                       <div className="absolute top-3 left-3">
-                        <span className={cn(
-                          "inline-flex items-center gap-1 px-2 py-1 rounded-md text-[9px] font-semibold uppercase tracking-wider transition-all duration-300",
-                          "backdrop-blur-md border",
-                          index === 0 && "bg-cyan-500/20 border-cyan-500/30 text-cyan-300 group-hover:bg-cyan-500/30",
-                          index === 1 && "bg-[#FF6E3C]/20 border-[#FF6E3C]/30 text-[#FF6E3C] group-hover:bg-[#FF6E3C]/30",
-                          index === 2 && "bg-purple-500/20 border-purple-500/30 text-purple-300 group-hover:bg-purple-500/30"
-                        )}>
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[9px] font-semibold uppercase tracking-wider bg-black/60 backdrop-blur-md border border-white/10 text-[#FF6E3C]">
                           {demo.tag}
                         </span>
                       </div>
@@ -490,12 +479,7 @@ export default function LandingHero() {
                       <div className="absolute bottom-3 left-3 right-3">
                         <p className="text-[11px] text-white/50 mb-0.5">{demo.from}</p>
                         <div className="flex items-center gap-1.5">
-                          <span className={cn(
-                            "text-xs transition-colors",
-                            index === 0 && "text-cyan-400",
-                            index === 1 && "text-[#FF6E3C]",
-                            index === 2 && "text-purple-400"
-                          )}>→</span>
+                          <span className="text-[#FF6E3C] text-xs font-bold">→</span>
                           <p className="text-xs font-semibold text-white">{demo.to}</p>
                         </div>
                       </div>
@@ -503,13 +487,8 @@ export default function LandingHero() {
                     
                     {/* Loading indicator */}
                     {loadingDemo === demo.id && (
-                      <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-10">
-                        <div className={cn(
-                          "w-6 h-6 border-2 border-t-transparent rounded-full animate-spin",
-                          index === 0 && "border-cyan-500",
-                          index === 1 && "border-[#FF6E3C]",
-                          index === 2 && "border-purple-500"
-                        )} />
+                      <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-10 rounded-xl">
+                        <div className="w-6 h-6 border-2 border-[#FF6E3C] border-t-transparent rounded-full animate-spin" />
                       </div>
                     )}
                   </button>
