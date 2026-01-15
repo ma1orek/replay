@@ -22,7 +22,8 @@ export async function compressVideo(
     quality?: number;
   } = {}
 ): Promise<CompressedVideo> {
-  const { maxSizeMB = 4, maxWidth = 1920, quality = 0.8 } = options;
+  // Vercel has 4.5MB limit, base64 adds ~33% overhead, so max 3MB raw = ~4MB base64
+  const { maxSizeMB = 3, maxWidth = 1280, quality = 0.7 } = options;
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
   const originalSize = videoBlob.size;
 
@@ -97,7 +98,7 @@ export async function compressVideo(
 
   const recorder = new MediaRecorder(canvasStream, {
     mimeType: selectedMimeType,
-    videoBitsPerSecond: Math.min(targetBitsPerSecond, 1000000), // Cap at 1Mbps
+    videoBitsPerSecond: Math.min(targetBitsPerSecond, 500000), // Cap at 500kbps to stay under 4.5MB Vercel limit
   });
 
   const chunks: Blob[] = [];
@@ -244,7 +245,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 /**
  * Quick check if video needs compression
  */
-export function needsCompression(blob: Blob, maxSizeMB: number = 4): boolean {
+export function needsCompression(blob: Blob, maxSizeMB: number = 3): boolean {
   return blob.size > maxSizeMB * 1024 * 1024;
 }
 
