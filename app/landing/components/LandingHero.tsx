@@ -340,7 +340,7 @@ export default function LandingHero() {
                 {/* CONFIGURATION */}
                 <button 
                   onClick={() => setShowAdvanced(!showAdvanced)}
-                  className="w-full py-2.5 flex items-center justify-center gap-1.5 text-white/40 hover:text-white/60 transition-colors text-xs"
+                  className="w-full py-4 flex items-center justify-center gap-1.5 text-white/40 hover:text-white/60 transition-colors text-xs"
                 >
                   <Settings className="w-3 h-3" />
                   <span>Configuration & Context</span>
@@ -388,7 +388,7 @@ export default function LandingHero() {
                 </AnimatePresence>
 
                 {/* RECONSTRUCT BUTTON */}
-                <div className="relative pb-5">
+                <div className="relative">
                   {heroFlow.blob && (
                     <div className="absolute -inset-1 bg-gradient-to-r from-[#FF6E3C] to-[#FF8C5C] rounded-xl blur-lg opacity-40 animate-pulse" />
                   )}
@@ -429,12 +429,13 @@ export default function LandingHero() {
               </div>
               
               {/* === INTEGRATED SEPARATOR === */}
-              <div className="relative py-5">
+              <div className="relative py-3">
                 <div className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                 <div className="flex items-center justify-center">
-                  <span className="flex items-center gap-2.5 text-sm font-medium text-white/60 bg-[#0a0a0a] px-5 relative z-10">
+                  <span className="flex items-center gap-2 text-sm bg-[#0a0a0a] px-4 relative z-10">
                     <Video className="w-4 h-4 text-[#FF6E3C]" />
-                    NO VIDEO? Try examples
+                    <span className="font-semibold text-white">NO VIDEO?</span>
+                    <span className="text-white/50">Try examples</span>
                   </span>
                 </div>
               </div>
