@@ -7874,18 +7874,23 @@ Try these prompts in Cursor or v0:
                       <motion.div 
                         initial={{ opacity: 0, y: 8 }} 
                         animate={{ opacity: 1, y: 0 }} 
-                        className="rounded-xl overflow-hidden border border-[#FF6E3C]/20"
-                        style={{ background: '#0a0a0a' }}
+                        className="rounded-xl overflow-hidden border border-[#FF6E3C]/30 shadow-lg shadow-[#FF6E3C]/10"
+                        style={{ background: '#111' }}
                       >
                         {/* Header */}
-                        <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.06]" style={{ background: '#0d0d0d' }}>
-                          <div className="flex items-center gap-2">
-                            <Loader2 className="w-3.5 h-3.5 text-[#FF6E3C] animate-spin" />
-                            <span className="text-[10px] font-medium text-[#FF6E3C]">{streamingStatus || "Generating..."}</span>
+                        <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#FF6E3C]/20" style={{ background: 'linear-gradient(to right, #1a1a1a, #151515)' }}>
+                          <div className="flex items-center gap-2.5">
+                            <div className="relative">
+                              <div className="w-2.5 h-2.5 rounded-full bg-[#FF6E3C] animate-pulse" />
+                              <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-[#FF6E3C] animate-ping opacity-50" />
+                            </div>
+                            <span className="text-xs font-medium text-[#FF6E3C]">{streamingStatus || "Generating..."}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             {streamingLines > 0 && (
-                              <span className="text-[10px] text-white/50 font-mono bg-white/5 px-2 py-0.5 rounded">{streamingLines} lines</span>
+                              <span className="text-[10px] text-white/70 font-mono bg-[#FF6E3C]/10 px-2 py-1 rounded-md border border-[#FF6E3C]/20">
+                                {streamingLines} lines
+                              </span>
                             )}
                             <button
                               onClick={() => {
@@ -7893,21 +7898,21 @@ Try these prompts in Cursor or v0:
                                 setIsEditing(false);
                                 showToast("Request cancelled", "info");
                               }}
-                              className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors"
+                              className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
                             >
-                              <X className="w-3 h-3" />
+                              <X className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </div>
                         
                         {/* LIVE Code streaming - syntax highlighted */}
-                        <div className="p-3 h-[200px] overflow-hidden relative font-mono text-[10px] leading-relaxed">
-                          <div className="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-[#0a0a0a] to-transparent z-10" />
-                          <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-[#0a0a0a] to-transparent z-10" />
+                        <div className="p-4 min-h-[180px] max-h-[280px] overflow-hidden relative font-mono text-[11px] leading-relaxed" style={{ background: '#0d0d0d' }}>
+                          <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-[#0d0d0d] to-transparent z-10 pointer-events-none" />
+                          <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#0d0d0d] to-transparent z-10 pointer-events-none" />
                           <pre className="m-0 pt-4 pb-4 whitespace-pre-wrap break-words overflow-y-auto h-full custom-scrollbar">
-                            {streamingCode ? (
-                              streamingCode.split('\n').slice(-15).map((line, i) => (
-                                <div key={i} className="min-h-[14px]">
+                            {streamingCode && streamingCode.length > 0 ? (
+                              streamingCode.split('\n').slice(-20).map((line, i) => (
+                                <div key={i} className="min-h-[16px]">
                                   {/* Syntax highlighting */}
                                   {line.split(/(<[^>]+>|"[^"]*"|'[^']*'|\/\*.*\*\/|\/\/.*$|{|}|\(|\)|class=|className=|style=|\b(?:const|let|var|function|return|if|else|for|while|import|export|from|default)\b)/g).map((part, j) => {
                                     if (!part) return null;
@@ -7917,17 +7922,21 @@ Try these prompts in Cursor or v0:
                                     if (/^(const|let|var|function|return|if|else|for|while|import|export|from|default)$/.test(part)) return <span key={j} className="text-[#c792ea]">{part}</span>;
                                     if (part === 'class=' || part === 'className=' || part === 'style=') return <span key={j} className="text-[#addb67]">{part}</span>;
                                     if (part === '{' || part === '}' || part === '(' || part === ')') return <span key={j} className="text-[#ffd700]">{part}</span>;
-                                    return <span key={j} className="text-[#d6deeb]">{part}</span>;
+                                    return <span key={j} className="text-white/90">{part}</span>;
                                   })}
                                 </div>
                               ))
                             ) : (
-                              <div className="flex items-center gap-2 text-white/30">
-                                <div className="w-2 h-2 bg-[#FF6E3C] rounded-full animate-pulse" />
-                                Preparing code...
+                              <div className="flex flex-col items-center justify-center h-full gap-3 text-white/50">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-2 h-2 bg-[#FF6E3C] rounded-full animate-pulse" />
+                                  <div className="w-2 h-2 bg-[#FF6E3C] rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+                                  <div className="w-2 h-2 bg-[#FF6E3C] rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+                                </div>
+                                <span className="text-xs">Writing code...</span>
                               </div>
                             )}
-                            <span className="inline-block w-2 h-4 bg-[#FF6E3C] ml-0.5 animate-pulse" />
+                            {streamingCode && <span className="inline-block w-2.5 h-5 bg-[#FF6E3C] ml-0.5 animate-pulse rounded-sm" />}
                           </pre>
                         </div>
                       </motion.div>
@@ -7972,7 +7981,7 @@ Try these prompts in Cursor or v0:
                             const currentSelectedElement = selectedElement;
                             const currentPlanMode = isPlanMode;
                             const currentChatHistory = chatMessages.slice(-10).map(m => ({ role: m.role, content: m.content }));
-                            setChatInput(""); setSelectedElement(null); setIsEditing(true); setStreamingStatus(null);
+                            setChatInput(""); setSelectedElement(null); setIsEditing(true); setStreamingStatus("Analyzing..."); setStreamingCode(''); setStreamingLines(0);
                             try {
                               if (currentPlanMode) {
                                 // PLAN MODE: Conversational response without code editing with streaming
@@ -8008,6 +8017,7 @@ Try these prompts in Cursor or v0:
                                 
                                 // Use streaming API with status updates and code preview
                                 let currentStreamCode = '';
+                                let lastUpdate = 0;
                                 const result = await editCodeWithAIStreaming(
                                   editableCode, prompt, imageData, undefined, false, currentChatHistory,
                                   (event) => {
@@ -8016,6 +8026,7 @@ Try these prompts in Cursor or v0:
                                       if (event.phase === 'writing') {
                                         currentStreamCode = '';
                                         setStreamingCode('');
+                                        setStreamingLines(0);
                                       }
                                     } else if (event.type === 'progress') {
                                       setStreamingStatus(`Writing code...`);
@@ -8024,10 +8035,15 @@ Try these prompts in Cursor or v0:
                                         setStreamingCode(event.preview);
                                       }
                                     } else if (event.type === 'chunk' && event.text) {
-                                      // Real-time code streaming
+                                      // Real-time code streaming - batch updates for performance
                                       currentStreamCode += event.text;
-                                      setStreamingCode(currentStreamCode.slice(-1500)); // Show last 1500 chars for better visibility
-                                      setStreamingLines(currentStreamCode.split('\n').length);
+                                      const now = Date.now();
+                                      // Update UI every 50ms for smooth batching
+                                      if (now - lastUpdate > 50) {
+                                        lastUpdate = now;
+                                        setStreamingCode(currentStreamCode.slice(-2000)); // Show last 2000 chars for better visibility
+                                        setStreamingLines(currentStreamCode.split('\n').length);
+                                      }
                                     }
                                   }
                                 );
