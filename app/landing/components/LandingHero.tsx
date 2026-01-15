@@ -501,14 +501,6 @@ export default function LandingHero() {
             </div>
           </GlowCard>
           
-          {/* Scroll indicator - only one */}
-          <div className="text-center mt-6">
-            <span className="text-xs text-white/30 flex items-center justify-center gap-2">
-              <ChevronDown className="w-4 h-4 animate-bounce" />
-              Scroll to explore
-            </span>
-          </div>
-          
         </div>
       </motion.div>
 
