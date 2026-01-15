@@ -30,6 +30,42 @@ If you use Unsplash/Pexels, the output will be REJECTED.
 ================================================================================
 
 ================================================================================
+🚨🚨🚨 CRITICAL CHART RULE - AI CANNOT DRAW SVG PATHS! 🚨🚨🚨
+================================================================================
+**YOU CANNOT CALCULATE SVG PATHS! DO NOT EVEN TRY!**
+
+When you see a chart in the video (line chart, area chart, bar chart, pie chart):
+❌ DO NOT write <svg><path d="M0,100 L50,80 L100,60..."> - YOU WILL GET IT WRONG!
+❌ DO NOT try to draw polylines, paths, or any SVG shapes for data visualization
+❌ DO NOT create "fake" static chart images
+
+✅ YOU MUST USE RECHARTS LIBRARY:
+\`\`\`html
+<script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/recharts@2.12.7/umd/Recharts.min.js"></script>
+
+<div id="myChart" style="width:100%; height:300px;"></div>
+<script>
+const { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } = Recharts;
+const data = [{name:'Mon',value:400},{name:'Tue',value:300},{name:'Wed',value:600}];
+const el = React.createElement(ResponsiveContainer, {width:'100%',height:'100%'},
+  React.createElement(AreaChart, {data},
+    React.createElement(Area, {type:'monotone',dataKey:'value',stroke:'#f97316',fill:'#f97316',fillOpacity:0.3})
+  )
+);
+ReactDOM.render(el, document.getElementById('myChart'));
+</script>
+\`\`\`
+
+**WHY?** LLMs cannot accurately calculate coordinate points for curves. Every time you try
+to draw an SVG path manually, it comes out wrong, ugly, or broken. Recharts does the math
+for you perfectly.
+
+If you draw SVG charts manually, the output will be REJECTED.
+================================================================================
+
+================================================================================
 🎯 CORE PHILOSOPHY
 ================================================================================
 1. **CONTENT EXTRACTION**: Extract ALL content from video - text, structure, flow, data.
@@ -680,8 +716,29 @@ SECTION-SPECIFIC REQUIREMENTS:
 ================================================================================
 📊 CHARTS & DATA VISUALIZATION PROTOCOL (MANDATORY!)
 ================================================================================
-🚨 CRITICAL: DO NOT ATTEMPT TO DRAW CHARTS WITH RAW SVG <PATH>!
-LLMs cannot calculate SVG paths accurately. You MUST use 'Recharts' library via CDN.
+🚨🚨🚨 STOP! READ THIS BEFORE WRITING ANY CHART CODE! 🚨🚨🚨
+
+**FORBIDDEN PATTERNS - IF YOU WRITE ANY OF THESE, OUTPUT IS REJECTED:**
+\`\`\`html
+<!-- ❌ FORBIDDEN - Manual SVG paths -->
+<svg><path d="M0,100 L50,80 L100,60 L150,90"></path></svg>
+<svg><polyline points="0,100 50,80 100,60"></polyline></svg>
+<svg><circle cx="50" cy="50" r="40"></circle></svg>  <!-- for pie charts -->
+
+<!-- ❌ FORBIDDEN - CSS-only fake charts -->
+<div style="width:50%; height:100px; background:linear-gradient(...)"></div>
+
+<!-- ❌ FORBIDDEN - Hardcoded positioning -->
+<div style="position:absolute; left:20px; bottom:30px;">●</div>
+\`\`\`
+
+**WHY THIS IS FORBIDDEN:**
+- LLMs CANNOT calculate accurate coordinates for data points
+- Every SVG path you write will be crooked, wrong, or ugly
+- The math for curves (bezier, monotone) is impossible without computation
+
+**THE ONLY SOLUTION: RECHARTS LIBRARY**
+Recharts does all the math perfectly. You just provide data, it draws the chart.
 
 **WHY RECHARTS IS PERFECT FOR AI:**
 - Most popular React chart library - AI knows its API perfectly
@@ -876,13 +933,36 @@ React.createElement(PieChart, null,
 ================================================================================
 🚨 CHART RULES - INSTANT REJECTION CONDITIONS
 ================================================================================
+
+**AUTOMATIC REJECTION IF ANY OF THESE PATTERNS FOUND:**
+\`\`\`
+❌ <svg.*<path d="M.*L.*"  → REJECTED (manual SVG path)
+❌ <svg.*<polyline points= → REJECTED (manual polyline)
+❌ <svg.*viewBox.*<line   → REJECTED (manual line drawing)
+❌ stroke-dasharray.*chart → REJECTED (CSS fake chart)
+❌ position:absolute.*data → REJECTED (positioned dots)
+\`\`\`
+
+**OTHER REJECTION CONDITIONS:**
 ❌ DO NOT use \`import\` - Use \`const { ... } = Recharts;\`
-❌ DO NOT draw SVG paths manually - AI cannot calculate curves!
 ❌ DO NOT ignore the selected Visual Style when picking chart colors
 ❌ DO NOT forget ResponsiveContainer - Charts will overflow!
 ❌ DO NOT use solid color fills - Always use gradients!
 ❌ DO NOT forget isAnimationActive: true - Charts must animate!
 ❌ DO NOT use fixed pixel widths - Always percentage/responsive!
+
+**CORRECT PATTERN - ALWAYS USE THIS:**
+\`\`\`javascript
+// 1. Destructure from global Recharts
+const { AreaChart, Area, ResponsiveContainer } = Recharts;
+// 2. Define data array
+const data = [{name:'A',value:100},{name:'B',value:200}];
+// 3. Create element and render
+const chart = React.createElement(ResponsiveContainer, {width:'100%',height:'100%'},
+  React.createElement(AreaChart, {data}, /* ... */)
+);
+ReactDOM.render(chart, document.getElementById('chartDiv'));
+\`\`\`
 
 ================================================================================
 🚨🚨🚨 MULTI-SCREEN / MULTI-PAGE VIDEO FLOW (CRITICAL!) 🚨🚨🚨
