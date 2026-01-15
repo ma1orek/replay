@@ -65,7 +65,7 @@ export default function LandingHero() {
   const DEMOS = [
     {
       id: 'dashboard',
-      src: '/videodashboard.mp4',
+      src: '/dashboardvid.mp4',
       title: 'SaaS Dashboard',
       flowId: 'flow_1768474261072_uclbwqzdc',
       from: 'Legacy SaaS Dashboard',
@@ -74,16 +74,16 @@ export default function LandingHero() {
     },
     {
       id: 'yc',
-      src: '/yc (1).mp4',
+      src: '/ycvid.mp4',
       title: 'YC Directory',
       flowId: 'flow_1768470467213_35dvc8tap',
       from: 'YC Directory',
       to: 'Next-Gen Layout',
       tag: 'Style Injection'
     },
-    { 
-      id: 'landing', 
-      src: '/lp (1).mp4', 
+    {
+      id: 'landing',
+      src: '/lpvid.mp4',
       title: 'Landing Page',
       flowId: null,
       from: 'Generic Landing Page',
@@ -216,16 +216,16 @@ export default function LandingHero() {
         className="relative w-full max-w-3xl mx-auto z-10 pb-8"
       >
         <div className="relative max-w-3xl mx-auto">
-          {/* Główny Box - Wrapped in GlowCard for requested style */}
+          {/* Unified Glass Stack - Everything in one container */}
           <GlowCard className="p-2 overflow-hidden" glowColor="orange" customSize>
             
             {/* Main Upload Panel - Premium Dark Design */}
             <div className="rounded-2xl bg-gradient-to-b from-white/[0.03] to-transparent backdrop-blur-sm p-5 md:p-6 pb-4 md:pb-5 flex flex-col gap-3 overflow-hidden w-full max-w-full box-border">
               
-              {/* 1. DROPZONE - Clean, Minimal */}
+              {/* 1. DROPZONE - Compact */}
               <div
                 className={cn(
-                  "relative rounded-xl bg-black/40 py-12 px-6 flex flex-col items-center justify-center gap-4 cursor-pointer transition-all duration-300 group overflow-hidden",
+                  "relative rounded-xl bg-black/40 py-8 px-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all duration-300 group overflow-hidden",
                   isDragging && "bg-[#FF6E3C]/5"
                 )}
                 onClick={onBrowse}
@@ -429,78 +429,84 @@ export default function LandingHero() {
                   e.currentTarget.value = "";
                 }}
               />
+              
+              {/* Separator - No Video section inside the card */}
+              <div className="flex items-center gap-3 pt-2">
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                <span className="flex items-center gap-2 text-xs text-white/40">
+                  <Video className="w-3.5 h-3.5 text-[#FF6E3C]" />
+                  NO VIDEO? Try examples
+                </span>
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+              </div>
+              
+              {/* Demo boxes with video previews - integrated */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {DEMOS.map((demo) => (
+                  <button
+                    key={demo.id}
+                    onClick={() => handleDemoSelect(demo)}
+                    disabled={loadingDemo === demo.id}
+                    className={cn(
+                      "group relative rounded-xl border transition-all duration-300 text-left overflow-hidden",
+                      selectedDemo === demo.id 
+                        ? "border-[#FF6E3C]/50" 
+                        : "border-white/[0.06] hover:border-white/20"
+                    )}
+                  >
+                    {/* Video preview with fade overlay */}
+                    <div className="relative aspect-video w-full overflow-hidden rounded-t-xl">
+                      <video 
+                        src={demo.src}
+                        className="w-full h-full object-cover"
+                        muted
+                        loop
+                        playsInline
+                        autoPlay
+                      />
+                      {/* Gradient fade overlay for text */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                      
+                      {/* Tag on video */}
+                      <div className="absolute top-2 left-2">
+                        <span className={cn(
+                          "inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-medium uppercase tracking-wider backdrop-blur-sm",
+                          selectedDemo === demo.id 
+                            ? "bg-[#FF6E3C]/80 text-white"
+                            : "bg-black/60 text-white/70"
+                        )}>
+                          {demo.tag}
+                        </span>
+                      </div>
+                      
+                      {/* Transformation text on video */}
+                      <div className="absolute bottom-2 left-2 right-2">
+                        <p className="text-[11px] text-white/60 mb-0.5">{demo.from}</p>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[#FF6E3C] text-xs">→</span>
+                          <p className="text-xs font-semibold text-white">{demo.to}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Loading indicator */}
+                    {loadingDemo === demo.id && (
+                      <div className="absolute inset-0 bg-black/80 flex items-center justify-center rounded-xl z-10">
+                        <div className="w-6 h-6 border-2 border-[#FF6E3C] border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
           </GlowCard>
           
-          {/* Enhanced "No video?" section with transformation boxes */}
-          <div className="mt-8 relative">
-            {/* Gradient glow background */}
-            <div className="absolute inset-0 -m-4 bg-gradient-to-b from-transparent via-[#FF6E3C]/[0.03] to-transparent rounded-3xl blur-xl pointer-events-none" />
-            
-            {/* Header */}
-            <div className="text-center mb-6 relative">
-              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/[0.06]">
-                <Video className="w-4 h-4 text-[#FF6E3C]" />
-                <span className="text-sm font-medium text-white/80">NO VIDEO?</span>
-                <span className="text-sm text-white/40">Try instant examples</span>
-              </span>
-            </div>
-            
-            {/* Transformation boxes grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative">
-              {DEMOS.map((demo) => (
-                <button
-                  key={demo.id}
-                  onClick={() => handleDemoSelect(demo)}
-                  disabled={loadingDemo === demo.id}
-                  className={cn(
-                    "group relative p-4 rounded-xl border transition-all duration-300 text-left overflow-hidden",
-                    selectedDemo === demo.id 
-                      ? "bg-[#FF6E3C]/10 border-[#FF6E3C]/50" 
-                      : "bg-black/40 border-white/[0.06] hover:border-white/20 hover:bg-white/[0.02]"
-                  )}
-                >
-                  {/* Hover glow effect */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#FF6E3C]/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  
-                  {/* Tag */}
-                  <div className="relative mb-3">
-                    <span className={cn(
-                      "inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider",
-                      selectedDemo === demo.id 
-                        ? "bg-[#FF6E3C]/20 text-[#FF6E3C]"
-                        : "bg-white/[0.05] text-white/50"
-                    )}>
-                      {demo.tag}
-                    </span>
-                  </div>
-                  
-                  {/* Transformation */}
-                  <div className="relative space-y-2">
-                    <p className="text-sm text-white/50 line-through decoration-white/20">{demo.from}</p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[#FF6E3C] font-bold">→</span>
-                      <p className="text-sm font-semibold text-white">{demo.to}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Loading indicator */}
-                  {loadingDemo === demo.id && (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-xl">
-                      <div className="w-6 h-6 border-2 border-[#FF6E3C] border-t-transparent rounded-full animate-spin" />
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-            
-            {/* Scroll indicator */}
-            <div className="text-center mt-8">
-              <span className="text-xs text-white/30 flex items-center justify-center gap-2">
-                <ChevronDown className="w-4 h-4 animate-bounce" />
-                Scroll to explore
-              </span>
-            </div>
+          {/* Scroll indicator - only one */}
+          <div className="text-center mt-6">
+            <span className="text-xs text-white/30 flex items-center justify-center gap-2">
+              <ChevronDown className="w-4 h-4 animate-bounce" />
+              Scroll to explore
+            </span>
           </div>
           
         </div>
