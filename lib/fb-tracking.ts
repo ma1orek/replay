@@ -239,12 +239,15 @@ export function trackStartTrial(userId?: string, email?: string) {
 /** 
  * CompleteRegistration - Ukończenie rejestracji
  * Użyj gdy: użytkownik kończy rejestrację (OAuth/email)
+ * Value = predicted LTV of a free user signup ($5 estimated)
  */
 export function trackCompleteRegistration(email?: string, userId?: string) {
   return trackFBEvent("CompleteRegistration", { 
     email,
     userId,
-    status: "completed"
+    status: "completed",
+    value: 5.00,       // Predicted value of a new signup (for ROAS optimization)
+    currency: "USD"
   });
 }
 
