@@ -27,7 +27,7 @@ export const STRIPE_PRICES = {
 // Top-up credit amounts - mapped to the correct env vars
 export const TOPUP_CREDITS: Record<string, number> = {};
 
-// Starter Pack - 300 credits for $9
+// Starter Pack - $9 one-time for 300 credits
 const starterPackPriceId = process.env.STRIPE_STARTER_PACK_PRICE_ID || "price_1Spo05Axch1s4iBGydOPAd2i";
 TOPUP_CREDITS[starterPackPriceId] = 300;
 

@@ -5,7 +5,15 @@
   "functions": {
     "app/api/**/*.ts": {
       "maxDuration": 300,
-      "memory": 1024
+      "memory": 3008
+    },
+    "app/api/generate/**/*.ts": {
+      "maxDuration": 300,
+      "memory": 3008
+    },
+    "app/api/upload-video/**/*.ts": {
+      "maxDuration": 300,
+      "memory": 3008
     }
   }
 }

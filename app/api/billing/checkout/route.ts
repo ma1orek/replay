@@ -16,7 +16,7 @@ const TOPUP_MAP: Record<number, { priceId: string; credits: number }> = {
   100: { priceId: process.env.STRIPE_CREDITS_PRICE_ID_12000 || "", credits: 5250 },
 };
 
-// Starter Pack - $9 one-time for 200 credits
+// Starter Pack - $9 one-time for 300 credits
 const STARTER_PACK_PRICE_ID = process.env.STRIPE_STARTER_PACK_PRICE_ID || "price_1Spo05Axch1s4iBGydOPAd2i";
 const STARTER_PACK_CREDITS = 300;
 
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ url: session.url });
     }
 
-    // Handle Starter Pack checkout ($9 one-time for 200 credits)
+    // Handle Starter Pack checkout ($9 one-time for 300 credits)
     if (type === "starter") {
       const session = await stripe.checkout.sessions.create({
         customer: customerId,

@@ -22,8 +22,8 @@ export async function compressVideo(
     quality?: number;
   } = {}
 ): Promise<CompressedVideo> {
-  // Allow higher quality 1080p, compress only if needed
-  const { maxSizeMB = 4, maxWidth = 1920, quality = 0.85 } = options;
+  // More aggressive compression to stay under Vercel's limits
+  const { maxSizeMB = 2.5, maxWidth = 1280, quality = 0.75 } = options;
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
   const originalSize = videoBlob.size;
 
@@ -92,13 +92,13 @@ export async function compressVideo(
 
   // Calculate target bitrate based on desired file size
   const videoDuration = video.duration;
-  const targetBitsPerSecond = Math.floor((maxSizeBytes * 8) / videoDuration * 0.8); // 80% of max to be safe
+  const targetBitsPerSecond = Math.floor((maxSizeBytes * 8) / videoDuration * 0.7); // 70% of max to be safe
 
   console.log(`Target bitrate: ${(targetBitsPerSecond / 1000).toFixed(0)} kbps for ${videoDuration.toFixed(1)}s video`);
 
   const recorder = new MediaRecorder(canvasStream, {
     mimeType: selectedMimeType,
-    videoBitsPerSecond: Math.min(targetBitsPerSecond, 1500000), // Cap at 1.5Mbps for good 1080p quality
+    videoBitsPerSecond: Math.min(targetBitsPerSecond, 800000), // Cap at 800kbps for reliable upload
   });
 
   const chunks: Blob[] = [];

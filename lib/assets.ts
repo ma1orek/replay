@@ -1,0 +1,483 @@
+// ============================================================================
+// ASSETS UTILITY - Extract and Replace Images in Generated Code
+// ============================================================================
+
+export interface ExtractedAsset {
+  id: string;
+  url: string;
+  type: "img" | "background";
+  width?: number;
+  height?: number;
+  alt?: string;
+  element?: string; // The full HTML element for context
+  index: number; // Position in code for replacement
+}
+
+/**
+ * Escape special regex characters in a string
+ */
+export function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Extract dimensions from any image URL
+ */
+function extractDimensions(url: string): { width?: number; height?: number } {
+  // Try new format first: /id/X/WIDTH/HEIGHT
+  const picsumIdMatch = url.match(/picsum\.photos\/id\/\d+\/(\d+)\/(\d+)/);
+  if (picsumIdMatch) {
+    return { width: parseInt(picsumIdMatch[1]), height: parseInt(picsumIdMatch[2]) };
+  }
+  
+  // Old format: /WIDTH/HEIGHT
+  const picsumMatch = url.match(/picsum\.photos\/(\d+)\/(\d+)/);
+  if (picsumMatch) {
+    return { width: parseInt(picsumMatch[1]), height: parseInt(picsumMatch[2]) };
+  }
+  
+  // Unsplash with w= parameter
+  const unsplashMatch = url.match(/[?&]w=(\d+)/);
+  if (unsplashMatch) {
+    return { width: parseInt(unsplashMatch[1]) };
+  }
+  
+  // Pravatar
+  const pravatarMatch = url.match(/pravatar\.cc\/(\d+)/);
+  if (pravatarMatch) {
+    const size = parseInt(pravatarMatch[1]);
+    return { width: size, height: size };
+  }
+  
+  return {};
+}
+
+/**
+ * Check if URL is a valid image URL (not SVG, not data URL, not gradient)
+ */
+function isValidImageUrl(url: string): boolean {
+  if (!url) return false;
+  if (url.startsWith('data:')) return false;
+  if (url.endsWith('.svg')) return false;
+  if (url.includes('gradient')) return false;
+  if (url.startsWith('#')) return false;
+  if (url.length < 10) return false;
+  return true;
+}
+
+/**
+ * Extract all images from HTML code (img src, srcset, data-src, background-image, inline styles)
+ * Detects ALL image types including those in animations, video posters, etc.
+ */
+export function extractAssetsFromCode(code: string): ExtractedAsset[] {
+  const assets: ExtractedAsset[] = [];
+  const seenUrls = new Set<string>();
+  let assetIndex = 0;
+
+  const addAsset = (url: string, type: "img" | "background", element: string, alt?: string) => {
+    // Normalize URL - remove extra whitespace and quotes
+    url = url.trim().replace(/^["']|["']$/g, '');
+    if (!isValidImageUrl(url)) return;
+    if (seenUrls.has(url)) return;
+    seenUrls.add(url);
+    
+    const dims = extractDimensions(url);
+    assets.push({
+      id: `${type}-${assetIndex}`,
+      url,
+      type,
+      width: dims.width,
+      height: dims.height,
+      alt,
+      element,
+      index: assetIndex++,
+    });
+  };
+
+  // 1. Extract <img> tags with src (most common)
+  const imgSrcRegex = /<img[^>]*\ssrc=["']([^"']+)["'][^>]*>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = imgSrcRegex.exec(code)) !== null) {
+    const fullElement = match[0];
+    const url = match[1];
+    const altMatch = fullElement.match(/alt=["']([^"']*)["']/i);
+    addAsset(url, "img", fullElement, altMatch?.[1]);
+  }
+
+  // 2. Extract srcset URLs
+  const srcsetRegex = /srcset=["']([^"']+)["']/gi;
+  while ((match = srcsetRegex.exec(code)) !== null) {
+    const srcset = match[1];
+    const element = match[0];
+    const urls = srcset.split(',').map(s => s.trim().split(/\s+/)[0]);
+    urls.forEach(url => addAsset(url, "img", element));
+  }
+
+  // 3. Extract data-src, data-image, data-bg (lazy loading patterns)
+  const dataAttrRegex = /data-(?:src|image|bg|background|lazy)=["']([^"']+)["']/gi;
+  while ((match = dataAttrRegex.exec(code)) !== null) {
+    addAsset(match[1], "img", match[0]);
+  }
+
+  // 4. Extract poster attribute from video tags
+  const posterRegex = /poster=["']([^"']+)["']/gi;
+  while ((match = posterRegex.exec(code)) !== null) {
+    addAsset(match[1], "img", match[0]);
+  }
+
+  // 5. Extract background-image in CSS (both in <style> blocks and inline)
+  const bgRegex = /background(?:-image)?:\s*url\(["']?([^"')]+)["']?\)/gi;
+  while ((match = bgRegex.exec(code)) !== null) {
+    addAsset(match[1], "background", match[0]);
+  }
+
+  // 6. Extract style="...background..." inline styles with multiple properties
+  const inlineStyleRegex = /style=["'][^"']*url\(["']?([^"')]+)["']?\)[^"']*["']/gi;
+  while ((match = inlineStyleRegex.exec(code)) !== null) {
+    addAsset(match[1], "background", match[0]);
+  }
+
+  // 7. Extract content: url() in CSS (used for ::before/::after)
+  const contentUrlRegex = /content:\s*url\(["']?([^"')]+)["']?\)/gi;
+  while ((match = contentUrlRegex.exec(code)) !== null) {
+    addAsset(match[1], "img", match[0]);
+  }
+
+  // 8. Extract mask-image and -webkit-mask-image
+  const maskRegex = /(?:-webkit-)?mask-image:\s*url\(["']?([^"')]+)["']?\)/gi;
+  while ((match = maskRegex.exec(code)) !== null) {
+    addAsset(match[1], "img", match[0]);
+  }
+
+  // 9. Extract list-style-image
+  const listStyleRegex = /list-style-image:\s*url\(["']?([^"')]+)["']?\)/gi;
+  while ((match = listStyleRegex.exec(code)) !== null) {
+    addAsset(match[1], "img", match[0]);
+  }
+
+  // 10. Extract border-image
+  const borderImageRegex = /border-image(?:-source)?:\s*url\(["']?([^"')]+)["']?\)/gi;
+  while ((match = borderImageRegex.exec(code)) !== null) {
+    addAsset(match[1], "img", match[0]);
+  }
+
+  // 11. Extract any URL that looks like an image (http/https ending in image extension)
+  const imageUrlRegex = /["'](https?:\/\/[^"'\s]+\.(?:jpg|jpeg|png|gif|webp)(?:\?[^"'\s]*)?)["']/gi;
+  while ((match = imageUrlRegex.exec(code)) !== null) {
+    addAsset(match[1], "img", match[0]);
+  }
+
+  // 12. Extract Unsplash URLs (with photo ID pattern)
+  const unsplashRegex = /["'](https?:\/\/images\.unsplash\.com\/[^"'\s]+)["']/gi;
+  while ((match = unsplashRegex.exec(code)) !== null) {
+    addAsset(match[1], "img", match[0]);
+  }
+
+  // 13. Extract Picsum URLs (any format including /id/X/)
+  const picsumRegex = /["']?(https?:\/\/picsum\.photos\/[^"'\s\)]+)["']?/gi;
+  while ((match = picsumRegex.exec(code)) !== null) {
+    addAsset(match[1], "img", match[0]);
+  }
+
+  // 14. Extract Pravatar URLs (avatars)
+  const pravatarRegex = /["']?(https?:\/\/i\.pravatar\.cc\/[^"'\s\)]+)["']?/gi;
+  while ((match = pravatarRegex.exec(code)) !== null) {
+    addAsset(match[1], "img", match[0]);
+  }
+
+  // 15. Extract source elements in picture tags
+  const sourceRegex = /<source[^>]*srcset=["']([^"']+)["'][^>]*>/gi;
+  while ((match = sourceRegex.exec(code)) !== null) {
+    const srcset = match[1];
+    const urls = srcset.split(',').map(s => s.trim().split(/\s+/)[0]);
+    urls.forEach(url => addAsset(url, "img", match ? match[0] : ""));
+  }
+
+  // 16. Extract object-fit images (often used with animations)
+  const objectFitRegex = /<(?:img|div)[^>]*(?:object-fit|object-position)[^>]*src=["']([^"']+)["'][^>]*>/gi;
+  while ((match = objectFitRegex.exec(code)) !== null) {
+    addAsset(match[1], "img", match[0]);
+  }
+
+  // 17. Extract placeholder.com and similar placeholder services
+  const placeholderRegex = /["'](https?:\/\/(?:via\.placeholder\.com|placehold\.co|placekitten\.com|loremflickr\.com)\/[^"'\s]+)["']/gi;
+  while ((match = placeholderRegex.exec(code)) !== null) {
+    addAsset(match[1], "img", match[0]);
+  }
+
+  // 18. Extract image-set() CSS function
+  const imageSetRegex = /image-set\([^)]*url\(["']?([^"')]+)["']?\)/gi;
+  while ((match = imageSetRegex.exec(code)) !== null) {
+    addAsset(match[1], "img", match[0]);
+  }
+
+  // 19. Scan for any remaining URLs in url() that might have been missed
+  const anyUrlRegex = /url\(["']?(https?:\/\/[^"'\)]+)["']?\)/gi;
+  while ((match = anyUrlRegex.exec(code)) !== null) {
+    const url = match[1];
+    // Only add if it looks like an image (has image extension or is from known image service)
+    if (url.match(/\.(jpg|jpeg|png|gif|webp|avif)/i) || 
+        url.includes('picsum') || 
+        url.includes('unsplash') || 
+        url.includes('pravatar') ||
+        url.includes('placeholder')) {
+      addAsset(url, "background", match[0]);
+    }
+  }
+
+  console.log(`[Assets] Extracted ${assets.length} assets from code`);
+  return assets;
+}
+
+/**
+ * Replace a SINGLE image URL in the code without using AI
+ * Only replaces the exact URL, not all occurrences
+ */
+export function replaceAssetInCode(
+  code: string, 
+  oldUrl: string, 
+  newUrl: string
+): string {
+  console.log('[Assets] Replacing:', oldUrl, '->', newUrl);
+  
+  // Escape special characters in the old URL for regex
+  const escapedOldUrl = escapeRegex(oldUrl);
+  
+  // Replace ONLY the first occurrence for each pattern
+  // This ensures we replace only the selected image, not all matching URLs
+  
+  // Replace in img src with double quotes
+  const srcDoubleRegex = new RegExp(`src="${escapedOldUrl}"`);
+  if (srcDoubleRegex.test(code)) {
+    console.log('[Assets] Found in src="" - replacing');
+    return code.replace(srcDoubleRegex, `src="${newUrl}"`);
+  }
+  
+  // Replace in img src with single quotes
+  const srcSingleRegex = new RegExp(`src='${escapedOldUrl}'`);
+  if (srcSingleRegex.test(code)) {
+    console.log('[Assets] Found in src=\'\' - replacing');
+    return code.replace(srcSingleRegex, `src='${newUrl}'`);
+  }
+  
+  // Replace in background-image url() with double quotes
+  const bgDoubleRegex = new RegExp(`url\\("${escapedOldUrl}"\\)`);
+  if (bgDoubleRegex.test(code)) {
+    console.log('[Assets] Found in url("") - replacing');
+    return code.replace(bgDoubleRegex, `url("${newUrl}")`);
+  }
+  
+  // Replace in background-image url() with single quotes
+  const bgSingleRegex = new RegExp(`url\\('${escapedOldUrl}'\\)`);
+  if (bgSingleRegex.test(code)) {
+    console.log('[Assets] Found in url(\'\') - replacing');
+    return code.replace(bgSingleRegex, `url('${newUrl}')`);
+  }
+  
+  // Replace in background-image url() without quotes
+  const bgNoQuotesRegex = new RegExp(`url\\(${escapedOldUrl}\\)`);
+  if (bgNoQuotesRegex.test(code)) {
+    console.log('[Assets] Found in url() no quotes - replacing');
+    return code.replace(bgNoQuotesRegex, `url(${newUrl})`);
+  }
+  
+  // Try direct string replacement
+  if (code.includes(oldUrl)) {
+    console.log('[Assets] Found as plain string - replacing');
+    return code.replace(oldUrl, newUrl);
+  }
+  
+  console.log('[Assets] URL not found in code!');
+  console.log('[Assets] Looking for:', oldUrl.substring(0, 100));
+  return code;
+}
+
+/**
+ * Get the category of an image based on its URL and dimensions
+ */
+export function categorizeAsset(asset: ExtractedAsset): "avatar" | "hero" | "product" | "background" | "general" {
+  const { url, width, height, type } = asset;
+  
+  // Check for avatar patterns
+  if (url.includes('pravatar') || url.includes('avatar') || url.includes('profile')) {
+    return "avatar";
+  }
+  
+  // Background images
+  if (type === "background") {
+    return "background";
+  }
+  
+  // Size-based categorization
+  if (width && height) {
+    const aspectRatio = width / height;
+    
+    // Square small images are likely avatars
+    if (Math.abs(aspectRatio - 1) < 0.2 && width <= 200) {
+      return "avatar";
+    }
+    
+    // Wide large images are likely heroes
+    if (aspectRatio > 1.5 && width >= 800) {
+      return "hero";
+    }
+    
+    // Medium sized images are likely products
+    if (width >= 200 && width <= 600) {
+      return "product";
+    }
+  }
+  
+  return "general";
+}
+
+/**
+ * Generate a stable picsum URL with specified dimensions
+ * Uses specific image ID instead of ?random to prevent images from changing on each load
+ */
+export function generatePicsumUrl(width: number = 800, height: number = 600): string {
+  // Picsum has images with IDs roughly 0-1084, pick a random one
+  const imageId = Math.floor(Math.random() * 1000) + 10;
+  return `https://picsum.photos/id/${imageId}/${width}/${height}`;
+}
+
+/**
+ * Simple hash function to generate a stable number from a string
+ */
+function simpleHash(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash);
+}
+
+/**
+ * Convert ALL unstable picsum URLs in code to stable /id/X/ format
+ * Uses a hash of the URL to generate consistent IDs - same URL always gets same ID
+ * This prevents images from changing on every preview reload
+ */
+export function stabilizePicsumUrls(code: string): string {
+  // Match picsum URLs with ?random=N or just base URL without /id/
+  // Pattern: https://picsum.photos/WIDTH/HEIGHT or https://picsum.photos/WIDTH/HEIGHT?random=N
+  const picsumUnstableRegex = /https:\/\/picsum\.photos\/(\d+)\/(\d+)(\?random=(\d+))?(?=["\'\)\s>])/g;
+  
+  return code.replace(picsumUnstableRegex, (match, width, height, _queryPart, randomNum) => {
+    // Skip URLs that already have /id/ format
+    if (match.includes('/id/')) {
+      return match;
+    }
+    
+    // Generate a stable ID based on either the random number or position
+    // If ?random=N exists, use that number as basis for stable ID
+    // Otherwise generate from a hash of dimensions
+    let stableId: number;
+    if (randomNum) {
+      // Use the random number to generate a stable picsum ID (0-1084 range)
+      stableId = (parseInt(randomNum, 10) % 1000) + 10;
+    } else {
+      // Generate ID from hash of the full match string
+      stableId = (simpleHash(match) % 1000) + 10;
+    }
+    
+    return `https://picsum.photos/id/${stableId}/${width}/${height}`;
+  });
+}
+
+/**
+ * Generate a stable pravatar URL for avatars
+ * Uses specific image ID so avatar doesn't change on each load
+ */
+export function generateAvatarUrl(size: number = 150): string {
+  const imageId = Math.floor(Math.random() * 70) + 1;
+  return `https://i.pravatar.cc/${size}?img=${imageId}`;
+}
+
+// ============================================================================
+// UNSPLASH API INTEGRATION (via API proxy)
+// ============================================================================
+
+export interface UnsplashImage {
+  id: string;
+  url: string;
+  thumbUrl: string;
+  width: number;
+  height: number;
+  description: string | null;
+  photographer: string;
+  downloadUrl: string;
+}
+
+/**
+ * Search for images via our API proxy
+ * Uses Unsplash if API key is configured, otherwise falls back to Picsum
+ */
+export async function searchUnsplash(
+  query: string, 
+  page: number = 1, 
+  perPage: number = 20
+): Promise<UnsplashImage[]> {
+  try {
+    const response = await fetch(
+      `/api/unsplash?query=${encodeURIComponent(query)}&page=${page}&per_page=${perPage}`
+    );
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    return data.results.map((img: any) => ({
+      id: img.id,
+      url: img.urls.regular,
+      thumbUrl: img.urls.thumb,
+      width: img.width,
+      height: img.height,
+      description: img.description || img.alt_description,
+      photographer: img.user.name,
+      downloadUrl: img.links.download_location,
+    }));
+  } catch (error) {
+    console.error('Image search error:', error);
+    return [];
+  }
+}
+
+/**
+ * Get Unsplash image URL with custom dimensions
+ * Also handles Picsum URLs for mock data
+ */
+export function getUnsplashUrlWithSize(
+  imageUrl: string, 
+  width: number, 
+  height?: number
+): string {
+  // Handle Picsum URLs (mock data)
+  if (imageUrl.includes('picsum.photos')) {
+    // Extract the ID if it's in /id/X/ format
+    const idMatch = imageUrl.match(/picsum\.photos\/id\/(\d+)/);
+    if (idMatch) {
+      const id = idMatch[1];
+      return `https://picsum.photos/id/${id}/${width}/${height || width}`;
+    }
+    // Fallback for other picsum formats
+    return `https://picsum.photos/id/${Math.floor(Math.random() * 1000) + 10}/${width}/${height || width}`;
+  }
+  
+  // Handle real Unsplash URLs
+  try {
+    const url = new URL(imageUrl);
+    url.searchParams.set('w', width.toString());
+    if (height) {
+      url.searchParams.set('h', height.toString());
+      url.searchParams.set('fit', 'crop');
+    }
+    return url.toString();
+  } catch {
+    // If URL parsing fails, return original
+    return imageUrl;
+  }
+}

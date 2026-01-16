@@ -46,7 +46,7 @@ export default function PricingPage() {
       {/* Plans */}
       <div className="space-y-4">
         <h2 className="text-2xl font-semibold text-white">Plans</h2>
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-4 gap-6">
           {/* Free */}
           <div className="p-6 rounded-xl bg-white/5 border border-white/10">
             <div className="mb-4">
@@ -57,26 +57,23 @@ export default function PricingPage() {
               <span className="text-4xl font-bold text-white">$0</span>
               <span className="text-white/50">/mo</span>
             </div>
+            <p className="text-xs text-white/40 mb-4">~1 generation</p>
             <ul className="space-y-2 text-sm text-white/70 mb-6">
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-400" />
-                <span>75 credits (one-time)</span>
+                <Check className="w-4 h-4 text-white/40" />
+                <span>100 credits / month</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-400" />
-                <span>1 free generation</span>
+                <Check className="w-4 h-4 text-white/40" />
+                <span>Preview only</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-400" />
-                <span>Live preview</span>
+                <Check className="w-4 h-4 text-white/40" />
+                <span>Public projects only</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-400" />
-                <span>Public projects</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-400" />
-                <span>Basic export</span>
+                <Check className="w-4 h-4 text-white/40" />
+                <span>Community support</span>
               </li>
             </ul>
             <button className="w-full py-2 rounded-lg bg-white/10 text-white text-sm hover:bg-white/20 transition-colors">
@@ -84,11 +81,45 @@ export default function PricingPage() {
             </button>
           </div>
 
+          {/* Starter */}
+          <div className="p-6 rounded-xl bg-white/5 border border-white/10">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-white">Starter</h3>
+              <p className="text-sm text-white/50">One-time purchase</p>
+            </div>
+            <div className="mb-4">
+              <span className="text-4xl font-bold text-white">$9</span>
+              <span className="text-white/50"> one-time</span>
+            </div>
+            <p className="text-xs text-white/40 mb-4">~4 generations • Perfect for testing</p>
+            <ul className="space-y-2 text-sm text-white/70 mb-6">
+              <li className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-white/40" />
+                <span>300 credits (~4 gens)</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-white/40" />
+                <span>Full Access & Export</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-white/40" />
+                <span>Publish to web</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-white/40" />
+                <span>Credits never expire</span>
+              </li>
+            </ul>
+            <button className="w-full py-2 rounded-lg bg-white/10 text-white text-sm hover:bg-white/20 transition-colors">
+              Buy Starter
+            </button>
+          </div>
+
           {/* Pro */}
           <div className="p-6 rounded-xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF3C6E]/20 border border-[#FF6E3C]/50 relative">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
               <span className="px-3 py-1 bg-[#FF6E3C] text-white text-xs font-medium rounded-full flex items-center gap-1">
-                <Star className="w-3 h-3" /> Most popular
+                <Star className="w-3 h-3" /> Best Value
               </span>
             </div>
             <div className="mb-4">
@@ -102,34 +133,31 @@ export default function PricingPage() {
               <span className="text-4xl font-bold text-white">$25</span>
               <span className="text-white/50">/mo</span>
             </div>
+            <p className="text-xs text-white/40 mb-4">~20 generations / month</p>
             <ul className="space-y-2 text-sm text-white/70 mb-6">
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-400" />
+                <Check className="w-4 h-4 text-[#FF6E3C]" />
+                <span className="text-[#FF6E3C]">Everything in Starter, plus:</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-[#FF6E3C]" />
                 <span>1,500 credits / month</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-400" />
-                <span>~20 rebuilds / month</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-400" />
+                <Check className="w-4 h-4 text-[#FF6E3C]" />
                 <span>Private projects</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-400" />
-                <span>All exports</span>
+                <Check className="w-4 h-4 text-[#FF6E3C]" />
+                <span>Credits roll over</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-400" />
-                <span>All 30+ style presets</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-400" />
-                <span>Rollover up to 600 credits</span>
+                <Check className="w-4 h-4 text-[#FF6E3C]" />
+                <span>Priority support</span>
               </li>
             </ul>
             <button className="w-full py-2 rounded-lg bg-[#FF6E3C] text-white text-sm font-medium hover:bg-[#FF6E3C]/90 transition-colors">
-              Upgrade
+              Subscribe
             </button>
           </div>
 
@@ -144,32 +172,24 @@ export default function PricingPage() {
             </div>
             <div className="mb-4">
               <span className="text-4xl font-bold text-white">Custom</span>
-              <span className="text-white/50">/mo</span>
             </div>
+            <p className="text-xs text-white/40 mb-4">Unlimited potential</p>
             <ul className="space-y-2 text-sm text-white/70 mb-6">
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-400" />
+                <Check className="w-4 h-4 text-white/40" />
+                <span>Everything in Pro, plus:</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-white/40" />
                 <span>Custom credit allocation</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-400" />
-                <span>Team seats (custom)</span>
+                <Check className="w-4 h-4 text-white/40" />
+                <span>Team seats & SSO</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-400" />
-                <span>Priority processing</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-400" />
-                <span>SSO / SAML (coming soon)</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-400" />
+                <Check className="w-4 h-4 text-white/40" />
                 <span>Dedicated support & SLA</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-400" />
-                <span>API access (coming soon)</span>
               </li>
             </ul>
             <button className="w-full py-2 rounded-lg bg-white/10 text-white text-sm hover:bg-white/20 transition-colors">
@@ -217,8 +237,8 @@ export default function PricingPage() {
             <p className="text-sm text-white/60">Yes. Cancel anytime from Settings → Plans → Manage. You'll keep access until the end of your billing period.</p>
           </div>
           <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-            <h4 className="font-medium text-white mb-1">What's the difference between Free and Pro?</h4>
-            <p className="text-sm text-white/60">Free: 100 credits/month, preview only. Pro: 3,000+ credits/month, full code access & export, rollover credits, priority processing, and all 30+ style presets.</p>
+            <h4 className="font-medium text-white mb-1">What's the difference between plans?</h4>
+            <p className="text-sm text-white/60">Free: 100 credits/month (~1 gen), preview only. Starter: $9 one-time, 300 credits (~4 gens), full access, never expire. Pro: $25/mo, 1,500 credits (~20 gens), private projects, credits roll over, priority support.</p>
           </div>
           <div className="p-4 rounded-xl bg-white/5 border border-white/10">
             <h4 className="font-medium text-white mb-1">What payment methods do you accept?</h4>
