@@ -52,10 +52,41 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { userId, membership, planTier, credits } = body;
+    const { userId, membership, planTier, credits, isTopup } = body;
 
     if (!userId) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+    }
+
+    // Handle Starter Pack (isTopup=true): Add credits to topup_credits, keep membership as-is
+    if (isTopup && credits && typeof credits === "number") {
+      const { data: wallet } = await adminSupabase
+        .from("credit_wallets")
+        .select("*")
+        .eq("user_id", userId)
+        .single();
+        
+      if (wallet) {
+        const newTopup = (wallet.topup_credits || 0) + credits;
+        await adminSupabase
+          .from("credit_wallets")
+          .update({ topup_credits: newTopup })
+          .eq("user_id", userId);
+      } else {
+        await adminSupabase
+          .from("credit_wallets")
+          .insert({
+            user_id: userId,
+            monthly_credits: 100,
+            topup_credits: credits,
+            rollover_credits: 0
+          });
+      }
+
+      return NextResponse.json({ 
+        success: true, 
+        message: `Added ${credits} credits to user (Starter Pack)` 
+      });
     }
 
     // Handle membership update (uses memberships table with 'plan' field)

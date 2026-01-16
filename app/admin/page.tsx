@@ -463,18 +463,19 @@ export default function AdminPage() {
     }
   };
 
-  // Available tiers for admin assignment (including starter pack)
+  // Available tiers for admin assignment
+  // Note: "starter" keeps membership as "free" but adds 300 topup credits
   const PRO_TIERS = [
-    { id: "free", label: "Free", credits: 100, membership: "free" },
-    { id: "starter", label: "Starter Pack ($9)", credits: 300, membership: "starter" },
-    { id: "pro25", label: "Pro 25", credits: 1500, membership: "pro" },
-    { id: "pro50", label: "Pro 50", credits: 3300, membership: "pro" },
-    { id: "pro100", label: "Pro 100", credits: 7500, membership: "pro" },
-    { id: "pro200", label: "Pro 200", credits: 16500, membership: "pro" },
-    { id: "pro300", label: "Pro 300", credits: 25500, membership: "pro" },
-    { id: "pro500", label: "Pro 500", credits: 45000, membership: "pro" },
-    { id: "pro1000", label: "Pro 1000", credits: 96000, membership: "pro" },
-    { id: "pro2000", label: "Pro 2000", credits: 225000, membership: "pro" },
+    { id: "free", label: "Free", credits: 100, membership: "free", isTopup: false },
+    { id: "starter", label: "Starter Pack (+300 credits)", credits: 300, membership: "free", isTopup: true },
+    { id: "pro25", label: "Pro 25", credits: 1500, membership: "pro", isTopup: false },
+    { id: "pro50", label: "Pro 50", credits: 3300, membership: "pro", isTopup: false },
+    { id: "pro100", label: "Pro 100", credits: 7500, membership: "pro", isTopup: false },
+    { id: "pro200", label: "Pro 200", credits: 16500, membership: "pro", isTopup: false },
+    { id: "pro300", label: "Pro 300", credits: 25500, membership: "pro", isTopup: false },
+    { id: "pro500", label: "Pro 500", credits: 45000, membership: "pro", isTopup: false },
+    { id: "pro1000", label: "Pro 1000", credits: 96000, membership: "pro", isTopup: false },
+    { id: "pro2000", label: "Pro 2000", credits: 225000, membership: "pro", isTopup: false },
   ];
 
   // Open plan selection modal
@@ -505,7 +506,8 @@ export default function AdminPage() {
         body: JSON.stringify({ 
           userId: planModalUser.id, 
           membership: newMembership,
-          credits: selectedTier.credits
+          credits: selectedTier.credits,
+          isTopup: selectedTier.isTopup // For starter pack - adds to topup_credits instead
         })
       });
       
