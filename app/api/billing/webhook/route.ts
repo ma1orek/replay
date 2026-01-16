@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
             
             // Track top-up purchase to Facebook
             const customerEmail = session.customer_details?.email || session.customer_email;
-            await trackFBPurchase(userId, customerEmail, session.amount_total ? session.amount_total / 100 : 9, isStarterPack ? "StarterPack" : "Purchase");
+            await trackFBPurchase(userId, customerEmail, session.amount_total ? session.amount_total / 100 : 9, "Purchase");
             
             console.log("Added", creditsAmount, "credits for user:", userId, isStarterPack ? "(Starter Pack)" : "");
           }
