@@ -1143,6 +1143,7 @@ function ReplayToolContent() {
   const [selectedFlowNode, setSelectedFlowNode] = useState<string | null>(null);
   const [showStructureInFlow, setShowStructureInFlow] = useState(false); // Toggle to show components under nodes
   const [showPossiblePaths, setShowPossiblePaths] = useState(true); // Toggle to show/hide possible paths in Flow
+  const [showPreviewsInFlow, setShowPreviewsInFlow] = useState(true); // Toggle to show iframe previews in flow nodes
   const [generationComplete, setGenerationComplete] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showFloatingEdit, setShowFloatingEdit] = useState(false);
@@ -1218,123 +1219,84 @@ function ReplayToolContent() {
   
   // Helper to inject image click handlers into preview HTML
   const injectAssetClickHandler = useCallback((html: string): string => {
-    // Simple CSS - outline without offset to not break layout
-    const CSS_STYLES = 'img { cursor: pointer !important; outline: 3px solid #FF6E3C !important; outline-offset: -3px !important; } img:hover { outline-width: 4px !important; filter: brightness(1.1) !important; } [data-has-bg-image] { cursor: pointer !important; outline: 3px solid #FF6E3C !important; outline-offset: -3px !important; } [data-has-bg-image]:hover { outline-width: 4px !important; }';
-    
     const script = `<script>
 (function() {
-  var assetSelectorEnabled = false;
+  var enabled = false;
+  var style = null;
+  
+  var CSS = 'img:not([src$=".svg"]):not([src^="data:"]) { cursor: pointer !important; box-shadow: 0 0 0 4px #FF6E3C !important; } img:not([src$=".svg"]):not([src^="data:"]):hover { box-shadow: 0 0 0 6px #FF6E3C, 0 0 20px rgba(255,110,60,0.5) !important; transform: scale(1.02) !important; z-index: 9999 !important; } [data-bg-url] { cursor: pointer !important; box-shadow: inset 0 0 0 4px #FF6E3C !important; } [data-bg-url]:hover { box-shadow: inset 0 0 0 6px #FF6E3C !important; }';
   
   function init() {
-    var style = document.createElement('style');
-    style.id = 'assets-selector-styles';
+    console.log('[Assets] Initializing...');
+    style = document.createElement('style');
+    style.id = 'asset-styles';
     document.head.appendChild(style);
     
-    // Find and mark ALL elements with background images
-    function markBackgroundImages() {
-      var count = 0;
+    function markBg() {
+      var c = 0;
       document.querySelectorAll('*').forEach(function(el) {
-        if (el.hasAttribute('data-has-bg-image')) return;
-        
-        var computed = window.getComputedStyle(el);
-        var bg = computed.backgroundImage;
-        
+        if (el.hasAttribute('data-bg-url')) return;
+        var bg = window.getComputedStyle(el).backgroundImage;
         if (bg && bg !== 'none' && bg.includes('url(')) {
-          var urlMatch = bg.match(/url\\(["']?([^"')]+)["']?\\)/);
-          if (urlMatch && urlMatch[1]) {
-            var url = urlMatch[1];
-            if (!url.includes('.svg') && !url.startsWith('data:') && !url.includes('gradient')) {
-              el.setAttribute('data-has-bg-image', 'true');
-              el.setAttribute('data-bg-url', url);
-              count++;
-            }
+          var m = bg.match(/url\\(["']?([^"')]+)["']?\\)/);
+          if (m && m[1] && !m[1].includes('.svg') && !m[1].startsWith('data:') && !m[1].includes('gradient')) {
+            el.setAttribute('data-bg-url', m[1]);
+            c++;
           }
         }
       });
-      console.log('[Assets] Marked ' + count + ' elements with background images');
+      console.log('[Assets] Marked ' + c + ' bg images');
     }
     
-    function countImages() {
-      var imgs = document.querySelectorAll('img:not([src*=".svg"]):not([src^="data:"])');
-      var bgs = document.querySelectorAll('[data-has-bg-image]');
-      console.log('[Assets] Found ' + imgs.length + ' img tags and ' + bgs.length + ' background images');
-      return imgs.length + bgs.length;
-    }
-    
-    window.__applyAssetStyles = function(enabled) {
-      assetSelectorEnabled = enabled;
-      var style = document.getElementById('assets-selector-styles');
-      if (enabled) {
-        markBackgroundImages();
-        style.textContent = ${JSON.stringify(CSS_STYLES)};
-        var total = countImages();
-        console.log('[Assets] Selector enabled - ' + total + ' images clickable');
+    window.__toggleAssets = function(on) {
+      enabled = on;
+      if (on) {
+        markBg();
+        style.textContent = CSS;
+        var imgs = document.querySelectorAll('img:not([src$=".svg"]):not([src^="data:"])').length;
+        var bgs = document.querySelectorAll('[data-bg-url]').length;
+        console.log('[Assets] ON - ' + imgs + ' imgs, ' + bgs + ' bgs');
       } else {
         style.textContent = '';
-        console.log('[Assets] Selector disabled');
+        console.log('[Assets] OFF');
       }
     };
     
     window.addEventListener('message', function(e) {
       if (e.data && e.data.type === 'TOGGLE_ASSET_SELECTOR') {
-        window.__applyAssetStyles(e.data.enabled);
+        window.__toggleAssets(e.data.enabled);
       }
     });
     
-    // Handle clicks on images AND background-images
     document.addEventListener('click', function(e) {
-      if (!assetSelectorEnabled) return;
-      
-      var target = e.target;
+      if (!enabled) return;
       var url = null;
+      var t = e.target;
       
-      // Check if clicked element or parent is an img tag
-      var img = target.tagName === 'IMG' ? target : target.closest('img');
-      if (img && img.src && !img.src.includes('.svg') && !img.src.startsWith('data:')) {
-        url = img.src;
-        console.log('[Assets] Clicked img tag:', url);
+      if (t.tagName === 'IMG' && t.src && !t.src.includes('.svg') && !t.src.startsWith('data:')) {
+        url = t.src;
       }
       
-      // If no img found, check for background-image (including on parent elements)
       if (!url) {
-        var el = target;
-        // First check if we have data-bg-url from our marking
+        var el = t;
         while (el && el !== document.body) {
           if (el.hasAttribute('data-bg-url')) {
             url = el.getAttribute('data-bg-url');
-            console.log('[Assets] Clicked element with marked bg:', url);
             break;
           }
           el = el.parentElement;
-        }
-        
-        // Fallback: check computed background-image directly
-        if (!url) {
-          el = target;
-          while (el && el !== document.body) {
-            var bg = window.getComputedStyle(el).backgroundImage;
-            if (bg && bg !== 'none' && bg.includes('url(')) {
-              var match = bg.match(/url\\(["']?([^"')]+)["']?\\)/);
-              if (match && match[1] && !match[1].includes('.svg') && !match[1].startsWith('data:')) {
-                url = match[1];
-                console.log('[Assets] Clicked element with computed bg:', url);
-                break;
-              }
-            }
-            el = el.parentElement;
-          }
         }
       }
       
       if (url) {
         e.preventDefault();
         e.stopPropagation();
-        console.log('[Assets] Sending ASSET_CLICK:', url);
+        console.log('[Assets] Click:', url);
         window.parent.postMessage({ type: 'ASSET_CLICK', url: url }, '*');
       }
     }, true);
     
-    console.log('[Assets] Handler initialized');
+    console.log('[Assets] Ready');
     window.parent.postMessage({ type: 'ASSET_HANDLER_READY' }, '*');
   }
   
@@ -8510,6 +8472,11 @@ Try these prompts in Cursor or v0:
                         <button 
                           onClick={async () => {
                             if (!chatInput.trim() || !editableCode || isEditing) return;
+                            // Block if images still uploading
+                            if (editImages.some(img => img.uploading)) {
+                              showToast("Poczekaj na upload zdjęcia...", "info");
+                              return;
+                            }
                             const userMsg: ChatMessage = { id: generateId(), role: "user", content: chatInput, timestamp: Date.now(), attachments: selectedElement ? [{ type: "element", label: selectedElement }] : editImages.length > 0 ? editImages.map(img => ({ type: "image" as const, label: img.name })) : undefined };
                             setChatMessages(prev => [...prev, userMsg]);
                             const currentInput = chatInput;
@@ -9625,6 +9592,27 @@ Try these prompts in Cursor or v0:
                     <EmptyState icon="logo" title="Drop or record video. Get code." subtitle="We analyze the flow, map interactions, and export clean code." showEarlyAccess={generations.length === 0} />
                   </div>
                 )}
+                
+                {/* Assets Modal - Side Drawer */}
+                <AssetsModal
+                  isOpen={showAssetsModal}
+                  onClose={() => setShowAssetsModal(false)}
+                  code={editableCode}
+                  onCodeUpdate={(newCode) => {
+                    setEditableCode(newCode);
+                    setDisplayedCode(newCode);
+                    setGeneratedCode(newCode);
+                    setPreviewUrl(createPreviewUrl(newCode));
+                    // Auto-save - update the generation record
+                    if (activeGeneration) {
+                      const updatedGen = { ...activeGeneration, code: newCode };
+                      setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
+                      saveGenerationToSupabase(updatedGen);
+                    }
+                  }}
+                  initialSelectedUrl={selectedAssetUrl}
+                  onClearSelection={() => setSelectedAssetUrl(null)}
+                />
               </div>
             )}
 
@@ -10235,6 +10223,19 @@ export default function GeneratedPage() {
                         <GitBranch className="w-3.5 h-3.5" />
                         Possible
                       </button>
+                      {/* Previews toggle */}
+                      <button 
+                        onClick={() => setShowPreviewsInFlow(!showPreviewsInFlow)}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-lg",
+                          showPreviewsInFlow 
+                            ? "bg-[#FF6E3C] text-white" 
+                            : "bg-[#1a1a1a] border border-white/10 text-white/60 hover:border-white/20"
+                        )}
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        Previews
+                      </button>
                       {/* Structure toggle */}
                       <button 
                         onClick={() => setShowStructureInFlow(!showStructureInFlow)}
@@ -10317,7 +10318,7 @@ export default function GeneratedPage() {
                             // Hide edges to hidden detected/possible nodes
                             if (!showPossiblePaths && (toNode.status === "detected" || toNode.status === "possible")) return null;
                             const x1 = fromNode.x + 90;
-                            const y1 = fromNode.y + (showStructureInFlow ? 100 : 60);
+                            const y1 = fromNode.y + (showPreviewsInFlow ? 140 : showStructureInFlow ? 100 : 60);
                             const x2 = toNode.x + 90;
                             const y2 = toNode.y;
                             const midX = (x1 + x2) / 2;
@@ -10502,8 +10503,8 @@ export default function GeneratedPage() {
                               </div>
                               
                               {/* Mini iframe preview for observed/added nodes */}
-                              {(isObserved || isAdded) && editableCode && (
-                                <div className="relative w-full h-24 bg-[#0a0a0a] overflow-hidden border-b border-white/5">
+                              {showPreviewsInFlow && (isObserved || isAdded) && editableCode && (
+                                <div className="relative w-full h-28 bg-[#0a0a0a] overflow-hidden border-b border-white/5">
                                   <div className="absolute inset-0 flex items-center justify-center">
                                     <iframe
                                       srcDoc={(() => {
@@ -12999,6 +13000,11 @@ export default function GeneratedPage() {
                   <button 
                     onClick={async () => {
                       if (!chatInput.trim() || !editableCode || isEditing) return;
+                      // Block if images still uploading
+                      if (editImages.some(img => img.uploading)) {
+                        showToast("Poczekaj na upload zdjęcia...", "info");
+                        return;
+                      }
                       const userMsg: ChatMessage = { id: generateId(), role: "user", content: chatInput, timestamp: Date.now(), attachments: editImages.length > 0 ? editImages.map(img => ({ type: "image" as const, label: img.name })) : undefined };
                       setChatMessages(prev => [...prev, userMsg]);
                       const currentInput = chatInput;
