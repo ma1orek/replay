@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { Providers } from "./providers";
 import CookieConsent from "@/components/CookieConsent";
@@ -118,6 +119,7 @@ export default function RootLayout({
       <body className="antialiased">
         <Providers>
           {children}
+          <SpeedInsights />
           <CookieConsent />
         </Providers>
       </body>
