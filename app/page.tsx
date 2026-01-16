@@ -977,13 +977,23 @@ function ReplayToolContent() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeFeature, setUpgradeFeature] = useState<"code" | "download" | "publish" | "supabase" | "general">("general");
   const [isUpgradeCheckingOut, setIsUpgradeCheckingOut] = useState(false);
-  const [selectedUpgradePlan, setSelectedUpgradePlan] = useState<"starter" | "pro">("starter");
+  const [selectedUpgradePlan, setSelectedUpgradePlan] = useState<"starter" | "pro">("pro");
+  const [selectedProTierIndex, setSelectedProTierIndex] = useState(0);
+  const [showProTierDropdown, setShowProTierDropdown] = useState(false);
   
   // Price IDs for checkout
   const STARTER_PACK_PRICE_ID = "price_1Spo05Axch1s4iBGydOPAd2i"; // $9 one-time
-  const DEFAULT_PRO_PRICE_ID = "price_1SotL1Axch1s4iBGWMvO0JBZ"; // $25/mo
-  const DEFAULT_PRO_TIER_ID = "pro25";
-  const DEFAULT_PRO_CREDITS = 1500;
+  
+  // PRO Subscription tiers (same as pricing page)
+  const PRO_TIERS = [
+    { id: 'pro25', credits: 1500, price: 25, priceId: "price_1SotL1Axch1s4iBGWMvO0JBZ" },
+    { id: 'pro50', credits: 3300, price: 50, priceId: "price_1SotLqAxch1s4iBG1ViXkfc2" },
+    { id: 'pro100', credits: 7500, price: 100, priceId: "price_1SotMYAxch1s4iBGLZZ7ATBs" },
+    { id: 'pro200', credits: 16500, price: 200, priceId: "price_1SotN4Axch1s4iBGUJEfzznw" },
+    { id: 'pro300', credits: 25500, price: 300, priceId: "price_1SotNMAxch1s4iBGzRD7B7VI" },
+    { id: 'pro500', credits: 45000, price: 500, priceId: "price_1SotNuAxch1s4iBGPl81sHqx" },
+  ];
+  const selectedProTier = PRO_TIERS[selectedProTierIndex];
   
   // Handler for direct checkout (used in inline upgrade buttons)
   const handleUpgradeCheckout = async (plan?: "starter" | "pro") => {
@@ -1003,9 +1013,9 @@ function ReplayToolContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: isStarter ? "starter" : "subscription",
-          priceId: isStarter ? STARTER_PACK_PRICE_ID : DEFAULT_PRO_PRICE_ID,
-          tierId: isStarter ? "starter" : DEFAULT_PRO_TIER_ID,
-          credits: isStarter ? 300 : DEFAULT_PRO_CREDITS,
+          priceId: isStarter ? STARTER_PACK_PRICE_ID : selectedProTier.priceId,
+          tierId: isStarter ? "starter" : selectedProTier.id,
+          credits: isStarter ? 300 : selectedProTier.credits,
           interval: "monthly"
         }),
       });
@@ -1062,8 +1072,9 @@ function ReplayToolContent() {
     return true;
   });
   
-  // Mobile Project Synced modal - shows after generation on mobile
+  // Mobile Project Synced modal - shows after generation on mobile (only once per generation)
   const [showMobileSyncModal, setShowMobileSyncModal] = useState(false);
+  const [mobileSyncShownForGeneration, setMobileSyncShownForGeneration] = useState<string | null>(null);
   
   // Live analysis state for "Matrix" view
   interface AnalysisPhase {
@@ -1388,10 +1399,15 @@ function ReplayToolContent() {
       components: prev.components.map(c => ({ ...c, status: "done" as const }))
     } : prev);
     
-    // Auto-switch to preview on mobile and show sync modal
+    // Auto-switch to preview on mobile and show sync modal (only once per generation)
     if (typeof window !== "undefined" && window.innerWidth < 768) {
       setMobilePanel("preview");
-      setShowMobileSyncModal(true);
+      // Only show modal if not already shown for this generation (use timestamp as unique ID)
+      const currentGenId = `gen_${Date.now()}`;
+      if (!mobileSyncShownForGeneration) {
+        setShowMobileSyncModal(true);
+        setMobileSyncShownForGeneration(currentGenId);
+      }
     }
     
     // Generate description
@@ -5554,6 +5570,7 @@ Try these prompts in Cursor or v0:
     setGeneratedCode(null);
     setDisplayedCode("");
     setEditableCode("");
+    setMobileSyncShownForGeneration(null); // Reset so modal can show for new generation
     // Auto-switch to Preview mode when generation starts
     setViewMode("preview");
     
@@ -9684,7 +9701,7 @@ export default function GeneratedPage() {
                                   {/* Close button */}
                                   <button 
                                     onClick={() => setViewMode("preview")}
-                                    className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+                                    className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-white/10 transition-colors z-10"
                                   >
                                     <X className="w-4 h-4 text-white/40" />
                                   </button>
@@ -9700,45 +9717,81 @@ export default function GeneratedPage() {
                                   
                                   {/* Options */}
                                   <div className="space-y-3 mb-5">
-                                    {/* Starter Pack */}
-                                    <button
-                                      onClick={() => setSelectedUpgradePlan?.("starter")}
-                                      className={`w-full p-4 rounded-xl border-2 transition-all text-left relative ${
-                                        selectedUpgradePlan === "starter" ? "border-[#FF6E3C] bg-[#FF6E3C]/5" : "border-white/10 hover:border-white/20 bg-white/[0.02]"
-                                      }`}
-                                    >
-                                      <span className="absolute -top-2 right-3 px-2 py-0.5 text-[10px] font-bold uppercase bg-[#FF6E3C] text-white rounded">Best Value</span>
-                                      <div className="flex items-center gap-3">
-                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedUpgradePlan === "starter" ? "border-[#FF6E3C] bg-[#FF6E3C]" : "border-white/30"}`}>
-                                          {selectedUpgradePlan === "starter" && <Check className="w-3 h-3 text-white" />}
-                                        </div>
-                                        <div className="flex-1">
-                                          <div className="flex items-baseline gap-2">
-                                            <span className="text-xl font-bold text-white">$9</span>
-                                            <span className="text-xs text-white/50">one-time</span>
-                                          </div>
-                                          <p className="text-xs text-white/60 mt-0.5">300 credits (~4 generations) • No subscription</p>
-                                        </div>
-                                      </div>
-                                    </button>
-                                    
-                                    {/* Pro Subscription */}
-                                    <button
-                                      onClick={() => setSelectedUpgradePlan?.("pro")}
-                                      className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                                    {/* Pro Subscription - Best Value */}
+                                    <div
+                                      onClick={() => setSelectedUpgradePlan("pro")}
+                                      className={`w-full p-4 rounded-xl border-2 transition-all text-left relative cursor-pointer ${
                                         selectedUpgradePlan === "pro" ? "border-[#FF6E3C] bg-[#FF6E3C]/5" : "border-white/10 hover:border-white/20 bg-white/[0.02]"
                                       }`}
                                     >
-                                      <div className="flex items-center gap-3">
-                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedUpgradePlan === "pro" ? "border-[#FF6E3C] bg-[#FF6E3C]" : "border-white/30"}`}>
+                                      <span className="absolute -top-2 right-3 px-2 py-0.5 text-[10px] font-bold uppercase bg-[#FF6E3C] text-white rounded">Best Value</span>
+                                      <div className="flex items-center gap-3 mb-3">
+                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedUpgradePlan === "pro" ? "border-[#FF6E3C] bg-[#FF6E3C]" : "border-white/30"}`}>
                                           {selectedUpgradePlan === "pro" && <Check className="w-3 h-3 text-white" />}
                                         </div>
                                         <div className="flex-1">
-                                          <div className="flex items-baseline gap-2">
-                                            <span className="text-xl font-bold text-white">$25</span>
-                                            <span className="text-xs text-white/50">/month</span>
+                                          <div className="flex items-center gap-2">
+                                            <Sparkles className="w-4 h-4 text-[#FF6E3C]" />
+                                            <span className="font-semibold text-white">Pro Subscription</span>
                                           </div>
-                                          <p className="text-xs text-white/60 mt-0.5">3,000 credits/mo • Priority support • Commercial license</p>
+                                        </div>
+                                        <div className="text-right">
+                                          <span className="text-xl font-bold text-white">${selectedProTier.price}</span>
+                                          <span className="text-xs text-white/50">/mo</span>
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Capacity selector */}
+                                      <div className="ml-8 relative">
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); setShowProTierDropdown(!showProTierDropdown); }}
+                                          className="w-full flex items-center justify-between px-3 py-2 bg-[#1a1a1a] border border-white/10 rounded-lg text-sm text-white hover:border-white/20 transition-colors"
+                                        >
+                                          <span>{selectedProTier.credits.toLocaleString()} credits</span>
+                                          <ChevronDown className={`w-4 h-4 text-white/50 transition-transform ${showProTierDropdown ? "rotate-180" : ""}`} />
+                                        </button>
+                                        
+                                        {showProTierDropdown && (
+                                          <div className="absolute top-full left-0 right-0 mt-1 bg-[#1a1a1a] border border-white/10 rounded-lg overflow-hidden z-20 shadow-xl">
+                                            {PRO_TIERS.map((tier, idx) => (
+                                              <button
+                                                key={tier.id}
+                                                onClick={(e) => { e.stopPropagation(); setSelectedProTierIndex(idx); setShowProTierDropdown(false); }}
+                                                className={`w-full px-3 py-2 text-left text-sm hover:bg-white/5 transition-colors flex items-center justify-between ${
+                                                  idx === selectedProTierIndex ? "text-[#FF6E3C] bg-[#FF6E3C]/10" : "text-white"
+                                                }`}
+                                              >
+                                                <span>{tier.credits.toLocaleString()} credits</span>
+                                                <span className="text-white/50">${tier.price}/mo</span>
+                                              </button>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                      
+                                      <p className="text-xs text-white/50 mt-2 ml-8">Priority support • Commercial license • Credits roll over</p>
+                                    </div>
+                                    
+                                    {/* Starter Pack - Simple option */}
+                                    <button
+                                      onClick={() => setSelectedUpgradePlan("starter")}
+                                      className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                                        selectedUpgradePlan === "starter" ? "border-[#FF6E3C] bg-[#FF6E3C]/5" : "border-white/10 hover:border-white/20 bg-white/[0.02]"
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedUpgradePlan === "starter" ? "border-[#FF6E3C] bg-[#FF6E3C]" : "border-white/30"}`}>
+                                          {selectedUpgradePlan === "starter" && <Check className="w-3 h-3 text-white" />}
+                                        </div>
+                                        <div className="flex-1">
+                                          <div className="flex items-center gap-2">
+                                            <Zap className="w-4 h-4 text-white/60" />
+                                            <span className="font-medium text-white">Starter Pack</span>
+                                          </div>
+                                          <p className="text-xs text-white/50 mt-0.5">300 credits • One-time • No subscription</p>
+                                        </div>
+                                        <div className="text-right">
+                                          <span className="text-xl font-bold text-white">$9</span>
                                         </div>
                                       </div>
                                     </button>
@@ -9756,9 +9809,9 @@ export default function GeneratedPage() {
                                         Processing...
                                       </>
                                     ) : selectedUpgradePlan === "starter" ? (
-                                      "Get Starter Pack for $9"
+                                      "Get Starter Pack — $9"
                                     ) : (
-                                      "Subscribe for $25/mo"
+                                      `Subscribe — $${selectedProTier.price}/mo`
                                     )}
                                   </button>
                                   <p className="text-center text-[10px] text-white/30 mt-3">

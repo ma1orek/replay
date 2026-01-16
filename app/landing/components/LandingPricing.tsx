@@ -9,11 +9,18 @@ import { cn } from "@/lib/utils";
 import AuthModal from "@/components/modals/AuthModal";
 import { useAuth } from "@/lib/auth/context";
 
+// Starter Pack - One-time $9
+const STARTER_PACK = {
+  id: 'starter',
+  credits: 300,
+  price: 9,
+  stripePriceId: "price_1Spo05Axch1s4iBGydOPAd2i",
+};
+
 // Elastic "PRO" Subscription Tiers with Stripe Price IDs
 const PRICING_TIERS = [
   {
     id: 'pro25',
-    label: "10 Generations",
     credits: 1500,
     monthlyPrice: 25,
     stripePriceId_Monthly: "price_1SotL1Axch1s4iBGWMvO0JBZ",
@@ -24,7 +31,6 @@ const PRICING_TIERS = [
   },
   {
     id: 'pro50',
-    label: "22 Generations",
     credits: 3300,
     monthlyPrice: 50,
     stripePriceId_Monthly: "price_1SotLqAxch1s4iBG1ViXkfc2",
@@ -35,7 +41,6 @@ const PRICING_TIERS = [
   },
   {
     id: 'pro100',
-    label: "50 Generations",
     credits: 7500,
     popular: true,
     monthlyPrice: 100,
@@ -47,7 +52,6 @@ const PRICING_TIERS = [
   },
   {
     id: 'pro200',
-    label: "110 Generations",
     credits: 16500,
     monthlyPrice: 200,
     stripePriceId_Monthly: "price_1SotN4Axch1s4iBGUJEfzznw",
@@ -58,7 +62,6 @@ const PRICING_TIERS = [
   },
   {
     id: 'pro300',
-    label: "170 Generations",
     credits: 25500,
     monthlyPrice: 300,
     stripePriceId_Monthly: "price_1SotNMAxch1s4iBGzRD7B7VI",
@@ -69,7 +72,6 @@ const PRICING_TIERS = [
   },
   {
     id: 'pro500',
-    label: "300 Generations",
     credits: 45000,
     monthlyPrice: 500,
     stripePriceId_Monthly: "price_1SotNuAxch1s4iBGPl81sHqx",
@@ -80,7 +82,6 @@ const PRICING_TIERS = [
   },
   {
     id: 'pro1000',
-    label: "640 Generations",
     credits: 96000,
     monthlyPrice: 1000,
     stripePriceId_Monthly: "price_1SotO9Axch1s4iBGCDE83jPv",
@@ -91,7 +92,6 @@ const PRICING_TIERS = [
   },
   {
     id: 'pro2000',
-    label: "1,500 Generations",
     credits: 225000,
     monthlyPrice: 2000,
     stripePriceId_Monthly: "price_1SotOOAxch1s4iBGWiUHzG1M",
@@ -128,6 +128,8 @@ export default function LandingPricing() {
     if (user && pendingAction) {
       if (pendingAction.type === "subscription" && pendingAction.priceId) {
         handleProSubscription(pendingAction.priceId);
+      } else if (pendingAction.type === "topup" && pendingAction.amount === 9) {
+        handleStarterPack();
       } else if (pendingAction.type === "topup" && pendingAction.amount) {
         handleBuyCredits(pendingAction.amount);
       }
@@ -196,6 +198,38 @@ export default function LandingPricing() {
     }
   };
 
+  const handleStarterPack = async () => {
+    if (!user) {
+      setPendingAction({ type: "topup", amount: 9 });
+      setShowAuthModal(true);
+      return;
+    }
+
+    setIsCheckingOut("starter");
+    try {
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          type: "starter",
+          priceId: STARTER_PACK.stripePriceId,
+          credits: STARTER_PACK.credits
+        }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else if (data.error) {
+        console.error("Checkout error:", data.error);
+        alert("Failed to start checkout: " + data.error);
+      }
+    } catch (error) {
+      console.error("Checkout error:", error);
+    } finally {
+      setIsCheckingOut(null);
+    }
+  };
+
   const handleGetStarted = () => {
     if (!user) {
       setShowAuthModal(true);
@@ -252,7 +286,7 @@ export default function LandingPricing() {
         </motion.div>
 
         {/* Pricing Cards Grid */}
-        <div className="grid lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto">
           
           {/* FREE Card */}
           <motion.div
@@ -261,7 +295,7 @@ export default function LandingPricing() {
             transition={{ duration: 0.8, delay: 0 }}
             className="relative"
           >
-            <div className="h-full p-8 rounded-2xl bg-white/[0.02] border border-white/[0.08] backdrop-blur-sm">
+            <div className="h-full p-6 rounded-2xl bg-white/[0.02] border border-white/[0.08] backdrop-blur-sm">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
                   <Zap className="w-4 h-4 text-white/60" />
@@ -270,14 +304,13 @@ export default function LandingPricing() {
               </div>
               
               <div className="mb-1">
-                <span className="text-5xl font-bold text-white">$0</span>
+                <span className="text-4xl font-bold text-white">$0</span>
               </div>
-              <p className="text-sm text-white/40 mb-6">Forever free to start</p>
+              <p className="text-sm text-white/40 mb-5">Forever free to start</p>
               
-              <div className="space-y-3 mb-8">
+              <div className="space-y-2.5 mb-6">
                 {[
                   "100 credits / month",
-                  "~1 generation",
                   "Preview only",
                   "Public projects only",
                   "Community support",
@@ -291,9 +324,61 @@ export default function LandingPricing() {
               
               <button
                 onClick={handleGetStarted}
-                className="w-full py-3.5 rounded-xl text-sm font-medium transition-all bg-white/[0.05] text-white/70 hover:bg-white/[0.08] border border-white/[0.08]"
+                className="w-full py-3 rounded-xl text-sm font-medium transition-all bg-white/[0.05] text-white/70 hover:bg-white/[0.08] border border-white/[0.08]"
               >
                 Get Started
+              </button>
+            </div>
+          </motion.div>
+
+          {/* STARTER PACK Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.8, delay: 0.05 }}
+            className="relative"
+          >
+            <div className="h-full p-6 rounded-2xl bg-white/[0.02] border border-white/[0.08] backdrop-blur-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                  <Zap className="w-4 h-4 text-emerald-400" />
+                </div>
+                <span className="text-sm font-medium text-emerald-400">Starter Pack</span>
+              </div>
+              
+              <div className="mb-1 flex items-baseline gap-2">
+                <span className="text-4xl font-bold text-white">$9</span>
+                <span className="text-sm text-white/40">one-time</span>
+              </div>
+              <p className="text-sm text-white/40 mb-5">Perfect for testing</p>
+              
+              <div className="space-y-2.5 mb-6">
+                {[
+                  "300 credits (no expiry)",
+                  "Full code access & export",
+                  "Publish to web",
+                  "No subscription required",
+                ].map((f) => (
+                  <div key={f} className="flex items-center gap-3 text-sm text-white/70">
+                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                    {f}
+                  </div>
+                ))}
+              </div>
+              
+              <button
+                onClick={handleStarterPack}
+                disabled={isCheckingOut === "starter"}
+                className="w-full py-3 rounded-xl text-sm font-semibold transition-all bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30 disabled:opacity-50"
+              >
+                {isCheckingOut === "starter" ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />
+                    Processing...
+                  </span>
+                ) : (
+                  "Buy Starter Pack"
+                )}
               </button>
             </div>
           </motion.div>
@@ -305,14 +390,14 @@ export default function LandingPricing() {
             transition={{ duration: 0.8, delay: 0.1 }}
             className="relative lg:-mt-4 lg:mb-4"
           >
-            {/* Popular Badge */}
+            {/* Best Value Badge */}
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
               <div className="px-4 py-1.5 rounded-full bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-xs font-semibold text-white shadow-lg shadow-[#FF6E3C]/30">
-                Most Popular
+                Best Value
               </div>
             </div>
             
-            <div className="h-full p-8 rounded-2xl bg-gradient-to-b from-[#FF6E3C]/10 to-transparent border border-[#FF6E3C]/30 backdrop-blur-sm relative overflow-hidden">
+            <div className="h-full p-6 rounded-2xl bg-gradient-to-b from-[#FF6E3C]/10 to-transparent border border-[#FF6E3C]/30 backdrop-blur-sm relative overflow-hidden">
               {/* Glow effect */}
               <div className="absolute inset-0 bg-gradient-to-b from-[#FF6E3C]/5 to-transparent pointer-events-none" />
               
@@ -326,7 +411,7 @@ export default function LandingPricing() {
                 
                 {/* Price Display */}
                 <div className="mb-1 flex items-baseline gap-2">
-                  <span className="text-5xl font-bold text-white">${displayPrice}</span>
+                  <span className="text-4xl font-bold text-white">${displayPrice}</span>
                   <span className="text-white/40">/mo</span>
                 </div>
                 
@@ -341,11 +426,11 @@ export default function LandingPricing() {
                 {!isAnnual && <div className="mb-4" />}
 
                 {/* Capacity Dropdown */}
-                <div className="relative mb-6">
+                <div className="relative mb-5">
                   <label className="block text-xs font-medium text-white/50 mb-2">Capacity</label>
                     <button
                         onClick={() => setDropdownOpen(!dropdownOpen)}
-                        className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-sm text-white hover:border-white/20 transition-all"
+                        className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 text-sm text-white hover:border-white/20 transition-all"
                       >
                         <span>{selectedTier.credits.toLocaleString()} credits</span>
                         <ChevronDown className={cn("w-4 h-4 text-white/40 transition-transform", dropdownOpen && "rotate-180")} />
@@ -380,15 +465,13 @@ export default function LandingPricing() {
                 </div>
 
                     {/* Features */}
-                    <div className="space-y-3 mb-8">
+                    <div className="space-y-2.5 mb-6">
                       {[
-                        "Everything in Free, plus:",
+                        "Everything in Starter, plus:",
                         `${selectedTier.credits.toLocaleString()} credits / month`,
-                        `~${Math.floor(selectedTier.credits / 75)} generations`,
                         "Private projects",
-                        "Full code access & export",
-                        "Publish to web",
                         "Credits roll over",
+                        "Priority support",
                       ].map((f, idx) => (
                         <div key={f} className={cn("flex items-center gap-3 text-sm", idx === 0 ? "text-[#FF6E3C] font-medium" : "text-white/70")}>
                           <Check className="w-4 h-4 text-[#FF6E3C] shrink-0" />
@@ -400,7 +483,7 @@ export default function LandingPricing() {
                 <button
                   onClick={() => handleProSubscription()}
                   disabled={isCheckingOut === "pro"}
-                  className="w-full py-3.5 rounded-xl text-sm font-semibold transition-all bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white hover:opacity-90 disabled:opacity-50 shadow-lg shadow-[#FF6E3C]/30"
+                  className="w-full py-3 rounded-xl text-sm font-semibold transition-all bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white hover:opacity-90 disabled:opacity-50 shadow-lg shadow-[#FF6E3C]/30"
                 >
                   {isCheckingOut === "pro" ? (
                     <span className="flex items-center justify-center gap-2">
@@ -419,10 +502,10 @@ export default function LandingPricing() {
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.8, delay: 0.2 }}
+            transition={{ duration: 0.8, delay: 0.15 }}
             className="relative"
           >
-            <div className="h-full p-8 rounded-2xl bg-white/[0.02] border border-white/[0.08] backdrop-blur-sm">
+            <div className="h-full p-6 rounded-2xl bg-white/[0.02] border border-white/[0.08] backdrop-blur-sm">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
                   <Building2 className="w-4 h-4 text-white/60" />
@@ -431,19 +514,16 @@ export default function LandingPricing() {
               </div>
               
               <div className="mb-1">
-                <span className="text-5xl font-bold text-white">Custom</span>
+                <span className="text-4xl font-bold text-white">Custom</span>
               </div>
-              <p className="text-sm text-white/40 mb-6">For teams & organizations</p>
+              <p className="text-sm text-white/40 mb-5">For teams & orgs</p>
               
-              <div className="space-y-3 mb-8">
+              <div className="space-y-2.5 mb-6">
                 {[
                   "Everything in Pro, plus:",
                   "Custom credit allocation",
-                  "Team seats",
-                  "Priority processing",
-                  "SSO / SAML",
+                  "Team seats & SSO",
                   "Dedicated support & SLA",
-                  "API access",
                 ].map((f, idx) => (
                   <div key={f} className={cn("flex items-center gap-3 text-sm", idx === 0 ? "text-white/80 font-medium" : "text-white/60")}>
                     <Check className="w-4 h-4 text-white/40 shrink-0" />
@@ -454,7 +534,7 @@ export default function LandingPricing() {
               
               <Link
                 href="/contact"
-                className="block w-full text-center py-3.5 rounded-xl text-sm font-medium transition-all bg-white/[0.05] text-white/70 hover:bg-white/[0.08] border border-white/[0.08]"
+                className="block w-full text-center py-3 rounded-xl text-sm font-medium transition-all bg-white/[0.05] text-white/70 hover:bg-white/[0.08] border border-white/[0.08]"
               >
                 Contact Sales
               </Link>
