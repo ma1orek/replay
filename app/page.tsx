@@ -1143,7 +1143,6 @@ function ReplayToolContent() {
   const [selectedFlowNode, setSelectedFlowNode] = useState<string | null>(null);
   const [showStructureInFlow, setShowStructureInFlow] = useState(false); // Toggle to show components under nodes
   const [showPossiblePaths, setShowPossiblePaths] = useState(true); // Toggle to show/hide possible paths in Flow
-  const [showPreviewsInFlow, setShowPreviewsInFlow] = useState(true); // Toggle to show iframe previews in flow nodes
   const [generationComplete, setGenerationComplete] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showFloatingEdit, setShowFloatingEdit] = useState(false);
@@ -1219,84 +1218,123 @@ function ReplayToolContent() {
   
   // Helper to inject image click handlers into preview HTML
   const injectAssetClickHandler = useCallback((html: string): string => {
+    // Simple CSS - outline without offset to not break layout
+    const CSS_STYLES = 'img { cursor: pointer !important; outline: 3px solid #FF6E3C !important; outline-offset: -3px !important; } img:hover { outline-width: 4px !important; filter: brightness(1.1) !important; } [data-has-bg-image] { cursor: pointer !important; outline: 3px solid #FF6E3C !important; outline-offset: -3px !important; } [data-has-bg-image]:hover { outline-width: 4px !important; }';
+    
     const script = `<script>
 (function() {
-  var enabled = false;
-  var style = null;
-  
-  var CSS = 'img:not([src$=".svg"]):not([src^="data:"]) { cursor: pointer !important; box-shadow: 0 0 0 4px #FF6E3C !important; } img:not([src$=".svg"]):not([src^="data:"]):hover { box-shadow: 0 0 0 6px #FF6E3C, 0 0 20px rgba(255,110,60,0.5) !important; transform: scale(1.02) !important; z-index: 9999 !important; } [data-bg-url] { cursor: pointer !important; box-shadow: inset 0 0 0 4px #FF6E3C !important; } [data-bg-url]:hover { box-shadow: inset 0 0 0 6px #FF6E3C !important; }';
+  var assetSelectorEnabled = false;
   
   function init() {
-    console.log('[Assets] Initializing...');
-    style = document.createElement('style');
-    style.id = 'asset-styles';
+    var style = document.createElement('style');
+    style.id = 'assets-selector-styles';
     document.head.appendChild(style);
     
-    function markBg() {
-      var c = 0;
+    // Find and mark ALL elements with background images
+    function markBackgroundImages() {
+      var count = 0;
       document.querySelectorAll('*').forEach(function(el) {
-        if (el.hasAttribute('data-bg-url')) return;
-        var bg = window.getComputedStyle(el).backgroundImage;
+        if (el.hasAttribute('data-has-bg-image')) return;
+        
+        var computed = window.getComputedStyle(el);
+        var bg = computed.backgroundImage;
+        
         if (bg && bg !== 'none' && bg.includes('url(')) {
-          var m = bg.match(/url\\(["']?([^"')]+)["']?\\)/);
-          if (m && m[1] && !m[1].includes('.svg') && !m[1].startsWith('data:') && !m[1].includes('gradient')) {
-            el.setAttribute('data-bg-url', m[1]);
-            c++;
+          var urlMatch = bg.match(/url\\(["']?([^"')]+)["']?\\)/);
+          if (urlMatch && urlMatch[1]) {
+            var url = urlMatch[1];
+            if (!url.includes('.svg') && !url.startsWith('data:') && !url.includes('gradient')) {
+              el.setAttribute('data-has-bg-image', 'true');
+              el.setAttribute('data-bg-url', url);
+              count++;
+            }
           }
         }
       });
-      console.log('[Assets] Marked ' + c + ' bg images');
+      console.log('[Assets] Marked ' + count + ' elements with background images');
     }
     
-    window.__toggleAssets = function(on) {
-      enabled = on;
-      if (on) {
-        markBg();
-        style.textContent = CSS;
-        var imgs = document.querySelectorAll('img:not([src$=".svg"]):not([src^="data:"])').length;
-        var bgs = document.querySelectorAll('[data-bg-url]').length;
-        console.log('[Assets] ON - ' + imgs + ' imgs, ' + bgs + ' bgs');
+    function countImages() {
+      var imgs = document.querySelectorAll('img');
+      var bgs = document.querySelectorAll('[data-has-bg-image]');
+      console.log('[Assets] Found ' + imgs.length + ' img tags and ' + bgs.length + ' background images');
+      return imgs.length + bgs.length;
+    }
+    
+    window.__applyAssetStyles = function(enabled) {
+      assetSelectorEnabled = enabled;
+      var style = document.getElementById('assets-selector-styles');
+      if (enabled) {
+        markBackgroundImages();
+        style.textContent = ${JSON.stringify(CSS_STYLES)};
+        var total = countImages();
+        console.log('[Assets] Selector enabled - ' + total + ' images clickable');
       } else {
         style.textContent = '';
-        console.log('[Assets] OFF');
+        console.log('[Assets] Selector disabled');
       }
     };
     
     window.addEventListener('message', function(e) {
       if (e.data && e.data.type === 'TOGGLE_ASSET_SELECTOR') {
-        window.__toggleAssets(e.data.enabled);
+        window.__applyAssetStyles(e.data.enabled);
       }
     });
     
+    // Handle clicks on images AND background-images
     document.addEventListener('click', function(e) {
-      if (!enabled) return;
-      var url = null;
-      var t = e.target;
+      if (!assetSelectorEnabled) return;
       
-      if (t.tagName === 'IMG' && t.src && !t.src.includes('.svg') && !t.src.startsWith('data:')) {
-        url = t.src;
+      var target = e.target;
+      var url = null;
+      
+      // Check if clicked element or parent is an img tag
+      var img = target.tagName === 'IMG' ? target : target.closest('img');
+      if (img && img.src && !img.src.includes('.svg') && !img.src.startsWith('data:')) {
+        url = img.src;
+        console.log('[Assets] Clicked img tag:', url);
       }
       
+      // If no img found, check for background-image (including on parent elements)
       if (!url) {
-        var el = t;
+        var el = target;
+        // First check if we have data-bg-url from our marking
         while (el && el !== document.body) {
           if (el.hasAttribute('data-bg-url')) {
             url = el.getAttribute('data-bg-url');
+            console.log('[Assets] Clicked element with marked bg:', url);
             break;
           }
           el = el.parentElement;
+        }
+        
+        // Fallback: check computed background-image directly
+        if (!url) {
+          el = target;
+          while (el && el !== document.body) {
+            var bg = window.getComputedStyle(el).backgroundImage;
+            if (bg && bg !== 'none' && bg.includes('url(')) {
+              var match = bg.match(/url\\(["']?([^"')]+)["']?\\)/);
+              if (match && match[1] && !match[1].includes('.svg') && !match[1].startsWith('data:')) {
+                url = match[1];
+                console.log('[Assets] Clicked element with computed bg:', url);
+                break;
+              }
+            }
+            el = el.parentElement;
+          }
         }
       }
       
       if (url) {
         e.preventDefault();
         e.stopPropagation();
-        console.log('[Assets] Click:', url);
+        console.log('[Assets] Sending ASSET_CLICK:', url);
         window.parent.postMessage({ type: 'ASSET_CLICK', url: url }, '*');
       }
     }, true);
     
-    console.log('[Assets] Ready');
+    console.log('[Assets] Handler initialized');
     window.parent.postMessage({ type: 'ASSET_HANDLER_READY' }, '*');
   }
   
@@ -8472,11 +8510,6 @@ Try these prompts in Cursor or v0:
                         <button 
                           onClick={async () => {
                             if (!chatInput.trim() || !editableCode || isEditing) return;
-                            // Block if images still uploading
-                            if (editImages.some(img => img.uploading)) {
-                              showToast("Poczekaj na upload zdjęcia...", "info");
-                              return;
-                            }
                             const userMsg: ChatMessage = { id: generateId(), role: "user", content: chatInput, timestamp: Date.now(), attachments: selectedElement ? [{ type: "element", label: selectedElement }] : editImages.length > 0 ? editImages.map(img => ({ type: "image" as const, label: img.name })) : undefined };
                             setChatMessages(prev => [...prev, userMsg]);
                             const currentInput = chatInput;
@@ -9592,27 +9625,6 @@ Try these prompts in Cursor or v0:
                     <EmptyState icon="logo" title="Drop or record video. Get code." subtitle="We analyze the flow, map interactions, and export clean code." showEarlyAccess={generations.length === 0} />
                   </div>
                 )}
-                
-                {/* Assets Modal - Side Drawer */}
-                <AssetsModal
-                  isOpen={showAssetsModal}
-                  onClose={() => setShowAssetsModal(false)}
-                  code={editableCode}
-                  onCodeUpdate={(newCode) => {
-                    setEditableCode(newCode);
-                    setDisplayedCode(newCode);
-                    setGeneratedCode(newCode);
-                    setPreviewUrl(createPreviewUrl(newCode));
-                    // Auto-save - update the generation record
-                    if (activeGeneration) {
-                      const updatedGen = { ...activeGeneration, code: newCode };
-                      setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
-                      saveGenerationToSupabase(updatedGen);
-                    }
-                  }}
-                  initialSelectedUrl={selectedAssetUrl}
-                  onClearSelection={() => setSelectedAssetUrl(null)}
-                />
               </div>
             )}
 
@@ -10223,19 +10235,6 @@ export default function GeneratedPage() {
                         <GitBranch className="w-3.5 h-3.5" />
                         Possible
                       </button>
-                      {/* Previews toggle */}
-                      <button 
-                        onClick={() => setShowPreviewsInFlow(!showPreviewsInFlow)}
-                        className={cn(
-                          "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-lg",
-                          showPreviewsInFlow 
-                            ? "bg-[#FF6E3C] text-white" 
-                            : "bg-[#1a1a1a] border border-white/10 text-white/60 hover:border-white/20"
-                        )}
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        Previews
-                      </button>
                       {/* Structure toggle */}
                       <button 
                         onClick={() => setShowStructureInFlow(!showStructureInFlow)}
@@ -10318,7 +10317,7 @@ export default function GeneratedPage() {
                             // Hide edges to hidden detected/possible nodes
                             if (!showPossiblePaths && (toNode.status === "detected" || toNode.status === "possible")) return null;
                             const x1 = fromNode.x + 90;
-                            const y1 = fromNode.y + (showPreviewsInFlow ? 140 : showStructureInFlow ? 100 : 60);
+                            const y1 = fromNode.y + (showStructureInFlow ? 100 : 60);
                             const x2 = toNode.x + 90;
                             const y2 = toNode.y;
                             const midX = (x1 + x2) / 2;
@@ -10393,43 +10392,49 @@ export default function GeneratedPage() {
                           
                           // Confidence-based styling - "added" looks like "observed" (green) since they're active
                           const confidenceStyles: Record<string, string> = {
-                            observed: "border-solid border-emerald-500/40 bg-[#0a0a0a]",
-                            detected: "border-solid border-amber-500/30 bg-[#0a0a0a]",
-                            possible: "border-dashed border-white/20 bg-[#0a0a0a]/50",
-                            added: "border-solid border-emerald-500/40 bg-[#0a0a0a]"
+                            observed: "border-solid border-emerald-500/30 bg-[#0a0a0a]",
+                            detected: "border-solid border-amber-500/20 bg-[#0a0a0a]",
+                            possible: "border-dashed border-white/10 bg-[#0a0a0a]/50",
+                            added: "border-solid border-emerald-500/30 bg-[#0a0a0a]"
                           };
                           
-                          // Node width: wider for observed/added nodes with preview
-                          const hasPreview = (isObserved || isAdded) && editableCode;
-                          const nodeWidth = hasPreview ? 'w-52' : 'w-44';
+                          // Check if this node has generated code (for iframe preview)
+                          const nodeFile = generatedFiles.find(f => f.sourceNodeId === node.id);
+                          const hasPreview = (isObserved || isAdded) && (nodeFile || editableCode);
                           
                           return (
                             <div 
                               key={node.id}
                               className={cn(
-                                "absolute rounded-xl border backdrop-blur-sm select-none",
-                                nodeWidth,
+                                "absolute rounded-xl border backdrop-blur-sm select-none overflow-hidden",
+                                hasPreview ? "w-48" : "w-40",
                                 confidenceStyles[node.status] || confidenceStyles.detected,
-                                selectedFlowNode === node.id && "ring-1 ring-[#FF6E3C]/50 border-[#FF6E3C]/30",
-                                isDragging ? "cursor-grabbing shadow-2xl z-50 scale-[1.02]" : "hover:border-white/30"
+                                selectedFlowNode === node.id && "ring-2 ring-[#FF6E3C]/40",
+                                isDragging ? "cursor-grabbing shadow-2xl z-50 scale-[1.02]" : "hover:border-white/20"
                               )}
                               style={{ 
                                 left: node.x, 
                                 top: node.y,
-                                transition: isDragging ? 'none' : 'border-color 0.15s, box-shadow 0.15s',
-                                opacity: isPossible ? 0.6 : isDetected ? 0.8 : 1
+                                transition: isDragging ? 'none' : 'all 0.15s ease',
+                                opacity: isPossible ? 0.5 : isDetected ? 0.75 : 1
                               }}
-                              title={isObserved ? "Shown and confirmed in the video recording" : isDetected ? "Present in navigation, but not shown in video" : "Reachable from observed paths, not yet confirmed"}
                             >
+                              {/* Status badge - top */}
+                              <div className={cn(
+                                "px-2 py-1 text-[9px] font-medium uppercase tracking-wider text-center",
+                                isObserved || isAdded ? "bg-emerald-500/10 text-emerald-400" : 
+                                isDetected ? "bg-amber-500/10 text-amber-400" : "bg-white/5 text-white/30"
+                              )}>
+                                {isObserved ? "observed" : isAdded ? "generated" : isDetected ? "detected" : "possible"}
+                              </div>
+                              
                               {/* Node header - DRAGGABLE */}
                               <div 
                                 className={cn(
-                                  "pt-4 px-3 pb-3 border-b cursor-grab active:cursor-grabbing group/nodeheader relative",
-                                  isPossible ? "border-white/5 border-dashed" : "border-white/5",
+                                  "px-3 py-2 cursor-grab active:cursor-grabbing group/nodeheader relative",
                                   draggingNodeId === node.id && "cursor-grabbing"
                                 )}
                                 onMouseDown={(e) => {
-                                  // Don't start drag if clicking edit/delete buttons
                                   if ((e.target as HTMLElement).closest('.flow-node-action')) return;
                                   e.stopPropagation();
                                   setDraggingNodeId(node.id);
@@ -10444,8 +10449,6 @@ export default function GeneratedPage() {
                                   if ((e.target as HTMLElement).closest('.flow-node-action')) return;
                                   if (!draggingNodeId) {
                                     setSelectedFlowNode(node.id === selectedFlowNode ? null : node.id);
-                                    // For detected/possible nodes, open edit with @NodeName prefilled
-                                    // Only if not currently editing
                                     if ((isDetected || isPossible) && node.id !== "home" && !isEditing) {
                                       setEditInput(`@${node.name} `);
                                       setShowFloatingEdit(true);
@@ -10455,7 +10458,6 @@ export default function GeneratedPage() {
                                 onDoubleClick={(e) => {
                                   if ((e.target as HTMLElement).closest('.flow-node-action')) return;
                                   e.stopPropagation();
-                                  // Double-click to view code for this node
                                   handleFlowNodeCodeFocus(node.id);
                                 }}
                               >
@@ -10484,76 +10486,34 @@ export default function GeneratedPage() {
                                   </button>
                                 </div>
                                 
-                                <div className="flex items-center gap-2 pr-12">
-                                  {/* Confidence indicator */}
-                                  {isObserved && <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" title="Observed" />}
-                                  {isDetected && <div className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" title="Detected" />}
-                                  {isPossible && <div className="w-1.5 h-1.5 rounded-full bg-white/40 flex-shrink-0" title="Possible" />}
+                                <div className="flex items-center gap-2 pr-10">
                                   <Icon className={cn("w-4 h-4 flex-shrink-0", 
-                                    isObserved ? "text-emerald-400" : isDetected ? "text-amber-400" : "text-white/40"
+                                    isObserved || isAdded ? "text-emerald-400" : isDetected ? "text-amber-400" : "text-white/30"
                                   )} />
                                   <span className={cn(
                                     "text-sm font-semibold truncate", 
-                                    isPossible ? "text-white/50 italic" : isDetected ? "text-white/70" : "text-white/90"
+                                    isPossible ? "text-white/40 italic" : isDetected ? "text-white/60" : "text-white"
                                   )} title={node.name}>{node.name}</span>
                                 </div>
-                                {node.description && (
-                                  <p className={cn("text-[10px] mt-1 line-clamp-2", isPossible ? "text-white/25" : isDetected ? "text-white/30" : "text-white/40")}>{node.description}</p>
-                                )}
                               </div>
                               
-                              {/* Mini iframe preview for observed/added nodes */}
-                              {showPreviewsInFlow && (isObserved || isAdded) && editableCode && (
-                                <div className="relative w-full h-28 bg-[#0a0a0a] overflow-hidden border-b border-white/5">
-                                  <div className="absolute inset-0 flex items-center justify-center">
-                                    <iframe
-                                      srcDoc={(() => {
-                                        // Inject script to auto-navigate to the right page
-                                        const pageId = node.id.toLowerCase().replace(/\s+/g, '-');
-                                        const autoNavScript = `
-                                          <script>
-                                            document.addEventListener('alpine:init', () => {
-                                              setTimeout(() => {
-                                                const app = document.querySelector('[x-data]');
-                                                if (app && app._x_dataStack) {
-                                                  const data = app._x_dataStack[0];
-                                                  if (data && data.currentPage !== undefined) {
-                                                    data.currentPage = '${pageId}';
-                                                  }
-                                                }
-                                              }, 100);
-                                            });
-                                          </script>
-                                        `;
-                                        return editableCode.replace('</head>', autoNavScript + '</head>');
-                                      })()}
-                                      className="w-[800px] h-[600px] border-0 pointer-events-none"
-                                      style={{ 
-                                        transform: 'scale(0.2)', 
-                                        transformOrigin: 'top left',
-                                        position: 'absolute',
-                                        left: '50%',
-                                        top: '50%',
-                                        marginLeft: '-80px',
-                                        marginTop: '-60px'
-                                      }}
-                                      sandbox="allow-scripts"
-                                      title={`Preview: ${node.name}`}
-                                    />
-                                  </div>
-                                  {/* Hover overlay for "View" */}
-                                  <div 
-                                    className="absolute inset-0 bg-black/60 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleFlowNodeCodeFocus(node.id);
+                              {/* Preview iframe for observed/added nodes */}
+                              {hasPreview && (
+                                <div className="mx-2 mb-2 rounded-lg overflow-hidden bg-white relative" style={{ height: '80px' }}>
+                                  <iframe
+                                    srcDoc={nodeFile?.content || editableCode || ''}
+                                    className="w-full h-full pointer-events-none border-0"
+                                    style={{ 
+                                      transform: 'scale(0.15)', 
+                                      transformOrigin: 'top left',
+                                      width: '667%',
+                                      height: '667%'
                                     }}
-                                  >
-                                    <div className="flex items-center gap-1.5 text-white/80 text-xs">
-                                      <Eye className="w-3.5 h-3.5" />
-                                      <span>View</span>
-                                    </div>
-                                  </div>
+                                    sandbox="allow-scripts"
+                                    title={`Preview: ${node.name}`}
+                                  />
+                                  {/* Overlay gradient */}
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
                                 </div>
                               )}
                               
@@ -12929,780 +12889,3 @@ export default function GeneratedPage() {
                             // Code was changed
                             const responseMsg = analyzeCodeChanges(editableCode, result.code, currentInput);
                             setEditableCode(result.code); setDisplayedCode(result.code); setGeneratedCode(result.code);
-                            setPreviewUrl(createPreviewUrl(result.code));
-                            setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: responseMsg, timestamp: Date.now() }]);
-                            if (activeGeneration) {
-                              const versionLabel = generateVersionLabel(currentInput);
-                              const updatedGen = { ...activeGeneration, code: result.code, versions: [...(activeGeneration.versions || []), { id: generateId(), timestamp: Date.now(), label: versionLabel, code: result.code, flowNodes, flowEdges, styleInfo }] };
-                              setActiveGeneration(updatedGen); 
-                              setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
-                              saveGenerationToSupabase(updatedGen);
-                            }
-                          } else if (!result?.cancelled) {
-                            setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: result?.error ? `Błąd: ${result.error}` : "Nie wykryto zmian. Spróbuj być bardziej konkretny.", timestamp: Date.now() }]);
-                          }
-                        } catch (error) { 
-                          if (!(error instanceof Error && error.name === 'AbortError')) {
-                            setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: `Error: ${error instanceof Error ? error.message : "Unknown error"}`, timestamp: Date.now() }]); 
-                          }
-                        }
-                        finally { setIsEditing(false); setEditImages([]); }
-                      }
-                    }}
-                    placeholder={isPlanMode ? "Plan..." : "Ask Replay..."}
-                    rows={1}
-                    className="w-full px-3 py-2.5 bg-transparent text-xs text-white/80 placeholder:text-white/30 resize-none focus:outline-none min-h-[38px]"
-                  />
-                </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  {/* Image - uploads to Supabase */}
-                  <label className="p-2 rounded-lg text-white/40 cursor-pointer hover:text-white/60 hover:bg-white/5 transition-colors" title="Upload image">
-                    <ImageIcon className="w-4 h-4" />
-                    <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
-                      if (!e.target.files) return;
-                      for (const file of Array.from(e.target.files)) {
-                        const id = generateId();
-                        const localUrl = URL.createObjectURL(file);
-                        setEditImages(prev => [...prev, { id, url: localUrl, name: file.name, file, uploading: true }]);
-                        try {
-                          const formData = new FormData();
-                          formData.append("file", file);
-                          formData.append("userId", user?.id || "anon");
-                          const response = await fetch("/api/upload-image", { method: "POST", body: formData });
-                          const data = await response.json();
-                          if (data.success && data.url) {
-                            URL.revokeObjectURL(localUrl);
-                            setEditImages(prev => prev.map(img => img.id === id ? { ...img, url: data.url, uploading: false } : img));
-                          } else {
-                            setEditImages(prev => prev.filter(img => img.id !== id));
-                          }
-                        } catch {
-                          setEditImages(prev => prev.filter(img => img.id !== id));
-                        }
-                      }
-                      e.target.value = "";
-                    }} />
-                  </label>
-                  {/* Plan Mode Toggle */}
-                  <button
-                    onClick={() => setIsPlanMode(!isPlanMode)}
-                    className={cn(
-                      "p-2 rounded-lg transition-all",
-                      isPlanMode 
-                        ? "bg-violet-500/20 text-violet-300" 
-                        : "text-white/40 hover:text-white/60"
-                    )}
-                    title={isPlanMode ? "Plan mode ON" : "Plan mode OFF"}
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                  </button>
-                  {/* Send */}
-                  <button 
-                    onClick={async () => {
-                      if (!chatInput.trim() || !editableCode || isEditing) return;
-                      // Block if images still uploading
-                      if (editImages.some(img => img.uploading)) {
-                        showToast("Poczekaj na upload zdjęcia...", "info");
-                        return;
-                      }
-                      const userMsg: ChatMessage = { id: generateId(), role: "user", content: chatInput, timestamp: Date.now(), attachments: editImages.length > 0 ? editImages.map(img => ({ type: "image" as const, label: img.name })) : undefined };
-                      setChatMessages(prev => [...prev, userMsg]);
-                      const currentInput = chatInput;
-                      const currentPlanMode = isPlanMode;
-                      const currentChatHistory = chatMessages.slice(-10).map(m => ({ role: m.role, content: m.content }));
-                      setChatInput(""); setIsEditing(true);
-                      try {
-                        if (currentPlanMode) {
-                          const result = await editCodeWithAI(editableCode, currentInput, undefined, undefined, true, undefined);
-                          const response = result?.code || "I can help you plan that! What would you like to discuss?";
-                          setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: response, timestamp: Date.now() }]);
-                        } else {
-                          // Convert images to base64 for API (mobile handler 2)
-                          let imageData: { base64?: string; url?: string; mimeType: string; name: string }[] | undefined;
-                          if (editImages.length > 0) {
-                            imageData = [];
-                            for (const img of editImages) {
-                              const base64 = await urlToBase64(img.url);
-                              if (base64) imageData.push({ base64, mimeType: 'image/png', name: img.name, url: img.url });
-                            }
-                            if (imageData.length === 0) imageData = undefined;
-                          }
-                          const result = await editCodeWithAI(editableCode, currentInput, imageData, undefined, false, currentChatHistory);
-                          if (result?.success && result.code && result.code !== editableCode) {
-                            const responseMsg = analyzeCodeChanges(editableCode, result.code, currentInput);
-                            setEditableCode(result.code); setDisplayedCode(result.code); setGeneratedCode(result.code);
-                            setPreviewUrl(createPreviewUrl(result.code));
-                            setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: responseMsg, timestamp: Date.now() }]);
-                            if (activeGeneration) {
-                              const versionLabel = generateVersionLabel(currentInput);
-                              const updatedGen = { ...activeGeneration, code: result.code, versions: [...(activeGeneration.versions || []), { id: generateId(), timestamp: Date.now(), label: versionLabel, code: result.code, flowNodes, flowEdges, styleInfo }] };
-                              setActiveGeneration(updatedGen); 
-                              setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
-                              saveGenerationToSupabase(updatedGen);
-                            }
-                          } else if (!result?.cancelled) {
-                            setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: result?.error ? `Error: ${result.error}` : "No changes detected. Try being more specific.", timestamp: Date.now() }]);
-                          }
-                        }
-                      } catch (error) { 
-                        if (!(error instanceof Error && error.name === 'AbortError')) {
-                          setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: `Error: ${error instanceof Error ? error.message : "Unknown error"}`, timestamp: Date.now() }]); 
-                        }
-                      }
-                      finally { setIsEditing(false); setEditImages([]); }
-                    }}
-                    disabled={!chatInput.trim() || isEditing}
-                    className={cn("p-2 rounded-lg transition-all flex-shrink-0", chatInput.trim() && !isEditing ? "bg-[#FF6E3C] text-white" : "bg-white/5 text-white/30")}
-                  >
-                    {isEditing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-            </div>
-            )}
-          </div>
-      )}
-      
-      {/* Mobile Floating Edit - Appears above bottom navigation */}
-      <AnimatePresence>
-        {showFloatingEdit && (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-[72px] inset-x-3 z-50 md:hidden"
-          >
-            <div className="backdrop-blur-xl bg-[#0a0a0a]/95 border border-white/[0.08] rounded-2xl p-3 shadow-2xl">
-              <div className="flex items-center gap-2 mb-2">
-                {isEditing ? (
-                  <Loader2 className="w-3.5 h-3.5 text-[#FF6E3C] animate-spin" />
-                ) : (
-                  <Sparkles className="w-3.5 h-3.5 text-[#FF6E3C]" />
-                )}
-                <span className="text-xs text-white/50 flex-1">
-                  {isEditing ? (
-                    <span className="text-[#FF6E3C]/80 animate-pulse">
-                      {selectedElement ? `Editing ${selectedElement.substring(0, 20)}...` : editInput.includes('@') ? `Creating ${editInput.match(/@([a-zA-Z0-9-_]+)/)?.[1] || 'page'}...` : 'Applying changes...'}
-                    </span>
-                  ) : selectedArchNode ? (
-                    <>Editing <span className="text-[#FF6E3C]">@{selectedArchNode}</span></>
-                  ) : "Describe your changes"}
-                </span>
-                {!isEditing && (
-                  <button 
-                    onClick={() => { setShowFloatingEdit(false); setSelectedArchNode(null); setShowSuggestions(false); }} 
-                    className="p-1 hover:bg-white/5 rounded"
-                  >
-                    <X className="w-3.5 h-3.5 text-white/30" />
-                  </button>
-                )}
-              </div>
-              {/* Image previews for mobile */}
-              {editImages.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {editImages.map(img => (
-                    <div key={img.id} className="relative group">
-                      <img src={img.url} alt={img.name} className="w-10 h-10 object-cover rounded-lg border border-white/10" />
-                      <button 
-                        onClick={() => {
-                          URL.revokeObjectURL(img.url);
-                          setEditImages(prev => prev.filter(i => i.id !== img.id));
-                        }}
-                        className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center"
-                      >
-                        <X className="w-2.5 h-2.5 text-white" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="flex gap-1.5">
-                {/* Image upload button for mobile */}
-                <label className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/[0.03] border border-white/[0.06] cursor-pointer flex-shrink-0">
-                  <input 
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={async (e) => {
-                      const files = e.target.files;
-                      if (files) {
-                        for (const file of Array.from(files)) {
-                          const id = `img_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-                          const localUrl = URL.createObjectURL(file);
-                          
-                          setEditImages(prev => [...prev, { id, url: localUrl, name: file.name, file, uploading: true }]);
-                          
-                          try {
-                            const formData = new FormData();
-                            formData.append("file", file);
-                            formData.append("userId", user?.id || "anon");
-                            
-                            const response = await fetch("/api/upload-image", {
-                              method: "POST",
-                              body: formData,
-                            });
-                            
-                            const data = await response.json();
-                            
-                            if (data.success && data.url) {
-                              URL.revokeObjectURL(localUrl);
-                              setEditImages(prev => prev.map(img => 
-                                img.id === id ? { ...img, url: data.url, uploading: false } : img
-                              ));
-                            } else {
-                              setEditImages(prev => prev.map(img => 
-                                img.id === id ? { ...img, uploading: false } : img
-                              ));
-                            }
-                          } catch (error) {
-                            setEditImages(prev => prev.map(img => 
-                              img.id === id ? { ...img, uploading: false } : img
-                            ));
-                          }
-                        }
-                      }
-                      e.target.value = "";
-                    }}
-                  />
-                  <ImageIcon className="w-4 h-4 text-white/40" />
-                </label>
-                <input 
-                  type="text" 
-                  value={editInput} 
-                  onChange={(e) => setEditInput(e.target.value)} 
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !showSuggestions) handleEdit();
-                    if (e.key === "Escape" && !isEditing) { setShowFloatingEdit(false); setSelectedArchNode(null); setEditImages([]); }
-                  }}
-                  placeholder={selectedArchNode ? `@${selectedArchNode}...` : "Type @ or add images..."} 
-                  className="flex-1 min-w-0 px-3 py-2 rounded-lg text-xs text-white/80 placeholder:text-white/25 bg-white/[0.03] border border-white/[0.06] focus:outline-none focus:border-white/10" 
-                  disabled={isEditing} 
-                  autoFocus 
-                />
-                <button 
-                  onClick={handleEdit} 
-                  disabled={(!editInput.trim() && editImages.length === 0) || isEditing} 
-                  className="p-2 rounded-lg bg-[#FF6E3C] text-white flex items-center justify-center disabled:opacity-50 flex-shrink-0"
-                >
-                  {isEditing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => {
-          setShowAuthModal(false);
-          setPendingAction(null);
-        }}
-        title="Sign in to generate"
-        description="Your credits and projects are saved to your account."
-      />
-      
-      {/* Out of Credits Modal */}
-      <OutOfCreditsModal
-        isOpen={showOutOfCreditsModal}
-        onClose={() => setShowOutOfCreditsModal(false)}
-        requiredCredits={pendingAction === "generate" ? CREDIT_COSTS.VIDEO_GENERATE : CREDIT_COSTS.AI_EDIT}
-        availableCredits={userTotalCredits}
-      />
-      
-      {/* Flow Node Edit/Delete Modal */}
-      <AnimatePresence>
-        {flowNodeModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-            onClick={() => setFlowNodeModal(null)}
-          >
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {flowNodeModal.type === "rename" ? (
-                <>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-[#FF6E3C]/10 flex items-center justify-center">
-                      <Pencil className="w-5 h-5 text-[#FF6E3C]" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-white">Rename Node</h3>
-                      <p className="text-sm text-white/40">Enter a new name for this node</p>
-                    </div>
-                  </div>
-                  <input
-                    type="text"
-                    value={flowNodeRenameValue}
-                    onChange={(e) => setFlowNodeRenameValue(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-[#FF6E3C]/50 focus:ring-1 focus:ring-[#FF6E3C]/30"
-                    placeholder="Node name..."
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && flowNodeRenameValue.trim()) {
-                        const newNodes = flowNodes.map(n => 
-                          n.id === flowNodeModal.nodeId ? { ...n, name: flowNodeRenameValue.trim() } : n
-                        );
-                        setFlowNodes(newNodes);
-                        // Save to Supabase
-                        if (activeGeneration) {
-                          const updatedGen = { ...activeGeneration, flowNodes: newNodes };
-                          setActiveGeneration(updatedGen);
-                          setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
-                          saveGenerationToSupabase(updatedGen);
-                        }
-                        showToast(`Renamed to "${flowNodeRenameValue.trim()}"`, "success");
-                        setFlowNodeModal(null);
-                      } else if (e.key === "Escape") {
-                        setFlowNodeModal(null);
-                      }
-                    }}
-                  />
-                  <div className="flex gap-3 mt-5">
-                    <button
-                      onClick={() => setFlowNodeModal(null)}
-                      className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors text-sm font-medium"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (flowNodeRenameValue.trim()) {
-                          const newNodes = flowNodes.map(n => 
-                            n.id === flowNodeModal.nodeId ? { ...n, name: flowNodeRenameValue.trim() } : n
-                          );
-                          setFlowNodes(newNodes);
-                          // Save to Supabase
-                          if (activeGeneration) {
-                            const updatedGen = { ...activeGeneration, flowNodes: newNodes };
-                            setActiveGeneration(updatedGen);
-                            setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
-                            saveGenerationToSupabase(updatedGen);
-                          }
-                          showToast(`Renamed to "${flowNodeRenameValue.trim()}"`, "success");
-                          setFlowNodeModal(null);
-                        }
-                      }}
-                      disabled={!flowNodeRenameValue.trim()}
-                      className="flex-1 py-2.5 rounded-xl bg-[#FF6E3C] hover:bg-[#FF6E3C]/90 text-white transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Rename
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center">
-                      <Trash2 className="w-5 h-5 text-red-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-white">Delete Node</h3>
-                      <p className="text-sm text-white/40">This action cannot be undone</p>
-                    </div>
-                  </div>
-                  <p className="text-sm text-white/60 mb-5">
-                    Are you sure you want to delete <span className="font-medium text-white">"{flowNodeModal.nodeName}"</span>? 
-                    This will also remove all connections to this node.
-                  </p>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setFlowNodeModal(null)}
-                      className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors text-sm font-medium"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={() => {
-                        const newNodes = flowNodes.filter(n => n.id !== flowNodeModal.nodeId);
-                        const newEdges = flowEdges.filter(edge => edge.from !== flowNodeModal.nodeId && edge.to !== flowNodeModal.nodeId);
-                        setFlowNodes(newNodes);
-                        setFlowEdges(newEdges);
-                        if (selectedFlowNode === flowNodeModal.nodeId) setSelectedFlowNode(null);
-                        // Save to Supabase
-                        if (activeGeneration) {
-                          const updatedGen = { ...activeGeneration, flowNodes: newNodes, flowEdges: newEdges };
-                          setActiveGeneration(updatedGen);
-                          setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
-                          saveGenerationToSupabase(updatedGen);
-                        }
-                        showToast(`Deleted "${flowNodeModal.nodeName}"`, "info");
-                        setFlowNodeModal(null);
-                      }}
-                      className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-colors text-sm font-medium"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      
-      {/* Project Settings Modal */}
-      <ProjectSettingsModal
-        isOpen={showProjectSettings}
-        onClose={() => setShowProjectSettings(false)}
-        project={{
-          id: activeGeneration?.id || `project_${Date.now()}`,
-          name: generationTitle || "Untitled Project",
-          createdAt: new Date().toISOString(),
-        }}
-        onDelete={(id) => {
-          // Delete project from generations
-          setGenerations(prev => prev.filter(g => g.id !== id));
-          if (activeGeneration?.id === id) {
-            setActiveGeneration(null);
-            setGeneratedCode(null);
-            setDisplayedCode("");
-            setEditableCode("");
-            setPreviewUrl(null);
-            setGenerationTitle("Untitled Project");
-          }
-        }}
-        onRename={(id, newName) => {
-          setGenerationTitle(newName);
-          if (activeGeneration?.id === id) {
-            setActiveGeneration(prev => prev ? { ...prev, title: newName } : null);
-          }
-          setGenerations(prev => prev.map(g => g.id === id ? { ...g, title: newName } : g));
-        }}
-      />
-      
-      {/* Upgrade Modal for FREE users */}
-      <UpgradeModal
-        isOpen={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-        feature={upgradeFeature}
-      />
-      
-      {/* Assets Modal for viewing and replacing images */}
-      <AssetsModal
-        isOpen={showAssetsModal}
-        onClose={() => setShowAssetsModal(false)}
-        code={editableCode}
-        initialSelectedUrl={selectedAssetUrl}
-        onClearSelection={() => setSelectedAssetUrl(null)}
-        onCodeUpdate={(newCode) => {
-          setEditableCode(newCode);
-          setDisplayedCode(newCode);
-          setGeneratedCode(newCode);
-          if (previewUrl) URL.revokeObjectURL(previewUrl);
-          setPreviewUrl(createPreviewUrl(newCode));
-          
-          // Save to Supabase immediately
-          if (activeGeneration) {
-            const updatedGen = { 
-              ...activeGeneration, 
-              code: newCode,
-              versions: [
-                ...(activeGeneration.versions || []),
-                {
-                  id: generateId(),
-                  timestamp: Date.now(),
-                  label: "Asset replaced",
-                  code: newCode,
-                  flowNodes,
-                  flowEdges,
-                  styleInfo
-                }
-              ].slice(-20)
-            };
-            setActiveGeneration(updatedGen);
-            setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
-            saveGenerationToSupabase(updatedGen);
-          }
-        }}
-      />
-      
-      {/* Global file input for video upload - accessible from both mobile and desktop */}
-      <input 
-        ref={fileInputRef} 
-        type="file" 
-        accept="video/*,video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm,.m4v" 
-        multiple 
-        onChange={handleFileInput} 
-        className="hidden" 
-      />
-      
-      {/* Delete Confirmation Modal */}
-      <AnimatePresence>
-        {showDeleteModal && deleteTargetId && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-            onClick={() => setShowDeleteModal(false)}
-          >
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="relative bg-[#0a0a0a] border border-white/10 rounded-2xl p-6 max-w-sm w-full shadow-2xl"
-            >
-              {/* Icon */}
-              <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
-                <Trash2 className="w-6 h-6 text-red-400" />
-              </div>
-              
-              {/* Title */}
-              <h3 className="text-lg font-semibold text-white text-center mb-2">
-                Delete Project?
-              </h3>
-              
-              {/* Project name */}
-              <p className="text-sm text-white/50 text-center mb-2">
-                Are you sure you want to delete
-              </p>
-              <p className="text-sm text-white/80 text-center font-medium mb-6 truncate px-4">
-                "{deleteTargetTitle}"
-              </p>
-              
-              {/* Warning */}
-              <p className="text-xs text-white/40 text-center mb-6">
-                This action cannot be undone.
-              </p>
-              
-              {/* Buttons */}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowDeleteModal(false)}
-                  className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors text-sm font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => deleteTargetId && deleteGeneration(deleteTargetId)}
-                  className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-colors text-sm font-medium flex items-center justify-center gap-2"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      
-      {/* Toast notifications */}
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        isVisible={toast.isVisible}
-        onClose={hideToast}
-      />
-      
-      {/* Mobile Project Synced Modal */}
-      {showMobileSyncModal && (
-        <>
-          {/* Backdrop */}
-          <div 
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200]" 
-            onClick={() => setShowMobileSyncModal(false)}
-          />
-          <div className="fixed inset-0 z-[200] flex items-end justify-center p-0 md:items-center md:p-4">
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="w-full md:max-w-md bg-[#0a0a0a] border border-white/10 rounded-t-3xl md:rounded-2xl shadow-2xl overflow-hidden"
-            >
-              {/* Close button */}
-              <button
-                onClick={() => setShowMobileSyncModal(false)}
-                className="absolute top-4 right-4 p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors z-10"
-              >
-                <X className="w-5 h-5 text-white/60" />
-              </button>
-              
-              <div className="p-6 pt-8">
-                {/* Phone → Desktop icons */}
-                <div className="flex items-center justify-center gap-4 mb-6">
-                  <div className="w-14 h-14 rounded-2xl bg-[#FF6E3C]/10 border border-[#FF6E3C]/20 flex items-center justify-center">
-                    <Smartphone className="w-7 h-7 text-[#FF6E3C]" />
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-white/30" />
-                  <div className="w-14 h-14 rounded-2xl bg-[#FF6E3C]/10 border border-[#FF6E3C]/20 flex items-center justify-center">
-                    <Monitor className="w-7 h-7 text-[#FF6E3C]" />
-                  </div>
-                </div>
-                
-                {/* Title */}
-                <div className="text-center mb-6">
-                  <h2 className="text-xl font-bold text-white flex items-center justify-center gap-2">
-                    Project Synced! <Rocket className="w-5 h-5 text-[#FF6E3C]" />
-                  </h2>
-                  <p className="text-sm text-white/50 mt-1">Unlock Full Power on Desktop:</p>
-                </div>
-                
-                {/* Features list */}
-                <div className="space-y-3 mb-6">
-                  <div className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
-                      <Code className="w-4 h-4 text-emerald-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-white">Production-Ready React Architecture</p>
-                      <p className="text-xs text-white/40 mt-0.5">Clean Code • TypeScript • Tailwind</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                      <Sparkles className="w-4 h-4 text-amber-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-white">AI Co-Pilot Refinement</p>
-                      <p className="text-xs text-white/40 mt-0.5">Chat & Iterate • Real-time changes</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                    <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center flex-shrink-0">
-                      <GitBranch className="w-4 h-4 text-cyan-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-white">Product Flow Map</p>
-                      <p className="text-xs text-white/40 mt-0.5">Visualize User Journeys</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                    <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center flex-shrink-0">
-                      <Paintbrush className="w-4 h-4 text-purple-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-white">Automated Design System</p>
-                      <p className="text-xs text-white/40 mt-0.5">Tokens • Variables • Assets</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                    <div className="w-8 h-8 rounded-lg bg-pink-500/10 flex items-center justify-center flex-shrink-0">
-                      <Layers className="w-4 h-4 text-pink-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-white">Componentized Code Export</p>
-                      <p className="text-xs text-white/40 mt-0.5">Atomic Structure • Reusable</p>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Footer */}
-                <p className="text-center text-xs text-white/40 mb-4">
-                  Synced & live on <span className="text-[#FF6E3C]">replay.build</span>
-                </p>
-                
-                {/* CTA Button */}
-                <button
-                  onClick={() => {
-                    setShowMobileSyncModal(false);
-                    handlePublishClick();
-                  }}
-                  className="w-full py-4 rounded-xl bg-[#FF6E3C] text-white font-semibold flex items-center justify-center gap-2 hover:bg-[#FF8F5C] transition-colors"
-                >
-                  <ExternalLink className="w-4 h-4" /> Publish & Copy Link
-                </button>
-                
-                {/* Secondary actions */}
-                <div className="flex gap-3 mt-3">
-                  <button
-                    onClick={() => { setShowMobileSyncModal(false); setMobilePanel("input"); }}
-                    className="flex-1 py-3 rounded-xl bg-white/5 text-white/70 text-sm font-medium hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Settings className="w-4 h-4" /> Configure
-                  </button>
-                  <button
-                    onClick={() => { setShowMobileSyncModal(false); setMobilePanel("preview"); }}
-                    className="flex-1 py-3 rounded-xl bg-white/5 text-white/70 text-sm font-medium hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Eye className="w-4 h-4" /> Preview
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </>
-      )}
-
-      {/* Mobile Recording Info Modal - Static, no animations */}
-      {showMobileRecordingInfo && (
-        <>
-          {/* Backdrop */}
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200]" />
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-            <div className="w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl p-6 shadow-2xl">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-[#FF6E3C]/20 flex items-center justify-center flex-shrink-0">
-                  <Smartphone className="w-6 h-6 text-[#FF6E3C]" />
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold text-white">Use your phone's recorder</h3>
-                  <p className="text-xs text-white/50 mt-0.5">Browser recording unavailable on mobile</p>
-                </div>
-              </div>
-              
-              <div className="space-y-3 text-sm text-white/70 bg-white/5 rounded-xl p-4">
-                <p className="font-medium text-white">How to record your screen:</p>
-                <ol className="list-decimal list-inside space-y-2">
-                  <li>Use your phone's built-in screen recorder</li>
-                  <li>Record the app/website you want to convert</li>
-                  <li>Come back here and upload the video</li>
-                </ol>
-                <div className="pt-3 border-t border-white/10 space-y-1 text-xs text-white/50">
-                  <p><span className="text-white/70">iOS:</span> Control Center → Screen Recording</p>
-                  <p><span className="text-white/70">Android:</span> Quick Settings → Screen Record</p>
-                </div>
-              </div>
-              
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => setShowMobileRecordingInfo(false)}
-                  className="flex-1 py-3 rounded-xl bg-white/10 text-white font-medium hover:bg-white/15 transition-colors"
-                >
-                  Got it
-                </button>
-                <button
-                  onClick={() => { setShowMobileRecordingInfo(false); fileInputRef.current?.click(); }}
-                  className="flex-1 py-3 rounded-xl bg-[#FF6E3C] text-white font-medium hover:bg-[#FF8F5C] transition-colors flex items-center justify-center gap-2"
-                >
-                  <Upload className="w-4 h-4" /> Upload
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-// Export with Suspense boundary for useSearchParams
-export default function ReplayTool() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-[#030303] flex items-center justify-center">
-        <div className="w-10 h-10 border-2 border-[#FF6E3C] border-t-transparent rounded-full animate-spin" />
-      </div>
-    }>
-      <ReplayToolContent />
-    </Suspense>
-  );
-}
