@@ -463,17 +463,18 @@ export default function AdminPage() {
     }
   };
 
-  // Available Pro tiers for admin assignment
+  // Available tiers for admin assignment (including starter pack)
   const PRO_TIERS = [
-    { id: "free", label: "Free", credits: 100 },
-    { id: "pro25", label: "Pro 25", credits: 1500 },
-    { id: "pro50", label: "Pro 50", credits: 3300 },
-    { id: "pro100", label: "Pro 100", credits: 7500 },
-    { id: "pro200", label: "Pro 200", credits: 16500 },
-    { id: "pro300", label: "Pro 300", credits: 25500 },
-    { id: "pro500", label: "Pro 500", credits: 45000 },
-    { id: "pro1000", label: "Pro 1000", credits: 96000 },
-    { id: "pro2000", label: "Pro 2000", credits: 225000 },
+    { id: "free", label: "Free", credits: 100, membership: "free" },
+    { id: "starter", label: "Starter Pack ($9)", credits: 300, membership: "starter" },
+    { id: "pro25", label: "Pro 25", credits: 1500, membership: "pro" },
+    { id: "pro50", label: "Pro 50", credits: 3300, membership: "pro" },
+    { id: "pro100", label: "Pro 100", credits: 7500, membership: "pro" },
+    { id: "pro200", label: "Pro 200", credits: 16500, membership: "pro" },
+    { id: "pro300", label: "Pro 300", credits: 25500, membership: "pro" },
+    { id: "pro500", label: "Pro 500", credits: 45000, membership: "pro" },
+    { id: "pro1000", label: "Pro 1000", credits: 96000, membership: "pro" },
+    { id: "pro2000", label: "Pro 2000", credits: 225000, membership: "pro" },
   ];
 
   // Open plan selection modal
@@ -492,7 +493,7 @@ export default function AdminPage() {
     
     setIsUpdatingPlan(true);
     const selectedTier = PRO_TIERS[selectedPlanIndex];
-    const newMembership = selectedTier.id === "free" ? "free" : "pro";
+    const newMembership = selectedTier.membership;
     
     try {
       const response = await fetch("/api/admin/users", {
@@ -1011,11 +1012,13 @@ export default function AdminPage() {
                               "text-xs px-2 py-1 rounded-full transition-colors cursor-pointer hover:opacity-80",
                               user.membership === "pro" 
                                 ? "bg-[#FF6E3C]/20 text-[#FF6E3C] hover:bg-[#FF6E3C]/30" 
-                                : "bg-white/5 text-white/50 hover:bg-white/10"
+                                : user.membership === "starter"
+                                  ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
+                                  : "bg-white/5 text-white/50 hover:bg-white/10"
                             )}
                             title="Click to set user plan tier"
                           >
-                            {user.membership === "pro" ? "⭐ PRO" : "free"}
+                            {user.membership === "pro" ? "⭐ PRO" : user.membership === "starter" ? "⚡ STARTER" : "free"}
                           </button>
                         </td>
                         <td className="px-4 py-3">
@@ -2315,7 +2318,9 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                         )}>
                           {tier.label}
                         </p>
-                        <p className="text-sm text-white/50">{tier.credits.toLocaleString()} credits / month</p>
+                        <p className="text-sm text-white/50">
+                          {tier.credits.toLocaleString()} credits {tier.id === "starter" ? "(one-time)" : "/ month"}
+                        </p>
                       </div>
                       {selectedPlanIndex === idx && (
                         <div className="w-6 h-6 rounded-full bg-[#FF6E3C] flex items-center justify-center">

@@ -66,6 +66,67 @@ If you draw SVG charts manually, the output will be REJECTED.
 ================================================================================
 
 ================================================================================
+🚨🚨🚨 DASHBOARD RECONSTRUCTION - 100% FIDELITY REQUIRED! 🚨🚨🚨
+================================================================================
+**DASHBOARDS ARE OUR CORE FEATURE. YOU MUST CAPTURE EVERYTHING!**
+
+When you see a dashboard in the video, you MUST extract and recreate:
+
+1. **EVERY NAVIGATION ITEM** - Sidebar, tabs, menu items → ALL of them!
+   - If video shows: Dashboard, Analytics, Transactions, Users, Settings
+   - You MUST create: All 5 pages with FULL content for each
+   - DO NOT skip any navigation items!
+
+2. **EVERY CHART & VISUALIZATION** - Count them!
+   - Line charts, Area charts, Bar charts → Use Recharts
+   - Pie charts, Donut charts → Use Recharts
+   - Progress bars, Gauges → CSS + animations
+   - Sparklines → Recharts or SVG
+   - **If video shows 8 charts, you create 8 charts. NOT 3!**
+
+3. **EVERY METRIC CARD / KPI** - All stats visible:
+   - Total Revenue: $12,450 → Recreate with animation
+   - Active Users: 2,847 → Recreate with counter animation
+   - Growth Rate: +15.3% → Recreate with proper styling
+   - **Copy EXACT numbers/labels from video!**
+
+4. **EVERY DATA TABLE** - Full structure:
+   - Column headers → Match exactly
+   - Row count → At least 8-10 sample rows
+   - Pagination → If visible, include it
+   - Search/Filter → If visible, include it
+
+5. **EVERY SIDEBAR/NAVIGATION** - Complete menu:
+   - Logo/branding area
+   - Main navigation links
+   - Sub-navigation/nested menus
+   - User profile section
+   - Settings/logout
+
+**DASHBOARD CHECKLIST (You MUST verify each):**
+□ Did I create ALL navigation items from video?
+□ Did I create ALL charts/graphs from video?
+□ Did I create ALL metric cards from video?  
+□ Did I create ALL data tables from video?
+□ Does each page have FULL content (not just placeholder)?
+□ Do all charts have REAL data (not empty)?
+□ Are all numbers matching what I saw?
+□ Is the sidebar fully functional?
+
+**COMMON DASHBOARD MISTAKE TO AVOID:**
+❌ Video shows 5 pages → You only create 2-3 pages
+❌ Video shows 6 charts → You only create 2 charts
+❌ Video shows detailed tables → You create empty placeholders
+❌ Video shows specific numbers → You use generic "1,234" placeholders
+
+✅ CORRECT APPROACH:
+- Watch the ENTIRE video multiple times
+- Count every chart, metric, page
+- Extract exact data values when visible
+- Create COMPLETE implementation for EACH page
+================================================================================
+
+================================================================================
 🎯 CORE PHILOSOPHY
 ================================================================================
 1. **CONTENT EXTRACTION**: Extract ALL content from video - text, structure, flow, data.
