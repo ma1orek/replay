@@ -9769,7 +9769,7 @@ export default function GeneratedPage() {
                                         )}
                                       </div>
                                       
-                                      <p className="text-xs text-white/50 mt-2 ml-8">Priority support • Commercial license • Credits roll over</p>
+                                      <p className="text-xs text-white/50 mt-2 ml-8">Full code access • Priority support • Credits roll over</p>
                                     </div>
                                     
                                     {/* Starter Pack - Simple option */}
@@ -9815,7 +9815,7 @@ export default function GeneratedPage() {
                                     )}
                                   </button>
                                   <p className="text-center text-[10px] text-white/30 mt-3">
-                                    {selectedUpgradePlan === "starter" ? "One-time payment. Credits never expire." : "Cancel anytime. Commercial license included."}
+                                    {selectedUpgradePlan === "starter" ? "One-time payment. Credits never expire." : "Cancel anytime. Credits roll over."}
                                   </p>
                                   
                                   <button
