@@ -56,9 +56,9 @@ const starterFeatures = [
 const proFeatures = [
   "Everything in Starter Pack",
   "3,000 credits per month",
-  "Unlimited exports",
+  "Full code access & export",
   "Priority AI processing",
-  "Commercial license",
+  "Credits roll over",
   "Priority support",
 ];
 
@@ -271,7 +271,7 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
                   <p className="text-center text-[11px] text-white/40">
                     {selectedPlan === "starter" 
                       ? "One-time payment. No subscription. Credits never expire."
-                      : "Includes commercial license. Cancel anytime."
+                      : "Cancel anytime. Credits roll over."
                     }
                   </p>
                   <button
