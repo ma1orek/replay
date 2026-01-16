@@ -1015,7 +1015,7 @@ function ReplayToolContent() {
           type: isStarter ? "starter" : "subscription",
           priceId: isStarter ? STARTER_PACK_PRICE_ID : selectedProTier.priceId,
           tierId: isStarter ? "starter" : selectedProTier.id,
-          credits: isStarter ? 300 : selectedProTier.credits,
+          credits: isStarter ? 200 : selectedProTier.credits,
           interval: "monthly"
         }),
       });
@@ -9788,7 +9788,7 @@ export default function GeneratedPage() {
                                             <Zap className="w-4 h-4 text-white/60" />
                                             <span className="font-medium text-white">Starter Pack</span>
                                           </div>
-                                          <p className="text-xs text-white/50 mt-0.5">300 credits • One-time • No subscription</p>
+                                          <p className="text-xs text-white/50 mt-0.5">200 credits • Export access • Ideal for testing</p>
                                         </div>
                                         <div className="text-right">
                                           <span className="text-xl font-bold text-white">$9</span>

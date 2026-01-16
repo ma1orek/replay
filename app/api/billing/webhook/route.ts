@@ -110,11 +110,25 @@ export async function POST(request: NextRequest) {
           console.log("Updated membership to Pro for user:", userId);
         }
         
-        // Handle top-up purchase (one-time payment)
+        // Handle top-up purchase (one-time payment) - includes Starter Pack
         if (session.mode === "payment" && userId) {
           const creditsAmount = parseInt(session.metadata?.credits_amount || "0");
+          const isStarterPack = session.metadata?.tier_id === "starter" || creditsAmount === 200;
           
           if (creditsAmount > 0) {
+            // If it's Starter Pack, update membership to "starter"
+            if (isStarterPack) {
+              await supabase
+                .from("memberships")
+                .upsert({
+                  user_id: userId,
+                  plan: "starter",
+                  updated_at: new Date().toISOString(),
+                }, { onConflict: "user_id" });
+              
+              console.log("Updated membership to Starter for user:", userId);
+            }
+            
             // Add credits to user's wallet
             const { data: wallet } = await supabase
               .from("credit_wallets")
@@ -140,15 +154,15 @@ export async function POST(request: NextRequest) {
                 type: "credit",
                 bucket: "topup",
                 amount: creditsAmount,
-                reason: "topup_purchase",
+                reason: isStarterPack ? "starter_pack_purchase" : "topup_purchase",
                 reference_id: session.id,
               });
             
             // Track top-up purchase to Facebook
             const customerEmail = session.customer_details?.email || session.customer_email;
-            await trackFBPurchase(userId, customerEmail, session.amount_total ? session.amount_total / 100 : 20, "Purchase");
+            await trackFBPurchase(userId, customerEmail, session.amount_total ? session.amount_total / 100 : 9, isStarterPack ? "StarterPack" : "Purchase");
             
-            console.log("Added", creditsAmount, "credits for user:", userId);
+            console.log("Added", creditsAmount, "credits for user:", userId, isStarterPack ? "(Starter Pack)" : "");
           }
         }
         break;
