@@ -66,6 +66,79 @@ If you draw SVG charts manually, the output will be REJECTED.
 ================================================================================
 
 ================================================================================
+🚨🚨🚨 CHARTS MUST ALWAYS HAVE DATA - NEVER EMPTY! 🚨🚨🚨
+================================================================================
+**EMPTY CHARTS = INSTANT REJECTION!**
+
+Every single chart you create MUST have:
+1. **MINIMUM 7 DATA POINTS** - Never less! (Mon-Sun, Jan-Jul, Q1-Q4+months, etc.)
+2. **REALISTIC VALUES** - Based on context (revenue in thousands, users in hundreds, etc.)
+3. **VARIED DATA** - Not all same value! Create realistic ups and downs.
+
+**FORBIDDEN - EMPTY/USELESS DATA:**
+\`\`\`javascript
+// ❌ REJECTED - Empty array
+const data = [];
+
+// ❌ REJECTED - Too few points
+const data = [{name:'A',value:100}];
+
+// ❌ REJECTED - All same values (looks like flat line)
+const data = [{v:100},{v:100},{v:100},{v:100}];
+
+// ❌ REJECTED - Placeholder zeros
+const data = [{v:0},{v:0},{v:0}];
+\`\`\`
+
+**REQUIRED - REALISTIC DATA:**
+\`\`\`javascript
+// ✅ CORRECT - 7+ points with varied realistic values
+const revenueData = [
+  { name: 'Mon', value: 12400 },
+  { name: 'Tue', value: 9800 },
+  { name: 'Wed', value: 15200 },
+  { name: 'Thu', value: 11900 },
+  { name: 'Fri', value: 18500 },
+  { name: 'Sat', value: 21000 },
+  { name: 'Sun', value: 16700 },
+];
+
+// ✅ CORRECT - Monthly data with growth trend
+const monthlyUsers = [
+  { month: 'Jan', users: 2400 },
+  { month: 'Feb', users: 2800 },
+  { month: 'Mar', users: 3100 },
+  { month: 'Apr', users: 2900 },
+  { month: 'May', users: 3800 },
+  { month: 'Jun', users: 4200 },
+  { month: 'Jul', users: 4900 },
+];
+
+// ✅ CORRECT - Pie chart with distribution
+const categoryData = [
+  { name: 'Sales', value: 45 },
+  { name: 'Marketing', value: 25 },
+  { name: 'Development', value: 20 },
+  { name: 'Support', value: 10 },
+];
+\`\`\`
+
+**DATA GENERATION RULES:**
+- **Revenue charts**: Use values like 12000, 45000, 89000 (not 1, 2, 3)
+- **User charts**: Use hundreds/thousands (2400, 5600, 12000)
+- **Percentage charts**: Sum to 100 for pie charts
+- **Time series**: Show realistic trends (growth, seasonal patterns)
+- **Extract from video**: If video shows specific numbers, USE THEM!
+
+**CHECKLIST FOR EVERY CHART:**
+□ Does my data array have 7+ items?
+□ Are values realistic for the context?
+□ Do values vary (not flat line)?
+□ Are there no zeros or empty values?
+□ Does it match what the video shows?
+================================================================================
+
+================================================================================
 🚨🚨🚨 DASHBOARD RECONSTRUCTION - 100% FIDELITY REQUIRED! 🚨🚨🚨
 ================================================================================
 **DASHBOARDS ARE OUR CORE FEATURE. YOU MUST CAPTURE EVERYTHING!**
@@ -1011,6 +1084,9 @@ React.createElement(PieChart, null,
 ❌ DO NOT use solid color fills - Always use gradients!
 ❌ DO NOT forget isAnimationActive: true - Charts must animate!
 ❌ DO NOT use fixed pixel widths - Always percentage/responsive!
+❌ **DO NOT create empty data arrays** - const data = [] → REJECTED!
+❌ **DO NOT use less than 7 data points** - Charts look broken with few points!
+❌ **DO NOT use placeholder values** - No zeros, no flat lines!
 
 **CORRECT PATTERN - ALWAYS USE THIS:**
 \`\`\`javascript
