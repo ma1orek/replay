@@ -46,20 +46,20 @@ const STARTER_PACK_PRICE_ID = "price_1Spo05Axch1s4iBGydOPAd2i"; // $9 one-time
 const PRO_SUBSCRIPTION_PRICE_ID = "price_1SotL1Axch1s4iBGWMvO0JBZ"; // $25/mo
 
 const starterFeatures = [
-  "Clean React + Tailwind Components",
-  "Framer Motion Interactions",
-  "Supabase Schema & Data Fetching",
-  "200 credits • Export access",
+  "300 credits (~4 generations)",
+  "Full Access & Export",
+  "Publish to web",
+  "Credits never expire",
   "Perfect for testing",
 ];
 
 const proFeatures = [
-  "Everything in Starter Pack",
-  "3,000 credits per month",
-  "Full code access & export",
-  "Priority AI processing",
-  "Credits roll over",
+  "Everything in Starter, plus:",
+  "1,500+ credits per month (~20 gens)",
+  "Full Access & export",
   "Priority support",
+  "Credits roll over",
+  "Private projects",
 ];
 
 export default function UpgradeModal({ isOpen, onClose, feature = "general" }: UpgradeModalProps) {
@@ -95,7 +95,7 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
           type: isStarter ? "starter" : "subscription",
           priceId: isStarter ? STARTER_PACK_PRICE_ID : PRO_SUBSCRIPTION_PRICE_ID,
           tierId: isStarter ? "starter" : "pro25",
-          credits: isStarter ? 200 : 1500,
+          credits: isStarter ? 300 : 1500,
           interval: isStarter ? undefined : "monthly"
         }),
       });
@@ -189,8 +189,8 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
                         <div>
                           <div className="flex items-center gap-2">
                             <CreditCard className="w-4 h-4 text-[#FF6E3C]" />
-                            <span className="font-semibold text-white">Starter Pack</span>
-                            <span className="px-2 py-0.5 text-[10px] font-medium bg-emerald-500/20 text-emerald-400 rounded-full">POPULAR</span>
+                            <span className="font-semibold text-white">Starter</span>
+                            <span className="px-2 py-0.5 text-[10px] font-medium bg-white/10 text-white/50 rounded-full">ONE-TIME</span>
                           </div>
                           <p className="text-xs text-white/50 mt-0.5">One-time payment • Perfect for testing</p>
                         </div>
@@ -203,7 +203,7 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
                     <ul className="space-y-1.5 ml-8">
                       {starterFeatures.map((feat, i) => (
                         <li key={i} className="flex items-center gap-2 text-xs text-white/60">
-                          <Check className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+                          <Check className="w-3 h-3 text-white/40 flex-shrink-0" />
                           {feat}
                         </li>
                       ))}
@@ -263,7 +263,7 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
                         Processing...
                       </span>
                     ) : selectedPlan === "starter" ? (
-                      "Get Starter Pack for $9"
+                      "Get Starter — $9"
                     ) : (
                       "Subscribe to Pro for $25/mo"
                     )}

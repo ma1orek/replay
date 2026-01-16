@@ -4,7 +4,7 @@ import { useRef, useState, useEffect } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown, Sparkles, Zap, Building2 } from "lucide-react";
+import { Check, ChevronDown, Sparkles, Zap, Building2, Smile } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AuthModal from "@/components/modals/AuthModal";
 import { useAuth } from "@/lib/auth/context";
@@ -12,7 +12,7 @@ import { useAuth } from "@/lib/auth/context";
 // Starter Pack - One-time $9
 const STARTER_PACK = {
   id: 'starter',
-  credits: 200,
+  credits: 300,
   price: 9,
   stripePriceId: "price_1Spo05Axch1s4iBGydOPAd2i",
 };
@@ -104,9 +104,9 @@ const PRICING_TIERS = [
 
 // One-time top-ups (reduced credits to make subscription more attractive)
 const TOPUPS = [
-  { amount: 20, price: "$20", credits: "900", gens: "~6" },
-  { amount: 50, price: "$50", credits: "2,400", gens: "~16" },
-  { amount: 100, price: "$100", credits: "5,250", gens: "~35" },
+  { amount: 20, price: "$20", credits: "900", gens: "~12" },
+  { amount: 50, price: "$50", credits: "2,400", gens: "~32" },
+  { amount: 100, price: "$100", credits: "5,250", gens: "~70" },
 ];
 
 export default function LandingPricing() {
@@ -298,7 +298,7 @@ export default function LandingPricing() {
             <div className="h-full p-6 rounded-2xl bg-white/[0.02] border border-white/[0.08] backdrop-blur-sm">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
-                  <Zap className="w-4 h-4 text-white/60" />
+                  <Smile className="w-4 h-4 text-white/60" />
                 </div>
                 <span className="text-sm font-medium text-white/60">Free</span>
               </div>
@@ -311,9 +311,9 @@ export default function LandingPricing() {
               <div className="space-y-2.5 mb-6">
                 {[
                   "100 credits / month",
+                  "~1 generation",
                   "Preview only",
-                  "Public projects only",
-                  "Community support",
+                  "Public projects",
                 ].map((f) => (
                   <div key={f} className="flex items-center gap-3 text-sm text-white/60">
                     <Check className="w-4 h-4 text-white/40 shrink-0" />
@@ -340,10 +340,10 @@ export default function LandingPricing() {
           >
             <div className="h-full p-6 rounded-2xl bg-white/[0.02] border border-white/[0.08] backdrop-blur-sm">
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                  <Zap className="w-4 h-4 text-emerald-400" />
+                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
+                  <Zap className="w-4 h-4 text-white/60" />
                 </div>
-                <span className="text-sm font-medium text-emerald-400">Starter Pack</span>
+                <span className="text-sm font-medium text-white/60">Starter</span>
               </div>
               
               <div className="mb-1 flex items-baseline gap-2">
@@ -354,13 +354,13 @@ export default function LandingPricing() {
               
               <div className="space-y-2.5 mb-6">
                 {[
-                  "200 credits (no expiry)",
-                  "Full code access & export",
+                  "300 credits (~4 gens)",
+                  "Full Access & Export",
                   "Publish to web",
-                  "No subscription required",
+                  "Credits never expire",
                 ].map((f) => (
-                  <div key={f} className="flex items-center gap-3 text-sm text-white/70">
-                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <div key={f} className="flex items-center gap-3 text-sm text-white/60">
+                    <Check className="w-4 h-4 text-white/40 shrink-0" />
                     {f}
                   </div>
                 ))}
@@ -369,15 +369,15 @@ export default function LandingPricing() {
               <button
                 onClick={handleStarterPack}
                 disabled={isCheckingOut === "starter"}
-                className="w-full py-3 rounded-xl text-sm font-semibold transition-all bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30 disabled:opacity-50"
+                className="w-full py-3 rounded-xl text-sm font-semibold transition-all bg-white/5 text-white/70 hover:bg-white/10 border border-white/10 disabled:opacity-50"
               >
                 {isCheckingOut === "starter" ? (
                   <span className="flex items-center justify-center gap-2">
-                    <span className="w-4 h-4 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     Processing...
                   </span>
                 ) : (
-                  "Buy Starter Pack"
+                  "Buy Starter"
                 )}
               </button>
             </div>
@@ -468,7 +468,7 @@ export default function LandingPricing() {
                     <div className="space-y-2.5 mb-6">
                       {[
                         "Everything in Starter, plus:",
-                        `${selectedTier.credits.toLocaleString()} credits / month`,
+                        `~${Math.floor(selectedTier.credits / 75)} generations`,
                         "Private projects",
                         "Credits roll over",
                         "Priority support",

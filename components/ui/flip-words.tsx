@@ -88,27 +88,39 @@ export const FlipWords = ({
         >
           <motion.span
             key={currentWord}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.25, ease: "easeInOut" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, filter: "blur(8px)", y: -20, scale: 0.95 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
             className="absolute inset-0 z-10 inline-block whitespace-nowrap"
           >
-            {currentWord.split(" ").map((w, wi) => (
-              <span key={`${w}-${wi}`} className="inline-block whitespace-nowrap">
-                {w.split("").map((ch, ci) => (
-                  <motion.span
-                    key={`${w}-${wi}-${ci}`}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: wi * 0.04 + ci * 0.015, duration: 0.15 }}
-                    className="inline-block"
-                  >
-                    {ch}
-                  </motion.span>
-                ))}
-                <span className="inline-block">&nbsp;</span>
-              </span>
+            {currentWord.split("").map((ch, ci) => (
+              <motion.span
+                key={`${currentWord}-${ci}`}
+                initial={{ 
+                  opacity: 0, 
+                  y: 20, 
+                  filter: "blur(12px)",
+                  scale: 0.8
+                }}
+                animate={{ 
+                  opacity: 1, 
+                  y: 0, 
+                  filter: "blur(0px)",
+                  scale: 1
+                }}
+                transition={{ 
+                  delay: ci * 0.03,
+                  duration: 0.4,
+                  ease: [0.2, 0.65, 0.3, 0.9]
+                }}
+                className="inline-block"
+                style={{ 
+                  willChange: "transform, opacity, filter"
+                }}
+              >
+                {ch === " " ? "\u00A0" : ch}
+              </motion.span>
             ))}
           </motion.span>
         </AnimatePresence>
@@ -116,4 +128,3 @@ export const FlipWords = ({
     </span>
   );
 };
-

@@ -139,7 +139,7 @@ export default function OutOfCreditsModal({
                             <span className="text-2xl font-bold text-white">$9</span>
                             <span className="text-sm text-white/50">one-time</span>
                           </div>
-                          <div className="text-sm font-semibold text-white mb-2">Starter Pack</div>
+                          <div className="text-sm font-semibold text-white mb-2">Starter</div>
                           <ul className="space-y-1">
                             <li className="flex items-center gap-2 text-xs text-white/60">
                               <Sparkles className="w-3 h-3 text-[#FF6E3C]" />
@@ -147,7 +147,7 @@ export default function OutOfCreditsModal({
                             </li>
                             <li className="flex items-center gap-2 text-xs text-white/60">
                               <Check className="w-3 h-3 text-green-500" />
-                              No subscription required
+                              Full Access • Credits never expire
                             </li>
                             <li className="flex items-center gap-2 text-xs text-white/60">
                               <Check className="w-3 h-3 text-green-500" />
@@ -188,15 +188,15 @@ export default function OutOfCreditsModal({
                           <ul className="space-y-1">
                             <li className="flex items-center gap-2 text-xs text-white/60">
                               <Sparkles className="w-3 h-3 text-[#FF6E3C]" />
-                              3,000 credits/month (~40 generations)
+                              1,500 credits/month (~20 generations)
                             </li>
                             <li className="flex items-center gap-2 text-xs text-white/60">
                               <Check className="w-3 h-3 text-green-500" />
-                              Priority support
+                              Full Access • Priority support
                             </li>
                             <li className="flex items-center gap-2 text-xs text-white/60">
                               <Check className="w-3 h-3 text-green-500" />
-                              Early access to features
+                              Credits roll over
                             </li>
                           </ul>
                         </div>
@@ -214,7 +214,7 @@ export default function OutOfCreditsModal({
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
                       <>
-                        {selectedOption === "starter" ? "Get Starter Pack for $9" : "Subscribe for $25/mo"}
+                        {selectedOption === "starter" ? "Get Starter — $9" : "Subscribe for $25/mo"}
                         <ArrowRight className="w-5 h-5" />
                       </>
                     )}

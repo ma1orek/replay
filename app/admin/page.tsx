@@ -62,6 +62,7 @@ interface Stats {
   topStyles: { style: string; count: number }[];
   generationsPerDay: { date: string; count: number }[];
   proUsers: number;
+  starterUsers: number;
 }
 
 interface FeedbackData {
@@ -464,10 +465,10 @@ export default function AdminPage() {
   };
 
   // Available tiers for admin assignment
-  // Note: "starter" is a separate plan with 200 topup credits (one-time)
+  // Note: "starter" just changes membership (doesn't add credits - use Fix Credits for that)
   const PRO_TIERS = [
     { id: "free", label: "Free", credits: 100, membership: "free", isTopup: false },
-    { id: "starter", label: "Starter Pack (200 credits)", credits: 200, membership: "starter", isTopup: true },
+    { id: "starter", label: "Starter", credits: 0, membership: "starter", isTopup: false },
     { id: "pro25", label: "Pro 25", credits: 1500, membership: "pro", isTopup: false },
     { id: "pro50", label: "Pro 50", credits: 3300, membership: "pro", isTopup: false },
     { id: "pro100", label: "Pro 100", credits: 7500, membership: "pro", isTopup: false },
@@ -777,12 +778,18 @@ export default function AdminPage() {
             </div>
 
             {/* Stats Row 2 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <StatCard
                 title="Pro Users"
                 value={stats?.proUsers || 0}
                 icon={Shield}
                 color="orange"
+              />
+              <StatCard
+                title="Starter Users"
+                value={stats?.starterUsers || 0}
+                icon={Zap}
+                color="gray"
               />
               <StatCard
                 title="Tokens Used"
@@ -2321,7 +2328,9 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                           {tier.label}
                         </p>
                         <p className="text-sm text-white/50">
-                          {tier.credits.toLocaleString()} credits {tier.id === "starter" ? "(one-time)" : "/ month"}
+                          {tier.id === "starter" 
+                            ? "Membership only (use Fix Credits to add)" 
+                            : `${tier.credits.toLocaleString()} credits / month`}
                         </p>
                       </div>
                       {selectedPlanIndex === idx && (
@@ -2403,7 +2412,7 @@ function StatCard({ title, value, icon: Icon, color }: {
   title: string; 
   value: number | string; 
   icon: any; 
-  color: "blue" | "green" | "yellow" | "purple" | "orange" | "cyan" | "pink"
+  color: "blue" | "green" | "yellow" | "purple" | "orange" | "cyan" | "pink" | "gray"
 }) {
   const colors = {
     blue: "from-blue-500/20 to-blue-600/10 text-blue-400",
@@ -2413,6 +2422,7 @@ function StatCard({ title, value, icon: Icon, color }: {
     orange: "from-orange-500/20 to-orange-600/10 text-orange-400",
     cyan: "from-cyan-500/20 to-cyan-600/10 text-cyan-400",
     pink: "from-pink-500/20 to-pink-600/10 text-pink-400",
+    gray: "from-gray-500/20 to-gray-600/10 text-gray-400",
   };
 
   return (

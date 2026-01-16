@@ -43,8 +43,8 @@ const faqs = [
     a: "Yes — if the UI is visible on screen, Replay can analyze it. Mobile app recordings get rebuilt as responsive web UI. Native platform logic isn't included, but the visual structure and interactions are preserved." 
   },
   { 
-    q: "What's the difference between Free and Pro?", 
-    a: "Free: 100 credits/month, preview only, public projects. Pro (from $25/month): 1,500+ credits/month, full code access & export, publish to web, private projects, rollover credits. Both plans include all 30+ style presets and AI editing." 
+    q: "What's the difference between plans?", 
+    a: "Free: 100 credits/month (~1 gen), preview only. Starter ($9 one-time): 300 credits (~4 gens), Full Access & Export, credits never expire. Pro ($25/month): 1,500 credits (~20 gens), private projects, credits roll over, priority support." 
   },
   { 
     q: "Can I cancel my subscription anytime?", 

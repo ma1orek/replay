@@ -202,6 +202,7 @@ export async function GET(request: NextRequest) {
       topStyles,
       generationsPerDay,
       proUsers: mappedUsers.filter((u: any) => u.membership === "pro").length,
+      starterUsers: mappedUsers.filter((u: any) => u.membership === "starter").length,
     };
 
     return NextResponse.json({

@@ -35,7 +35,7 @@ export default function LandingNavigation() {
   const meta = user?.user_metadata;
   const displayName = profile?.full_name || meta?.full_name || meta?.name || user?.email?.split('@')[0] || 'User';
   const plan = membership?.plan || "free";
-  const isPaidPlan = plan === "pro" || plan === "agency" || plan === "enterprise";
+  const isPaidPlan = plan === "starter" || plan === "pro" || plan === "agency" || plan === "enterprise";
   
   // Close profile menu when clicking outside
   useEffect(() => {
@@ -103,13 +103,13 @@ export default function LandingNavigation() {
                     className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors"
                   >
                     <span className="text-sm font-medium text-white/80 max-w-[120px] truncate">{displayName}</span>
-                    {isPaidPlan ? (
+                    {(plan === "pro" || plan === "agency" || plan === "enterprise") ? (
                       <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase">
                         {plan === "agency" ? "Agency" : plan === "enterprise" ? "Enterprise" : "Pro"}
                       </span>
                     ) : (
                       <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-white/50 uppercase">
-                        Free
+                        {plan === "starter" ? "Starter" : "Free"}
                       </span>
                     )}
                   </button>
@@ -137,13 +137,13 @@ export default function LandingNavigation() {
                               <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm text-white">{totalCredits} credits</span>
-                                  {isPaidPlan ? (
+                                  {(plan === "pro" || plan === "agency" || plan === "enterprise") ? (
                                     <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase">
                                       {plan === "agency" ? "Agency" : plan === "enterprise" ? "Enterprise" : "Pro"}
                                     </span>
                                   ) : (
                                     <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-white/50 uppercase">
-                                      Free
+                                      {plan === "starter" ? "Starter" : "Free"}
                                     </span>
                                   )}
                                 </div>
@@ -306,13 +306,13 @@ export default function LandingNavigation() {
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
                                 <span className="text-sm text-white">{totalCredits} credits</span>
-                                {isPaidPlan ? (
+                                {(plan === "pro" || plan === "agency" || plan === "enterprise") ? (
                                   <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase">
                                     {plan === "agency" ? "Agency" : plan === "enterprise" ? "Enterprise" : "Pro"}
                                   </span>
                                 ) : (
                                   <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-white/50 uppercase">
-                                    Free
+                                    {plan === "starter" ? "Starter" : "Free"}
                                   </span>
                                 )}
                               </div>

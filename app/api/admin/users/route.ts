@@ -152,8 +152,9 @@ export async function PATCH(request: NextRequest) {
         }
       }
       
-      // If credits are specified, also update the user's credits
-      if (credits && typeof credits === "number") {
+      // If credits are specified AND membership is NOT starter, update monthly_credits
+      // For starter, credits are managed via topup_credits (one-time purchases), not monthly
+      if (credits && typeof credits === "number" && membership !== "starter") {
         const { data: wallet } = await adminSupabase
           .from("credit_wallets")
           .select("*")

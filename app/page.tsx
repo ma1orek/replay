@@ -69,6 +69,7 @@ import {
   Zap
 } from "lucide-react";
 import { cn, generateId, formatDuration, updateProjectAnalytics } from "@/lib/utils";
+import { stabilizePicsumUrls } from "@/lib/assets";
 import { transmuteVideoToCode } from "@/actions/transmute";
 import { getDatabaseContext, formatDatabaseContextForPrompt } from "@/lib/supabase/schema";
 import { useIsMobile } from "@/lib/useIsMobile";
@@ -129,6 +130,21 @@ async function editCodeWithAIStreaming(
     if (!response.ok) {
       const errorText = await response.text();
       console.error('[editCodeWithAI] API error:', response.status, errorText);
+      
+      // Handle specific error codes with user-friendly messages
+      if (response.status === 413) {
+        return { 
+          success: false, 
+          error: 'Image too large! Please use a smaller image (max 4MB) or compress it first.' 
+        };
+      }
+      if (response.status === 429) {
+        return { 
+          success: false, 
+          error: 'Too many requests. Please wait a moment and try again.' 
+        };
+      }
+      
       return { success: false, error: `API error: ${response.status}` };
     }
     
@@ -247,6 +263,21 @@ async function editCodeWithAI(
     if (!response.ok) {
       const errorText = await response.text();
       console.error('[editCodeWithAI] API error:', response.status, errorText);
+      
+      // Handle specific error codes with user-friendly messages
+      if (response.status === 413) {
+        return { 
+          success: false, 
+          error: 'Image too large! Please use a smaller image (max 4MB) or compress it first.' 
+        };
+      }
+      if (response.status === 429) {
+        return { 
+          success: false, 
+          error: 'Too many requests. Please wait a moment and try again.' 
+        };
+      }
+      
       return { success: false, error: `API error: ${response.status}` };
     }
     
@@ -285,6 +316,7 @@ import AuthModal from "@/components/modals/AuthModal";
 import OutOfCreditsModal from "@/components/modals/OutOfCreditsModal";
 import FeedbackGateModal from "@/components/modals/FeedbackGateModal";
 import UpgradeModal from "@/components/modals/UpgradeModal";
+import AssetsModal from "@/components/modals/AssetsModal";
 import ProjectSettingsModal from "@/components/ProjectSettingsModal";
 import { Toast, useToast } from "@/components/Toast";
 // MobileScanner removed - mobile users now use MobileLayout exclusively
@@ -706,8 +738,8 @@ const GENERATION_TIPS = [
   "Click, don't just watch. Interacting helps the engine differentiate functional elements from static containers.",
   "Cursor movement matters. Slow down over interactive elements to help us capture hover states accurately.",
   "Context is King. Providing specific context clues (e.g., 'Admin Dashboard') improves component density and typography.",
-  "Don't be afraid to scroll. Replay can reconstruct long pages—just scroll slowly to ensure every section is captured.",
-  "Use 'Edit with AI' after generation to refine specific parts — like 'make the button bigger' or 'add hover effect'.",
+  "Don't be afraid to scroll. Replay can reconstruct long pages — just scroll slowly to ensure every section is captured.",
+  "Use the chat to refine specific parts after generation — like 'make the button bigger' or 'add hover effect'.",
   "Record interactions, not just static views. Clicking, hovering, and scrolling help AI understand your UI better.",
   "Style injection is powerful. Specify 'Apple-style' or 'Linear dark mode' for consistent design language.",
   "Shorter videos often work better. Focus on one flow or feature at a time for more accurate results.",
@@ -795,7 +827,7 @@ const analyzeCodeChanges = (oldCode: string, newCode: string, userRequest: strin
   }
   
   if (isFix) {
-    insights.push("Naprawione! 🔧");
+    insights.push("Naprawione!");
   }
   
   if (isAdd && insights.length === 0) {
@@ -931,7 +963,7 @@ function ReplayToolContent() {
     "typographic-architecture": "Typographic Architecture",
   };
   
-  // Helper function to get default style name from localStorage
+  // Helper function to get default style name from localStorage (only call client-side)
   const getDefaultStyleName = () => {
     if (typeof window === 'undefined') return "";
     const defaultPreset = localStorage.getItem("replay_default_style_preset");
@@ -939,9 +971,16 @@ function ReplayToolContent() {
     return STYLE_ID_TO_NAME[defaultPreset] || "";
   };
   
-  const [styleDirective, setStyleDirective] = useState(() => {
-    return getDefaultStyleName();
-  });
+  // Initialize to empty string to avoid hydration mismatch
+  const [styleDirective, setStyleDirective] = useState("");
+  
+  // Load default style from localStorage after mount
+  useEffect(() => {
+    const savedStyle = getDefaultStyleName();
+    if (savedStyle) {
+      setStyleDirective(savedStyle);
+    }
+  }, []);
   const [styleReferenceImage, setStyleReferenceImage] = useState<{ url: string; name: string } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [compressionProgress, setCompressionProgress] = useState(0);
@@ -1034,8 +1073,8 @@ function ReplayToolContent() {
     }
   };
   
-  // Check if user has paid plan (PRO or higher)
-  const isPaidPlan = membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise";
+  // Check if user has paid plan (Starter, PRO or higher)
+  const isPaidPlan = membership?.plan === "starter" || membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise";
   const [pendingAction, setPendingAction] = useState<"generate" | "edit" | null>(null);
   const [analysisDescription, setAnalysisDescription] = useState<string>("");
   const [editInput, setEditInput] = useState("");
@@ -1172,6 +1211,200 @@ function ReplayToolContent() {
   // Direct text editing mode (like Framer)
   const [isDirectEditMode, setIsDirectEditMode] = useState(false);
   const [pendingTextEdits, setPendingTextEdits] = useState<{ originalText: string; newText: string; elementPath: string }[]>([]);
+  
+  // Assets modal state
+  const [showAssetsModal, setShowAssetsModal] = useState(false);
+  const [selectedAssetUrl, setSelectedAssetUrl] = useState<string | null>(null);
+  
+  // Helper to inject image click handlers into preview HTML
+  const injectAssetClickHandler = useCallback((html: string): string => {
+    // Simple CSS - outline without offset to not break layout
+    const CSS_STYLES = 'img { cursor: pointer !important; outline: 3px solid #FF6E3C !important; outline-offset: -3px !important; } img:hover { outline-width: 4px !important; filter: brightness(1.1) !important; } [data-has-bg-image] { cursor: pointer !important; outline: 3px solid #FF6E3C !important; outline-offset: -3px !important; } [data-has-bg-image]:hover { outline-width: 4px !important; }';
+    
+    const script = `<script>
+(function() {
+  var assetSelectorEnabled = false;
+  
+  function init() {
+    var style = document.createElement('style');
+    style.id = 'assets-selector-styles';
+    document.head.appendChild(style);
+    
+    // Find and mark ALL elements with background images
+    function markBackgroundImages() {
+      var count = 0;
+      document.querySelectorAll('*').forEach(function(el) {
+        if (el.hasAttribute('data-has-bg-image')) return;
+        
+        var computed = window.getComputedStyle(el);
+        var bg = computed.backgroundImage;
+        
+        if (bg && bg !== 'none' && bg.includes('url(')) {
+          var urlMatch = bg.match(/url\\(["']?([^"')]+)["']?\\)/);
+          if (urlMatch && urlMatch[1]) {
+            var url = urlMatch[1];
+            if (!url.includes('.svg') && !url.startsWith('data:') && !url.includes('gradient')) {
+              el.setAttribute('data-has-bg-image', 'true');
+              el.setAttribute('data-bg-url', url);
+              count++;
+            }
+          }
+        }
+      });
+      console.log('[Assets] Marked ' + count + ' elements with background images');
+    }
+    
+    function countImages() {
+      var imgs = document.querySelectorAll('img:not([src*=".svg"]):not([src^="data:"])');
+      var bgs = document.querySelectorAll('[data-has-bg-image]');
+      console.log('[Assets] Found ' + imgs.length + ' img tags and ' + bgs.length + ' background images');
+      return imgs.length + bgs.length;
+    }
+    
+    window.__applyAssetStyles = function(enabled) {
+      assetSelectorEnabled = enabled;
+      var style = document.getElementById('assets-selector-styles');
+      if (enabled) {
+        markBackgroundImages();
+        style.textContent = ${JSON.stringify(CSS_STYLES)};
+        var total = countImages();
+        console.log('[Assets] Selector enabled - ' + total + ' images clickable');
+      } else {
+        style.textContent = '';
+        console.log('[Assets] Selector disabled');
+      }
+    };
+    
+    window.addEventListener('message', function(e) {
+      if (e.data && e.data.type === 'TOGGLE_ASSET_SELECTOR') {
+        window.__applyAssetStyles(e.data.enabled);
+      }
+    });
+    
+    // Handle clicks on images AND background-images
+    document.addEventListener('click', function(e) {
+      if (!assetSelectorEnabled) return;
+      
+      var target = e.target;
+      var url = null;
+      
+      // Check if clicked element or parent is an img tag
+      var img = target.tagName === 'IMG' ? target : target.closest('img');
+      if (img && img.src && !img.src.includes('.svg') && !img.src.startsWith('data:')) {
+        url = img.src;
+        console.log('[Assets] Clicked img tag:', url);
+      }
+      
+      // If no img found, check for background-image (including on parent elements)
+      if (!url) {
+        var el = target;
+        // First check if we have data-bg-url from our marking
+        while (el && el !== document.body) {
+          if (el.hasAttribute('data-bg-url')) {
+            url = el.getAttribute('data-bg-url');
+            console.log('[Assets] Clicked element with marked bg:', url);
+            break;
+          }
+          el = el.parentElement;
+        }
+        
+        // Fallback: check computed background-image directly
+        if (!url) {
+          el = target;
+          while (el && el !== document.body) {
+            var bg = window.getComputedStyle(el).backgroundImage;
+            if (bg && bg !== 'none' && bg.includes('url(')) {
+              var match = bg.match(/url\\(["']?([^"')]+)["']?\\)/);
+              if (match && match[1] && !match[1].includes('.svg') && !match[1].startsWith('data:')) {
+                url = match[1];
+                console.log('[Assets] Clicked element with computed bg:', url);
+                break;
+              }
+            }
+            el = el.parentElement;
+          }
+        }
+      }
+      
+      if (url) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('[Assets] Sending ASSET_CLICK:', url);
+        window.parent.postMessage({ type: 'ASSET_CLICK', url: url }, '*');
+      }
+    }, true);
+    
+    console.log('[Assets] Handler initialized');
+    window.parent.postMessage({ type: 'ASSET_HANDLER_READY' }, '*');
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>`;
+    if (html.includes('</head>')) {
+      return html.replace('</head>', script + '</head>');
+    } else if (html.includes('<body')) {
+      return html.replace('<body', script + '<body');
+    }
+    return script + html;
+  }, []);
+  
+  // Create preview URL with asset click handlers and stabilized picsum URLs
+  const createPreviewUrl = useCallback((code: string): string => {
+    // First stabilize any picsum URLs to prevent images from randomly changing
+    const stabilizedCode = stabilizePicsumUrls(code);
+    const codeWithHandler = injectAssetClickHandler(stabilizedCode);
+    return URL.createObjectURL(new Blob([codeWithHandler], { type: "text/html" }));
+  }, [injectAssetClickHandler]);
+  
+  // Track if iframe handler is ready
+  const iframeHandlerReady = useRef(false);
+  
+  // Listen for asset clicks and handler ready from preview iframe
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'ASSET_CLICK' && event.data?.url) {
+        console.log('[Assets] Image clicked in preview:', event.data.url);
+        setSelectedAssetUrl(event.data.url);
+        setShowAssetsModal(true);
+      }
+      if (event.data?.type === 'ASSET_HANDLER_READY') {
+        console.log('[Assets] Handler ready in iframe');
+        iframeHandlerReady.current = true;
+        // If Assets modal is already open, send the toggle message
+        if (showAssetsModal && previewIframeRef.current?.contentWindow) {
+          previewIframeRef.current.contentWindow.postMessage({ type: 'TOGGLE_ASSET_SELECTOR', enabled: true }, '*');
+        }
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [showAssetsModal]);
+  
+  // Toggle asset selector styles in iframe when Assets modal opens/closes (no reload)
+  useEffect(() => {
+    const sendToggleMessage = () => {
+      if (previewIframeRef.current?.contentWindow) {
+        previewIframeRef.current.contentWindow.postMessage({ type: 'TOGGLE_ASSET_SELECTOR', enabled: showAssetsModal }, '*');
+      }
+    };
+    
+    // Send immediately
+    sendToggleMessage();
+    
+    // Also send after a short delay to ensure iframe is ready
+    const timeout = setTimeout(sendToggleMessage, 100);
+    const timeout2 = setTimeout(sendToggleMessage, 500);
+    
+    return () => {
+      clearTimeout(timeout);
+      clearTimeout(timeout2);
+    };
+  }, [showAssetsModal, previewUrl]); // Also re-send when previewUrl changes (new iframe content)
   
   // Dragging state for flow nodes
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
@@ -1349,7 +1582,7 @@ function ReplayToolContent() {
       
       // Show browser notification if tab is hidden (works in background!)
       if (isTabHidden && 'Notification' in window && Notification.permission === 'granted') {
-        const notification = new Notification('Replay - Generation Complete! 🎉', {
+        const notification = new Notification('Replay - Generation Complete!', {
           body: 'Your interface is ready. Click to view.',
           icon: '/favicon.ico',
           tag: 'replay-generation-complete',
@@ -1415,10 +1648,9 @@ function ReplayToolContent() {
     typeText(description, (typed) => setAnalysisDescription(typed), 15);
     
     // Update preview URL
-    const blob = new Blob([code], { type: "text/html" });
-    setPreviewUrl(URL.createObjectURL(blob));
+    setPreviewUrl(createPreviewUrl(code));
     
-    // 🚀 TRANSFORM SIDEBAR TO AGENTIC CHAT
+    // TRANSFORM SIDEBAR TO AGENTIC CHAT
     setSidebarMode("chat");
     setSidebarTab("chat");
     setMobilePanel("chat"); // Also switch mobile to chat
@@ -1448,7 +1680,7 @@ function ReplayToolContent() {
     const summaryMessage: ChatMessage = {
       id: generateId(),
       role: "assistant",
-      content: `**Boom. UI Reconstructed.** 🚀\n\nI focused on matching the exact layout and feel from your video. Used ${techStack.slice(0, 3).join(", ")} to keep it clean and maintainable.\n\n${features.length > 0 ? `**Key sections:** ${features.join(" • ")}\n\n` : ""}Ready to refine? Just tell me what to tweak.`,
+      content: `**Boom. UI Reconstructed.**\n\nMatched the layout from your video using ${techStack.slice(0, 3).join(", ")} for clean, maintainable code.\n\n${features.length > 0 ? `**Key sections:** ${features.join(" • ")}\n\n` : ""}Ready to refine? Just tell me what to tweak.`,
       timestamp: Date.now(),
       quickActions: [
         "Make it mobile-friendly",
@@ -1699,8 +1931,7 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
             }]);
             
             // Create blob URL for preview
-            const blob = new Blob([gen.code], { type: "text/html" });
-            setPreviewUrl(URL.createObjectURL(blob));
+            setPreviewUrl(createPreviewUrl(gen.code));
             
             // On mobile, show preview tab immediately
             setMobilePanel("preview");
@@ -2718,7 +2949,7 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
         setPendingTextEdits([]);
         // Refresh preview to original code
         if (editableCode) {
-          setPreviewUrl(URL.createObjectURL(new Blob([editableCode], { type: "text/html" })));
+          setPreviewUrl(createPreviewUrl(editableCode));
         }
       }
     }
@@ -2811,7 +3042,7 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
       setEditableCode(newCode);
       setDisplayedCode(newCode);
       setGeneratedCode(newCode);
-      setPreviewUrl(URL.createObjectURL(new Blob([newCode], { type: "text/html" })));
+      setPreviewUrl(createPreviewUrl(newCode));
       
       // Save version
       if (activeGeneration) {
@@ -5000,8 +5231,7 @@ Try these prompts in Cursor or v0:
     if (version.styleInfo) setStyleInfo(version.styleInfo);
     
     // Update preview
-    const blob = new Blob([version.code], { type: "text/html" });
-    setPreviewUrl(URL.createObjectURL(blob));
+    setPreviewUrl(createPreviewUrl(version.code));
     
     showToast(`Restored to: ${version.label}`, "success");
     setExpandedVersions(null);
@@ -5223,7 +5453,7 @@ Try these prompts in Cursor or v0:
       const videoBase64 = await blobToBase64(videoBlob);
       const mimeType = videoBlob.type || "video/mp4";
       
-      setStreamingStatus("🚀 Connecting to AI...");
+      setStreamingStatus("Connecting to AI...");
       
       // Call streaming endpoint
       // Create AbortController for timeout
@@ -5320,7 +5550,7 @@ Try these prompts in Cursor or v0:
                 break;
                 
               case "complete":
-                setStreamingStatus("✅ Generation complete!");
+                setStreamingStatus("Generation complete!");
                 tokenUsage = data.tokenUsage;
                 // Return the clean extracted code
                 return { 
@@ -5494,7 +5724,7 @@ Try these prompts in Cursor or v0:
           setEditableCode(result.code);
           setDisplayedCode(result.code);
           if (previewUrl) URL.revokeObjectURL(previewUrl);
-          setPreviewUrl(URL.createObjectURL(new Blob([result.code], { type: "text/html" })));
+          setPreviewUrl(createPreviewUrl(result.code));
           buildArchitectureLive(result.code);
           buildFlowLive(result.code);
           setStyleInfo(extractStyleInfo(result.code));
@@ -5502,16 +5732,26 @@ Try these prompts in Cursor or v0:
           const files = generateFileStructure(result.code, flowNodes, codeMode);
           setGeneratedFiles(files);
           
-          // 🚀 Switch to chat mode and add response message
+          // Switch to chat mode and add response message
           setSidebarMode("chat");
           setSidebarTab("chat");
           setViewMode("preview");
           
           // Add chat message about what was updated
+          // Extract just the style NAME, not the full prompt instructions
+          const getStyleName = (style: string) => {
+            if (!style || style === 'auto' || style === 'auto-detect') return 'Auto-detect';
+            // Extract first line or title (before any newlines or detailed instructions)
+            const firstLine = style.split('\n')[0].trim();
+            // Remove emoji and special chars, take first ~50 chars
+            const cleanName = firstLine.replace(/^[^\w\s]+/, '').trim().substring(0, 50);
+            return cleanName || 'Custom style';
+          };
+          
           const updateMsg: ChatMessage = {
             id: generateId(),
             role: "assistant",
-            content: `**Project Updated!** ✨\n\nI've applied your changes:\n${contextChanged ? `- Updated context/requirements\n` : ""}${styleChanged ? `- Applied new style: ${styleDirective}\n` : ""}\nThe preview is now showing your updated design. Let me know if you want any more tweaks!`,
+            content: `**Project Updated!** ✨\n\nI've applied your changes:\n${contextChanged ? `- Updated context/requirements\n` : ""}${styleChanged ? `- Applied new style: ${getStyleName(styleDirective)}\n` : ""}\nThe preview is now showing your updated design. Let me know if you want any more tweaks!`,
             timestamp: Date.now(),
             quickActions: [
               "Make more changes",
@@ -5976,8 +6216,7 @@ Try these prompts in Cursor or v0:
         
         // Set code and preview URL
         setGeneratedCode(result.code);
-        const blob = new Blob([result.code], { type: "text/html" });
-        setPreviewUrl(URL.createObjectURL(blob));
+        setPreviewUrl(createPreviewUrl(result.code));
         
         // Check if tab is hidden - if so, store for immediate display when visible
         if (document.hidden) {
@@ -6064,7 +6303,7 @@ Try these prompts in Cursor or v0:
         setChatMessages([{
           id: generateId(),
           role: "assistant",
-          content: `**Boom. UI Reconstructed.** 🚀\n\nMatched the layout from your video using Tailwind CSS and Alpine.js for interactivity.\n\nReady to refine? Just tell me what to tweak.`,
+          content: `**Boom. UI Reconstructed.**\n\nMatched the layout from your video using Tailwind CSS and Alpine.js for interactivity.\n\nReady to refine? Just tell me what to tweak.`,
           timestamp: Date.now(),
           quickActions: ["Make it mobile-friendly", "Tweak the colors", "Add hover effects", "Improve the spacing"]
         }]);
@@ -6193,11 +6432,78 @@ Try these prompts in Cursor or v0:
     return desc;
   };
 
-  // Convert image URL to base64 (for sending to AI)
+  // Compress image to reduce size (max 1MB for Edit with AI)
+  const compressImage = useCallback(async (blob: Blob, maxSizeKB: number = 1024): Promise<Blob> => {
+    return new Promise((resolve) => {
+      const img = document.createElement('img');
+      const url = URL.createObjectURL(blob);
+      
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        
+        // Calculate target dimensions (max 1200px on longest side)
+        const maxDim = 1200;
+        let { width, height } = img;
+        
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = (height / width) * maxDim;
+            width = maxDim;
+          } else {
+            width = (width / height) * maxDim;
+            height = maxDim;
+          }
+        }
+        
+        // Create canvas and draw resized image
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { resolve(blob); return; }
+        
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Try different quality levels until we're under maxSize
+        let quality = 0.8;
+        const tryCompress = () => {
+          canvas.toBlob((result) => {
+            if (!result) { resolve(blob); return; }
+            
+            if (result.size > maxSizeKB * 1024 && quality > 0.3) {
+              quality -= 0.1;
+              tryCompress();
+            } else {
+              console.log(`[compressImage] Compressed from ${(blob.size/1024).toFixed(0)}KB to ${(result.size/1024).toFixed(0)}KB`);
+              resolve(result);
+            }
+          }, 'image/jpeg', quality);
+        };
+        
+        tryCompress();
+      };
+      
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(blob); // Return original on error
+      };
+      
+      img.src = url;
+    });
+  }, []);
+
+  // Convert image URL to base64 (for sending to AI) - with compression
   const urlToBase64 = useCallback(async (url: string): Promise<string | null> => {
     try {
       const response = await fetch(url);
-      const blob = await response.blob();
+      let blob = await response.blob();
+      
+      // Compress if larger than 500KB
+      if (blob.size > 500 * 1024) {
+        console.log(`[urlToBase64] Image ${(blob.size/1024).toFixed(0)}KB - compressing...`);
+        blob = await compressImage(blob, 800);
+      }
+      
       return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -6213,7 +6519,7 @@ Try these prompts in Cursor or v0:
       console.error("Error converting URL to base64:", e);
       return null;
     }
-  }, []);
+  }, [compressImage]);
 
   // Handle paste for images in chat/edit input (CTRL+V)
   const handlePasteImage = useCallback(async (e: React.ClipboardEvent<HTMLTextAreaElement | HTMLInputElement>) => {
@@ -6259,7 +6565,7 @@ Try these prompts in Cursor or v0:
     
     // Add with uploading state
     setEditImages(prev => [...prev, { id: tempId, url: tempUrl, name: imgName, file: imageFile!, uploading: true }]);
-    showToast("📷 Wgrywanie zdjęcia...", "info");
+    showToast("Wgrywanie zdjęcia...", "info");
     
     // Upload to Supabase
     try {
@@ -6278,16 +6584,16 @@ Try these prompts in Cursor or v0:
         setEditImages(prev => prev.map(img => 
           img.id === tempId ? { ...img, url: data.url, uploading: false } : img
         ));
-        showToast("✅ Zdjęcie dołączone!", "success");
+        showToast("Zdjęcie dołączone!", "success");
       } else {
         // Remove failed upload
         setEditImages(prev => prev.filter(img => img.id !== tempId));
-        showToast("❌ Nie udało się wgrać zdjęcia", "error");
+        showToast("Nie udało się wgrać zdjęcia", "error");
       }
     } catch (err) {
       console.error("Upload error:", err);
       setEditImages(prev => prev.filter(img => img.id !== tempId));
-      showToast("❌ Błąd podczas wgrywania", "error");
+      showToast("Błąd podczas wgrywania", "error");
     }
   }, [user?.id, showToast]);
 
@@ -6560,7 +6866,7 @@ Try these prompts in Cursor or v0:
       setGeneratedCode(editableCode);
       setDisplayedCode(editableCode);
       if (previewUrl) URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(URL.createObjectURL(new Blob([editableCode], { type: "text/html" })));
+      setPreviewUrl(createPreviewUrl(editableCode));
       setIsCodeEditable(false);
       
       // Regenerate file structure with updated code
@@ -6688,7 +6994,7 @@ Try these prompts in Cursor or v0:
     // Refresh the preview by re-creating the blob URL
     if (editableCode) {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(URL.createObjectURL(new Blob([editableCode], { type: "text/html" })));
+      setPreviewUrl(createPreviewUrl(editableCode));
       // Rebuild architecture, flow and style
       buildArchitectureLive(editableCode);
       buildFlowLive(editableCode);
@@ -7175,9 +7481,9 @@ Try these prompts in Cursor or v0:
             {user ? (
               <span className={cn(
                 "text-xs font-semibold uppercase",
-                isPaidPlan ? "text-[#FF6E3C]" : "text-white/50"
+                (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-[#FF6E3C]" : "text-white/50"
               )}>
-                {isPaidPlan ? (membership?.plan === "agency" ? "Agency" : "Pro") : "Free"}
+                {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : membership?.plan === "starter" ? "Starter" : "Free"}
               </span>
             ) : (
               <User className="w-5 h-5 text-white/60" />
@@ -7219,13 +7525,13 @@ Try these prompts in Cursor or v0:
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <span className="text-sm text-white">{userTotalCredits} credits</span>
-                            {isPaidPlan ? (
+                            {(plan === "pro" || plan === "agency" || plan === "enterprise") ? (
                               <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase">
                                 {plan === "agency" ? "Agency" : plan === "enterprise" ? "Enterprise" : "Pro"}
                               </span>
                             ) : (
                               <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-white/50 uppercase">
-                                Free
+                                {plan === "starter" ? "Starter" : "Free"}
                               </span>
                             )}
                           </div>
@@ -7448,8 +7754,7 @@ Try these prompts in Cursor or v0:
                               setGeneratedCode(genToLoad.code);
                               setDisplayedCode(genToLoad.code);
                               setEditableCode(genToLoad.code);
-                              const blob = new Blob([genToLoad.code], { type: "text/html" });
-                              setPreviewUrl(URL.createObjectURL(blob));
+                              setPreviewUrl(createPreviewUrl(genToLoad.code));
                             }
                             if (genToLoad.flowNodes) setFlowNodes(genToLoad.flowNodes);
                             if (genToLoad.flowEdges) setFlowEdges(genToLoad.flowEdges);
@@ -7496,7 +7801,7 @@ Try these prompts in Cursor or v0:
                               setChatMessages([{
                                 id: generateId(),
                                 role: "assistant",
-                                content: `**Boom. UI Reconstructed.** 🚀\n\nMatched the layout from your video using Tailwind CSS and Alpine.js for interactivity.\n\nReady to refine? Just tell me what to tweak.`,
+                                content: `**Boom. UI Reconstructed.**\n\nMatched the layout from your video using Tailwind CSS and Alpine.js for interactivity.\n\nReady to refine? Just tell me what to tweak.`,
                                 timestamp: Date.now(),
                                 quickActions: ["Make it mobile-friendly", "Tweak the colors", "Add hover effects", "Improve the spacing"]
                               }]);
@@ -7915,7 +8220,7 @@ Try these prompts in Cursor or v0:
                           </button>
                         </div>
                         
-                        {/* Code preview - only when writing code */}
+                        {/* Code preview - only when writing code - with syntax highlighting */}
                         {streamingCode && streamingCode.length > 50 && (
                           <motion.div 
                             initial={{ height: 0, opacity: 0 }}
@@ -7924,8 +8229,21 @@ Try these prompts in Cursor or v0:
                             className="border-t border-white/5 bg-[#0a0a0a]"
                           >
                             <div className="p-2 max-h-[120px] overflow-hidden font-mono text-[9px] leading-relaxed">
-                              <pre className="m-0 whitespace-pre-wrap break-words text-white/50">
-                                {streamingCode.slice(-800).split('\n').slice(-8).join('\n')}
+                              <pre className="m-0 whitespace-pre-wrap break-words">
+                                {streamingCode.slice(-800).split('\n').slice(-8).map((line, i) => (
+                                  <div key={i} className="min-h-[12px]">
+                                    {line.split(/(<[^>]+>|"[^"]*"|'[^']*'|\/\*.*\*\/|\/\/.*$|{|}|\(|\)|class=|className=|style=|\b(?:const|let|var|function|return|if|else|for|while|import|export|from|default)\b)/g).map((part, j) => {
+                                      if (!part) return null;
+                                      if (part.startsWith('<') && part.endsWith('>')) return <span key={j} className="text-[#7fdbca]">{part}</span>;
+                                      if (part.startsWith('"') || part.startsWith("'")) return <span key={j} className="text-[#ecc48d]">{part}</span>;
+                                      if (part.startsWith('//') || part.startsWith('/*')) return <span key={j} className="text-[#637777]">{part}</span>;
+                                      if (/^(const|let|var|function|return|if|else|for|while|import|export|from|default)$/.test(part)) return <span key={j} className="text-[#c792ea]">{part}</span>;
+                                      if (part === 'class=' || part === 'className=' || part === 'style=') return <span key={j} className="text-[#addb67]">{part}</span>;
+                                      if (part === '{' || part === '}' || part === '(' || part === ')') return <span key={j} className="text-[#ffd700]">{part}</span>;
+                                      return <span key={j} className="text-[#d6deeb]">{part}</span>;
+                                    })}
+                                  </div>
+                                ))}
                                 <span className="text-[#FF6E3C]">▌</span>
                               </pre>
                             </div>
@@ -8060,7 +8378,7 @@ Try these prompts in Cursor or v0:
                                     
                                     if (codeChanged) {
                                       setEditableCode(result.code); setDisplayedCode(result.code); setGeneratedCode(result.code);
-                                      setPreviewUrl(URL.createObjectURL(new Blob([result.code], { type: "text/html" })));
+                                      setPreviewUrl(createPreviewUrl(result.code));
                                       
                                       // Use summary from streaming if available, otherwise analyze
                                       const responseMsg = result.summary 
@@ -8139,11 +8457,38 @@ Try these prompts in Cursor or v0:
                             <span>Select</span>
                             {isPointAndEdit && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-[#FF6E3C] rounded-full" />}
                           </button>
-                          {/* Image upload - same icon as Edit with AI */}
+                          {/* Image upload - uploads to Supabase */}
                           <label className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[10px] text-white/40 hover:text-white/60 hover:bg-white/5 cursor-pointer transition-all">
                             <ImageIcon className="w-3.5 h-3.5" />
                             <span>Image</span>
-                            <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => { if (e.target.files) Array.from(e.target.files).forEach(file => { const reader = new FileReader(); reader.onload = () => setEditImages(prev => [...prev, { id: generateId(), url: reader.result as string, name: file.name, file }]); reader.readAsDataURL(file); }); }} />
+                            <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
+                              if (!e.target.files) return;
+                              for (const file of Array.from(e.target.files)) {
+                                const id = generateId();
+                                const localUrl = URL.createObjectURL(file);
+                                setEditImages(prev => [...prev, { id, url: localUrl, name: file.name, file, uploading: true }]);
+                                showToast("Wgrywanie zdjęcia...", "info");
+                                try {
+                                  const formData = new FormData();
+                                  formData.append("file", file);
+                                  formData.append("userId", user?.id || "anon");
+                                  const response = await fetch("/api/upload-image", { method: "POST", body: formData });
+                                  const data = await response.json();
+                                  if (data.success && data.url) {
+                                    URL.revokeObjectURL(localUrl);
+                                    setEditImages(prev => prev.map(img => img.id === id ? { ...img, url: data.url, uploading: false } : img));
+                                    showToast("Zdjęcie gotowe!", "success");
+                                  } else {
+                                    setEditImages(prev => prev.filter(img => img.id !== id));
+                                    showToast("Nie udało się wgrać", "error");
+                                  }
+                                } catch (err) {
+                                  setEditImages(prev => prev.filter(img => img.id !== id));
+                                  showToast("Błąd wgrywania", "error");
+                                }
+                              }
+                              e.target.value = "";
+                            }} />
                           </label>
                         </div>
                         {/* Plan + Send grouped on right */}
@@ -8201,7 +8546,7 @@ Try these prompts in Cursor or v0:
                                   
                                   if (codeChanged) {
                                     setEditableCode(result.code); setDisplayedCode(result.code); setGeneratedCode(result.code);
-                                    setPreviewUrl(URL.createObjectURL(new Blob([result.code], { type: "text/html" })));
+                                    setPreviewUrl(createPreviewUrl(result.code));
                                     
                                     const responseMsg = analyzeCodeChanges(editableCode, result.code, currentInput);
                                     
@@ -8869,7 +9214,7 @@ Try these prompts in Cursor or v0:
                               setIsDirectEditMode(false);
                               // Force refresh preview to discard visual changes
                               if (editableCode) {
-                                setPreviewUrl(URL.createObjectURL(new Blob([editableCode], { type: "text/html" })));
+                                setPreviewUrl(createPreviewUrl(editableCode));
                               }
                             }}
                             className="btn-black px-2 py-1 rounded-lg text-[10px] text-white/50 hover:text-white/70"
@@ -8921,6 +9266,21 @@ Try these prompts in Cursor or v0:
                           <MousePointer className="w-3 h-3" /> Select
                         </button>
                       </div>
+                      
+                      {/* Assets Button */}
+                      <button
+                        onClick={() => setShowAssetsModal(!showAssetsModal)}
+                        className={cn(
+                          "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] transition-colors",
+                          showAssetsModal
+                            ? "bg-[#FF6E3C]/20 border border-[#FF6E3C]/50 text-[#FF6E3C]"
+                            : "bg-white/[0.03] border border-white/[0.08] text-white/50 hover:text-white/70 hover:border-white/15"
+                        )}
+                        title="View and replace images"
+                      >
+                        <ImageIcon className="w-3.5 h-3.5" />
+                        Assets
+                      </button>
                     </>
                   )}
                 </>
@@ -8943,13 +9303,13 @@ Try these prompts in Cursor or v0:
                           className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/5 transition-colors"
                         >
                           <span className="text-xs font-medium text-white/80 max-w-[80px] truncate">{displayName}</span>
-                          {isPaidPlan ? (
+                          {(plan === "pro" || plan === "agency" || plan === "enterprise") ? (
                             <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase">
                               {plan === "agency" ? "Agency" : plan === "enterprise" ? "Enterprise" : "Pro"}
                             </span>
                           ) : (
                             <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-white/50 uppercase">
-                              Free
+                              {plan === "starter" ? "Starter" : "Free"}
                             </span>
                           )}
                         </button>
@@ -9227,6 +9587,14 @@ Try these prompts in Cursor or v0:
                         key={previewUrl}
                         ref={previewIframeRef}
                         src={previewUrl} 
+                        onLoad={() => {
+                          // Send toggle message when iframe loads
+                          if (showAssetsModal && previewIframeRef.current?.contentWindow) {
+                            setTimeout(() => {
+                              previewIframeRef.current?.contentWindow?.postMessage({ type: 'TOGGLE_ASSET_SELECTOR', enabled: true }, '*');
+                            }, 50);
+                          }
+                        }}
                         className={cn(
                           "border-0 bg-[#0a0a0a] transition-all duration-300",
                           isMobilePreview 
@@ -9250,11 +9618,7 @@ Try these prompts in Cursor or v0:
                       )}
                     </div>
                     
-                    {!showFloatingEdit && !isEditing && (
-                      <button onClick={() => { setShowFloatingEdit(true); setIsDirectEditMode(false); }} className="floating-edit-btn flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium text-white/90">
-                        <Sparkles className="w-4 h-4 text-[#FF6E3C]" /> Edit with AI
-                      </button>
-                    )}
+{/* Edit with AI button removed - chat does the same thing */}
                   </>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-[#0a0a0a]">
@@ -9769,7 +10133,7 @@ export default function GeneratedPage() {
                                         )}
                                       </div>
                                       
-                                      <p className="text-xs text-white/50 mt-2 ml-8">Full code access • Priority support • Credits roll over</p>
+                                      <p className="text-xs text-white/50 mt-2 ml-8">Full access • Priority support • Credits roll over</p>
                                     </div>
                                     
                                     {/* Starter Pack - Simple option */}
@@ -9786,9 +10150,9 @@ export default function GeneratedPage() {
                                         <div className="flex-1">
                                           <div className="flex items-center gap-2">
                                             <Zap className="w-4 h-4 text-white/60" />
-                                            <span className="font-medium text-white">Starter Pack</span>
+                                            <span className="font-medium text-white">Starter</span>
                                           </div>
-                                          <p className="text-xs text-white/50 mt-0.5">200 credits • Export access • Ideal for testing</p>
+                                          <p className="text-xs text-white/50 mt-0.5">300 credits • ~4 generations • Perfect for testing</p>
                                         </div>
                                         <div className="text-right">
                                           <span className="text-xl font-bold text-white">$9</span>
@@ -9809,7 +10173,7 @@ export default function GeneratedPage() {
                                         Processing...
                                       </>
                                     ) : selectedUpgradePlan === "starter" ? (
-                                      "Get Starter Pack — $9"
+                                      "Get Starter — $9"
                                     ) : (
                                       `Subscribe — $${selectedProTier.price}/mo`
                                     )}
@@ -9840,11 +10204,7 @@ export default function GeneratedPage() {
                   {/* Inspector Panel removed - simplified UI */}
                 </div>
                 
-                {editableCode && !isStreamingCode && !isCodeEditable && !showFloatingEdit && (
-                  <button onClick={() => { setShowFloatingEdit(true); setIsDirectEditMode(false); }} className="floating-edit-btn flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium text-white/90">
-                    <Sparkles className="w-4 h-4 text-[#FF6E3C]" /> Edit with AI
-                  </button>
-                )}
+{/* Edit with AI button removed - chat does the same thing */}
                   </>
                 )}
               </div>
@@ -10038,11 +10398,16 @@ export default function GeneratedPage() {
                             added: "border-solid border-emerald-500/40 bg-[#0a0a0a]"
                           };
                           
+                          // Node width: wider for observed/added nodes with preview
+                          const hasPreview = (isObserved || isAdded) && editableCode;
+                          const nodeWidth = hasPreview ? 'w-52' : 'w-44';
+                          
                           return (
                             <div 
                               key={node.id}
                               className={cn(
-                                "absolute w-44 rounded-xl border backdrop-blur-sm select-none",
+                                "absolute rounded-xl border backdrop-blur-sm select-none",
+                                nodeWidth,
                                 confidenceStyles[node.status] || confidenceStyles.detected,
                                 selectedFlowNode === node.id && "ring-1 ring-[#FF6E3C]/50 border-[#FF6E3C]/30",
                                 isDragging ? "cursor-grabbing shadow-2xl z-50 scale-[1.02]" : "hover:border-white/30"
@@ -10135,6 +10500,61 @@ export default function GeneratedPage() {
                                   <p className={cn("text-[10px] mt-1 line-clamp-2", isPossible ? "text-white/25" : isDetected ? "text-white/30" : "text-white/40")}>{node.description}</p>
                                 )}
                               </div>
+                              
+                              {/* Mini iframe preview for observed/added nodes */}
+                              {(isObserved || isAdded) && editableCode && (
+                                <div className="relative w-full h-24 bg-[#0a0a0a] overflow-hidden border-b border-white/5">
+                                  <div className="absolute inset-0 flex items-center justify-center">
+                                    <iframe
+                                      srcDoc={(() => {
+                                        // Inject script to auto-navigate to the right page
+                                        const pageId = node.id.toLowerCase().replace(/\s+/g, '-');
+                                        const autoNavScript = `
+                                          <script>
+                                            document.addEventListener('alpine:init', () => {
+                                              setTimeout(() => {
+                                                const app = document.querySelector('[x-data]');
+                                                if (app && app._x_dataStack) {
+                                                  const data = app._x_dataStack[0];
+                                                  if (data && data.currentPage !== undefined) {
+                                                    data.currentPage = '${pageId}';
+                                                  }
+                                                }
+                                              }, 100);
+                                            });
+                                          </script>
+                                        `;
+                                        return editableCode.replace('</head>', autoNavScript + '</head>');
+                                      })()}
+                                      className="w-[800px] h-[600px] border-0 pointer-events-none"
+                                      style={{ 
+                                        transform: 'scale(0.2)', 
+                                        transformOrigin: 'top left',
+                                        position: 'absolute',
+                                        left: '50%',
+                                        top: '50%',
+                                        marginLeft: '-80px',
+                                        marginTop: '-60px'
+                                      }}
+                                      sandbox="allow-scripts"
+                                      title={`Preview: ${node.name}`}
+                                    />
+                                  </div>
+                                  {/* Hover overlay for "View" */}
+                                  <div 
+                                    className="absolute inset-0 bg-black/60 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleFlowNodeCodeFocus(node.id);
+                                    }}
+                                  >
+                                    <div className="flex items-center gap-1.5 text-white/80 text-xs">
+                                      <Eye className="w-3.5 h-3.5" />
+                                      <span>View</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                               
                               {/* Structure overlay (when toggle is ON) */}
                               <AnimatePresence>
@@ -10258,15 +10678,7 @@ export default function GeneratedPage() {
                   </div>
                 )}
                 
-                {/* Edit with AI button for Flow */}
-                {!flowBuilding && flowNodes.length > 0 && !showFloatingEdit && !isProcessing && (
-                  <button 
-                    onClick={() => { setShowFloatingEdit(true); setIsDirectEditMode(false); }} 
-                    className="floating-edit-btn flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium text-white/90"
-                  >
-                    <Sparkles className="w-4 h-4 text-[#FF6E3C]" /> Edit with AI
-                  </button>
-                )}
+{/* Edit with AI button removed - chat does the same thing */}
               </div>
             )}
             
@@ -10349,11 +10761,7 @@ export default function GeneratedPage() {
                       <div className="style-card"><p className="text-[10px] text-white/40 uppercase mb-2">Shadows</p><p className="text-sm text-white/70">{styleInfo.shadows}</p></div>
                     </div>
                     
-                    {!showFloatingEdit && (
-                      <button onClick={() => { setShowFloatingEdit(true); setIsDirectEditMode(false); }} className="floating-edit-btn flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium text-white/90">
-                        <Sparkles className="w-4 h-4 text-[#FF6E3C]" /> Edit with AI
-                      </button>
-                    )}
+{/* Edit with AI button removed - chat does the same thing */}
                   </div>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
@@ -11225,9 +11633,9 @@ export default function GeneratedPage() {
                     {user ? (
                       <span className={cn(
                         "text-xs font-semibold uppercase",
-                        isPaidPlan ? "text-[#FF6E3C]" : "text-white/50"
+                        (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-[#FF6E3C]" : "text-white/50"
                       )}>
-                        {isPaidPlan ? (membership?.plan === "agency" ? "Agency" : "Pro") : "Free"}
+                        {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : membership?.plan === "starter" ? "Starter" : "Free"}
                       </span>
                     ) : (
                       <User className="w-5 h-5 text-white/50" />
@@ -11504,9 +11912,9 @@ export default function GeneratedPage() {
                     {user ? (
                       <span className={cn(
                         "text-xs font-semibold uppercase",
-                        isPaidPlan ? "text-[#FF6E3C]" : "text-white/50"
+                        (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-[#FF6E3C]" : "text-white/50"
                       )}>
-                        {isPaidPlan ? (membership?.plan === "agency" ? "Agency" : "Pro") : "Free"}
+                        {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : membership?.plan === "starter" ? "Starter" : "Free"}
                       </span>
                     ) : (
                       <User className="w-5 h-5 text-white/50" />
@@ -11608,9 +12016,9 @@ export default function GeneratedPage() {
                   {user ? (
                     <span className={cn(
                       "text-xs font-semibold uppercase",
-                      isPaidPlan ? "text-[#FF6E3C]" : "text-white/50"
+                      (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-[#FF6E3C]" : "text-white/50"
                     )}>
-                      {isPaidPlan ? (membership?.plan === "agency" ? "Agency" : "Pro") : "Free"}
+                      {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : membership?.plan === "starter" ? "Starter" : "Free"}
                     </span>
                   ) : (
                     <User className="w-5 h-5 text-white/50" />
@@ -11805,9 +12213,9 @@ export default function GeneratedPage() {
                   {user ? (
                     <span className={cn(
                       "text-xs font-semibold uppercase",
-                      isPaidPlan ? "text-[#FF6E3C]" : "text-white/50"
+                      (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-[#FF6E3C]" : "text-white/50"
                     )}>
-                      {isPaidPlan ? (membership?.plan === "agency" ? "Agency" : "Pro") : "Free"}
+                      {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : membership?.plan === "starter" ? "Starter" : "Free"}
                     </span>
                   ) : (
                     <User className="w-5 h-5 text-white/50" />
@@ -12008,9 +12416,9 @@ export default function GeneratedPage() {
                   {user ? (
                     <span className={cn(
                       "text-xs font-semibold uppercase",
-                      isPaidPlan ? "text-[#FF6E3C]" : "text-white/50"
+                      (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-[#FF6E3C]" : "text-white/50"
                     )}>
-                      {isPaidPlan ? (membership?.plan === "agency" ? "Agency" : "Pro") : "Free"}
+                      {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : membership?.plan === "starter" ? "Starter" : "Free"}
                     </span>
                   ) : (
                     <User className="w-5 h-5 text-white/50" />
@@ -12132,9 +12540,9 @@ export default function GeneratedPage() {
                   {user ? (
                     <span className={cn(
                       "text-xs font-semibold uppercase",
-                      isPaidPlan ? "text-[#FF6E3C]" : "text-white/50"
+                      (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-[#FF6E3C]" : "text-white/50"
                     )}>
-                      {isPaidPlan ? (membership?.plan === "agency" ? "Agency" : "Pro") : "Free"}
+                      {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : membership?.plan === "starter" ? "Starter" : "Free"}
                     </span>
                   ) : (
                     <User className="w-5 h-5 text-white/50" />
@@ -12520,7 +12928,7 @@ export default function GeneratedPage() {
                             // Code was changed
                             const responseMsg = analyzeCodeChanges(editableCode, result.code, currentInput);
                             setEditableCode(result.code); setDisplayedCode(result.code); setGeneratedCode(result.code);
-                            setPreviewUrl(URL.createObjectURL(new Blob([result.code], { type: "text/html" })));
+                            setPreviewUrl(createPreviewUrl(result.code));
                             setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: responseMsg, timestamp: Date.now() }]);
                             if (activeGeneration) {
                               const versionLabel = generateVersionLabel(currentInput);
@@ -12546,10 +12954,33 @@ export default function GeneratedPage() {
                   />
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  {/* Image */}
+                  {/* Image - uploads to Supabase */}
                   <label className="p-2 rounded-lg text-white/40 cursor-pointer hover:text-white/60 hover:bg-white/5 transition-colors" title="Upload image">
                     <ImageIcon className="w-4 h-4" />
-                    <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => { if (e.target.files) Array.from(e.target.files).forEach(file => { const reader = new FileReader(); reader.onload = () => setEditImages(prev => [...prev, { id: generateId(), url: reader.result as string, name: file.name, file }]); reader.readAsDataURL(file); }); }} />
+                    <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
+                      if (!e.target.files) return;
+                      for (const file of Array.from(e.target.files)) {
+                        const id = generateId();
+                        const localUrl = URL.createObjectURL(file);
+                        setEditImages(prev => [...prev, { id, url: localUrl, name: file.name, file, uploading: true }]);
+                        try {
+                          const formData = new FormData();
+                          formData.append("file", file);
+                          formData.append("userId", user?.id || "anon");
+                          const response = await fetch("/api/upload-image", { method: "POST", body: formData });
+                          const data = await response.json();
+                          if (data.success && data.url) {
+                            URL.revokeObjectURL(localUrl);
+                            setEditImages(prev => prev.map(img => img.id === id ? { ...img, url: data.url, uploading: false } : img));
+                          } else {
+                            setEditImages(prev => prev.filter(img => img.id !== id));
+                          }
+                        } catch {
+                          setEditImages(prev => prev.filter(img => img.id !== id));
+                        }
+                      }
+                      e.target.value = "";
+                    }} />
                   </label>
                   {/* Plan Mode Toggle */}
                   <button
@@ -12594,7 +13025,7 @@ export default function GeneratedPage() {
                           if (result?.success && result.code && result.code !== editableCode) {
                             const responseMsg = analyzeCodeChanges(editableCode, result.code, currentInput);
                             setEditableCode(result.code); setDisplayedCode(result.code); setGeneratedCode(result.code);
-                            setPreviewUrl(URL.createObjectURL(new Blob([result.code], { type: "text/html" })));
+                            setPreviewUrl(createPreviewUrl(result.code));
                             setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: responseMsg, timestamp: Date.now() }]);
                             if (activeGeneration) {
                               const versionLabel = generateVersionLabel(currentInput);
@@ -12950,6 +13381,45 @@ export default function GeneratedPage() {
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         feature={upgradeFeature}
+      />
+      
+      {/* Assets Modal for viewing and replacing images */}
+      <AssetsModal
+        isOpen={showAssetsModal}
+        onClose={() => setShowAssetsModal(false)}
+        code={editableCode}
+        initialSelectedUrl={selectedAssetUrl}
+        onClearSelection={() => setSelectedAssetUrl(null)}
+        onCodeUpdate={(newCode) => {
+          setEditableCode(newCode);
+          setDisplayedCode(newCode);
+          setGeneratedCode(newCode);
+          if (previewUrl) URL.revokeObjectURL(previewUrl);
+          setPreviewUrl(createPreviewUrl(newCode));
+          
+          // Save to Supabase immediately
+          if (activeGeneration) {
+            const updatedGen = { 
+              ...activeGeneration, 
+              code: newCode,
+              versions: [
+                ...(activeGeneration.versions || []),
+                {
+                  id: generateId(),
+                  timestamp: Date.now(),
+                  label: "Asset replaced",
+                  code: newCode,
+                  flowNodes,
+                  flowEdges,
+                  styleInfo
+                }
+              ].slice(-20)
+            };
+            setActiveGeneration(updatedGen);
+            setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
+            saveGenerationToSupabase(updatedGen);
+          }
+        }}
       />
       
       {/* Global file input for video upload - accessible from both mobile and desktop */}
