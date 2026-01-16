@@ -464,10 +464,10 @@ export default function AdminPage() {
   };
 
   // Available tiers for admin assignment
-  // Note: "starter" keeps membership as "free" but adds 300 topup credits
+  // Note: "starter" is a separate plan with 200 topup credits (one-time)
   const PRO_TIERS = [
     { id: "free", label: "Free", credits: 100, membership: "free", isTopup: false },
-    { id: "starter", label: "Starter Pack (+300 credits)", credits: 300, membership: "free", isTopup: true },
+    { id: "starter", label: "Starter Pack (200 credits)", credits: 200, membership: "starter", isTopup: true },
     { id: "pro25", label: "Pro 25", credits: 1500, membership: "pro", isTopup: false },
     { id: "pro50", label: "Pro 50", credits: 3300, membership: "pro", isTopup: false },
     { id: "pro100", label: "Pro 100", credits: 7500, membership: "pro", isTopup: false },

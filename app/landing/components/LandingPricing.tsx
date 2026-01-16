@@ -12,7 +12,7 @@ import { useAuth } from "@/lib/auth/context";
 // Starter Pack - One-time $9
 const STARTER_PACK = {
   id: 'starter',
-  credits: 300,
+  credits: 200,
   price: 9,
   stripePriceId: "price_1Spo05Axch1s4iBGydOPAd2i",
 };
@@ -354,7 +354,7 @@ export default function LandingPricing() {
               
               <div className="space-y-2.5 mb-6">
                 {[
-                  "300 credits (no expiry)",
+                  "200 credits (no expiry)",
                   "Full code access & export",
                   "Publish to web",
                   "No subscription required",

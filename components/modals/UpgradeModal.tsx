@@ -49,7 +49,7 @@ const starterFeatures = [
   "Clean React + Tailwind Components",
   "Framer Motion Interactions",
   "Supabase Schema & Data Fetching",
-  "300 credits (3 full generations)",
+  "200 credits • Export access",
   "Perfect for testing",
 ];
 
@@ -95,7 +95,7 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
           type: isStarter ? "starter" : "subscription",
           priceId: isStarter ? STARTER_PACK_PRICE_ID : PRO_SUBSCRIPTION_PRICE_ID,
           tierId: isStarter ? "starter" : "pro25",
-          credits: isStarter ? 300 : 1500,
+          credits: isStarter ? 200 : 1500,
           interval: isStarter ? undefined : "monthly"
         }),
       });

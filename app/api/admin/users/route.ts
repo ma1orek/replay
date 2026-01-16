@@ -58,8 +58,31 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400 });
     }
 
-    // Handle Starter Pack (isTopup=true): Add credits to topup_credits, keep membership as-is
+    // Handle Starter Pack (isTopup=true): Add credits to topup_credits AND set membership to "starter"
     if (isTopup && credits && typeof credits === "number") {
+      // Update membership to "starter"
+      const { data: existingMembership } = await adminSupabase
+        .from("memberships")
+        .select("*")
+        .eq("user_id", userId)
+        .single();
+
+      if (existingMembership) {
+        await adminSupabase
+          .from("memberships")
+          .update({ plan: "starter" })
+          .eq("user_id", userId);
+      } else {
+        await adminSupabase
+          .from("memberships")
+          .insert({ 
+            user_id: userId, 
+            plan: "starter",
+            created_at: new Date().toISOString()
+          });
+      }
+
+      // Add credits to topup_credits
       const { data: wallet } = await adminSupabase
         .from("credit_wallets")
         .select("*")
@@ -85,7 +108,7 @@ export async function PATCH(request: NextRequest) {
 
       return NextResponse.json({ 
         success: true, 
-        message: `Added ${credits} credits to user (Starter Pack)` 
+        message: `User upgraded to Starter Pack with ${credits} credits` 
       });
     }
 
