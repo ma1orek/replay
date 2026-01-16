@@ -65,7 +65,8 @@ import {
   MousePointer2,
   Info,
   Rocket,
-  Globe
+  Globe,
+  Zap
 } from "lucide-react";
 import { cn, generateId, formatDuration, updateProjectAnalytics } from "@/lib/utils";
 import { transmuteVideoToCode } from "@/actions/transmute";
@@ -976,14 +977,18 @@ function ReplayToolContent() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeFeature, setUpgradeFeature] = useState<"code" | "download" | "publish" | "supabase" | "general">("general");
   const [isUpgradeCheckingOut, setIsUpgradeCheckingOut] = useState(false);
+  const [selectedUpgradePlan, setSelectedUpgradePlan] = useState<"starter" | "pro">("starter");
   
-  // Default Pro tier ($25/mo) for direct checkout
-  const DEFAULT_PRO_PRICE_ID = "price_1SotL1Axch1s4iBGWMvO0JBZ";
+  // Price IDs for checkout
+  const STARTER_PACK_PRICE_ID = "price_1Spo05Axch1s4iBGydOPAd2i"; // $9 one-time
+  const DEFAULT_PRO_PRICE_ID = "price_1SotL1Axch1s4iBGWMvO0JBZ"; // $25/mo
   const DEFAULT_PRO_TIER_ID = "pro25";
   const DEFAULT_PRO_CREDITS = 1500;
   
   // Handler for direct checkout (used in inline upgrade buttons)
-  const handleUpgradeCheckout = async () => {
+  const handleUpgradeCheckout = async (plan?: "starter" | "pro") => {
+    const selectedPlan = plan || selectedUpgradePlan;
+    
     if (!user) {
       setShowAuthModal(true);
       return;
@@ -991,14 +996,16 @@ function ReplayToolContent() {
     
     setIsUpgradeCheckingOut(true);
     try {
+      const isStarter = selectedPlan === "starter";
+      
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          type: "subscription",
-          priceId: DEFAULT_PRO_PRICE_ID,
-          tierId: DEFAULT_PRO_TIER_ID,
-          credits: DEFAULT_PRO_CREDITS,
+          type: isStarter ? "starter" : "subscription",
+          priceId: isStarter ? STARTER_PACK_PRICE_ID : DEFAULT_PRO_PRICE_ID,
+          tierId: isStarter ? "starter" : DEFAULT_PRO_TIER_ID,
+          credits: isStarter ? 300 : DEFAULT_PRO_CREDITS,
           interval: "monthly"
         }),
       });
@@ -9671,9 +9678,9 @@ export default function GeneratedPage() {
                                 </pre>
                               </div>
                               
-                              {/* Upgrade overlay - FOMO style */}
+                              {/* Upgrade overlay - Starter Pack + Pro options */}
                               <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-[#0a0a0a]/40 via-[#0a0a0a]/70 to-[#0a0a0a]/90">
-                                <div className="relative text-center p-8 bg-[#111]/95 border border-white/10 rounded-2xl shadow-2xl max-w-md mx-4">
+                                <div className="relative p-6 bg-[#0d0d0d] border border-white/10 rounded-2xl shadow-2xl max-w-md mx-4">
                                   {/* Close button */}
                                   <button 
                                     onClick={() => setViewMode("preview")}
@@ -9682,51 +9689,85 @@ export default function GeneratedPage() {
                                     <X className="w-4 h-4 text-white/40" />
                                   </button>
                                   
-                                  <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 border border-[#FF6E3C]/20 flex items-center justify-center">
-                                    <Lock className="w-7 h-7 text-[#FF6E3C]" />
-                                  </div>
-                                  <h3 className="text-xl font-bold text-white mb-3">Unlock Full Source Code</h3>
-                                  <p className="text-sm text-white/60 mb-4">
-                                    Your code is ready. We've successfully reconstructed the UI logic, animations, and data structure.
-                                  </p>
-                                  
-                                  {/* Features list */}
-                                  <div className="text-left space-y-2 mb-6 px-4">
-                                    <div className="flex items-center gap-2 text-sm text-white/70">
-                                      <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                                      <span>Clean React + Tailwind Components</span>
+                                  {/* Header */}
+                                  <div className="text-center mb-5">
+                                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[#FF6E3C]/10 flex items-center justify-center">
+                                      <Zap className="w-7 h-7 text-[#FF6E3C]" />
                                     </div>
-                                    <div className="flex items-center gap-2 text-sm text-white/70">
-                                      <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                                      <span>Framer Motion Interactions</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm text-white/70">
-                                      <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                                      <span>Supabase Schema & Data Fetching</span>
-                                    </div>
+                                    <h3 className="text-xl font-bold text-white mb-2">Unlock Source Code</h3>
+                                    <p className="text-sm text-white/50">Get instant access to React + Tailwind code</p>
                                   </div>
                                   
+                                  {/* Options */}
+                                  <div className="space-y-3 mb-5">
+                                    {/* Starter Pack */}
+                                    <button
+                                      onClick={() => setSelectedUpgradePlan?.("starter")}
+                                      className={`w-full p-4 rounded-xl border-2 transition-all text-left relative ${
+                                        selectedUpgradePlan === "starter" ? "border-[#FF6E3C] bg-[#FF6E3C]/5" : "border-white/10 hover:border-white/20 bg-white/[0.02]"
+                                      }`}
+                                    >
+                                      <span className="absolute -top-2 right-3 px-2 py-0.5 text-[10px] font-bold uppercase bg-[#FF6E3C] text-white rounded">Best Value</span>
+                                      <div className="flex items-center gap-3">
+                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedUpgradePlan === "starter" ? "border-[#FF6E3C] bg-[#FF6E3C]" : "border-white/30"}`}>
+                                          {selectedUpgradePlan === "starter" && <Check className="w-3 h-3 text-white" />}
+                                        </div>
+                                        <div className="flex-1">
+                                          <div className="flex items-baseline gap-2">
+                                            <span className="text-xl font-bold text-white">$9</span>
+                                            <span className="text-xs text-white/50">one-time</span>
+                                          </div>
+                                          <p className="text-xs text-white/60 mt-0.5">300 credits (~4 generations) • No subscription</p>
+                                        </div>
+                                      </div>
+                                    </button>
+                                    
+                                    {/* Pro Subscription */}
+                                    <button
+                                      onClick={() => setSelectedUpgradePlan?.("pro")}
+                                      className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                                        selectedUpgradePlan === "pro" ? "border-[#FF6E3C] bg-[#FF6E3C]/5" : "border-white/10 hover:border-white/20 bg-white/[0.02]"
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedUpgradePlan === "pro" ? "border-[#FF6E3C] bg-[#FF6E3C]" : "border-white/30"}`}>
+                                          {selectedUpgradePlan === "pro" && <Check className="w-3 h-3 text-white" />}
+                                        </div>
+                                        <div className="flex-1">
+                                          <div className="flex items-baseline gap-2">
+                                            <span className="text-xl font-bold text-white">$25</span>
+                                            <span className="text-xs text-white/50">/month</span>
+                                          </div>
+                                          <p className="text-xs text-white/60 mt-0.5">3,000 credits/mo • Priority support • Commercial license</p>
+                                        </div>
+                                      </div>
+                                    </button>
+                                  </div>
+                                  
+                                  {/* CTA */}
                                   <button
-                                    onClick={handleUpgradeCheckout}
+                                    onClick={() => handleUpgradeCheckout(selectedUpgradePlan)}
                                     disabled={isUpgradeCheckingOut}
-                                    className="block w-full py-3.5 rounded-xl bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white text-sm font-semibold hover:opacity-90 transition-opacity mb-3 text-center disabled:opacity-50"
+                                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
                                   >
                                     {isUpgradeCheckingOut ? (
-                                      <span className="flex items-center justify-center gap-2">
+                                      <>
                                         <Loader2 className="w-4 h-4 animate-spin" />
                                         Processing...
-                                      </span>
+                                      </>
+                                    ) : selectedUpgradePlan === "starter" ? (
+                                      "Get Starter Pack for $9"
                                     ) : (
-                                      "Upgrade to Pro"
+                                      "Subscribe for $25/mo"
                                     )}
                                   </button>
-                                  <p className="text-[11px] text-white/40">
-                                    Includes commercial license. Cancel anytime.
+                                  <p className="text-center text-[10px] text-white/30 mt-3">
+                                    {selectedUpgradePlan === "starter" ? "One-time payment. Credits never expire." : "Cancel anytime. Commercial license included."}
                                   </p>
                                   
                                   <button
                                     onClick={() => setViewMode("preview")}
-                                    className="mt-4 text-xs text-white/30 hover:text-white/50 transition-colors"
+                                    className="w-full mt-3 text-xs text-white/30 hover:text-white/50 transition-colors"
                                   >
                                     Maybe later
                                   </button>
