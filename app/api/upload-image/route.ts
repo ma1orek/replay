@@ -40,12 +40,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     
-    // Get public URL
+    // Use signed URL (works even if bucket is private) - valid for 1 year
+    const { data: signedData, error: signedError } = await supabase.storage
+      .from("user-images")
+      .createSignedUrl(filename, 60 * 60 * 24 * 365);
+    
+    if (signedData?.signedUrl) {
+      console.log("[upload-image] Uploaded with signed URL:", filename);
+      return NextResponse.json({
+        success: true,
+        url: signedData.signedUrl,
+        filename: filename,
+      });
+    }
+    
+    // Fallback to public URL if signed fails
     const { data: urlData } = supabase.storage
       .from("user-images")
       .getPublicUrl(filename);
     
-    console.log("[upload-image] Uploaded:", filename, "URL:", urlData.publicUrl);
+    console.log("[upload-image] Uploaded with public URL:", filename);
     
     return NextResponse.json({
       success: true,
@@ -58,4 +72,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-
