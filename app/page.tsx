@@ -1143,7 +1143,7 @@ function ReplayToolContent() {
   const [selectedFlowNode, setSelectedFlowNode] = useState<string | null>(null);
   const [showStructureInFlow, setShowStructureInFlow] = useState(false); // Toggle to show components under nodes
   const [showPossiblePaths, setShowPossiblePaths] = useState(true); // Toggle to show/hide possible paths in Flow
-  const [showPreviewsInFlow, setShowPreviewsInFlow] = useState(false); // Toggle to show iframe previews in flow nodes
+  const [showPreviewsInFlow, setShowPreviewsInFlow] = useState(true); // Always show iframe previews in flow nodes by default
   const [generationComplete, setGenerationComplete] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showFloatingEdit, setShowFloatingEdit] = useState(false);
@@ -4574,25 +4574,42 @@ Try these prompts in Cursor or v0:
     return displayedCode;
   }, [generatedFiles, activeFilePath, displayedCode]);
   
-  // Handle node click from Flow - focus on corresponding code
-  const handleFlowNodeCodeFocus = useCallback((nodeId: string) => {
-    setViewMode("code");
-    
+  // Handle node click from Flow - focus on corresponding code/preview
+  const handleFlowNodeCodeFocus = useCallback((nodeId: string, targetView?: "code" | "preview") => {
     // Find file for this node
     const file = generatedFiles.find(f => f.sourceNodeId === nodeId);
-    if (file) {
+    
+    if (file && file.content) {
+      // Set active file for code view
       setActiveFilePath(file.path);
       
-      // Find reference map entry
-      const ref = codeReferenceMap.find(r => r.nodeId === nodeId);
-      if (ref) {
-        setHighlightedLines({ start: ref.startLine, end: ref.endLine });
-        // Clear highlight after 3 seconds
-        setTimeout(() => setHighlightedLines(null), 3000);
+      // If going to preview, load this node's code into preview
+      if (targetView === "preview") {
+        setEditableCode(file.content);
+        setDisplayedCode(file.content);
+        setPreviewUrl(prev => {
+          if (prev) URL.revokeObjectURL(prev);
+          return createPreviewUrl(file.content);
+        });
+        setViewMode("preview");
+      } else {
+        setViewMode("code");
+        // Find reference map entry
+        const ref = codeReferenceMap.find(r => r.nodeId === nodeId);
+        if (ref) {
+          setHighlightedLines({ start: ref.startLine, end: ref.endLine });
+          setTimeout(() => setHighlightedLines(null), 3000);
+        }
       }
-    } else if (nodeId !== "home") {
+    } else if (nodeId === "home" || nodeId.toLowerCase() === "home") {
+      // Home node - use main editableCode
+      if (targetView === "preview") {
+        setViewMode("preview");
+      } else {
+        setViewMode("code");
+      }
+    } else {
       // Node is possible but not built - set up AI edit
-      // Only if not currently editing
       if (isEditing) return;
       const node = flowNodes.find(n => n.id === nodeId);
       if (node) {
@@ -4600,7 +4617,7 @@ Try these prompts in Cursor or v0:
         setShowFloatingEdit(true);
       }
     }
-  }, [generatedFiles, codeReferenceMap, flowNodes]);
+  }, [generatedFiles, codeReferenceMap, flowNodes, createPreviewUrl, isEditing]);
   
   // Toggle folder expansion
   const toggleFolder = useCallback((path: string) => {
@@ -10596,8 +10613,7 @@ export default function GeneratedPage() {
                                       className="flow-node-btn flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-medium bg-[#FF6E3C]/20 hover:bg-[#FF6E3C]/30 text-[#FF6E3C] transition-colors"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleFlowNodeCodeFocus(node.id);
-                                        setViewMode("preview");
+                                        handleFlowNodeCodeFocus(node.id, "preview");
                                       }}
                                     >
                                       <Eye className="w-3 h-3" />
@@ -10608,8 +10624,7 @@ export default function GeneratedPage() {
                                       className="flow-node-btn flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-medium bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/80 transition-colors"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleFlowNodeCodeFocus(node.id);
-                                        setViewMode("code");
+                                        handleFlowNodeCodeFocus(node.id, "code");
                                       }}
                                     >
                                       <Code className="w-3 h-3" />
