@@ -13041,3 +13041,12 @@ export default function GeneratedPage() {
     </div>
   );
 }
+
+// Page wrapper with Suspense for useSearchParams
+export default function Page() {
+  return (
+    <Suspense fallback={<div className="h-screen bg-[#050505] flex items-center justify-center"><div className="w-8 h-8 border-2 border-[#FF6E3C] border-t-transparent rounded-full animate-spin" /></div>}>
+      <ReplayToolContent />
+    </Suspense>
+  );
+}
