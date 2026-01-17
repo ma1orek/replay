@@ -1380,6 +1380,34 @@ function ReplayToolContent() {
     return script + html;
   }, []);
   
+  const injectPageSelection = useCallback((code: string, pageId?: string | null): string => {
+    if (!pageId) return code;
+    const script = `
+<script>
+(function() {
+  var targetPage = ${JSON.stringify(pageId)};
+  function trySetPage() {
+    try {
+      var root = document.querySelector('[x-data]');
+      if (root && root._x_dataStack && root._x_dataStack[0]) {
+        var data = root._x_dataStack[0];
+        if (data.currentPage !== undefined) data.currentPage = targetPage;
+        if (data.page !== undefined) data.page = targetPage;
+        if (data.activeTab !== undefined) data.activeTab = targetPage;
+        if (data.activeView !== undefined) data.activeView = targetPage;
+      }
+    } catch (e) {}
+  }
+  document.addEventListener('alpine:init', trySetPage);
+  document.addEventListener('alpine:initialized', trySetPage);
+  setTimeout(trySetPage, 50);
+  setTimeout(trySetPage, 200);
+})();
+</script>`;
+    if (code.includes('</body>')) return code.replace('</body>', script + '</body>');
+    return code + script;
+  }, []);
+  
   // Create preview URL with asset click handlers and stabilized picsum URLs
   const createPreviewUrl = useCallback((code: string): string => {
     // First stabilize any picsum URLs to prevent images from randomly changing
@@ -4575,16 +4603,23 @@ Try these prompts in Cursor or v0:
   }, [generatedFiles, activeFilePath, displayedCode]);
   
   // Handle node click from Flow - focus on corresponding code/preview
+  // IMPORTANT: Preview uses selectedFlowPage state to navigate, Code only changes file path
+  const [selectedFlowPage, setSelectedFlowPage] = useState<string | null>(null);
+  
   const handleFlowNodeCodeFocus = useCallback((nodeId: string, targetView?: "code" | "preview") => {
-    // For preview - always use the main editableCode (full HTML with styles)
-    // The preview needs the complete single-file code to render properly
+    const node = flowNodes.find(n => n.id === nodeId);
+    if (!node) return;
+    
+    // For preview - set the page name and switch to preview mode
+    // The main preview iframe will use selectedFlowPage to navigate
     if (targetView === "preview") {
-      // Just switch to preview mode - the main editableCode already has everything
+      const pageId = node.id;
+      setSelectedFlowPage(pageId);
       setViewMode("preview");
       return;
     }
     
-    // For code view - find the specific file
+    // For code view - find the specific file WITHOUT affecting preview or iframes
     const file = generatedFiles.find(f => f.sourceNodeId === nodeId);
     
     if (file && file.content) {
@@ -4600,13 +4635,34 @@ Try these prompts in Cursor or v0:
     } else {
       // Node is possible but not built - set up AI edit
       if (isEditing) return;
-      const node = flowNodes.find(n => n.id === nodeId);
       if (node) {
         setEditInput(`@${node.name} Create this page with full content and layout`);
         setShowFloatingEdit(true);
       }
     }
   }, [generatedFiles, codeReferenceMap, flowNodes, isEditing]);
+
+  useEffect(() => {
+    if (!editableCode || !selectedFlowPage || viewMode !== "preview") return;
+    setPreviewUrl(prev => {
+      if (prev) URL.revokeObjectURL(prev);
+      const previewCode = injectPageSelection(editableCode, selectedFlowPage);
+      return createPreviewUrl(previewCode);
+    });
+  }, [editableCode, selectedFlowPage, viewMode, createPreviewUrl, injectPageSelection]);
+
+  const FLOW_NODE_WIDTH = 220;
+  const FLOW_PREVIEW_HEIGHT = 120;
+  
+  const getFlowNodeHeight = useCallback((node: ProductFlowNode) => {
+    const hasPreview = showPreviewsInFlow && editableCode && (node.status === "observed" || node.status === "added");
+    const baseHeight = hasPreview ? FLOW_PREVIEW_HEIGHT : 0;
+    const descriptionHeight = node.description ? 30 : 0;
+    const structureRows = node.components?.length ? Math.ceil(node.components.length / 2) : 0;
+    const structureHeight = showStructureInFlow ? (structureRows > 0 ? structureRows * 24 + 36 : 18) : 0;
+    const contentHeight = 140 + descriptionHeight + structureHeight;
+    return baseHeight + contentHeight;
+  }, [showPreviewsInFlow, editableCode, showStructureInFlow, FLOW_PREVIEW_HEIGHT]);
   
   // Toggle folder expansion
   const toggleFolder = useCallback((path: string) => {
@@ -10418,14 +10474,10 @@ export default function GeneratedPage() {
                             // Hide edges to hidden detected/possible nodes
                             if (!showPossiblePaths && (toNode.status === "detected" || toNode.status === "possible")) return null;
                             
-                            // Fixed width for cleaner calculations
-                            const nodeWidth = 200;
-                            const fromHasPreview = showPreviewsInFlow && (fromNode.status === "observed" || fromNode.status === "added") && editableCode;
-                            const fromHeight = (fromHasPreview ? 100 : 0) + 70; // preview + content height
-                            
-                            const x1 = fromNode.x + nodeWidth / 2;
+                            const fromHeight = getFlowNodeHeight(fromNode);
+                            const x1 = fromNode.x + FLOW_NODE_WIDTH / 2;
                             const y1 = fromNode.y + fromHeight;
-                            const x2 = toNode.x + nodeWidth / 2;
+                            const x2 = toNode.x + FLOW_NODE_WIDTH / 2;
                             const y2 = toNode.y;
                             const midX = (x1 + x2) / 2;
                             const midY = (y1 + y2) / 2;
@@ -10501,48 +10553,56 @@ export default function GeneratedPage() {
                           const hasCode = (isObserved || isAdded) && editableCode;
                           const hasPreview = showPreviewsInFlow && hasCode;
                           
-                          // Create preview code with page navigation script
-                          const pageName = node.name.toLowerCase().replace(/\s+/g, '');
-                          const previewCode = hasPreview && editableCode ? 
-                            editableCode.replace('</body>', `<script>
-                              document.addEventListener('alpine:init', () => {
-                                Alpine.store('page', '${pageName}');
-                              });
-                              setTimeout(() => {
-                                if (window.Alpine && Alpine.store) {
-                                  const root = document.querySelector('[x-data]');
-                                  if (root && root._x_dataStack) {
-                                    root._x_dataStack[0].currentPage = '${pageName}';
-                                  }
-                                }
-                              }, 100);
-                            </script></body>`) : null;
+                          // Create preview code with page navigation script (use node.id)
+                          const previewCode = hasPreview && editableCode
+                            ? injectPageSelection(editableCode, node.id)
+                            : null;
                           
                           // Fixed width for cleaner layout
-                          const nodeWidth = 200;
-                          const previewHeight = hasPreview ? 100 : 0;
+                          const nodeWidth = FLOW_NODE_WIDTH;
+                          const previewHeight = hasPreview ? FLOW_PREVIEW_HEIGHT : 0;
+                          
+                          // Dynamic height calculation
+                          const baseHeight = hasPreview ? FLOW_PREVIEW_HEIGHT : 0;
+                          const contentHeight = 140 + (node.description ? 30 : 0) + (showStructureInFlow && node.components?.length ? Math.ceil(node.components.length / 2) * 24 + 36 : 0);
+                          const totalHeight = getFlowNodeHeight(node) || (baseHeight + contentHeight);
+                          
+                          // Each iframe gets its own isolated preview code with unique key
+                          const iframeKey = `iframe-${node.id}-${showPreviewsInFlow}`;
                           
                           return (
                             <div 
                               key={node.id}
                               className={cn(
-                                "absolute select-none group/flownode",
-                                "rounded-xl overflow-hidden backdrop-blur-sm",
-                                isDragging ? "cursor-grabbing z-50" : "cursor-grab",
-                                selectedFlowNode === node.id && "ring-1 ring-[#FF6E3C]"
+                                "absolute select-none group/flownode flex flex-col",
+                                "rounded-2xl overflow-hidden transition-all duration-300",
+                                isDragging ? "cursor-grabbing z-50 scale-[1.02]" : "cursor-grab",
+                                selectedFlowNode === node.id && "ring-2 ring-[#FF6E3C]/60 ring-offset-2 ring-offset-black/80"
                               )}
                               style={{ 
                                 left: node.x, 
                                 top: node.y,
                                 width: nodeWidth,
-                                opacity: isPossible ? 0.5 : isDetected ? 0.9 : 1,
-                                background: 'rgba(15, 15, 15, 0.9)',
-                                border: isObserved || isAdded
-                                  ? '1px solid rgba(16,185,129,0.35)'
+                                minHeight: totalHeight,
+                                opacity: isPossible ? 0.55 : isDetected ? 0.9 : 1,
+                                // Premium glass effect
+                                background: isObserved || isAdded 
+                                  ? 'linear-gradient(165deg, rgba(25,25,25,0.95) 0%, rgba(12,12,12,0.98) 100%)'
                                   : isDetected
-                                  ? '1px solid rgba(245,158,11,0.3)'
+                                  ? 'linear-gradient(165deg, rgba(20,20,20,0.92) 0%, rgba(10,10,10,0.95) 100%)'
+                                  : 'linear-gradient(165deg, rgba(18,18,18,0.85) 0%, rgba(8,8,8,0.9) 100%)',
+                                backdropFilter: 'blur(20px) saturate(180%)',
+                                WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                                border: isObserved || isAdded
+                                  ? '1px solid rgba(16,185,129,0.25)'
+                                  : isDetected
+                                  ? '1px solid rgba(245,158,11,0.2)'
                                   : '1px solid rgba(255,255,255,0.08)',
-                                boxShadow: '0 4px 20px rgba(0,0,0,0.4)'
+                                boxShadow: isDragging
+                                  ? '0 25px 50px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05) inset'
+                                  : isObserved || isAdded
+                                  ? '0 8px 32px -8px rgba(16,185,129,0.15), 0 4px 16px -4px rgba(0,0,0,0.3), 0 0 0 1px rgba(16,185,129,0.08) inset'
+                                  : '0 8px 32px -8px rgba(0,0,0,0.4), 0 4px 16px -4px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.03) inset'
                               }}
                               onMouseDown={(e) => {
                                 // Don't start drag if clicking buttons
@@ -10557,12 +10617,13 @@ export default function GeneratedPage() {
                                 };
                               }}
                             >
-                              {/* Iframe Preview - shows correct page for this node */}
+                              {/* Iframe Preview */}
                               {hasPreview && previewCode && (
-                                <div className="relative w-full overflow-hidden bg-white/95" style={{ height: previewHeight }}>
+                                <div className="relative w-full overflow-hidden bg-[#050505]" style={{ height: previewHeight }}>
                                   <iframe
+                                    key={iframeKey}
                                     srcDoc={previewCode}
-                                    className="pointer-events-none absolute top-0 left-0"
+                                    className="pointer-events-none absolute top-0 left-0 opacity-90 transition-opacity group-hover/flownode:opacity-100"
                                     style={{ 
                                       width: `${nodeWidth * 8}px`,
                                       height: `${previewHeight * 8}px`,
@@ -10572,27 +10633,106 @@ export default function GeneratedPage() {
                                     sandbox="allow-scripts"
                                     title={`Preview: ${node.name}`}
                                   />
+                                  {/* Glass overlay on preview */}
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                                  
+                                  {/* Status Badge inside preview area */}
+                                  <div className="absolute top-2 right-2">
+                                    <span className={cn(
+                                      "text-[9px] px-2 py-0.5 rounded-full capitalize font-medium backdrop-blur-md border",
+                                      isObserved 
+                                        ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400" 
+                                        : isAdded
+                                        ? "bg-[#FF6E3C]/20 border-[#FF6E3C]/30 text-[#FF6E3C]"
+                                        : isDetected
+                                        ? "bg-amber-500/20 border-amber-500/30 text-amber-400"
+                                        : "bg-white/10 border-white/10 text-white/50"
+                                    )}>
+                                      {isObserved ? "observed" : isAdded ? "generated" : isDetected ? "detected" : "possible"}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Status Badge for non-preview nodes - Top Right of card */}
+                              {!hasPreview && (
+                                <div className="absolute top-3 right-3 z-10">
+                                  <span className={cn(
+                                    "text-[9px] px-2 py-0.5 rounded-full capitalize font-medium border",
+                                    isObserved 
+                                      ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" 
+                                      : isAdded
+                                      ? "bg-[#FF6E3C]/10 border-[#FF6E3C]/20 text-[#FF6E3C]"
+                                      : isDetected
+                                      ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                                      : "bg-white/5 border-white/5 text-white/30"
+                                  )}>
+                                    {isObserved ? "observed" : isAdded ? "generated" : isDetected ? "detected" : "possible"}
+                                  </span>
                                 </div>
                               )}
                               
                               {/* Node header */}
-                              <div className="p-2.5">
-                                <div className="flex items-center gap-2">
-                                  <Icon className={cn("w-4 h-4 flex-shrink-0", 
-                                    isObserved ? "text-emerald-400" 
-                                    : isAdded ? "text-[#FF6E3C]"
-                                    : isDetected ? "text-amber-400"
-                                    : "text-white/30"
-                                  )} />
-                                  <span className={cn(
-                                    "text-xs font-medium truncate flex-1", 
-                                    isPossible ? "text-white/40" : "text-white/90"
-                                  )} title={node.name}>{node.name}</span>
+                              <div className="p-3">
+                                <div className="flex items-center gap-2.5 mb-1.5">
+                                  {/* Status indicator */}
+                                  <div className={cn(
+                                    "w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 transition-colors",
+                                    isObserved ? "bg-emerald-500/10 text-emerald-400" 
+                                    : isAdded ? "bg-[#FF6E3C]/10 text-[#FF6E3C]"
+                                    : isDetected ? "bg-amber-500/10 text-amber-400"
+                                    : "bg-white/5 text-white/30"
+                                  )}>
+                                    <Icon className="w-3.5 h-3.5" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <span className={cn(
+                                      "text-[12px] font-semibold truncate block leading-tight", 
+                                      isPossible ? "text-white/40 italic" : "text-white/90"
+                                    )} title={node.name}>{node.name}</span>
+                                  </div>
                                 </div>
+                                
+                                {/* Description */}
+                                {node.description && (
+                                  <p className="text-[10px] text-white/40 leading-snug line-clamp-2 mb-2">
+                                    {node.description}
+                                  </p>
+                                )}
+
+                                {/* Structure overlay (Components list) */}
+                                <AnimatePresence>
+                                  {showStructureInFlow && (
+                                    <motion.div 
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: "auto", opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      className="overflow-hidden"
+                                    >
+                                      <div className="pt-2 mt-2 border-t border-white/5">
+                                        <div className="flex items-center gap-1.5 mb-1.5">
+                                          <GitBranch className="w-3 h-3 text-white/20" />
+                                          <span className="text-[9px] text-white/30 uppercase tracking-wider font-medium">Structure</span>
+                                        </div>
+                                        {node.components && node.components.length > 0 ? (
+                                          <div className="flex flex-wrap gap-1">
+                                            {node.components.map((comp, i) => (
+                                              <div key={i} className="px-1.5 py-0.5 rounded-[4px] bg-white/5 border border-white/5 text-[9px] text-white/40">
+                                                {comp}
+                                              </div>
+                                            ))}
+                                          </div>
+                                        ) : (
+                                          <div className="text-[9px] text-white/25 italic">No structure detected</div>
+                                        )}
+                                      </div>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
                               </div>
                               
                               {/* Action buttons - glass style */}
-                              <div className="flex items-center gap-1 px-2 pb-2">
+                              <div className="flex items-center gap-1.5 px-3 pb-3">
                                 {hasCode ? (
                                   <>
                                     <button
