@@ -95,7 +95,7 @@ export const FlipWords = ({
             className="absolute inset-0 z-10 inline-block whitespace-nowrap"
           >
             {currentWord.split("").map((ch, ci) => (
-              <motion.span
+                  <motion.span
                 key={`${currentWord}-${ci}`}
                 initial={{ 
                   opacity: 0, 
@@ -114,13 +114,13 @@ export const FlipWords = ({
                   duration: 0.4,
                   ease: [0.2, 0.65, 0.3, 0.9]
                 }}
-                className="inline-block"
+                    className="inline-block"
                 style={{ 
                   willChange: "transform, opacity, filter"
                 }}
-              >
+                  >
                 {ch === " " ? "\u00A0" : ch}
-              </motion.span>
+                  </motion.span>
             ))}
           </motion.span>
         </AnimatePresence>

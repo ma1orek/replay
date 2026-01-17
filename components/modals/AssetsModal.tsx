@@ -32,6 +32,8 @@ interface AssetsModalProps {
   code: string;
   onCodeUpdate: (newCode: string) => void;
   initialSelectedUrl?: string | null;
+  initialSelectedOccurrence?: number | null;
+  assetsOverride?: ExtractedAsset[];
   onClearSelection?: () => void;
 }
 
@@ -59,6 +61,8 @@ export default function AssetsModal({
   code, 
   onCodeUpdate,
   initialSelectedUrl,
+  initialSelectedOccurrence,
+  assetsOverride,
   onClearSelection
 }: AssetsModalProps) {
   const [assets, setAssets] = useState<ExtractedAsset[]>([]);
@@ -85,14 +89,26 @@ export default function AssetsModal({
 
   // Extract assets when code changes
   useEffect(() => {
+    if (assetsOverride && assetsOverride.length > 0) {
+      setAssets(assetsOverride);
+      const stillExists = selectedAsset && assetsOverride.find(a => a.id === selectedAsset.id);
+      if (!stillExists) {
+        setSelectedAsset(assetsOverride[0] || null);
+      }
+      return;
+    }
+
     if (code) {
       const extracted = extractAssetsFromCode(code);
       setAssets(extracted);
       if (extracted.length > 0 && !selectedAsset) {
         setSelectedAsset(extracted[0]);
       }
+    } else {
+      setAssets([]);
+      setSelectedAsset(null);
     }
-  }, [code]);
+  }, [code, assetsOverride, selectedAsset]);
 
   // Auto-select asset when modal opens with initialSelectedUrl (from preview click)
   useEffect(() => {
@@ -100,9 +116,33 @@ export default function AssetsModal({
       console.log('[Assets] Looking for clicked URL:', initialSelectedUrl);
       console.log('[Assets] Available assets:', assets.map(a => a.url));
       
+      const normalizeUrl = (url: string) => {
+        try {
+          if (url.startsWith("http")) {
+            const parsed = new URL(url);
+            return parsed.pathname + parsed.search;
+          }
+        } catch (e) {}
+        return url;
+      };
+
+      const urlsMatch = (a: string, b: string) => {
+        if (a === b) return true;
+        const na = normalizeUrl(a);
+        const nb = normalizeUrl(b);
+        if (na === nb) return true;
+        return a.includes(b) || b.includes(a) || na.includes(nb) || nb.includes(na);
+      };
+
       // Find the asset that matches the clicked URL
       // Try exact match first
       let matchingAsset = assets.find(a => a.url === initialSelectedUrl);
+
+      // Prefer matching by occurrence if provided
+      if (!matchingAsset && initialSelectedOccurrence !== undefined && initialSelectedOccurrence !== null) {
+        const candidates = assets.filter(a => urlsMatch(a.url, initialSelectedUrl));
+        matchingAsset = candidates.find(a => a.occurrence === initialSelectedOccurrence) || candidates[0];
+      }
       
       if (!matchingAsset) {
         // Try matching by picsum ID (e.g., /id/123/ should match /id/123/)
@@ -175,7 +215,7 @@ export default function AssetsModal({
       // Clear the selection after handling
       onClearSelection?.();
     }
-  }, [isOpen, initialSelectedUrl, assets, onClearSelection]);
+  }, [isOpen, initialSelectedUrl, initialSelectedOccurrence, assets, onClearSelection]);
 
   // Load initial images when modal opens or tab changes to browse
   useEffect(() => {
@@ -199,7 +239,7 @@ export default function AssetsModal({
     console.log('[AssetsModal] New URL:', newUrl);
     console.log('[AssetsModal] Code length:', code.length);
     
-    const newCode = replaceAssetInCode(code, asset.url, newUrl);
+    const newCode = replaceAssetInCode(code, asset.sourceUrl || asset.url, newUrl, asset.occurrence);
     
     const codeChanged = newCode !== code;
     console.log('[AssetsModal] Code changed:', codeChanged);
@@ -208,7 +248,7 @@ export default function AssetsModal({
       onCodeUpdate(newCode);
       
       // Update local state immediately
-      const updatedAsset = { ...asset, url: newUrl };
+      const updatedAsset = { ...asset, url: newUrl, sourceUrl: newUrl };
       setAssets(prev => prev.map(a => 
         a.id === asset.id ? updatedAsset : a
       ));
@@ -684,3 +724,4 @@ export default function AssetsModal({
     </AnimatePresence>
   );
 }
+

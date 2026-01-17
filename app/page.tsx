@@ -1216,11 +1216,12 @@ function ReplayToolContent() {
   // Assets modal state
   const [showAssetsModal, setShowAssetsModal] = useState(false);
   const [selectedAssetUrl, setSelectedAssetUrl] = useState<string | null>(null);
+  const [selectedAssetOccurrence, setSelectedAssetOccurrence] = useState<number | null>(null);
   
   // Helper to inject image click handlers into preview HTML
   const injectAssetClickHandler = useCallback((html: string): string => {
     // Simple CSS - outline without offset to not break layout
-    const CSS_STYLES = 'img { cursor: pointer !important; outline: 3px solid #FF6E3C !important; outline-offset: -3px !important; } img:hover { outline-width: 4px !important; filter: brightness(1.1) !important; } [data-has-bg-image] { cursor: pointer !important; outline: 3px solid #FF6E3C !important; outline-offset: -3px !important; } [data-has-bg-image]:hover { outline-width: 4px !important; }';
+    const CSS_STYLES = 'img { cursor: pointer !important; outline: 2px dashed #FF6E3C !important; outline-offset: -2px !important; } img:hover { outline-width: 3px !important; filter: brightness(1.06) !important; } [data-has-bg-image] { cursor: pointer !important; outline: 2px dashed #FF6E3C !important; outline-offset: -2px !important; } [data-has-bg-image]:hover { outline-width: 3px !important; }';
     
     const script = `<script>
 (function() {
@@ -1255,6 +1256,26 @@ function ReplayToolContent() {
       console.log('[Assets] Marked ' + count + ' elements with background images');
     }
     
+    function buildAssetIndex() {
+      var urlCounts = {};
+      document.querySelectorAll('img').forEach(function(img) {
+        var url = img.currentSrc || img.src;
+        if (!url || url.includes('.svg') || url.startsWith('data:')) return;
+        var count = urlCounts[url] || 0;
+        img.setAttribute('data-asset-url', url);
+        img.setAttribute('data-asset-occurrence', String(count));
+        urlCounts[url] = count + 1;
+      });
+      document.querySelectorAll('[data-has-bg-image]').forEach(function(el) {
+        var url = el.getAttribute('data-bg-url');
+        if (!url || url.includes('.svg') || url.startsWith('data:')) return;
+        var count = urlCounts[url] || 0;
+        el.setAttribute('data-asset-url', url);
+        el.setAttribute('data-asset-occurrence', String(count));
+        urlCounts[url] = count + 1;
+      });
+    }
+    
     function countImages() {
       var imgs = document.querySelectorAll('img');
       var bgs = document.querySelectorAll('[data-has-bg-image]');
@@ -1267,6 +1288,7 @@ function ReplayToolContent() {
       var style = document.getElementById('assets-selector-styles');
       if (enabled) {
         markBackgroundImages();
+        buildAssetIndex();
         style.textContent = ${JSON.stringify(CSS_STYLES)};
         var total = countImages();
         console.log('[Assets] Selector enabled - ' + total + ' images clickable');
@@ -1288,11 +1310,13 @@ function ReplayToolContent() {
       
       var target = e.target;
       var url = null;
+      var occurrence = null;
       
       // Check if clicked element or parent is an img tag
       var img = target.tagName === 'IMG' ? target : target.closest('img');
       if (img && img.src && !img.src.includes('.svg') && !img.src.startsWith('data:')) {
-        url = img.src;
+        url = img.currentSrc || img.src;
+        occurrence = img.getAttribute('data-asset-occurrence');
         console.log('[Assets] Clicked img tag:', url);
       }
       
@@ -1303,6 +1327,7 @@ function ReplayToolContent() {
         while (el && el !== document.body) {
           if (el.hasAttribute('data-bg-url')) {
             url = el.getAttribute('data-bg-url');
+            occurrence = el.getAttribute('data-asset-occurrence');
             console.log('[Assets] Clicked element with marked bg:', url);
             break;
           }
@@ -1318,6 +1343,7 @@ function ReplayToolContent() {
               var match = bg.match(/url\\(["']?([^"')]+)["']?\\)/);
               if (match && match[1] && !match[1].includes('.svg') && !match[1].startsWith('data:')) {
                 url = match[1];
+                occurrence = el.getAttribute('data-asset-occurrence');
                 console.log('[Assets] Clicked element with computed bg:', url);
                 break;
               }
@@ -1331,7 +1357,7 @@ function ReplayToolContent() {
         e.preventDefault();
         e.stopPropagation();
         console.log('[Assets] Sending ASSET_CLICK:', url);
-        window.parent.postMessage({ type: 'ASSET_CLICK', url: url }, '*');
+        window.parent.postMessage({ type: 'ASSET_CLICK', url: url, occurrence: occurrence ? parseInt(occurrence, 10) : null }, '*');
       }
     }, true);
     
@@ -1371,6 +1397,9 @@ function ReplayToolContent() {
       if (event.data?.type === 'ASSET_CLICK' && event.data?.url) {
         console.log('[Assets] Image clicked in preview:', event.data.url);
         setSelectedAssetUrl(event.data.url);
+        setSelectedAssetOccurrence(
+          typeof event.data.occurrence === "number" ? event.data.occurrence : null
+        );
         setShowAssetsModal(true);
       }
       if (event.data?.type === 'ASSET_HANDLER_READY') {
@@ -3072,6 +3101,45 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
     setPendingTextEdits([]);
     setIsDirectEditMode(false);
   }, [pendingTextEdits, editableCode, activeGeneration, flowNodes, flowEdges, styleInfo]);
+
+  const handleAssetCodeUpdate = useCallback((newCode: string) => {
+    if (!newCode) return;
+    setEditableCode(newCode);
+    setDisplayedCode(newCode);
+    setGeneratedCode(newCode);
+    setPreviewUrl(prev => {
+      if (prev) URL.revokeObjectURL(prev);
+      return createPreviewUrl(newCode);
+    });
+
+    const files = generateFileStructure(newCode, flowNodes, codeMode);
+    setGeneratedFiles(files);
+
+    if (activeGeneration) {
+      const versionLabel = "Asset update";
+      const updatedGen = {
+        ...activeGeneration,
+        code: newCode,
+        versions: [
+          ...(activeGeneration.versions || []),
+          {
+            id: generateId(),
+            timestamp: Date.now(),
+            label: versionLabel,
+            code: newCode,
+            flowNodes,
+            flowEdges,
+            styleInfo,
+          },
+        ],
+      };
+      setActiveGeneration(updatedGen);
+      setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
+      saveGenerationToSupabase(updatedGen);
+    }
+  }, [activeGeneration, codeMode, createPreviewUrl, flowEdges, flowNodes, saveGenerationToSupabase, styleInfo]);
+
+  const assetCode = editableCode || displayedCode || generatedCode || "";
 
   // Build architecture from code - better positioning with no overlaps
   const buildArchitectureLive = async (code: string) => {
@@ -7466,6 +7534,19 @@ Try these prompts in Cursor or v0:
       <div className="gradient-bg" />
       <div className="grain-overlay" />
       <div className="vignette" />
+
+      <AssetsModal
+        isOpen={showAssetsModal}
+        onClose={() => setShowAssetsModal(false)}
+        code={assetCode}
+        onCodeUpdate={handleAssetCodeUpdate}
+        initialSelectedUrl={selectedAssetUrl}
+        initialSelectedOccurrence={selectedAssetOccurrence}
+        onClearSelection={() => {
+          setSelectedAssetUrl(null);
+          setSelectedAssetOccurrence(null);
+        }}
+      />
       
       {/* Desktop Header removed - Logo now in sidebar, tabs in work area */}
       
@@ -10330,9 +10411,17 @@ export default function GeneratedPage() {
                             if (!fromNode || !toNode) return null;
                             // Hide edges to hidden detected/possible nodes
                             if (!showPossiblePaths && (toNode.status === "detected" || toNode.status === "possible")) return null;
-                            const x1 = fromNode.x + 90;
-                            const y1 = fromNode.y + (showStructureInFlow ? 100 : 60);
-                            const x2 = toNode.x + 90;
+                            
+                            // Calculate dynamic dimensions based on preview state
+                            const fromHasPreview = showPreviewsInFlow && (fromNode.status === "observed" || fromNode.status === "added");
+                            const toHasPreview = showPreviewsInFlow && (toNode.status === "observed" || toNode.status === "added");
+                            const fromWidth = fromHasPreview ? 280 : 180;
+                            const toWidth = toHasPreview ? 280 : 180;
+                            const fromHeight = (fromHasPreview ? 160 : 0) + (showStructureInFlow ? 100 : 70);
+                            
+                            const x1 = fromNode.x + fromWidth / 2;
+                            const y1 = fromNode.y + fromHeight;
+                            const x2 = toNode.x + toWidth / 2;
                             const y2 = toNode.y;
                             const midX = (x1 + x2) / 2;
                             const midY = (y1 + y2) / 2;
@@ -10404,58 +10493,71 @@ export default function GeneratedPage() {
                           const Icon = typeIcons[node.type] || Layout;
                           const isDragging = draggingNodeId === node.id;
                           
-                          // Confidence-based styling - "added" looks like "observed" (green) since they're active
-                          const confidenceStyles: Record<string, string> = {
-                            observed: "border-solid border-emerald-500/40 bg-[#0a0a0a]",
-                            detected: "border-solid border-amber-500/30 bg-[#0a0a0a]",
-                            possible: "border-dashed border-white/20 bg-[#0a0a0a]/50",
-                            added: "border-solid border-emerald-500/40 bg-[#0a0a0a]"
-                          };
-                          
                           // Get code for this node's preview
                           const nodeFile = generatedFiles.find(f => f.sourceNodeId === node.id);
                           const nodePreviewCode = nodeFile?.content || (node.id === "home" || node.name.toLowerCase() === "home" ? editableCode : null);
                           const hasPreview = showPreviewsInFlow && (isObserved || isAdded) && nodePreviewCode;
                           
+                          // Dynamic width based on preview state
+                          const nodeWidth = hasPreview ? 280 : 180;
+                          const previewHeight = hasPreview ? 160 : 0;
+                          
                           return (
                             <div 
                               key={node.id}
                               className={cn(
-                                "absolute rounded-xl border backdrop-blur-sm select-none transition-all",
-                                hasPreview ? "w-56" : "w-44",
-                                confidenceStyles[node.status] || confidenceStyles.detected,
-                                selectedFlowNode === node.id && "ring-1 ring-[#FF6E3C]/50 border-[#FF6E3C]/30",
-                                isDragging ? "cursor-grabbing shadow-2xl z-50 scale-[1.02]" : "hover:border-white/30"
+                                "absolute select-none transition-all group/flownode",
+                                "rounded-2xl overflow-hidden",
+                                "shadow-xl shadow-black/30",
+                                isDragging ? "cursor-grabbing z-50 scale-[1.02]" : "hover:scale-[1.01]",
+                                selectedFlowNode === node.id && "ring-2 ring-[#FF6E3C]/60"
                               )}
                               style={{ 
                                 left: node.x, 
                                 top: node.y,
-                                transition: isDragging ? 'none' : 'border-color 0.15s, box-shadow 0.15s, width 0.2s',
-                                opacity: isPossible ? 0.6 : isDetected ? 0.8 : 1
+                                width: nodeWidth,
+                                transition: isDragging ? 'none' : 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                                opacity: isPossible ? 0.5 : isDetected ? 0.75 : 1,
+                                background: isObserved || isAdded 
+                                  ? 'linear-gradient(180deg, rgba(16,185,129,0.08) 0%, rgba(10,10,10,0.98) 100%)'
+                                  : isDetected
+                                  ? 'linear-gradient(180deg, rgba(245,158,11,0.06) 0%, rgba(10,10,10,0.98) 100%)'
+                                  : 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(10,10,10,0.95) 100%)',
+                                border: isObserved || isAdded
+                                  ? '1px solid rgba(16,185,129,0.3)'
+                                  : isDetected
+                                  ? '1px solid rgba(245,158,11,0.25)'
+                                  : '1px dashed rgba(255,255,255,0.15)'
                               }}
                               title={isObserved ? "Shown and confirmed in the video recording" : isDetected ? "Present in navigation, but not shown in video" : "Reachable from observed paths, not yet confirmed"}
                             >
-                              {/* Iframe Preview */}
+                              {/* Iframe Preview - Full Width */}
                               <AnimatePresence>
                                 {hasPreview && nodePreviewCode && (
                                   <motion.div
                                     initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: 120, opacity: 1 }}
+                                    animate={{ height: previewHeight, opacity: 1 }}
                                     exit={{ height: 0, opacity: 0 }}
-                                    className="relative overflow-hidden rounded-t-xl bg-white"
+                                    transition={{ duration: 0.2, ease: "easeOut" }}
+                                    className="relative w-full overflow-hidden bg-gradient-to-b from-white to-gray-100"
                                   >
                                     <div className="absolute inset-0 overflow-hidden">
                                       <iframe
                                         srcDoc={nodePreviewCode}
-                                        className="w-[400%] h-[400%] origin-top-left pointer-events-none"
-                                        style={{ transform: 'scale(0.25)' }}
+                                        className="pointer-events-none"
+                                        style={{ 
+                                          width: `${nodeWidth * 4}px`,
+                                          height: `${previewHeight * 4}px`,
+                                          transform: 'scale(0.25)',
+                                          transformOrigin: 'top left'
+                                        }}
                                         sandbox="allow-scripts"
                                         title={`Preview: ${node.name}`}
                                       />
                                     </div>
                                     {/* Overlay for click handling */}
                                     <div 
-                                      className="absolute inset-0 bg-transparent hover:bg-black/10 transition-colors cursor-pointer"
+                                      className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent hover:from-black/30 transition-colors cursor-pointer"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleFlowNodeCodeFocus(node.id);
@@ -10463,8 +10565,19 @@ export default function GeneratedPage() {
                                       }}
                                     />
                                     {/* Status badge */}
-                                    <div className="absolute top-1 right-1 px-1.5 py-0.5 rounded text-[8px] font-medium bg-black/60 text-white/80">
+                                    <div className={cn(
+                                      "absolute top-2 right-2 px-2 py-0.5 rounded-full text-[9px] font-semibold backdrop-blur-md",
+                                      isObserved 
+                                        ? "bg-emerald-500/80 text-white" 
+                                        : "bg-[#FF6E3C]/80 text-white"
+                                    )}>
                                       {isObserved ? "observed" : "generated"}
+                                    </div>
+                                    {/* Play/View overlay icon */}
+                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/flownode:opacity-100 transition-opacity pointer-events-none">
+                                      <div className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
+                                        <Eye className="w-5 h-5 text-white" />
+                                      </div>
                                     </div>
                                   </motion.div>
                                 )}
@@ -10473,8 +10586,8 @@ export default function GeneratedPage() {
                               {/* Node header - DRAGGABLE */}
                               <div 
                                 className={cn(
-                                  "pt-4 px-3 pb-3 border-b cursor-grab active:cursor-grabbing group/nodeheader relative",
-                                  isPossible ? "border-white/5 border-dashed" : "border-white/5",
+                                  "px-4 py-3 cursor-grab active:cursor-grabbing group/nodeheader relative",
+                                  hasPreview && "border-t border-white/5",
                                   draggingNodeId === node.id && "cursor-grabbing"
                                 )}
                                 onMouseDown={(e) => {
@@ -10509,14 +10622,14 @@ export default function GeneratedPage() {
                                 }}
                               >
                                 {/* Edit/Delete buttons on hover */}
-                                <div className="flow-node-action absolute top-1 right-1 flex items-center gap-0.5 opacity-0 group-hover/nodeheader:opacity-100 transition-opacity z-10">
+                                <div className="flow-node-action absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover/nodeheader:opacity-100 transition-opacity z-10">
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setFlowNodeRenameValue(node.name);
                                       setFlowNodeModal({ type: "rename", nodeId: node.id, nodeName: node.name });
                                     }}
-                                    className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
+                                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
                                     title="Rename node"
                                   >
                                     <Pencil className="w-3 h-3" />
@@ -10526,29 +10639,40 @@ export default function GeneratedPage() {
                                       e.stopPropagation();
                                       setFlowNodeModal({ type: "delete", nodeId: node.id, nodeName: node.name });
                                     }}
-                                    className="p-1 rounded hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-colors"
+                                    className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400/60 hover:text-red-400 transition-colors"
                                     title="Delete node"
                                   >
                                     <Trash2 className="w-3 h-3" />
                                   </button>
                                 </div>
                                 
-                                <div className="flex items-center gap-2 pr-12">
-                                  {/* Confidence indicator */}
-                                  {isObserved && <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" title="Observed" />}
-                                  {isDetected && <div className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" title="Detected" />}
-                                  {isPossible && <div className="w-1.5 h-1.5 rounded-full bg-white/40 flex-shrink-0" title="Possible" />}
-                                  <Icon className={cn("w-4 h-4 flex-shrink-0", 
-                                    isObserved ? "text-emerald-400" : isDetected ? "text-amber-400" : "text-white/40"
-                                  )} />
-                                  <span className={cn(
-                                    "text-sm font-semibold truncate", 
-                                    isPossible ? "text-white/50 italic" : isDetected ? "text-white/70" : "text-white/90"
-                                  )} title={node.name}>{node.name}</span>
+                                <div className="flex items-center gap-2.5 pr-16">
+                                  {/* Status indicator with glow */}
+                                  <div className={cn(
+                                    "w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0",
+                                    isObserved || isAdded 
+                                      ? "bg-emerald-500/20 text-emerald-400" 
+                                      : isDetected 
+                                      ? "bg-amber-500/20 text-amber-400" 
+                                      : "bg-white/5 text-white/40"
+                                  )}>
+                                    <Icon className="w-4 h-4" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className={cn(
+                                        "text-sm font-semibold truncate", 
+                                        isPossible ? "text-white/50 italic" : isDetected ? "text-white/70" : "text-white"
+                                      )} title={node.name}>{node.name}</span>
+                                      {/* Status dot */}
+                                      {isObserved && <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" title="Observed" />}
+                                      {isAdded && <div className="w-2 h-2 rounded-full bg-[#FF6E3C] flex-shrink-0" title="Generated" />}
+                                    </div>
+                                    {node.description && (
+                                      <p className={cn("text-[10px] mt-0.5 line-clamp-1", isPossible ? "text-white/25" : isDetected ? "text-white/30" : "text-white/40")}>{node.description}</p>
+                                    )}
+                                  </div>
                                 </div>
-                                {node.description && (
-                                  <p className={cn("text-[10px] mt-1 line-clamp-2", isPossible ? "text-white/25" : isDetected ? "text-white/30" : "text-white/40")}>{node.description}</p>
-                                )}
                               </div>
                               
                               {/* Structure overlay (when toggle is ON) */}
@@ -10560,15 +10684,14 @@ export default function GeneratedPage() {
                                     exit={{ height: 0, opacity: 0 }}
                                     className="overflow-hidden"
                                   >
-                                    <div className="p-2 bg-white/[0.02]">
-                                      <div className="flex items-center gap-1.5 mb-1.5">
+                                    <div className="px-4 py-2 bg-white/[0.02] border-t border-white/5">
+                                      <div className="flex items-center gap-1.5 mb-2">
                                         <GitBranch className="w-3 h-3 text-white/30" />
-                                        <span className="text-[9px] text-white/30 uppercase tracking-wider">Components</span>
+                                        <span className="text-[9px] text-white/30 uppercase tracking-wider font-medium">Components</span>
                                       </div>
-                                      <div className="space-y-1">
+                                      <div className="flex flex-wrap gap-1">
                                         {node.components.map((comp, i) => (
-                                          <div key={i} className="flex items-center gap-1.5 text-[10px] text-white/50">
-                                            <div className="w-1 h-1 rounded-full bg-[#FF6E3C]/50" />
+                                          <div key={i} className="px-2 py-0.5 rounded-full bg-white/5 text-[9px] text-white/50">
                                             {comp}
                                           </div>
                                         ))}
@@ -10579,16 +10702,16 @@ export default function GeneratedPage() {
                               </AnimatePresence>
                               
                               {/* Action buttons - CTAs based on status */}
-                              <div className="flex items-center gap-1 p-2 border-t border-white/5">
+                              <div className="flex items-center gap-2 px-3 py-2.5 border-t border-white/5">
                                 {(isObserved || isAdded) ? (
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleFlowNodeCodeFocus(node.id);
                                     }}
-                                    className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-[9px] bg-white/5 hover:bg-white/10 text-white/50 hover:text-white/70 transition-colors"
+                                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[10px] font-medium bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/90 transition-all border border-white/5 hover:border-white/10"
                                   >
-                                    <Code className="w-3 h-3" />
+                                    <Code className="w-3.5 h-3.5" />
                                     View Code
                                   </button>
                                 ) : isDetected ? (
@@ -10606,12 +10729,12 @@ export default function GeneratedPage() {
                                       setShowFloatingEdit(true);
                                     }}
                                     disabled={isEditing}
-                                    className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-[9px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-400/80 hover:text-amber-400 transition-colors disabled:opacity-50"
+                                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[10px] font-medium bg-gradient-to-r from-amber-500/20 to-amber-500/10 hover:from-amber-500/30 hover:to-amber-500/20 text-amber-400 hover:text-amber-300 transition-all border border-amber-500/20 hover:border-amber-500/30 disabled:opacity-50"
                                     title={!user || isDemoMode ? "Sign up to reconstruct" : "Reconstruct from observed patterns"}
                                   >
-                                    <Plus className="w-3 h-3" />
+                                    <Plus className="w-3.5 h-3.5" />
                                     Reconstruct
-                                    {(!user || isDemoMode) && <Lock className="w-2.5 h-2.5 ml-0.5" />}
+                                    {(!user || isDemoMode) && <Lock className="w-3 h-3 ml-0.5 opacity-70" />}
                                   </button>
                                 ) : (
                                   <button
@@ -10628,31 +10751,33 @@ export default function GeneratedPage() {
                                       setShowFloatingEdit(true);
                                     }}
                                     disabled={isEditing}
-                                    className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-[9px] bg-white/10 hover:bg-white/15 text-white/50 hover:text-white/70 transition-colors disabled:opacity-50"
+                                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[10px] font-medium bg-white/5 hover:bg-white/10 text-white/40 hover:text-white/60 transition-all border border-dashed border-white/10 hover:border-white/20 disabled:opacity-50"
                                     title={!user || isDemoMode ? "Sign up to generate" : "Generate flow continuation"}
                                   >
-                                    <Plus className="w-3 h-3" />
+                                    <Plus className="w-3.5 h-3.5" />
                                     Generate
-                                    {(!user || isDemoMode) && <Lock className="w-2.5 h-2.5 ml-0.5" />}
+                                    {(!user || isDemoMode) && <Lock className="w-3 h-3 ml-0.5 opacity-70" />}
                                   </button>
                                 )}
                               </div>
                               
-                              {/* Status badge - centered on top with more spacing */}
-                              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
-                                <span className={cn(
-                                  "text-[7px] px-2 py-0.5 rounded-full bg-[#0a0a0a] border capitalize whitespace-nowrap",
-                                  isObserved 
-                                    ? "border-emerald-500/30 text-emerald-400/70" 
-                                    : isAdded
-                                    ? "border-emerald-500/30 text-emerald-400/70"
-                                    : isDetected
-                                    ? "border-amber-500/30 text-amber-400/70"
-                                    : "border-dashed border-white/10 text-white/30 italic"
-                                )}>
-                                  {isObserved ? "observed" : isAdded ? "added" : isDetected ? "detected" : "possible"}
-                                </span>
-                              </div>
+                              {/* Status badge - top center */}
+                              {!hasPreview && (
+                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+                                  <span className={cn(
+                                    "text-[8px] px-2.5 py-1 rounded-full capitalize whitespace-nowrap font-medium shadow-lg",
+                                    isObserved 
+                                      ? "bg-emerald-500/90 text-white" 
+                                      : isAdded
+                                      ? "bg-[#FF6E3C]/90 text-white"
+                                      : isDetected
+                                      ? "bg-amber-500/80 text-white"
+                                      : "bg-white/10 text-white/50 border border-dashed border-white/20"
+                                  )}>
+                                    {isObserved ? "observed" : isAdded ? "generated" : isDetected ? "detected" : "possible"}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           );
                         })}
@@ -12923,3 +13048,87 @@ export default function GeneratedPage() {
                             // Code was changed
                             const responseMsg = analyzeCodeChanges(editableCode, result.code, currentInput);
                             setEditableCode(result.code); setDisplayedCode(result.code); setGeneratedCode(result.code);
+                            setPreviewUrl(createPreviewUrl(result.code));
+                            setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: responseMsg, timestamp: Date.now() }]);
+                            if (activeGeneration) {
+                              const versionLabel = generateVersionLabel(currentInput);
+                              const updatedGen = { 
+                                ...activeGeneration, 
+                                code: result.code, 
+                                versions: [...(activeGeneration.versions || []), { 
+                                  id: generateId(), 
+                                  timestamp: Date.now(), 
+                                  label: versionLabel, 
+                                  code: result.code, 
+                                  flowNodes, 
+                                  flowEdges, 
+                                  styleInfo 
+                                }] 
+                              };
+                              setActiveGeneration(updatedGen); 
+                              setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
+                              saveGenerationToSupabase(updatedGen);
+                            }
+                          } else if (!result?.cancelled) {
+                            setChatMessages(prev => [...prev, { 
+                              id: generateId(), 
+                              role: "assistant", 
+                              content: `Error: ${result?.error || "Something went wrong. Please try again with a different request."}`, 
+                              timestamp: Date.now() 
+                            }]);
+                          }
+                        } catch (error) {
+                          if (!(error instanceof Error && error.name === 'AbortError')) {
+                            setChatMessages(prev => [...prev, { 
+                              id: generateId(), 
+                              role: "assistant", 
+                              content: `Error: ${error instanceof Error ? error.message : "Unknown error occurred"}`, 
+                              timestamp: Date.now() 
+                            }]);
+                          }
+                        } finally {
+                          setIsEditing(false);
+                          setStreamingStatus(null);
+                          setStreamingCode(null);
+                          setStreamingLines(0);
+                          setEditImages([]);
+                        }
+                      }
+                    }}
+                    placeholder={isPlanMode ? "Plan and discuss changes..." : "Ask Replay to edit..."}
+                    rows={1}
+                    className="w-full px-3 py-2.5 bg-transparent text-[11px] text-white/80 placeholder:text-white/25 resize-none focus:outline-none min-h-[36px]"
+                  />
+                  
+                  {/* Attachments preview - images only on mobile */}
+                  {editImages.length > 0 && (
+                    <div className="px-3 pb-2 flex gap-1.5 flex-wrap">
+                      {editImages.map((img) => (
+                        <div key={img.id} className="relative group">
+                          <img src={img.url} alt="" className="w-8 h-8 rounded object-cover border border-white/10" />
+                          <button onClick={() => setEditImages(prev => prev.filter(i => i.id !== img.id))} className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100"><X className="w-2 h-2" /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    if (!chatInput.trim() || !editableCode) return;
+                    const fakeEvent = { key: "Enter", shiftKey: false, preventDefault: () => {} } as any;
+                    const textarea = document.activeElement as HTMLTextAreaElement | null;
+                    textarea?.dispatchEvent?.(new KeyboardEvent("keydown", { key: "Enter" }));
+                  }}
+                  className="p-2 rounded-lg bg-[#FF6E3C]/10 border border-[#FF6E3C]/20 text-[#FF6E3C] hover:bg-[#FF6E3C]/20 transition-colors"
+                  title="Send"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            )}
+          </div>
+      )}
+    </div>
+  );
+}
