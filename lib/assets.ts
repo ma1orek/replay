@@ -5,12 +5,14 @@
 export interface ExtractedAsset {
   id: string;
   url: string;
+  sourceUrl?: string;
   type: "img" | "background";
   width?: number;
   height?: number;
   alt?: string;
   element?: string; // The full HTML element for context
   index: number; // Position in code for replacement
+  occurrence?: number; // nth occurrence of the same URL in code
 }
 
 /**
@@ -18,6 +20,17 @@ export interface ExtractedAsset {
  */
 export function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function normalizeAssetUrl(url: string): string {
+  if (!url) return url;
+  try {
+    if (url.startsWith("http")) {
+      const parsed = new URL(url);
+      return parsed.pathname + parsed.search;
+    }
+  } catch (e) {}
+  return url;
 }
 
 /**
@@ -61,8 +74,21 @@ function isValidImageUrl(url: string): boolean {
   if (url.endsWith('.svg')) return false;
   if (url.includes('gradient')) return false;
   if (url.startsWith('#')) return false;
-  if (url.length < 10) return false;
+  if (url.length < 3) return false;
   return true;
+}
+
+function isLikelyImageUrl(url: string): boolean {
+  if (!isValidImageUrl(url)) return false;
+  const clean = url.split("?")[0].toLowerCase();
+  if (clean.match(/\.(jpg|jpeg|png|gif|webp|avif|bmp|tiff?)$/i)) return true;
+  if (url.includes("picsum") || url.includes("unsplash") || url.includes("pravatar") || url.includes("placeholder")) {
+    return true;
+  }
+  if (url.startsWith("/") || url.startsWith("./") || url.startsWith("../")) {
+    return clean.includes(".");
+  }
+  return false;
 }
 
 /**
@@ -71,17 +97,21 @@ function isValidImageUrl(url: string): boolean {
  */
 export function extractAssetsFromCode(code: string): ExtractedAsset[] {
   const assets: ExtractedAsset[] = [];
-  const seenUrls = new Set<string>();
+  const seenMatches = new Set<string>();
+  const urlOccurrences = new Map<string, number>();
   let assetIndex = 0;
 
-  const addAsset = (url: string, type: "img" | "background", element: string, alt?: string) => {
+  const addAsset = (url: string, type: "img" | "background", element: string, alt?: string, position?: number) => {
     // Normalize URL - remove extra whitespace and quotes
     url = url.trim().replace(/^["']|["']$/g, '');
     if (!isValidImageUrl(url)) return;
-    if (seenUrls.has(url)) return;
-    seenUrls.add(url);
+    const matchKey = position !== undefined ? `${position}|${url}` : `${url}|${element}`;
+    if (seenMatches.has(matchKey)) return;
+    seenMatches.add(matchKey);
     
     const dims = extractDimensions(url);
+    const occurrence = urlOccurrences.get(url) ?? 0;
+    urlOccurrences.set(url, occurrence + 1);
     assets.push({
       id: `${type}-${assetIndex}`,
       url,
@@ -91,6 +121,7 @@ export function extractAssetsFromCode(code: string): ExtractedAsset[] {
       alt,
       element,
       index: assetIndex++,
+      occurrence,
     });
   };
 
@@ -101,7 +132,13 @@ export function extractAssetsFromCode(code: string): ExtractedAsset[] {
     const fullElement = match[0];
     const url = match[1];
     const altMatch = fullElement.match(/alt=["']([^"']*)["']/i);
-    addAsset(url, "img", fullElement, altMatch?.[1]);
+    addAsset(url, "img", fullElement, altMatch?.[1], match.index);
+  }
+
+  // 1b. Extract JSX/TSX <img> or <Image> with src={"..."}
+  const imgSrcJsxRegex = /<(?:img|Image)[^>]*\ssrc=\{["'`]([^"'`]+)["'`]\}[^>]*>/gi;
+  while ((match = imgSrcJsxRegex.exec(code)) !== null) {
+    addAsset(match[1], "img", match[0], undefined, match.index);
   }
 
   // 2. Extract srcset URLs
@@ -110,79 +147,100 @@ export function extractAssetsFromCode(code: string): ExtractedAsset[] {
     const srcset = match[1];
     const element = match[0];
     const urls = srcset.split(',').map(s => s.trim().split(/\s+/)[0]);
-    urls.forEach(url => addAsset(url, "img", element));
+    urls.forEach(url => addAsset(url, "img", element, undefined, match?.index));
+  }
+
+  // 2b. JSX/TSX srcSet={"..."}
+  const srcSetJsxRegex = /srcSet=\{["'`]([^"'`]+)["'`]\}/gi;
+  while ((match = srcSetJsxRegex.exec(code)) !== null) {
+    const srcset = match[1];
+    const element = match[0];
+    const urls = srcset.split(',').map(s => s.trim().split(/\s+/)[0]);
+    urls.forEach(url => addAsset(url, "img", element, undefined, match?.index));
   }
 
   // 3. Extract data-src, data-image, data-bg (lazy loading patterns)
   const dataAttrRegex = /data-(?:src|image|bg|background|lazy)=["']([^"']+)["']/gi;
   while ((match = dataAttrRegex.exec(code)) !== null) {
-    addAsset(match[1], "img", match[0]);
+    addAsset(match[1], "img", match[0], undefined, match.index);
   }
 
   // 4. Extract poster attribute from video tags
   const posterRegex = /poster=["']([^"']+)["']/gi;
   while ((match = posterRegex.exec(code)) !== null) {
-    addAsset(match[1], "img", match[0]);
+    addAsset(match[1], "img", match[0], undefined, match.index);
   }
 
   // 5. Extract background-image in CSS (both in <style> blocks and inline)
   const bgRegex = /background(?:-image)?:\s*url\(["']?([^"')]+)["']?\)/gi;
   while ((match = bgRegex.exec(code)) !== null) {
-    addAsset(match[1], "background", match[0]);
+    addAsset(match[1], "background", match[0], undefined, match.index);
   }
 
   // 6. Extract style="...background..." inline styles with multiple properties
   const inlineStyleRegex = /style=["'][^"']*url\(["']?([^"')]+)["']?\)[^"']*["']/gi;
   while ((match = inlineStyleRegex.exec(code)) !== null) {
-    addAsset(match[1], "background", match[0]);
+    addAsset(match[1], "background", match[0], undefined, match.index);
+  }
+
+  // 6b. Extract JSX style backgroundImage: "url(...)"
+  const jsxBgImageRegex = /backgroundImage\s*:\s*["'`]url\(([^"'`]+)\)["'`]/gi;
+  while ((match = jsxBgImageRegex.exec(code)) !== null) {
+    addAsset(match[1], "background", match[0], undefined, match.index);
+  }
+
+  // 6c. Extract Tailwind bg-[url(...)] class patterns
+  const tailwindBgRegex = /bg-\[url\((?:'|")?([^'")]+)(?:'|")?\)\]/gi;
+  while ((match = tailwindBgRegex.exec(code)) !== null) {
+    addAsset(match[1], "background", match[0], undefined, match.index);
   }
 
   // 7. Extract content: url() in CSS (used for ::before/::after)
   const contentUrlRegex = /content:\s*url\(["']?([^"')]+)["']?\)/gi;
   while ((match = contentUrlRegex.exec(code)) !== null) {
-    addAsset(match[1], "img", match[0]);
+    addAsset(match[1], "img", match[0], undefined, match.index);
   }
 
   // 8. Extract mask-image and -webkit-mask-image
   const maskRegex = /(?:-webkit-)?mask-image:\s*url\(["']?([^"')]+)["']?\)/gi;
   while ((match = maskRegex.exec(code)) !== null) {
-    addAsset(match[1], "img", match[0]);
+    addAsset(match[1], "img", match[0], undefined, match.index);
   }
 
   // 9. Extract list-style-image
   const listStyleRegex = /list-style-image:\s*url\(["']?([^"')]+)["']?\)/gi;
   while ((match = listStyleRegex.exec(code)) !== null) {
-    addAsset(match[1], "img", match[0]);
+    addAsset(match[1], "img", match[0], undefined, match.index);
   }
 
   // 10. Extract border-image
   const borderImageRegex = /border-image(?:-source)?:\s*url\(["']?([^"')]+)["']?\)/gi;
   while ((match = borderImageRegex.exec(code)) !== null) {
-    addAsset(match[1], "img", match[0]);
+    addAsset(match[1], "img", match[0], undefined, match.index);
   }
 
   // 11. Extract any URL that looks like an image (http/https ending in image extension)
   const imageUrlRegex = /["'](https?:\/\/[^"'\s]+\.(?:jpg|jpeg|png|gif|webp)(?:\?[^"'\s]*)?)["']/gi;
   while ((match = imageUrlRegex.exec(code)) !== null) {
-    addAsset(match[1], "img", match[0]);
+    addAsset(match[1], "img", match[0], undefined, match.index);
   }
 
   // 12. Extract Unsplash URLs (with photo ID pattern)
   const unsplashRegex = /["'](https?:\/\/images\.unsplash\.com\/[^"'\s]+)["']/gi;
   while ((match = unsplashRegex.exec(code)) !== null) {
-    addAsset(match[1], "img", match[0]);
+    addAsset(match[1], "img", match[0], undefined, match.index);
   }
 
   // 13. Extract Picsum URLs (any format including /id/X/)
   const picsumRegex = /["']?(https?:\/\/picsum\.photos\/[^"'\s\)]+)["']?/gi;
   while ((match = picsumRegex.exec(code)) !== null) {
-    addAsset(match[1], "img", match[0]);
+    addAsset(match[1], "img", match[0], undefined, match.index);
   }
 
   // 14. Extract Pravatar URLs (avatars)
   const pravatarRegex = /["']?(https?:\/\/i\.pravatar\.cc\/[^"'\s\)]+)["']?/gi;
   while ((match = pravatarRegex.exec(code)) !== null) {
-    addAsset(match[1], "img", match[0]);
+    addAsset(match[1], "img", match[0], undefined, match.index);
   }
 
   // 15. Extract source elements in picture tags
@@ -190,38 +248,34 @@ export function extractAssetsFromCode(code: string): ExtractedAsset[] {
   while ((match = sourceRegex.exec(code)) !== null) {
     const srcset = match[1];
     const urls = srcset.split(',').map(s => s.trim().split(/\s+/)[0]);
-    urls.forEach(url => addAsset(url, "img", match ? match[0] : ""));
+    urls.forEach(url => addAsset(url, "img", match ? match[0] : "", undefined, match?.index));
   }
 
   // 16. Extract object-fit images (often used with animations)
   const objectFitRegex = /<(?:img|div)[^>]*(?:object-fit|object-position)[^>]*src=["']([^"']+)["'][^>]*>/gi;
   while ((match = objectFitRegex.exec(code)) !== null) {
-    addAsset(match[1], "img", match[0]);
+    addAsset(match[1], "img", match[0], undefined, match.index);
   }
 
   // 17. Extract placeholder.com and similar placeholder services
   const placeholderRegex = /["'](https?:\/\/(?:via\.placeholder\.com|placehold\.co|placekitten\.com|loremflickr\.com)\/[^"'\s]+)["']/gi;
   while ((match = placeholderRegex.exec(code)) !== null) {
-    addAsset(match[1], "img", match[0]);
+    addAsset(match[1], "img", match[0], undefined, match.index);
   }
 
   // 18. Extract image-set() CSS function
   const imageSetRegex = /image-set\([^)]*url\(["']?([^"')]+)["']?\)/gi;
   while ((match = imageSetRegex.exec(code)) !== null) {
-    addAsset(match[1], "img", match[0]);
+    addAsset(match[1], "img", match[0], undefined, match.index);
   }
 
   // 19. Scan for any remaining URLs in url() that might have been missed
-  const anyUrlRegex = /url\(["']?(https?:\/\/[^"'\)]+)["']?\)/gi;
+  const anyUrlRegex = /url\(["']?([^"'\)]+)["']?\)/gi;
   while ((match = anyUrlRegex.exec(code)) !== null) {
     const url = match[1];
     // Only add if it looks like an image (has image extension or is from known image service)
-    if (url.match(/\.(jpg|jpeg|png|gif|webp|avif)/i) || 
-        url.includes('picsum') || 
-        url.includes('unsplash') || 
-        url.includes('pravatar') ||
-        url.includes('placeholder')) {
-      addAsset(url, "background", match[0]);
+    if (isLikelyImageUrl(url)) {
+      addAsset(url, "background", match[0], undefined, match.index);
     }
   }
 
@@ -236,12 +290,25 @@ export function extractAssetsFromCode(code: string): ExtractedAsset[] {
 export function replaceAssetInCode(
   code: string, 
   oldUrl: string, 
-  newUrl: string
+  newUrl: string,
+  occurrence?: number
 ): string {
   console.log('[Assets] Replacing:', oldUrl, '->', newUrl);
+
+  if (occurrence !== undefined && occurrence !== null) {
+    const replaced = replaceNthOccurrence(code, oldUrl, newUrl, occurrence);
+    if (replaced !== code) {
+      console.log('[Assets] Replaced by occurrence:', occurrence);
+      return replaced;
+    }
+  }
   
   // Escape special characters in the old URL for regex
   const escapedOldUrl = escapeRegex(oldUrl);
+  const normalizedOldUrl = normalizeAssetUrl(oldUrl);
+  const escapedNormalizedOldUrl = escapeRegex(normalizedOldUrl);
+  const encodedOldUrl = oldUrl.replace(/&/g, "&amp;");
+  const escapedEncodedOldUrl = escapeRegex(encodedOldUrl);
   
   // Replace ONLY the first occurrence for each pattern
   // This ensures we replace only the selected image, not all matching URLs
@@ -258,6 +325,27 @@ export function replaceAssetInCode(
   if (srcSingleRegex.test(code)) {
     console.log('[Assets] Found in src=\'\' - replacing');
     return code.replace(srcSingleRegex, `src='${newUrl}'`);
+  }
+
+  // Replace in JSX src={"..."}
+  const srcJsxDoubleRegex = new RegExp(`src=\\{"${escapedOldUrl}"\\}`);
+  if (srcJsxDoubleRegex.test(code)) {
+    console.log('[Assets] Found in src={"..."} - replacing');
+    return code.replace(srcJsxDoubleRegex, `src={"${newUrl}"}`);
+  }
+
+  // Replace in JSX src={'...'}
+  const srcJsxSingleRegex = new RegExp(`src=\\{'${escapedOldUrl}'\\}`);
+  if (srcJsxSingleRegex.test(code)) {
+    console.log('[Assets] Found in src={\'...\'} - replacing');
+    return code.replace(srcJsxSingleRegex, `src={'${newUrl}'}`);
+  }
+
+  // Replace in JSX src={`...`}
+  const srcJsxTemplateRegex = new RegExp(`src=\\{\\\`${escapedOldUrl}\\\`\\}`);
+  if (srcJsxTemplateRegex.test(code)) {
+    console.log('[Assets] Found in src={`...`} - replacing');
+    return code.replace(srcJsxTemplateRegex, `src={\`${newUrl}\`}`);
   }
   
   // Replace in background-image url() with double quotes
@@ -280,15 +368,56 @@ export function replaceAssetInCode(
     console.log('[Assets] Found in url() no quotes - replacing');
     return code.replace(bgNoQuotesRegex, `url(${newUrl})`);
   }
+
+  // Replace in JSX backgroundImage: "url(...)"
+  const bgImageJsxRegex = new RegExp(`backgroundImage\\s*:\\s*["'\`]url\\((["'\`]?)${escapedOldUrl}\\1\\)["'\`]`);
+  if (bgImageJsxRegex.test(code)) {
+    console.log('[Assets] Found in backgroundImage - replacing');
+    return code.replace(bgImageJsxRegex, `backgroundImage: "url(${newUrl})"`);
+  }
   
   // Try direct string replacement
   if (code.includes(oldUrl)) {
     console.log('[Assets] Found as plain string - replacing');
     return code.replace(oldUrl, newUrl);
   }
-  
+
+  if (normalizedOldUrl !== oldUrl && code.includes(normalizedOldUrl)) {
+    console.log('[Assets] Found normalized URL - replacing');
+    return code.replace(normalizedOldUrl, newUrl);
+  }
+
+  if (encodedOldUrl !== oldUrl && code.includes(encodedOldUrl)) {
+    console.log('[Assets] Found encoded URL - replacing');
+    return code.replace(encodedOldUrl, newUrl);
+  }
+
+  if (escapedNormalizedOldUrl && new RegExp(escapedNormalizedOldUrl).test(code)) {
+    console.log('[Assets] Found normalized URL regex - replacing');
+    return code.replace(new RegExp(escapedNormalizedOldUrl), newUrl);
+  }
+
+  if (escapedEncodedOldUrl && new RegExp(escapedEncodedOldUrl).test(code)) {
+    console.log('[Assets] Found encoded URL regex - replacing');
+    return code.replace(new RegExp(escapedEncodedOldUrl), newUrl);
+  }
+
   console.log('[Assets] URL not found in code!');
   console.log('[Assets] Looking for:', oldUrl.substring(0, 100));
+  return code;
+}
+
+function replaceNthOccurrence(code: string, oldStr: string, newStr: string, occurrence: number): string {
+  if (occurrence < 0) return code;
+  let fromIndex = 0;
+  for (let i = 0; i <= occurrence; i++) {
+    const idx = code.indexOf(oldStr, fromIndex);
+    if (idx === -1) return code;
+    if (i === occurrence) {
+      return code.slice(0, idx) + newStr + code.slice(idx + oldStr.length);
+    }
+    fromIndex = idx + oldStr.length;
+  }
   return code;
 }
 
@@ -481,3 +610,5 @@ export function getUnsplashUrlWithSize(
     return imageUrl;
   }
 }
+
+
