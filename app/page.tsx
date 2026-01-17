@@ -10393,10 +10393,10 @@ export default function GeneratedPage() {
                           transformOrigin: 'center center'
                         }}
                       >
-                        {/* Edge lines with semantic styling - Infinite canvas SVG */}
+                        {/* Edge lines with semantic styling */}
                         <svg 
-                          className="absolute pointer-events-none" 
-                          style={{ left: "-10000px", top: "-10000px", width: "40000px", height: "30000px" }}
+                          className="absolute pointer-events-none overflow-visible" 
+                          style={{ left: 0, top: 0, width: "100%", height: "100%", overflow: "visible" }}
                         >
                           <defs>
                             <marker id="flow-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
@@ -10419,9 +10419,9 @@ export default function GeneratedPage() {
                             if (!showPossiblePaths && (toNode.status === "detected" || toNode.status === "possible")) return null;
                             
                             // Fixed width for cleaner calculations
-                            const nodeWidth = 220;
+                            const nodeWidth = 200;
                             const fromHasPreview = showPreviewsInFlow && (fromNode.status === "observed" || fromNode.status === "added") && editableCode;
-                            const fromHeight = (fromHasPreview ? 120 : 0) + 90; // preview + content height
+                            const fromHeight = (fromHasPreview ? 100 : 0) + 70; // preview + content height
                             
                             const x1 = fromNode.x + nodeWidth / 2;
                             const y1 = fromNode.y + fromHeight;
@@ -10497,44 +10497,52 @@ export default function GeneratedPage() {
                           const Icon = typeIcons[node.type] || Layout;
                           const isDragging = draggingNodeId === node.id;
                           
-                          // For preview thumbnail, always use full editableCode (has all styles)
+                          // For preview thumbnail, use full editableCode but inject script to show correct page
                           const hasCode = (isObserved || isAdded) && editableCode;
                           const hasPreview = showPreviewsInFlow && hasCode;
                           
+                          // Create preview code with page navigation script
+                          const pageName = node.name.toLowerCase().replace(/\s+/g, '');
+                          const previewCode = hasPreview && editableCode ? 
+                            editableCode.replace('</body>', `<script>
+                              document.addEventListener('alpine:init', () => {
+                                Alpine.store('page', '${pageName}');
+                              });
+                              setTimeout(() => {
+                                if (window.Alpine && Alpine.store) {
+                                  const root = document.querySelector('[x-data]');
+                                  if (root && root._x_dataStack) {
+                                    root._x_dataStack[0].currentPage = '${pageName}';
+                                  }
+                                }
+                              }, 100);
+                            </script></body>`) : null;
+                          
                           // Fixed width for cleaner layout
-                          const nodeWidth = 220;
-                          const previewHeight = hasPreview ? 120 : 0;
+                          const nodeWidth = 200;
+                          const previewHeight = hasPreview ? 100 : 0;
                           
                           return (
                             <div 
                               key={node.id}
                               className={cn(
                                 "absolute select-none group/flownode",
-                                "rounded-2xl overflow-hidden",
-                                isDragging ? "cursor-grabbing z-50 scale-105" : "cursor-grab hover:scale-[1.02]",
-                                selectedFlowNode === node.id && "ring-2 ring-[#FF6E3C]"
+                                "rounded-xl overflow-hidden backdrop-blur-sm",
+                                isDragging ? "cursor-grabbing z-50" : "cursor-grab",
+                                selectedFlowNode === node.id && "ring-1 ring-[#FF6E3C]"
                               )}
                               style={{ 
                                 left: node.x, 
                                 top: node.y,
                                 width: nodeWidth,
-                                opacity: isPossible ? 0.4 : isDetected ? 0.85 : 1,
-                                background: isObserved || isAdded
-                                  ? 'linear-gradient(180deg, #111 0%, #0a0a0a 100%)'
-                                  : isDetected
-                                  ? 'linear-gradient(180deg, #0f0f0f 0%, #080808 100%)'
-                                  : '#0a0a0a',
+                                opacity: isPossible ? 0.5 : isDetected ? 0.9 : 1,
+                                background: 'rgba(15, 15, 15, 0.9)',
                                 border: isObserved || isAdded
-                                  ? '2px solid rgba(16,185,129,0.5)'
+                                  ? '1px solid rgba(16,185,129,0.35)'
                                   : isDetected
-                                  ? '2px solid rgba(245,158,11,0.4)'
-                                  : '1px dashed rgba(255,255,255,0.15)',
-                                boxShadow: isDragging 
-                                  ? '0 25px 50px rgba(0,0,0,0.6), 0 0 30px rgba(255,110,60,0.2)' 
-                                  : isObserved || isAdded
-                                  ? '0 8px 24px rgba(0,0,0,0.4), 0 0 20px rgba(16,185,129,0.1)'
-                                  : '0 4px 16px rgba(0,0,0,0.3)',
-                                transition: isDragging ? 'none' : 'transform 0.15s, box-shadow 0.15s'
+                                  ? '1px solid rgba(245,158,11,0.3)'
+                                  : '1px solid rgba(255,255,255,0.08)',
+                                boxShadow: '0 4px 20px rgba(0,0,0,0.4)'
                               }}
                               onMouseDown={(e) => {
                                 // Don't start drag if clicking buttons
@@ -10549,16 +10557,16 @@ export default function GeneratedPage() {
                                 };
                               }}
                             >
-                              {/* Iframe Preview - uses full editableCode with all styles */}
-                              {hasPreview && editableCode && (
-                                <div className="relative w-full overflow-hidden bg-white" style={{ height: previewHeight }}>
+                              {/* Iframe Preview - shows correct page for this node */}
+                              {hasPreview && previewCode && (
+                                <div className="relative w-full overflow-hidden bg-white/95" style={{ height: previewHeight }}>
                                   <iframe
-                                    srcDoc={editableCode}
+                                    srcDoc={previewCode}
                                     className="pointer-events-none absolute top-0 left-0"
                                     style={{ 
-                                      width: `${nodeWidth * 6}px`,
-                                      height: `${previewHeight * 6}px`,
-                                      transform: 'scale(0.167)',
+                                      width: `${nodeWidth * 8}px`,
+                                      height: `${previewHeight * 8}px`,
+                                      transform: 'scale(0.125)',
                                       transformOrigin: 'top left'
                                     }}
                                     sandbox="allow-scripts"
@@ -10568,65 +10576,49 @@ export default function GeneratedPage() {
                               )}
                               
                               {/* Node header */}
-                              <div className="p-3">
-                                <div className="flex items-center gap-2.5">
-                                  {/* Status indicator */}
-                                  <div className={cn(
-                                    "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0",
-                                    isObserved ? "bg-emerald-500/20" 
-                                    : isAdded ? "bg-[#FF6E3C]/20"
-                                    : isDetected ? "bg-amber-500/15"
-                                    : "bg-white/5"
-                                  )}>
-                                    <Icon className={cn("w-3.5 h-3.5", 
-                                      isObserved ? "text-emerald-400" 
-                                      : isAdded ? "text-[#FF6E3C]"
-                                      : isDetected ? "text-amber-400"
-                                      : "text-white/30"
-                                    )} />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <span className={cn(
-                                      "text-[13px] font-semibold truncate block", 
-                                      isPossible ? "text-white/40 italic" : "text-white"
-                                    )} title={node.name}>{node.name}</span>
-                                    {node.description && (
-                                      <p className="text-[9px] text-white/40 mt-0.5 line-clamp-1">{node.description}</p>
-                                    )}
-                                  </div>
+                              <div className="p-2.5">
+                                <div className="flex items-center gap-2">
+                                  <Icon className={cn("w-4 h-4 flex-shrink-0", 
+                                    isObserved ? "text-emerald-400" 
+                                    : isAdded ? "text-[#FF6E3C]"
+                                    : isDetected ? "text-amber-400"
+                                    : "text-white/30"
+                                  )} />
+                                  <span className={cn(
+                                    "text-xs font-medium truncate flex-1", 
+                                    isPossible ? "text-white/40" : "text-white/90"
+                                  )} title={node.name}>{node.name}</span>
                                 </div>
                               </div>
                               
-                              {/* Action buttons */}
-                              <div className="flex items-center gap-1.5 px-3 pb-3">
+                              {/* Action buttons - glass style */}
+                              <div className="flex items-center gap-1 px-2 pb-2">
                                 {hasCode ? (
                                   <>
-                                    {/* Preview button */}
                                     <button
-                                      className="flow-node-btn flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] font-semibold bg-[#FF6E3C] hover:bg-[#ff8055] text-white transition-colors shadow-lg shadow-[#FF6E3C]/20"
+                                      className="flow-node-btn flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-medium bg-[#FF6E3C]/90 hover:bg-[#FF6E3C] text-white transition-colors"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleFlowNodeCodeFocus(node.id, "preview");
                                       }}
                                     >
-                                      <Eye className="w-3.5 h-3.5" />
+                                      <Eye className="w-3 h-3" />
                                       Preview
                                     </button>
-                                    {/* View Code button */}
                                     <button
-                                      className="flow-node-btn flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] font-medium bg-white/10 hover:bg-white/15 text-white/70 hover:text-white transition-colors"
+                                      className="flow-node-btn flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-medium bg-white/10 hover:bg-white/15 text-white/60 transition-colors"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleFlowNodeCodeFocus(node.id, "code");
                                       }}
                                     >
-                                      <Code className="w-3.5 h-3.5" />
+                                      <Code className="w-3 h-3" />
                                       Code
                                     </button>
                                   </>
                                 ) : isDetected ? (
                                   <button
-                                    className="flow-node-btn flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] font-semibold bg-amber-500/90 hover:bg-amber-500 text-white transition-colors shadow-lg shadow-amber-500/20"
+                                    className="flow-node-btn flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-medium bg-amber-500/80 hover:bg-amber-500 text-white transition-colors"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       if (!user || isDemoMode) {
@@ -10640,12 +10632,12 @@ export default function GeneratedPage() {
                                     }}
                                     disabled={isEditing}
                                   >
-                                    <Plus className="w-3.5 h-3.5" />
+                                    <Plus className="w-3 h-3" />
                                     Reconstruct
                                   </button>
                                 ) : (
                                   <button
-                                    className="flow-node-btn flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] font-medium bg-white/8 hover:bg-white/12 text-white/50 hover:text-white/70 transition-colors border border-dashed border-white/10"
+                                    className="flow-node-btn flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-medium bg-white/5 hover:bg-white/10 text-white/40 transition-colors"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       if (!user || isDemoMode) {
@@ -10659,23 +10651,23 @@ export default function GeneratedPage() {
                                     }}
                                     disabled={isEditing}
                                   >
-                                    <Plus className="w-3.5 h-3.5" />
+                                    <Plus className="w-3 h-3" />
                                     Generate
                                   </button>
                                 )}
                               </div>
                               
                               {/* Status badge - top center */}
-                              <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+                              <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-10">
                                 <span className={cn(
-                                  "text-[9px] px-2.5 py-1 rounded-full capitalize whitespace-nowrap font-semibold shadow-lg",
+                                  "text-[8px] px-2 py-0.5 rounded-full capitalize whitespace-nowrap font-medium",
                                   isObserved 
-                                    ? "bg-emerald-500 text-white shadow-emerald-500/30" 
+                                    ? "bg-emerald-500/90 text-white" 
                                     : isAdded
-                                    ? "bg-[#FF6E3C] text-white shadow-[#FF6E3C]/30"
+                                    ? "bg-[#FF6E3C]/90 text-white"
                                     : isDetected
-                                    ? "bg-amber-500 text-white shadow-amber-500/30"
-                                    : "bg-zinc-700 text-white/70"
+                                    ? "bg-amber-500/90 text-white"
+                                    : "bg-white/20 text-white/60"
                                 )}>
                                   {isObserved ? "observed" : isAdded ? "generated" : isDetected ? "detected" : "possible"}
                                 </span>
