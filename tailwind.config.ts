@@ -51,6 +51,7 @@ const config: Config = {
         display: ["var(--font-space-grotesk)", "system-ui", "sans-serif"],
       },
       animation: {
+        marquee: "marquee 30s linear infinite",
         "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "glow": "glow 2s ease-in-out infinite alternate",
         "slide-up": "slideUp 0.3s ease-out",
@@ -65,6 +66,10 @@ const config: Config = {
         grid: "grid 15s linear infinite",
       },
       keyframes: {
+        marquee: {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
         glow: {
           "0%": { boxShadow: "0 0 20px rgba(99, 102, 241, 0.3)" },
           "100%": { boxShadow: "0 0 40px rgba(99, 102, 241, 0.6)" },
