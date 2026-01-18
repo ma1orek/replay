@@ -748,73 +748,7 @@ function SettingsContent() {
               </div>
               </div>
 
-              {/* STARTER Card */}
-              <div className="pt-4">
-              <div className={cn(
-                "p-6 rounded-2xl bg-white/[0.02] border backdrop-blur-sm h-full flex flex-col",
-                currentPlan === "starter" ? "border-emerald-500/50 ring-1 ring-emerald-500/30" : "border-white/[0.08]"
-              )}>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
-                    <Zap className="w-4 h-4 text-white/60" />
-                  </div>
-                  <span className="text-sm font-medium text-white/60">Starter</span>
-                </div>
-                
-                <div className="mb-1 flex items-baseline gap-2">
-                  <span className="text-4xl font-bold text-white">$9</span>
-                  <span className="text-sm text-white/40">one-time</span>
-                </div>
-                <p className="text-sm text-white/40 mb-6">~4 generations • Perfect for testing</p>
-                
-                <div className="space-y-3 mb-6 flex-grow">
-                  {[
-                    "300 credits (no expiry)",
-                    "Full Access",
-                    "Publish to web",
-                    "Credits never expire",
-                    "No subscription needed",
-                  ].map((f) => (
-                    <div key={f} className="flex items-center gap-3 text-sm text-white/60">
-                      <Check className="w-4 h-4 text-white/40 shrink-0" />
-                      {f}
-                    </div>
-                  ))}
-                </div>
-                
-                {currentPlan === "starter" ? (
-                  <div className="w-full py-2.5 rounded-xl text-sm font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center justify-center gap-2 mt-auto">
-                    <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                    Active Plan
-                  </div>
-                ) : (
-                  <button
-                    onClick={async () => {
-                      try {
-                        setIsCheckingOut("starter");
-                        const res = await fetch("/api/billing/checkout", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ plan: "starter" }),
-                        });
-                        const data = await res.json();
-                        if (data.url) {
-                          window.location.href = data.url;
-                        }
-                      } catch (err) {
-                        console.error("Checkout error:", err);
-                      } finally {
-                        setIsCheckingOut(null);
-                      }
-                    }}
-                    disabled={isCheckingOut === "starter"}
-                    className="w-full py-2.5 rounded-xl text-sm font-medium bg-white/5 text-white/70 hover:bg-white/10 border border-white/10 transition-all mt-auto disabled:opacity-50"
-                  >
-                    {isCheckingOut === "starter" ? "Processing..." : "Buy Starter"}
-                  </button>
-                )}
-              </div>
-              </div>
+              {/* Maker removed - only PRO subscriptions available */}
 
               {/* PRO Card - Elastic with Dropdown */}
               <div className="relative pt-4">

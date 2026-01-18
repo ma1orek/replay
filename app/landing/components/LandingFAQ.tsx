@@ -44,7 +44,7 @@ const faqs = [
   },
   { 
     q: "What's the difference between plans?", 
-    a: "Free: 100 credits/month (~1 gen), preview only. Starter ($9 one-time): 300 credits (~4 gens), Full Access & Export, credits never expire. Pro ($25/month): 1,500 credits (~20 gens), private projects, credits roll over, priority support." 
+    a: "Free: 100 credits/month (~1 gen), preview only. Maker ($9 one-time): 300 credits (~4 gens), Full Access & Export, credits never expire. Pro ($25/month): 1,500 credits (~20 gens), private projects, credits roll over, priority support." 
   },
   { 
     q: "Can I cancel my subscription anytime?", 

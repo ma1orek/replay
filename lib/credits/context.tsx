@@ -12,7 +12,7 @@ export interface CreditWallet {
 }
 
 export interface Membership {
-  plan: "free" | "starter" | "pro" | "agency" | "enterprise";
+  plan: "free" | "pro" | "agency" | "enterprise";
   status: "active" | "canceled" | "past_due" | "trialing";
   current_period_start: string | null;
   current_period_end: string | null;
@@ -33,11 +33,6 @@ interface CreditsContextType {
 export const PLAN_LIMITS: Record<string, { monthlyCredits: number; rolloverCap: number; rolloverExpiry: number }> = {
   free: {
     monthlyCredits: 100,
-    rolloverCap: 0,
-    rolloverExpiry: 0,
-  },
-  starter: {
-    monthlyCredits: 0, // Starter uses topup credits only (one-time purchase)
     rolloverCap: 0,
     rolloverExpiry: 0,
   },

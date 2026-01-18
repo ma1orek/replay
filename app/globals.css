@@ -919,7 +919,10 @@ body {
   height: 48px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible;
+  /* Add padding to ensure handles at 0% and 100% are fully visible */
+  margin-left: 7px;
+  margin-right: 7px;
 }
 
 .trim-waveform {

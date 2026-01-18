@@ -441,24 +441,28 @@ export default function AssetsModal({
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
               {assets.map((asset, i) => (
                 <button
-                  key={asset.id}
+                  key={`${asset.id}-${asset.url}`}
                   onClick={() => {
                     setIsPreviewLoading(true);
                     setSelectedAsset(asset);
                   }}
                   className={cn(
-                    "flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all relative group",
+                    "flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all relative group bg-white/5",
                     selectedAsset?.id === asset.id
                       ? "border-[#FF6E3C] ring-2 ring-[#FF6E3C]/30"
                       : "border-transparent hover:border-white/30"
                   )}
                 >
                   <img 
-                    src={asset.url} 
+                    src={asset.url}
+                    key={asset.url}
                     alt={`Image ${i + 1}`}
                     className="w-full h-full object-cover"
+                    crossOrigin="anonymous"
+                    referrerPolicy="no-referrer"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23333' viewBox='0 0 24 24'%3E%3Crect width='24' height='24'/%3E%3C/svg%3E";
+                      const img = e.target as HTMLImageElement;
+                      img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23333' viewBox='0 0 24 24'%3E%3Crect width='24' height='24'/%3E%3C/svg%3E";
                     }}
                   />
                   {selectedAsset?.id === asset.id && (

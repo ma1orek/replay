@@ -81,10 +81,10 @@ export default function PricingPage() {
             </button>
           </div>
 
-          {/* Starter */}
+          {/* Maker */}
           <div className="p-6 rounded-xl bg-white/5 border border-white/10">
             <div className="mb-4">
-              <h3 className="text-lg font-semibold text-white">Starter</h3>
+              <h3 className="text-lg font-semibold text-white">Maker</h3>
               <p className="text-sm text-white/50">One-time purchase</p>
             </div>
             <div className="mb-4">
@@ -111,7 +111,7 @@ export default function PricingPage() {
               </li>
             </ul>
             <button className="w-full py-2 rounded-lg bg-white/10 text-white text-sm hover:bg-white/20 transition-colors">
-              Buy Starter
+              Buy Maker
             </button>
           </div>
 
@@ -137,7 +137,7 @@ export default function PricingPage() {
             <ul className="space-y-2 text-sm text-white/70 mb-6">
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-[#FF6E3C]" />
-                <span className="text-[#FF6E3C]">Everything in Starter, plus:</span>
+                <span className="text-[#FF6E3C]">Everything in Maker, plus:</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-[#FF6E3C]" />
@@ -238,7 +238,7 @@ export default function PricingPage() {
           </div>
           <div className="p-4 rounded-xl bg-white/5 border border-white/10">
             <h4 className="font-medium text-white mb-1">What's the difference between plans?</h4>
-            <p className="text-sm text-white/60">Free: 100 credits/month (~1 gen), preview only. Starter: $9 one-time, 300 credits (~4 gens), full access, never expire. Pro: $25/mo, 1,500 credits (~20 gens), private projects, credits roll over, priority support.</p>
+            <p className="text-sm text-white/60">Free: 100 credits/month (~1 gen), preview only. Maker: $9 one-time, 300 credits (~4 gens), full access, never expire. Pro: $25/mo, 1,500 credits (~20 gens), private projects, credits roll over, priority support.</p>
           </div>
           <div className="p-4 rounded-xl bg-white/5 border border-white/10">
             <h4 className="font-medium text-white mb-1">What payment methods do you accept?</h4>

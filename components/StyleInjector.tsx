@@ -4167,10 +4167,15 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
               if (selectedPreset?.id === "custom") {
                 return value.replace(/^Custom\.?\s*/, '');
               }
-              // For other presets, extract text after the preset's fullDesc or name
+              // For other presets, extract text after "ADDITIONAL USER INSTRUCTIONS:"
+              const instructionsMatch = value.match(/ADDITIONAL USER INSTRUCTIONS:\s*(.*)/);
+              if (instructionsMatch) {
+                return instructionsMatch[1] || '';
+              }
+              // Fallback: extract text after the preset's fullDesc or name
               if (selectedPreset?.fullDesc && value.includes(selectedPreset.fullDesc)) {
                 const afterFullDesc = value.split(selectedPreset.fullDesc)[1]?.trim() || '';
-                return afterFullDesc.replace(/^[.\s]+/, ''); // Remove leading dots/spaces
+                return afterFullDesc.replace(/^[.\s]+/, '').replace(/^ADDITIONAL USER INSTRUCTIONS:\s*/, '');
               }
               if (selectedPreset?.name && value.startsWith(selectedPreset.name)) {
                 const afterName = value.slice(selectedPreset.name.length).replace(/^[.\s]+/, '');
@@ -4178,20 +4183,20 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
                 if (selectedPreset?.fullDesc && afterName.startsWith(selectedPreset.fullDesc.slice(0, 50))) {
                   return '';
                 }
-                return afterName;
+                return afterName.replace(/^ADDITIONAL USER INSTRUCTIONS:\s*/, '');
               }
               return '';
             })()}
             onChange={(e) => {
-              const refinement = e.target.value.trim();
+              const refinement = e.target.value;
               if (selectedPreset?.id === "custom") {
-                onChange(refinement ? `Custom. ${refinement}` : "Custom");
+                onChange(refinement.trim() ? `Custom. ${refinement}` : "Custom");
               } else if (selectedPreset) {
                 // Append refinement to the preset's full style
                 const baseStyle = selectedPreset.fullDesc 
                   ? `${selectedPreset.name}. ${selectedPreset.fullDesc}`
                   : selectedPreset.name;
-                onChange(refinement ? `${baseStyle} ADDITIONAL USER INSTRUCTIONS: ${refinement}` : baseStyle);
+                onChange(refinement.trim() ? `${baseStyle} ADDITIONAL USER INSTRUCTIONS: ${refinement}` : baseStyle);
               } else {
                 onChange(refinement);
               }

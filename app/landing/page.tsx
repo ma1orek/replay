@@ -2,10 +2,10 @@ import { AuroraEffect, FloatingOrbs, GridLines } from "./components/LandingBackg
 import LandingNavigation from "./components/LandingNavigation";
 import LandingHero from "./components/LandingHero";
 import LandingScrollIndicator from "./components/LandingScrollIndicator";
-import { LandingSocialProof } from "./components/LandingSocialProof";
+// import { LandingSocialProof } from "./components/LandingSocialProof";
 import LandingHowItWorks from "./components/LandingHowItWorks";
-import LandingSuperpowers from "./components/LandingSuperpowers";
-import { MidPageCTA, FinalCTA } from "./components/LandingCTA";
+// import LandingSuperpowers from "./components/LandingSuperpowers";
+import { FinalCTA } from "./components/LandingCTA";
 import { LandingFeatures } from "./components/LandingFeatures";
 import { LandingUseCases } from "./components/LandingUseCases";
 import LandingPricing from "./components/LandingPricing";
@@ -61,7 +61,7 @@ export default function LandingPage() {
       <LandingNavigation />
 
       {/* ═══════════════════════════════════════════════════════════════ */}
-      {/* HERO - Centered */}
+      {/* HERO - Split Layout (No scroll needed ideally) */}
       {/* ═══════════════════════════════════════════════════════════════ */}
       <section className="relative z-10 min-h-screen flex items-center justify-center pt-20">
         {/* RetroGrid only in hero - HIDDEN ON MOBILE for performance */}
@@ -69,7 +69,7 @@ export default function LandingPage() {
           <RetroGrid />
         </div>
         
-        <div className="relative z-10 mx-auto max-w-7xl px-6 py-20 w-full text-center">
+        <div className="relative z-10 w-full">
           <LandingHero />
         </div>
 
@@ -77,14 +77,9 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════ */}
-      {/* SUPERPOWERS (The Trifecta/Quadfecta) */}
+      {/* DEMO (See a real Replay generation) */}
       {/* ═══════════════════════════════════════════════════════════════ */}
-      <LandingSuperpowers />
-
-      {/* ═══════════════════════════════════════════════════════════════ */}
-      {/* SOCIAL PROOF / TECH STACK */}
-      {/* ═══════════════════════════════════════════════════════════════ */}
-      <LandingSocialProof />
+      <LandingFeatures />
 
       {/* ═══════════════════════════════════════════════════════════════ */}
       {/* HOW IT WORKS */}
@@ -92,17 +87,7 @@ export default function LandingPage() {
       <LandingHowItWorks />
 
       {/* ═══════════════════════════════════════════════════════════════ */}
-      {/* THE DIFFERENCE (Features) */}
-      {/* ═══════════════════════════════════════════════════════════════ */}
-      <LandingFeatures />
-
-      {/* ═══════════════════════════════════════════════════════════════ */}
-      {/* MID-PAGE CTA - Action Banner */}
-      {/* ═══════════════════════════════════════════════════════════════ */}
-      <MidPageCTA />
-
-      {/* ═══════════════════════════════════════════════════════════════ */}
-      {/* USE CASES */}
+      {/* USE CASES (Solve Real Problems) */}
       {/* ═══════════════════════════════════════════════════════════════ */}
       <LandingUseCases />
 

@@ -62,7 +62,7 @@ interface Stats {
   topStyles: { style: string; count: number }[];
   generationsPerDay: { date: string; count: number }[];
   proUsers: number;
-  starterUsers: number;
+  // makerUsers removed - only PRO subscriptions available
 }
 
 interface FeedbackData {
@@ -465,10 +465,10 @@ export default function AdminPage() {
   };
 
   // Available tiers for admin assignment
-  // Note: "starter" just changes membership (doesn't add credits - use Fix Credits for that)
+  // Maker removed - only PRO subscriptions available
   const PRO_TIERS = [
     { id: "free", label: "Free", credits: 100, membership: "free", isTopup: false },
-    { id: "starter", label: "Starter", credits: 0, membership: "starter", isTopup: false },
+    // Maker removed - only PRO subscriptions available
     { id: "pro25", label: "Pro 25", credits: 1500, membership: "pro", isTopup: false },
     { id: "pro50", label: "Pro 50", credits: 3300, membership: "pro", isTopup: false },
     { id: "pro100", label: "Pro 100", credits: 7500, membership: "pro", isTopup: false },
@@ -508,7 +508,7 @@ export default function AdminPage() {
           userId: planModalUser.id, 
           membership: newMembership,
           credits: selectedTier.credits,
-          isTopup: selectedTier.isTopup // For starter pack - adds to topup_credits instead
+          isTopup: selectedTier.isTopup // For top-up credits
         })
       });
       
@@ -786,8 +786,8 @@ export default function AdminPage() {
                 color="orange"
               />
               <StatCard
-                title="Starter Users"
-                value={stats?.starterUsers || 0}
+                title="Pro Users"
+                value={0}
                 icon={Zap}
                 color="gray"
               />
@@ -1021,13 +1021,13 @@ export default function AdminPage() {
                               "text-xs px-2 py-1 rounded-full transition-colors cursor-pointer hover:opacity-80",
                               user.membership === "pro" 
                                 ? "bg-[#FF6E3C]/20 text-[#FF6E3C] hover:bg-[#FF6E3C]/30" 
-                                : user.membership === "starter"
+                                : false
                                   ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
                                   : "bg-white/5 text-white/50 hover:bg-white/10"
                             )}
                             title="Click to set user plan tier"
                           >
-                            {user.membership === "pro" ? "⭐ PRO" : user.membership === "starter" ? "⚡ STARTER" : "free"}
+                            {user.membership === "pro" ? "⭐ PRO" : "free"}
                           </button>
                         </td>
                         <td className="px-4 py-3">
@@ -2328,9 +2328,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                           {tier.label}
                         </p>
                         <p className="text-sm text-white/50">
-                          {tier.id === "starter" 
-                            ? "Membership only (use Fix Credits to add)" 
-                            : `${tier.credits.toLocaleString()} credits / month`}
+                          {tier.credits > 0 ? `${tier.credits.toLocaleString()} credits / month` : "Membership only"}
                         </p>
                       </div>
                       {selectedPlanIndex === idx && (

@@ -462,11 +462,12 @@ export function categorizeAsset(asset: ExtractedAsset): "avatar" | "hero" | "pro
 
 /**
  * Generate a stable picsum URL with specified dimensions
- * Uses specific image ID instead of ?random to prevent images from changing on each load
+ * Uses ONLY verified working IDs that are confirmed to exist
  */
 export function generatePicsumUrl(width: number = 800, height: number = 600): string {
-  // Picsum has images with IDs roughly 0-1084, pick a random one
-  const imageId = Math.floor(Math.random() * 1000) + 10;
+  // VERIFIED working picsum IDs - same as in API routes
+  const validPicsumIds = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 130, 131, 133, 134, 137, 139, 140, 141, 142, 143, 144, 145, 146, 147, 149, 152, 153, 154, 155, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200];
+  const imageId = validPicsumIds[Math.floor(Math.random() * validPicsumIds.length)];
   return `https://picsum.photos/id/${imageId}/${width}/${height}`;
 }
 
@@ -489,26 +490,20 @@ function simpleHash(str: string): number {
  * This prevents images from changing on every preview reload
  */
 export function stabilizePicsumUrls(code: string): string {
+  // VERIFIED working picsum IDs
+  const validPicsumIds = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 130, 131, 133, 134, 137, 139, 140, 141, 142, 143, 144, 145, 146, 147, 149, 152, 153, 154, 155, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200];
+  
   // Match picsum URLs with ?random=N or just base URL without /id/
-  // Pattern: https://picsum.photos/WIDTH/HEIGHT or https://picsum.photos/WIDTH/HEIGHT?random=N
   const picsumUnstableRegex = /https:\/\/picsum\.photos\/(\d+)\/(\d+)(\?random=(\d+))?(?=["\'\)\s>])/g;
   
   return code.replace(picsumUnstableRegex, (match, width, height, _queryPart, randomNum) => {
-    // Skip URLs that already have /id/ format
-    if (match.includes('/id/')) {
-      return match;
-    }
+    if (match.includes('/id/')) return match;
     
-    // Generate a stable ID based on either the random number or position
-    // If ?random=N exists, use that number as basis for stable ID
-    // Otherwise generate from a hash of dimensions
     let stableId: number;
     if (randomNum) {
-      // Use the random number to generate a stable picsum ID (0-1084 range)
-      stableId = (parseInt(randomNum, 10) % 1000) + 10;
+      stableId = validPicsumIds[parseInt(randomNum, 10) % validPicsumIds.length];
     } else {
-      // Generate ID from hash of the full match string
-      stableId = (simpleHash(match) % 1000) + 10;
+      stableId = validPicsumIds[simpleHash(match) % validPicsumIds.length];
     }
     
     return `https://picsum.photos/id/${stableId}/${width}/${height}`;
@@ -584,16 +579,19 @@ export function getUnsplashUrlWithSize(
   width: number, 
   height?: number
 ): string {
+  // VERIFIED working picsum IDs
+  const validPicsumIds = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100];
+
   // Handle Picsum URLs (mock data)
   if (imageUrl.includes('picsum.photos')) {
-    // Extract the ID if it's in /id/X/ format
     const idMatch = imageUrl.match(/picsum\.photos\/id\/(\d+)/);
     if (idMatch) {
-      const id = idMatch[1];
-      return `https://picsum.photos/id/${id}/${width}/${height || width}`;
+      return `https://picsum.photos/id/${idMatch[1]}/${width}/${height || width}`;
     }
-    // Fallback for other picsum formats
-    return `https://picsum.photos/id/${Math.floor(Math.random() * 1000) + 10}/${width}/${height || width}`;
+    // Fallback: use a stable ID based on hash instead of random
+    // This ensures that the same URL always results in the same thumbnail
+    const stableId = validPicsumIds[simpleHash(imageUrl) % validPicsumIds.length];
+    return `https://picsum.photos/id/${stableId}/${width}/${height || width}`;
   }
   
   // Handle real Unsplash URLs
@@ -606,7 +604,6 @@ export function getUnsplashUrlWithSize(
     }
     return url.toString();
   } catch {
-    // If URL parsing fails, return original
     return imageUrl;
   }
 }

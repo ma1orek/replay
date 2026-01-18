@@ -9,13 +9,7 @@ import { cn } from "@/lib/utils";
 import AuthModal from "@/components/modals/AuthModal";
 import { useAuth } from "@/lib/auth/context";
 
-// Starter Pack - One-time $9
-const STARTER_PACK = {
-  id: 'starter',
-  credits: 300,
-  price: 9,
-  stripePriceId: "price_1Spo05Axch1s4iBGydOPAd2i",
-};
+// Maker Pack removed - only PRO subscriptions available
 
 // Elastic "PRO" Subscription Tiers with Stripe Price IDs
 const PRICING_TIERS = [
@@ -129,7 +123,8 @@ export default function LandingPricing() {
       if (pendingAction.type === "subscription" && pendingAction.priceId) {
         handleProSubscription(pendingAction.priceId);
       } else if (pendingAction.type === "topup" && pendingAction.amount === 9) {
-        handleStarterPack();
+        // Maker removed - redirect to PRO subscription
+        window.location.href = "/settings?tab=plans";
       } else if (pendingAction.type === "topup" && pendingAction.amount) {
         handleBuyCredits(pendingAction.amount);
       }
@@ -198,37 +193,7 @@ export default function LandingPricing() {
     }
   };
 
-  const handleStarterPack = async () => {
-    if (!user) {
-      setPendingAction({ type: "topup", amount: 9 });
-      setShowAuthModal(true);
-      return;
-    }
-
-    setIsCheckingOut("starter");
-    try {
-      const res = await fetch("/api/billing/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          type: "starter",
-          priceId: STARTER_PACK.stripePriceId,
-          credits: STARTER_PACK.credits
-        }),
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else if (data.error) {
-        console.error("Checkout error:", data.error);
-        alert("Failed to start checkout: " + data.error);
-      }
-    } catch (error) {
-      console.error("Checkout error:", error);
-    } finally {
-      setIsCheckingOut(null);
-    }
-  };
+  // Maker Pack removed - only PRO subscriptions available
 
   const handleGetStarted = () => {
     if (!user) {
@@ -331,57 +296,7 @@ export default function LandingPricing() {
             </div>
           </motion.div>
 
-          {/* STARTER PACK Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.8, delay: 0.05 }}
-            className="relative"
-          >
-            <div className="h-full p-6 rounded-2xl bg-white/[0.02] border border-white/[0.08] backdrop-blur-sm">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
-                  <Zap className="w-4 h-4 text-white/60" />
-                </div>
-                <span className="text-sm font-medium text-white/60">Starter</span>
-              </div>
-              
-              <div className="mb-1 flex items-baseline gap-2">
-                <span className="text-4xl font-bold text-white">$9</span>
-                <span className="text-sm text-white/40">one-time</span>
-              </div>
-              <p className="text-sm text-white/40 mb-5">Perfect for testing</p>
-              
-              <div className="space-y-2.5 mb-6">
-                {[
-                  "300 credits (~4 gens)",
-                  "Full Access & Export",
-                  "Publish to web",
-                  "Credits never expire",
-                ].map((f) => (
-                  <div key={f} className="flex items-center gap-3 text-sm text-white/60">
-                    <Check className="w-4 h-4 text-white/40 shrink-0" />
-                    {f}
-                  </div>
-                ))}
-              </div>
-              
-              <button
-                onClick={handleStarterPack}
-                disabled={isCheckingOut === "starter"}
-                className="w-full py-3 rounded-xl text-sm font-semibold transition-all bg-white/5 text-white/70 hover:bg-white/10 border border-white/10 disabled:opacity-50"
-              >
-                {isCheckingOut === "starter" ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Processing...
-                  </span>
-                ) : (
-                  "Buy Starter"
-                )}
-              </button>
-            </div>
-          </motion.div>
+          {/* Maker Pack removed - only PRO subscriptions available */}
 
           {/* PRO Card - Elastic */}
           <motion.div
@@ -467,7 +382,7 @@ export default function LandingPricing() {
                     {/* Features */}
                     <div className="space-y-2.5 mb-6">
                       {[
-                        "Everything in Starter, plus:",
+                        "Everything in Maker, plus:",
                         `~${Math.floor(selectedTier.credits / 75)} generations`,
                         "Private projects",
                         "Credits roll over",

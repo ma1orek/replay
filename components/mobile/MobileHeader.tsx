@@ -48,11 +48,9 @@ export default function MobileHeader({
   
   // Get plan display name
   const getPlanDisplay = () => {
-    if (isPro) {
-      if (plan === "agency") return "Agency";
-      if (plan === "enterprise") return "Enterprise";
-      return "PRO";
-    }
+    if (plan === "agency") return "Agency";
+    if (plan === "enterprise") return "Enterprise";
+    if (plan === "pro") return "PRO";
     return "Free";
   };
   
@@ -121,13 +119,13 @@ export default function MobileHeader({
               onClick={() => setShowQuickMenu(!showQuickMenu)}
               className="focus:outline-none active:scale-95 transition-transform"
             >
-              {isPro ? (
+              {(plan === "pro" || plan === "agency" || plan === "enterprise") ? (
                 <span className="px-2.5 py-1 rounded text-[10px] font-bold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase tracking-wide">
                   {getPlanDisplay()}
                 </span>
               ) : (
                 <span className="px-2.5 py-1 rounded text-[10px] font-medium bg-white/10 text-white/50 uppercase">
-                  Free
+                  {getPlanDisplay()}
                 </span>
               )}
             </button>

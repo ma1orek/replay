@@ -20,7 +20,6 @@ export default function OutOfCreditsModal({
   availableCredits = 0,
 }: OutOfCreditsModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const [selectedOption, setSelectedOption] = useState<"starter" | "pro">("starter");
   const [isLoading, setIsLoading] = useState(false);
 
   // Auto-focus close button when modal opens
@@ -33,13 +32,16 @@ export default function OutOfCreditsModal({
   const handlePurchase = async () => {
     setIsLoading(true);
     try {
-      const endpoint = selectedOption === "starter" 
-        ? "/api/billing/checkout?type=starter"
-        : "/api/billing/checkout?type=pro";
-      
-      const response = await fetch(endpoint, {
+      const response = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "subscription",
+          priceId: "price_1SotL1Axch1s4iBGWMvO0JBZ",
+          tierId: "pro25",
+          credits: 1500,
+          interval: "monthly"
+        }),
       });
       
       const data = await response.json();
@@ -109,71 +111,12 @@ export default function OutOfCreditsModal({
                     </p>
                   </div>
 
-                  {/* Options */}
-                  <div className="space-y-3 mb-6">
-                    {/* Starter Pack - Primary */}
-                    <button
-                      onClick={() => setSelectedOption("starter")}
-                      className={`w-full p-4 rounded-xl border-2 transition-all text-left relative ${
-                        selectedOption === "starter"
-                          ? "border-[#FF6E3C] bg-[#FF6E3C]/5"
-                          : "border-white/10 hover:border-white/20 bg-white/[0.02]"
-                      }`}
-                    >
-                      {/* Badge */}
-                      <span className="absolute -top-2 right-3 px-2 py-0.5 text-[10px] font-bold uppercase bg-[#FF6E3C] text-white rounded">
-                        Best Value
-                      </span>
-                      
+                  {/* Pro Subscription - Only Option */}
+                  <div className="mb-6">
+                    <div className="w-full p-4 rounded-xl border-2 border-[#FF6E3C] bg-[#FF6E3C]/5">
                       <div className="flex items-start gap-4">
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                          selectedOption === "starter" 
-                            ? "border-[#FF6E3C] bg-[#FF6E3C]" 
-                            : "border-white/30"
-                        }`}>
-                          {selectedOption === "starter" && <Check className="w-3 h-3 text-white" />}
-                        </div>
-                        
-                        <div className="flex-1">
-                          <div className="flex items-baseline gap-2 mb-1">
-                            <span className="text-2xl font-bold text-white">$9</span>
-                            <span className="text-sm text-white/50">one-time</span>
-                          </div>
-                          <div className="text-sm font-semibold text-white mb-2">Starter</div>
-                          <ul className="space-y-1">
-                            <li className="flex items-center gap-2 text-xs text-white/60">
-                              <Sparkles className="w-3 h-3 text-[#FF6E3C]" />
-                              300 credits (~4 generations)
-                            </li>
-                            <li className="flex items-center gap-2 text-xs text-white/60">
-                              <Check className="w-3 h-3 text-green-500" />
-                              Full Access • Credits never expire
-                            </li>
-                            <li className="flex items-center gap-2 text-xs text-white/60">
-                              <Check className="w-3 h-3 text-green-500" />
-                              Perfect for testing
-                            </li>
-                          </ul>
-                        </div>
-                      </div>
-                    </button>
-
-                    {/* Pro Subscription - Secondary */}
-                    <button
-                      onClick={() => setSelectedOption("pro")}
-                      className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                        selectedOption === "pro"
-                          ? "border-[#FF6E3C] bg-[#FF6E3C]/5"
-                          : "border-white/10 hover:border-white/20 bg-white/[0.02]"
-                      }`}
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                          selectedOption === "pro" 
-                            ? "border-[#FF6E3C] bg-[#FF6E3C]" 
-                            : "border-white/30"
-                        }`}>
-                          {selectedOption === "pro" && <Check className="w-3 h-3 text-white" />}
+                        <div className="w-5 h-5 rounded-full border-2 border-[#FF6E3C] bg-[#FF6E3C] flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Check className="w-3 h-3 text-white" />
                         </div>
                         
                         <div className="flex-1">
@@ -201,7 +144,7 @@ export default function OutOfCreditsModal({
                           </ul>
                         </div>
                       </div>
-                    </button>
+                    </div>
                   </div>
 
                   {/* CTA Button */}
@@ -214,7 +157,7 @@ export default function OutOfCreditsModal({
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
                       <>
-                        {selectedOption === "starter" ? "Get Starter — $9" : "Subscribe for $25/mo"}
+                        Subscribe for $25/mo
                         <ArrowRight className="w-5 h-5" />
                       </>
                     )}

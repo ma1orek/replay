@@ -13,6 +13,64 @@ function getGeminiKey() {
   return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
 }
 
+// Fix broken image URLs - replace ALL external images with picsum
+function fixBrokenImageUrls(code: string): string {
+  if (!code) return code;
+  
+  // VERIFIED working picsum IDs
+  const validPicsumIds = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 130, 131, 133, 134, 137, 139, 140, 141, 142, 143, 144, 145, 146, 147, 149, 152, 153, 154, 155, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 206, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 247, 248, 249, 250];
+  const validIdSet = new Set(validPicsumIds);
+  let imageCounter = 0;
+  
+  const getNextPicsumUrl = (width = 800, height = 600) => {
+    const id = validPicsumIds[imageCounter % validPicsumIds.length];
+    imageCounter++;
+    return `https://picsum.photos/id/${id}/${width}/${height}`;
+  };
+  
+  // AGGRESSIVE: Replace ANY unsplash URL
+  code = code.replace(/https?:\/\/[^"'\s)]*unsplash[^"'\s)]*/gi, () => getNextPicsumUrl());
+  
+  // Replace Pexels
+  code = code.replace(/https?:\/\/[^"'\s)]*pexels[^"'\s)]*/gi, () => getNextPicsumUrl());
+  
+  // Replace all placeholder services
+  code = code.replace(/https?:\/\/via\.placeholder\.com[^"'\s)]*/gi, () => getNextPicsumUrl());
+  code = code.replace(/https?:\/\/placehold\.co[^"'\s)]*/gi, () => getNextPicsumUrl());
+  code = code.replace(/https?:\/\/placeholder\.com[^"'\s)]*/gi, () => getNextPicsumUrl());
+  code = code.replace(/https?:\/\/dummyimage\.com[^"'\s)]*/gi, () => getNextPicsumUrl());
+  code = code.replace(/https?:\/\/placekitten\.com[^"'\s)]*/gi, () => getNextPicsumUrl());
+  code = code.replace(/https?:\/\/loremflickr\.com[^"'\s)]*/gi, () => getNextPicsumUrl());
+  code = code.replace(/https?:\/\/lorempixel\.com[^"'\s)]*/gi, () => getNextPicsumUrl());
+  code = code.replace(/https?:\/\/placeimg\.com[^"'\s)]*/gi, () => getNextPicsumUrl());
+  
+  // Replace cloudinary
+  code = code.replace(/https?:\/\/res\.cloudinary\.com[^"'\s)]*/gi, () => getNextPicsumUrl());
+  
+  // Fix picsum with invalid IDs
+  code = code.replace(/https?:\/\/picsum\.photos\/id\/(\d+)\/(\d+)(?:\/(\d+))?/gi, (match, idStr, w, h) => {
+    const id = parseInt(idStr);
+    if (validIdSet.has(id)) return match;
+    return getNextPicsumUrl(parseInt(w) || 800, parseInt(h) || parseInt(w) || 600);
+  });
+  
+  // Fix picsum without /id/
+  code = code.replace(/https?:\/\/picsum\.photos\/(\d+)(?:\/(\d+))?(?:\?[^"'\s)]*)?(?=["'\s)])/gi, (match, w, h) => {
+    if (match.includes('/id/')) return match;
+    return getNextPicsumUrl(parseInt(w) || 800, parseInt(h) || parseInt(w) || 600);
+  });
+  
+  // Fix empty/broken src
+  code = code.replace(/src\s*=\s*["'](?:\s*|#|about:blank|javascript:[^"']*)["']/gi, () => `src="${getNextPicsumUrl()}"`);
+  
+  // Fix img tags without src
+  code = code.replace(/<img\s+(?![^>]*src=)[^>]*>/gi, (match) => {
+    return match.replace(/<img/, `<img src="${getNextPicsumUrl()}"`);
+  });
+  
+  return code;
+}
+
 // =============================================================================
 // REPLAY AI SYSTEM PROMPT - Inspired by Lovable/Bolt architecture
 // =============================================================================
@@ -135,9 +193,22 @@ export async function POST(request: NextRequest) {
 
         const openai = new OpenAI({ apiKey });
         
-        // PLAN MODE - Quick conversational response
+        // PLAN MODE - Quick conversational response using Gemini
         if (isPlanMode) {
           send("status", { message: "Thinking...", phase: "plan" });
+          
+          const geminiKey = getGeminiKey();
+          if (!geminiKey) {
+            send("error", { error: "Gemini API key not configured" });
+            controller.close();
+            return;
+          }
+          
+          const genAI = new GoogleGenerativeAI(geminiKey);
+          const model = genAI.getGenerativeModel({
+            model: "gemini-3-pro-preview",
+            generationConfig: { temperature: 0.7, maxOutputTokens: 1000 },
+          });
           
           const pageCount = (currentCode.match(/x-show=["']currentPage/gi) || []).length || 1;
           const planPrompt = `Jesteś Replay - przyjaznym asystentem.
@@ -154,24 +225,23 @@ PYTANIE: ${editRequest}
 
 Odpowiedz krótko i przyjaźnie:`;
 
-          const response = await openai.chat.completions.create({
-            model: "gpt-5.2",
-            messages: [{ role: "user", content: planPrompt }],
-            max_completion_tokens: 500,
-            temperature: 0.7,
-            stream: true,
-          });
-          
-          let fullText = "";
-          for await (const chunk of response) {
-            const text = chunk.choices[0]?.delta?.content || "";
-            fullText += text;
-            if (text) {
-              send("chunk", { text, fullText });
+          try {
+            const result = await model.generateContentStream(planPrompt);
+            
+            let fullText = "";
+            for await (const chunk of result.stream) {
+              const text = chunk.text() || "";
+              fullText += text;
+              if (text) {
+                send("chunk", { text, fullText });
+              }
             }
-          }
 
-          send("complete", { code: fullText, isChat: true });
+            send("complete", { code: fullText, isChat: true });
+          } catch (err: any) {
+            console.error("[Plan Mode] Gemini error:", err);
+            send("error", { error: err?.message || "Failed to get response" });
+          }
           controller.close();
           return;
         }
@@ -234,8 +304,8 @@ Odpowiedz krótko i przyjaźnie:`;
           
           const genAI = new GoogleGenerativeAI(geminiKey);
           const model = genAI.getGenerativeModel({
-            model: "gemini-2.0-flash",
-            generationConfig: { temperature: 0.8, maxOutputTokens: 65000 },
+            model: "gemini-3-pro-preview",
+            generationConfig: { temperature: 0.8, maxOutputTokens: 100000 },
           });
           
           // Check if user wants to replace an asset (logo, image, etc.)
@@ -454,33 +524,35 @@ CRITICAL RULES:
             send("error", { error: geminiError?.message || "Failed to process image. Please try with a smaller image." });
           }
         } else {
-          // Use OpenAI for text-only edits (faster)
-          send("status", { message: "Generating code with GPT-5.2...", phase: "ai" });
+          // Use Gemini for text-only edits (consistent with generation)
+          send("status", { message: "Generating code with Gemini 3 Pro...", phase: "ai" });
           
-          // Build comprehensive system prompt like Lovable/Bolt
-          const systemPrompt = buildSystemPrompt(chatHistory);
+          const geminiKey = getGeminiKey();
+          if (!geminiKey) {
+            send("error", { error: "Gemini API key not configured" });
+            controller.close();
+            return;
+          }
           
-          const messages: any[] = [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: prompt }
-          ];
+          const genAI = new GoogleGenerativeAI(geminiKey);
+          const model = genAI.getGenerativeModel({
+            model: "gemini-3-pro-preview",
+            generationConfig: { temperature: 0.7, maxOutputTokens: 100000 },
+          });
 
           send("status", { message: "Writing code...", phase: "writing" });
 
           try {
-            const response = await openai.chat.completions.create({
-              model: "gpt-5.2",
-              messages,
-              max_completion_tokens: 16000,
-              temperature: 0.7,
-              stream: true,
-            });
+            const systemPrompt = buildSystemPrompt(chatHistory);
+            const fullPrompt = `${systemPrompt}\n\n${prompt}`;
+            
+            const result = await model.generateContentStream(fullPrompt);
             
             let fullCode = "";
             let chunkCount = 0;
             
-            for await (const chunk of response) {
-              const text = chunk.choices[0]?.delta?.content || "";
+            for await (const chunk of result.stream) {
+              const text = chunk.text() || "";
               fullCode += text;
               chunkCount++;
               
@@ -543,7 +615,7 @@ CRITICAL RULES:
               }
             }
           } catch (streamError: any) {
-            console.error("[Stream Edit] OpenAI error:", streamError);
+            console.error("[Stream Edit] Gemini error:", streamError);
             send("error", { error: streamError?.message || "AI generation failed. Please try again." });
           }
         }
@@ -577,32 +649,50 @@ function extractCode(response: string): string | null {
   cleaned = cleaned.replace(/^(Here'?s?|I'?ve|The|Below is|This is|Sure|Okay|Done)[^`<]*(?=```|<!DOCTYPE|<html)/i, '');
   cleaned = cleaned.trim();
   
+  let result: string | null = null;
+  
   const htmlMatch = cleaned.match(/```html\s*([\s\S]*?)```/i);
-  if (htmlMatch && htmlMatch[1].trim().length > 50) return htmlMatch[1].trim();
-  
-  const codeMatch = cleaned.match(/```\s*([\s\S]*?)```/);
-  if (codeMatch && codeMatch[1].trim().length > 50) return codeMatch[1].trim();
-  
-  const doctypeMatch = cleaned.match(/(<!DOCTYPE[\s\S]*<\/html>)/i);
-  if (doctypeMatch) return doctypeMatch[1].trim();
-  
-  const htmlTagMatch = cleaned.match(/(<html[\s\S]*<\/html>)/i);
-  if (htmlTagMatch) return htmlTagMatch[1].trim();
-  
-  if (cleaned.startsWith('<!DOCTYPE') || cleaned.startsWith('<html') || cleaned.startsWith('<HTML')) {
-    const endIndex = cleaned.toLowerCase().lastIndexOf('</html>');
-    if (endIndex > 0) return cleaned.substring(0, endIndex + 7);
-    return cleaned;
+  if (htmlMatch && htmlMatch[1].trim().length > 50) {
+    result = htmlMatch[1].trim();
+  } else {
+    const codeMatch = cleaned.match(/```\s*([\s\S]*?)```/);
+    if (codeMatch && codeMatch[1].trim().length > 50) {
+      result = codeMatch[1].trim();
+    } else {
+      const doctypeMatch = cleaned.match(/(<!DOCTYPE[\s\S]*<\/html>)/i);
+      if (doctypeMatch) {
+        result = doctypeMatch[1].trim();
+      } else {
+        const htmlTagMatch = cleaned.match(/(<html[\s\S]*<\/html>)/i);
+        if (htmlTagMatch) {
+          result = htmlTagMatch[1].trim();
+        } else if (cleaned.startsWith('<!DOCTYPE') || cleaned.startsWith('<html') || cleaned.startsWith('<HTML')) {
+          const endIndex = cleaned.toLowerCase().lastIndexOf('</html>');
+          if (endIndex > 0) {
+            result = cleaned.substring(0, endIndex + 7);
+          } else {
+            result = cleaned;
+          }
+        } else {
+          const htmlStartIndex = cleaned.search(/<(!DOCTYPE|html)/i);
+          if (htmlStartIndex >= 0) {
+            const htmlContent = cleaned.substring(htmlStartIndex);
+            const endIndex = htmlContent.toLowerCase().lastIndexOf('</html>');
+            if (endIndex > 0) {
+              result = htmlContent.substring(0, endIndex + 7);
+            }
+          }
+        }
+      }
+    }
   }
   
-  const htmlStartIndex = cleaned.search(/<(!DOCTYPE|html)/i);
-  if (htmlStartIndex >= 0) {
-    const htmlContent = cleaned.substring(htmlStartIndex);
-    const endIndex = htmlContent.toLowerCase().lastIndexOf('</html>');
-    if (endIndex > 0) return htmlContent.substring(0, endIndex + 7);
+  // Fix broken image URLs before returning
+  if (result) {
+    result = fixBrokenImageUrls(result);
   }
   
-  return null;
+  return result;
 }
 
 function tryFallbackExtraction(response: string): string | null {
@@ -732,23 +822,37 @@ ${historyLines}
 `;
   }
 
-  // Detect if this is a "Create new page" request (starts with @PageName)
-  const isCreatePageRequest = /^@[a-zA-Z0-9-_]+\s+(create|add|make|build)/i.test(request.trim());
-  const pageNameMatch = request.match(/^@([a-zA-Z0-9-_]+)/);
-  const pageName = pageNameMatch ? pageNameMatch[1].toLowerCase().replace(/[^a-z0-9]+/g, '-') : null;
+  // Detect if this is a "Create/Add new page" request
+  const isCreatePageRequest = /ADD\s+a?\s*new\s+page|create\s+.*page|add\s+.*page|reconstruct|generate\s+.*page|@[a-zA-Z0-9-_]+\s+(create|add|make|build|reconstruct|generate)/i.test(request.trim());
+  
+  // Extract page name from various formats
+  const pageNameMatch = request.match(/(?:for|page)\s*["']([^"']+)["']|@([a-zA-Z0-9-_]+)|route:\s*\/([a-z0-9-]+)/i);
+  const pageName = pageNameMatch ? (pageNameMatch[1] || pageNameMatch[2] || pageNameMatch[3])?.toLowerCase().replace(/[^a-z0-9]+/g, '-') : null;
 
-  // Special instructions for adding new pages
+  // Special instructions for adding new pages - CRITICAL: PRESERVE EXISTING CODE
   const pageCreationInstructions = isCreatePageRequest && pageName ? `
-ADDING NEW PAGE: "${pageName}"
-This is a NEW PAGE request. You must:
-1. ADD "${pageName}" to the Alpine.js x-data currentPage options
-2. ADD a NEW x-show section: x-show="currentPage === '${pageName}'"
-3. CREATE full content for the "${pageName}" page matching the existing design
-4. ADD a navigation link to access this page
-5. KEEP ALL EXISTING PAGES INTACT
+⚠️⚠️⚠️ CRITICAL: ADDING NEW PAGE "${pageName}" ⚠️⚠️⚠️
 
-CRITICAL: The existing pages must remain EXACTLY as they are!
-Only ADD the new page section and navigation link.
+YOU MUST DO EXACTLY THIS:
+1. KEEP 100% OF EXISTING CODE - DO NOT DELETE OR MODIFY ANY EXISTING PAGES
+2. ADD a new x-show section with x-show="currentPage === '${pageName}'"
+3. ADD "${pageName}" to navigation menu alongside existing items
+4. CREATE content for "${pageName}" page matching the existing design/style
+
+FORBIDDEN ACTIONS:
+❌ DO NOT remove existing pages
+❌ DO NOT replace the entire HTML with just the new page
+❌ DO NOT modify existing page content
+❌ DO NOT change the existing navigation structure
+
+REQUIRED STRUCTURE:
+The code must have MULTIPLE x-show sections (existing ones + the new "${pageName}"):
+- x-show="currentPage === 'home'" (KEEP)
+- x-show="currentPage === 'existing1'" (KEEP) 
+- x-show="currentPage === 'existing2'" (KEEP)
+- x-show="currentPage === '${pageName}'" (ADD NEW)
+
+Count existing x-show sections BEFORE. After your edit, there must be MORE x-show sections, not fewer!
 ` : '';
 
   // Detect translation requests
@@ -787,10 +891,12 @@ ${pageCreationInstructions}${translationInstructions}
 OUTPUT RULES:
 1. Return COMPLETE HTML document (<!DOCTYPE html> to </html>)
 2. Wrap code in html code blocks
-3. Include ALL original functionality - do not remove anything unless asked
-4. Preserve Alpine.js x-data, x-show, x-on directives exactly
-5. Keep all existing pages, navigation, and multi-page structure
-6. NEVER return partial code or explanations instead of code
+3. ⚠️ PRESERVE ALL EXISTING CODE - only ADD/MODIFY what was specifically requested
+4. ⚠️ If adding a page: KEEP all existing x-show sections, ADD the new one
+5. Preserve Alpine.js x-data, x-show, x-on directives exactly
+6. Keep all existing pages, navigation, and multi-page structure
+7. NEVER return partial code or explanations instead of code
+8. NEVER reduce the amount of content - only add or modify
 
 TECHNICAL STANDARDS:
 - Use Tailwind CSS for all styling

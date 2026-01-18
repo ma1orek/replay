@@ -41,8 +41,8 @@ function createAdminClient() {
   return createClient(url, key);
 }
 
-// Email template for Starter announcement
-function getStarterEmailHtml() {
+// Email template for Maker announcement
+function getMakerEmailHtml() {
   return `
 <!DOCTYPE html>
 <html>
@@ -68,14 +68,14 @@ function getStarterEmailHtml() {
       </p>
       
       <p style="color: rgba(255,255,255,0.85); font-size: 16px; line-height: 1.7; margin: 0 0 28px 0;">
-        I wanted to personally let you know about our new <strong style="color: #FF6E3C;">Starter</strong> plan:
+        I wanted to personally let you know about our new <strong style="color: #FF6E3C;">Maker</strong> plan:
       </p>
       
-      <!-- Starter Box -->
+      <!-- Maker Box -->
       <div style="background: rgba(255,110,60,0.12); border-radius: 12px; padding: 24px; margin: 0 0 28px 0; border: 1px solid rgba(255,110,60,0.25);">
         
         <div style="margin-bottom: 20px;">
-          <h2 style="color: #FF6E3C; font-size: 24px; margin: 0; font-weight: 700;">Starter</h2>
+          <h2 style="color: #FF6E3C; font-size: 24px; margin: 0; font-weight: 700;">Maker</h2>
           <p style="color: rgba(255,255,255,0.55); font-size: 14px; margin: 6px 0 0 0;">One-time purchase, no subscription</p>
         </div>
         
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
         from: "Bartosz from Replay <bartosz@replay.build>",
         to: testEmail,
         subject: "I saw you created a generation — here's something for you ✨",
-        html: getStarterEmailHtml(),
+        html: getMakerEmailHtml(),
       });
 
       if (result.error) {
@@ -223,7 +223,7 @@ export async function POST(request: NextRequest) {
             from: "Bartosz from Replay <bartosz@replay.build>",
             to: email,
             subject: "I saw you created a generation — here's something for you ✨",
-            html: getStarterEmailHtml(),
+            html: getMakerEmailHtml(),
           });
 
           if (result.error) {
@@ -302,7 +302,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       totalUsersWithGenerations: users.length,
       users,
-      emailPreview: getStarterEmailHtml()
+      emailPreview: getMakerEmailHtml()
     });
 
   } catch (error: any) {

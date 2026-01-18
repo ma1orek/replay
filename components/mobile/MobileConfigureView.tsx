@@ -186,7 +186,7 @@ export default function MobileConfigureView({
             <video
               ref={previewVideoRef}
               src={videoUrl}
-              className="w-full aspect-video object-cover"
+              className="w-full max-h-[50vh] object-contain"
               playsInline
               muted
               loop

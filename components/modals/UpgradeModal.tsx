@@ -42,21 +42,12 @@ const featureMessages = {
 };
 
 // Stripe Price IDs
-const STARTER_PACK_PRICE_ID = "price_1Spo05Axch1s4iBGydOPAd2i"; // $9 one-time
 const PRO_SUBSCRIPTION_PRICE_ID = "price_1SotL1Axch1s4iBGWMvO0JBZ"; // $25/mo
 
-const starterFeatures = [
-  "300 credits (~4 generations)",
+const proFeatures = [
+  "1,500+ credits per month (~20 gens)",
   "Full Access & Export",
   "Publish to web",
-  "Credits never expire",
-  "Perfect for testing",
-];
-
-const proFeatures = [
-  "Everything in Starter, plus:",
-  "1,500+ credits per month (~20 gens)",
-  "Full Access & export",
   "Priority support",
   "Credits roll over",
   "Private projects",
@@ -65,7 +56,7 @@ const proFeatures = [
 export default function UpgradeModal({ isOpen, onClose, feature = "general" }: UpgradeModalProps) {
   const featureInfo = featureMessages[feature];
   const { user } = useAuth();
-  const [selectedPlan, setSelectedPlan] = useState<"starter" | "pro">("starter");
+  // Only PRO subscription available
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -86,17 +77,15 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
 
     setIsCheckingOut(true);
     try {
-      const isStarter = selectedPlan === "starter";
-      
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          type: isStarter ? "starter" : "subscription",
-          priceId: isStarter ? STARTER_PACK_PRICE_ID : PRO_SUBSCRIPTION_PRICE_ID,
-          tierId: isStarter ? "starter" : "pro25",
-          credits: isStarter ? 300 : 1500,
-          interval: isStarter ? undefined : "monthly"
+          type: "subscription",
+          priceId: PRO_SUBSCRIPTION_PRICE_ID,
+          tierId: "pro25",
+          credits: 1500,
+          interval: "monthly"
         }),
       });
       const data = await res.json();
@@ -168,63 +157,13 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
                   <p className="text-sm text-white/60 max-w-sm mx-auto">{featureInfo.description}</p>
                 </div>
 
-                {/* Plan Selection */}
-                <div className="px-6 pb-4 space-y-3">
-                  {/* Starter Pack Option */}
-                  <button
-                    onClick={() => setSelectedPlan("starter")}
-                    className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                      selectedPlan === "starter"
-                        ? "border-[#FF6E3C] bg-[#FF6E3C]/10"
-                        : "border-white/10 bg-white/[0.02] hover:border-white/20"
-                    }`}
-                  >
+                {/* Pro Subscription - Only Option */}
+                <div className="px-6 pb-4">
+                  <div className="w-full p-4 rounded-xl border-2 border-[#FF6E3C] bg-[#FF6E3C]/10">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3">
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                          selectedPlan === "starter" ? "border-[#FF6E3C] bg-[#FF6E3C]" : "border-white/30"
-                        }`}>
-                          {selectedPlan === "starter" && <Check className="w-3 h-3 text-white" />}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <CreditCard className="w-4 h-4 text-[#FF6E3C]" />
-                            <span className="font-semibold text-white">Starter</span>
-                            <span className="px-2 py-0.5 text-[10px] font-medium bg-white/10 text-white/50 rounded-full">ONE-TIME</span>
-                          </div>
-                          <p className="text-xs text-white/50 mt-0.5">One-time payment • Perfect for testing</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-2xl font-bold text-white">$9</span>
-                        <p className="text-[10px] text-white/40">one-time</p>
-                      </div>
-                    </div>
-                    <ul className="space-y-1.5 ml-8">
-                      {starterFeatures.map((feat, i) => (
-                        <li key={i} className="flex items-center gap-2 text-xs text-white/60">
-                          <Check className="w-3 h-3 text-white/40 flex-shrink-0" />
-                          {feat}
-                        </li>
-                      ))}
-                    </ul>
-                  </button>
-
-                  {/* Pro Subscription Option */}
-                  <button
-                    onClick={() => setSelectedPlan("pro")}
-                    className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                      selectedPlan === "pro"
-                        ? "border-[#FF6E3C] bg-[#FF6E3C]/10"
-                        : "border-white/10 bg-white/[0.02] hover:border-white/20"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                          selectedPlan === "pro" ? "border-[#FF6E3C] bg-[#FF6E3C]" : "border-white/30"
-                        }`}>
-                          {selectedPlan === "pro" && <Check className="w-3 h-3 text-white" />}
+                        <div className="w-5 h-5 rounded-full border-2 border-[#FF6E3C] bg-[#FF6E3C] flex items-center justify-center">
+                          <Check className="w-3 h-3 text-white" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
@@ -247,7 +186,7 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
                         </li>
                       ))}
                     </ul>
-                  </button>
+                  </div>
                 </div>
 
                 {/* CTA */}
@@ -262,17 +201,12 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
                         <Loader2 className="w-4 h-4 animate-spin" />
                         Processing...
                       </span>
-                    ) : selectedPlan === "starter" ? (
-                      "Get Starter — $9"
                     ) : (
                       "Subscribe to Pro for $25/mo"
                     )}
                   </button>
                   <p className="text-center text-[11px] text-white/40">
-                    {selectedPlan === "starter" 
-                      ? "One-time payment. No subscription. Credits never expire."
-                      : "Cancel anytime. Credits roll over."
-                    }
+                    Cancel anytime. Credits roll over.
                   </p>
                   <button
                     onClick={onClose}

@@ -110,23 +110,23 @@ export async function POST(request: NextRequest) {
           console.log("Updated membership to Pro for user:", userId);
         }
         
-        // Handle top-up purchase (one-time payment) - includes Starter Pack
+        // Handle top-up purchase (one-time payment) - includes Maker Pack
         if (session.mode === "payment" && userId) {
           const creditsAmount = parseInt(session.metadata?.credits_amount || "0");
-          const isStarterPack = session.metadata?.tier_id === "starter" || creditsAmount === 200;
+          const isMakerPack = session.metadata?.tier_id === "maker" || creditsAmount === 200;
           
           if (creditsAmount > 0) {
-            // If it's Starter Pack, update membership to "starter"
-            if (isStarterPack) {
+            // If it's Maker Pack, update membership to "maker"
+            if (isMakerPack) {
               await supabase
                 .from("memberships")
                 .upsert({
                   user_id: userId,
-                  plan: "starter",
+                  plan: "maker",
                   updated_at: new Date().toISOString(),
                 }, { onConflict: "user_id" });
               
-              console.log("Updated membership to Starter for user:", userId);
+              console.log("Updated membership to Maker for user:", userId);
             }
             
             // Add credits to user's wallet
@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
                 type: "credit",
                 bucket: "topup",
                 amount: creditsAmount,
-                reason: isStarterPack ? "starter_pack_purchase" : "topup_purchase",
+                reason: isMakerPack ? "maker_pack_purchase" : "topup_purchase",
                 reference_id: session.id,
               });
             
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
             const customerEmail = session.customer_details?.email || session.customer_email;
             await trackFBPurchase(userId, customerEmail, session.amount_total ? session.amount_total / 100 : 9, "Purchase");
             
-            console.log("Added", creditsAmount, "credits for user:", userId, isStarterPack ? "(Starter Pack)" : "");
+            console.log("Added", creditsAmount, "credits for user:", userId);
           }
         }
         break;

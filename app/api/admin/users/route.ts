@@ -58,31 +58,10 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400 });
     }
 
-    // Handle Starter Pack (isTopup=true): Add credits to topup_credits AND set membership to "starter"
+    // Maker Pack removed - only PRO subscriptions available
+    // Top-up credits can still be added via topup_credits, but won't change membership plan
     if (isTopup && credits && typeof credits === "number") {
-      // Update membership to "starter"
-      const { data: existingMembership } = await adminSupabase
-        .from("memberships")
-        .select("*")
-        .eq("user_id", userId)
-        .single();
-
-      if (existingMembership) {
-        await adminSupabase
-          .from("memberships")
-          .update({ plan: "starter" })
-          .eq("user_id", userId);
-      } else {
-        await adminSupabase
-          .from("memberships")
-          .insert({ 
-            user_id: userId, 
-            plan: "starter",
-            created_at: new Date().toISOString()
-          });
-      }
-
-      // Add credits to topup_credits
+      // Add credits to topup_credits (no membership change)
       const { data: wallet } = await adminSupabase
         .from("credit_wallets")
         .select("*")
@@ -108,7 +87,7 @@ export async function PATCH(request: NextRequest) {
 
       return NextResponse.json({ 
         success: true, 
-        message: `User upgraded to Starter Pack with ${credits} credits` 
+        message: `Added ${credits} top-up credits to user` 
       });
     }
 
@@ -152,9 +131,8 @@ export async function PATCH(request: NextRequest) {
         }
       }
       
-      // If credits are specified AND membership is NOT starter, update monthly_credits
-      // For starter, credits are managed via topup_credits (one-time purchases), not monthly
-      if (credits && typeof credits === "number" && membership !== "starter") {
+      // If credits are specified, update monthly_credits (for subscription plans)
+      if (credits && typeof credits === "number") {
         const { data: wallet } = await adminSupabase
           .from("credit_wallets")
           .select("*")

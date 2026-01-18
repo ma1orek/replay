@@ -35,7 +35,7 @@ export default function LandingNavigation() {
   const meta = user?.user_metadata;
   const displayName = profile?.full_name || meta?.full_name || meta?.name || user?.email?.split('@')[0] || 'User';
   const plan = membership?.plan || "free";
-  const isPaidPlan = plan === "starter" || plan === "pro" || plan === "agency" || plan === "enterprise";
+  const isPaidPlan = plan === "pro" || plan === "agency" || plan === "enterprise";
   
   // Close profile menu when clicking outside
   useEffect(() => {
@@ -109,7 +109,7 @@ export default function LandingNavigation() {
                       </span>
                     ) : (
                       <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-white/50 uppercase">
-                        {plan === "starter" ? "Starter" : "Free"}
+                        Free
                       </span>
                     )}
                   </button>
@@ -143,7 +143,7 @@ export default function LandingNavigation() {
                                     </span>
                                   ) : (
                                     <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-white/50 uppercase">
-                                      {plan === "starter" ? "Starter" : "Free"}
+                                      Free
                                     </span>
                                   )}
                                 </div>
@@ -312,7 +312,7 @@ export default function LandingNavigation() {
                                   </span>
                                 ) : (
                                   <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-white/50 uppercase">
-                                    {plan === "starter" ? "Starter" : "Free"}
+                                    Free
                                   </span>
                                 )}
                               </div>

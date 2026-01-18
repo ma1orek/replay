@@ -27,6 +27,21 @@ const STORAGE_KEY_VIDEO = "replay_mobile_pending_video";
 const STORAGE_KEY_NAME = "replay_mobile_pending_name";
 const STORAGE_KEY_LOAD_PROJECT = "replay_mobile_load_project";
 
+// IndexedDB helper for storing large video blobs
+const openVideoDB = (): Promise<IDBDatabase> => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("replay_videos", 1);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      if (!db.objectStoreNames.contains("videos")) {
+        db.createObjectStore("videos");
+      }
+    };
+  });
+};
+
 export default function MobileLayout({ user, isPro, plan, credits, creditsLoading, onLogin, onOpenCreditsModal, onCreditsRefresh, onSaveGeneration, onOpenHistory }: MobileLayoutProps) {
   const searchParams = useSearchParams();
   const autoStartCamera = searchParams?.get("camera") === "true";
@@ -185,35 +200,48 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [checkForPendingJob]);
   
-  // Restore video from localStorage after login
+  // Restore video from IndexedDB after login
   useEffect(() => {
     if (user && !videoBlob) {
-      try {
-        const savedVideoData = localStorage.getItem(STORAGE_KEY_VIDEO);
-        const savedName = localStorage.getItem(STORAGE_KEY_NAME);
-        
-        if (savedVideoData) {
-          // Convert base64 back to Blob
-          const byteString = atob(savedVideoData.split(",")[1] || savedVideoData);
-          const mimeType = savedVideoData.match(/data:([^;]+);/)?.[1] || "video/webm";
-          const ab = new ArrayBuffer(byteString.length);
-          const ia = new Uint8Array(ab);
-          for (let i = 0; i < byteString.length; i++) {
-            ia[i] = byteString.charCodeAt(i);
-          }
-          const blob = new Blob([ab], { type: mimeType });
-          setVideoBlob(blob);
-          if (savedName) setProjectName(savedName);
+      const restoreVideo = async () => {
+        try {
+          // Try IndexedDB first (for large videos)
+          const db = await openVideoDB();
+          const tx = db.transaction("videos", "readonly");
+          const store = tx.objectStore("videos");
+          const request = store.get("pending_video");
           
-          // Clear storage
-          localStorage.removeItem(STORAGE_KEY_VIDEO);
-          localStorage.removeItem(STORAGE_KEY_NAME);
-          
-          console.log("Restored video from localStorage after login");
+          request.onsuccess = () => {
+            if (request.result) {
+              const { blob, name } = request.result;
+              setVideoBlob(blob);
+              if (name) setProjectName(name);
+              
+              // Clear from IndexedDB
+              const deleteTx = db.transaction("videos", "readwrite");
+              deleteTx.objectStore("videos").delete("pending_video");
+              
+              console.log("Restored video from IndexedDB after login");
+            }
+          };
+        } catch (err) {
+          console.error("Failed to restore video:", err);
         }
-      } catch (err) {
-        console.error("Failed to restore video:", err);
-      }
+        
+        // Also check localStorage for project name only
+        try {
+          const savedName = localStorage.getItem(STORAGE_KEY_NAME);
+          if (savedName) {
+            setProjectName(savedName);
+            localStorage.removeItem(STORAGE_KEY_NAME);
+          }
+          // Clean up old video key if it exists (it would be corrupted anyway)
+          localStorage.removeItem(STORAGE_KEY_VIDEO);
+        } catch (e) {
+          // Ignore localStorage errors
+        }
+      };
+      restoreVideo();
     }
   }, [user, videoBlob]);
   
@@ -252,22 +280,33 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
     setActiveTab("configure");
   }, []);
   
-  // Save video to localStorage before login redirect
+  // Save video to IndexedDB before login redirect (localStorage is too small for videos)
   const saveVideoForLogin = useCallback(async () => {
     if (!videoBlob) return;
     
     try {
-      // Convert blob to base64
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result as string;
-        localStorage.setItem(STORAGE_KEY_VIDEO, base64);
+      // Use IndexedDB for large video blobs (localStorage has ~5MB limit)
+      const db = await openVideoDB();
+      const tx = db.transaction("videos", "readwrite");
+      const store = tx.objectStore("videos");
+      
+      await new Promise<void>((resolve, reject) => {
+        const request = store.put({ blob: videoBlob, name: projectName }, "pending_video");
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+      
+      // Also save name to localStorage as backup
+      try {
         localStorage.setItem(STORAGE_KEY_NAME, projectName);
-        console.log("Saved video to localStorage before login");
-      };
-      reader.readAsDataURL(videoBlob);
+      } catch (e) {
+        // Ignore localStorage errors
+      }
+      
+      console.log("Saved video to IndexedDB before login");
     } catch (err) {
       console.error("Failed to save video:", err);
+      // Don't block login even if storage fails
     }
   }, [videoBlob, projectName]);
   
