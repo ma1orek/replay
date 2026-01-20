@@ -137,23 +137,34 @@ export function PendingFlowProvider({ children }: { children: React.ReactNode })
         if (!serialized) {
           const stored = localStorage.getItem(STORAGE_KEY);
           if (stored) {
-            serialized = JSON.parse(stored);
+            try {
+              serialized = JSON.parse(stored);
+            } catch (parseError) {
+              console.warn("[PendingFlow] Corrupted localStorage, clearing");
+              localStorage.removeItem(STORAGE_KEY);
+            }
           }
         }
         
-        if (serialized) {
+        if (serialized && serialized.blobBase64) {
           // Check if it's not too old (max 1 hour)
           const ageMs = Date.now() - serialized.createdAt;
           if (ageMs < 60 * 60 * 1000) {
-            const blob = base64ToBlob(serialized.blobBase64, serialized.blobType);
-            setPendingState({
-              blob,
-              name: serialized.name,
-              context: serialized.context,
-              styleDirective: serialized.styleDirective,
-              createdAt: serialized.createdAt,
-            });
-            console.log("[PendingFlow] Loaded pending flow:", serialized.name);
+            try {
+              const blob = base64ToBlob(serialized.blobBase64, serialized.blobType);
+              setPendingState({
+                blob,
+                name: serialized.name,
+                context: serialized.context,
+                styleDirective: serialized.styleDirective,
+                createdAt: serialized.createdAt,
+              });
+              console.log("[PendingFlow] Loaded pending flow:", serialized.name);
+            } catch (blobError) {
+              console.warn("[PendingFlow] Corrupted blob data, clearing storage");
+              localStorage.removeItem(STORAGE_KEY);
+              await clearFromIDB();
+            }
           } else {
             // Clear expired pending flow
             console.log("[PendingFlow] Clearing expired pending flow");

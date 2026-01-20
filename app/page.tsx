@@ -68,7 +68,16 @@ import {
   Globe,
   Zap,
   PanelLeftClose,
-  PanelLeft
+  PanelLeft,
+  FileText,
+  Plug,
+  CheckSquare,
+  Package,
+  Cpu,
+  ListTodo,
+  Shield,
+  Cloud,
+  Gauge
 } from "lucide-react";
 import { cn, generateId, formatDuration, updateProjectAnalytics } from "@/lib/utils";
 import { stabilizePicsumUrls } from "@/lib/assets";
@@ -497,7 +506,8 @@ interface ChatMessage {
   quickActions?: string[];
 }
 
-type ViewMode = "preview" | "code" | "flow" | "design" | "input";
+type ViewMode = "preview" | "code" | "flow" | "design" | "docs" | "input";
+type DocsSubTab = "overview" | "api" | "qa" | "deploy";
 type SidebarMode = "config" | "chat";
 type SidebarTab = "chat" | "tree" | "style";
 type SidebarView = "projects" | "detail"; // New: toggle between project list and detail view
@@ -1016,6 +1026,7 @@ function ReplayToolContent() {
   const [isStreamingCode, setIsStreamingCode] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("preview");
+  const [docsSubTab, setDocsSubTab] = useState<DocsSubTab>("overview");
   const [selectedFlowId, setSelectedFlowId] = useState<string | null>(null);
   // const [showUserMenu, setShowUserMenu] = useState(false); // Removed in favor of direct link
   // streamingMessage state removed - loading handled in LoadingState component
@@ -5222,17 +5233,35 @@ Try these prompts in Cursor or v0:
   };
 
   // Import flow from landing hero (upload/record/context/style) without touching tool behavior.
+  // Track processed pending flows to prevent duplicate imports
+  const processedPendingRef = useRef<number | null>(null);
+  
   useEffect(() => {
     if (!pending?.blob) return;
+    
+    // Prevent duplicate processing (React Strict Mode, fast re-renders)
+    if (processedPendingRef.current === pending.createdAt) {
+      return;
+    }
+    processedPendingRef.current = pending.createdAt;
 
     // Safety: only consume once per pending payload
     const payload = pending;
     (async () => {
       try {
-        await addVideoToFlows(payload.blob, payload.name || "Flow");
-        if (payload.context) setRefinements(payload.context);
-        if (payload.styleDirective) setStyleDirective(payload.styleDirective);
-        setViewMode("input");
+        // Check if we already have flows - if so, just restore context/style, don't add video again
+        // This happens when user clicked Reconstruct while not logged in, then logged in
+        if (flows.length > 0) {
+          console.log("[PendingFlow] Flows already exist, restoring context only (not adding duplicate video)");
+          if (payload.context) setRefinements(payload.context);
+          if (payload.styleDirective) setStyleDirective(payload.styleDirective);
+        } else {
+          // No flows yet - this is a fresh import from landing page
+          await addVideoToFlows(payload.blob, payload.name || "Flow");
+          if (payload.context) setRefinements(payload.context);
+          if (payload.styleDirective) setStyleDirective(payload.styleDirective);
+          setViewMode("input");
+        }
       } finally {
         clearPending();
       }
@@ -5794,13 +5823,20 @@ Try these prompts in Cursor or v0:
   };
 
   const handleGenerate = async () => {
-    if (flows.length === 0) return;
+    console.log("[handleGenerate] Called, flows:", flows.length, "user:", !!user);
+    if (flows.length === 0) {
+      console.log("[handleGenerate] No flows - returning early");
+      showToast("Please upload or record a video first", "error");
+      return;
+    }
     
     // Auth gate: require login
     if (!user) {
+      console.log("[handleGenerate] No user - showing auth modal");
       // Save flow to persistent storage so it survives auth redirect
       const flow = flows.find(f => f.id === selectedFlowId) || flows[0];
       if (flow && flow.videoBlob) {
+        console.log("[handleGenerate] Saving flow to pending storage");
         await setPending({
           blob: flow.videoBlob,
           name: flow.name || "Flow",
@@ -5811,6 +5847,7 @@ Try these prompts in Cursor or v0:
       }
       setPendingAction("generate");
       setShowAuthModal(true);
+      console.log("[handleGenerate] Auth modal should now be visible");
       return;
     }
     
@@ -7685,6 +7722,25 @@ Try these prompts in Cursor or v0:
         }}
       />
       
+      {/* Auth Modal for Desktop */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => {
+          setShowAuthModal(false);
+          setPendingAction(null);
+        }}
+        title="Sign in to continue"
+        description="Your scans and credits are saved to your account."
+      />
+      
+      {/* Out of Credits Modal for Desktop */}
+      <OutOfCreditsModal
+        isOpen={showOutOfCreditsModal}
+        onClose={() => setShowOutOfCreditsModal(false)}
+        requiredCredits={CREDIT_COSTS.VIDEO_GENERATE}
+        availableCredits={userTotalCredits}
+      />
+      
       {/* Hidden file input for video upload */}
       <input 
         type="file" 
@@ -9177,14 +9233,45 @@ Try these prompts in Cursor or v0:
               </div>
 
               <div className="p-4 border-b border-zinc-800">
-                <div className="flex items-center gap-2 mb-3"><Palette className="w-4 h-4 text-zinc-500" /><span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Style</span></div>
-                <StyleInjector 
-                  value={styleDirective} 
-                  onChange={setStyleDirective} 
-                  disabled={isProcessing}
-                  referenceImage={styleReferenceImage}
-                  onReferenceImageChange={setStyleReferenceImage}
-                />
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Palette className="w-4 h-4 text-zinc-500" />
+                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                      {enterpriseMode ? "Enterprise Preset" : "Style"}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setEnterpriseMode(!enterpriseMode)}
+                    className={cn(
+                      "px-2 py-1 rounded-md text-[10px] font-medium transition-all",
+                      enterpriseMode 
+                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" 
+                        : "bg-zinc-800/50 text-zinc-500 hover:text-zinc-400"
+                    )}
+                  >
+                    {enterpriseMode ? "Enterprise ✓" : "Creative"}
+                  </button>
+                </div>
+                
+                {enterpriseMode ? (
+                  <EnterprisePresetSelector
+                    selectedPresetId={enterprisePresetId}
+                    onSelect={(preset) => {
+                      setEnterprisePresetId(preset.id);
+                      setStyleDirective(`Apply ${preset.name} design system`);
+                    }}
+                    compact={true}
+                    disabled={isProcessing}
+                  />
+                ) : (
+                  <StyleInjector 
+                    value={styleDirective} 
+                    onChange={setStyleDirective} 
+                    disabled={isProcessing}
+                    referenceImage={styleReferenceImage}
+                    onReferenceImageChange={setStyleReferenceImage}
+                  />
+                )}
               </div>
 
               {/* Generate Button */}
@@ -9482,6 +9569,7 @@ Try these prompts in Cursor or v0:
                 { id: "code", icon: Code, label: "Code" },
                 { id: "flow", icon: GitBranch, label: "Flow" },
                 { id: "design", icon: Palette, label: "Design" },
+                { id: "docs", icon: FileText, label: "Docs" },
                 { id: "input", icon: FileInput, label: "Input" },
               ].map((tab) => (
                 <button 
@@ -11165,6 +11253,523 @@ export default function GeneratedPage() {
                     <EmptyState icon="logo" title="No style info yet" subtitle="Generate code to see the design system" />
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Docs - Documentation with sub-tabs */}
+            {viewMode === "docs" && (
+              <div className="flex-1 overflow-hidden flex flex-col bg-[#111111]">
+                {/* Sub-tabs navigation */}
+                <div className="flex items-center gap-1 p-3 border-b border-white/[0.06] bg-[#141414]">
+                  {[
+                    { id: "overview", icon: FileText, label: "Overview" },
+                    { id: "api", icon: Plug, label: "API" },
+                    { id: "qa", icon: CheckSquare, label: "QA" },
+                    { id: "deploy", icon: Rocket, label: "Deploy" },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setDocsSubTab(tab.id as DocsSubTab)}
+                      className={cn(
+                        "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                        docsSubTab === tab.id
+                          ? "text-white bg-zinc-700"
+                          : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
+                      )}
+                    >
+                      <tab.icon className="w-3.5 h-3.5" />
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Sub-tab content */}
+                <div className="flex-1 overflow-auto p-6">
+                  {(isProcessing || isStreamingCode) ? (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <LoadingState />
+                    </div>
+                  ) : !generatedCode ? (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <EmptyState icon="logo" title="No documentation yet" subtitle="Generate code to see documentation" />
+                    </div>
+                  ) : (
+                    <div className="max-w-4xl mx-auto">
+                      {/* Overview Sub-tab */}
+                      {docsSubTab === "overview" && (
+                        <div className="space-y-6">
+                          <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500/20 to-orange-600/10 flex items-center justify-center">
+                              <FileText className="w-5 h-5 text-orange-400" />
+                            </div>
+                            <div>
+                              <h2 className="text-lg font-semibold text-white">{activeGeneration?.title || "Project Documentation"}</h2>
+                              <p className="text-xs text-zinc-500">Generated {new Date().toLocaleDateString()}</p>
+                            </div>
+                          </div>
+
+                          {/* What was delivered */}
+                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
+                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
+                              <Package className="w-4 h-4 text-emerald-400" />
+                              What Was Delivered
+                            </h3>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50">
+                                <p className="text-2xl font-bold text-white">{editableCode?.length || 0}</p>
+                                <p className="text-xs text-zinc-500">React Components</p>
+                              </div>
+                              <div className="p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50">
+                                <p className="text-2xl font-bold text-white">{flowNodes.filter(n => n.status === "observed").length}</p>
+                                <p className="text-xs text-zinc-500">Screens Mapped</p>
+                              </div>
+                              <div className="p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50">
+                                <p className="text-2xl font-bold text-white">{styleInfo?.colors?.length || 0}</p>
+                                <p className="text-xs text-zinc-500">Design Tokens</p>
+                              </div>
+                              <div className="p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50">
+                                <p className="text-2xl font-bold text-white">TypeScript</p>
+                                <p className="text-xs text-zinc-500">Strict Mode</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Architecture Overview */}
+                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
+                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
+                              <Layers className="w-4 h-4 text-blue-400" />
+                              Architecture
+                            </h3>
+                            <pre className="text-xs text-zinc-400 font-mono bg-zinc-800/50 rounded-lg p-4 overflow-x-auto">
+{`/src
+├── /components
+│   ├── /ui          # Base shadcn/ui components
+│   └── /features    # Business logic components
+├── /hooks           # Custom React hooks
+├── /services        # API client & services
+├── /types           # TypeScript definitions
+├── /utils           # Helper functions
+└── /config          # App configuration`}
+                            </pre>
+                          </div>
+
+                          {/* Quick Start */}
+                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
+                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
+                              <Zap className="w-4 h-4 text-yellow-400" />
+                              Quick Start
+                            </h3>
+                            <div className="space-y-3">
+                              <div className="flex items-start gap-3">
+                                <span className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400">1</span>
+                                <div>
+                                  <p className="text-sm text-zinc-300">Download the package</p>
+                                  <p className="text-xs text-zinc-500">Go to Design tab → Download Enterprise Package</p>
+                                </div>
+                              </div>
+                              <div className="flex items-start gap-3">
+                                <span className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400">2</span>
+                                <div>
+                                  <p className="text-sm text-zinc-300">Install dependencies</p>
+                                  <code className="text-xs text-orange-400 bg-zinc-800 px-2 py-0.5 rounded">npm install</code>
+                                </div>
+                              </div>
+                              <div className="flex items-start gap-3">
+                                <span className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400">3</span>
+                                <div>
+                                  <p className="text-sm text-zinc-300">Start development server</p>
+                                  <code className="text-xs text-orange-400 bg-zinc-800 px-2 py-0.5 rounded">npm run dev</code>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Technologies Used */}
+                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
+                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
+                              <Cpu className="w-4 h-4 text-purple-400" />
+                              Technologies
+                            </h3>
+                            <div className="flex flex-wrap gap-2">
+                              {["React 18", "TypeScript", "Tailwind CSS", "shadcn/ui", "Radix UI", "React Query", "Zod", "Framer Motion"].map((tech) => (
+                                <span key={tech} className="px-2.5 py-1 rounded-full bg-zinc-800 text-xs text-zinc-400 border border-zinc-700">
+                                  {tech}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* API Sub-tab */}
+                      {docsSubTab === "api" && (
+                        <div className="space-y-6">
+                          <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center">
+                              <Plug className="w-5 h-5 text-blue-400" />
+                            </div>
+                            <div>
+                              <h2 className="text-lg font-semibold text-white">API Integration</h2>
+                              <p className="text-xs text-zinc-500">Backend integration specifications</p>
+                            </div>
+                          </div>
+
+                          {/* Inferred API Endpoints */}
+                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
+                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
+                              <Globe className="w-4 h-4 text-green-400" />
+                              Inferred Endpoints
+                            </h3>
+                            <div className="space-y-2">
+                              {flowNodes.filter(n => n.status === "observed").slice(0, 8).map((node, i) => (
+                                <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50">
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400">GET</span>
+                                  <code className="text-xs text-zinc-300 font-mono">/api/{node.label.toLowerCase().replace(/\s+/g, '-')}</code>
+                                  <span className="text-xs text-zinc-600 ml-auto">→ {node.label}</span>
+                                </div>
+                              ))}
+                              {flowNodes.filter(n => n.status === "observed").length > 0 && (
+                                <div className="flex items-center gap-3 p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50">
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-400">POST</span>
+                                  <code className="text-xs text-zinc-300 font-mono">/api/actions</code>
+                                  <span className="text-xs text-zinc-600 ml-auto">→ Form submissions</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* OpenAPI Spec */}
+                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
+                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
+                              <FileCode className="w-4 h-4 text-orange-400" />
+                              OpenAPI Specification
+                            </h3>
+                            <pre className="text-xs text-zinc-400 font-mono bg-zinc-800/50 rounded-lg p-4 overflow-x-auto max-h-64">
+{`openapi: 3.0.0
+info:
+  title: ${activeGeneration?.title || "Generated"} API
+  version: 1.0.0
+  description: Auto-generated from video analysis
+
+paths:
+  /api/data:
+    get:
+      summary: Fetch main data
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/actions:
+    post:
+      summary: Submit form data
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: Created`}
+                            </pre>
+                            <button 
+                              onClick={() => {
+                                const spec = `openapi: 3.0.0\ninfo:\n  title: ${activeGeneration?.title || "Generated"} API\n  version: 1.0.0`;
+                                navigator.clipboard.writeText(spec);
+                                showToast("OpenAPI spec copied!", "success");
+                              }}
+                              className="mt-3 px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors flex items-center gap-1.5"
+                            >
+                              <Copy className="w-3 h-3" /> Copy Spec
+                            </button>
+                          </div>
+
+                          {/* Backend Checklist */}
+                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
+                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
+                              <ListTodo className="w-4 h-4 text-yellow-400" />
+                              Backend Implementation Checklist
+                            </h3>
+                            <div className="space-y-2">
+                              {[
+                                "Set up API routes matching OpenAPI spec",
+                                "Implement authentication middleware",
+                                "Create database models from TypeScript interfaces",
+                                "Add input validation using Zod schemas",
+                                "Implement CORS for frontend domain",
+                                "Set up error handling & logging",
+                                "Add rate limiting for API endpoints",
+                                "Create seed data for development"
+                              ].map((item, i) => (
+                                <label key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800/30 cursor-pointer group">
+                                  <input type="checkbox" className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-orange-500 focus:ring-orange-500/50" />
+                                  <span className="text-sm text-zinc-400 group-hover:text-zinc-300">{item}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* QA Sub-tab */}
+                      {docsSubTab === "qa" && (
+                        <div className="space-y-6">
+                          <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center">
+                              <CheckSquare className="w-5 h-5 text-emerald-400" />
+                            </div>
+                            <div>
+                              <h2 className="text-lg font-semibold text-white">Quality Assurance</h2>
+                              <p className="text-xs text-zinc-500">Testing & verification checklists</p>
+                            </div>
+                          </div>
+
+                          {/* Functional Testing */}
+                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
+                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
+                              <Play className="w-4 h-4 text-green-400" />
+                              Functional Testing
+                            </h3>
+                            <div className="space-y-2">
+                              {[
+                                "All screens render without errors",
+                                "Navigation between screens works correctly",
+                                "Forms validate input correctly",
+                                "Error states display properly",
+                                "Loading states appear during async operations",
+                                "Empty states show when no data",
+                                "All buttons/links are clickable",
+                                "Data displays match source video"
+                              ].map((item, i) => (
+                                <label key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800/30 cursor-pointer group">
+                                  <input type="checkbox" className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-emerald-500 focus:ring-emerald-500/50" />
+                                  <span className="text-sm text-zinc-400 group-hover:text-zinc-300">{item}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Accessibility */}
+                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
+                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
+                              <Eye className="w-4 h-4 text-blue-400" />
+                              Accessibility (WCAG AA)
+                            </h3>
+                            <div className="space-y-2">
+                              {[
+                                "Color contrast meets 4.5:1 ratio",
+                                "All images have alt text",
+                                "Forms have proper labels",
+                                "Keyboard navigation works (Tab, Enter, Escape)",
+                                "Focus indicators visible",
+                                "Screen reader compatible",
+                                "No keyboard traps"
+                              ].map((item, i) => (
+                                <label key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800/30 cursor-pointer group">
+                                  <input type="checkbox" className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500/50" />
+                                  <span className="text-sm text-zinc-400 group-hover:text-zinc-300">{item}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Browser Testing */}
+                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
+                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
+                              <Monitor className="w-4 h-4 text-purple-400" />
+                              Browser & Device Testing
+                            </h3>
+                            <div className="grid grid-cols-2 gap-3">
+                              {[
+                                { name: "Chrome", status: "primary" },
+                                { name: "Firefox", status: "supported" },
+                                { name: "Safari", status: "supported" },
+                                { name: "Edge", status: "supported" },
+                                { name: "Mobile iOS", status: "responsive" },
+                                { name: "Mobile Android", status: "responsive" }
+                              ].map((browser) => (
+                                <div key={browser.name} className="flex items-center gap-2 p-2 rounded-lg bg-zinc-800/50">
+                                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                  <span className="text-sm text-zinc-300">{browser.name}</span>
+                                  <span className="text-[10px] text-zinc-600 ml-auto">{browser.status}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Performance */}
+                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
+                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
+                              <Gauge className="w-4 h-4 text-yellow-400" />
+                              Performance Targets
+                            </h3>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="p-3 rounded-lg bg-zinc-800/50">
+                                <p className="text-lg font-bold text-emerald-400">&lt; 3s</p>
+                                <p className="text-xs text-zinc-500">First Contentful Paint</p>
+                              </div>
+                              <div className="p-3 rounded-lg bg-zinc-800/50">
+                                <p className="text-lg font-bold text-emerald-400">&lt; 100ms</p>
+                                <p className="text-xs text-zinc-500">Interaction Response</p>
+                              </div>
+                              <div className="p-3 rounded-lg bg-zinc-800/50">
+                                <p className="text-lg font-bold text-yellow-400">90+</p>
+                                <p className="text-xs text-zinc-500">Lighthouse Score</p>
+                              </div>
+                              <div className="p-3 rounded-lg bg-zinc-800/50">
+                                <p className="text-lg font-bold text-emerald-400">&lt; 200KB</p>
+                                <p className="text-xs text-zinc-500">Initial Bundle</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Deploy Sub-tab */}
+                      {docsSubTab === "deploy" && (
+                        <div className="space-y-6">
+                          <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/10 flex items-center justify-center">
+                              <Rocket className="w-5 h-5 text-purple-400" />
+                            </div>
+                            <div>
+                              <h2 className="text-lg font-semibold text-white">Deployment</h2>
+                              <p className="text-xs text-zinc-500">Production deployment guides</p>
+                            </div>
+                          </div>
+
+                          {/* Docker Setup */}
+                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
+                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
+                              <Box className="w-4 h-4 text-blue-400" />
+                              Docker Configuration
+                            </h3>
+                            <pre className="text-xs text-zinc-400 font-mono bg-zinc-800/50 rounded-lg p-4 overflow-x-auto">
+{`# Dockerfile
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/package.json ./
+RUN npm ci --only=production
+EXPOSE 3000
+CMD ["npm", "start"]`}
+                            </pre>
+                            <button 
+                              onClick={() => {
+                                navigator.clipboard.writeText("docker build -t replay-app . && docker run -p 3000:3000 replay-app");
+                                showToast("Docker commands copied!", "success");
+                              }}
+                              className="mt-3 px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors flex items-center gap-1.5"
+                            >
+                              <Copy className="w-3 h-3" /> Copy Build Command
+                            </button>
+                          </div>
+
+                          {/* Environment Variables */}
+                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
+                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
+                              <Settings className="w-4 h-4 text-yellow-400" />
+                              Environment Variables
+                            </h3>
+                            <pre className="text-xs text-zinc-400 font-mono bg-zinc-800/50 rounded-lg p-4 overflow-x-auto">
+{`# .env.production
+NEXT_PUBLIC_API_URL=https://api.yoursite.com
+NEXT_PUBLIC_APP_URL=https://yoursite.com
+DATABASE_URL=postgresql://...
+JWT_SECRET=your-secret-key
+REDIS_URL=redis://...`}
+                            </pre>
+                          </div>
+
+                          {/* CI/CD Pipeline */}
+                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
+                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
+                              <GitBranch className="w-4 h-4 text-green-400" />
+                              CI/CD Pipeline (GitHub Actions)
+                            </h3>
+                            <pre className="text-xs text-zinc-400 font-mono bg-zinc-800/50 rounded-lg p-4 overflow-x-auto max-h-48">
+{`# .github/workflows/deploy.yml
+name: Deploy
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25`}
+                            </pre>
+                          </div>
+
+                          {/* Production Checklist */}
+                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
+                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
+                              <Shield className="w-4 h-4 text-red-400" />
+                              Production Checklist
+                            </h3>
+                            <div className="space-y-2">
+                              {[
+                                "Environment variables configured",
+                                "Database migrations applied",
+                                "SSL/TLS certificate installed",
+                                "Error monitoring set up (Sentry)",
+                                "Logging configured",
+                                "Backup strategy in place",
+                                "Rate limiting enabled",
+                                "CDN configured for static assets"
+                              ].map((item, i) => (
+                                <label key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800/30 cursor-pointer group">
+                                  <input type="checkbox" className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-purple-500 focus:ring-purple-500/50" />
+                                  <span className="text-sm text-zinc-400 group-hover:text-zinc-300">{item}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* One-Click Deploy */}
+                          <div className="rounded-xl border border-orange-500/20 bg-gradient-to-br from-orange-500/5 to-transparent p-5">
+                            <h3 className="text-sm font-semibold text-zinc-300 mb-3">Quick Deploy Options</h3>
+                            <div className="flex gap-3">
+                              <button className="flex-1 px-4 py-3 rounded-lg bg-black hover:bg-zinc-900 border border-zinc-700 transition-colors flex items-center justify-center gap-2">
+                                <svg className="w-5 h-5" viewBox="0 0 76 76" fill="white"><path d="M37.5274 0L75.0548 65H0L37.5274 0Z"/></svg>
+                                <span className="text-sm font-medium text-white">Vercel</span>
+                              </button>
+                              <button className="flex-1 px-4 py-3 rounded-lg bg-[#7B42BC] hover:bg-[#6B32AC] transition-colors flex items-center justify-center gap-2">
+                                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="white"><path d="M12 2L2 22h20L12 2z"/></svg>
+                                <span className="text-sm font-medium text-white">Netlify</span>
+                              </button>
+                              <button className="flex-1 px-4 py-3 rounded-lg bg-[#FF9900] hover:bg-[#EC8E00] transition-colors flex items-center justify-center gap-2">
+                                <Cloud className="w-5 h-5 text-white" />
+                                <span className="text-sm font-medium text-white">AWS</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -13204,16 +13809,44 @@ export default function GeneratedPage() {
                   />
                 </div>
                 
-                {/* Visual Style */}
+                {/* Visual Style / Enterprise Preset */}
                 <div>
-                  <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider mb-1.5 block">Visual Style</label>
-                  <StyleInjector 
-                    value={styleDirective} 
-                    onChange={setStyleDirective} 
-                    disabled={isProcessing}
-                    referenceImage={styleReferenceImage}
-                    onReferenceImageChange={setStyleReferenceImage}
-                  />
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
+                      {enterpriseMode ? "Enterprise Preset" : "Visual Style"}
+                    </label>
+                    <button
+                      onClick={() => setEnterpriseMode(!enterpriseMode)}
+                      className={cn(
+                        "px-1.5 py-0.5 rounded text-[9px] font-medium transition-all",
+                        enterpriseMode 
+                          ? "bg-emerald-500/20 text-emerald-400" 
+                          : "bg-zinc-800/50 text-zinc-500"
+                      )}
+                    >
+                      {enterpriseMode ? "Enterprise" : "Creative"}
+                    </button>
+                  </div>
+                  
+                  {enterpriseMode ? (
+                    <EnterprisePresetSelector
+                      selectedPresetId={enterprisePresetId}
+                      onSelect={(preset) => {
+                        setEnterprisePresetId(preset.id);
+                        setStyleDirective(`Apply ${preset.name} design system`);
+                      }}
+                      compact={true}
+                      disabled={isProcessing}
+                    />
+                  ) : (
+                    <StyleInjector 
+                      value={styleDirective} 
+                      onChange={setStyleDirective} 
+                      disabled={isProcessing}
+                      referenceImage={styleReferenceImage}
+                      onReferenceImageChange={setStyleReferenceImage}
+                    />
+                  )}
                 </div>
                 
                 {/* Reconstruct Button */}
