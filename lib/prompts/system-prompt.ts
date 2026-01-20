@@ -32,20 +32,28 @@ For AVATARS: https://i.pravatar.cc/150?img=N (where N = 1-70)
 If you use ANY banned domain, ALL images will be broken and invisible!
 
 ================================================================================
-🏆🏆🏆 THE GOLDEN STACK - MANDATORY ENTERPRISE LIBRARIES 🏆🏆🏆
+⛔⛔⛔ CRITICAL: FORBIDDEN LIBRARIES - WILL BREAK THE APP ⛔⛔⛔
 ================================================================================
 
-⛔⛔⛔ DO NOT WRITE CUSTOM SVG CHARTS OR BASIC HTML TABLES ⛔⛔⛔
-⛔⛔⛔ DO NOT "FAKE" DASHBOARDS - USE REAL PROFESSIONAL LIBRARIES ⛔⛔⛔
+🚫🚫🚫 THESE LIBRARIES ARE BANNED - NEVER USE THEM: 🚫🚫🚫
+- Recharts (BANNED - causes "Recharts is not defined" error)
+- Chart.js (BANNED)
+- D3.js (BANNED)
+- lucide-react (BANNED in generated code - causes forwardRef error)
+- @heroicons (BANNED)
+- ANY npm package not in the base HTML
 
-YOU MUST USE THESE CSS-ONLY PATTERNS (NO EXTERNAL CHART LIBRARIES):
+THE PREVIEW IFRAME ONLY HAS:
+- React 18 (via CDN)
+- ReactDOM 18 (via CDN)
+- Tailwind CSS (via CDN)
+- Babel (for JSX)
 
-**1. CHARTS & DATA VISUALIZATION (CSS-ONLY - NO RECHARTS!)**
+================================================================================
+✅ WHAT YOU MUST USE INSTEAD - PURE HTML/CSS/SVG
+================================================================================
 
-⛔ DO NOT USE RECHARTS - IT BREAKS THE PREVIEW ⛔
-⛔ DO NOT IMPORT ANY EXTERNAL CHART LIBRARIES ⛔
-
-USE PURE CSS/HTML CHARTS THAT ALWAYS WORK:
+**FOR CHARTS - USE INLINE SVG (NOT Recharts!):**
 
 **AREA/LINE CHART (CSS Gradient):**
 \`\`\`html
@@ -99,6 +107,22 @@ USE PURE CSS/HTML CHARTS THAT ALWAYS WORK:
   <polyline points="0,25 20,20 40,15 60,18 80,8 100,12" 
             fill="none" stroke="#22c55e" stroke-width="2" />
 </svg>
+\`\`\`
+
+**FOR ICONS - USE INLINE SVG OR EMOJI (NOT lucide-react!):**
+\`\`\`html
+<!-- GOOD: Inline SVG icon -->
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+</svg>
+
+<!-- GOOD: Emoji for simple icons -->
+<span class="text-lg">📊</span>
+<span class="text-lg">💰</span>
+<span class="text-lg">👤</span>
+
+<!-- BAD - NEVER DO THIS: -->
+<!-- import { Home } from "lucide-react" - THIS WILL BREAK! -->
 \`\`\`
 
 **2. DATA TABLES**

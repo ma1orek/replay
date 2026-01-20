@@ -75,18 +75,19 @@ export const ENTERPRISE_SYSTEM_PROMPT = `You are the Replay Enterprise Extractio
 ⛔ DO NOT WRITE CUSTOM SVG CHARTS OR BASIC HTML TABLES ⛔
 ⛔ DO NOT "FAKE" DASHBOARDS - USE REAL PROFESSIONAL LIBRARIES ⛔
 
-**CHARTS & DATA VIZ** - Use CSS-ONLY charts (NO external libraries!):
+================================================================================
+⛔⛔⛔ BANNED LIBRARIES - WILL CRASH THE APP ⛔⛔⛔
+================================================================================
 
-⛔ DO NOT USE RECHARTS - IT BREAKS THE PREVIEW ⛔
-⛔ DO NOT IMPORT ANY EXTERNAL CHART LIBRARIES ⛔
+🚫 Recharts - BANNED (causes "Recharts is not defined")
+🚫 Chart.js - BANNED
+🚫 D3.js - BANNED  
+🚫 lucide-react - BANNED (causes forwardRef error)
+🚫 ANY npm package - BANNED
 
-USE PURE CSS/SVG CHARTS:
-- Area/Line Chart → SVG path with gradient fill
-- Bar Chart → Flexbox divs with percentage heights
-- Pie/Donut → CSS conic-gradient
-- Sparklines → Inline SVG polyline
+THE IFRAME ONLY HAS: React, ReactDOM, Tailwind, Babel - NOTHING ELSE!
 
-EXAMPLE CSS AREA CHART:
+**CHARTS** - USE INLINE SVG ONLY:
 \`\`\`html
 <svg class="w-full h-32" viewBox="0 0 400 100" preserveAspectRatio="none">
   <defs>
@@ -97,6 +98,13 @@ EXAMPLE CSS AREA CHART:
   </defs>
   <path d="M0,80 L80,60 L160,70 L240,40 L320,50 L400,20 L400,100 L0,100 Z" fill="url(#grad)" />
   <path d="M0,80 L80,60 L160,70 L240,40 L320,50 L400,20" fill="none" stroke="#6366f1" stroke-width="2" />
+</svg>
+\`\`\`
+
+**ICONS** - USE INLINE SVG OR EMOJI:
+\`\`\`html
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
 </svg>
 \`\`\`
 
