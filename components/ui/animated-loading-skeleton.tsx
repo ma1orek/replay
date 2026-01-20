@@ -1,86 +1,47 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState } from 'react'
 
-// Walking search icon skeleton - FIXED flickering
+// Smooth, professional loading skeleton with walking search icon
 const AnimatedLoadingSkeleton = () => {
-    const [position, setPosition] = useState({ x: 40, y: 60 });
-    const positionRef = useRef({ x: 40, y: 60 });
-    const targetRef = useRef({ x: 40, y: 60 });
-    const animationRef = useRef<number>();
-
-    // Grid positions for cards
-    const cardPositions = [
-        { x: 40, y: 60 },
-        { x: 250, y: 60 },
-        { x: 460, y: 60 },
-        { x: 40, y: 290 },
-        { x: 250, y: 290 },
-        { x: 460, y: 290 },
-    ];
-
+    const [cardIndex, setCardIndex] = useState(0);
+    
+    // Sequential movement through cards (no random jumps)
     useEffect(() => {
-        let currentIndex = 0;
+        const interval = setInterval(() => {
+            setCardIndex(prev => (prev + 1) % 6);
+        }, 1500); // 1.5s per card - calm, professional pace
         
-        // Pick next random target
-        const pickNextTarget = () => {
-            const nextIndex = Math.floor(Math.random() * cardPositions.length);
-            if (nextIndex !== currentIndex) {
-                currentIndex = nextIndex;
-                targetRef.current = cardPositions[nextIndex];
-            } else {
-                // If same, pick next one
-                currentIndex = (nextIndex + 1) % cardPositions.length;
-                targetRef.current = cardPositions[currentIndex];
-            }
-        };
-
-        // Smooth animation loop
-        const animate = () => {
-            const speed = 0.02; // Slow, smooth movement
-            const dx = targetRef.current.x - positionRef.current.x;
-            const dy = targetRef.current.y - positionRef.current.y;
-            
-            // If close to target, pick new target
-            if (Math.abs(dx) < 5 && Math.abs(dy) < 5) {
-                pickNextTarget();
-            }
-            
-            // Lerp towards target
-            positionRef.current.x += dx * speed;
-            positionRef.current.y += dy * speed;
-            
-            // Update state only when needed (throttled)
-            setPosition({ ...positionRef.current });
-            
-            animationRef.current = requestAnimationFrame(animate);
-        };
-
-        // Start animation
-        pickNextTarget();
-        animationRef.current = requestAnimationFrame(animate);
-
-        return () => {
-            if (animationRef.current) {
-                cancelAnimationFrame(animationRef.current);
-            }
-        };
+        return () => clearInterval(interval);
     }, []);
+
+    // Card grid positions (relative to grid)
+    const getIconPosition = (index: number) => {
+        const col = index % 3;
+        const row = Math.floor(index / 3);
+        // Position at center of each card cell
+        return {
+            left: `calc(${(col * 33.333) + 16.666}% - 20px)`,
+            top: `calc(${(row * 50) + 25}% - 20px)`
+        };
+    };
+
+    const iconPos = getIconPosition(cardIndex);
 
     return (
         <div className="w-full max-w-2xl mx-auto p-6">
             <div className="relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/80 p-6">
                 
-                {/* Walking search icon */}
+                {/* Walking search icon - CSS transition for smooth movement */}
                 <div
-                    className="absolute z-10 pointer-events-none transition-none"
+                    className="absolute z-10 pointer-events-none"
                     style={{
-                        left: position.x,
-                        top: position.y,
-                        transform: 'translate(-50%, -50%)',
+                        left: iconPos.left,
+                        top: iconPos.top,
+                        transition: 'left 0.8s cubic-bezier(0.4, 0, 0.2, 1), top 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
                     }}
                 >
-                    <div className="bg-zinc-800/90 p-3 rounded-full backdrop-blur-sm shadow-lg shadow-zinc-900/50">
+                    <div className="search-icon-glow bg-zinc-800/90 p-3 rounded-full backdrop-blur-sm">
                         <svg
                             className="w-5 h-5 text-orange-500"
                             fill="none"
@@ -98,11 +59,18 @@ const AnimatedLoadingSkeleton = () => {
                 </div>
 
                 {/* Grid of skeleton cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-3" style={{ minHeight: '320px' }}>
                     {[0, 1, 2, 3, 4, 5].map((i) => (
                         <div
                             key={i}
-                            className="bg-zinc-800/50 rounded-lg border border-zinc-800 p-3"
+                            className={`
+                                bg-zinc-800/50 rounded-lg border p-3
+                                transition-all duration-500 ease-out
+                                ${i === cardIndex 
+                                    ? 'border-orange-500/60 ring-1 ring-orange-500/30' 
+                                    : 'border-zinc-800'
+                                }
+                            `}
                         >
                             <div className="skeleton-bar h-24 rounded-md mb-3" />
                             <div className="skeleton-bar h-3 w-3/4 rounded mb-2" />
@@ -112,7 +80,7 @@ const AnimatedLoadingSkeleton = () => {
                 </div>
             </div>
 
-            {/* CSS for shimmer effect */}
+            {/* Pure CSS animations - no JS re-renders */}
             <style jsx>{`
                 .skeleton-bar {
                     background: linear-gradient(
@@ -122,12 +90,28 @@ const AnimatedLoadingSkeleton = () => {
                         #27272a 100%
                     );
                     background-size: 200% 100%;
-                    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+                    animation: shimmer 2s ease-in-out infinite;
                 }
 
-                @keyframes skeleton-shimmer {
-                    0% { background-position: 200% 0; }
-                    100% { background-position: -200% 0; }
+                @keyframes shimmer {
+                    0%, 100% { background-position: 200% 0; }
+                    50% { background-position: -200% 0; }
+                }
+
+                .search-icon-glow {
+                    box-shadow: 0 0 15px rgba(249, 115, 22, 0.3);
+                    animation: pulse-glow 2s ease-in-out infinite;
+                }
+
+                @keyframes pulse-glow {
+                    0%, 100% { 
+                        box-shadow: 0 0 10px rgba(249, 115, 22, 0.2);
+                        transform: scale(1);
+                    }
+                    50% { 
+                        box-shadow: 0 0 20px rgba(249, 115, 22, 0.4);
+                        transform: scale(1.05);
+                    }
                 }
             `}</style>
         </div>
