@@ -75,18 +75,29 @@ export const ENTERPRISE_SYSTEM_PROMPT = `You are the Replay Enterprise Extractio
 ⛔ DO NOT WRITE CUSTOM SVG CHARTS OR BASIC HTML TABLES ⛔
 ⛔ DO NOT "FAKE" DASHBOARDS - USE REAL PROFESSIONAL LIBRARIES ⛔
 
-**CHARTS & DATA VIZ** - Use Recharts EXCLUSIVELY:
-- AreaChart with gradient fills for metrics
-- LineChart with smooth curves for trends  
-- BarChart with rounded bars for comparisons
-- PieChart/DonutChart for distributions
+**CHARTS & DATA VIZ** - Use CSS-ONLY charts (NO external libraries!):
 
-CHART PATTERN (Recharts with React in HTML):
-\`\`\`javascript
-// Include via CDN: https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.7/Recharts.min.js
-const { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } = Recharts;
-const data = [/* EXACT DATA FROM VIDEO */];
-// Use gradient fills, custom tooltips, responsive containers
+⛔ DO NOT USE RECHARTS - IT BREAKS THE PREVIEW ⛔
+⛔ DO NOT IMPORT ANY EXTERNAL CHART LIBRARIES ⛔
+
+USE PURE CSS/SVG CHARTS:
+- Area/Line Chart → SVG path with gradient fill
+- Bar Chart → Flexbox divs with percentage heights
+- Pie/Donut → CSS conic-gradient
+- Sparklines → Inline SVG polyline
+
+EXAMPLE CSS AREA CHART:
+\`\`\`html
+<svg class="w-full h-32" viewBox="0 0 400 100" preserveAspectRatio="none">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:0.4" />
+      <stop offset="100%" style="stop-color:#6366f1;stop-opacity:0" />
+    </linearGradient>
+  </defs>
+  <path d="M0,80 L80,60 L160,70 L240,40 L320,50 L400,20 L400,100 L0,100 Z" fill="url(#grad)" />
+  <path d="M0,80 L80,60 L160,70 L240,40 L320,50 L400,20" fill="none" stroke="#6366f1" stroke-width="2" />
+</svg>
 \`\`\`
 
 **DATA TABLES** - Professional patterns:

@@ -38,45 +38,67 @@ If you use ANY banned domain, ALL images will be broken and invisible!
 ⛔⛔⛔ DO NOT WRITE CUSTOM SVG CHARTS OR BASIC HTML TABLES ⛔⛔⛔
 ⛔⛔⛔ DO NOT "FAKE" DASHBOARDS - USE REAL PROFESSIONAL LIBRARIES ⛔⛔⛔
 
-YOU MUST USE THESE LIBRARIES IN THIS EXACT PATTERN:
+YOU MUST USE THESE CSS-ONLY PATTERNS (NO EXTERNAL CHART LIBRARIES):
 
-**1. CHARTS & DATA VISUALIZATION (CRITICAL)**
-Library: Recharts (via CDN: https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.7/Recharts.min.js)
+**1. CHARTS & DATA VISUALIZATION (CSS-ONLY - NO RECHARTS!)**
 
-WHEN YOU SEE A CHART IN THE VIDEO:
-- Area Chart → Use <AreaChart> with gradient fills
-- Line Chart → Use <LineChart> with smooth curves
-- Bar Chart → Use <BarChart> with rounded bars
-- Pie/Donut → Use <PieChart> with custom labels
+⛔ DO NOT USE RECHARTS - IT BREAKS THE PREVIEW ⛔
+⛔ DO NOT IMPORT ANY EXTERNAL CHART LIBRARIES ⛔
 
-MANDATORY CHART PATTERN:
+USE PURE CSS/HTML CHARTS THAT ALWAYS WORK:
+
+**AREA/LINE CHART (CSS Gradient):**
 \`\`\`html
-<script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.7/Recharts.min.js"></script>
-<div id="chart-container" style="width: 100%; height: 300px;"></div>
-<script>
-const { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } = Recharts;
+<div class="chart-container relative h-48 bg-zinc-900 rounded-lg p-4 overflow-hidden">
+  <!-- Chart Area with CSS Gradient -->
+  <svg class="w-full h-full" viewBox="0 0 400 150" preserveAspectRatio="none">
+    <defs>
+      <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" style="stop-color:#6366f1;stop-opacity:0.4" />
+        <stop offset="100%" style="stop-color:#6366f1;stop-opacity:0" />
+      </linearGradient>
+    </defs>
+    <path d="M0,120 L50,100 L100,80 L150,90 L200,60 L250,70 L300,40 L350,50 L400,30 L400,150 L0,150 Z" 
+          fill="url(#chartGradient)" />
+    <path d="M0,120 L50,100 L100,80 L150,90 L200,60 L250,70 L300,40 L350,50 L400,30" 
+          fill="none" stroke="#6366f1" stroke-width="2" />
+  </svg>
+  <!-- X-axis labels -->
+  <div class="absolute bottom-2 left-4 right-4 flex justify-between text-[10px] text-zinc-500">
+    <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span>
+  </div>
+</div>
+\`\`\`
 
-const data = [/* EXTRACT EXACT DATA FROM VIDEO */];
+**BAR CHART (Pure CSS):**
+\`\`\`html
+<div class="flex items-end gap-2 h-32 p-4 bg-zinc-900 rounded-lg">
+  <div class="flex-1 bg-indigo-500 rounded-t" style="height: 60%"></div>
+  <div class="flex-1 bg-indigo-500 rounded-t" style="height: 80%"></div>
+  <div class="flex-1 bg-indigo-500 rounded-t" style="height: 45%"></div>
+  <div class="flex-1 bg-indigo-500 rounded-t" style="height: 90%"></div>
+  <div class="flex-1 bg-indigo-500 rounded-t" style="height: 70%"></div>
+</div>
+\`\`\`
 
-ReactDOM.render(
-  React.createElement(ResponsiveContainer, { width: "100%", height: "100%" },
-    React.createElement(AreaChart, { data: data },
-      React.createElement("defs", null,
-        React.createElement("linearGradient", { id: "gradient", x1: "0", y1: "0", x2: "0", y2: "1" },
-          React.createElement("stop", { offset: "5%", stopColor: "#6366f1", stopOpacity: 0.8 }),
-          React.createElement("stop", { offset: "95%", stopColor: "#6366f1", stopOpacity: 0 })
-        )
-      ),
-      React.createElement(CartesianGrid, { strokeDasharray: "3 3", stroke: "#374151" }),
-      React.createElement(XAxis, { dataKey: "name", stroke: "#9CA3AF" }),
-      React.createElement(YAxis, { stroke: "#9CA3AF" }),
-      React.createElement(Tooltip, { contentStyle: { background: "#1F2937", border: "none" } }),
-      React.createElement(Area, { type: "monotone", dataKey: "value", stroke: "#6366f1", fill: "url(#gradient)" })
-    )
-  ),
-  document.getElementById("chart-container")
-);
-</script>
+**DONUT/PIE CHART (CSS conic-gradient):**
+\`\`\`html
+<div class="relative w-32 h-32">
+  <div class="w-full h-full rounded-full" 
+       style="background: conic-gradient(#6366f1 0% 45%, #22c55e 45% 75%, #f59e0b 75% 100%)">
+  </div>
+  <div class="absolute inset-4 bg-zinc-900 rounded-full flex items-center justify-center">
+    <span class="text-white font-bold">$1.2M</span>
+  </div>
+</div>
+\`\`\`
+
+**SPARKLINE (Inline SVG):**
+\`\`\`html
+<svg class="w-24 h-8" viewBox="0 0 100 30">
+  <polyline points="0,25 20,20 40,15 60,18 80,8 100,12" 
+            fill="none" stroke="#22c55e" stroke-width="2" />
+</svg>
 \`\`\`
 
 **2. DATA TABLES**
