@@ -1050,7 +1050,7 @@ function ReplayToolContent() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeFeature, setUpgradeFeature] = useState<"code" | "download" | "publish" | "supabase" | "general">("general");
   const [isUpgradeCheckingOut, setIsUpgradeCheckingOut] = useState(false);
-  const [selectedUpgradePlan, setSelectedUpgradePlan] = useState<"starter" | "pro">("pro");
+  const [selectedUpgradePlan, setSelectedUpgradePlan] = useState<"pro">("pro");
   const [selectedProTierIndex, setSelectedProTierIndex] = useState(0);
   const [showProTierDropdown, setShowProTierDropdown] = useState(false);
   
@@ -1069,7 +1069,7 @@ function ReplayToolContent() {
   const selectedProTier = PRO_TIERS[selectedProTierIndex];
   
   // Handler for direct checkout (used in inline upgrade buttons)
-  const handleUpgradeCheckout = async (plan?: "starter" | "pro") => {
+  const handleUpgradeCheckout = async (plan?: "pro") => {
     const selectedPlan = plan || selectedUpgradePlan;
     
     if (!user) {
@@ -1079,7 +1079,7 @@ function ReplayToolContent() {
     
     setIsUpgradeCheckingOut(true);
     try {
-      const isStarter = selectedPlan === "starter";
+      const isStarter = false;
       
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
@@ -1107,8 +1107,8 @@ function ReplayToolContent() {
     }
   };
   
-  // Check if user has paid plan (Starter, PRO or higher)
-  const isPaidPlan = membership?.plan === "starter" || membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise";
+  // Check if user has paid plan (PRO or higher)
+  const isPaidPlan = membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise";
   const [pendingAction, setPendingAction] = useState<"generate" | "edit" | null>(null);
   const [analysisDescription, setAnalysisDescription] = useState<string>("");
   const [editInput, setEditInput] = useState("");
@@ -7781,7 +7781,7 @@ Try these prompts in Cursor or v0:
                 "text-xs font-semibold uppercase",
                 (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-zinc-300" : "text-zinc-500"
               )}>
-                {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : membership?.plan === "starter" ? "Starter" : "Free"}
+                {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : "Free"}
               </span>
             ) : (
               <User className="w-5 h-5 text-zinc-400" />
@@ -7829,7 +7829,7 @@ Try these prompts in Cursor or v0:
                               </span>
                             ) : (
                               <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-zinc-500 uppercase">
-                                {plan === "starter" ? "Starter" : "Free"}
+                                {"Free"}
                               </span>
                             )}
                           </div>
@@ -9733,7 +9733,7 @@ Try these prompts in Cursor or v0:
                             </span>
                           ) : (
                             <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-zinc-500 uppercase">
-                              {plan === "starter" ? "Starter" : "Free"}
+                              {"Free"}
                             </span>
                           )}
                         </button>
@@ -10566,14 +10566,14 @@ export default function GeneratedPage() {
                                     
                                     {/* Starter Pack - Simple option */}
                                     <button
-                                      onClick={() => setSelectedUpgradePlan("starter")}
+                                      onClick={() => {}}
                                       className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                                        selectedUpgradePlan === "starter" ? "border-[var(--accent-orange)] bg-zinc-800/5" : "border-zinc-700 hover:border-white/20 bg-zinc-800/50"
+                                        false ? "border-[var(--accent-orange)] bg-zinc-800/5" : "border-zinc-700 hover:border-white/20 bg-zinc-800/50"
                                       }`}
                                     >
                                       <div className="flex items-center gap-3">
-                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedUpgradePlan === "starter" ? "border-[var(--accent-orange)] bg-zinc-800" : "border-white/30"}`}>
-                                          {selectedUpgradePlan === "starter" && <Check className="w-3 h-3 text-white" />}
+                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${false ? "border-[var(--accent-orange)] bg-zinc-800" : "border-white/30"}`}>
+                                          {false && <Check className="w-3 h-3 text-white" />}
                                         </div>
                                         <div className="flex-1">
                                           <div className="flex items-center gap-2">
@@ -10600,14 +10600,14 @@ export default function GeneratedPage() {
                                         <Loader2 className="w-4 h-4 animate-spin" />
                                         Processing...
                                       </>
-                                    ) : selectedUpgradePlan === "starter" ? (
+                                    ) : false ? (
                                       "Get Starter — $9"
                                     ) : (
                                       `Subscribe — $${selectedProTier.price}/mo`
                                     )}
                                   </button>
                                   <p className="text-center text-[10px] text-zinc-600 mt-3">
-                                    {selectedUpgradePlan === "starter" ? "One-time payment. Credits never expire." : "Cancel anytime. Credits roll over."}
+                                    {false ? "One-time payment. Credits never expire." : "Cancel anytime. Credits roll over."}
                                   </p>
                                   
                                   <button
@@ -11424,8 +11424,8 @@ export default function GeneratedPage() {
                               {flowNodes.filter(n => n.status === "observed").slice(0, 8).map((node, i) => (
                                 <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50">
                                   <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400">GET</span>
-                                  <code className="text-xs text-zinc-300 font-mono">/api/{node.label.toLowerCase().replace(/\s+/g, '-')}</code>
-                                  <span className="text-xs text-zinc-600 ml-auto">→ {node.label}</span>
+                                  <code className="text-xs text-zinc-300 font-mono">/api/{node.name.toLowerCase().replace(/\s+/g, '-')}</code>
+                                  <span className="text-xs text-zinc-600 ml-auto">→ {node.name}</span>
                                 </div>
                               ))}
                               {flowNodes.filter(n => n.status === "observed").length > 0 && (
@@ -12641,7 +12641,7 @@ jobs:
                         "text-xs font-semibold uppercase",
                         (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-zinc-300" : "text-zinc-500"
                       )}>
-                        {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : membership?.plan === "starter" ? "Starter" : "Free"}
+                        {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : "Free"}
                       </span>
                     ) : (
                       <User className="w-5 h-5 text-zinc-500" />
@@ -12948,7 +12948,7 @@ jobs:
                         "text-xs font-semibold uppercase",
                         (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-zinc-300" : "text-zinc-500"
                       )}>
-                        {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : membership?.plan === "starter" ? "Starter" : "Free"}
+                        {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : "Free"}
                       </span>
                     ) : (
                       <User className="w-5 h-5 text-zinc-500" />
@@ -13052,7 +13052,7 @@ jobs:
                       "text-xs font-semibold uppercase",
                       (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-zinc-300" : "text-zinc-500"
                     )}>
-                      {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : membership?.plan === "starter" ? "Starter" : "Free"}
+                      {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : "Free"}
                     </span>
                   ) : (
                     <User className="w-5 h-5 text-zinc-500" />
@@ -13249,7 +13249,7 @@ jobs:
                       "text-xs font-semibold uppercase",
                       (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-zinc-300" : "text-zinc-500"
                     )}>
-                      {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : membership?.plan === "starter" ? "Starter" : "Free"}
+                      {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : "Free"}
                     </span>
                   ) : (
                     <User className="w-5 h-5 text-zinc-500" />
@@ -13452,7 +13452,7 @@ jobs:
                       "text-xs font-semibold uppercase",
                       (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-zinc-300" : "text-zinc-500"
                     )}>
-                      {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : membership?.plan === "starter" ? "Starter" : "Free"}
+                      {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : "Free"}
                     </span>
                   ) : (
                     <User className="w-5 h-5 text-zinc-500" />
@@ -13576,7 +13576,7 @@ jobs:
                       "text-xs font-semibold uppercase",
                       (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-zinc-300" : "text-zinc-500"
                     )}>
-                      {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : membership?.plan === "starter" ? "Starter" : "Free"}
+                      {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : "Free"}
                     </span>
                   ) : (
                     <User className="w-5 h-5 text-zinc-500" />
