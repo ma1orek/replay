@@ -4,8 +4,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-// Use Gemini 2.5 Pro for flows (better reasoning)
-const MODEL_NAME = "gemini-2.5-pro-preview";
+// Use Gemini 3 Pro for flows (better reasoning)
+const MODEL_NAME = "gemini-3-pro-preview";
 
 function getApiKey(): string | null {
   return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || null;

@@ -4,8 +4,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-// Use Gemini 2.0 Flash for docs (fast & cheap)
-const MODEL_NAME = "gemini-2.0-flash";
+// Use Gemini 3 Flash for docs (fast & cheap)
+const MODEL_NAME = "gemini-3-flash-preview";
 
 function getApiKey(): string | null {
   return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || null;
