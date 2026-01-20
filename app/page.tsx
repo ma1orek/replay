@@ -77,6 +77,9 @@ import { getDatabaseContext, formatDatabaseContextForPrompt } from "@/lib/supaba
 import { useIsMobile } from "@/lib/useIsMobile";
 import { useGenerationJob } from "@/lib/useGenerationJob";
 import { MobileLayout } from "@/components/mobile";
+import { EnterprisePresetSelector, PresetBadge } from "@/components/EnterprisePresetSelector";
+import { EnterpriseExport } from "@/components/EnterpriseExport";
+import { ENTERPRISE_PRESETS, EnterprisePreset, getPresetById } from "@/lib/enterprise-presets";
 // Demo is now loaded from /api/demo/[id] endpoint
 
 // Global abort controller for canceling AI requests
@@ -976,13 +979,31 @@ function ReplayToolContent() {
   // Initialize to empty string to avoid hydration mismatch
   const [styleDirective, setStyleDirective] = useState("");
   
+  // Enterprise preset state
+  const [enterprisePresetId, setEnterprisePresetId] = useState<string | null>(null);
+  const [enterpriseMode, setEnterpriseMode] = useState(false);
+  
   // Load default style from localStorage after mount
   useEffect(() => {
     const savedStyle = getDefaultStyleName();
     if (savedStyle) {
       setStyleDirective(savedStyle);
     }
+    // Load saved enterprise preset
+    const savedPreset = localStorage.getItem("replay_enterprise_preset");
+    if (savedPreset) {
+      setEnterprisePresetId(savedPreset);
+      setEnterpriseMode(true);
+    }
   }, []);
+  
+  // Save enterprise preset to localStorage
+  useEffect(() => {
+    if (enterprisePresetId) {
+      localStorage.setItem("replay_enterprise_preset", enterprisePresetId);
+    }
+  }, [enterprisePresetId]);
+  
   const [styleReferenceImage, setStyleReferenceImage] = useState<{ url: string; name: string } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [compressionProgress, setCompressionProgress] = useState(0);
@@ -5653,6 +5674,9 @@ Try these prompts in Cursor or v0:
           styleDirective,
           databaseContext,
           styleReferenceImage,
+          // Enterprise mode parameters
+          enterpriseMode,
+          enterprisePresetId,
         }),
         signal: controller.signal,
       });
@@ -8939,18 +8963,44 @@ Try these prompts in Cursor or v0:
                     />
                   </div>
                   
-                  {/* Style Section */}
+                  {/* Design System Section */}
                   <div className="p-4 border-b border-white/[0.06]">
-                    <span className="sidebar-label text-[11px] font-semibold text-white/40 uppercase tracking-wider flex items-center gap-2 mb-3">
-                      <Palette className="w-3.5 h-3.5" /> VISUAL STYLE
-                    </span>
-                    <StyleInjector 
-                      value={styleDirective} 
-                      onChange={setStyleDirective} 
-                      disabled={isProcessing}
-                      referenceImage={styleReferenceImage}
-                      onReferenceImageChange={setStyleReferenceImage}
-                    />
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="sidebar-label text-[11px] font-semibold text-white/40 uppercase tracking-wider flex items-center gap-2">
+                        <Palette className="w-3.5 h-3.5" /> {enterpriseMode ? "ENTERPRISE PRESET" : "VISUAL STYLE"}
+                      </span>
+                      <button
+                        onClick={() => setEnterpriseMode(!enterpriseMode)}
+                        className={cn(
+                          "px-2 py-1 rounded-md text-[10px] font-medium transition-all",
+                          enterpriseMode 
+                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" 
+                            : "bg-zinc-800/50 text-zinc-500 hover:text-zinc-400"
+                        )}
+                      >
+                        {enterpriseMode ? "Enterprise ✓" : "Creative"}
+                      </button>
+                    </div>
+                    
+                    {enterpriseMode ? (
+                      <EnterprisePresetSelector
+                        selectedPresetId={enterprisePresetId}
+                        onSelect={(preset) => {
+                          setEnterprisePresetId(preset.id);
+                          setStyleDirective(`Apply ${preset.name} design system`);
+                        }}
+                        compact={true}
+                        disabled={isProcessing}
+                      />
+                    ) : (
+                      <StyleInjector 
+                        value={styleDirective} 
+                        onChange={setStyleDirective} 
+                        disabled={isProcessing}
+                        referenceImage={styleReferenceImage}
+                        onReferenceImageChange={setStyleReferenceImage}
+                      />
+                    )}
                   </div>
                   
                   {/* Generate Button */}
@@ -11094,6 +11144,20 @@ export default function GeneratedPage() {
                       <div className="style-card"><p className="text-[10px] text-zinc-500 uppercase mb-2">Shadows</p><p className="text-sm text-zinc-400">{styleInfo.shadows}</p></div>
                     </div>
                     
+                    {/* Enterprise Export Package */}
+                    {generatedCode && (
+                      <div className="style-card mt-6">
+                        <EnterpriseExport
+                          projectName={activeGeneration?.title || "Replay Project"}
+                          generatedCode={generatedCode}
+                          preset={enterprisePresetId ? getPresetById(enterprisePresetId) || null : null}
+                          onExport={(format) => {
+                            showToast(`Enterprise package exported as ${format.toUpperCase()}!`, "success");
+                          }}
+                        />
+                      </div>
+                    )}
+                    
 {/* Edit with AI button removed - chat does the same thing */}
                   </div>
                 ) : (
@@ -12078,19 +12142,47 @@ export default function GeneratedPage() {
                 />
               </div>
 
-              {/* Style Section - Consistent sizing */}
+              {/* Design System Section - Consistent sizing */}
               <div className="p-4 border-b border-zinc-800 flex-shrink-0">
-                <div className="flex items-center gap-2 mb-3">
-                  <Palette className="w-4 h-4 text-zinc-500" />
-                  <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Style</span>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Palette className="w-4 h-4 text-zinc-500" />
+                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                      {enterpriseMode ? "Enterprise Preset" : "Style"}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setEnterpriseMode(!enterpriseMode)}
+                    className={cn(
+                      "px-2 py-1 rounded-md text-[10px] font-medium transition-all",
+                      enterpriseMode 
+                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" 
+                        : "bg-zinc-800/50 text-zinc-500 hover:text-zinc-400"
+                    )}
+                  >
+                    {enterpriseMode ? "Enterprise ✓" : "Creative"}
+                  </button>
                 </div>
-                <StyleInjector 
-                  value={styleDirective} 
-                  onChange={setStyleDirective} 
-                  disabled={isProcessing}
-                  referenceImage={styleReferenceImage}
-                  onReferenceImageChange={setStyleReferenceImage}
-                />
+                
+                {enterpriseMode ? (
+                  <EnterprisePresetSelector
+                    selectedPresetId={enterprisePresetId}
+                    onSelect={(preset) => {
+                      setEnterprisePresetId(preset.id);
+                      setStyleDirective(`Apply ${preset.name} design system`);
+                    }}
+                    compact={true}
+                    disabled={isProcessing}
+                  />
+                ) : (
+                  <StyleInjector 
+                    value={styleDirective} 
+                    onChange={setStyleDirective} 
+                    disabled={isProcessing}
+                    referenceImage={styleReferenceImage}
+                    onReferenceImageChange={setStyleReferenceImage}
+                  />
+                )}
               </div>
 
               {/* Generate Button */}
