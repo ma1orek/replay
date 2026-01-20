@@ -11468,68 +11468,64 @@ export default function GeneratedPage() {
                             </div>
                           ) : aiDocsOverview ? (
                             <>
-                              {/* AI Generated Header */}
-                              <div className="flex items-center justify-between mb-6">
+                              {/* Header - Clean style */}
+                              <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-600/10 flex items-center justify-center border border-orange-500/20">
-                                    <FileText className="w-6 h-6 text-orange-400" />
+                                  <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center">
+                                    <FileText className="w-4 h-4 text-zinc-400" />
                                   </div>
                                   <div>
-                                    <h2 className="text-xl font-semibold text-white">{aiDocsOverview.title || activeGeneration?.title || "Project"}</h2>
+                                    <h2 className="text-sm font-medium text-white">{aiDocsOverview.title || activeGeneration?.title || "Project"}</h2>
                                     <div className="flex items-center gap-2 mt-0.5">
-                                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-medium">{aiDocsOverview.industry || "Enterprise"}</span>
-                                      <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 text-[10px] font-medium">{aiDocsOverview.complexity || "Production"}</span>
-                                      <span className="text-[10px] text-zinc-600">• AI Generated</span>
+                                      <span className="text-[10px] text-zinc-500">{aiDocsOverview.industry || "SaaS"}</span>
+                                      <span className="text-zinc-700">•</span>
+                                      <span className="text-[10px] text-zinc-600">AI Generated</span>
                                     </div>
                                   </div>
                                 </div>
-                                <button 
-                                  onClick={() => generateDocs("overview")}
-                                  className="px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-lg transition-colors flex items-center gap-1.5"
-                                >
-                                  <RefreshCw className="w-3 h-3" /> Regenerate
+                                <button onClick={() => generateDocs("overview")} className="p-1.5 hover:bg-zinc-800 rounded-md transition-colors">
+                                  <RefreshCw className="w-3.5 h-3.5 text-zinc-500" />
                                 </button>
                               </div>
 
                               {/* AI Description */}
                               {aiDocsOverview.description && (
-                                <p className="text-sm text-zinc-400 leading-relaxed border-l-2 border-orange-500/30 pl-4 py-2 bg-zinc-900/30 rounded-r-lg">
+                                <p className="text-xs text-zinc-500 leading-relaxed mt-3">
                                   {aiDocsOverview.description}
                                 </p>
                               )}
 
                               {/* Stats Grid */}
-                              <div className="grid grid-cols-4 gap-3">
-                                <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-zinc-700/50">
-                                  <p className="text-3xl font-bold text-white">{aiDocsOverview.stats?.screens || flowNodes.filter(n => n.status === "observed").length}</p>
-                                  <p className="text-xs text-zinc-500 mt-1">Screens</p>
+                              <div className="grid grid-cols-4 gap-2 mt-4">
+                                <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800">
+                                  <p className="text-xl font-semibold text-zinc-300">{aiDocsOverview.stats?.screens || flowNodes.filter(n => n.status === "observed").length}</p>
+                                  <p className="text-[10px] text-zinc-600">Screens</p>
                                 </div>
-                                <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-zinc-700/50">
-                                  <p className="text-3xl font-bold text-white">{aiDocsOverview.stats?.components || (editableCode?.split("function ").length || 1)}</p>
-                                  <p className="text-xs text-zinc-500 mt-1">Components</p>
+                                <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800">
+                                  <p className="text-xl font-semibold text-zinc-300">{aiDocsOverview.stats?.components || (editableCode?.split("function ").length || 1)}</p>
+                                  <p className="text-[10px] text-zinc-600">Components</p>
                                 </div>
-                                <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-zinc-700/50">
-                                  <p className="text-3xl font-bold text-white">{aiDocsOverview.stats?.apiEndpoints || "~5"}</p>
-                                  <p className="text-xs text-zinc-500 mt-1">API Endpoints</p>
+                                <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800">
+                                  <p className="text-xl font-semibold text-zinc-300">{aiDocsOverview.stats?.apiEndpoints || "~5"}</p>
+                                  <p className="text-[10px] text-zinc-600">API Endpoints</p>
                                 </div>
-                                <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-zinc-700/50">
-                                  <p className="text-3xl font-bold text-white">{aiDocsOverview.stats?.designTokens || styleInfo?.colors?.length || 5}</p>
-                                  <p className="text-xs text-zinc-500 mt-1">Design Tokens</p>
+                                <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800">
+                                  <p className="text-xl font-semibold text-zinc-300">{aiDocsOverview.stats?.designTokens || styleInfo?.colors?.length || 5}</p>
+                                  <p className="text-[10px] text-zinc-600">Design Tokens</p>
                                 </div>
                               </div>
 
                               {/* Features */}
                               {aiDocsOverview.features?.length > 0 && (
-                                <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
-                                  <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
-                                    <Sparkles className="w-4 h-4 text-yellow-400" />
-                                    Key Features Identified
-                                  </h3>
-                                  <div className="grid grid-cols-2 gap-2">
+                                <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden mt-4">
+                                  <div className="px-4 py-2.5 border-b border-zinc-800">
+                                    <h3 className="text-xs font-medium text-zinc-400">Features</h3>
+                                  </div>
+                                  <div className="p-3 grid grid-cols-2 gap-1.5">
                                     {aiDocsOverview.features.map((feature: string, i: number) => (
-                                      <div key={i} className="flex items-center gap-2 p-2.5 rounded-lg bg-zinc-800/50 border border-zinc-700/30">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                        <span className="text-sm text-zinc-300">{feature}</span>
+                                      <div key={i} className="flex items-center gap-2 p-2 rounded bg-zinc-800/30">
+                                        <div className="w-1 h-1 rounded-full bg-zinc-500" />
+                                        <span className="text-xs text-zinc-400">{feature}</span>
                                       </div>
                                     ))}
                                   </div>
@@ -11537,12 +11533,11 @@ export default function GeneratedPage() {
                               )}
 
                               {/* Architecture */}
-                              <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
-                                <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
-                                  <Layers className="w-4 h-4 text-blue-400" />
-                                  Architecture
-                                </h3>
-                                <pre className="text-xs text-zinc-400 font-mono bg-zinc-800/50 rounded-lg p-4 overflow-x-auto whitespace-pre">
+                              <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden mt-4">
+                                <div className="px-4 py-2.5 border-b border-zinc-800">
+                                  <h3 className="text-xs font-medium text-zinc-400">Architecture</h3>
+                                </div>
+                                <pre className="p-4 text-[11px] text-zinc-500 font-mono overflow-x-auto whitespace-pre">
 {aiDocsOverview.fileStructure || `/src
 ├── /components
 │   ├── /ui          # Base shadcn/ui components
@@ -11556,23 +11551,22 @@ export default function GeneratedPage() {
                               </div>
 
                               {/* Quick Start */}
-                              <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
-                                <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
-                                  <Zap className="w-4 h-4 text-yellow-400" />
-                                  Quick Start
-                                </h3>
-                                <div className="space-y-3">
+                              <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden mt-4">
+                                <div className="px-4 py-2.5 border-b border-zinc-800">
+                                  <h3 className="text-xs font-medium text-zinc-400">Quick Start</h3>
+                                </div>
+                                <div className="p-3 space-y-2">
                                   {(aiDocsOverview.quickStart || [
                                     { step: 1, title: "Download", description: "Go to Design tab → Download Enterprise Package" },
                                     { step: 2, title: "Install", command: "npm install" },
                                     { step: 3, title: "Run", command: "npm run dev" }
                                   ]).map((item: any, i: number) => (
-                                    <div key={i} className="flex items-start gap-3">
-                                      <span className="w-6 h-6 rounded-full bg-gradient-to-br from-orange-500/20 to-orange-600/20 flex items-center justify-center text-xs font-bold text-orange-400">{item.step || i + 1}</span>
+                                    <div key={i} className="flex items-start gap-2.5 p-2 rounded hover:bg-zinc-800/30">
+                                      <span className="w-5 h-5 rounded bg-zinc-800 flex items-center justify-center text-[10px] font-medium text-zinc-500">{item.step || i + 1}</span>
                                       <div className="flex-1">
-                                        <p className="text-sm text-zinc-300 font-medium">{item.title}</p>
-                                        {item.description && <p className="text-xs text-zinc-500">{item.description}</p>}
-                                        {item.command && <code className="text-xs text-orange-400 bg-zinc-800 px-2 py-0.5 rounded mt-1 inline-block">{item.command}</code>}
+                                        <p className="text-xs text-zinc-300">{item.title}</p>
+                                        {item.description && <p className="text-[10px] text-zinc-600">{item.description}</p>}
+                                        {item.command && <code className="text-[10px] text-zinc-400 bg-zinc-800 px-1.5 py-0.5 rounded mt-1 inline-block font-mono">{item.command}</code>}
                                       </div>
                                     </div>
                                   ))}
@@ -11580,18 +11574,17 @@ export default function GeneratedPage() {
                               </div>
 
                               {/* Technologies */}
-                              <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
-                                <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
-                                  <Cpu className="w-4 h-4 text-purple-400" />
-                                  Technology Stack
-                                </h3>
-                                <div className="space-y-3">
+                              <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden mt-4">
+                                <div className="px-4 py-2.5 border-b border-zinc-800">
+                                  <h3 className="text-xs font-medium text-zinc-400">Technology Stack</h3>
+                                </div>
+                                <div className="p-3 space-y-2.5">
                                   {aiDocsOverview.architecture && Object.entries(aiDocsOverview.architecture).map(([category, techs]: [string, any]) => (
                                     <div key={category}>
-                                      <p className="text-[10px] text-zinc-600 uppercase tracking-wider mb-2">{category}</p>
-                                      <div className="flex flex-wrap gap-2">
+                                      <p className="text-[9px] text-zinc-600 uppercase tracking-wider mb-1.5">{category}</p>
+                                      <div className="flex flex-wrap gap-1.5">
                                         {(Array.isArray(techs) ? techs : [techs]).map((tech: string, i: number) => (
-                                          <span key={i} className="px-2.5 py-1 rounded-full bg-zinc-800 text-xs text-zinc-400 border border-zinc-700/50">
+                                          <span key={i} className="px-2 py-0.5 rounded bg-zinc-800 text-[10px] text-zinc-500">
                                             {tech}
                                           </span>
                                         ))}
@@ -11599,9 +11592,9 @@ export default function GeneratedPage() {
                                     </div>
                                   ))}
                                   {!aiDocsOverview.architecture && (
-                                    <div className="flex flex-wrap gap-2">
+                                    <div className="flex flex-wrap gap-1.5">
                                       {["React 18", "TypeScript", "Tailwind CSS", "shadcn/ui", "Radix UI", "React Query", "Zod"].map((tech) => (
-                                        <span key={tech} className="px-2.5 py-1 rounded-full bg-zinc-800 text-xs text-zinc-400 border border-zinc-700/50">
+                                        <span key={tech} className="px-2 py-0.5 rounded bg-zinc-800 text-[10px] text-zinc-500">
                                           {tech}
                                         </span>
                                       ))}
@@ -11626,370 +11619,433 @@ export default function GeneratedPage() {
                         </div>
                       )}
 
-                      {/* API Sub-tab */}
+                      {/* API Sub-tab - AI Generated */}
                       {docsSubTab === "api" && (
-                        <div className="space-y-6">
-                          <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center">
-                              <Plug className="w-5 h-5 text-blue-400" />
+                        <div className="space-y-4">
+                          {isGeneratingDocs === "api" ? (
+                            <div className="flex flex-col items-center justify-center py-20">
+                              <div className="relative w-10 h-10 mb-4">
+                                <div className="absolute inset-0 rounded-full border-2 border-zinc-700" />
+                                <div className="absolute inset-0 rounded-full border-2 border-zinc-400 border-t-transparent animate-spin" />
+                              </div>
+                              <p className="text-sm text-zinc-500">Generating API documentation...</p>
+                              <p className="text-[10px] text-zinc-600 mt-1">Gemini 3 Flash</p>
                             </div>
-                            <div>
-                              <h2 className="text-lg font-semibold text-white">API Integration</h2>
-                              <p className="text-xs text-zinc-500">Backend integration specifications</p>
-                            </div>
-                          </div>
-
-                          {/* Inferred API Endpoints */}
-                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
-                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
-                              <Globe className="w-4 h-4 text-green-400" />
-                              Inferred Endpoints
-                            </h3>
-                            <div className="space-y-2">
-                              {flowNodes.filter(n => n.status === "observed").slice(0, 8).map((node, i) => (
-                                <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50">
-                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400">GET</span>
-                                  <code className="text-xs text-zinc-300 font-mono">/api/{node.name.toLowerCase().replace(/\s+/g, '-')}</code>
-                                  <span className="text-xs text-zinc-600 ml-auto">→ {node.name}</span>
+                          ) : aiDocsApi ? (
+                            <>
+                              {/* Header */}
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center">
+                                    <Plug className="w-4 h-4 text-zinc-400" />
+                                  </div>
+                                  <div>
+                                    <h2 className="text-sm font-medium text-white">API Integration</h2>
+                                    <p className="text-[10px] text-zinc-600">Backend specifications • AI Generated</p>
+                                  </div>
                                 </div>
-                              ))}
-                              {flowNodes.filter(n => n.status === "observed").length > 0 && (
-                                <div className="flex items-center gap-3 p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50">
-                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-400">POST</span>
-                                  <code className="text-xs text-zinc-300 font-mono">/api/actions</code>
-                                  <span className="text-xs text-zinc-600 ml-auto">→ Form submissions</span>
+                                <button onClick={() => generateDocs("api")} className="p-1.5 hover:bg-zinc-800 rounded-md transition-colors">
+                                  <RefreshCw className="w-3.5 h-3.5 text-zinc-500" />
+                                </button>
+                              </div>
+
+                              {/* Endpoints */}
+                              {aiDocsApi.endpoints?.length > 0 && (
+                                <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+                                  <div className="px-4 py-2.5 border-b border-zinc-800">
+                                    <h3 className="text-xs font-medium text-zinc-400">Endpoints</h3>
+                                  </div>
+                                  <div className="divide-y divide-zinc-800/50">
+                                    {aiDocsApi.endpoints.slice(0, 10).map((endpoint: any, i: number) => (
+                                      <div key={i} className="px-4 py-3 hover:bg-zinc-800/30 transition-colors">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                                            endpoint.method === "GET" ? "bg-zinc-700 text-zinc-300" :
+                                            endpoint.method === "POST" ? "bg-zinc-700 text-zinc-300" :
+                                            endpoint.method === "PUT" ? "bg-zinc-700 text-zinc-300" :
+                                            "bg-zinc-700 text-zinc-300"
+                                          }`}>{endpoint.method}</span>
+                                          <code className="text-xs text-zinc-300 font-mono">{endpoint.path}</code>
+                                        </div>
+                                        <p className="text-[11px] text-zinc-500">{endpoint.description}</p>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
                               )}
-                            </div>
-                          </div>
 
-                          {/* OpenAPI Spec */}
-                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
-                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
-                              <FileCode className="w-4 h-4 text-orange-400" />
-                              OpenAPI Specification
-                            </h3>
-                            <pre className="text-xs text-zinc-400 font-mono bg-zinc-800/50 rounded-lg p-4 overflow-x-auto max-h-64">
-{`openapi: 3.0.0
-info:
-  title: ${activeGeneration?.title || "Generated"} API
-  version: 1.0.0
-  description: Auto-generated from video analysis
-
-paths:
-  /api/data:
-    get:
-      summary: Fetch main data
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-
-  /api/actions:
-    post:
-      summary: Submit form data
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-      responses:
-        '201':
-          description: Created`}
-                            </pre>
-                            <button 
-                              onClick={() => {
-                                const spec = `openapi: 3.0.0\ninfo:\n  title: ${activeGeneration?.title || "Generated"} API\n  version: 1.0.0`;
-                                navigator.clipboard.writeText(spec);
-                                showToast("OpenAPI spec copied!", "success");
-                              }}
-                              className="mt-3 px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors flex items-center gap-1.5"
-                            >
-                              <Copy className="w-3 h-3" /> Copy Spec
-                            </button>
-                          </div>
-
-                          {/* Backend Checklist */}
-                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
-                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
-                              <ListTodo className="w-4 h-4 text-yellow-400" />
-                              Backend Implementation Checklist
-                            </h3>
-                            <div className="space-y-2">
-                              {[
-                                "Set up API routes matching OpenAPI spec",
-                                "Implement authentication middleware",
-                                "Create database models from TypeScript interfaces",
-                                "Add input validation using Zod schemas",
-                                "Implement CORS for frontend domain",
-                                "Set up error handling & logging",
-                                "Add rate limiting for API endpoints",
-                                "Create seed data for development"
-                              ].map((item, i) => (
-                                <label key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800/30 cursor-pointer group">
-                                  <input type="checkbox" className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-orange-500 focus:ring-orange-500/50" />
-                                  <span className="text-sm text-zinc-400 group-hover:text-zinc-300">{item}</span>
-                                </label>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* QA Sub-tab */}
-                      {docsSubTab === "qa" && (
-                        <div className="space-y-6">
-                          <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center">
-                              <CheckSquare className="w-5 h-5 text-emerald-400" />
-                            </div>
-                            <div>
-                              <h2 className="text-lg font-semibold text-white">Quality Assurance</h2>
-                              <p className="text-xs text-zinc-500">Testing & verification checklists</p>
-                            </div>
-                          </div>
-
-                          {/* Functional Testing */}
-                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
-                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
-                              <Play className="w-4 h-4 text-green-400" />
-                              Functional Testing
-                            </h3>
-                            <div className="space-y-2">
-                              {[
-                                "All screens render without errors",
-                                "Navigation between screens works correctly",
-                                "Forms validate input correctly",
-                                "Error states display properly",
-                                "Loading states appear during async operations",
-                                "Empty states show when no data",
-                                "All buttons/links are clickable",
-                                "Data displays match source video"
-                              ].map((item, i) => (
-                                <label key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800/30 cursor-pointer group">
-                                  <input type="checkbox" className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-emerald-500 focus:ring-emerald-500/50" />
-                                  <span className="text-sm text-zinc-400 group-hover:text-zinc-300">{item}</span>
-                                </label>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Accessibility */}
-                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
-                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
-                              <Eye className="w-4 h-4 text-blue-400" />
-                              Accessibility (WCAG AA)
-                            </h3>
-                            <div className="space-y-2">
-                              {[
-                                "Color contrast meets 4.5:1 ratio",
-                                "All images have alt text",
-                                "Forms have proper labels",
-                                "Keyboard navigation works (Tab, Enter, Escape)",
-                                "Focus indicators visible",
-                                "Screen reader compatible",
-                                "No keyboard traps"
-                              ].map((item, i) => (
-                                <label key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800/30 cursor-pointer group">
-                                  <input type="checkbox" className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500/50" />
-                                  <span className="text-sm text-zinc-400 group-hover:text-zinc-300">{item}</span>
-                                </label>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Browser Testing */}
-                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
-                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
-                              <Monitor className="w-4 h-4 text-purple-400" />
-                              Browser & Device Testing
-                            </h3>
-                            <div className="grid grid-cols-2 gap-3">
-                              {[
-                                { name: "Chrome", status: "primary" },
-                                { name: "Firefox", status: "supported" },
-                                { name: "Safari", status: "supported" },
-                                { name: "Edge", status: "supported" },
-                                { name: "Mobile iOS", status: "responsive" },
-                                { name: "Mobile Android", status: "responsive" }
-                              ].map((browser) => (
-                                <div key={browser.name} className="flex items-center gap-2 p-2 rounded-lg bg-zinc-800/50">
-                                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                                  <span className="text-sm text-zinc-300">{browser.name}</span>
-                                  <span className="text-[10px] text-zinc-600 ml-auto">{browser.status}</span>
+                              {/* OpenAPI Spec */}
+                              {aiDocsApi.openApiSpec && (
+                                <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+                                  <div className="px-4 py-2.5 border-b border-zinc-800 flex items-center justify-between">
+                                    <h3 className="text-xs font-medium text-zinc-400">OpenAPI 3.0 Spec</h3>
+                                    <button 
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(aiDocsApi.openApiSpec);
+                                        showToast("Copied!", "success");
+                                      }}
+                                      className="text-[10px] text-zinc-500 hover:text-zinc-300 flex items-center gap-1"
+                                    >
+                                      <Copy className="w-3 h-3" /> Copy
+                                    </button>
+                                  </div>
+                                  <pre className="p-4 text-[11px] text-zinc-500 font-mono overflow-x-auto max-h-48">{aiDocsApi.openApiSpec}</pre>
                                 </div>
-                              ))}
-                            </div>
-                          </div>
+                              )}
 
-                          {/* Performance */}
-                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
-                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
-                              <Gauge className="w-4 h-4 text-yellow-400" />
-                              Performance Targets
-                            </h3>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="p-3 rounded-lg bg-zinc-800/50">
-                                <p className="text-lg font-bold text-emerald-400">&lt; 3s</p>
-                                <p className="text-xs text-zinc-500">First Contentful Paint</p>
-                              </div>
-                              <div className="p-3 rounded-lg bg-zinc-800/50">
-                                <p className="text-lg font-bold text-emerald-400">&lt; 100ms</p>
-                                <p className="text-xs text-zinc-500">Interaction Response</p>
-                              </div>
-                              <div className="p-3 rounded-lg bg-zinc-800/50">
-                                <p className="text-lg font-bold text-yellow-400">90+</p>
-                                <p className="text-xs text-zinc-500">Lighthouse Score</p>
-                              </div>
-                              <div className="p-3 rounded-lg bg-zinc-800/50">
-                                <p className="text-lg font-bold text-emerald-400">&lt; 200KB</p>
-                                <p className="text-xs text-zinc-500">Initial Bundle</p>
-                              </div>
+                              {/* Data Models */}
+                              {aiDocsApi.dataModels?.length > 0 && (
+                                <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+                                  <div className="px-4 py-2.5 border-b border-zinc-800">
+                                    <h3 className="text-xs font-medium text-zinc-400">Data Models</h3>
+                                  </div>
+                                  <div className="p-4 space-y-3">
+                                    {aiDocsApi.dataModels.map((model: any, i: number) => (
+                                      <div key={i}>
+                                        <p className="text-xs font-medium text-zinc-300 mb-1">{model.name}</p>
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {model.fields?.map((field: any, j: number) => (
+                                            <span key={j} className="px-2 py-0.5 rounded bg-zinc-800 text-[10px] text-zinc-500 font-mono">
+                                              {field.name}: {field.type}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Backend Checklist */}
+                              {aiDocsApi.backendChecklist?.length > 0 && (
+                                <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+                                  <div className="px-4 py-2.5 border-b border-zinc-800">
+                                    <h3 className="text-xs font-medium text-zinc-400">Implementation Checklist</h3>
+                                  </div>
+                                  <div className="p-3 space-y-1">
+                                    {aiDocsApi.backendChecklist.map((item: any, i: number) => (
+                                      <label key={i} className="flex items-center gap-2.5 p-2 rounded hover:bg-zinc-800/30 cursor-pointer group">
+                                        <input type="checkbox" className="w-3.5 h-3.5 rounded border-zinc-700 bg-zinc-800 text-zinc-400" />
+                                        <span className="text-xs text-zinc-500 group-hover:text-zinc-400">{item.item || item}</span>
+                                        {item.priority && <span className="text-[9px] text-zinc-600 ml-auto">{item.priority}</span>}
+                                      </label>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="flex flex-col items-center justify-center py-16">
+                              <Plug className="w-10 h-10 text-zinc-700 mb-3" />
+                              <p className="text-xs text-zinc-500 mb-3">API docs will generate automatically</p>
+                              <button onClick={() => generateDocs("api")} className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-xs rounded-md transition-colors">
+                                Generate Now
+                              </button>
                             </div>
-                          </div>
+                          )}
                         </div>
                       )}
 
-                      {/* Deploy Sub-tab */}
+                      {/* QA Sub-tab - AI Generated */}
+                      {docsSubTab === "qa" && (
+                        <div className="space-y-4">
+                          {isGeneratingDocs === "qa" ? (
+                            <div className="flex flex-col items-center justify-center py-20">
+                              <div className="relative w-10 h-10 mb-4">
+                                <div className="absolute inset-0 rounded-full border-2 border-zinc-700" />
+                                <div className="absolute inset-0 rounded-full border-2 border-zinc-400 border-t-transparent animate-spin" />
+                              </div>
+                              <p className="text-sm text-zinc-500">Generating QA checklist...</p>
+                              <p className="text-[10px] text-zinc-600 mt-1">Gemini 3 Flash</p>
+                            </div>
+                          ) : aiDocsQa ? (
+                            <>
+                              {/* Header */}
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center">
+                                    <CheckSquare className="w-4 h-4 text-zinc-400" />
+                                  </div>
+                                  <div>
+                                    <h2 className="text-sm font-medium text-white">Quality Assurance</h2>
+                                    <p className="text-[10px] text-zinc-600">Testing checklist • AI Generated</p>
+                                  </div>
+                                </div>
+                                <button onClick={() => generateDocs("qa")} className="p-1.5 hover:bg-zinc-800 rounded-md transition-colors">
+                                  <RefreshCw className="w-3.5 h-3.5 text-zinc-500" />
+                                </button>
+                              </div>
+
+                              {/* Performance Targets */}
+                              {aiDocsQa.performanceTargets && (
+                                <div className="grid grid-cols-4 gap-2">
+                                  <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800">
+                                    <p className="text-lg font-semibold text-zinc-300">{aiDocsQa.performanceTargets.fcp || "< 2s"}</p>
+                                    <p className="text-[10px] text-zinc-600">FCP</p>
+                                  </div>
+                                  <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800">
+                                    <p className="text-lg font-semibold text-zinc-300">{aiDocsQa.performanceTargets.lcp || "< 2.5s"}</p>
+                                    <p className="text-[10px] text-zinc-600">LCP</p>
+                                  </div>
+                                  <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800">
+                                    <p className="text-lg font-semibold text-zinc-300">{aiDocsQa.performanceTargets.cls || "< 0.1"}</p>
+                                    <p className="text-[10px] text-zinc-600">CLS</p>
+                                  </div>
+                                  <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800">
+                                    <p className="text-lg font-semibold text-zinc-300">{aiDocsQa.performanceTargets.fid || "< 100ms"}</p>
+                                    <p className="text-[10px] text-zinc-600">FID</p>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Functional Tests */}
+                              {aiDocsQa.functionalTests?.length > 0 && (
+                                <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+                                  <div className="px-4 py-2.5 border-b border-zinc-800">
+                                    <h3 className="text-xs font-medium text-zinc-400">Functional Tests</h3>
+                                  </div>
+                                  <div className="p-3 space-y-1 max-h-64 overflow-y-auto">
+                                    {aiDocsQa.functionalTests.map((test: any, i: number) => (
+                                      <label key={i} className="flex items-start gap-2.5 p-2 rounded hover:bg-zinc-800/30 cursor-pointer group">
+                                        <input type="checkbox" className="w-3.5 h-3.5 mt-0.5 rounded border-zinc-700 bg-zinc-800 text-zinc-400" />
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-xs text-zinc-400 group-hover:text-zinc-300">{test.description || test}</p>
+                                          {test.category && <p className="text-[9px] text-zinc-600 mt-0.5">{test.category}</p>}
+                                        </div>
+                                        {test.priority && (
+                                          <span className={`text-[9px] px-1.5 py-0.5 rounded ${
+                                            test.priority === "critical" ? "bg-zinc-800 text-zinc-400" : "text-zinc-600"
+                                          }`}>{test.priority}</span>
+                                        )}
+                                      </label>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Accessibility Tests */}
+                              {aiDocsQa.accessibilityTests?.length > 0 && (
+                                <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+                                  <div className="px-4 py-2.5 border-b border-zinc-800">
+                                    <h3 className="text-xs font-medium text-zinc-400">Accessibility (WCAG AA)</h3>
+                                  </div>
+                                  <div className="p-3 space-y-1">
+                                    {aiDocsQa.accessibilityTests.map((test: any, i: number) => (
+                                      <label key={i} className="flex items-start gap-2.5 p-2 rounded hover:bg-zinc-800/30 cursor-pointer group">
+                                        <input type="checkbox" className="w-3.5 h-3.5 mt-0.5 rounded border-zinc-700 bg-zinc-800 text-zinc-400" />
+                                        <div className="flex-1">
+                                          <p className="text-xs text-zinc-400 group-hover:text-zinc-300">{test.description || test}</p>
+                                          {test.wcagCriteria && <p className="text-[9px] text-zinc-600 mt-0.5">WCAG {test.wcagCriteria}</p>}
+                                        </div>
+                                      </label>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Browser Support */}
+                              {aiDocsQa.browserSupport?.length > 0 && (
+                                <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+                                  <div className="px-4 py-2.5 border-b border-zinc-800">
+                                    <h3 className="text-xs font-medium text-zinc-400">Browser Support</h3>
+                                  </div>
+                                  <div className="p-3 grid grid-cols-3 gap-2">
+                                    {aiDocsQa.browserSupport.map((browser: any, i: number) => (
+                                      <div key={i} className="flex items-center gap-2 p-2 rounded bg-zinc-800/50">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
+                                        <span className="text-xs text-zinc-400">{browser.browser || browser}</span>
+                                        {browser.status && <span className="text-[9px] text-zinc-600 ml-auto">{browser.status}</span>}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Security Checklist */}
+                              {aiDocsQa.securityChecklist?.length > 0 && (
+                                <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+                                  <div className="px-4 py-2.5 border-b border-zinc-800">
+                                    <h3 className="text-xs font-medium text-zinc-400">Security</h3>
+                                  </div>
+                                  <div className="p-3 space-y-1">
+                                    {aiDocsQa.securityChecklist.map((item: any, i: number) => (
+                                      <label key={i} className="flex items-center gap-2.5 p-2 rounded hover:bg-zinc-800/30 cursor-pointer group">
+                                        <input type="checkbox" className="w-3.5 h-3.5 rounded border-zinc-700 bg-zinc-800 text-zinc-400" />
+                                        <span className="text-xs text-zinc-500 group-hover:text-zinc-400">{item.item || item}</span>
+                                      </label>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="flex flex-col items-center justify-center py-16">
+                              <CheckSquare className="w-10 h-10 text-zinc-700 mb-3" />
+                              <p className="text-xs text-zinc-500 mb-3">QA checklist will generate automatically</p>
+                              <button onClick={() => generateDocs("qa")} className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-xs rounded-md transition-colors">
+                                Generate Now
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Deploy Sub-tab - AI Generated */}
                       {docsSubTab === "deploy" && (
-                        <div className="space-y-6">
-                          <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/10 flex items-center justify-center">
-                              <Rocket className="w-5 h-5 text-purple-400" />
+                        <div className="space-y-4">
+                          {isGeneratingDocs === "deploy" ? (
+                            <div className="flex flex-col items-center justify-center py-20">
+                              <div className="relative w-10 h-10 mb-4">
+                                <div className="absolute inset-0 rounded-full border-2 border-zinc-700" />
+                                <div className="absolute inset-0 rounded-full border-2 border-zinc-400 border-t-transparent animate-spin" />
+                              </div>
+                              <p className="text-sm text-zinc-500">Generating deployment guide...</p>
+                              <p className="text-[10px] text-zinc-600 mt-1">Gemini 3 Flash</p>
                             </div>
-                            <div>
-                              <h2 className="text-lg font-semibold text-white">Deployment</h2>
-                              <p className="text-xs text-zinc-500">Production deployment guides</p>
-                            </div>
-                          </div>
+                          ) : aiDocsDeploy ? (
+                            <>
+                              {/* Header */}
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center">
+                                    <Rocket className="w-4 h-4 text-zinc-400" />
+                                  </div>
+                                  <div>
+                                    <h2 className="text-sm font-medium text-white">Deployment</h2>
+                                    <p className="text-[10px] text-zinc-600">Production guide • AI Generated</p>
+                                  </div>
+                                </div>
+                                <button onClick={() => generateDocs("deploy")} className="p-1.5 hover:bg-zinc-800 rounded-md transition-colors">
+                                  <RefreshCw className="w-3.5 h-3.5 text-zinc-500" />
+                                </button>
+                              </div>
 
-                          {/* Docker Setup */}
-                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
-                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
-                              <Box className="w-4 h-4 text-blue-400" />
-                              Docker Configuration
-                            </h3>
-                            <pre className="text-xs text-zinc-400 font-mono bg-zinc-800/50 rounded-lg p-4 overflow-x-auto">
-{`# Dockerfile
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
+                              {/* Dockerfile */}
+                              {aiDocsDeploy.dockerfile && (
+                                <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+                                  <div className="px-4 py-2.5 border-b border-zinc-800 flex items-center justify-between">
+                                    <h3 className="text-xs font-medium text-zinc-400">Dockerfile</h3>
+                                    <button 
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(aiDocsDeploy.dockerfile);
+                                        showToast("Copied!", "success");
+                                      }}
+                                      className="text-[10px] text-zinc-500 hover:text-zinc-300 flex items-center gap-1"
+                                    >
+                                      <Copy className="w-3 h-3" /> Copy
+                                    </button>
+                                  </div>
+                                  <pre className="p-4 text-[11px] text-zinc-500 font-mono overflow-x-auto max-h-40">{aiDocsDeploy.dockerfile}</pre>
+                                </div>
+                              )}
 
-FROM node:20-alpine AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./
-RUN npm ci --only=production
-EXPOSE 3000
-CMD ["npm", "start"]`}
-                            </pre>
-                            <button 
-                              onClick={() => {
-                                navigator.clipboard.writeText("docker build -t replay-app . && docker run -p 3000:3000 replay-app");
-                                showToast("Docker commands copied!", "success");
-                              }}
-                              className="mt-3 px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors flex items-center gap-1.5"
-                            >
-                              <Copy className="w-3 h-3" /> Copy Build Command
-                            </button>
-                          </div>
+                              {/* Environment Variables */}
+                              {aiDocsDeploy.envVariables?.length > 0 && (
+                                <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+                                  <div className="px-4 py-2.5 border-b border-zinc-800">
+                                    <h3 className="text-xs font-medium text-zinc-400">Environment Variables</h3>
+                                  </div>
+                                  <div className="divide-y divide-zinc-800/50">
+                                    {aiDocsDeploy.envVariables.map((env: any, i: number) => (
+                                      <div key={i} className="px-4 py-2.5">
+                                        <div className="flex items-center gap-2">
+                                          <code className="text-xs text-zinc-300 font-mono">{env.name}</code>
+                                          {env.required && <span className="text-[9px] text-zinc-600">required</span>}
+                                        </div>
+                                        <p className="text-[10px] text-zinc-600 mt-0.5">{env.description}</p>
+                                        {env.example && <code className="text-[10px] text-zinc-500 font-mono">{env.example}</code>}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
 
-                          {/* Environment Variables */}
-                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
-                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
-                              <Settings className="w-4 h-4 text-yellow-400" />
-                              Environment Variables
-                            </h3>
-                            <pre className="text-xs text-zinc-400 font-mono bg-zinc-800/50 rounded-lg p-4 overflow-x-auto">
-{`# .env.production
-NEXT_PUBLIC_API_URL=https://api.yoursite.com
-NEXT_PUBLIC_APP_URL=https://yoursite.com
-DATABASE_URL=postgresql://...
-JWT_SECRET=your-secret-key
-REDIS_URL=redis://...`}
-                            </pre>
-                          </div>
+                              {/* CI/CD */}
+                              {aiDocsDeploy.cicd?.workflow && (
+                                <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+                                  <div className="px-4 py-2.5 border-b border-zinc-800 flex items-center justify-between">
+                                    <h3 className="text-xs font-medium text-zinc-400">{aiDocsDeploy.cicd.platform || "CI/CD"}</h3>
+                                    <button 
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(aiDocsDeploy.cicd.workflow);
+                                        showToast("Copied!", "success");
+                                      }}
+                                      className="text-[10px] text-zinc-500 hover:text-zinc-300 flex items-center gap-1"
+                                    >
+                                      <Copy className="w-3 h-3" /> Copy
+                                    </button>
+                                  </div>
+                                  <pre className="p-4 text-[11px] text-zinc-500 font-mono overflow-x-auto max-h-40">{aiDocsDeploy.cicd.workflow}</pre>
+                                </div>
+                              )}
 
-                          {/* CI/CD Pipeline */}
-                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
-                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
-                              <GitBranch className="w-4 h-4 text-green-400" />
-                              CI/CD Pipeline (GitHub Actions)
-                            </h3>
-                            <pre className="text-xs text-zinc-400 font-mono bg-zinc-800/50 rounded-lg p-4 overflow-x-auto max-h-48">
-{`# .github/workflows/deploy.yml
-name: Deploy
-on:
-  push:
-    branches: [main]
+                              {/* Deploy Platforms */}
+                              {aiDocsDeploy.platforms?.length > 0 && (
+                                <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+                                  <div className="px-4 py-2.5 border-b border-zinc-800">
+                                    <h3 className="text-xs font-medium text-zinc-400">Deploy Platforms</h3>
+                                  </div>
+                                  <div className="p-3 grid grid-cols-3 gap-2">
+                                    {aiDocsDeploy.platforms.map((platform: any, i: number) => (
+                                      <div key={i} className={`p-3 rounded-lg text-center ${platform.recommended ? "bg-zinc-800 border border-zinc-700" : "bg-zinc-800/50"}`}>
+                                        <p className="text-xs font-medium text-zinc-300">{platform.name}</p>
+                                        {platform.recommended && <p className="text-[9px] text-zinc-500 mt-0.5">Recommended</p>}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: npm ci
-      - run: npm run build
-      - run: npm test
-      - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v25`}
-                            </pre>
-                          </div>
+                              {/* Production Checklist */}
+                              {aiDocsDeploy.productionChecklist?.length > 0 && (
+                                <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+                                  <div className="px-4 py-2.5 border-b border-zinc-800">
+                                    <h3 className="text-xs font-medium text-zinc-400">Production Checklist</h3>
+                                  </div>
+                                  <div className="p-3 space-y-3">
+                                    {aiDocsDeploy.productionChecklist.map((category: any, i: number) => (
+                                      <div key={i}>
+                                        <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1.5">{category.category}</p>
+                                        <div className="space-y-1">
+                                          {category.items?.map((item: string, j: number) => (
+                                            <label key={j} className="flex items-center gap-2.5 p-1.5 rounded hover:bg-zinc-800/30 cursor-pointer">
+                                              <input type="checkbox" className="w-3 h-3 rounded border-zinc-700 bg-zinc-800 text-zinc-400" />
+                                              <span className="text-xs text-zinc-500">{item}</span>
+                                            </label>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
 
-                          {/* Production Checklist */}
-                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
-                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
-                              <Shield className="w-4 h-4 text-red-400" />
-                              Production Checklist
-                            </h3>
-                            <div className="space-y-2">
-                              {[
-                                "Environment variables configured",
-                                "Database migrations applied",
-                                "SSL/TLS certificate installed",
-                                "Error monitoring set up (Sentry)",
-                                "Logging configured",
-                                "Backup strategy in place",
-                                "Rate limiting enabled",
-                                "CDN configured for static assets"
-                              ].map((item, i) => (
-                                <label key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800/30 cursor-pointer group">
-                                  <input type="checkbox" className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-purple-500 focus:ring-purple-500/50" />
-                                  <span className="text-sm text-zinc-400 group-hover:text-zinc-300">{item}</span>
-                                </label>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* One-Click Deploy */}
-                          <div className="rounded-xl border border-orange-500/20 bg-gradient-to-br from-orange-500/5 to-transparent p-5">
-                            <h3 className="text-sm font-semibold text-zinc-300 mb-3">Quick Deploy Options</h3>
-                            <div className="flex gap-3">
-                              <button className="flex-1 px-4 py-3 rounded-lg bg-black hover:bg-zinc-900 border border-zinc-700 transition-colors flex items-center justify-center gap-2">
-                                <svg className="w-5 h-5" viewBox="0 0 76 76" fill="white"><path d="M37.5274 0L75.0548 65H0L37.5274 0Z"/></svg>
-                                <span className="text-sm font-medium text-white">Vercel</span>
+                              {/* Troubleshooting */}
+                              {aiDocsDeploy.troubleshooting?.length > 0 && (
+                                <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+                                  <div className="px-4 py-2.5 border-b border-zinc-800">
+                                    <h3 className="text-xs font-medium text-zinc-400">Troubleshooting</h3>
+                                  </div>
+                                  <div className="divide-y divide-zinc-800/50">
+                                    {aiDocsDeploy.troubleshooting.slice(0, 5).map((issue: any, i: number) => (
+                                      <div key={i} className="px-4 py-3">
+                                        <p className="text-xs text-zinc-300 font-medium">{issue.issue}</p>
+                                        <p className="text-[10px] text-zinc-600 mt-1">→ {issue.solution}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="flex flex-col items-center justify-center py-16">
+                              <Rocket className="w-10 h-10 text-zinc-700 mb-3" />
+                              <p className="text-xs text-zinc-500 mb-3">Deploy guide will generate automatically</p>
+                              <button onClick={() => generateDocs("deploy")} className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-xs rounded-md transition-colors">
+                                Generate Now
                               </button>
-                              <button className="flex-1 px-4 py-3 rounded-lg bg-[#7B42BC] hover:bg-[#6B32AC] transition-colors flex items-center justify-center gap-2">
-                                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="white"><path d="M12 2L2 22h20L12 2z"/></svg>
-                                <span className="text-sm font-medium text-white">Netlify</span>
-                              </button>
-                              <button className="flex-1 px-4 py-3 rounded-lg bg-[#FF9900] hover:bg-[#EC8E00] transition-colors flex items-center justify-center gap-2">
-                                <Cloud className="w-5 h-5 text-white" />
-                                <span className="text-sm font-medium text-white">AWS</span>
-                              </button>
                             </div>
-                          </div>
+                          )}
                         </div>
                       )}
                     </div>
