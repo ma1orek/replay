@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { VIDEO_TO_CODE_SYSTEM_PROMPT, buildStylePrompt } from "@/lib/prompts/system-prompt";
+import { buildEnterprisePrompt, ENTERPRISE_SYSTEM_PROMPT } from "@/lib/enterprise-prompt";
+import { ENTERPRISE_PRESETS } from "@/lib/enterprise-presets";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -138,7 +140,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { videoBase64, mimeType, styleDirective, databaseContext, styleReferenceImage } = body;
+    const { videoBase64, mimeType, styleDirective, databaseContext, styleReferenceImage, enterprisePresetId, enterpriseMode } = body;
 
     if (!videoBase64 || !mimeType) {
       return new Response(
@@ -152,16 +154,29 @@ export async function POST(request: NextRequest) {
     const model = genAI.getGenerativeModel({
       model: "gemini-3-pro-preview",
       generationConfig: {
-        temperature: 0.7,
+        temperature: enterpriseMode ? 0.5 : 0.7, // Lower temp for enterprise accuracy
         maxOutputTokens: 100000,
       },
     });
 
-    // Build full prompt
-    let fullPrompt = VIDEO_TO_CODE_SYSTEM_PROMPT;
-    fullPrompt += buildStylePrompt(styleDirective);
+    // Build full prompt - use enterprise mode if preset selected
+    let fullPrompt: string;
     
-    if (databaseContext) {
+    if (enterpriseMode && enterprisePresetId) {
+      // Enterprise mode: use new accuracy-focused prompt
+      fullPrompt = buildEnterprisePrompt(
+        enterprisePresetId,
+        styleDirective, // Additional context
+        databaseContext
+      );
+    } else {
+      // Legacy mode: use original creative prompt
+      fullPrompt = VIDEO_TO_CODE_SYSTEM_PROMPT;
+      fullPrompt += buildStylePrompt(styleDirective);
+    }
+    
+    // Add database context for legacy mode (enterprise mode includes it in buildEnterprisePrompt)
+    if (databaseContext && !enterpriseMode) {
       fullPrompt += `
 
 DATABASE CONTEXT (use this data in appropriate places):

@@ -2,6 +2,21 @@
 // App Types
 // ============================================
 
+// Re-export enterprise types
+export * from "./enterprise-output";
+export { 
+  ENTERPRISE_PRESETS, 
+  getPresetById, 
+  getPresetsByIndustry,
+  generateCSSVariables,
+  generateTailwindConfig,
+  type EnterprisePreset,
+  type ColorPalette,
+  type TypographyScale,
+  type ComponentConfig,
+  type ChartConfig,
+} from "@/lib/enterprise-presets";
+
 export interface Flow {
   id: string;
   name: string;
