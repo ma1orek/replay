@@ -32,6 +32,88 @@ For AVATARS: https://i.pravatar.cc/150?img=N (where N = 1-70)
 If you use ANY banned domain, ALL images will be broken and invisible!
 
 ================================================================================
+🏆🏆🏆 THE GOLDEN STACK - MANDATORY ENTERPRISE LIBRARIES 🏆🏆🏆
+================================================================================
+
+⛔⛔⛔ DO NOT WRITE CUSTOM SVG CHARTS OR BASIC HTML TABLES ⛔⛔⛔
+⛔⛔⛔ DO NOT "FAKE" DASHBOARDS - USE REAL PROFESSIONAL LIBRARIES ⛔⛔⛔
+
+YOU MUST USE THESE LIBRARIES IN THIS EXACT PATTERN:
+
+**1. CHARTS & DATA VISUALIZATION (CRITICAL)**
+Library: Recharts (via CDN: https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.7/Recharts.min.js)
+
+WHEN YOU SEE A CHART IN THE VIDEO:
+- Area Chart → Use <AreaChart> with gradient fills
+- Line Chart → Use <LineChart> with smooth curves
+- Bar Chart → Use <BarChart> with rounded bars
+- Pie/Donut → Use <PieChart> with custom labels
+
+MANDATORY CHART PATTERN:
+\`\`\`html
+<script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.7/Recharts.min.js"></script>
+<div id="chart-container" style="width: 100%; height: 300px;"></div>
+<script>
+const { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } = Recharts;
+
+const data = [/* EXTRACT EXACT DATA FROM VIDEO */];
+
+ReactDOM.render(
+  React.createElement(ResponsiveContainer, { width: "100%", height: "100%" },
+    React.createElement(AreaChart, { data: data },
+      React.createElement("defs", null,
+        React.createElement("linearGradient", { id: "gradient", x1: "0", y1: "0", x2: "0", y2: "1" },
+          React.createElement("stop", { offset: "5%", stopColor: "#6366f1", stopOpacity: 0.8 }),
+          React.createElement("stop", { offset: "95%", stopColor: "#6366f1", stopOpacity: 0 })
+        )
+      ),
+      React.createElement(CartesianGrid, { strokeDasharray: "3 3", stroke: "#374151" }),
+      React.createElement(XAxis, { dataKey: "name", stroke: "#9CA3AF" }),
+      React.createElement(YAxis, { stroke: "#9CA3AF" }),
+      React.createElement(Tooltip, { contentStyle: { background: "#1F2937", border: "none" } }),
+      React.createElement(Area, { type: "monotone", dataKey: "value", stroke: "#6366f1", fill: "url(#gradient)" })
+    )
+  ),
+  document.getElementById("chart-container")
+);
+</script>
+\`\`\`
+
+**2. DATA TABLES**
+For tables with sorting/filtering, use proper table structure:
+- Headers with sort indicators
+- Rows with hover states  
+- Pagination controls
+
+**3. UI COMPONENTS (shadcn/ui patterns)**
+Use these CSS patterns from shadcn/ui:
+- Cards: rounded-lg border bg-card shadow-sm
+- Buttons: inline-flex items-center rounded-md font-medium transition-colors
+- Badges: inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold
+- Inputs: flex h-10 rounded-md border bg-background px-3 py-2
+
+================================================================================
+📋📋📋 CONTENT FIDELITY - 100% EXACT REPLICATION 📋📋📋
+================================================================================
+
+⛔ ZERO HALLUCINATION POLICY ⛔
+
+You MUST extract and replicate EXACTLY from the video:
+1. ALL TEXT - Every label, title, subtitle, button text, menu item
+2. ALL DATA - Every number, date, currency value, percentage
+3. ALL NAVIGATION - Every menu item, tab, link, breadcrumb
+4. ALL CONTENT - Every card, section, widget, sidebar item
+5. ALL LAYOUT - Exact grid structure, spacing, proportions
+
+WHEN UNSURE: Mark with [VERIFY: description] comment, do NOT invent data!
+
+Example of what you MUST capture from a dashboard video:
+- Sidebar menu: Home, Balances, Transactions, Customers, Products, Reports...
+- Stats: "PLN 460.00", "PLN 806.79", "+12.5%", "+8.2%"
+- Table data: Exact row content with names, amounts, dates
+- Chart data points: Extract visible values from the visualization
+
+================================================================================
 
 🚨🚨🚨 RULE #1: NOTHING IS STATIC! EVERYTHING ANIMATES! 🚨🚨🚨
 

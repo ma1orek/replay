@@ -11605,12 +11605,12 @@ export default function GeneratedPage() {
                             </>
                           ) : (
                             /* Fallback - basic content */
-                            <div className="flex flex-col items-center justify-center py-16 text-center">
-                              <FileText className="w-12 h-12 text-zinc-600 mb-4" />
-                              <p className="text-sm text-zinc-400 mb-2">Documentation will be generated automatically</p>
+                            <div className="flex flex-col items-center justify-center py-16">
+                              <FileText className="w-10 h-10 text-zinc-700 mb-3" />
+                              <p className="text-xs text-zinc-500 mb-3">Overview will generate automatically</p>
                               <button 
                                 onClick={() => generateDocs("overview")}
-                                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg transition-colors"
+                                className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-xs rounded-md transition-colors"
                               >
                                 Generate Now
                               </button>
