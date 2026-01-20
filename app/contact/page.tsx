@@ -76,20 +76,14 @@ export default function ContactPage() {
   const selectedTopic = TOPICS.find(t => t.id === formData.topic);
 
   return (
-    <div className="min-h-screen bg-[#030303] text-white">
+    <div className="min-h-screen bg-white text-zinc-900">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-[#030303]/90 backdrop-blur-xl">
+      <header className="fixed top-0 left-0 right-0 z-50 border-b border-zinc-200 bg-white/90 backdrop-blur-xl">
         <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Logo />
           </Link>
-          <Link
-            href="/landing"
-            className="flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Home
-          </Link>
+          <Link href="/" className="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></Link>
         </div>
       </header>
 
@@ -166,13 +160,13 @@ export default function ContactPage() {
                 </div>
 
                 {/* Direct Email Option */}
-                <div className="mb-8 p-4 rounded-2xl bg-white/[0.03] border border-white/10">
+                <div className="mb-8 p-4 rounded-2xl bg-white/[0.03] border border-zinc-200">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-[#FF6E3C]/20 flex items-center justify-center flex-shrink-0">
                       <Mail className="w-5 h-5 text-[#FF6E3C]" />
                     </div>
                     <div>
-                      <p className="text-sm text-white/50">Prefer email? Write to us directly:</p>
+                      <p className="text-sm text-zinc-500">Prefer email? Write to us directly:</p>
                       <a
                         href="mailto:support@replay.build"
                         className="text-[#FF6E3C] hover:text-[#FF8F5C] font-medium transition-colors"
@@ -188,24 +182,24 @@ export default function ContactPage() {
                   {/* Name Row */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm text-white/50 mb-2">First Name *</label>
+                      <label className="block text-sm text-zinc-500 mb-2">First Name *</label>
                       <input
                         type="text"
                         required
                         value={formData.firstName}
                         onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
+                        className="w-full px-4 py-3 rounded-xl bg-zinc-100 border border-zinc-200 text-white placeholder:text-zinc-400 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
                         placeholder="John"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-white/50 mb-2">Last Name *</label>
+                      <label className="block text-sm text-zinc-500 mb-2">Last Name *</label>
                       <input
                         type="text"
                         required
                         value={formData.lastName}
                         onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
+                        className="w-full px-4 py-3 rounded-xl bg-zinc-100 border border-zinc-200 text-white placeholder:text-zinc-400 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
                         placeholder="Doe"
                       />
                     </div>
@@ -213,48 +207,48 @@ export default function ContactPage() {
 
                   {/* Email */}
                   <div>
-                    <label className="block text-sm text-white/50 mb-2">Email *</label>
+                    <label className="block text-sm text-zinc-500 mb-2">Email *</label>
                     <input
                       type="email"
                       required
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
+                      className="w-full px-4 py-3 rounded-xl bg-zinc-100 border border-zinc-200 text-white placeholder:text-zinc-400 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
                       placeholder="john@company.com"
                     />
                   </div>
 
                   {/* Company */}
                   <div>
-                    <label className="block text-sm text-white/50 mb-2">Company *</label>
+                    <label className="block text-sm text-zinc-500 mb-2">Company *</label>
                     <input
                       type="text"
                       required
                       value={formData.company}
                       onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
+                      className="w-full px-4 py-3 rounded-xl bg-zinc-100 border border-zinc-200 text-white placeholder:text-zinc-400 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
                       placeholder="Acme Inc."
                     />
                   </div>
 
                   {/* Topic */}
                   <div>
-                    <label className="block text-sm text-white/50 mb-2">Topic *</label>
+                    <label className="block text-sm text-zinc-500 mb-2">Topic *</label>
                     <div className="relative">
                       <button
                         type="button"
                         onClick={() => setShowTopicDropdown(!showTopicDropdown)}
-                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white flex items-center justify-between focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
+                        className="w-full px-4 py-3 rounded-xl bg-zinc-100 border border-zinc-200 text-white flex items-center justify-between focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
                       >
                         <div className="flex items-center gap-3">
-                          {selectedTopic && <selectedTopic.icon className="w-4 h-4 text-white/50" />}
+                          {selectedTopic && <selectedTopic.icon className="w-4 h-4 text-zinc-500" />}
                           <span>{selectedTopic?.label}</span>
                         </div>
-                        <ChevronDown className={cn("w-4 h-4 text-white/50 transition-transform", showTopicDropdown && "rotate-180")} />
+                        <ChevronDown className={cn("w-4 h-4 text-zinc-500 transition-transform", showTopicDropdown && "rotate-180")} />
                       </button>
                       
                       {showTopicDropdown && (
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden z-10">
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-zinc-200 rounded-xl overflow-hidden z-10">
                           {TOPICS.map((topic) => (
                             <button
                               key={topic.id}
@@ -264,7 +258,7 @@ export default function ContactPage() {
                                 setShowTopicDropdown(false);
                               }}
                               className={cn(
-                                "w-full px-4 py-3 flex items-center gap-3 hover:bg-white/5 transition-colors text-left",
+                                "w-full px-4 py-3 flex items-center gap-3 hover:bg-zinc-100 transition-colors text-left",
                                 formData.topic === topic.id && "bg-[#FF6E3C]/10 text-[#FF6E3C]"
                               )}
                             >
@@ -279,13 +273,13 @@ export default function ContactPage() {
 
                   {/* Message */}
                   <div>
-                    <label className="block text-sm text-white/50 mb-2">Message *</label>
+                    <label className="block text-sm text-zinc-500 mb-2">Message *</label>
                     <textarea
                       required
                       rows={5}
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors resize-none"
+                      className="w-full px-4 py-3 rounded-xl bg-zinc-100 border border-zinc-200 text-white placeholder:text-zinc-400 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors resize-none"
                       placeholder="Tell us about your project or question..."
                     />
                   </div>

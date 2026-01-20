@@ -6,45 +6,45 @@ export default function DatabaseIntegrationPage() {
     <div className="space-y-12">
       {/* Header */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 text-sm text-white/50">
-          <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
+        <div className="flex items-center gap-2 text-sm text-zinc-500">
+          <Link href="/docs" className="hover:text-zinc-900 transition-colors">Docs</Link>
           <span>/</span>
           <span>Guides</span>
           <span>/</span>
-          <span className="text-white">Database Integration</span>
+          <span className="text-zinc-900">Database Integration</span>
         </div>
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-[#FF6E3C]/20">
             <Database className="w-6 h-6 text-[#FF6E3C]" />
           </div>
-          <h1 className="text-4xl font-bold text-white">Database Integration</h1>
+          <h1 className="text-4xl font-bold text-zinc-900">Database Integration</h1>
         </div>
-        <p className="text-xl text-white/60">
+        <p className="text-xl text-zinc-500">
           Connect Supabase to generate UI that works with your real data.
         </p>
       </div>
 
       {/* Overview */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-white">Why Connect a Database?</h2>
-        <p className="text-white/70 leading-relaxed">
+        <h2 className="text-2xl font-semibold text-zinc-900">Why Connect a Database?</h2>
+        <p className="text-zinc-600 leading-relaxed">
           By connecting your Supabase database, the AI understands your actual data structure. 
           When you ask "create a users list", it generates code that fetches from your real 
-          <code className="px-1.5 py-0.5 bg-white/10 rounded text-sm mx-1">users</code> table 
+          <code className="px-1.5 py-0.5 bg-zinc-200 rounded text-sm mx-1">users</code> table 
           with correct column names.
         </p>
       </div>
 
       {/* What Replay can see */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-white">What Replay Can Access</h2>
+        <h2 className="text-2xl font-semibold text-zinc-900">What Replay Can Access</h2>
         <div className="grid md:grid-cols-2 gap-4">
           <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/30">
             <div className="flex items-center gap-2 mb-2">
               <Check className="w-4 h-4 text-green-400" />
               <h4 className="font-medium text-green-400">Read Access:</h4>
             </div>
-            <ul className="space-y-1 text-sm text-white/70">
+            <ul className="space-y-1 text-sm text-zinc-600">
               <li>• Table names</li>
               <li>• Column names and types</li>
               <li>• Sample data (for schema inference)</li>
@@ -56,7 +56,7 @@ export default function DatabaseIntegrationPage() {
               <Shield className="w-4 h-4 text-red-400" />
               <h4 className="font-medium text-red-400">No Write Access:</h4>
             </div>
-            <ul className="space-y-1 text-sm text-white/70">
+            <ul className="space-y-1 text-sm text-zinc-600">
               <li>• Cannot modify data</li>
               <li>• Cannot delete records</li>
               <li>• Cannot alter schema</li>
@@ -68,7 +68,7 @@ export default function DatabaseIntegrationPage() {
 
       {/* Setup steps */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-white">Setup Guide</h2>
+        <h2 className="text-2xl font-semibold text-zinc-900">Setup Guide</h2>
         <div className="space-y-4">
           {[
             {
@@ -102,13 +102,13 @@ export default function DatabaseIntegrationPage() {
               icon: Check
             },
           ].map((item) => (
-            <div key={item.step} className="flex gap-4 p-4 rounded-xl bg-white/5 border border-white/10">
+            <div key={item.step} className="flex gap-4 p-4 rounded-xl bg-zinc-100 border border-zinc-200">
               <div className="w-10 h-10 rounded-full bg-[#FF6E3C] flex items-center justify-center flex-shrink-0">
-                <item.icon className="w-5 h-5 text-white" />
+                <item.icon className="w-5 h-5 text-zinc-900" />
               </div>
               <div>
-                <h4 className="font-medium text-white">Step {item.step}: {item.title}</h4>
-                <p className="text-sm text-white/60 mt-1">{item.description}</p>
+                <h4 className="font-medium text-zinc-900">Step {item.step}: {item.title}</h4>
+                <p className="text-sm text-zinc-500 mt-1">{item.description}</p>
               </div>
             </div>
           ))}
@@ -117,12 +117,12 @@ export default function DatabaseIntegrationPage() {
 
       {/* RLS Setup */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-white">Configuring Row Level Security</h2>
-        <p className="text-white/70 leading-relaxed">
+        <h2 className="text-2xl font-semibold text-zinc-900">Configuring Row Level Security</h2>
+        <p className="text-zinc-600 leading-relaxed">
           For Replay to see your tables, you need to enable RLS and create policies. Here's an example:
         </p>
-        <div className="p-4 rounded-xl bg-[#1a1a1a] border border-white/10 font-mono text-sm overflow-x-auto">
-          <pre className="text-white/70">{`-- Enable RLS on the table
+        <div className="p-4 rounded-xl bg-[#1a1a1a] border border-zinc-200 font-mono text-sm overflow-x-auto">
+          <pre className="text-zinc-600">{`-- Enable RLS on the table
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 
 -- Create a policy that allows SELECT for anonymous users
@@ -135,7 +135,7 @@ USING (true);`}</pre>
         <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30">
           <div className="flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 text-yellow-400 mt-0.5" />
-            <p className="text-sm text-white/70">
+            <p className="text-sm text-zinc-600">
               Only create read policies for data that's safe to expose. Don't expose sensitive user data.
             </p>
           </div>
@@ -144,20 +144,20 @@ USING (true);`}</pre>
 
       {/* Using with AI */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-white">Using Database Context with AI</h2>
-        <p className="text-white/70 leading-relaxed">
+        <h2 className="text-2xl font-semibold text-zinc-900">Using Database Context with AI</h2>
+        <p className="text-zinc-600 leading-relaxed">
           Once connected, the AI automatically knows about your schema. Try prompts like:
         </p>
-        <div className="p-4 rounded-xl bg-[#1a1a1a] border border-white/10 font-mono text-sm">
+        <div className="p-4 rounded-xl bg-[#1a1a1a] border border-zinc-200 font-mono text-sm">
           <p className="text-[#FF6E3C]">"Create a product grid using my products table"</p>
           <p className="text-[#FF6E3C] mt-2">"Add a user profile section with data from profiles"</p>
           <p className="text-[#FF6E3C] mt-2">"Build a dashboard showing order statistics"</p>
         </div>
-        <p className="text-white/70 leading-relaxed mt-4">
+        <p className="text-zinc-600 leading-relaxed mt-4">
           The generated code will include proper Supabase client initialization and queries:
         </p>
-        <div className="p-4 rounded-xl bg-[#1a1a1a] border border-white/10 font-mono text-sm overflow-x-auto">
-          <pre className="text-white/70">{`<script>
+        <div className="p-4 rounded-xl bg-[#1a1a1a] border border-zinc-200 font-mono text-sm overflow-x-auto">
+          <pre className="text-zinc-600">{`<script>
   const supabase = supabase.createClient(
     'YOUR_SUPABASE_URL',
     'YOUR_ANON_KEY'
@@ -175,28 +175,28 @@ USING (true);`}</pre>
 
       {/* Troubleshooting */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-white">Troubleshooting</h2>
+        <h2 className="text-2xl font-semibold text-zinc-900">Troubleshooting</h2>
         <div className="space-y-3">
-          <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-            <h4 className="font-medium text-white mb-1">Tables not showing?</h4>
-            <p className="text-sm text-white/60">Check that RLS is enabled AND you have a SELECT policy for the anon role.</p>
+          <div className="p-4 rounded-xl bg-zinc-100 border border-zinc-200">
+            <h4 className="font-medium text-zinc-900 mb-1">Tables not showing?</h4>
+            <p className="text-sm text-zinc-500">Check that RLS is enabled AND you have a SELECT policy for the anon role.</p>
           </div>
-          <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-            <h4 className="font-medium text-white mb-1">Showing 0 rows?</h4>
-            <p className="text-sm text-white/60">Your RLS policy might be too restrictive. Try <code className="px-1 py-0.5 bg-white/10 rounded text-xs">USING (true)</code> for public data.</p>
+          <div className="p-4 rounded-xl bg-zinc-100 border border-zinc-200">
+            <h4 className="font-medium text-zinc-900 mb-1">Showing 0 rows?</h4>
+            <p className="text-sm text-zinc-500">Your RLS policy might be too restrictive. Try <code className="px-1 py-0.5 bg-zinc-200 rounded text-xs">USING (true)</code> for public data.</p>
           </div>
-          <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-            <h4 className="font-medium text-white mb-1">Invalid URL error?</h4>
-            <p className="text-sm text-white/60">Make sure your URL starts with https:// and ends with .supabase.co</p>
+          <div className="p-4 rounded-xl bg-zinc-100 border border-zinc-200">
+            <h4 className="font-medium text-zinc-900 mb-1">Invalid URL error?</h4>
+            <p className="text-sm text-zinc-500">Make sure your URL starts with https:// and ends with .supabase.co</p>
           </div>
         </div>
       </div>
 
       {/* Security note */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-white">Security Notes</h2>
-        <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-          <ul className="space-y-2 text-sm text-white/70">
+        <h2 className="text-2xl font-semibold text-zinc-900">Security Notes</h2>
+        <div className="p-4 rounded-xl bg-zinc-100 border border-zinc-200">
+          <ul className="space-y-2 text-sm text-zinc-600">
             <li className="flex items-start gap-2">
               <Shield className="w-4 h-4 text-[#FF6E3C] mt-0.5" />
               <span>Credentials are stored in your browser's localStorage - never sent to our servers</span>

@@ -66,7 +66,9 @@ import {
   Info,
   Rocket,
   Globe,
-  Zap
+  Zap,
+  PanelLeftClose,
+  PanelLeft
 } from "lucide-react";
 import { cn, generateId, formatDuration, updateProjectAnalytics } from "@/lib/utils";
 import { stabilizePicsumUrls } from "@/lib/assets";
@@ -1141,6 +1143,7 @@ function ReplayToolContent() {
   const [flowEdges, setFlowEdges] = useState<ProductFlowEdge[]>([]);
   const [flowBuilding, setFlowBuilding] = useState(false);
   const [selectedFlowNode, setSelectedFlowNode] = useState<string | null>(null);
+  const [hasAutoLayouted, setHasAutoLayouted] = useState(false);
   const [showStructureInFlow, setShowStructureInFlow] = useState(false); // Toggle to show components under nodes
   const [showPossiblePaths, setShowPossiblePaths] = useState(true); // Toggle to show/hide possible paths in Flow
   const [showPreviewsInFlow, setShowPreviewsInFlow] = useState(true); // Always show iframe previews in flow nodes by default
@@ -1189,6 +1192,7 @@ function ReplayToolContent() {
   const [sidebarMode, setSidebarMode] = useState<SidebarMode>("config");
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>("chat");
   const [sidebarView, setSidebarView] = useState<SidebarView>("detail"); // projects list vs detail view
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // collapsed sidebar state
   const [projectMenuOpen, setProjectMenuOpen] = useState<string | null>(null); // context menu for projects
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -1221,7 +1225,7 @@ function ReplayToolContent() {
   // Helper to inject image click handlers into preview HTML
   const injectAssetClickHandler = useCallback((html: string): string => {
     // Simple CSS - outline without offset to not break layout
-    const CSS_STYLES = 'img { cursor: pointer !important; outline: 2px dashed #FF6E3C !important; outline-offset: -2px !important; } img:hover { outline-width: 3px !important; filter: brightness(1.06) !important; } [data-has-bg-image] { cursor: pointer !important; outline: 2px dashed #FF6E3C !important; outline-offset: -2px !important; } [data-has-bg-image]:hover { outline-width: 3px !important; }';
+    const CSS_STYLES = 'img { cursor: pointer !important; outline: 2px dashed var(--accent-orange) !important; outline-offset: -2px !important; } img:hover { outline-width: 3px !important; filter: brightness(1.06) !important; } [data-has-bg-image] { cursor: pointer !important; outline: 2px dashed var(--accent-orange) !important; outline-offset: -2px !important; } [data-has-bg-image]:hover { outline-width: 3px !important; }';
     
     const script = `<script>
 (function() {
@@ -2729,7 +2733,7 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
             let hovered = null;
             const overlay = document.createElement('div');
             overlay.id = 'point-edit-overlay';
-            overlay.style.cssText = 'position:fixed;pointer-events:none;border:2px solid #FF6E3C;background:rgba(255,110,60,0.1);z-index:99999;transition:all 0.1s ease;display:none;';
+            overlay.style.cssText = 'position:fixed;pointer-events:none;border:2px solid var(--accent-orange);background:rgba(82,82,91,0.2);z-index:99999;transition:all 0.1s ease;display:none;';
             document.body.appendChild(overlay);
             
             document.addEventListener('mousemove', function(e) {
@@ -2843,7 +2847,7 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
               activeElement = el;
               originalText = el.textContent;
               el.contentEditable = 'true';
-              el.style.outline = '2px solid #FF6E3C';
+              el.style.outline = '2px solid var(--accent-orange)';
               el.style.outlineOffset = '2px';
               el.focus();
               
@@ -2959,7 +2963,7 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
             // Visual indicator that editing mode is active
             const indicator = document.createElement('div');
             indicator.id = 'direct-edit-indicator';
-            indicator.style.cssText = 'position:fixed;top:8px;right:8px;padding:4px 10px;background:#FF6E3C;color:white;font-size:11px;font-family:system-ui;border-radius:4px;z-index:99999;pointer-events:none;';
+            indicator.style.cssText = 'position:fixed;top:8px;right:8px;padding:4px 10px;background:var(--accent-orange);color:white;font-size:11px;font-family:system-ui;border-radius:4px;z-index:99999;pointer-events:none;';
             indicator.textContent = '✎ Editing Mode (click buttons/links, double-click text)';
             document.body.appendChild(indicator);
           })();
@@ -2969,7 +2973,7 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
         // Add hover highlight style and disable all interactivity
         const style = doc.createElement('style');
         style.id = 'direct-edit-style';
-        style.textContent = 'a, button, input, select, textarea, [onclick], [href] { pointer-events: auto !important; cursor: text !important; } a:hover, button:hover { outline: 2px dashed #FF6E3C !important; outline-offset: 2px; } h1,h2,h3,h4,h5,h6,p,span,li,label,td,th,strong,em,b,i,small,div,section,article,aside,nav,header,time,address,figcaption,blockquote,cite,code,pre,mark,del,ins,sub,sup { transition: outline 0.1s; } h1:hover,h2:hover,h3:hover,h4:hover,h5:hover,h6:hover,p:hover,span:hover,li:hover,label:hover,td:hover,th:hover,strong:hover,em:hover,b:hover,i:hover,small:hover,div:hover,section:hover,article:hover,aside:hover,nav:hover,header:hover,time:hover,address:hover,figcaption:hover,blockquote:hover,cite:hover,code:hover,pre:hover,mark:hover,del:hover,ins:hover,sub:hover,sup:hover { outline: 1px dashed rgba(255,110,60,0.5); outline-offset: 2px; cursor: text; }';
+        style.textContent = 'a, button, input, select, textarea, [onclick], [href] { pointer-events: auto !important; cursor: text !important; } a:hover, button:hover { outline: 2px dashed var(--accent-orange) !important; outline-offset: 2px; } h1,h2,h3,h4,h5,h6,p,span,li,label,td,th,strong,em,b,i,small,div,section,article,aside,nav,header,time,address,figcaption,blockquote,cite,code,pre,mark,del,ins,sub,sup { transition: outline 0.1s; } h1:hover,h2:hover,h3:hover,h4:hover,h5:hover,h6:hover,p:hover,span:hover,li:hover,label:hover,td:hover,th:hover,strong:hover,em:hover,b:hover,i:hover,small:hover,div:hover,section:hover,article:hover,aside:hover,nav:hover,header:hover,time:hover,address:hover,figcaption:hover,blockquote:hover,cite:hover,code:hover,pre:hover,mark:hover,del:hover,ins:hover,sub:hover,sup:hover { outline: 1px dashed rgba(82,82,91,0.2); outline-offset: 2px; cursor: text; }';
         doc.head.appendChild(style);
       } catch (e) {
         console.log('Cannot inject direct edit script:', e);
@@ -4610,16 +4614,17 @@ Try these prompts in Cursor or v0:
     const node = flowNodes.find(n => n.id === nodeId);
     if (!node) return;
     
+    // Select the node in flow first
+    setSelectedFlowNode(nodeId);
+    
     // For preview - set the page name and switch to preview mode
-    // The main preview iframe will use selectedFlowPage to navigate
     if (targetView === "preview") {
-      const pageId = node.id;
-      setSelectedFlowPage(pageId);
+      setSelectedFlowPage(node.id);
       setViewMode("preview");
       return;
     }
     
-    // For code view - find the specific file WITHOUT affecting preview or iframes
+    // For code view - find the specific file
     const file = generatedFiles.find(f => f.sourceNodeId === nodeId);
     
     if (file && file.content) {
@@ -4659,10 +4664,58 @@ Try these prompts in Cursor or v0:
     const baseHeight = hasPreview ? FLOW_PREVIEW_HEIGHT : 0;
     const descriptionHeight = node.description ? 30 : 0;
     const structureRows = node.components?.length ? Math.ceil(node.components.length / 2) : 0;
-    const structureHeight = showStructureInFlow ? (structureRows > 0 ? structureRows * 24 + 36 : 18) : 0;
-    const contentHeight = 140 + descriptionHeight + structureHeight;
+    const structureHeight = showStructureInFlow ? (structureRows > 0 ? structureRows * 20 + 28 : 14) : 0;
+    const contentHeight = 80 + descriptionHeight + structureHeight;
     return baseHeight + contentHeight;
   }, [showPreviewsInFlow, editableCode, showStructureInFlow, FLOW_PREVIEW_HEIGHT]);
+
+  // Auto-layout flow nodes function
+  const autoLayoutFlowNodes = useCallback(() => {
+    if (flowNodes.length === 0) return;
+    
+    const observed = flowNodes.filter(n => n.status === "observed" || n.status === "added");
+    const detected = flowNodes.filter(n => n.status === "detected");
+    const possible = flowNodes.filter(n => n.status === "possible");
+    
+    const nodeWidth = 240;
+    const nodeHeight = 180;
+    const gapX = 40;
+    const gapY = 60;
+    const cols = 5;
+    const startX = 100;
+    let startY = 50;
+    
+    const layoutNodes = (nodes: typeof flowNodes, offsetY: number) => {
+      return nodes.map((node, i) => ({
+        ...node,
+        x: startX + (i % cols) * (nodeWidth + gapX),
+        y: offsetY + Math.floor(i / cols) * (nodeHeight + gapY)
+      }));
+    };
+    
+    const observedLayout = layoutNodes(observed, startY);
+    startY += Math.ceil(observed.length / cols) * (nodeHeight + gapY) + 80;
+    const detectedLayout = layoutNodes(detected, startY);
+    startY += Math.ceil(detected.length / cols) * (nodeHeight + gapY) + 80;
+    const possibleLayout = layoutNodes(possible, startY);
+    
+    setFlowNodes([...observedLayout, ...detectedLayout, ...possibleLayout]);
+    setArchZoom(0.6);
+    setCanvasPan({ x: 0, y: 0 });
+  }, [flowNodes]);
+
+  // Auto-layout on initial load or when structure toggle changes
+  useEffect(() => {
+    if (flowNodes.length > 0 && !flowBuilding && !hasAutoLayouted) {
+      autoLayoutFlowNodes();
+      setHasAutoLayouted(true);
+    }
+  }, [flowNodes.length, flowBuilding, hasAutoLayouted, autoLayoutFlowNodes]);
+
+  // Reset auto-layout flag when project changes
+  useEffect(() => {
+    setHasAutoLayouted(false);
+  }, [activeGeneration]);
   
   // Toggle folder expansion
   const toggleFolder = useCallback((path: string) => {
@@ -7173,15 +7226,15 @@ Try these prompts in Cursor or v0:
         styles: "text-purple-400/60",
         types: "text-green-400/60",
         layout: "text-cyan-400/60",
-        sections: "text-orange-400/60"
+        sections: "text-zinc-300/60"
       };
-      const colorClass = folderColors[folder.name] || "text-white/40";
+      const colorClass = folderColors[folder.name] || "text-zinc-500";
       
       return (
         <div>
           <button
             onClick={() => onFolderToggle(folder.path)}
-            className="w-full flex items-center gap-1 px-1 py-0.5 hover:bg-white/5 rounded text-white/50 transition-colors min-w-0"
+            className="w-full flex items-center gap-1 px-1 py-0.5 hover:bg-zinc-800/50 rounded text-zinc-500 transition-colors min-w-0"
             style={{ paddingLeft }}
           >
             <ChevronRight className={cn("w-2.5 h-2.5 flex-shrink-0 transition-transform", isExpanded && "rotate-90")} />
@@ -7236,47 +7289,48 @@ Try these prompts in Cursor or v0:
         className={cn(
           "w-full flex items-center gap-1.5 px-1.5 py-0.5 rounded text-[10px] transition-colors min-w-0",
           isGenerating 
-            ? "bg-[#FF6E3C]/5 text-[#FF6E3C]/70 animate-pulse"
+            ? "bg-zinc-800/5 text-zinc-300/70 animate-pulse"
             : isActive 
-              ? "bg-[#FF6E3C]/10 text-[#FF6E3C]" 
+              ? "bg-zinc-800/10 text-zinc-300" 
               : isStub 
-                ? "text-white/20 hover:bg-white/5 italic" 
-                : "text-white/50 hover:bg-white/5 hover:text-white/70"
+                ? "text-white/20 hover:bg-zinc-800/50 italic" 
+                : "text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-400"
         )}
         style={{ paddingLeft: paddingLeft + 14 }}
         title={isGenerating ? `Generating ${file.name}...` : isStub ? `${file.name} - Click to create with AI` : file.name}
         disabled={isGenerating}
       >
         {isGenerating ? (
-          <Loader2 className="w-3 h-3 flex-shrink-0 text-[#FF6E3C] animate-spin" />
+          <Loader2 className="w-3 h-3 flex-shrink-0 text-zinc-300 animate-spin" />
         ) : (
-          <FileIcon className={cn("w-3 h-3 flex-shrink-0", isActive ? "text-[#FF6E3C]" : isStub ? "opacity-30" : iconColor)} />
+          <FileIcon className={cn("w-3 h-3 flex-shrink-0", isActive ? "text-zinc-300" : isStub ? "opacity-30" : iconColor)} />
         )}
-        <span className={cn("truncate", isStub && "opacity-60", isGenerating && "text-[#FF6E3C]/70")}>{file.name}</span>
-        {isGenerating && <span className="flex-shrink-0 ml-auto text-[8px] text-[#FF6E3C]/60 animate-pulse">...</span>}
-        {isStub && !isGenerating && <span className="flex-shrink-0 ml-auto text-[7px] text-[#FF6E3C]/50">+</span>}
+        <span className={cn("truncate", isStub && "opacity-60", isGenerating && "text-zinc-300/70")}>{file.name}</span>
+        {isGenerating && <span className="flex-shrink-0 ml-auto text-[8px] text-zinc-300/60 animate-pulse">...</span>}
+        {isStub && !isGenerating && <span className="flex-shrink-0 ml-auto text-[7px] text-zinc-300/50">+</span>}
       </button>
     );
   };
 
   const EmptyState = ({ icon: Icon, title, subtitle, showEarlyAccess = false }: { icon: any; title: string; subtitle: string; showEarlyAccess?: boolean }) => (
-    <div className="empty-state">
-      <div className="empty-logo-container">
+    <div className="flex flex-col items-center justify-center text-center px-8 py-16">
+      {/* Small subtle icon - NOT a giant logo */}
+      <div className="w-12 h-12 rounded-xl bg-zinc-800/50 flex items-center justify-center mb-5">
         {Icon === "logo" ? (
-          <svg className="empty-logo" viewBox="0 0 82 109" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg className="w-6 h-6 text-zinc-600" viewBox="0 0 82 109" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M68.099 37.2285C78.1678 43.042 78.168 57.5753 68.099 63.3887L29.5092 85.668C15.6602 93.6633 0.510418 77.4704 9.40857 64.1836L17.4017 52.248C18.1877 51.0745 18.1876 49.5427 17.4017 48.3691L9.40857 36.4336C0.509989 23.1467 15.6602 6.95306 29.5092 14.9482L68.099 37.2285Z" stroke="currentColor" strokeWidth="11.6182" strokeLinejoin="round"/>
             <rect x="34.054" y="98.6841" width="48.6555" height="11.6182" rx="5.80909" transform="rotate(-30 34.054 98.6841)" fill="currentColor"/>
           </svg>
         ) : (
-          <Icon className="w-12 h-12 text-white/10 mx-auto" />
+          <Icon className="w-6 h-6 text-zinc-600" />
         )}
       </div>
-      <p className="text-base text-white/25 mt-6">{title}</p>
-      <p className="text-lg text-white/15 mt-1">{subtitle}</p>
+      <h3 className="text-sm font-medium text-zinc-300">{title}</h3>
+      <p className="text-sm text-zinc-500 mt-1.5 max-w-xs">{subtitle}</p>
       {showEarlyAccess && (
-        <div className="mt-6 px-4 py-3 rounded-xl bg-[#FF6E3C]/5 border border-[#FF6E3C]/10 max-w-xs">
-          <p className="text-xs text-[#FF6E3C]/80 font-medium">Early Access</p>
-          <p className="text-[10px] text-white/40 mt-1">We're reconstructing real-world UI behavior — edge cases welcome.</p>
+        <div className="mt-5 px-3 py-2 rounded-lg bg-zinc-800/50 border border-zinc-700/50">
+          <p className="text-xs text-zinc-300/80 font-medium">Early Access</p>
+          <p className="text-xs text-zinc-500 mt-0.5">Edge cases welcome.</p>
         </div>
       )}
     </div>
@@ -7325,7 +7379,7 @@ Try these prompts in Cursor or v0:
     // Using parent state for tips to persist across renders
     
     return (
-      <div className="w-full h-full flex flex-col bg-[#050505] overflow-hidden">
+      <div className="w-full h-full flex flex-col bg-[#111111] overflow-hidden">
         {/* Main Content */}
         <div className="flex-1 flex flex-col items-center justify-center p-6">
           
@@ -7335,7 +7389,7 @@ Try these prompts in Cursor or v0:
             <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
               <div className="relative">
                 {/* Animated Glow */}
-                <div className="absolute inset-0 blur-2xl bg-[#FF6E3C]/30 scale-[2]" style={{ animation: "glow-pulse 2s ease-in-out infinite" }} />
+                <div className="absolute inset-0 blur-2xl bg-zinc-800/30 scale-[2]" style={{ animation: "glow-pulse 2s ease-in-out infinite" }} />
                 {/* Logo with gradient sweep */}
                 <div className="logo-loader-container relative">
                   <svg className="logo-loader-svg" viewBox="0 0 82 109" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -7348,39 +7402,39 @@ Try these prompts in Cursor or v0:
             </div>
             
             {/* Skeleton Frame - More visible */}
-            <div className="rounded-xl border border-white/[0.08] overflow-hidden bg-black/40 opacity-50">
+            <div className="rounded-xl border border-zinc-700 overflow-hidden bg-zinc-900 opacity-50">
               {/* Skeleton Header */}
-              <div className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.06]">
-                <div className="w-6 h-6 rounded bg-white/5" style={{ animation: "skeleton-pulse 2s ease-in-out infinite" }} />
-                <div className="w-24 h-3 rounded bg-white/5" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.1s" }} />
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800">
+                <div className="w-6 h-6 rounded bg-zinc-800/50" style={{ animation: "skeleton-pulse 2s ease-in-out infinite" }} />
+                <div className="w-24 h-3 rounded bg-zinc-800/50" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.1s" }} />
                 <div className="flex-1" />
                 <div className="flex gap-2">
-                  <div className="w-16 h-6 rounded bg-white/5" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.2s" }} />
-                  <div className="w-16 h-6 rounded bg-white/5" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.3s" }} />
+                  <div className="w-16 h-6 rounded bg-zinc-800/50" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.2s" }} />
+                  <div className="w-16 h-6 rounded bg-zinc-800/50" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.3s" }} />
                 </div>
               </div>
               
               {/* Skeleton Body */}
               <div className="flex min-h-[220px]">
                 {/* Sidebar */}
-                <div className="w-40 border-r border-white/[0.06] p-3 space-y-2 hidden sm:block">
-                  <div className="w-full h-7 rounded bg-white/5" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.1s" }} />
-                  <div className="w-3/4 h-7 rounded bg-white/[0.03]" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.2s" }} />
-                  <div className="w-5/6 h-7 rounded bg-white/[0.03]" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.3s" }} />
-                  <div className="w-2/3 h-7 rounded bg-white/[0.03]" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.4s" }} />
+                <div className="w-40 border-r border-zinc-800 p-3 space-y-2 hidden sm:block">
+                  <div className="w-full h-7 rounded bg-zinc-800/50" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.1s" }} />
+                  <div className="w-3/4 h-7 rounded bg-zinc-800/50" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.2s" }} />
+                  <div className="w-5/6 h-7 rounded bg-zinc-800/50" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.3s" }} />
+                  <div className="w-2/3 h-7 rounded bg-zinc-800/50" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.4s" }} />
                 </div>
                 
                 {/* Main Content */}
                 <div className="flex-1 p-4">
-                  <div className="w-2/3 h-5 rounded bg-white/5 mb-3" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.1s" }} />
-                  <div className="w-1/2 h-3 rounded bg-white/[0.03] mb-6" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.2s" }} />
+                  <div className="w-2/3 h-5 rounded bg-zinc-800/50 mb-3" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.1s" }} />
+                  <div className="w-1/2 h-3 rounded bg-zinc-800/50 mb-6" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.2s" }} />
                   
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {[...Array(6)].map((_, i) => (
-                      <div key={i} className="rounded-lg border border-white/[0.04] p-3 bg-white/[0.02]">
-                        <div className="w-8 h-8 rounded bg-white/5 mb-2" style={{ animation: `skeleton-pulse 2s ease-in-out infinite ${0.1 * i}s` }} />
-                        <div className="w-full h-3 rounded bg-white/5 mb-1.5" style={{ animation: `skeleton-pulse 2s ease-in-out infinite ${0.1 * i + 0.1}s` }} />
-                        <div className="w-2/3 h-2 rounded bg-white/[0.03]" style={{ animation: `skeleton-pulse 2s ease-in-out infinite ${0.1 * i + 0.2}s` }} />
+                      <div key={i} className="rounded-lg border border-zinc-800 p-3 bg-zinc-800/50">
+                        <div className="w-8 h-8 rounded bg-zinc-800/50 mb-2" style={{ animation: `skeleton-pulse 2s ease-in-out infinite ${0.1 * i}s` }} />
+                        <div className="w-full h-3 rounded bg-zinc-800/50 mb-1.5" style={{ animation: `skeleton-pulse 2s ease-in-out infinite ${0.1 * i + 0.1}s` }} />
+                        <div className="w-2/3 h-2 rounded bg-zinc-800/50" style={{ animation: `skeleton-pulse 2s ease-in-out infinite ${0.1 * i + 0.2}s` }} />
                       </div>
                     ))}
                   </div>
@@ -7398,7 +7452,7 @@ Try these prompts in Cursor or v0:
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.4, ease: "easeInOut" }}
-                className="text-sm text-white/50 text-center"
+                className="text-sm text-zinc-500 text-center"
               >
                 {displayMessage}
               </motion.p>
@@ -7414,7 +7468,7 @@ Try these prompts in Cursor or v0:
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.5, ease: "easeInOut" }}
-                className="font-mono text-[10px] text-white/35 leading-relaxed text-center"
+                className="font-mono text-[10px] text-zinc-500 leading-relaxed text-center"
               >
                 {GENERATION_TIPS[currentTipIndex]}
               </motion.p>
@@ -7426,18 +7480,18 @@ Try these prompts in Cursor or v0:
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="w-full max-w-2xl mt-6 rounded-xl border border-white/[0.08] overflow-hidden"
+              className="w-full max-w-2xl mt-6 rounded-xl border border-zinc-700 overflow-hidden"
               style={{ background: '#0a0a0a' }}
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.06]" style={{ background: '#0d0d0d' }}>
+              <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800" style={{ background: '#0d0d0d' }}>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[#FF6E3C] animate-pulse" />
-                  <span className="text-[10px] text-white/50 font-mono">
+                  <div className="w-2 h-2 rounded-full bg-zinc-800 animate-pulse" />
+                  <span className="text-[10px] text-zinc-500 font-mono">
                     {streamingStatus || "Writing code..."}
                   </span>
                   {streamingLines > 0 && (
-                    <span className="text-[9px] text-[#FF6E3C]/70 font-mono ml-2">
+                    <span className="text-[9px] text-zinc-300/70 font-mono ml-2">
                       {streamingLines} lines
                     </span>
                   )}
@@ -7468,7 +7522,7 @@ Try these prompts in Cursor or v0:
                   ) : (
                     <span className="text-white/20">Waiting for code...</span>
                   )}
-                  <span className="inline-block w-2 h-4 bg-[#FF6E3C] ml-0.5 animate-pulse" />
+                  <span className="inline-block w-2 h-4 bg-zinc-800 ml-0.5 animate-pulse" />
                 </pre>
               </div>
             </motion.div>
@@ -7538,7 +7592,7 @@ Try these prompts in Cursor or v0:
   if (isMobile === null) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-10 h-10 border-2 border-[#FF6E3C] border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-2 border-[var(--accent-orange)] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -7592,10 +7646,7 @@ Try these prompts in Cursor or v0:
 
   // ====== DESKTOP APP ======
   return (
-    <div className="h-screen flex flex-col bg-[#050505] overflow-hidden font-poppins">
-      <div className="gradient-bg" />
-      <div className="grain-overlay" />
-      <div className="vignette" />
+    <div className="h-screen flex flex-col bg-[#111111] overflow-hidden">
 
       <AssetsModal
         isOpen={showAssetsModal}
@@ -7610,27 +7661,50 @@ Try these prompts in Cursor or v0:
         }}
       />
       
+      {/* Hidden file input for video upload */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        className="hidden" 
+        accept="video/*,.mp4,.mov,.webm,.avi,.mkv,.m4v"
+        onChange={async (e) => {
+          const files = e.target.files;
+          if (files && files.length > 0) {
+            for (const file of Array.from(files)) {
+              const isVideo = file.type.startsWith("video/") || 
+                              file.name.toLowerCase().match(/\.(mp4|mov|webm|avi|mkv|m4v)$/);
+              if (isVideo) {
+                await addVideoToFlows(file, file.name.replace(/\.[^/.]+$/, ""));
+              } else {
+                showToast("Please select a video file", "error");
+              }
+            }
+          }
+          e.target.value = "";
+        }}
+      />
+      
       {/* Desktop Header removed - Logo now in sidebar, tabs in work area */}
       
       {/* Mobile Header - Fixed - Hide when panels with own headers are open */}
       {!(mobilePanel === "chat" && generatedCode) && mobilePanel !== "preview" && mobilePanel !== "code" && mobilePanel !== "flow" && mobilePanel !== "design" && mobilePanel !== "input" && (
-        <header className="fixed top-0 left-0 right-0 z-50 flex md:hidden items-center justify-between px-4 py-3 border-b border-white/5 bg-black/95 backdrop-blur-xl">
+        <header className="fixed top-0 left-0 right-0 z-50 flex md:hidden items-center justify-between px-4 py-3 border-b border-zinc-800 bg-zinc-900 backdrop-blur-xl">
           <a href="/" className="hover:opacity-80 transition-opacity">
             <Logo />
           </a>
           <button 
             onClick={() => setShowMobileMenu(!showMobileMenu)}
-            className="px-3 py-2 rounded-xl hover:bg-white/5 active:bg-white/10 min-h-[44px] flex items-center justify-center"
+            className="px-3 py-2 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-h-[44px] flex items-center justify-center"
           >
             {user ? (
               <span className={cn(
                 "text-xs font-semibold uppercase",
-                (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-[#FF6E3C]" : "text-white/50"
+                (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-zinc-300" : "text-zinc-500"
               )}>
                 {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : membership?.plan === "starter" ? "Starter" : "Free"}
               </span>
             ) : (
-              <User className="w-5 h-5 text-white/60" />
+              <User className="w-5 h-5 text-zinc-400" />
             )}
           </button>
         </header>
@@ -7638,15 +7712,15 @@ Try these prompts in Cursor or v0:
       
       {/* Mobile Menu - Full Screen Overlay - Static */}
       {showMobileMenu && (
-          <div className="fixed inset-0 z-[100] bg-[#0a0a0a] md:hidden flex flex-col">
+          <div className="fixed inset-0 z-[100] bg-[#111111] md:hidden flex flex-col">
               {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 safe-area-pt">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 safe-area-pt">
                 <div className="flex items-center gap-3">
-                  <User className="w-5 h-5 text-[#FF6E3C]" />
+                  <User className="w-5 h-5 text-zinc-300" />
                   <span className="text-base font-semibold text-white">Account</span>
                 </div>
-                <button onClick={() => setShowMobileMenu(false)} className="p-3 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center">
-                  <X className="w-5 h-5 text-white/60" />
+                <button onClick={() => setShowMobileMenu(false)} className="p-3 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center">
+                  <X className="w-5 h-5 text-zinc-400" />
                 </button>
               </div>
               
@@ -7664,37 +7738,37 @@ Try these prompts in Cursor or v0:
                       <Link 
                         href="/settings?tab=plans" 
                         onClick={() => setShowMobileMenu(false)}
-                        className="block p-4 hover:bg-white/5 transition-colors border-b border-white/5"
+                        className="block p-4 hover:bg-zinc-800/50 transition-colors border-b border-zinc-800"
                       >
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <span className="text-sm text-white">{userTotalCredits} credits</span>
                             {(plan === "pro" || plan === "agency" || plan === "enterprise") ? (
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase">
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-zinc-800 text-white uppercase">
                                 {plan === "agency" ? "Agency" : plan === "enterprise" ? "Enterprise" : "Pro"}
                               </span>
                             ) : (
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-white/50 uppercase">
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-zinc-500 uppercase">
                                 {plan === "starter" ? "Starter" : "Free"}
                               </span>
                             )}
                           </div>
-                          <ChevronRight className="w-4 h-4 text-white/40" />
+                          <ChevronRight className="w-4 h-4 text-zinc-500" />
                         </div>
                         <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                           <div 
-                            className="h-full bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] rounded-full transition-all"
+                            className="h-full bg-zinc-800 rounded-full transition-all"
                             style={{ width: `${percentage}%` }}
                           />
                         </div>
                         {!isPaidPlan && (
                           <div className="flex items-center justify-between mt-2">
-                            <span className="text-xs text-[#FF6E3C] font-medium">Upgrade →</span>
+                            <span className="text-xs text-zinc-300 font-medium">Upgrade →</span>
                           </div>
                         )}
                         {isPaidPlan && (
                           <div className="flex items-center justify-between mt-2">
-                            <span className="text-xs text-white/40">Add credits →</span>
+                            <span className="text-xs text-zinc-500">Add credits →</span>
                           </div>
                         )}
                       </Link>
@@ -7704,22 +7778,22 @@ Try these prompts in Cursor or v0:
                   <div className="p-2 space-y-1">
                     <button 
                       onClick={() => { setShowMobileMenu(false); setShowHistoryMode(true); }}
-                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 active:bg-white/10 text-white/80"
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-zinc-800/50 active:bg-white/10 text-zinc-200"
                     >
                       <History className="w-4 h-4 opacity-50" /> Projects
                     </button>
                     <Link 
                       href="/settings" 
                       onClick={() => setShowMobileMenu(false)}
-                      className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 text-white/80"
+                      className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-zinc-800/50 text-zinc-200"
                     >
                       <Settings className="w-4 h-4 opacity-50" /> Settings
                     </Link>
                   </div>
-                  <div className="p-4 border-t border-white/5 safe-area-pb">
+                  <div className="p-4 border-t border-zinc-800 safe-area-pb">
                     <button 
                       onClick={() => { setShowMobileMenu(false); signOut(); }}
-                      className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 active:bg-white/10 text-white/80 min-h-[48px]"
+                      className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 text-zinc-200 min-h-[48px]"
                     >
                       <LogOut className="w-5 h-5 opacity-50" /> Sign out
                     </button>
@@ -7729,7 +7803,7 @@ Try these prompts in Cursor or v0:
                 <div className="p-4 safe-area-pb">
                   <button
                     onClick={() => { setShowMobileMenu(false); setShowAuthModal(true); }}
-                    className="w-full py-4 rounded-xl bg-[#FF6E3C] text-white font-medium active:bg-[#FF8F5C] transition-colors min-h-[52px]"
+                    className="w-full py-4 rounded-xl bg-zinc-800 text-white font-medium active:bg-zinc-600 transition-colors min-h-[52px]"
                   >
                     Sign in
                   </button>
@@ -7740,40 +7814,91 @@ Try these prompts in Cursor or v0:
       )}
 
       <div className="flex-1 flex overflow-hidden relative z-10">
-        {/* Left Panel - Hidden on mobile */}
-        <div className="hidden md:flex w-[340px] border-r border-white/5 bg-black/40 backdrop-blur-sm flex-col">
+        {/* Left Panel - Sidebar - Hidden on mobile */}
+        <div className={cn(
+          "hidden md:flex border-r border-zinc-800/50 bg-[#141414] flex-col transition-all duration-300",
+          sidebarCollapsed ? "w-16" : "w-80"
+        )}>
           
-          {/* Logo - same height as main top bar (h-12) */}
-          <div className="flex-shrink-0 h-12 px-4 flex items-center border-b border-white/5">
-            <a href="/" className="hover:opacity-80 transition-opacity">
-              <Logo />
-            </a>
+          {/* Logo + Collapse Button - same height as main top bar (h-12) */}
+          <div className="flex-shrink-0 h-12 px-3 flex items-center justify-center border-b border-zinc-800/50">
+            {sidebarCollapsed ? (
+              <button
+                onClick={() => setSidebarCollapsed(false)}
+                className="p-2 rounded-md hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-zinc-200"
+                title="Expand sidebar"
+              >
+                <PanelLeft className="w-5 h-5" />
+              </button>
+            ) : (
+              <div className="flex items-center justify-between w-full">
+                <a href="/" className="hover:opacity-80 transition-opacity">
+                  <LogoIcon className="w-7 h-7" color="white" />
+                </a>
+                <button
+                  onClick={() => setSidebarCollapsed(true)}
+                  className="p-1.5 rounded-md hover:bg-zinc-800 transition-colors text-zinc-500 hover:text-zinc-300"
+                  title="Collapse sidebar"
+                >
+                  <PanelLeftClose className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
           
+          {/* Collapsed state - show icon buttons */}
+          {sidebarCollapsed && (
+            <div className="flex-1 flex flex-col items-center py-4 gap-3">
+              <button 
+                onClick={() => { setSidebarCollapsed(false); setSidebarView("projects"); }}
+                className="w-10 h-10 rounded-lg bg-zinc-800/50 hover:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-zinc-200 transition-all"
+                title="Projects"
+              >
+                <Folder className="w-5 h-5" />
+              </button>
+              <button 
+                onClick={() => { setSidebarCollapsed(false); setSidebarView("detail"); }}
+                className="w-10 h-10 rounded-lg bg-zinc-800/50 hover:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-zinc-200 transition-all"
+                title="Configuration"
+              >
+                <Boxes className="w-5 h-5" />
+              </button>
+              <button 
+                onClick={() => { setSidebarCollapsed(false); setSidebarTab("chat"); }}
+                className="w-10 h-10 rounded-lg bg-zinc-800/50 hover:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-zinc-200 transition-all"
+                title="Replay AI"
+              >
+                <Send className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+          
           {/* PROJECT Header - Clickable button to open projects dropdown */}
-          <div className="flex-shrink-0 px-4 py-3 border-b border-white/5">
+          {!sidebarCollapsed && (
+          <div className="flex-shrink-0 px-3 py-3 border-b border-zinc-800/50">
             <button 
-              className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 hover:border-white/15 transition-all group"
+              className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg bg-zinc-800/50 border border-zinc-700/50 cursor-pointer hover:bg-zinc-800 transition-all group"
               onClick={() => setSidebarView(sidebarView === "projects" ? "detail" : "projects")}
             >
               <div className="flex flex-col items-start min-w-0">
-                <span className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Project</span>
-                <span className="text-sm font-medium text-white truncate max-w-[230px]">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Project</span>
+                <span className="text-sm font-medium text-zinc-200 truncate max-w-[220px]">
                   {generationTitle || "Untitled Project"}
                 </span>
               </div>
               <ChevronDown className={cn(
-                "w-4 h-4 text-white/50 transition-transform flex-shrink-0 group-hover:text-white/70",
+                "w-4 h-4 text-zinc-500 transition-transform flex-shrink-0 group-hover:text-zinc-400",
                 sidebarView === "projects" && "rotate-180"
               )} />
             </button>
           </div>
+          )}
           
           {/* PROJECTS LIST VIEW */}
-          {sidebarView === "projects" ? (
+          {!sidebarCollapsed && sidebarView === "projects" ? (
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-              {/* + Create New Project - at the top, highlighted */}
-              <div className="flex-shrink-0 px-3 pt-3 pb-2">
+              {/* + Create New Project */}
+              <div className="flex-shrink-0 p-3">
                 <button
                   onClick={() => {
                     // Create new project
@@ -7799,54 +7924,50 @@ Try these prompts in Cursor or v0:
                     localStorage.removeItem("replay_generated_code");
                     localStorage.removeItem("replay_generation_title");
                   }}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-[#FF6E3C]/10 border border-[#FF6E3C]/20 text-sm font-medium text-[#FF6E3C] hover:bg-[#FF6E3C]/20 hover:border-[#FF6E3C]/30 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md border border-dashed border-zinc-700 text-sm font-medium text-zinc-300 hover:bg-zinc-800/10 hover:border-zinc-700 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Create New Project</span>
                 </button>
               </div>
               
-              {/* Divider */}
-              <div className="border-b border-white/10 mx-3" />
-              
               {/* Search */}
-              <div className="px-3 py-2">
+              <div className="px-3 pb-2">
                 <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
                   <input
                     type="text"
                     value={historySearch}
                     onChange={(e) => setHistorySearch(e.target.value)}
                     placeholder="Search projects..."
-                    className="w-full pl-8 pr-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs text-white/70 placeholder:text-white/30 focus:outline-none focus:border-white/10"
+                    className="w-full pl-9 pr-3 py-2 rounded-md bg-zinc-800/50 border border-zinc-700/50 text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600"
                   />
                 </div>
               </div>
               
+              {/* Divider */}
+              <div className="border-b border-zinc-800/50 mx-3" />
+              
               {/* Generation List - sorted newest first */}
               <div 
-                className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-2"
-                style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
+                className="flex-1 min-h-0 overflow-y-auto p-2"
+                style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.1) transparent' }}
               >
                 {isLoadingHistory ? (
                   <div className="text-center py-12">
-                    <Loader2 className="w-6 h-6 text-[#FF6E3C] animate-spin mx-auto" />
-                    <p className="text-sm text-white/40 mt-4">Loading...</p>
+                    <Loader2 className="w-5 h-5 text-zinc-300 animate-spin mx-auto" />
+                    <p className="text-sm text-zinc-500 mt-3">Loading...</p>
                   </div>
                 ) : generations.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="empty-logo-container mx-auto" style={{ width: 60, height: 75 }}>
-                      <svg className="empty-logo" viewBox="0 0 82 109" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M68.099 37.2285C78.1678 43.042 78.168 57.5753 68.099 63.3887L29.5092 85.668C15.6602 93.6633 0.510418 77.4704 9.40857 64.1836L17.4017 52.248C18.1877 51.0745 18.1876 49.5427 17.4017 48.3691L9.40857 36.4336C0.509989 23.1467 15.6602 6.95306 29.5092 14.9482L68.099 37.2285Z" stroke="currentColor" strokeWidth="11.6182" strokeLinejoin="round"/>
-                        <rect x="34.054" y="98.6841" width="48.6555" height="11.6182" rx="5.80909" transform="rotate(-30 34.054 98.6841)" fill="currentColor"/>
-                      </svg>
+                  <div className="text-center py-12 px-4">
+                    <div className="w-10 h-10 rounded-lg bg-zinc-800/50 flex items-center justify-center mx-auto mb-3">
+                      <Folder className="w-5 h-5 text-zinc-600" />
                     </div>
-                    <p className="text-sm text-white/40 mt-4">No generations yet</p>
-                    <p className="text-xs text-white/25 mt-1">Upload a video and generate code to start</p>
+                    <p className="text-sm text-zinc-400">No projects yet</p>
+                    <p className="text-xs text-zinc-600 mt-1">Create one to get started</p>
                   </div>
                 ) : (
-                  <div className="space-y-1">
-                    {generations
+                  <div className="space-y-2">{generations
                       .slice()
                       .sort((a, b) => b.timestamp - a.timestamp)
                       .filter(gen => !historySearch || gen.title.toLowerCase().includes(historySearch.toLowerCase()))
@@ -7854,8 +7975,8 @@ Try these prompts in Cursor or v0:
                       <div 
                         key={gen.id}
                         className={cn(
-                          "group relative p-3 rounded-lg cursor-pointer transition-colors hover:bg-white/5",
-                          activeGeneration?.id === gen.id && "bg-[#FF6E3C]/10 border border-[#FF6E3C]/20"
+                          "group relative p-3 rounded-lg cursor-pointer transition-all border bg-zinc-800/30 border-zinc-700/50 hover:bg-zinc-800/60 hover:border-zinc-600",
+                          activeGeneration?.id === gen.id && "bg-zinc-800 border border-zinc-700"
                         )}
                         onClick={async () => {
                           if (renamingId === gen.id) return; // Don't load while renaming
@@ -7971,13 +8092,13 @@ Try these prompts in Cursor or v0:
                                   }}
                                   onClick={(e) => e.stopPropagation()}
                                   autoFocus
-                                  className="flex-1 min-w-0 text-sm font-medium text-white/80 bg-white/5 border border-white/10 rounded px-2 py-0.5 focus:outline-none focus:border-[#FF6E3C]/50"
+                                  className="flex-1 min-w-0 text-sm font-medium text-zinc-200 bg-zinc-800/50 border border-zinc-700 rounded px-2 py-0.5 focus:outline-none focus:border-zinc-700"
                                 />
                               ) : (
-                                <p className="text-sm font-medium text-white/80 truncate">{gen.title}</p>
+                                <p className="text-sm font-medium text-zinc-200 truncate">{gen.title}</p>
                               )}
                             </div>
-                            <p className="text-[10px] text-white/30 mt-1">
+                            <p className="text-[10px] text-zinc-600 mt-1">
                               {new Date(gen.timestamp).toLocaleDateString()} • {new Date(gen.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
@@ -7994,7 +8115,7 @@ Try these prompts in Cursor or v0:
                                 historyMenuOpen === gen.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"
                               )}
                             >
-                              <MoreVertical className="w-4 h-4 text-white/40" />
+                              <MoreVertical className="w-4 h-4 text-zinc-500" />
                             </button>
                             
                             {/* Dropdown menu */}
@@ -8004,7 +8125,7 @@ Try these prompts in Cursor or v0:
                                   initial={{ opacity: 0, scale: 0.95, y: -5 }}
                                   animate={{ opacity: 1, scale: 1, y: 0 }}
                                   exit={{ opacity: 0, scale: 0.95, y: -5 }}
-                                  className="absolute right-0 top-8 z-50 w-32 bg-[#151515] border border-white/10 rounded-lg shadow-xl overflow-hidden"
+                                  className="absolute right-0 top-8 z-50 w-32 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl overflow-hidden"
                                   onClick={(e) => e.stopPropagation()}
                                 >
                                   <button
@@ -8013,7 +8134,7 @@ Try these prompts in Cursor or v0:
                                       // Start renaming this project
                                       setRenamingId(gen.id);
                                     }}
-                                    className="w-full px-3 py-2 text-left text-xs text-white/70 hover:bg-white/5 flex items-center gap-2"
+                                    className="w-full px-3 py-2 text-left text-xs text-zinc-400 hover:bg-zinc-800/50 flex items-center gap-2"
                                   >
                                     <Pencil className="w-3 h-3" /> Edit Name
                                   </button>
@@ -8025,7 +8146,7 @@ Try these prompts in Cursor or v0:
                                       setGenerationTitle(gen.title || "Untitled Project");
                                       setShowProjectSettings(true);
                                     }}
-                                    className="w-full px-3 py-2 text-left text-xs text-white/70 hover:bg-white/5 flex items-center gap-2"
+                                    className="w-full px-3 py-2 text-left text-xs text-zinc-400 hover:bg-zinc-800/50 flex items-center gap-2"
                                   >
                                     <Settings className="w-3 h-3" /> Settings
                                   </button>
@@ -8034,7 +8155,7 @@ Try these prompts in Cursor or v0:
                                       setHistoryMenuOpen(null);
                                       duplicateGeneration(gen);
                                     }}
-                                    className="w-full px-3 py-2 text-left text-xs text-white/70 hover:bg-white/5 flex items-center gap-2"
+                                    className="w-full px-3 py-2 text-left text-xs text-zinc-400 hover:bg-zinc-800/50 flex items-center gap-2"
                                   >
                                     <Copy className="w-3 h-3" /> Duplicate
                                   </button>
@@ -8056,11 +8177,11 @@ Try these prompts in Cursor or v0:
                                         showToast("Project exported!", "success");
                                       }
                                     }}
-                                    className="w-full px-3 py-2 text-left text-xs text-white/70 hover:bg-white/5 flex items-center gap-2"
+                                    className="w-full px-3 py-2 text-left text-xs text-zinc-400 hover:bg-zinc-800/50 flex items-center gap-2"
                                   >
                                     <Download className="w-3 h-3" /> Export
                                   </button>
-                                  <div className="border-t border-white/5 my-1" />
+                                  <div className="border-t border-zinc-800 my-1" />
                                   <button
                                     onClick={() => {
                                       setHistoryMenuOpen(null);
@@ -8081,7 +8202,7 @@ Try these prompts in Cursor or v0:
                           {(() => {
                             const filteredVersions = (gen.versions || []).filter(v => v.label !== "Initial generation");
                             return filteredVersions.length > 0 ? (
-                              <p className="text-[10px] text-white/40 truncate">
+                              <p className="text-[10px] text-zinc-500 truncate">
                                 <span className="text-emerald-400/60">Latest:</span> {filteredVersions[filteredVersions.length - 1]?.label || "Code update"}
                               </p>
                             ) : (
@@ -8098,13 +8219,13 @@ Try these prompts in Cursor or v0:
                         </div>
                         
                         {/* Version History Toggle - always show */}
-                        <div className="mt-2 pt-2 border-t border-white/5">
+                        <div className="mt-2 pt-2 border-t border-zinc-800">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               setExpandedVersions(expandedVersions === gen.id ? null : gen.id);
                             }}
-                            className="flex items-center gap-2 text-[10px] text-white/40 hover:text-white/60 transition-colors"
+                            className="flex items-center gap-2 text-[10px] text-zinc-500 hover:text-zinc-400 transition-colors"
                           >
                             <Clock className="w-3 h-3" />
                             <span>{((gen.versions || []).filter(v => v.label !== "Initial generation").length) + 1} version{((gen.versions || []).filter(v => v.label !== "Initial generation").length) >= 1 ? 's' : ''}</span>
@@ -8124,7 +8245,7 @@ Try these prompts in Cursor or v0:
                                 className="mt-2 ml-1 space-y-1 overflow-hidden"
                               >
                                 {/* Version timeline - newest at top, oldest at bottom */}
-                                <div className="relative pl-3 border-l border-white/10">
+                                <div className="relative pl-3 border-l border-zinc-700">
                                   {/* Versions in reverse order (newest/current at top) - filter out "Initial generation" as it's shown separately below */}
                                   {(gen.versions || []).filter(v => v.label !== "Initial generation").slice().reverse().map((version, idx) => (
                                     <div 
@@ -8134,20 +8255,20 @@ Try these prompts in Cursor or v0:
                                       <div className={cn(
                                         "absolute -left-[7px] top-2.5 w-2.5 h-2.5 rounded-full border-2",
                                         idx === 0 
-                                          ? "bg-[#FF6E3C] border-[#FF6E3C]" 
-                                          : "bg-[#0a0a0a] border-white/20 group-hover/version:border-white/40"
+                                          ? "bg-zinc-800 border-[var(--accent-orange)]" 
+                                          : "bg-[#111111] border-white/20 group-hover/version:border-white/40"
                                       )} />
                                       
                                       <div className="flex items-center justify-between gap-2 pl-2">
                                         <div className="flex-1 min-w-0">
-                                          <p className="text-[10px] text-white/50 truncate">{version.label}</p>
+                                          <p className="text-[10px] text-zinc-500 truncate">{version.label}</p>
                                           <p className="text-[8px] text-white/25">
                                             {new Date(version.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                           </p>
                                         </div>
                                         
                                         {idx === 0 ? (
-                                          <span className="text-[8px] text-[#FF6E3C]/60 uppercase">Current</span>
+                                          <span className="text-[8px] text-zinc-300/60 uppercase">Current</span>
                                         ) : (
                                           <button
                                             onClick={(e) => {
@@ -8157,7 +8278,7 @@ Try these prompts in Cursor or v0:
                                             className="opacity-0 group-hover/version:opacity-100 p-1 rounded hover:bg-white/10 transition-all"
                                             title="Restore this version"
                                           >
-                                            <Play className="w-3 h-3 text-[#FF6E3C]" />
+                                            <Play className="w-3 h-3 text-zinc-300" />
                                           </button>
                                         )}
                                       </div>
@@ -8168,17 +8289,17 @@ Try these prompts in Cursor or v0:
                                   <div className="relative py-1.5 group/version">
                                     <div className={cn(
                                       "absolute -left-[7px] top-2.5 w-2.5 h-2.5 rounded-full border-2",
-                                      !gen.versions?.length ? "bg-[#FF6E3C] border-[#FF6E3C]" : "bg-[#0a0a0a] border-white/20 group-hover/version:border-white/40"
+                                      !gen.versions?.length ? "bg-zinc-800 border-[var(--accent-orange)]" : "bg-[#111111] border-white/20 group-hover/version:border-white/40"
                                     )} />
                                     <div className="flex items-center justify-between gap-2 pl-2">
                                       <div className="flex-1 min-w-0">
-                                        <p className="text-[10px] text-white/50 truncate">Initial generation</p>
+                                        <p className="text-[10px] text-zinc-500 truncate">Initial generation</p>
                                         <p className="text-[8px] text-white/25">
                                           {new Date(gen.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </p>
                                       </div>
                                       {!gen.versions?.length ? (
-                                        <span className="text-[8px] text-[#FF6E3C]/60 uppercase">Current</span>
+                                        <span className="text-[8px] text-zinc-300/60 uppercase">Current</span>
                                       ) : (
                                         <button
                                           onClick={(e) => {
@@ -8197,7 +8318,7 @@ Try these prompts in Cursor or v0:
                                           className="opacity-0 group-hover/version:opacity-100 p-1 rounded hover:bg-white/10 transition-all"
                                           title="Restore to initial"
                                         >
-                                          <Play className="w-3 h-3 text-[#FF6E3C]" />
+                                          <Play className="w-3 h-3 text-zinc-300" />
                                         </button>
                                       )}
                                     </div>
@@ -8213,20 +8334,20 @@ Try these prompts in Cursor or v0:
                 )}
               </div>
             </div>
-          ) : sidebarView === "detail" && sidebarMode === "chat" && generationComplete ? (
+          ) : !sidebarCollapsed && sidebarView === "detail" && sidebarMode === "chat" && generationComplete ? (
             /* AGENTIC CHAT MODE - After Generation - With Tabs */
             <div className="flex-1 flex flex-col min-h-0">
               
               {/* Tabs: Replay AI | Settings */}
-              <div className="flex-shrink-0 px-3 py-2 border-b border-white/5">
-                <div className="flex gap-1 p-0.5 bg-white/[0.02] rounded-lg">
+              <div className="flex-shrink-0 px-3 py-2 border-b border-zinc-800">
+                <div className="flex gap-1 p-0.5 bg-zinc-800/50 rounded-lg">
                   <button
                     onClick={() => setSidebarTab("chat")}
                     className={cn(
                       "flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium transition-all",
                       sidebarTab === "chat" 
                         ? "bg-white/10 text-white" 
-                        : "text-white/40 hover:text-white/60"
+                        : "text-zinc-500 hover:text-zinc-400"
                     )}
                   >
                     <Send className="w-3 h-3" />
@@ -8238,7 +8359,7 @@ Try these prompts in Cursor or v0:
                       "flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium transition-all",
                       sidebarTab === "style" 
                         ? "bg-white/10 text-white" 
-                        : "text-white/40 hover:text-white/60"
+                        : "text-zinc-500 hover:text-zinc-400"
                     )}
                   >
                     <Boxes className="w-3 h-3" />
@@ -8266,10 +8387,10 @@ Try these prompts in Cursor or v0:
                           /* AI Message - Clean, no avatar */
                           <div className="space-y-2">
                             <div className="flex items-center gap-1.5 mb-1">
-                              <LogoIcon className="w-3.5 h-3.5" color="#FF6E3C" />
-                              <span className="text-[10px] font-medium text-white/40">Replay</span>
+                              <LogoIcon className="w-3.5 h-3.5" color="var(--accent-orange)" />
+                              <span className="text-[10px] font-medium text-zinc-500">Replay</span>
                             </div>
-                            <div className="text-[11px] leading-relaxed text-white/70 space-y-1.5">
+                            <div className="text-[11px] leading-relaxed text-zinc-400 space-y-1.5">
                               {msg.content.split('\n').map((line, i) => {
                                 if (line.includes('Complete')) {
                                   return (
@@ -8280,22 +8401,22 @@ Try these prompts in Cursor or v0:
                                   );
                                 }
                                 if (line.startsWith('**') && line.endsWith('**')) {
-                                  return <p key={i} className="font-medium text-white/90 text-xs">{line.replace(/\*\*/g, '')}</p>;
+                                  return <p key={i} className="font-medium text-zinc-200 text-xs">{line.replace(/\*\*/g, '')}</p>;
                                 }
                                 if (line.startsWith('• ') || line.startsWith('- ')) {
                                   return (
-                                    <p key={i} className="flex items-start gap-1.5 text-white/60">
-                                      <span className="text-[#FF6E3C]/70 mt-px">•</span>
+                                    <p key={i} className="flex items-start gap-1.5 text-zinc-400">
+                                      <span className="text-zinc-300/70 mt-px">•</span>
                                       <span>{line.replace(/^[•-]\s/, '')}</span>
                                     </p>
                                   );
                                 }
                                 if (!line.trim()) return <div key={i} className="h-1" />;
                                 return (
-                                  <p key={i} className="text-white/60">
+                                  <p key={i} className="text-zinc-400">
                                     {line.split(/(\*\*[^*]+\*\*)/).map((part, j) => 
                                       part.startsWith('**') && part.endsWith('**') 
-                                        ? <span key={j} className="text-white/90 font-medium">{part.replace(/\*\*/g, '')}</span>
+                                        ? <span key={j} className="text-zinc-200 font-medium">{part.replace(/\*\*/g, '')}</span>
                                         : part
                                     )}
                                   </p>
@@ -8310,7 +8431,7 @@ Try these prompts in Cursor or v0:
                                   <button
                                     key={i}
                                     onClick={() => setChatInput(action)}
-                                    className="px-2 py-1 rounded text-[10px] bg-white/[0.03] text-white/50 hover:bg-white/[0.06] hover:text-white/80 border border-white/[0.05] transition-all"
+                                    className="px-2 py-1 rounded text-[10px] bg-zinc-800/50 text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-200 border border-white/[0.05] transition-all"
                                   >
                                     {action}
                                   </button>
@@ -8322,7 +8443,7 @@ Try these prompts in Cursor or v0:
                           /* User Message - Right aligned, compact */
                           <div className="flex justify-end">
                             <div className="max-w-[85%]">
-                              <div className="px-3 py-2 rounded-xl bg-white/[0.06] text-[11px] text-white/80">
+                              <div className="px-3 py-2 rounded-xl bg-zinc-800/50 text-[11px] text-zinc-200">
                                 {msg.content}
                               </div>
                               {msg.attachments && msg.attachments.length > 0 && (
@@ -8348,17 +8469,17 @@ Try these prompts in Cursor or v0:
                         initial={{ opacity: 0 }} 
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.2 }}
-                        className="rounded-lg border border-white/10 bg-[#111] overflow-hidden"
+                        className="rounded-lg border border-zinc-700 bg-[#111111] overflow-hidden"
                       >
                         {/* Status */}
                         <div className="flex items-center justify-between px-3 py-2">
                           <div className="flex items-center gap-2">
-                            <Loader2 className="w-3 h-3 text-[#FF6E3C] animate-spin" />
-                            <span className="text-xs text-white/60">{streamingStatus || "Thinking..."}</span>
+                            <Loader2 className="w-3 h-3 text-zinc-300 animate-spin" />
+                            <span className="text-xs text-zinc-400">{streamingStatus || "Thinking..."}</span>
                           </div>
                           <button
                             onClick={() => { cancelAIRequest(); setIsEditing(false); showToast("Cancelled", "info"); }}
-                            className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white/50"
+                            className="p-1 rounded hover:bg-white/10 text-zinc-600 hover:text-zinc-500"
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -8370,7 +8491,7 @@ Try these prompts in Cursor or v0:
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
                             transition={{ duration: 0.3 }}
-                            className="border-t border-white/5 bg-[#0a0a0a]"
+                            className="border-t border-zinc-800 bg-[#111111]"
                           >
                             <div className="p-2 max-h-[120px] overflow-hidden font-mono text-[9px] leading-relaxed">
                               <pre className="m-0 whitespace-pre-wrap break-words">
@@ -8388,10 +8509,10 @@ Try these prompts in Cursor or v0:
                                     })}
                                   </div>
                                 ))}
-                                <span className="text-[#FF6E3C]">▌</span>
+                                <span className="text-zinc-300">▌</span>
                               </pre>
                             </div>
-                            <div className="px-2 pb-1.5 text-[9px] text-white/30 font-mono">
+                            <div className="px-2 pb-1.5 text-[9px] text-zinc-600 font-mono">
                               {streamingLines} lines written
                             </div>
                           </motion.div>
@@ -8401,8 +8522,8 @@ Try these prompts in Cursor or v0:
                   </div>
                   
                   {/* Input Area - Minimal */}
-                  <div className="flex-shrink-0 p-2 border-t border-white/5">
-                    <div className="rounded-xl bg-white/[0.02] border border-white/[0.05] relative">
+                  <div className="flex-shrink-0 p-2 border-t border-zinc-800">
+                    <div className="rounded-xl bg-zinc-800/50 border border-white/[0.05] relative">
                       {/* Auth overlay for non-logged users only */}
                       {!user && (
                         <div 
@@ -8410,9 +8531,9 @@ Try these prompts in Cursor or v0:
                             setShowAuthModal(true);
                             showToast("Sign up free to edit with AI. Get 1 free generation!", "info");
                           }}
-                          className="absolute inset-0 z-10 cursor-pointer flex items-center justify-center bg-black/40 backdrop-blur-[2px] rounded-xl"
+                          className="absolute inset-0 z-10 cursor-pointer flex items-center justify-center bg-zinc-900 backdrop-blur-[2px] rounded-xl"
                         >
-                          <div className="flex items-center gap-2 text-white/50 text-xs">
+                          <div className="flex items-center gap-2 text-zinc-500 text-xs">
                             <Lock className="w-3.5 h-3.5" />
                             <span>Sign up to edit with AI</span>
                           </div>
@@ -8553,7 +8674,7 @@ Try these prompts in Cursor or v0:
                         }}
                         placeholder={isPlanMode ? "Plan and discuss changes..." : "Ask Replay to edit..."}
                         rows={1}
-                        className="w-full px-3 py-2.5 bg-transparent text-[11px] text-white/80 placeholder:text-white/25 resize-none focus:outline-none min-h-[36px]"
+                        className="w-full px-3 py-2.5 bg-transparent text-[11px] text-zinc-200 placeholder:text-white/25 resize-none focus:outline-none min-h-[36px]"
                       />
                       
                       {/* Attachments preview */}
@@ -8561,7 +8682,7 @@ Try these prompts in Cursor or v0:
                         <div className="px-3 pb-2 flex gap-1.5 flex-wrap">
                           {editImages.map((img) => (
                             <div key={img.id} className="relative group">
-                              <img src={img.url} alt="" className={cn("w-8 h-8 rounded object-cover border border-white/10", img.uploading && "opacity-50")} />
+                              <img src={img.url} alt="" className={cn("w-8 h-8 rounded object-cover border border-zinc-700", img.uploading && "opacity-50")} />
                               {img.uploading && (
                                 <div className="absolute inset-0 flex items-center justify-center">
                                   <Loader2 className="w-3 h-3 text-white animate-spin" />
@@ -8571,7 +8692,7 @@ Try these prompts in Cursor or v0:
                             </div>
                           ))}
                           {selectedElement && (
-                            <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#FF6E3C]/10 text-[#FF6E3C]/80 text-[9px] border border-[#FF6E3C]/20">
+                            <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-800/10 text-zinc-300/80 text-[9px] border border-zinc-700">
                               <MousePointer className="w-2.5 h-2.5" />{selectedElement}
                               <button onClick={() => { setSelectedElement(null); setIsPointAndEdit(false); }}><X className="w-2 h-2" /></button>
                             </span>
@@ -8593,16 +8714,16 @@ Try these prompts in Cursor or v0:
                             className={cn(
                               "relative flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[10px] transition-all",
                               isPointAndEdit 
-                                ? "bg-[#FF6E3C]/20 text-[#FF6E3C] border border-[#FF6E3C]/30" 
-                                : "text-white/40 hover:text-white/60 hover:bg-white/5"
+                                ? "bg-zinc-800/20 text-zinc-300 border border-zinc-700" 
+                                : "text-zinc-500 hover:text-zinc-400 hover:bg-zinc-800/50"
                             )}
                           >
                             <MousePointer className={cn("w-3.5 h-3.5", isPointAndEdit && "animate-pulse")} />
                             <span>Select</span>
-                            {isPointAndEdit && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-[#FF6E3C] rounded-full" />}
+                            {isPointAndEdit && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-zinc-800 rounded-full" />}
                           </button>
                           {/* Image upload - uploads to Supabase */}
-                          <label className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[10px] text-white/40 hover:text-white/60 hover:bg-white/5 cursor-pointer transition-all">
+                          <label className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[10px] text-zinc-500 hover:text-zinc-400 hover:bg-zinc-800/50 cursor-pointer transition-all">
                             <ImageIcon className="w-3.5 h-3.5" />
                             <span>Image</span>
                             <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
@@ -8644,7 +8765,7 @@ Try these prompts in Cursor or v0:
                               "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all",
                               isPlanMode 
                                 ? "bg-violet-500/20 text-violet-300 border border-violet-500/30" 
-                                : "text-white/40 hover:text-white/60 hover:bg-white/5"
+                                : "text-zinc-500 hover:text-zinc-400 hover:bg-zinc-800/50"
                             )}
                             title={isPlanMode ? "Plan mode ON - discussing without executing" : "Plan mode OFF - will execute changes"}
                           >
@@ -8714,9 +8835,9 @@ Try these prompts in Cursor or v0:
                             finally { setIsEditing(false); setEditImages([]); setIsPointAndEdit(false); }
                           }}
                           disabled={!chatInput.trim() || isEditing}
-                          className={cn("p-1.5 rounded-lg transition-all", chatInput.trim() && !isEditing ? "bg-white text-black" : "bg-white/5 text-white/30")}
+                          className={cn("p-1.5 rounded-lg transition-all", chatInput.trim() && !isEditing ? "bg-white text-black" : "bg-zinc-800/50 text-zinc-600")}
                         >
-                          {isEditing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                          {isEditing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                         </button>
                         </div>
                       </div>
@@ -8728,7 +8849,20 @@ Try these prompts in Cursor or v0:
                 <div className="flex-1 overflow-y-auto custom-scrollbar" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}>
                   
                   {/* Upload Section - Primary */}
-                  <div className="p-3 border-b border-white/5">
+                  <div className="p-4 border-b border-white/[0.06]">
+                    <div className="sidebar-label text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3 flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <Video className="w-3.5 h-3.5" /> VIDEO INPUT
+                      </span>
+                      {flows.length > 0 && (
+                        <button 
+                          onClick={() => fileInputRef.current?.click()}
+                          className="text-[10px] text-white/40 hover:text-white/70 flex items-center gap-1 px-2 py-0.5 rounded hover:bg-zinc-800/50 transition-colors normal-case font-normal"
+                        >
+                          <Plus className="w-3 h-3" /> Add more
+                        </button>
+                      )}
+                    </div>
                     {flows.length === 0 ? (
                       <>
                         {/* Upload Area with Drag & Drop */}
@@ -8738,62 +8872,48 @@ Try these prompts in Cursor or v0:
                           onDragLeave={handleDragLeave}
                           onDrop={handleDrop}
                           className={cn(
-                            "relative rounded-xl border-2 border-dashed bg-white/[0.02] transition-all cursor-pointer group mb-3",
-                            isDragging 
-                              ? "border-[#FF6E3C] bg-[#FF6E3C]/10" 
-                              : "border-white/[0.08] hover:border-[#FF6E3C]/30 hover:bg-white/[0.03]"
+                            "dropzone-pro relative rounded-xl transition-all cursor-pointer group mb-3",
+                            isDragging && "active"
                           )}
                         >
-                          <div className="p-4 text-center">
+                          <div className="p-5 text-center">
                             <div className={cn(
-                              "w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2 transition-colors",
-                              isDragging ? "bg-[#FF6E3C]/20" : "bg-white/5 group-hover:bg-[#FF6E3C]/10"
+                              "w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 transition-colors bg-zinc-800/50",
+                              isDragging ? "bg-[var(--accent-orange)]/20" : "group-hover:bg-[var(--accent-orange)]/10"
                             )}>
                               <Upload className={cn(
-                                "w-5 h-5 transition-colors",
-                                isDragging ? "text-[#FF6E3C]" : "text-white/30 group-hover:text-[#FF6E3C]/60"
+                                "w-6 h-6 transition-colors text-white/30",
+                                isDragging ? "text-[var(--accent-orange)]" : "group-hover:text-[var(--accent-orange)]/60"
                               )} />
                             </div>
-                            <p className="text-xs text-white/50 font-medium">{isDragging ? "Drop video here" : "Upload your video"}</p>
-                            <p className="text-[10px] text-white/25 mt-0.5">or drag & drop</p>
+                            <p className="text-[13px] text-white/80 font-medium">{isDragging ? "Drop video here" : "Upload your video"}</p>
+                            <p className="text-[11px] text-white/30 mt-1">or drag & drop</p>
                           </div>
                         </div>
                         
                         {/* Record Button */}
                         <button 
                           onClick={startRecording}
-                          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white/[0.03] border border-red-500/30 hover:border-red-500/50 hover:bg-white/[0.06] text-xs text-white/60 hover:text-white/80 transition-all"
+                          className="w-full flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl bg-zinc-800/50 border border-white/[0.08] hover:border-red-500/40 hover:bg-zinc-800/50 text-[13px] text-white/70 hover:text-white transition-all"
                         >
-                          <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" /> Record screen
+                          <div className="status-dot recording w-2.5 h-2.5" /> Record screen
                         </button>
                       </>
                     ) : (
                       <>
                         {/* Video List */}
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-[10px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5">
-                            <Video className="w-3 h-3" /> Videos
-                            <span className="text-[9px] bg-white/10 px-1.5 py-0.5 rounded">{flows.length}</span>
-                          </span>
-                          <button 
-                            onClick={() => fileInputRef.current?.click()}
-                            className="text-[9px] text-white/30 hover:text-white/50 flex items-center gap-1"
-                          >
-                            <Plus className="w-2.5 h-2.5" /> Add
-                          </button>
-                        </div>
-                        <div className="space-y-1">
+                        <div className="space-y-2">
                           {flows.map((flow) => (
-                            <button key={flow.id} onClick={() => setSelectedFlowId(flow.id)} className={cn("w-full flex items-center gap-2 p-2 rounded-lg cursor-pointer text-left", selectedFlowId === flow.id ? "bg-[#FF6E3C]/10 border border-[#FF6E3C]/20" : "bg-white/[0.02] hover:bg-white/[0.04]")} aria-label={`Select flow ${flow.name || flow.id}`}>
-                              <div className="w-10 h-6 rounded overflow-hidden bg-white/5 flex-shrink-0">
-                                {flow.thumbnail ? <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" /> : <Film className="w-3 h-3 text-white/20 mx-auto mt-1.5" />}
+                            <button key={flow.id} onClick={() => setSelectedFlowId(flow.id)} className={cn("w-full flex items-center gap-3 p-3 rounded-xl cursor-pointer text-left transition-all", selectedFlowId === flow.id ? "bg-zinc-800/50 border border-white/[0.12]" : "bg-zinc-800/50 border border-transparent hover:bg-zinc-800/50 hover:border-white/[0.06]")} aria-label={`Select flow ${flow.name || flow.id}`}>
+                              <div className="w-12 h-8 rounded-lg overflow-hidden bg-zinc-800/50 flex-shrink-0">
+                                {flow.thumbnail ? <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" /> : <Film className="w-4 h-4 text-white/20 mx-auto mt-2" />}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-[11px] text-white/70 truncate">{flow.name}</p>
-                                <p className="text-[9px] text-white/30">{formatDuration(flow.duration)}</p>
+                                <p className="text-[13px] text-white/80 truncate">{flow.name}</p>
+                                <p className="text-[11px] text-white/30">{formatDuration(flow.duration)}</p>
                               </div>
-                              <span onClick={(e) => { e.stopPropagation(); setFlows(prev => prev.filter(f => f.id !== flow.id)); }} className="p-1 text-white/20 hover:text-red-400" role="button" tabIndex={0} aria-label="Remove flow" onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setFlows(prev => prev.filter(f => f.id !== flow.id)); }}}>
-                                <Trash2 className="w-3 h-3" />
+                              <span onClick={(e) => { e.stopPropagation(); setFlows(prev => prev.filter(f => f.id !== flow.id)); }} className="p-1.5 text-white/20 hover:text-red-400 hover:bg-zinc-800/50 rounded-lg transition-colors" role="button" tabIndex={0} aria-label="Remove flow" onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setFlows(prev => prev.filter(f => f.id !== flow.id)); }}}>
+                                <Trash2 className="w-3.5 h-3.5" />
                               </span>
                             </button>
                           ))}
@@ -8803,26 +8923,26 @@ Try these prompts in Cursor or v0:
                   </div>
                   
                   {/* Context Section */}
-                  <div className="p-3 border-b border-white/5">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5">
-                        <MousePointer2 className="w-3 h-3" /> Context
+                  <div className="p-4 border-b border-white/[0.06]">
+                    <div className="sidebar-label text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3 flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <MousePointer2 className="w-3.5 h-3.5" /> CONTEXT
                       </span>
-                      <span className="text-[9px] text-white/30">Optional</span>
+                      <span className="text-[10px] text-white/25 bg-zinc-800/50 px-2 py-0.5 rounded normal-case font-normal">Optional</span>
                     </div>
                     <textarea
                       value={refinements}
                       onChange={(e) => setRefinements(e.target.value)}
                       placeholder="Add data logic, constraints or details..."
-                      rows={2}
-                      className="w-full px-2.5 py-2 rounded-lg bg-white/[0.02] border border-white/[0.05] text-[11px] text-white/70 placeholder:text-white/25 resize-y focus:outline-none focus:border-white/10 min-h-[60px] max-h-[200px]"
+                      rows={3}
+                      className="w-full px-3 py-3 rounded-xl text-xs text-zinc-300 bg-zinc-800/80 border border-zinc-700/50 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 min-h-[80px] resize-y"
                     />
                   </div>
                   
                   {/* Style Section */}
-                  <div className="p-3 border-b border-white/5">
-                    <span className="text-[10px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5 mb-2">
-                      <Palette className="w-3 h-3" /> Visual Style
+                  <div className="p-4 border-b border-white/[0.06]">
+                    <span className="sidebar-label text-[11px] font-semibold text-white/40 uppercase tracking-wider flex items-center gap-2 mb-3">
+                      <Palette className="w-3.5 h-3.5" /> VISUAL STYLE
                     </span>
                     <StyleInjector 
                       value={styleDirective} 
@@ -8834,24 +8954,24 @@ Try these prompts in Cursor or v0:
                   </div>
                   
                   {/* Generate Button */}
-                  <div className="p-3">
+                  <div className="p-4">
                     <button 
                       onClick={handleGenerate}
                       disabled={isProcessing || flows.length === 0}
-                      className="w-full py-2.5 rounded-lg bg-[#FF6E3C]/10 hover:bg-[#FF6E3C]/20 border border-[#FF6E3C]/20 text-[11px] font-medium text-[#FF6E3C] flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                      className="w-full py-3.5 rounded-xl bg-zinc-800 hover:from-[#52525b] hover:to-[var(--accent-orange)] text-[13px] font-semibold text-white flex items-center justify-center gap-2.5 transition-all disabled:opacity-50 shadow-[0_0_20px_rgba(82,82,91,0.2)] hover:shadow-[0_0_30px_rgba(82,82,91,0.2)] hover:-translate-y-0.5"
                     >
-                      <LogoIcon className="w-3.5 h-3.5" color="#FF6E3C" />
+                      <LogoIcon className="w-4 h-4" color="white" />
                       Reconstruct
                     </button>
                   </div>
                   
                   {/* Database Section */}
-                  <div className="p-3 border-b border-white/5">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-medium text-white/40 uppercase tracking-wider flex items-center gap-1.5">
-                        <Database className="w-3 h-3" /> Database
+                  <div className="p-4 border-b border-white/[0.06]">
+                    <div className="sidebar-label text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3 flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <Database className="w-3.5 h-3.5" /> DATABASE
                       </span>
-                      <span className="text-[9px] text-white/30" title="Connect Supabase to wire real data to your UI">Optional</span>
+                      <span className="text-[10px] text-white/25 bg-zinc-800/50 px-2 py-0.5 rounded normal-case font-normal">Optional</span>
                     </div>
                     <button 
                       onClick={() => {
@@ -8869,18 +8989,16 @@ Try these prompts in Cursor or v0:
                         setShowProjectSettings(true);
                       }}
                       className={cn(
-                        "w-full py-2.5 rounded-lg bg-white/[0.02] border border-white/[0.05] text-[10px] flex items-center justify-center gap-1.5 transition-colors group",
-                        (!user || isDemoMode || !isPaidPlan) 
-                          ? "text-white/30 hover:text-white/40 cursor-not-allowed" 
-                          : "text-white/50 hover:text-white/70 hover:bg-white/[0.05]"
+                        "w-full px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-2 transition-colors bg-zinc-800/60 border border-zinc-700/50 hover:bg-zinc-700/60 text-zinc-300",
+                        (!user || isDemoMode || !isPaidPlan) && "opacity-50 cursor-not-allowed"
                       )}
                       title={!user || isDemoMode ? "Sign up to use Supabase integration" : !isPaidPlan ? "Pro feature - Upgrade to connect" : "Connect Supabase to fetch real data"}
                     >
-                      <Database className="w-3 h-3 group-hover:text-[#3ECF8E]" />
-                      Wire to Supabase
-                      {(!user || isDemoMode || !isPaidPlan) && <Lock className="w-2.5 h-2.5 text-white/20" />}
+                      <Database className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[#3ECF8E]" />
+                      <span className="text-zinc-300">Wire to Supabase</span>
+                      {(!user || isDemoMode || !isPaidPlan) && <Lock className="w-3 h-3 text-white/30" />}
                     </button>
-                    <p className="text-[9px] text-white/25 mt-1.5 text-center">
+                    <p className="text-[10px] text-white/25 mt-2 text-center">
                       {!user || isDemoMode ? "Sign up to connect database" : !isPaidPlan ? "Pro feature" : "Connect your database to wire real data"}
                     </p>
                   </div>
@@ -8888,10 +9006,10 @@ Try these prompts in Cursor or v0:
                   {/* Colors Preview */}
                   {styleInfo && styleInfo.colors.length > 0 && (
                     <div className="p-3">
-                      <span className="text-[10px] font-medium text-white/40 uppercase tracking-wider block mb-2">Current Colors</span>
+                      <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider block mb-2">Current Colors</span>
                       <div className="flex gap-1 flex-wrap">
                         {styleInfo.colors.slice(0, 6).map((c, i) => (
-                          <div key={i} className="w-6 h-6 rounded border border-white/10" style={{ background: c.value }} title={c.value} />
+                          <div key={i} className="w-6 h-6 rounded border border-zinc-700" style={{ background: c.value }} title={c.value} />
                         ))}
                       </div>
                     </div>
@@ -8899,7 +9017,7 @@ Try these prompts in Cursor or v0:
                 </div>
               )}
             </div>
-          ) : sidebarView === "detail" ? (
+          ) : !sidebarCollapsed && sidebarView === "detail" ? (
             /* CONFIG MODE - Before Generation */
             <div 
               className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar"
@@ -8909,12 +9027,12 @@ Try these prompts in Cursor or v0:
               }}
             >
               {/* Videos Section */}
-              <div className="p-4 border-b border-white/5">
+              <div className="p-4 border-b border-zinc-800">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <Video className="w-4 h-4 text-white/40" />
-                    <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Videos</span>
-                    {flows.length > 0 && <span className="px-1.5 py-0.5 bg-white/5 rounded text-[10px] text-white/40">{flows.length}</span>}
+                    <Video className="w-4 h-4 text-zinc-500" />
+                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Videos</span>
+                    {flows.length > 0 && <span className="px-1.5 py-0.5 bg-zinc-800/50 rounded text-[10px] text-zinc-500">{flows.length}</span>}
                   </div>
                   <div className="flex gap-1.5">
                     {isRecording ? (
@@ -8922,7 +9040,7 @@ Try these prompts in Cursor or v0:
                         <Square className="w-3 h-3 fill-red-500 text-red-500" />{formatDuration(recordingDuration)}
                       </button>
                     ) : (
-                      <button onClick={startRecording} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs bg-white/[0.03] border border-red-500/30 hover:border-red-500/50 text-white/60 hover:text-white/80 transition-all"><div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> Record</button>
+                      <button onClick={startRecording} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs bg-zinc-800/50 border border-red-500/30 hover:border-red-500/50 text-zinc-400 hover:text-zinc-200 transition-all"><div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> Record</button>
                     )}
                     <button onClick={() => fileInputRef.current?.click()} className="btn-black flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs"><Upload className="w-3.5 h-3.5" /> Upload</button>
                   </div>
@@ -8939,13 +9057,13 @@ Try these prompts in Cursor or v0:
                       className={cn(
                         "relative rounded-xl border-2 border-dashed transition-all cursor-pointer",
                         isDragging 
-                          ? "border-[#FF6E3C] bg-[#FF6E3C]/10" 
-                          : "border-white/[0.08] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.03]"
+                          ? "border-[var(--accent-orange)] bg-zinc-800/10" 
+                          : "border-zinc-700 bg-zinc-800/50 hover:border-white/[0.15] hover:bg-zinc-800/50"
                       )}
                     >
                       <div className="p-5 text-center">
-                        <Video className={cn("w-5 h-5 mx-auto mb-2", isDragging ? "text-[#FF6E3C]" : "text-white/30")} />
-                        <p className={cn("text-[10px]", isDragging ? "text-[#FF6E3C]" : "text-white/40")}>
+                        <Video className={cn("w-5 h-5 mx-auto mb-2", isDragging ? "text-zinc-300" : "text-zinc-600")} />
+                        <p className={cn("text-[10px]", isDragging ? "text-zinc-300" : "text-zinc-500")}>
                           {isDragging ? "Drop video here!" : "Drop your video here"}
                         </p>
                         <p className="text-[9px] text-white/25 mt-1">
@@ -8955,16 +9073,16 @@ Try these prompts in Cursor or v0:
                     </div>
                   ) : flows.map((flow) => (
                     <button key={flow.id} onClick={() => setSelectedFlowId(flow.id)} className={cn("flow-item w-full flex items-center gap-2.5 p-2 cursor-pointer group text-left", selectedFlowId === flow.id && "selected")} aria-label={`Select flow ${flow.name}`}>
-                      <div className="w-14 h-8 rounded overflow-hidden bg-white/5 flex-shrink-0 flex items-center justify-center">
+                      <div className="w-14 h-8 rounded overflow-hidden bg-zinc-800/50 flex-shrink-0 flex items-center justify-center">
                         {flow.thumbnail ? <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" /> : <Film className="w-3 h-3 text-white/20" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white/80 truncate">{flow.name}</p>
-                        <p className="text-xs text-white/40">
+                        <p className="text-sm font-medium text-zinc-200 truncate">{flow.name}</p>
+                        <p className="text-xs text-zinc-500">
                           {formatDuration(flow.trimEnd - flow.trimStart)} / {formatDuration(flow.duration)}
                         </p>
                       </div>
-                      <span onClick={(e) => { e.stopPropagation(); removeFlow(flow.id); }} className="p-1 opacity-0 group-hover:opacity-100 hover:bg-white/10 rounded" role="button" tabIndex={0} aria-label="Remove flow" onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); removeFlow(flow.id); }}}><Trash2 className="w-3 h-3 text-white/40" /></span>
+                      <span onClick={(e) => { e.stopPropagation(); removeFlow(flow.id); }} className="p-1 opacity-0 group-hover:opacity-100 hover:bg-white/10 rounded" role="button" tabIndex={0} aria-label="Remove flow" onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); removeFlow(flow.id); }}}><Trash2 className="w-3 h-3 text-zinc-500" /></span>
                     </button>
                   ))}
                   
@@ -8972,7 +9090,7 @@ Try these prompts in Cursor or v0:
                   {flows.length > 0 && (
                     <button 
                       onClick={() => fileInputRef.current?.click()} 
-                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs text-white/40 hover:text-white/60 hover:bg-white/5 border border-dashed border-white/10 hover:border-white/20 transition-colors"
+                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs text-zinc-500 hover:text-zinc-400 hover:bg-zinc-800/50 border border-dashed border-zinc-700 hover:border-white/20 transition-colors"
                     >
                       <Plus className="w-3 h-3" />
                       <span>Add video</span>
@@ -8981,10 +9099,10 @@ Try these prompts in Cursor or v0:
                 </div>
               </div>
               {/* CONTEXT Section - Above Style */}
-              <div className="p-4 border-b border-white/5">
+              <div className="p-4 border-b border-zinc-800">
                 <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="w-4 h-4 text-white/40" />
-                  <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Context</span>
+                  <Sparkles className="w-4 h-4 text-zinc-500" />
+                  <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Context</span>
                 </div>
                 
                 {/* Textarea only */}
@@ -9002,14 +9120,14 @@ Try these prompts in Cursor or v0:
                   disabled={isProcessing}
                   rows={3}
                   className={cn(
-                    "w-full px-3 py-3 rounded-lg text-xs text-white/70 placeholder:text-white/30 placeholder:text-[11px] transition-colors focus:outline-none textarea-grow input-subtle min-h-[80px] max-h-[300px] resize-y",
+                    "w-full px-3 py-3 rounded-xl text-xs text-zinc-300 bg-zinc-800/80 border border-zinc-700/50 placeholder:text-zinc-600 placeholder:text-[11px] transition-colors focus:outline-none focus:border-zinc-600 min-h-[80px] max-h-[300px] resize-y",
                     isProcessing && "opacity-50 cursor-not-allowed"
                   )}
                 />
               </div>
 
-              <div className="p-4 border-b border-white/5">
-                <div className="flex items-center gap-2 mb-3"><Palette className="w-4 h-4 text-white/40" /><span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Style</span></div>
+              <div className="p-4 border-b border-zinc-800">
+                <div className="flex items-center gap-2 mb-3"><Palette className="w-4 h-4 text-zinc-500" /><span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Style</span></div>
                 <StyleInjector 
                   value={styleDirective} 
                   onChange={setStyleDirective} 
@@ -9020,7 +9138,7 @@ Try these prompts in Cursor or v0:
               </div>
 
               {/* Generate Button */}
-              <div className="p-4 border-b border-white/5">
+              <div className="p-4 border-b border-zinc-800">
                 {(() => {
                   // Determine if we're in update mode (existing project + changed context)
                   const hasProject = activeGeneration && generatedCode && generationComplete;
@@ -9029,13 +9147,13 @@ Try these prompts in Cursor or v0:
                   const isUpdateMode = hasProject && (hasContextChange || hasStyleChange) && refinements.trim();
                   
                   return (
-                    <button onClick={handleGenerate} disabled={isProcessing || isEditing || flows.length === 0} className={cn("w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl font-semibold text-sm transition-all btn-generate", (isProcessing || isEditing) && "processing")}>
-                      <div className="btn-generate-grain" />
+                    <button onClick={handleGenerate} disabled={isProcessing || isEditing || flows.length === 0} className={cn("w-full flex items-center justify-center gap-2.5 py-3 rounded-xl font-medium text-sm transition-all bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700/50", (isProcessing || isEditing) && "opacity-70")}>
+                      
                       <span className="relative z-10 flex items-center gap-2.5">
                         {isProcessing || isEditing ? (
                           <><Loader2 className="w-4 h-4 animate-spin" /><span className="generating-text">{isEditing ? "Updating..." : "Reconstructing..."}</span></>
                         ) : (
-                          <><LogoIcon className="btn-logo-icon" color="#FF6E3C" /><span>Reconstruct</span><ChevronRight className="w-4 h-4" /></>
+                          <><LogoIcon className="btn-logo-icon" color="var(--accent-orange)" /><span>Reconstruct</span><ChevronRight className="w-4 h-4" /></>
                         )}
                       </span>
                     </button>
@@ -9044,8 +9162,8 @@ Try these prompts in Cursor or v0:
               </div>
 
               {/* Analysis Section - now scrolls with everything */}
-              <div className="border-b border-white/5">
-                <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2"><Activity className="w-4 h-4 text-white/40" /><span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Analysis</span></div>
+              <div className="border-b border-zinc-800">
+                <div className="px-4 py-3 border-b border-zinc-800 flex items-center gap-2"><Activity className="w-4 h-4 text-zinc-500" /><span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Analysis</span></div>
                 <div ref={analysisRef} className="p-4">
               {(isProcessing || isStreamingCode) && analysisPhase ? (
                 <div className="space-y-4">
@@ -9056,8 +9174,8 @@ Try these prompts in Cursor or v0:
                     className="analysis-section"
                   >
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">UX Signals</span>
-                      {analysisSection === "style" && <Loader2 className="w-3 h-3 animate-spin text-[#FF6E3C]/50 ml-auto" />}
+                      <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">UX Signals</span>
+                      {analysisSection === "style" && <Loader2 className="w-3 h-3 animate-spin text-zinc-300/50 ml-auto" />}
                     </div>
                     <div className="space-y-2.5">
                       {/* Technical UX tags with Lucide icons */}
@@ -9073,33 +9191,33 @@ Try these prompts in Cursor or v0:
                             {/* Lucide icon based on signal type */}
                             <div className={cn(
                               "w-5 h-5 rounded flex items-center justify-center flex-shrink-0",
-                              signal.value.includes("...") ? "bg-white/5" : "bg-white/[0.03]"
+                              signal.value.includes("...") ? "bg-zinc-800/50" : "bg-zinc-800/50"
                             )}>
-                              {signal.type === "motion" && <RefreshCw className={cn("w-3 h-3", signal.value.includes("...") ? "text-white/30 animate-spin" : "text-cyan-400/70")} />}
-                              {signal.type === "interaction" && <MousePointer className={cn("w-3 h-3", signal.value.includes("...") ? "text-white/30" : "text-amber-400/70")} />}
-                              {signal.type === "responsive" && <Smartphone className={cn("w-3 h-3", signal.value.includes("...") ? "text-white/30" : "text-green-400/70")} />}
-                              {signal.type === "hierarchy" && <Layers className={cn("w-3 h-3", signal.value.includes("...") ? "text-white/30" : "text-purple-400/70")} />}
+                              {signal.type === "motion" && <RefreshCw className={cn("w-3 h-3", signal.value.includes("...") ? "text-zinc-600 animate-spin" : "text-cyan-400/70")} />}
+                              {signal.type === "interaction" && <MousePointer className={cn("w-3 h-3", signal.value.includes("...") ? "text-zinc-600" : "text-zinc-300/70")} />}
+                              {signal.type === "responsive" && <Smartphone className={cn("w-3 h-3", signal.value.includes("...") ? "text-zinc-600" : "text-green-400/70")} />}
+                              {signal.type === "hierarchy" && <Layers className={cn("w-3 h-3", signal.value.includes("...") ? "text-zinc-600" : "text-purple-400/70")} />}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-[10px] text-white/50">{signal.label}</span>
+                                <span className="text-[10px] text-zinc-500">{signal.label}</span>
                                 {signal.value.includes("...") ? (
-                                  <span className="text-[10px] text-[#FF6E3C]/60 italic">{signal.value}</span>
+                                  <span className="text-[10px] text-zinc-300/60 italic">{signal.value}</span>
                                 ) : (
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/80 font-medium border border-white/5">
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800/50 text-zinc-200 font-medium border border-zinc-800">
                                     {signal.value}
                                   </span>
                                 )}
                               </div>
                               {signal.tech && !signal.value.includes("...") && (
-                                <code className="text-[9px] text-white/30 mt-0.5 block font-mono">{signal.tech}</code>
+                                <code className="text-[9px] text-zinc-600 mt-0.5 block font-mono">{signal.tech}</code>
                               )}
                             </div>
                           </motion.div>
                         ))
                       ) : (
-                        <div className="flex items-center gap-2 text-[10px] text-white/30">
-                          <Loader2 className="w-3 h-3 animate-spin text-[#FF6E3C]/50" />
+                        <div className="flex items-center gap-2 text-[10px] text-zinc-600">
+                          <Loader2 className="w-3 h-3 animate-spin text-zinc-300/50" />
                           <span>Detecting patterns...</span>
                         </div>
                       )}
@@ -9116,8 +9234,8 @@ Try these prompts in Cursor or v0:
                         className="analysis-section"
                       >
                         <div className="flex items-center gap-2 mb-3">
-                          <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Structure & Components</span>
-                          {analysisSection === "layout" && <Loader2 className="w-3 h-3 animate-spin text-[#FF6E3C]/50 ml-auto" />}
+                          <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">Structure & Components</span>
+                          {analysisSection === "layout" && <Loader2 className="w-3 h-3 animate-spin text-zinc-300/50 ml-auto" />}
                           {analysisSection === "components" && <Check className="w-3 h-3 text-green-500/50 ml-auto" />}
                         </div>
                         
@@ -9142,16 +9260,16 @@ Try these prompts in Cursor or v0:
                                   {node.status === "done" ? (
                                     <Check className="w-2.5 h-2.5 text-green-500/70 flex-shrink-0" />
                                   ) : node.status === "generating" ? (
-                                    <Loader2 className="w-2.5 h-2.5 animate-spin text-[#FF6E3C]/70 flex-shrink-0" />
+                                    <Loader2 className="w-2.5 h-2.5 animate-spin text-zinc-300/70 flex-shrink-0" />
                                   ) : (
-                                    <div className="w-2.5 h-2.5 rounded-full border border-white/10 flex-shrink-0" />
+                                    <div className="w-2.5 h-2.5 rounded-full border border-zinc-700 flex-shrink-0" />
                                   )}
                                   
                                   {/* Component name */}
                                   <span className={cn(
                                     "text-[10px]", 
-                                    node.status === "done" ? "text-white/70" : 
-                                    node.status === "generating" ? "text-[#FF6E3C]/70" : "text-white/30"
+                                    node.status === "done" ? "text-zinc-400" : 
+                                    node.status === "generating" ? "text-zinc-300/70" : "text-zinc-600"
                                   )}>
                                     {node.name}
                                   </span>
@@ -9160,9 +9278,9 @@ Try these prompts in Cursor or v0:
                                   <span className={cn(
                                     "text-[8px] px-1 py-0.5 rounded",
                                     node.type === "Template" ? "bg-purple-500/20 text-purple-400/80" :
-                                    node.type === "Organism" ? "bg-blue-500/20 text-blue-400/80" :
+                                    node.type === "Organism" ? "bg-zinc-600/20 text-zinc-400" :
                                     node.type === "Molecule" ? "bg-green-500/20 text-green-400/80" :
-                                    "bg-white/10 text-white/40"
+                                    "bg-white/10 text-zinc-500"
                                   )}>
                                     {node.type}
                                   </span>
@@ -9185,8 +9303,8 @@ Try these prompts in Cursor or v0:
                               </motion.div>
                             ))
                           ) : (
-                            <div className="flex items-center gap-2 text-[10px] text-white/30">
-                              <Loader2 className="w-3 h-3 animate-spin text-[#FF6E3C]/50" />
+                            <div className="flex items-center gap-2 text-[10px] text-zinc-600">
+                              <Loader2 className="w-3 h-3 animate-spin text-zinc-300/50" />
                               <span>Building component tree...</span>
                             </div>
                           )}
@@ -9197,18 +9315,18 @@ Try these prompts in Cursor or v0:
                           <motion.div 
                             initial={{ opacity: 0, y: 5 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="mt-3 pt-2 border-t border-white/5"
+                            className="mt-3 pt-2 border-t border-zinc-800"
                           >
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-1.5">
                                 <Database className={cn("w-3 h-3", isSupabaseConnected ? "text-green-500/60" : "text-white/20")} />
-                                <span className="text-[9px] text-white/30 uppercase tracking-wide">Data Patterns</span>
+                                <span className="text-[9px] text-zinc-600 uppercase tracking-wide">Data Patterns</span>
                               </div>
                               {/* Supabase connection status - PRO only */}
                               {isPaidPlan ? (
                                 <span className={cn(
                                   "text-[9px]",
-                                  isSupabaseConnected ? "text-green-500" : "text-white/30"
+                                  isSupabaseConnected ? "text-green-500" : "text-zinc-600"
                                 )}>
                                   {isSupabaseConnected ? "Supabase Connected" : "Supabase Not Connected"}
                                 </span>
@@ -9218,7 +9336,7 @@ Try these prompts in Cursor or v0:
                                     setUpgradeFeature("supabase");
                                     setShowUpgradeModal(true);
                                   }}
-                                  className="flex items-center gap-1 text-[9px] text-[#FF6E3C] hover:text-[#FF8F5C]"
+                                  className="flex items-center gap-1 text-[9px] text-zinc-300 hover:text-[#52525b]"
                                 >
                                   <Lock className="w-2.5 h-2.5" />
                                   <span>PRO</span>
@@ -9228,16 +9346,16 @@ Try these prompts in Cursor or v0:
                             {isPaidPlan ? (
                               analysisPhase.dataPatterns.map((pattern, i) => (
                                 <div key={i} className="flex items-center gap-2 text-[9px] py-0.5">
-                                  <span className="text-white/50">{pattern.pattern}</span>
+                                  <span className="text-zinc-500">{pattern.pattern}</span>
                                   <span className="text-white/20">→</span>
                                   <code className={cn(
                                     "font-mono px-1 rounded",
-                                    isSupabaseConnected ? "text-green-400/80 bg-green-500/5" : "text-white/40 bg-white/5"
+                                    isSupabaseConnected ? "text-green-400/80 bg-green-500/5" : "text-zinc-500 bg-zinc-800/50"
                                   )}>{pattern.suggestedTable || pattern.component}</code>
                                 </div>
                               ))
                             ) : (
-                              <div className="text-[9px] text-white/30 italic">
+                              <div className="text-[9px] text-zinc-600 italic">
                                 {analysisPhase.dataPatterns.length} patterns detected — upgrade to see details
                               </div>
                             )}
@@ -9250,40 +9368,40 @@ Try these prompts in Cursor or v0:
               ) : generationComplete && analysisPhase?.stats ? (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
                   <div className="flex items-center gap-2 mb-2">
-                    <LogoIcon className="w-4 h-5" color="#FF6E3C" />
-                    <span className="text-xs font-medium text-white/60">Complete</span>
+                    <LogoIcon className="w-4 h-5" color="var(--accent-orange)" />
+                    <span className="text-xs font-medium text-zinc-400">Complete</span>
                   </div>
                   
                   {/* Stats tiles - compact single line */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-white/40">Stack</span>
-                      <span className="text-xs text-white/70 font-medium">Tailwind + Alpine</span>
+                      <span className="text-xs text-zinc-500">Stack</span>
+                      <span className="text-xs text-zinc-400 font-medium">Tailwind + Alpine</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-white/40">Elements</span>
-                      <span className="text-xs text-white/70 font-medium">{analysisPhase.stats.componentCount}</span>
+                      <span className="text-xs text-zinc-500">Elements</span>
+                      <span className="text-xs text-zinc-400 font-medium">{analysisPhase.stats.componentCount}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-white/40">Style</span>
-                      <span className="text-xs text-white/70 font-medium truncate max-w-[140px]">{analysisPhase.stats.theme.split(' ')[0]}</span>
+                      <span className="text-xs text-zinc-500">Style</span>
+                      <span className="text-xs text-zinc-400 font-medium truncate max-w-[140px]">{analysisPhase.stats.theme.split(' ')[0]}</span>
                     </div>
                   </div>
                   
                   {/* Show actual colors from generated code */}
                   {styleInfo && styleInfo.colors.length > 0 && (
-                    <div className="flex items-center gap-2 pt-2 border-t border-white/5">
-                      <span className="text-xs text-white/30">Colors:</span>
+                    <div className="flex items-center gap-2 pt-2 border-t border-zinc-800">
+                      <span className="text-xs text-zinc-600">Colors:</span>
                       <div className="flex gap-1">
                         {styleInfo.colors.slice(0, 5).map((c, i) => (
-                          <div key={i} className="w-5 h-5 rounded-sm border border-white/10" style={{ background: c.value }} title={c.value} />
+                          <div key={i} className="w-5 h-5 rounded-sm border border-zinc-700" style={{ background: c.value }} title={c.value} />
                         ))}
                       </div>
                     </div>
                   )}
                   
                   {analysisDescription && (
-                    <p className="text-xs text-white/40 leading-relaxed mt-2 pt-2 border-t border-white/5">
+                    <p className="text-xs text-zinc-500 leading-relaxed mt-2 pt-2 border-t border-zinc-800">
                       {analysisDescription}
                     </p>
                   )}
@@ -9292,7 +9410,7 @@ Try these prompts in Cursor or v0:
                 <div className="analysis-section">
                   <div className="flex items-center gap-2 mb-2">
                     <Clock className="w-3.5 h-3.5 text-white/20" />
-                    <span className="text-xs font-semibold text-white/30 uppercase tracking-wider">Waiting for generation</span>
+                    <span className="text-xs font-semibold text-zinc-600 uppercase tracking-wider">Waiting for generation</span>
                   </div>
                   <p className="text-xs text-white/25 leading-relaxed">Live analysis logs will display here once generation starts.</p>
                 </div>
@@ -9304,46 +9422,52 @@ Try these prompts in Cursor or v0:
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col bg-[#0a0a0a] min-w-0 overflow-hidden">
+        <div className="flex-1 flex flex-col bg-[#111111] min-w-0 overflow-hidden">
           {/* Desktop Top Bar: Tabs Left | Options Center | User/Actions Right */}
-          <div className="hidden md:flex items-center justify-between px-3 h-12 border-b border-white/5 bg-black/40">
-            {/* Left: Navigation Tabs */}
-            <div className="flex items-center gap-1 bg-black/40 rounded-lg p-0.5">
+          <div className="hidden md:flex items-center justify-between px-4 h-12 border-b border-zinc-800/50 bg-zinc-900">
+            {/* Left: Navigation Tabs - Animated toggle style */}
+            <div className="flex items-center bg-zinc-800/50 rounded-lg p-1">
               {[
                 { id: "preview", icon: Eye, label: "Preview" },
                 { id: "code", icon: Code, label: "Code" },
                 { id: "flow", icon: GitBranch, label: "Flow" },
-                { id: "design", icon: Paintbrush, label: "Design System" },
+                { id: "design", icon: Palette, label: "Design" },
                 { id: "input", icon: FileInput, label: "Input" },
               ].map((tab) => (
                 <button 
                   key={tab.id} 
                   onClick={() => setViewMode(tab.id as ViewMode)} 
+                  title={tab.label}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors", 
-                    viewMode === tab.id ? "bg-white/10 text-white" : "text-white/40 hover:text-white/60"
+                    "relative flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium transition-all duration-200 rounded-md", 
+                    viewMode === tab.id 
+                      ? "text-white bg-zinc-700" 
+                      : "text-zinc-500 hover:text-zinc-300"
                   )}
                 >
-                  <tab.icon className="w-3.5 h-3.5" />{tab.label}
+                  <tab.icon className="w-3.5 h-3.5" />
+                  <AnimatePresence mode="wait">
+                    {viewMode === tab.id && (
+                      <motion.span
+                        key={tab.id}
+                        initial={{ width: 0, opacity: 0 }}
+                        animate={{ width: "auto", opacity: 1 }}
+                        exit={{ width: 0, opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="overflow-hidden whitespace-nowrap"
+                      >
+                        {tab.label}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
                 </button>
               ))}
             </div>
             
             {/* Center: Tab-specific options */}
             <div className="flex items-center gap-2">
-              {viewMode === "flow" && (
-                <div className="flex items-center gap-1 mr-2">
-                  <button onClick={() => setArchZoom(z => Math.max(0.5, z - 0.1))} className="btn-black p-1.5 rounded-lg"><ZoomOut className="w-3.5 h-3.5" /></button>
-                  <span className="text-xs text-white/40 w-12 text-center">{Math.round(archZoom * 100)}%</span>
-                  <button onClick={() => setArchZoom(z => Math.min(2, z + 0.1))} className="btn-black p-1.5 rounded-lg"><ZoomIn className="w-3.5 h-3.5" /></button>
-                </div>
-              )}
-              {viewMode === "code" && editableCode && !isCodeEditable && (
-                <button onClick={handleEnterEditMode} className="btn-black flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"><Pencil className="w-3.5 h-3.5" /> Edit</button>
-              )}
-              {viewMode === "code" && isCodeEditable && (
-                <button onClick={applyCodeChanges} className="btn-black flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-green-400"><Check className="w-3.5 h-3.5" /> Apply</button>
-              )}
+
+
               {editableCode && (
                 <>
                   {viewMode === "preview" && (
@@ -9361,7 +9485,7 @@ Try these prompts in Cursor or v0:
                                 setPreviewUrl(createPreviewUrl(editableCode));
                               }
                             }}
-                            className="btn-black px-2 py-1 rounded-lg text-[10px] text-white/50 hover:text-white/70"
+                            className="btn-black px-2 py-1 rounded-lg text-[10px] text-zinc-500 hover:text-zinc-400"
                           >
                             Discard All
                           </button>
@@ -9375,7 +9499,7 @@ Try these prompts in Cursor or v0:
                       )}
                       
                       {/* Editing / Select toggle - click again to deselect */}
-                      <div className="flex items-center rounded-lg overflow-hidden border border-white/10">
+                      <div className="flex items-center rounded-lg overflow-hidden border border-zinc-700">
                         <button 
                           onClick={() => { 
                             if (isDirectEditMode) {
@@ -9387,11 +9511,13 @@ Try these prompts in Cursor or v0:
                             }
                           }}
                           className={cn(
-                            "flex items-center gap-1 px-2.5 py-1.5 text-[11px] transition-colors",
-                            isDirectEditMode ? "bg-[#FF6E3C]/20 text-[#FF6E3C]" : "bg-white/5 text-white/50 hover:text-white/70"
+                            "flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium transition-all",
+                            isDirectEditMode 
+                              ? "bg-white text-zinc-900" 
+                              : "bg-zinc-800/50 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700/50"
                           )}
                         >
-                          <Pencil className="w-3 h-3" /> Editing
+                          <Pencil className={cn("w-3 h-3", isDirectEditMode && "text-zinc-700")} /> Editing
                         </button>
                         <button 
                           onClick={() => { 
@@ -9403,11 +9529,13 @@ Try these prompts in Cursor or v0:
                             }
                           }}
                           className={cn(
-                            "flex items-center gap-1 px-2.5 py-1.5 text-[11px] transition-colors border-l border-white/10",
-                            isPointAndEdit ? "bg-[#FF6E3C]/20 text-[#FF6E3C]" : "bg-white/5 text-white/50 hover:text-white/70"
+                            "flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium transition-all border-l border-zinc-700",
+                            isPointAndEdit 
+                              ? "bg-white text-zinc-900" 
+                              : "bg-zinc-800/50 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700/50"
                           )}
                         >
-                          <MousePointer className="w-3 h-3" /> Select
+                          <MousePointer className={cn("w-3 h-3", isPointAndEdit && "text-zinc-700")} /> Select
                         </button>
                       </div>
                       
@@ -9415,15 +9543,29 @@ Try these prompts in Cursor or v0:
                       <button
                         onClick={() => setShowAssetsModal(!showAssetsModal)}
                         className={cn(
-                          "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] transition-colors",
+                          "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all border",
                           showAssetsModal
-                            ? "bg-[#FF6E3C]/20 border border-[#FF6E3C]/50 text-[#FF6E3C]"
-                            : "bg-white/[0.03] border border-white/[0.08] text-white/50 hover:text-white/70 hover:border-white/15"
+                            ? "bg-white text-zinc-900 border-white"
+                            : "bg-zinc-800/50 border-zinc-700 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700/50"
                         )}
                         title="View and replace images"
                       >
                         <ImageIcon className="w-3.5 h-3.5" />
                         Assets
+                      </button>
+                      
+                      {/* Mobile/Desktop toggle - only in preview */}
+                      <button 
+                        onClick={() => setIsMobilePreview(!isMobilePreview)} 
+                        className={cn(
+                          "p-2 rounded-lg transition-colors border",
+                          isMobilePreview 
+                            ? "bg-white text-zinc-900 border-white" 
+                            : "bg-zinc-800/50 border-zinc-700 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700/50"
+                        )} 
+                        title={isMobilePreview ? "Switch to desktop view" : "Switch to mobile view"}
+                      >
+                        {isMobilePreview ? <Monitor className="w-3.5 h-3.5" /> : <Smartphone className="w-3.5 h-3.5" />}
                       </button>
                     </>
                   )}
@@ -9444,15 +9586,15 @@ Try these prompts in Cursor or v0:
                       return (
                         <button 
                           onClick={() => setShowProfileMenu(!showProfileMenu)}
-                          className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/5 transition-colors"
+                          className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-zinc-800/50 transition-colors"
                         >
-                          <span className="text-xs font-medium text-white/80 max-w-[80px] truncate">{displayName}</span>
+                          <span className="text-xs font-medium text-zinc-200 max-w-[80px] truncate">{displayName}</span>
                           {(plan === "pro" || plan === "agency" || plan === "enterprise") ? (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase">
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-zinc-800 text-white uppercase">
                               {plan === "agency" ? "Agency" : plan === "enterprise" ? "Enterprise" : "Pro"}
                             </span>
                           ) : (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-white/50 uppercase">
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-zinc-500 uppercase">
                               {plan === "starter" ? "Starter" : "Free"}
                             </span>
                           )}
@@ -9468,7 +9610,7 @@ Try these prompts in Cursor or v0:
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: -5, scale: 0.95 }}
                           transition={{ duration: 0.15 }}
-                          className="absolute right-0 top-full mt-2 w-64 bg-[#0A0A0A] border border-white/10 rounded-xl shadow-xl overflow-hidden z-50"
+                          className="absolute right-0 top-full mt-2 w-64 bg-[#111111] border border-zinc-700 rounded-xl shadow-xl overflow-hidden z-50"
                         >
                           {/* Credits section */}
                           {(() => {
@@ -9479,36 +9621,36 @@ Try these prompts in Cursor or v0:
                               <Link 
                                 href="/settings?tab=plans"
                                 onClick={() => setShowProfileMenu(false)}
-                                className="block p-4 hover:bg-white/5 transition-colors border-b border-white/5"
+                                className="block p-4 hover:bg-zinc-800/50 transition-colors border-b border-zinc-800"
                               >
                                 <div className="flex items-center justify-between mb-2">
                                   <div className="flex items-center gap-2">
                                     <span className="text-sm text-white">{userTotalCredits} credits</span>
                                     {isPaidPlan ? (
-                                      <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white uppercase">
+                                      <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-zinc-800 text-white uppercase">
                                         {plan === "agency" ? "Agency" : plan === "enterprise" ? "Enterprise" : "Pro"}
                                       </span>
                                     ) : (
-                                      <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-white/50 uppercase">
+                                      <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-zinc-500 uppercase">
                                         Free
                                       </span>
                                     )}
                                   </div>
-                                  <ChevronRight className="w-4 h-4 text-white/40" />
+                                  <ChevronRight className="w-4 h-4 text-zinc-500" />
                                 </div>
                                 <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                                   <div 
-                                    className="h-full bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] rounded-full transition-all"
+                                    className="h-full bg-zinc-800 rounded-full transition-all"
                                     style={{ width: `${percentage}%` }}
                                   />
                                 </div>
                                 {isPaidPlan ? (
                                   <div className="mt-2">
-                                    <span className="text-xs text-white/40">Add credits →</span>
+                                    <span className="text-xs text-zinc-500">Add credits →</span>
                                   </div>
                                 ) : (
                                   <div className="mt-2">
-                                    <span className="text-xs text-[#FF6E3C] font-medium">Upgrade →</span>
+                                    <span className="text-xs text-zinc-300 font-medium">Upgrade →</span>
                                   </div>
                                 )}
                               </Link>
@@ -9518,7 +9660,7 @@ Try these prompts in Cursor or v0:
                           {/* Your Projects */}
                           <button 
                             onClick={() => { setShowProfileMenu(false); setSidebarView("projects"); }}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/5 transition-colors"
+                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-zinc-200 hover:bg-zinc-800/50 transition-colors"
                           >
                             <Folder className="w-4 h-4 opacity-50" />
                             Your Projects
@@ -9528,17 +9670,17 @@ Try these prompts in Cursor or v0:
                           <Link 
                             href="/settings"
                             onClick={() => setShowProfileMenu(false)}
-                            className="flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/5 transition-colors"
+                            className="flex items-center gap-3 px-4 py-3 text-sm text-zinc-200 hover:bg-zinc-800/50 transition-colors"
                           >
                             <Settings className="w-4 h-4 opacity-50" />
                             Settings
                           </Link>
                           
                           {/* Sign out */}
-                          <div className="border-t border-white/5">
+                          <div className="border-t border-zinc-800">
                             <button 
                               onClick={() => { setShowProfileMenu(false); signOut(); }}
-                              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/5 transition-colors"
+                              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-zinc-200 hover:bg-zinc-800/50 transition-colors"
                             >
                               <LogOut className="w-4 h-4 opacity-50" />
                               Sign out
@@ -9549,36 +9691,22 @@ Try these prompts in Cursor or v0:
                     </AnimatePresence>
                   </>
                 ) : (
-                  <button
-                    onClick={() => setShowAuthModal(true)}
-                    className="px-3 py-1.5 rounded-lg bg-white/10 text-white text-xs font-medium hover:bg-white/20 transition-colors"
+                  <Link
+                    href="/login"
+                    className="px-3 py-1.5 rounded-md bg-zinc-800 text-sm font-medium text-zinc-300 hover:bg-zinc-700 hover:text-zinc-200 transition-colors"
                   >
                     Sign in
-                  </button>
+                  </Link>
                 )}
               </div>
               
               {/* Refresh button */}
               <button 
                 onClick={handleRefresh}
-                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                className="p-2 rounded-md hover:bg-zinc-800 transition-colors"
                 title="Refresh preview"
               >
-                <RefreshCw className="w-4 h-4 text-white/60" />
-              </button>
-              
-              {/* Mobile toggle */}
-              <button 
-                onClick={() => setIsMobilePreview(!isMobilePreview)} 
-                className={cn(
-                  "p-2 rounded-lg transition-colors", 
-                  isMobilePreview 
-                    ? "bg-[#FF6E3C]/20 text-[#FF6E3C]" 
-                    : "bg-white/5 hover:bg-white/10"
-                )} 
-                title={isMobilePreview ? "Desktop view" : "Mobile view"}
-              >
-                {isMobilePreview ? <Monitor className="w-4 h-4" /> : <Smartphone className="w-4 h-4 text-white/60" />}
+                <RefreshCw className="w-4 h-4 text-zinc-500" />
               </button>
               
               {/* Publish button with dropdown - always brand color */}
@@ -9600,16 +9728,16 @@ Try these prompts in Cursor or v0:
                     setShowPublishModal(!showPublishModal);
                   }}
                   disabled={isPublishing}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#FF6E3C] hover:bg-[#FF8F5C] text-white transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-zinc-800 hover:bg-zinc-700 text-white transition-colors flex items-center gap-2 disabled:opacity-50"
                 >
                   {isPublishing ? (
                     <>
-                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin" />
                       Publishing...
                     </>
                   ) : publishedUrl ? (
                     <>
-                      <ExternalLink className="w-3 h-3" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                       Published
                     </>
                   ) : (
@@ -9625,9 +9753,9 @@ Try these prompts in Cursor or v0:
                       className="fixed inset-0 z-[99]" 
                       onClick={() => setShowPublishModal(false)}
                     />
-                    <div className="absolute right-0 top-full mt-2 w-80 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl z-[100] overflow-hidden">
+                    <div className="absolute right-0 top-full mt-2 w-80 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl z-[100] overflow-hidden">
                       {/* Header */}
-                      <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+                      <div className="px-4 py-3 border-b border-zinc-700 flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium text-white">Publish your project</span>
                           {publishedUrl && (
@@ -9638,7 +9766,7 @@ Try these prompts in Cursor or v0:
                           onClick={() => setShowPublishModal(false)}
                           className="p-1 rounded hover:bg-white/10 transition-colors"
                         >
-                          <X className="w-4 h-4 text-white/60" />
+                          <X className="w-4 h-4 text-zinc-400" />
                         </button>
                       </div>
                       
@@ -9646,10 +9774,10 @@ Try these prompts in Cursor or v0:
                       <div className="p-4 space-y-3">
                         {/* Published URL */}
                         <div>
-                          <label className="text-xs text-white/50 mb-1.5 block">Published URL</label>
-                          <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2">
-                            <Globe className="w-4 h-4 text-white/40 flex-shrink-0" />
-                            <span className="text-sm text-white/80 truncate flex-1 font-mono">
+                          <label className="text-xs text-zinc-500 mb-1.5 block">Published URL</label>
+                          <div className="flex items-center gap-2 bg-zinc-800/50 border border-zinc-700 rounded-lg px-3 py-2">
+                            <Globe className="w-4 h-4 text-zinc-500 flex-shrink-0" />
+                            <span className="text-sm text-zinc-200 truncate flex-1 font-mono">
                               {publishedUrl ? publishedUrl.replace('https://', '').replace('http://', '') : 'replay.build/p/...'}
                             </span>
                             {publishedUrl && (
@@ -9661,7 +9789,7 @@ Try these prompts in Cursor or v0:
                                 className="p-1.5 rounded hover:bg-white/10 transition-colors"
                                 title="Copy URL"
                               >
-                                <Copy className="w-3.5 h-3.5 text-white/60" />
+                                <Copy className="w-3.5 h-3.5 text-zinc-400" />
                               </button>
                             )}
                           </div>
@@ -9674,7 +9802,7 @@ Try these prompts in Cursor or v0:
                               href={publishedUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex-1 py-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                              className="flex-1 py-2.5 rounded-lg bg-zinc-800/50 hover:bg-white/10 text-zinc-200 text-sm font-medium transition-colors flex items-center justify-center gap-2"
                             >
                               <ExternalLink className="w-4 h-4" />
                               Open
@@ -9683,7 +9811,7 @@ Try these prompts in Cursor or v0:
                           <button
                             onClick={() => handlePublish()}
                             disabled={isPublishing}
-                            className="flex-1 py-2.5 rounded-lg bg-[#FF6E3C] hover:bg-[#FF8F5C] text-white text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                            className="flex-1 py-2.5 rounded-lg bg-zinc-800 hover:bg-zinc-600 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                           >
                             {isPublishing ? (
                               <>
@@ -9715,18 +9843,18 @@ Try these prompts in Cursor or v0:
             </div>
           </div>
 
-          <div className="flex-1 overflow-hidden flex flex-col relative bg-[#0a0a0a]">
+          <div className="flex-1 overflow-hidden flex flex-col relative bg-[#111111]">
             {/* Preview - show loading during generation, keep preview visible during editing */}
             {viewMode === "preview" && (
-              <div className="flex-1 preview-container relative bg-[#0a0a0a] flex flex-col overflow-hidden" style={{ overscrollBehavior: 'none' }}>
+              <div className="flex-1 preview-container relative bg-[#111111] flex flex-col overflow-hidden" style={{ overscrollBehavior: 'none' }}>
                 {(isProcessing || isStreamingCode) ? (
-                  <div className="w-full h-full flex items-center justify-center bg-[#0a0a0a]">
+                  <div className="w-full h-full flex items-center justify-center bg-[#111111]">
                     <LoadingState />
                   </div>
                 ) : previewUrl ? (
                   <>
                     {/* Iframe container */}
-                    <div className={cn("flex-1 flex items-center justify-center bg-[#0a0a0a] overflow-hidden relative", isMobilePreview && "py-4")} style={{ overscrollBehavior: 'none' }}>
+                    <div className={cn("flex-1 flex items-center justify-center bg-[#111111] overflow-hidden relative", isMobilePreview && "py-4")} style={{ overscrollBehavior: 'none' }}>
                       <iframe 
                         key={previewUrl}
                         ref={previewIframeRef}
@@ -9740,7 +9868,7 @@ Try these prompts in Cursor or v0:
                           }
                         }}
                         className={cn(
-                          "border-0 bg-[#0a0a0a] transition-all duration-300",
+                          "border-0 bg-[#111111] transition-all duration-300",
                           isMobilePreview 
                             ? "w-[375px] h-[667px] rounded-3xl shadow-2xl ring-4 ring-black/50" 
                             : "w-full h-full",
@@ -9754,9 +9882,9 @@ Try these prompts in Cursor or v0:
                       {/* Editing overlay indicator */}
                       {isEditing && (
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                          <div className="bg-black/80 backdrop-blur-sm px-6 py-4 rounded-2xl border border-white/10 flex items-center gap-3">
-                            <Loader2 className="w-5 h-5 text-[#FF6E3C] animate-spin" />
-                            <span className="text-white/80 text-sm font-medium">Applying changes...</span>
+                          <div className="bg-zinc-900 backdrop-blur-sm px-6 py-4 rounded-2xl border border-zinc-700 flex items-center gap-3">
+                            <Loader2 className="w-5 h-5 text-zinc-300 animate-spin" />
+                            <span className="text-zinc-200 text-sm font-medium">Applying changes...</span>
                           </div>
                         </div>
                       )}
@@ -9765,7 +9893,7 @@ Try these prompts in Cursor or v0:
 {/* Edit with AI button removed - chat does the same thing */}
                   </>
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-[#0a0a0a]">
+                  <div className="w-full h-full flex items-center justify-center bg-[#111111]">
                     <EmptyState icon="logo" title="Drop or record video. Get code." subtitle="We analyze the flow, map interactions, and export clean code." showEarlyAccess={generations.length === 0} />
                   </div>
                 )}
@@ -9774,28 +9902,28 @@ Try these prompts in Cursor or v0:
 
             {/* Code - Professional Code Tab with mode toggle and file tree */}
             {viewMode === "code" && (
-              <div className="flex-1 flex flex-col relative bg-[#0a0a0a] min-h-0 overflow-hidden">
+              <div className="flex-1 flex flex-col relative bg-[#111111] min-h-0 overflow-hidden">
                 {/* Show loading during generation - hide everything else */}
                 {(isProcessing || isStreamingCode) ? (
-                  <div className="w-full h-full flex items-center justify-center bg-[#0a0a0a]">
+                  <div className="w-full h-full flex items-center justify-center bg-[#111111]">
                     <LoadingState />
                   </div>
                 ) : (
                   <>
                 {/* Code Tab Header - Mode toggle, Agent Mode, actions */}
                 {displayedCode && (
-                  <div className="flex-shrink-0 border-b border-white/5 bg-[#0c0c0c] px-3 py-2">
+                  <div className="flex-shrink-0 border-b border-zinc-800 bg-[#111111] px-3 py-2">
                     <div className="flex items-center justify-between gap-3">
                       {/* Left: Mode toggle - Single-file / Componentized + Agent Mode */}
                       <div className="flex items-center gap-3">
-                        <div className="flex items-center bg-black/50 rounded-lg p-0.5">
+                        <div className="flex items-center bg-zinc-900 rounded-lg p-0.5">
                           <button
                             onClick={() => setCodeMode("single-file")}
                             className={cn(
                               "px-3 py-1 rounded-md text-[10px] font-medium transition-all",
                               codeMode === "single-file" 
                                 ? "bg-white/10 text-white" 
-                                : "text-white/40 hover:text-white/60"
+                                : "text-zinc-500 hover:text-zinc-400"
                             )}
                           >
                             Single-file
@@ -9808,7 +9936,7 @@ Try these prompts in Cursor or v0:
                               !generationComplete && "opacity-50 cursor-not-allowed",
                               codeMode === "componentized" 
                                 ? "bg-white/10 text-white" 
-                                : "text-white/40 hover:text-white/60"
+                                : "text-zinc-500 hover:text-zinc-400"
                             )}
                             title={!generationComplete ? "Complete generation first" : ""}
                           >
@@ -9823,7 +9951,7 @@ Try these prompts in Cursor or v0:
                             className={cn(
                               "relative w-8 h-4 rounded-full transition-all",
                               agentMode 
-                                ? "bg-[#FF6E3C]" 
+                                ? "bg-zinc-800" 
                                 : "bg-white/20"
                             )}
                             aria-label="Toggle Agent Mode"
@@ -9835,16 +9963,16 @@ Try these prompts in Cursor or v0:
                           </button>
                           <span className={cn(
                             "text-[10px] font-medium",
-                            agentMode ? "text-white" : "text-white/40"
+                            agentMode ? "text-white" : "text-zinc-500"
                           )}>
                             Agent Mode
                           </span>
                           {/* Info tooltip - positioned below */}
                           <div className="relative group">
-                            <Info className="w-3 h-3 text-white/30 cursor-help" />
-                            <div className="absolute left-0 top-full mt-2 w-64 p-2.5 bg-[#1a1a1a] border border-white/10 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                              <div className="absolute left-2 -top-1 w-2 h-2 bg-[#1a1a1a] border-l border-t border-white/10 rotate-45" />
-                              <p className="text-[10px] text-white/70 leading-relaxed">
+                            <Info className="w-3 h-3 text-zinc-600 cursor-help" />
+                            <div className="absolute left-0 top-full mt-2 w-64 p-2.5 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                              <div className="absolute left-2 -top-1 w-2 h-2 bg-zinc-900 border-l border-t border-zinc-700 rotate-45" />
+                              <p className="text-[10px] text-zinc-400 leading-relaxed">
                                 Adds hidden context markers to the code. Optimized for <span className="text-white font-medium">Cursor</span>, <span className="text-white font-medium">Windsurf</span>, and <span className="text-white font-medium">Copilot</span> to understand your UI intent instantly.
                               </p>
                             </div>
@@ -9852,8 +9980,26 @@ Try these prompts in Cursor or v0:
                         </div>
                       </div>
                       
-                      {/* Right: Actions - Copy for AI dropdown & Download */}
+                      {/* Right: Actions - Edit, Copy for AI dropdown & Download */}
                       <div className="flex items-center gap-1.5">
+                        {/* Edit button */}
+                        {editableCode && !isCodeEditable && (
+                          <button 
+                            onClick={handleEnterEditMode} 
+                            className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-zinc-500 hover:text-zinc-400 hover:bg-zinc-800/50 transition-colors"
+                          >
+                            <Pencil className="w-3 h-3" /> Edit
+                          </button>
+                        )}
+                        {isCodeEditable && (
+                          <button 
+                            onClick={applyCodeChanges} 
+                            className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors"
+                          >
+                            <Check className="w-3 h-3" /> Apply
+                          </button>
+                        )}
+                        
                         {/* Copy for AI - Single dropdown button */}
                         <div className="relative">
                           <button 
@@ -9875,8 +10021,8 @@ Try these prompts in Cursor or v0:
                             className={cn(
                               "flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-colors",
                               agentMode 
-                                ? "bg-[#FF6E3C]/10 text-[#FF6E3C] hover:bg-[#FF6E3C]/20 border border-[#FF6E3C]/30" 
-                                : "text-white/40 hover:text-white/60 hover:bg-white/5",
+                                ? "bg-zinc-800/10 text-zinc-300 hover:bg-zinc-800/20 border border-zinc-700" 
+                                : "text-zinc-500 hover:text-zinc-400 hover:bg-zinc-800/50",
                               (!user || (!isPaidPlan && userTotalCredits <= 0)) && "opacity-50"
                             )}
                           >
@@ -9893,7 +10039,7 @@ Try these prompts in Cursor or v0:
                                 className="fixed inset-0 z-40" 
                                 onClick={() => setShowCopyDropdown(false)}
                               />
-                              <div className="absolute right-0 top-full mt-1 w-56 bg-[#1a1a1a] border border-white/10 rounded-lg shadow-xl z-50 overflow-hidden">
+                              <div className="absolute right-0 top-full mt-1 w-56 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 overflow-hidden">
                                 <div className="p-1.5">
                                   <button
                                     onClick={() => {
@@ -9902,12 +10048,12 @@ Try these prompts in Cursor or v0:
                                       showToast("Clean code copied", "success");
                                       setShowCopyDropdown(false);
                                     }}
-                                    className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-[11px] text-white/70 hover:bg-white/5 hover:text-white transition-colors text-left"
+                                    className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-[11px] text-zinc-400 hover:bg-zinc-800/50 hover:text-white transition-colors text-left"
                                   >
-                                    <Copy className="w-3.5 h-3.5 text-white/40" />
+                                    <Copy className="w-3.5 h-3.5 text-zinc-500" />
                                     <div>
                                       <div className="font-medium">Copy Clean Code</div>
-                                      <div className="text-[9px] text-white/40">For manual implementation</div>
+                                      <div className="text-[9px] text-zinc-500">For manual implementation</div>
                                     </div>
                                   </button>
                                   
@@ -9921,8 +10067,8 @@ Try these prompts in Cursor or v0:
                                     className={cn(
                                       "w-full flex items-center gap-2 px-3 py-2 rounded-md text-[11px] transition-colors text-left",
                                       agentMode 
-                                        ? "bg-[#FF6E3C]/10 text-[#FF6E3C]" 
-                                        : "text-white/70 hover:bg-[#FF6E3C]/10 hover:text-[#FF6E3C]"
+                                        ? "bg-zinc-800/10 text-zinc-300" 
+                                        : "text-zinc-400 hover:bg-zinc-800/10 hover:text-zinc-300"
                                     )}
                                   >
                                     <Sparkles className="w-3.5 h-3.5" />
@@ -9933,7 +10079,7 @@ Try these prompts in Cursor or v0:
                                     {agentMode && <Check className="w-3 h-3 ml-auto" />}
                                   </button>
                                   
-                                  <div className="border-t border-white/5 my-1" />
+                                  <div className="border-t border-zinc-800 my-1" />
                                   
                                   <button
                                     onClick={() => {
@@ -9942,12 +10088,12 @@ Try these prompts in Cursor or v0:
                                       showToast("Prompt instructions copied", "success");
                                       setShowCopyDropdown(false);
                                     }}
-                                    className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-[11px] text-white/70 hover:bg-white/5 hover:text-white transition-colors text-left"
+                                    className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-[11px] text-zinc-400 hover:bg-zinc-800/50 hover:text-white transition-colors text-left"
                                   >
-                                    <MessageSquare className="w-3.5 h-3.5 text-white/40" />
+                                    <MessageSquare className="w-3.5 h-3.5 text-zinc-500" />
                                     <div>
                                       <div className="font-medium">Copy Prompt Only</div>
-                                      <div className="text-[9px] text-white/40">Just the AI instructions</div>
+                                      <div className="text-[9px] text-zinc-500">Just the AI instructions</div>
                                     </div>
                                   </button>
                                 </div>
@@ -9973,7 +10119,7 @@ Try these prompts in Cursor or v0:
                             handleDownload();
                           }}
                           className={cn(
-                            "flex items-center gap-1 px-2 py-1 rounded text-[10px] text-white/40 hover:text-white/60 hover:bg-white/5 transition-colors",
+                            "flex items-center gap-1 px-2 py-1 rounded text-[10px] text-zinc-500 hover:text-zinc-400 hover:bg-zinc-800/50 transition-colors",
                             (!user || (!isPaidPlan && userTotalCredits <= 0)) && "opacity-50"
                           )}
                         >
@@ -9990,10 +10136,10 @@ Try these prompts in Cursor or v0:
                 <div className="flex-1 flex min-h-0 overflow-hidden">
                   {/* File Tree Panel - Same width for both modes */}
                   {displayedCode && (
-                    <div className="w-56 flex-shrink-0 border-r border-white/5 overflow-y-auto bg-[#0a0a0a]">
-                      <div className="p-2 border-b border-white/5 sticky top-0 bg-[#0a0a0a] z-10">
+                    <div className="w-56 flex-shrink-0 border-r border-zinc-800 overflow-y-auto bg-[#111111]">
+                      <div className="p-2 border-b border-zinc-800 sticky top-0 bg-[#111111] z-10">
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5 text-[9px] text-white/40 uppercase tracking-wider">
+                          <div className="flex items-center gap-1.5 text-[9px] text-zinc-500 uppercase tracking-wider">
                             <FolderTree className="w-3 h-3" />
                             <span>Files</span>
                           </div>
@@ -10038,22 +10184,22 @@ Try these prompts in Cursor or v0:
                   <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                     {/* Breadcrumb bar */}
                     {displayedCode && (
-                      <div className="flex-shrink-0 px-3 py-1.5 border-b border-white/5 bg-[#0a0a0a] flex items-center gap-2">
-                        <span className="text-[10px] text-white/30">
+                      <div className="flex-shrink-0 px-3 py-1.5 border-b border-zinc-800 bg-[#111111] flex items-center gap-2">
+                        <span className="text-[10px] text-zinc-600">
                           {activeFilePath.split('/').filter(Boolean).map((part, i, arr) => (
                             <span key={i}>
-                              <span className={i === arr.length - 1 ? "text-white/60" : ""}>{part}</span>
+                              <span className={i === arr.length - 1 ? "text-zinc-400" : ""}>{part}</span>
                               {i < arr.length - 1 && <span className="mx-1 text-white/20">/</span>}
                             </span>
                           ))}
                         </span>
                         {generatedFiles.find(f => f.path === activeFilePath)?.isStub && (
-                          <span className="px-1.5 py-0.5 rounded text-[8px] bg-yellow-500/10 text-yellow-400/70 border border-yellow-500/20">
+                          <span className="px-1.5 py-0.5 rounded text-[8px] bg-zinc-600/10 text-zinc-400 border border-zinc-600/20">
                             STUB
                           </span>
                         )}
                         {agentMode && (
-                          <span className="px-1.5 py-0.5 rounded text-[8px] bg-[#FF6E3C]/10 text-[#FF6E3C] border border-[#FF6E3C]/20">
+                          <span className="px-1.5 py-0.5 rounded text-[8px] bg-zinc-800/10 text-zinc-300 border border-zinc-700">
                             AGENT
                           </span>
                         )}
@@ -10071,17 +10217,17 @@ Try these prompts in Cursor or v0:
                         <textarea 
                           value={editableCode} 
                           onChange={(e) => setEditableCode(e.target.value)} 
-                          className="w-full h-full p-3 bg-[#0a0a0a] text-[11px] text-white/80 font-mono resize-none focus:outline-none" 
+                          className="w-full h-full p-3 bg-[#111111] text-[11px] text-zinc-200 font-mono resize-none focus:outline-none" 
                           style={{ fontFamily: "'JetBrains Mono', monospace" }} 
                           spellCheck={false} 
                         />
                       ) : generatingFilePath && generatingFilePath === activeFilePath ? (
                         // Show loading state when generating the currently viewed file
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-[#0a0a0a] gap-4">
-                          <Loader2 className="w-8 h-8 text-[#FF6E3C] animate-spin" />
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-[#111111] gap-4">
+                          <Loader2 className="w-8 h-8 text-zinc-300 animate-spin" />
                           <div className="text-center">
-                            <p className="text-sm text-white/60 font-medium">Generating page...</p>
-                            <p className="text-xs text-white/30 mt-1">{activeFilePath.split('/').pop()}</p>
+                            <p className="text-sm text-zinc-400 font-medium">Generating page...</p>
+                            <p className="text-xs text-zinc-600 mt-1">{activeFilePath.split('/').pop()}</p>
                           </div>
                         </div>
                       ) : displayedCode ? (
@@ -10112,7 +10258,7 @@ Try these prompts in Cursor or v0:
                                         key={i} 
                                         {...getLineProps({ line })}
                                         className={cn(
-                                          isHighlighted && "bg-[#FF6E3C]/10 -mx-3 px-3 border-l-2 border-[#FF6E3C]"
+                                          isHighlighted && "bg-zinc-800/10 -mx-3 px-3 border-l-2 border-[var(--accent-orange)]"
                                         )}
                                       >
                                         <span className="inline-block w-8 pr-3 text-right text-white/15 select-none text-[10px]">{lineNum}</span>
@@ -10120,7 +10266,7 @@ Try these prompts in Cursor or v0:
                                       </div>
                                     );
                                   })}
-                                  {isStreamingCode && <span className="text-[#FF6E3C] animate-pulse">▋</span>}
+                                  {isStreamingCode && <span className="text-zinc-300 animate-pulse">▋</span>}
                                 </pre>
                               )}
                             </Highlight>
@@ -10197,7 +10343,7 @@ export default function GeneratedPage() {
 }`.split('\n').map((line, i) => (
                                     <div key={i} className="whitespace-pre">
                                       <span className="inline-block w-8 pr-3 text-right text-white/15 text-[10px]">{i + 1}</span>
-                                      <span className="text-white/50">{line}</span>
+                                      <span className="text-zinc-500">{line}</span>
                                     </div>
                                   ))}
                                 </pre>
@@ -10205,22 +10351,22 @@ export default function GeneratedPage() {
                               
                               {/* Upgrade overlay - Starter Pack + Pro options */}
                               <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-[#0a0a0a]/40 via-[#0a0a0a]/70 to-[#0a0a0a]/90">
-                                <div className="relative p-6 bg-[#0d0d0d] border border-white/10 rounded-2xl shadow-2xl max-w-md mx-4">
+                                <div className="relative p-6 bg-[#111111] border border-zinc-700 rounded-2xl shadow-2xl max-w-md mx-4">
                                   {/* Close button */}
                                   <button 
                                     onClick={() => setViewMode("preview")}
                                     className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-white/10 transition-colors z-10"
                                   >
-                                    <X className="w-4 h-4 text-white/40" />
+                                    <X className="w-4 h-4 text-zinc-500" />
                                   </button>
                                   
                                   {/* Header */}
                                   <div className="text-center mb-5">
-                                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[#FF6E3C]/10 flex items-center justify-center">
-                                      <Zap className="w-7 h-7 text-[#FF6E3C]" />
+                                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-zinc-800/10 flex items-center justify-center">
+                                      <Zap className="w-7 h-7 text-zinc-300" />
                                     </div>
                                     <h3 className="text-xl font-bold text-white mb-2">Unlock Source Code</h3>
-                                    <p className="text-sm text-white/50">Get instant access to React + Tailwind code</p>
+                                    <p className="text-sm text-zinc-500">Get instant access to React + Tailwind code</p>
                                   </div>
                                   
                                   {/* Options */}
@@ -10229,23 +10375,23 @@ export default function GeneratedPage() {
                                     <div
                                       onClick={() => setSelectedUpgradePlan("pro")}
                                       className={`w-full p-4 rounded-xl border-2 transition-all text-left relative cursor-pointer ${
-                                        selectedUpgradePlan === "pro" ? "border-[#FF6E3C] bg-[#FF6E3C]/5" : "border-white/10 hover:border-white/20 bg-white/[0.02]"
+                                        selectedUpgradePlan === "pro" ? "border-[var(--accent-orange)] bg-zinc-800/5" : "border-zinc-700 hover:border-white/20 bg-zinc-800/50"
                                       }`}
                                     >
-                                      <span className="absolute -top-2 right-3 px-2 py-0.5 text-[10px] font-bold uppercase bg-[#FF6E3C] text-white rounded">Best Value</span>
+                                      <span className="absolute -top-2 right-3 px-2 py-0.5 text-[10px] font-bold uppercase bg-zinc-800 text-white rounded">Best Value</span>
                                       <div className="flex items-center gap-3 mb-3">
-                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedUpgradePlan === "pro" ? "border-[#FF6E3C] bg-[#FF6E3C]" : "border-white/30"}`}>
+                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedUpgradePlan === "pro" ? "border-[var(--accent-orange)] bg-zinc-800" : "border-white/30"}`}>
                                           {selectedUpgradePlan === "pro" && <Check className="w-3 h-3 text-white" />}
                                         </div>
                                         <div className="flex-1">
                                           <div className="flex items-center gap-2">
-                                            <Sparkles className="w-4 h-4 text-[#FF6E3C]" />
+                                            <Sparkles className="w-4 h-4 text-zinc-300" />
                                             <span className="font-semibold text-white">Pro Subscription</span>
                                           </div>
                                         </div>
                                         <div className="text-right">
                                           <span className="text-xl font-bold text-white">${selectedProTier.price}</span>
-                                          <span className="text-xs text-white/50">/mo</span>
+                                          <span className="text-xs text-zinc-500">/mo</span>
                                         </div>
                                       </div>
                                       
@@ -10253,50 +10399,50 @@ export default function GeneratedPage() {
                                       <div className="ml-8 relative">
                                         <button
                                           onClick={(e) => { e.stopPropagation(); setShowProTierDropdown(!showProTierDropdown); }}
-                                          className="w-full flex items-center justify-between px-3 py-2 bg-[#1a1a1a] border border-white/10 rounded-lg text-sm text-white hover:border-white/20 transition-colors"
+                                          className="w-full flex items-center justify-between px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-white hover:border-white/20 transition-colors"
                                         >
                                           <span>{selectedProTier.credits.toLocaleString()} credits</span>
-                                          <ChevronDown className={`w-4 h-4 text-white/50 transition-transform ${showProTierDropdown ? "rotate-180" : ""}`} />
+                                          <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform ${showProTierDropdown ? "rotate-180" : ""}`} />
                                         </button>
                                         
                                         {showProTierDropdown && (
-                                          <div className="absolute top-full left-0 right-0 mt-1 bg-[#1a1a1a] border border-white/10 rounded-lg overflow-hidden z-20 shadow-xl">
+                                          <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-lg overflow-hidden z-20 shadow-xl">
                                             {PRO_TIERS.map((tier, idx) => (
                                               <button
                                                 key={tier.id}
                                                 onClick={(e) => { e.stopPropagation(); setSelectedProTierIndex(idx); setShowProTierDropdown(false); }}
-                                                className={`w-full px-3 py-2 text-left text-sm hover:bg-white/5 transition-colors flex items-center justify-between ${
-                                                  idx === selectedProTierIndex ? "text-[#FF6E3C] bg-[#FF6E3C]/10" : "text-white"
+                                                className={`w-full px-3 py-2 text-left text-sm hover:bg-zinc-800/50 transition-colors flex items-center justify-between ${
+                                                  idx === selectedProTierIndex ? "text-zinc-300 bg-zinc-800/10" : "text-white"
                                                 }`}
                                               >
                                                 <span>{tier.credits.toLocaleString()} credits</span>
-                                                <span className="text-white/50">${tier.price}/mo</span>
+                                                <span className="text-zinc-500">${tier.price}/mo</span>
                                               </button>
                                             ))}
                                           </div>
                                         )}
                                       </div>
                                       
-                                      <p className="text-xs text-white/50 mt-2 ml-8">Full access • Priority support • Credits roll over</p>
+                                      <p className="text-xs text-zinc-500 mt-2 ml-8">Full access • Priority support • Credits roll over</p>
                                     </div>
                                     
                                     {/* Starter Pack - Simple option */}
                                     <button
                                       onClick={() => setSelectedUpgradePlan("starter")}
                                       className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                                        selectedUpgradePlan === "starter" ? "border-[#FF6E3C] bg-[#FF6E3C]/5" : "border-white/10 hover:border-white/20 bg-white/[0.02]"
+                                        selectedUpgradePlan === "starter" ? "border-[var(--accent-orange)] bg-zinc-800/5" : "border-zinc-700 hover:border-white/20 bg-zinc-800/50"
                                       }`}
                                     >
                                       <div className="flex items-center gap-3">
-                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedUpgradePlan === "starter" ? "border-[#FF6E3C] bg-[#FF6E3C]" : "border-white/30"}`}>
+                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedUpgradePlan === "starter" ? "border-[var(--accent-orange)] bg-zinc-800" : "border-white/30"}`}>
                                           {selectedUpgradePlan === "starter" && <Check className="w-3 h-3 text-white" />}
                                         </div>
                                         <div className="flex-1">
                                           <div className="flex items-center gap-2">
-                                            <Zap className="w-4 h-4 text-white/60" />
+                                            <Zap className="w-4 h-4 text-zinc-400" />
                                             <span className="font-medium text-white">Starter</span>
                                           </div>
-                                          <p className="text-xs text-white/50 mt-0.5">300 credits • ~4 generations • Perfect for testing</p>
+                                          <p className="text-xs text-zinc-500 mt-0.5">300 credits • ~4 generations • Perfect for testing</p>
                                         </div>
                                         <div className="text-right">
                                           <span className="text-xl font-bold text-white">$9</span>
@@ -10309,7 +10455,7 @@ export default function GeneratedPage() {
                                   <button
                                     onClick={() => handleUpgradeCheckout(selectedUpgradePlan)}
                                     disabled={isUpgradeCheckingOut}
-                                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                                    className="w-full py-3.5 rounded-xl bg-zinc-800 text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
                                   >
                                     {isUpgradeCheckingOut ? (
                                       <>
@@ -10322,13 +10468,13 @@ export default function GeneratedPage() {
                                       `Subscribe — $${selectedProTier.price}/mo`
                                     )}
                                   </button>
-                                  <p className="text-center text-[10px] text-white/30 mt-3">
+                                  <p className="text-center text-[10px] text-zinc-600 mt-3">
                                     {selectedUpgradePlan === "starter" ? "One-time payment. Credits never expire." : "Cancel anytime. Credits roll over."}
                                   </p>
                                   
                                   <button
                                     onClick={() => setViewMode("preview")}
-                                    className="w-full mt-3 text-xs text-white/30 hover:text-white/50 transition-colors"
+                                    className="w-full mt-3 text-xs text-zinc-600 hover:text-zinc-500 transition-colors"
                                   >
                                     Maybe later
                                   </button>
@@ -10338,7 +10484,7 @@ export default function GeneratedPage() {
                           )}
                         </div>
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-[#0a0a0a]">
+                        <div className="w-full h-full flex items-center justify-center bg-[#111111]">
                           {isProcessing ? <LoadingState /> : <EmptyState icon="logo" title="No code generated" subtitle="Generate from a video to see the code" />}
                         </div>
                       )}
@@ -10364,16 +10510,51 @@ export default function GeneratedPage() {
                   </div>
                 ) : flowNodes.length > 0 || flowBuilding ? (
                   <>
+                    {/* Zoom controls - bottom left */}
+                    <div className="absolute bottom-4 left-4 z-20 flex items-center gap-1 bg-zinc-900/90 backdrop-blur-sm rounded-lg p-1 border border-zinc-800">
+                      <button 
+                        onClick={() => setArchZoom(z => Math.max(0.25, z - 0.1))} 
+                        className="p-1.5 rounded hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-zinc-200"
+                        title="Zoom out"
+                      >
+                        <ZoomOut className="w-4 h-4" />
+                      </button>
+                      <span className="text-xs text-zinc-400 w-12 text-center font-mono">{Math.round(archZoom * 100)}%</span>
+                      <button 
+                        onClick={() => setArchZoom(z => Math.min(2, z + 0.1))} 
+                        className="p-1.5 rounded hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-zinc-200"
+                        title="Zoom in"
+                      >
+                        <ZoomIn className="w-4 h-4" />
+                      </button>
+                      <div className="w-px h-4 bg-zinc-700 mx-1" />
+                      <button 
+                        onClick={() => setArchZoom(1)} 
+                        className="px-2 py-1 rounded hover:bg-zinc-800 transition-colors text-[10px] text-zinc-400 hover:text-zinc-200"
+                        title="Reset zoom"
+                      >
+                        Reset
+                      </button>
+                      <div className="w-px h-4 bg-zinc-700 mx-1" />
+                      <button 
+                        onClick={autoLayoutFlowNodes}
+                        className="px-2 py-1 rounded hover:bg-zinc-800 transition-colors text-[10px] text-zinc-400 hover:text-zinc-200"
+                        title="Auto-arrange nodes"
+                      >
+                        Auto Layout
+                      </button>
+                    </div>
+                    
                     {/* Toggle buttons - top right */}
                     <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
                       {/* Possible paths toggle */}
                       <button 
                         onClick={() => setShowPossiblePaths(!showPossiblePaths)}
                         className={cn(
-                          "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-lg",
+                          "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-lg border",
                           showPossiblePaths 
-                            ? "bg-white/10 border border-white/20 text-white/80" 
-                            : "bg-[#1a1a1a] border border-white/10 text-white/40 hover:border-white/20"
+                            ? "bg-white text-zinc-900 border-white" 
+                            : "bg-zinc-900 border-zinc-700 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
                         )}
                       >
                         <GitBranch className="w-3.5 h-3.5" />
@@ -10383,10 +10564,10 @@ export default function GeneratedPage() {
                       <button 
                         onClick={() => setShowStructureInFlow(!showStructureInFlow)}
                         className={cn(
-                          "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-lg",
+                          "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-lg border",
                           showStructureInFlow 
-                            ? "bg-[#FF6E3C] text-white" 
-                            : "bg-[#1a1a1a] border border-white/10 text-white/60 hover:border-white/20"
+                            ? "bg-white text-zinc-900 border-white" 
+                            : "bg-zinc-900 border-zinc-700 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
                         )}
                       >
                         <Layers className="w-3.5 h-3.5" />
@@ -10396,10 +10577,10 @@ export default function GeneratedPage() {
                       <button 
                         onClick={() => setShowPreviewsInFlow(!showPreviewsInFlow)}
                         className={cn(
-                          "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-lg",
+                          "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-lg border",
                           showPreviewsInFlow 
-                            ? "bg-[#FF6E3C] text-white" 
-                            : "bg-[#1a1a1a] border border-white/10 text-white/60 hover:border-white/20"
+                            ? "bg-white text-zinc-900 border-white" 
+                            : "bg-zinc-900 border-zinc-700 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
                         )}
                       >
                         <Eye className="w-3.5 h-3.5" />
@@ -10412,7 +10593,21 @@ export default function GeneratedPage() {
                     
                     <div 
                       ref={archCanvasRef}
-                      className={cn("arch-canvas w-full h-full", isPanning && !draggingNodeId && "dragging")}
+                      className={cn("arch-canvas w-full h-full bg-[#111111]", isPanning && !draggingNodeId && "dragging")} style={{ backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)", backgroundSize: "24px 24px" }}
+                      onWheel={(e) => {
+                        e.preventDefault();
+                        if (e.ctrlKey || e.metaKey) {
+                          // Zoom with Ctrl/Cmd + scroll
+                          const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                          setArchZoom(z => Math.max(0.25, Math.min(2, z + delta)));
+                        } else {
+                          // Pan with scroll (inverted for natural feel)
+                          setCanvasPan(prev => ({
+                            x: prev.x - e.deltaX,
+                            y: prev.y - e.deltaY
+                          }));
+                        }
+                      }}
                       onMouseDown={(e) => {
                         if (!draggingNodeId) handleCanvasMouseDown(e);
                       }}
@@ -10564,7 +10759,7 @@ export default function GeneratedPage() {
                           
                           // Dynamic height calculation
                           const baseHeight = hasPreview ? FLOW_PREVIEW_HEIGHT : 0;
-                          const contentHeight = 140 + (node.description ? 30 : 0) + (showStructureInFlow && node.components?.length ? Math.ceil(node.components.length / 2) * 24 + 36 : 0);
+                          const contentHeight = 80 + (node.description ? 20 : 0) + (showStructureInFlow && node.components?.length ? Math.ceil(node.components.length / 2) * 20 + 28 : 0);
                           const totalHeight = getFlowNodeHeight(node) || (baseHeight + contentHeight);
                           
                           // Each iframe gets its own isolated preview code with unique key
@@ -10575,9 +10770,9 @@ export default function GeneratedPage() {
                               key={node.id}
                               className={cn(
                                 "absolute select-none group/flownode flex flex-col",
-                                "rounded-2xl overflow-hidden transition-all duration-300",
-                                isDragging ? "cursor-grabbing z-50 scale-[1.02]" : "cursor-grab",
-                                selectedFlowNode === node.id && "ring-2 ring-[#FF6E3C]/60 ring-offset-2 ring-offset-black/80"
+                                "rounded-2xl overflow-hidden",
+                                isDragging ? "cursor-grabbing z-50 scale-[1.02]" : "cursor-grab transition-shadow duration-200",
+                                selectedFlowNode === node.id && "ring-2 ring-[var(--accent-orange)]/60 ring-offset-2 ring-offset-black/80"
                               )}
                               style={{ 
                                 left: node.x, 
@@ -10585,24 +10780,12 @@ export default function GeneratedPage() {
                                 width: nodeWidth,
                                 minHeight: totalHeight,
                                 opacity: isPossible ? 0.55 : isDetected ? 0.9 : 1,
-                                // Premium glass effect
-                                background: isObserved || isAdded 
-                                  ? 'linear-gradient(165deg, rgba(25,25,25,0.95) 0%, rgba(12,12,12,0.98) 100%)'
-                                  : isDetected
-                                  ? 'linear-gradient(165deg, rgba(20,20,20,0.92) 0%, rgba(10,10,10,0.95) 100%)'
-                                  : 'linear-gradient(165deg, rgba(18,18,18,0.85) 0%, rgba(8,8,8,0.9) 100%)',
-                                backdropFilter: 'blur(20px) saturate(180%)',
-                                WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-                                border: isObserved || isAdded
-                                  ? '1px solid rgba(16,185,129,0.25)'
-                                  : isDetected
-                                  ? '1px solid rgba(245,158,11,0.2)'
-                                  : '1px solid rgba(255,255,255,0.08)',
+                                // Clean technical style
+                                background: 'rgba(15,15,17,0.95)',
+                                border: '1px solid rgba(255,255,255,0.12)',
                                 boxShadow: isDragging
-                                  ? '0 25px 50px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05) inset'
-                                  : isObserved || isAdded
-                                  ? '0 8px 32px -8px rgba(16,185,129,0.15), 0 4px 16px -4px rgba(0,0,0,0.3), 0 0 0 1px rgba(16,185,129,0.08) inset'
-                                  : '0 8px 32px -8px rgba(0,0,0,0.4), 0 4px 16px -4px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.03) inset'
+                                  ? '0 20px 40px -12px rgba(0,0,0,0.5)'
+                                  : '0 4px 20px -4px rgba(0,0,0,0.3)'
                               }}
                               onMouseDown={(e) => {
                                 // Don't start drag if clicking buttons
@@ -10619,7 +10802,7 @@ export default function GeneratedPage() {
                             >
                               {/* Iframe Preview */}
                               {hasPreview && previewCode && (
-                                <div className="relative w-full overflow-hidden bg-[#050505]" style={{ height: previewHeight }}>
+                                <div className="relative w-full overflow-hidden bg-[#111111]" style={{ height: previewHeight }}>
                                   <iframe
                                     key={iframeKey}
                                     srcDoc={previewCode}
@@ -10641,12 +10824,12 @@ export default function GeneratedPage() {
                                     <span className={cn(
                                       "text-[9px] px-2 py-0.5 rounded-full capitalize font-medium backdrop-blur-md border",
                                       isObserved 
-                                        ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400" 
+                                        ? "bg-zinc-600/20 border-zinc-600/30 text-zinc-300" 
                                         : isAdded
-                                        ? "bg-[#FF6E3C]/20 border-[#FF6E3C]/30 text-[#FF6E3C]"
+                                        ? "bg-zinc-800/20 border-zinc-700 text-zinc-300"
                                         : isDetected
-                                        ? "bg-amber-500/20 border-amber-500/30 text-amber-400"
-                                        : "bg-white/10 border-white/10 text-white/50"
+                                        ? "bg-zinc-600/20 border-zinc-600/30 text-zinc-300"
+                                        : "bg-white/10 border-zinc-700 text-zinc-500"
                                     )}>
                                       {isObserved ? "observed" : isAdded ? "generated" : isDetected ? "detected" : "possible"}
                                     </span>
@@ -10654,48 +10837,45 @@ export default function GeneratedPage() {
                                 </div>
                               )}
                               
-                              {/* Status Badge for non-preview nodes - Top Right of card */}
-                              {!hasPreview && (
-                                <div className="absolute top-3 right-3 z-10">
+                              {/* Node header with status badge */}
+                              <div className="p-3">
+                                {/* Top row: Icon + Name + Status Badge */}
+                                <div className="flex items-start gap-2 mb-1.5">
+                                  {/* Icon */}
+                                  <div className={cn(
+                                    "w-5 h-5 rounded flex items-center justify-center flex-shrink-0 mt-0.5",
+                                    isObserved ? "bg-zinc-600/10 text-zinc-400" 
+                                    : isAdded ? "bg-zinc-800/10 text-zinc-300"
+                                    : isDetected ? "bg-zinc-600/10 text-zinc-300"
+                                    : "bg-zinc-800/50 text-zinc-600"
+                                  )}>
+                                    <Icon className="w-3 h-3" />
+                                  </div>
+                                  {/* Name - takes available space */}
+                                  <div className="flex-1 min-w-0 pr-1">
+                                    <span className={cn(
+                                      "text-[11px] font-medium block leading-tight line-clamp-2", 
+                                      isPossible ? "text-zinc-500 italic" : "text-zinc-200"
+                                    )} title={node.name}>{node.name}</span>
+                                  </div>
+                                  {/* Status Badge - always visible, top right */}
                                   <span className={cn(
-                                    "text-[9px] px-2 py-0.5 rounded-full capitalize font-medium border",
+                                    "text-[8px] px-1.5 py-0.5 rounded capitalize font-medium flex-shrink-0",
                                     isObserved 
-                                      ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" 
+                                      ? "bg-emerald-500/20 text-emerald-400" 
                                       : isAdded
-                                      ? "bg-[#FF6E3C]/10 border-[#FF6E3C]/20 text-[#FF6E3C]"
+                                      ? "bg-zinc-700 text-zinc-300"
                                       : isDetected
-                                      ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
-                                      : "bg-white/5 border-white/5 text-white/30"
+                                      ? "bg-zinc-700 text-zinc-400"
+                                      : "bg-zinc-800 text-zinc-500"
                                   )}>
                                     {isObserved ? "observed" : isAdded ? "generated" : isDetected ? "detected" : "possible"}
                                   </span>
                                 </div>
-                              )}
-                              
-                              {/* Node header */}
-                              <div className="p-3">
-                                <div className="flex items-center gap-2.5 mb-1.5">
-                                  {/* Status indicator */}
-                                  <div className={cn(
-                                    "w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 transition-colors",
-                                    isObserved ? "bg-emerald-500/10 text-emerald-400" 
-                                    : isAdded ? "bg-[#FF6E3C]/10 text-[#FF6E3C]"
-                                    : isDetected ? "bg-amber-500/10 text-amber-400"
-                                    : "bg-white/5 text-white/30"
-                                  )}>
-                                    <Icon className="w-3.5 h-3.5" />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <span className={cn(
-                                      "text-[12px] font-semibold truncate block leading-tight", 
-                                      isPossible ? "text-white/40 italic" : "text-white/90"
-                                    )} title={node.name}>{node.name}</span>
-                                  </div>
-                                </div>
                                 
                                 {/* Description */}
                                 {node.description && (
-                                  <p className="text-[10px] text-white/40 leading-snug line-clamp-2 mb-2">
+                                  <p className="text-[10px] text-zinc-500 leading-snug line-clamp-2 mb-2">
                                     {node.description}
                                   </p>
                                 )}
@@ -10709,15 +10889,15 @@ export default function GeneratedPage() {
                                       exit={{ height: 0, opacity: 0 }}
                                       className="overflow-hidden"
                                     >
-                                      <div className="pt-2 mt-2 border-t border-white/5">
+                                      <div className="pt-2 mt-2 border-t border-zinc-800">
                                         <div className="flex items-center gap-1.5 mb-1.5">
                                           <GitBranch className="w-3 h-3 text-white/20" />
-                                          <span className="text-[9px] text-white/30 uppercase tracking-wider font-medium">Structure</span>
+                                          <span className="text-[9px] text-zinc-600 uppercase tracking-wider font-medium">Structure</span>
                                         </div>
                                         {node.components && node.components.length > 0 ? (
                                           <div className="flex flex-wrap gap-1">
                                             {node.components.map((comp, i) => (
-                                              <div key={i} className="px-1.5 py-0.5 rounded-[4px] bg-white/5 border border-white/5 text-[9px] text-white/40">
+                                              <div key={i} className="px-1.5 py-0.5 rounded-[4px] bg-zinc-800/50 border border-zinc-800 text-[9px] text-zinc-500">
                                                 {comp}
                                               </div>
                                             ))}
@@ -10736,7 +10916,7 @@ export default function GeneratedPage() {
                                 {hasCode ? (
                                   <>
                                     <button
-                                      className="flow-node-btn flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-medium bg-[#FF6E3C]/90 hover:bg-[#FF6E3C] text-white transition-colors"
+                                      className="flow-node-btn flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-medium bg-zinc-800/90 hover:bg-zinc-800 text-white transition-colors"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleFlowNodeCodeFocus(node.id, "preview");
@@ -10746,7 +10926,7 @@ export default function GeneratedPage() {
                                       Preview
                                     </button>
                                     <button
-                                      className="flow-node-btn flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-medium bg-white/10 hover:bg-white/15 text-white/60 transition-colors"
+                                      className="flow-node-btn flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-medium bg-white/10 hover:bg-white/15 text-zinc-400 transition-colors"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleFlowNodeCodeFocus(node.id, "code");
@@ -10758,7 +10938,7 @@ export default function GeneratedPage() {
                                   </>
                                 ) : isDetected ? (
                                   <button
-                                    className="flow-node-btn flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-medium bg-amber-500/80 hover:bg-amber-500 text-white transition-colors"
+                                    className="flow-node-btn flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-medium bg-zinc-700 hover:bg-zinc-600 text-white transition-colors"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       if (!user || isDemoMode) {
@@ -10777,7 +10957,7 @@ export default function GeneratedPage() {
                                   </button>
                                 ) : (
                                   <button
-                                    className="flow-node-btn flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-medium bg-white/5 hover:bg-white/10 text-white/40 transition-colors"
+                                    className="flow-node-btn flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-medium bg-zinc-800/50 hover:bg-white/10 text-zinc-500 transition-colors"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       if (!user || isDemoMode) {
@@ -10797,29 +10977,15 @@ export default function GeneratedPage() {
                                 )}
                               </div>
                               
-                              {/* Status badge - top center */}
-                              <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-10">
-                                <span className={cn(
-                                  "text-[8px] px-2 py-0.5 rounded-full capitalize whitespace-nowrap font-medium",
-                                  isObserved 
-                                    ? "bg-emerald-500/90 text-white" 
-                                    : isAdded
-                                    ? "bg-[#FF6E3C]/90 text-white"
-                                    : isDetected
-                                    ? "bg-amber-500/90 text-white"
-                                    : "bg-white/20 text-white/60"
-                                )}>
-                                  {isObserved ? "observed" : isAdded ? "generated" : isDetected ? "detected" : "possible"}
-                                </span>
-                              </div>
+
                             </div>
                           );
                         })}
                         
                         
                         {flowBuilding && (
-                          <div className="absolute top-4 left-4 flex items-center gap-2 text-xs text-white/40 bg-black/50 px-3 py-2 rounded-lg">
-                            <Loader2 className="w-4 h-4 animate-spin text-[#FF6E3C]" />
+                          <div className="absolute top-4 left-4 flex items-center gap-2 text-xs text-zinc-500 bg-zinc-900 px-3 py-2 rounded-lg">
+                            <Loader2 className="w-4 h-4 animate-spin text-zinc-300" />
                             Building product map...
                           </div>
                         )}
@@ -10846,31 +11012,28 @@ export default function GeneratedPage() {
                   </div>
                 ) : styleInfo ? (
                   <div className="max-w-3xl mx-auto space-y-6">
-                    <div className="flex items-center gap-2 mb-6"><Paintbrush className="w-5 h-5 text-[#FF6E3C]/60" /><h3 className="text-sm font-medium text-white/70">Design System</h3></div>
+                    <div className="flex items-center gap-2 mb-6"><Paintbrush className="w-5 h-5 text-zinc-300/60" /><h3 className="text-sm font-medium text-zinc-400">Design System</h3></div>
                     
-                    {/* Colors with usage badges */}
+                    {/* Colors with usage badges - Grid Layout */}
                     <div className="style-card">
-                      <div className="flex items-center gap-2 mb-4"><Droplet className="w-4 h-4 text-[#FF6E3C]/60" /><span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Colors</span></div>
-                      <div className="space-y-4">
+                      <div className="flex items-center gap-2 mb-6"><Droplet className="w-4 h-4 text-zinc-300/60" /><span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Colors</span></div>
+                      <div className="grid grid-cols-2 gap-4">
                         {styleInfo.colors.map((color, i) => {
-                          // Generate usage hints based on color role
                           const usageHints: Record<string, string> = {
-                            "Primary": "Used in: Primary CTAs, Active states, Links",
-                            "Secondary": "Used in: Secondary buttons, Borders, Icons",
-                            "Accent": "Used in: Highlights, Badges, Alerts",
-                            "Background": "Used in: Page background, Cards",
-                            "Text": "Used in: Body text, Headings",
-                            "Border": "Used in: Dividers, Input borders"
+                            "Primary": "Primary CTAs, Active states, Links",
+                            "Secondary": "Secondary buttons, Borders, Icons",
+                            "Accent": "Highlights, Badges, Alerts",
+                            "Background": "Page background, Cards",
+                            "Text": "Body text, Headings",
+                            "Border": "Dividers, Input borders"
                           };
                           return (
-                            <div key={i} className="flex items-start gap-3">
-                              <div className="color-swatch-large flex-shrink-0" style={{ backgroundColor: color.value }} />
+                            <div key={i} className="flex items-center gap-4 p-3 rounded-lg bg-zinc-900/50 border border-zinc-800/50">
+                              <div className="w-16 h-16 rounded-lg flex-shrink-0 shadow-lg" style={{ backgroundColor: color.value, border: '1px solid rgba(255,255,255,0.1)' }} />
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <p className="text-xs text-white/70">{color.name}</p>
-                                  <p className="text-[10px] text-white/40 font-mono">{color.value}</p>
-                                </div>
-                                <p className="text-[9px] text-white/30 mt-1">{usageHints[color.name] || "Used in: UI elements"}</p>
+                                <p className="text-sm font-medium text-zinc-200">{color.name}</p>
+                                <p className="text-xs text-zinc-400 font-mono mt-0.5">{color.value}</p>
+                                <p className="text-[10px] text-zinc-600 mt-1">{usageHints[color.name] || "UI elements"}</p>
                               </div>
                             </div>
                           );
@@ -10880,7 +11043,7 @@ export default function GeneratedPage() {
                     
                     {/* Typography with usage badges */}
                     <div className="style-card">
-                      <div className="flex items-center gap-2 mb-4"><Type className="w-4 h-4 text-[#FF6E3C]/60" /><span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Typography</span></div>
+                      <div className="flex items-center gap-2 mb-4"><Type className="w-4 h-4 text-zinc-300/60" /><span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Typography</span></div>
                       <div className="space-y-4">
                         {styleInfo.fonts.map((font, i) => {
                           const fontUsageHints = [
@@ -10893,15 +11056,15 @@ export default function GeneratedPage() {
                             <div key={i} className="font-preview">
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <p className="text-lg text-white/80" style={{ fontFamily: font.family }}>{font.name}</p>
-                                  <p className="text-[10px] text-white/40">{font.usage}</p>
+                                  <p className="text-lg text-zinc-200" style={{ fontFamily: font.family }}>{font.name}</p>
+                                  <p className="text-[10px] text-zinc-500">{font.usage}</p>
                                 </div>
                                 <div className="text-right">
-                                  <span className="text-xs text-white/30">{font.weight}</span>
+                                  <span className="text-xs text-zinc-600">{font.weight}</span>
                                   <p className="text-[10px] text-white/20 font-mono mt-1">{font.family}</p>
                                 </div>
                               </div>
-                              <p className="text-[9px] text-white/30 mt-1 pt-1 border-t border-white/5">{fontUsageHints[i] || "Used in: Various UI elements"}</p>
+                              <p className="text-[9px] text-zinc-600 mt-1 pt-1 border-t border-zinc-800">{fontUsageHints[i] || "Used in: Various UI elements"}</p>
                             </div>
                           );
                         })}
@@ -10910,9 +11073,9 @@ export default function GeneratedPage() {
                     
                     {/* Other Styles */}
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="style-card"><p className="text-[10px] text-white/40 uppercase mb-2">Spacing</p><p className="text-sm text-white/70">{styleInfo.spacing}</p></div>
-                      <div className="style-card"><p className="text-[10px] text-white/40 uppercase mb-2">Border Radius</p><p className="text-sm text-white/70">{styleInfo.borderRadius}</p></div>
-                      <div className="style-card"><p className="text-[10px] text-white/40 uppercase mb-2">Shadows</p><p className="text-sm text-white/70">{styleInfo.shadows}</p></div>
+                      <div className="style-card"><p className="text-[10px] text-zinc-500 uppercase mb-2">Spacing</p><p className="text-sm text-zinc-400">{styleInfo.spacing}</p></div>
+                      <div className="style-card"><p className="text-[10px] text-zinc-500 uppercase mb-2">Border Radius</p><p className="text-sm text-zinc-400">{styleInfo.borderRadius}</p></div>
+                      <div className="style-card"><p className="text-[10px] text-zinc-500 uppercase mb-2">Shadows</p><p className="text-sm text-zinc-400">{styleInfo.shadows}</p></div>
                     </div>
                     
 {/* Edit with AI button removed - chat does the same thing */}
@@ -10973,21 +11136,25 @@ export default function GeneratedPage() {
                         onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
                       />
                     </div>
-                    <div className="p-4 border-t border-white/5 bg-[#0a0a0a]">
-                      {/* Playback controls */}
-                      <div className="flex items-center gap-3 mb-4">
-                        <button onClick={togglePlayPause} className="btn-black p-2.5 rounded-lg">
-                          {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                        </button>
-                        <span className="text-xs text-white/50 font-mono w-24">{formatDuration(Math.floor(currentTime))} / {formatDuration(selectedFlow.duration)}</span>
+                    <div className="p-4 border-t border-zinc-800 bg-[#111111]">
+                      {/* Video Timeline Header */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <button onClick={togglePlayPause} className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors">
+                            {isPlaying ? <Pause className="w-4 h-4 text-white" /> : <Play className="w-4 h-4 text-white" />}
+                          </button>
+                          <span className="text-sm text-white font-mono">{formatDuration(Math.floor(currentTime))}</span>
+                          <span className="text-xs text-zinc-500">/</span>
+                          <span className="text-xs text-zinc-500 font-mono">{formatDuration(selectedFlow.duration)}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-zinc-500">
+                          <span className="text-zinc-400">AI will process:</span>
+                          <span className="font-mono text-white bg-zinc-800 px-2 py-0.5 rounded">{formatDuration(selectedFlow.trimStart)} - {formatDuration(selectedFlow.trimEnd)}</span>
+                        </div>
                       </div>
                       
-                      {/* Trim bar with live preview */}
+                      {/* Timeline / Trim bar */}
                       <div className="mb-4">
-                        <div className="flex items-center justify-between text-xs text-white/40 mb-2">
-                          <span>Trim selection</span>
-                          <span className="font-mono">{formatDuration(selectedFlow.trimStart)} - {formatDuration(selectedFlow.trimEnd)}</span>
-                        </div>
                         <div 
                           ref={trimBarRef} 
                           className="trim-slider-container relative cursor-pointer"
@@ -11043,21 +11210,21 @@ export default function GeneratedPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <button onClick={() => fileInputRef.current?.click()} className="btn-black flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"><Upload className="w-3.5 h-3.5" /> Upload New</button>
-                          <button onClick={startRecording} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-white/[0.03] border border-red-500/30 hover:border-red-500/50 text-white/60 hover:text-white/80 transition-all"><div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> Record New</button>
+                          <button onClick={startRecording} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-zinc-800/50 border border-red-500/30 hover:border-red-500/50 text-zinc-400 hover:text-zinc-200 transition-all"><div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> Record New</button>
                         </div>
-                        <button onClick={applyTrim} className="btn-black flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs bg-[#FF6E3C]/20 text-[#FF6E3C] border border-[#FF6E3C]/30">
+                        <button onClick={applyTrim} className="btn-black flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs bg-zinc-800/20 text-zinc-300 border border-zinc-700">
                           <Check className="w-3.5 h-3.5" /> Apply Trim
                         </button>
                       </div>
                     </div>
                   </>
                 ) : (
-                  <div className="flex-1 flex items-center justify-center bg-[#0a0a0a]">
+                  <div className="flex-1 flex items-center justify-center bg-[#111111]">
                     <div className="text-center">
                       <EmptyState icon="logo" title="No video selected" subtitle="Record or upload a video first" showEarlyAccess={generations.length === 0} />
                       <div className="flex items-center justify-center gap-2 mt-4">
                         <button onClick={() => fileInputRef.current?.click()} className="btn-black flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs"><Upload className="w-3.5 h-3.5" /> Upload</button>
-                        <button onClick={startRecording} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs bg-white/[0.03] border border-red-500/30 hover:border-red-500/50 text-white/60 hover:text-white/80 transition-all"><div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" /> Record</button>
+                        <button onClick={startRecording} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs bg-zinc-800/50 border border-red-500/30 hover:border-red-500/50 text-zinc-400 hover:text-zinc-200 transition-all"><div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" /> Record</button>
                       </div>
                     </div>
                   </div>
@@ -11074,16 +11241,16 @@ export default function GeneratedPage() {
                   exit={{ opacity: 0, y: 20 }} 
                   className="absolute bottom-6 left-0 right-0 flex justify-center z-50 px-6"
                 >
-                  <div className="w-full max-w-[500px] backdrop-blur-xl bg-[#0a0a0a]/95 border border-white/[0.04] rounded-2xl p-3 shadow-2xl">
+                  <div className="w-full max-w-[500px] backdrop-blur-xl bg-[#111111]/95 border border-zinc-800 rounded-2xl p-3 shadow-2xl">
                     <div className="flex items-center gap-2 mb-2">
                       {isEditing ? (
-                        <Loader2 className="w-3.5 h-3.5 text-[#FF6E3C] animate-spin" />
+                        <Loader2 className="w-3.5 h-3.5 text-zinc-300 animate-spin" />
                       ) : (
-                        <Sparkles className="w-3.5 h-3.5 text-[#FF6E3C]" />
+                        <Sparkles className="w-3.5 h-3.5 text-zinc-300" />
                       )}
-                      <span className="text-xs text-white/50">
+                      <span className="text-xs text-zinc-500">
                         {isEditing ? (
-                          <span className="text-[#FF6E3C]/80 animate-pulse">
+                          <span className="text-zinc-300/80 animate-pulse">
                             {selectedElement ? `Editing ${selectedElement.substring(0, 20)}...` : editInput.includes('@') ? `Creating ${editInput.match(/@([a-zA-Z0-9-_]+)/)?.[1] || 'page'}...` : 'Applying changes...'}
                           </span>
                         ) : selectedArchNode ? (
@@ -11105,7 +11272,7 @@ export default function GeneratedPage() {
                         </button>
                       ) : (
                         /* Close button when not editing */
-                        <button onClick={() => { setShowFloatingEdit(false); setSelectedArchNode(null); setShowSuggestions(false); }} className="ml-auto p-1 hover:bg-white/5 rounded">
+                        <button onClick={() => { setShowFloatingEdit(false); setSelectedArchNode(null); setShowSuggestions(false); }} className="ml-auto p-1 hover:bg-zinc-800/50 rounded">
                           <X className="w-3 h-3 text-white/20" />
                         </button>
                       )}
@@ -11116,7 +11283,7 @@ export default function GeneratedPage() {
                         <div className="flex flex-wrap gap-2 mb-2">
                           {editImages.map(img => (
                             <div key={img.id} className="relative group">
-                              <img src={img.url} alt={img.name} className="w-12 h-12 object-cover rounded-lg border border-white/10" />
+                              <img src={img.url} alt={img.name} className="w-12 h-12 object-cover rounded-lg border border-zinc-700" />
                               <button 
                                 onClick={() => {
                                   URL.revokeObjectURL(img.url);
@@ -11146,16 +11313,16 @@ export default function GeneratedPage() {
                           className={cn(
                             "relative flex items-center justify-center w-10 h-10 rounded-lg border transition-all",
                             isEditing 
-                              ? "bg-white/[0.02] border-white/[0.02] text-white/20 cursor-not-allowed"
+                              ? "bg-zinc-800/50 border-white/[0.02] text-white/20 cursor-not-allowed"
                               : isPointAndEdit 
-                                ? "bg-[#FF6E3C]/20 border-[#FF6E3C] text-[#FF6E3C] shadow-[0_0_10px_rgba(255,110,60,0.3)]" 
-                                : "bg-white/[0.03] border-white/[0.04] hover:border-white/10 text-white/40"
+                                ? "bg-zinc-800/20 border-[var(--accent-orange)] text-zinc-300 shadow-[0_0_10px_rgba(82,82,91,0.2)]" 
+                                : "bg-zinc-800/50 border-zinc-800 hover:border-zinc-700 text-zinc-500"
                           )}
                           title={isEditing ? "Disabled during editing" : isPointAndEdit ? "Click to deactivate pointer" : "Click element in preview to edit"}
                         >
                           <MousePointer className={cn("w-4 h-4", isPointAndEdit && !isEditing && "animate-pulse")} />
                           {isPointAndEdit && !isEditing && (
-                            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#FF6E3C] rounded-full animate-pulse" />
+                            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-zinc-800 rounded-full animate-pulse" />
                           )}
                         </button>
                         {/* Image upload button */}
@@ -11163,8 +11330,8 @@ export default function GeneratedPage() {
                           className={cn(
                             "flex items-center justify-center w-10 h-10 rounded-lg border transition-colors",
                             isEditing 
-                              ? "bg-white/[0.02] border-white/[0.02] text-white/20 cursor-not-allowed"
-                              : "bg-white/[0.03] border-white/[0.04] hover:border-white/10 cursor-pointer"
+                              ? "bg-zinc-800/50 border-white/[0.02] text-white/20 cursor-not-allowed"
+                              : "bg-zinc-800/50 border-zinc-800 hover:border-zinc-700 cursor-pointer"
                           )}
                           title={isEditing ? "Disabled during editing" : "Upload image"}
                         >
@@ -11219,7 +11386,7 @@ export default function GeneratedPage() {
                               e.target.value = "";
                             }}
                           />
-                          <ImageIcon className={cn("w-4 h-4", isEditing ? "text-white/20" : "text-white/40")} />
+                          <ImageIcon className={cn("w-4 h-4", isEditing ? "text-white/20" : "text-zinc-500")} />
                         </label>
                         <input 
                           ref={editInputRef}
@@ -11231,12 +11398,12 @@ export default function GeneratedPage() {
                             if (e.key === "Escape" && !isEditing) { setShowFloatingEdit(false); setSelectedArchNode(null); setEditImages([]); }
                           }}
                           placeholder={selectedArchNode ? `Describe changes for @${selectedArchNode}...` : "Type @ to select a component or add images..."} 
-                          className="flex-1 px-3 py-2.5 rounded-lg text-sm text-white/80 placeholder:text-white/20 bg-white/[0.03] border border-white/[0.04] focus:outline-none focus:border-white/10" 
+                          className="flex-1 px-3 py-2.5 rounded-lg text-sm text-zinc-200 placeholder:text-white/20 bg-zinc-800/50 border border-zinc-800 focus:outline-none focus:border-zinc-700" 
                           disabled={isEditing} 
                           autoFocus 
                         />
                         <button onClick={handleEdit} disabled={(!editInput.trim() && editImages.length === 0) || isEditing} className="btn-black px-4 rounded-lg flex items-center gap-2 disabled:opacity-50">
-                          {isEditing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                          {isEditing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                         </button>
                       </div>
                       
@@ -11259,8 +11426,8 @@ export default function GeneratedPage() {
                                 >
                                   <Icon className="w-3.5 h-3.5 icon" />
                                   <div>
-                                    <span className="text-xs text-white/80">@{node.id}</span>
-                                    <span className="text-[10px] text-white/40 ml-2">{node.name}</span>
+                                    <span className="text-xs text-zinc-200">@{node.id}</span>
+                                    <span className="text-[10px] text-zinc-500 ml-2">{node.name}</span>
                                   </div>
                                 </div>
                               );
@@ -11281,38 +11448,38 @@ export default function GeneratedPage() {
                   initial={{ opacity: 0 }} 
                   animate={{ opacity: 1 }} 
                   exit={{ opacity: 0 }}
-                  className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center"
+                  className="fixed inset-0 bg-zinc-900 backdrop-blur-sm z-[100] flex items-center justify-center"
                   onClick={() => setSelectedNodeModal(null)}
                 >
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl"
+                    className="bg-[#111111] border border-zinc-700 rounded-2xl p-6 w-full max-w-md shadow-2xl"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        {(() => { const Icon = getNodeIcon(selectedNodeModal.type); return <Icon className="w-6 h-6 text-[#FF6E3C]" />; })()}
+                        {(() => { const Icon = getNodeIcon(selectedNodeModal.type); return <Icon className="w-6 h-6 text-zinc-300" />; })()}
                         <div>
                           <h3 className="text-lg font-semibold text-white">{selectedNodeModal.name}</h3>
-                          <span className="text-xs text-white/40 uppercase">{selectedNodeModal.type}</span>
+                          <span className="text-xs text-zinc-500 uppercase">{selectedNodeModal.type}</span>
                         </div>
                       </div>
-                      <button onClick={() => setSelectedNodeModal(null)} className="p-1 hover:bg-white/5 rounded">
-                        <X className="w-5 h-5 text-white/40" />
+                      <button onClick={() => setSelectedNodeModal(null)} className="p-1 hover:bg-zinc-800/50 rounded">
+                        <X className="w-5 h-5 text-zinc-500" />
                       </button>
                     </div>
                     
                     <div className="space-y-4">
                       <div>
-                        <span className="text-[10px] text-white/30 uppercase">Description</span>
-                        <p className="text-sm text-white/70 mt-1">{selectedNodeModal.description || "Component in the page structure"}</p>
+                        <span className="text-[10px] text-zinc-600 uppercase">Description</span>
+                        <p className="text-sm text-zinc-400 mt-1">{selectedNodeModal.description || "Component in the page structure"}</p>
                       </div>
                       
                       <div>
-                        <span className="text-[10px] text-white/30 uppercase">User Flow</span>
-                        <p className="text-sm text-white/50 mt-1">
+                        <span className="text-[10px] text-zinc-600 uppercase">User Flow</span>
+                        <p className="text-sm text-zinc-500 mt-1">
                           {selectedNodeModal.type === "page" && "Root container for all page elements"}
                           {selectedNodeModal.type === "component" && "Reusable UI component that can contain other elements"}
                           {selectedNodeModal.type === "section" && "Major content section of the page"}
@@ -11323,10 +11490,10 @@ export default function GeneratedPage() {
                       
                       {selectedNodeModal.connections && selectedNodeModal.connections.length > 0 && (
                         <div>
-                          <span className="text-[10px] text-white/30 uppercase">Connected To</span>
+                          <span className="text-[10px] text-zinc-600 uppercase">Connected To</span>
                           <div className="flex flex-wrap gap-2 mt-2">
                             {selectedNodeModal.connections.map(conn => (
-                              <span key={conn} className="px-2 py-1 bg-white/5 rounded text-xs text-white/60">@{conn}</span>
+                              <span key={conn} className="px-2 py-1 bg-zinc-800/50 rounded text-xs text-zinc-400">@{conn}</span>
                             ))}
                           </div>
                         </div>
@@ -11340,7 +11507,7 @@ export default function GeneratedPage() {
                           setShowFloatingEdit(true); 
                           setSelectedNodeModal(null); 
                         }}
-                        className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 bg-[#FF6E3C]/10 border border-[#FF6E3C]/20 rounded-xl text-sm text-[#FF6E3C] hover:bg-[#FF6E3C]/15 transition-colors"
+                        className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 bg-zinc-800/10 border border-zinc-700 rounded-xl text-sm text-zinc-300 hover:bg-zinc-800/15 transition-colors"
                       >
                         <Sparkles className="w-4 h-4" /> Edit with AI
                       </button>
@@ -11357,25 +11524,25 @@ export default function GeneratedPage() {
       {!user && !authLoading && !isDemoMode && !searchParams.get('demo') && (
         <>
           {/* Backdrop with blur - see content behind */}
-          <div className="fixed inset-0 z-50 md:hidden bg-black/40 backdrop-blur-sm" />
+          <div className="fixed inset-0 z-50 md:hidden bg-zinc-900 backdrop-blur-sm" />
           
           {/* Auth Popup Modal - Static, no animations */}
           <div className="fixed inset-0 z-50 md:hidden flex items-center justify-center p-4">
-            <div className="w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl p-6 shadow-2xl text-center">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center mx-auto mb-5">
-                <Lock className="w-8 h-8 text-[#FF6E3C]" />
+            <div className="w-full max-w-sm bg-[#111111] border border-zinc-700 rounded-2xl p-6 shadow-2xl text-center">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--accent-orange)]/20 to-[#52525b]/10 flex items-center justify-center mx-auto mb-5">
+                <Lock className="w-8 h-8 text-zinc-300" />
               </div>
               <h2 className="text-xl font-semibold text-white mb-2">Sign in to continue</h2>
-              <p className="text-white/50 text-sm mb-6">
+              <p className="text-zinc-500 text-sm mb-6">
                 Create an account or sign in to start building. Get 100 free credits.
               </p>
               <button
                 onClick={() => setShowAuthModal(true)}
-                className="w-full px-6 py-3.5 rounded-xl bg-[#FF6E3C] text-white font-medium hover:bg-[#FF8F5C] transition-colors mb-4"
+                className="w-full px-6 py-3.5 rounded-xl bg-zinc-800 text-white font-medium hover:bg-zinc-600 transition-colors mb-4"
               >
                 Sign in / Sign up
               </button>
-              <a href="/landing" className="text-sm text-white/40 hover:text-white/60 transition-colors">
+              <a href="/landing" className="text-sm text-zinc-500 hover:text-zinc-400 transition-colors">
                 ← Back to home
               </a>
             </div>
@@ -11392,23 +11559,23 @@ export default function GeneratedPage() {
             exit={{ y: 100, opacity: 0 }}
             className="fixed bottom-[80px] left-3 right-3 z-50 md:hidden"
           >
-            <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-4 shadow-2xl">
+            <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-4 shadow-2xl">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#FF6E3C]/10 flex items-center justify-center flex-shrink-0">
-                  <Monitor className="w-5 h-5 text-[#FF6E3C]" />
+                <div className="w-10 h-10 rounded-full bg-zinc-800/10 flex items-center justify-center flex-shrink-0">
+                  <Monitor className="w-5 h-5 text-zinc-300" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white/90">Quick preview mode</p>
-                  <p className="text-xs text-white/50 mt-0.5">Full features available on desktop</p>
+                  <p className="text-sm font-medium text-zinc-200">Quick preview mode</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">Full features available on desktop</p>
                 </div>
                 <button 
                   onClick={() => {
                     setShowMobileBanner(false);
                     localStorage.setItem("replay_mobile_banner_dismissed", "true");
                   }}
-                  className="p-3 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                  className="p-3 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center"
                 >
-                  <X className="w-5 h-5 text-white/40" />
+                  <X className="w-5 h-5 text-zinc-500" />
                 </button>
               </div>
             </div>
@@ -11418,7 +11585,7 @@ export default function GeneratedPage() {
       
       {/* Mobile Bottom Navigation - 72px height, proper touch targets - HIDE in demo mode */}
       {!isDemoMode && (
-      <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-white/10 bg-[#0a0a0a] safe-area-pb" style={{ height: '72px' }}>
+      <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-zinc-700 bg-[#111111] safe-area-pb" style={{ height: '72px' }}>
         <div className="flex items-center justify-around h-full px-1">
           {/* Show Chat tab when we have generated code, otherwise show Input */}
           {generatedCode ? (
@@ -11426,7 +11593,7 @@ export default function GeneratedPage() {
               onClick={() => setMobilePanel("chat")}
               className={cn(
                 "flex flex-col items-center justify-center gap-1 rounded-xl transition-colors min-w-[64px] min-h-[56px]",
-                mobilePanel === "chat" && !showHistoryMode ? "text-[#FF6E3C] bg-[#FF6E3C]/10" : "text-white/40"
+                mobilePanel === "chat" && !showHistoryMode ? "text-zinc-300 bg-zinc-800/10" : "text-zinc-500"
               )}
             >
               <Sparkles className="w-6 h-6" />
@@ -11437,7 +11604,7 @@ export default function GeneratedPage() {
               onClick={() => setMobilePanel("input")}
               className={cn(
                 "flex flex-col items-center justify-center gap-1 rounded-xl transition-colors min-w-[64px] min-h-[56px]",
-                mobilePanel === "input" && !showHistoryMode ? "text-[#FF6E3C] bg-[#FF6E3C]/10" : "text-white/40"
+                mobilePanel === "input" && !showHistoryMode ? "text-zinc-300 bg-zinc-800/10" : "text-zinc-500"
               )}
             >
               <Film className="w-6 h-6" />
@@ -11449,7 +11616,7 @@ export default function GeneratedPage() {
             onClick={() => setMobilePanel("preview")}
             className={cn(
               "flex flex-col items-center justify-center gap-1 rounded-xl transition-colors min-w-[64px] min-h-[56px]",
-              mobilePanel === "preview" && !showHistoryMode ? "text-[#FF6E3C] bg-[#FF6E3C]/10" : "text-white/40"
+              mobilePanel === "preview" && !showHistoryMode ? "text-zinc-300 bg-zinc-800/10" : "text-zinc-500"
             )}
           >
             <Eye className="w-6 h-6" />
@@ -11460,7 +11627,7 @@ export default function GeneratedPage() {
             onClick={() => setMobilePanel("code")}
             className={cn(
               "flex flex-col items-center justify-center gap-1 rounded-xl transition-colors min-w-[64px] min-h-[56px]",
-              mobilePanel === "code" && !showHistoryMode ? "text-[#FF6E3C] bg-[#FF6E3C]/10" : "text-white/40"
+              mobilePanel === "code" && !showHistoryMode ? "text-zinc-300 bg-zinc-800/10" : "text-zinc-500"
             )}
           >
             <Code className="w-6 h-6" />
@@ -11471,7 +11638,7 @@ export default function GeneratedPage() {
             onClick={() => setMobilePanel("flow")}
             className={cn(
               "flex flex-col items-center justify-center gap-1 rounded-xl transition-colors min-w-[64px] min-h-[56px]",
-              mobilePanel === "flow" && !showHistoryMode ? "text-[#FF6E3C] bg-[#FF6E3C]/10" : "text-white/40"
+              mobilePanel === "flow" && !showHistoryMode ? "text-zinc-300 bg-zinc-800/10" : "text-zinc-500"
             )}
           >
             <GitBranch className="w-6 h-6" />
@@ -11482,7 +11649,7 @@ export default function GeneratedPage() {
             onClick={() => setMobilePanel("design")}
             className={cn(
               "flex flex-col items-center justify-center gap-1 rounded-xl transition-colors min-w-[64px] min-h-[56px]",
-              mobilePanel === "design" && !showHistoryMode ? "text-[#FF6E3C] bg-[#FF6E3C]/10" : "text-white/40"
+              mobilePanel === "design" && !showHistoryMode ? "text-zinc-300 bg-zinc-800/10" : "text-zinc-500"
             )}
           >
             <Palette className="w-6 h-6" />
@@ -11494,31 +11661,31 @@ export default function GeneratedPage() {
       
       {/* Mobile History - Full Screen Overlay - Static */}
       {showHistoryMode && (
-          <div className="fixed inset-0 z-[100] md:hidden bg-[#0a0a0a] flex flex-col">
+          <div className="fixed inset-0 z-[100] md:hidden bg-[#111111] flex flex-col">
             {/* History Header - Same height as tool headers */}
-            <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
+            <div className="flex items-center justify-between px-3 py-2.5 border-b border-zinc-800 flex-shrink-0 bg-zinc-900 backdrop-blur-xl">
               <div className="flex items-center gap-2">
-                <History className="w-5 h-5 text-[#FF6E3C]" />
+                <History className="w-5 h-5 text-zinc-300" />
                 <span className="text-sm font-semibold text-white">Your Projects</span>
               </div>
               <button 
                 onClick={() => setShowHistoryMode(false)}
-                className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center"
               >
-                <X className="w-5 h-5 text-white/60" />
+                <X className="w-5 h-5 text-zinc-400" />
               </button>
             </div>
             
             {/* Search */}
-            <div className="p-4 border-b border-white/5 flex-shrink-0">
+            <div className="p-4 border-b border-zinc-800 flex-shrink-0">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
                 <input
                   type="text"
                   value={historySearch}
                   onChange={(e) => setHistorySearch(e.target.value)}
                   placeholder="Search projects..."
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.06] text-sm text-white/70 placeholder:text-white/30 focus:outline-none focus:border-white/10"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-zinc-800/50 border border-zinc-800 text-sm text-zinc-400 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-700"
                 />
               </div>
             </div>
@@ -11527,8 +11694,8 @@ export default function GeneratedPage() {
             <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2">
               {isLoadingHistory ? (
                 <div className="text-center py-12">
-                  <Loader2 className="w-8 h-8 text-[#FF6E3C] animate-spin mx-auto" />
-                  <p className="text-sm text-white/40 mt-4">Loading your projects...</p>
+                  <Loader2 className="w-8 h-8 text-zinc-300 animate-spin mx-auto" />
+                  <p className="text-sm text-zinc-500 mt-4">Loading your projects...</p>
                 </div>
               ) : generations.length === 0 ? (
                 <div className="text-center py-12">
@@ -11538,7 +11705,7 @@ export default function GeneratedPage() {
                       <rect x="34.054" y="98.6841" width="48.6555" height="11.6182" rx="5.80909" transform="rotate(-30 34.054 98.6841)" fill="currentColor"/>
                     </svg>
                   </div>
-                  <p className="text-sm text-white/40 mt-4">No generations yet</p>
+                  <p className="text-sm text-zinc-500 mt-4">No generations yet</p>
                   <p className="text-xs text-white/25 mt-1">Upload a video and generate code to start</p>
                 </div>
               ) : (
@@ -11552,8 +11719,8 @@ export default function GeneratedPage() {
                     className={cn(
                       "relative p-3 pr-10 rounded-xl cursor-pointer transition-colors border",
                       activeGeneration?.id === gen.id 
-                        ? "bg-[#FF6E3C]/10 border-[#FF6E3C]/30" 
-                        : "bg-white/[0.02] border-white/5 hover:bg-white/5"
+                        ? "bg-zinc-800/10 border-zinc-700" 
+                        : "bg-zinc-800/50 border-zinc-800 hover:bg-zinc-800/50"
                     )}
                     onClick={async () => {
                       if (renamingId === gen.id) return;
@@ -11599,16 +11766,16 @@ export default function GeneratedPage() {
                     }}
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <p className="text-sm font-medium text-white/80 truncate flex-1">{gen.title}</p>
+                      <p className="text-sm font-medium text-zinc-200 truncate flex-1">{gen.title}</p>
                     </div>
-                    <p className="text-[10px] text-white/30">
+                    <p className="text-[10px] text-zinc-600">
                       {new Date(gen.timestamp).toLocaleDateString()} • {new Date(gen.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                     {/* Delete action - right aligned */}
                     <div className="absolute top-3 right-3">
                       <button
                         onClick={(e) => { e.stopPropagation(); confirmDeleteGeneration(gen.id, gen.title); }}
-                        className="p-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 text-white/30 hover:text-red-400 transition-colors"
+                        className="p-1.5 rounded-lg bg-zinc-800/50 hover:bg-red-500/20 text-zinc-600 hover:text-red-400 transition-colors"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -11617,7 +11784,7 @@ export default function GeneratedPage() {
                     {/* Latest change or style info */}
                     <div className="mt-1">
                       {gen.versions && gen.versions.length > 0 ? (
-                        <p className="text-[10px] text-white/40 truncate">
+                        <p className="text-[10px] text-zinc-500 truncate">
                           <span className="text-emerald-400/60">Latest:</span> {gen.versions[gen.versions.length - 1]?.label || "Code update"}
                         </p>
                       ) : (
@@ -11628,13 +11795,13 @@ export default function GeneratedPage() {
                     </div>
                     
                     {/* Version History Toggle - Mobile */}
-                    <div className="mt-2 pt-2 border-t border-white/5">
+                    <div className="mt-2 pt-2 border-t border-zinc-800">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setExpandedVersions(expandedVersions === gen.id ? null : gen.id);
                         }}
-                        className="flex items-center gap-2 text-[10px] text-white/40 hover:text-white/60 transition-colors"
+                        className="flex items-center gap-2 text-[10px] text-zinc-500 hover:text-zinc-400 transition-colors"
                       >
                         <Clock className="w-3 h-3" />
                         <span>{((gen.versions || []).filter(v => v.label !== "Initial generation").length) + 1} version{((gen.versions || []).filter(v => v.label !== "Initial generation").length) >= 1 ? 's' : ''}</span>
@@ -11653,7 +11820,7 @@ export default function GeneratedPage() {
                             className="mt-2 ml-1 space-y-1 overflow-hidden"
                           >
                             {/* Version timeline - newest at top, oldest at bottom */}
-                            <div className="relative pl-3 border-l border-white/10">
+                            <div className="relative pl-3 border-l border-zinc-700">
                               {/* Versions in reverse order (newest/current at top) - filter out "Initial generation" */}
                               {(gen.versions || []).filter(v => v.label !== "Initial generation").slice().reverse().map((version, idx) => (
                                 <div 
@@ -11663,30 +11830,30 @@ export default function GeneratedPage() {
                                   <div className={cn(
                                     "absolute -left-[7px] top-2.5 w-2.5 h-2.5 rounded-full border-2",
                                     idx === 0 
-                                      ? "bg-[#FF6E3C] border-[#FF6E3C]" 
-                                      : "bg-[#0a0a0a] border-white/20"
+                                      ? "bg-zinc-800 border-[var(--accent-orange)]" 
+                                      : "bg-[#111111] border-white/20"
                                   )} />
                                   
                                   <div className="flex items-center justify-between gap-2 pl-2">
                                     <div className="flex-1 min-w-0">
-                                      <p className="text-[10px] text-white/50 truncate">{version.label}</p>
+                                      <p className="text-[10px] text-zinc-500 truncate">{version.label}</p>
                                       <p className="text-[8px] text-white/25">
                                         {new Date(version.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                       </p>
                                     </div>
                                     
                                     {idx === 0 ? (
-                                      <span className="text-[8px] text-[#FF6E3C]/60 uppercase">Current</span>
+                                      <span className="text-[8px] text-zinc-300/60 uppercase">Current</span>
                                     ) : (
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           restoreVersion(gen.id, version);
                                         }}
-                                        className="p-1.5 rounded bg-white/5 hover:bg-white/10 transition-all"
+                                        className="p-1.5 rounded bg-zinc-800/50 hover:bg-white/10 transition-all"
                                         title="Restore"
                                       >
-                                        <Play className="w-3 h-3 text-[#FF6E3C]" />
+                                        <Play className="w-3 h-3 text-zinc-300" />
                                       </button>
                                     )}
                                   </div>
@@ -11697,17 +11864,17 @@ export default function GeneratedPage() {
                               <div className="relative py-1.5">
                                 <div className={cn(
                                   "absolute -left-[7px] top-2.5 w-2.5 h-2.5 rounded-full border-2",
-                                  !gen.versions?.length ? "bg-[#FF6E3C] border-[#FF6E3C]" : "bg-[#0a0a0a] border-white/20"
+                                  !gen.versions?.length ? "bg-zinc-800 border-[var(--accent-orange)]" : "bg-[#111111] border-white/20"
                                 )} />
                                 <div className="flex items-center justify-between gap-2 pl-2">
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-[10px] text-white/50 truncate">Initial generation</p>
+                                    <p className="text-[10px] text-zinc-500 truncate">Initial generation</p>
                                     <p className="text-[8px] text-white/25">
                                       {new Date(gen.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </p>
                                   </div>
                                   {!gen.versions?.length ? (
-                                    <span className="text-[8px] text-[#FF6E3C]/60 uppercase">Current</span>
+                                    <span className="text-[8px] text-zinc-300/60 uppercase">Current</span>
                                   ) : (
                                     <button
                                       onClick={(e) => {
@@ -11722,10 +11889,10 @@ export default function GeneratedPage() {
                                           styleInfo: gen.styleInfo
                                         });
                                       }}
-                                      className="p-1.5 rounded bg-white/5 hover:bg-white/10 transition-all"
+                                      className="p-1.5 rounded bg-zinc-800/50 hover:bg-white/10 transition-all"
                                       title="Restore to initial"
                                     >
-                                      <Play className="w-3 h-3 text-[#FF6E3C]" />
+                                      <Play className="w-3 h-3 text-zinc-300" />
                                     </button>
                                   )}
                                 </div>
@@ -11749,11 +11916,11 @@ export default function GeneratedPage() {
               <div className="flex-1 flex flex-col items-center justify-center p-6">
                 <div className="text-center mb-8">
                   <h2 className="text-2xl font-bold text-white mb-2">Upload a video</h2>
-                  <p className="text-white/50">Record your screen and upload it here</p>
+                  <p className="text-zinc-500">Record your screen and upload it here</p>
                 </div>
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full max-w-xs py-4 bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] rounded-2xl text-white font-bold text-lg flex items-center justify-center gap-3"
+                  className="w-full max-w-xs py-4 bg-zinc-800 rounded-2xl text-white font-bold text-lg flex items-center justify-center gap-3"
                 >
                   <Upload className="w-5 h-5" />
                   Upload Video
@@ -11762,37 +11929,37 @@ export default function GeneratedPage() {
             ) : (
               <>
               {/* Standard Mobile Header - when video is loaded */}
-              <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
+              <div className="flex items-center gap-2 px-3 py-2.5 border-b border-zinc-800 flex-shrink-0 bg-zinc-900 backdrop-blur-xl">
                 <a href="/" className="flex-shrink-0 p-1.5 -ml-1.5">
-                  <LogoIcon className="w-6 h-6" color="#FF6E3C" />
+                  <LogoIcon className="w-7 h-7" color="white" />
                 </a>
                 <input
                   type="text"
                   value={generationTitle}
                   onChange={(e) => setGenerationTitle(e.target.value)}
-                  className="flex-1 min-w-0 text-sm font-medium text-white/80 bg-transparent focus:outline-none truncate"
+                  className="flex-1 min-w-0 text-sm font-medium text-zinc-200 bg-transparent focus:outline-none truncate"
                   placeholder="Untitled"
                 />
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  <button onClick={() => { setGenerationTitle("Untitled Project"); setFlows([]); setRefinements(""); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); setActiveGeneration(null); setGeneratedCode(null); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setChatMessages([]); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New Project">
-                    <Plus className="w-5 h-5 text-white/50" />
+                  <button onClick={() => { setGenerationTitle("Untitled Project"); setFlows([]); setRefinements(""); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); setActiveGeneration(null); setGeneratedCode(null); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setChatMessages([]); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New Project">
+                    <Plus className="w-5 h-5 text-zinc-500" />
                   </button>
-                  <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Your Projects">
-                    <History className="w-5 h-5 text-white/50" />
+                  <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Your Projects">
+                    <History className="w-5 h-5 text-zinc-500" />
                   </button>
-                  <button onClick={() => setShowProjectSettings(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Settings">
-                    <Settings className="w-5 h-5 text-white/50" />
+                  <button onClick={() => setShowProjectSettings(true)} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Settings">
+                    <Settings className="w-5 h-5 text-zinc-500" />
                   </button>
-                  <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="px-3 py-2 rounded-xl hover:bg-white/5 active:bg-white/10 min-h-[44px] flex items-center justify-center">
+                  <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="px-3 py-2 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-h-[44px] flex items-center justify-center">
                     {user ? (
                       <span className={cn(
                         "text-xs font-semibold uppercase",
-                        (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-[#FF6E3C]" : "text-white/50"
+                        (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-zinc-300" : "text-zinc-500"
                       )}>
                         {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : membership?.plan === "starter" ? "Starter" : "Free"}
                       </span>
                     ) : (
-                      <User className="w-5 h-5 text-white/50" />
+                      <User className="w-5 h-5 text-zinc-500" />
                     )}
                   </button>
                 </div>
@@ -11800,11 +11967,11 @@ export default function GeneratedPage() {
               
               <div className="flex flex-col flex-1 overflow-auto">
               {/* Videos Section - Consistent sizing */}
-              <div className="p-4 border-b border-white/5 flex-shrink-0">
+              <div className="p-4 border-b border-zinc-800 flex-shrink-0">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <Video className="w-4 h-4 text-white/50" />
-                    <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Videos</span>
+                    <Video className="w-4 h-4 text-zinc-500" />
+                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Videos</span>
                   </div>
                   <div className="flex gap-2">
                     {isRecording ? (
@@ -11812,11 +11979,11 @@ export default function GeneratedPage() {
                         <Square className="w-3 h-3 fill-current" />{formatDuration(recordingDuration)}
                       </button>
                     ) : (
-                      <button onClick={startRecording} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-white/5 border border-red-500/30 active:bg-red-500/10 text-white/70 transition-all min-h-[44px]">
+                      <button onClick={startRecording} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-zinc-800/50 border border-red-500/30 active:bg-red-500/10 text-zinc-400 transition-all min-h-[44px]">
                         <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" /> Record
                       </button>
                     )}
-                    <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-white/5 active:bg-white/10 text-white/70 min-h-[44px]">
+                    <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-zinc-800/50 active:bg-white/10 text-zinc-400 min-h-[44px]">
                       <Upload className="w-4 h-4" /> Upload
                     </button>
                   </div>
@@ -11834,16 +12001,16 @@ export default function GeneratedPage() {
                       className={cn(
                         "relative rounded-xl border-2 border-dashed transition-all cursor-pointer min-h-[100px]",
                         isDragging 
-                          ? "border-[#FF6E3C] bg-[#FF6E3C]/10" 
-                          : "border-white/[0.08] bg-white/[0.02] active:bg-white/[0.05]"
+                          ? "border-[var(--accent-orange)] bg-zinc-800/10" 
+                          : "border-zinc-700 bg-zinc-800/50 active:bg-zinc-800/50"
                       )}
                     >
                       <div className="p-6 text-center">
-                        <Video className={cn("w-6 h-6 mx-auto mb-2", isDragging ? "text-[#FF6E3C]" : "text-white/30")} />
-                        <p className={cn("text-sm", isDragging ? "text-[#FF6E3C]" : "text-white/50")}>
+                        <Video className={cn("w-6 h-6 mx-auto mb-2", isDragging ? "text-zinc-300" : "text-zinc-600")} />
+                        <p className={cn("text-sm", isDragging ? "text-zinc-300" : "text-zinc-500")}>
                           {isDragging ? "Drop video here!" : "Drop your video here"}
                         </p>
-                        <p className="text-xs text-white/30 mt-1">
+                        <p className="text-xs text-zinc-600 mt-1">
                           Screen recording or UI walkthrough
                         </p>
                       </div>
@@ -11854,18 +12021,18 @@ export default function GeneratedPage() {
                       onClick={() => setSelectedFlowId(flow.id)}
                       className={cn(
                         "flex items-center gap-3 p-3 rounded-xl cursor-pointer min-h-[56px]",
-                        selectedFlowId === flow.id ? "bg-[#FF6E3C]/10 border border-[#FF6E3C]/30" : "bg-white/5 active:bg-white/10"
+                        selectedFlowId === flow.id ? "bg-zinc-800/10 border border-zinc-700" : "bg-zinc-800/50 active:bg-white/10"
                       )}
                     >
-                      <div className="w-16 h-10 rounded-lg overflow-hidden bg-white/5 flex-shrink-0 flex items-center justify-center">
+                      <div className="w-16 h-10 rounded-lg overflow-hidden bg-zinc-800/50 flex-shrink-0 flex items-center justify-center">
                         {flow.thumbnail ? <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" /> : <Film className="w-4 h-4 text-white/20" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white/80 truncate">{flow.name}</p>
-                        <p className="text-xs text-white/40">{formatDuration(flow.trimEnd - flow.trimStart)} / {formatDuration(flow.duration)}</p>
+                        <p className="text-sm font-medium text-zinc-200 truncate">{flow.name}</p>
+                        <p className="text-xs text-zinc-500">{formatDuration(flow.trimEnd - flow.trimStart)} / {formatDuration(flow.duration)}</p>
                       </div>
                       <button onClick={(e) => { e.stopPropagation(); removeFlow(flow.id); }} className="p-3 rounded-xl active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center">
-                        <Trash2 className="w-4 h-4 text-white/40" />
+                        <Trash2 className="w-4 h-4 text-zinc-500" />
                       </button>
                     </div>
                   ))}
@@ -11873,10 +12040,10 @@ export default function GeneratedPage() {
               </div>
 
               {/* Context Section - Consistent sizing */}
-              <div className="p-4 border-b border-white/5 flex-shrink-0">
+              <div className="p-4 border-b border-zinc-800 flex-shrink-0">
                 <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="w-4 h-4 text-white/50" />
-                  <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Context</span>
+                  <Sparkles className="w-4 h-4 text-zinc-500" />
+                  <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Context</span>
                 </div>
                 <textarea
                   value={refinements}
@@ -11891,15 +12058,15 @@ export default function GeneratedPage() {
                   placeholder="Add data logic, constraints or details (optional)"
                   disabled={isProcessing}
                   rows={3}
-                  className="w-full px-4 py-3 rounded-xl text-sm text-white/70 placeholder:text-white/30 bg-white/[0.03] border border-white/[0.06] focus:outline-none focus:border-[#FF6E3C]/20 min-h-[88px] max-h-[200px] resize-y leading-relaxed"
+                  className="w-full px-4 py-3 rounded-xl text-sm text-zinc-400 placeholder:text-zinc-600 bg-zinc-800/50 border border-zinc-800 focus:outline-none focus:border-zinc-700 min-h-[88px] max-h-[200px] resize-y leading-relaxed"
                 />
               </div>
 
               {/* Style Section - Consistent sizing */}
-              <div className="p-4 border-b border-white/5 flex-shrink-0">
+              <div className="p-4 border-b border-zinc-800 flex-shrink-0">
                 <div className="flex items-center gap-2 mb-3">
-                  <Palette className="w-4 h-4 text-white/50" />
-                  <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Style</span>
+                  <Palette className="w-4 h-4 text-zinc-500" />
+                  <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Style</span>
                 </div>
                 <StyleInjector 
                   value={styleDirective} 
@@ -11911,7 +12078,7 @@ export default function GeneratedPage() {
               </div>
 
               {/* Generate Button */}
-              <div className="p-4 border-b border-white/5 flex-shrink-0">
+              <div className="p-4 border-b border-zinc-800 flex-shrink-0">
                 {(() => {
                   // Determine if we're in update mode (existing project + changed context)
                   const hasProject = activeGeneration && generatedCode && generationComplete;
@@ -11925,8 +12092,8 @@ export default function GeneratedPage() {
                       disabled={isProcessing || isEditing || flows.length === 0}
                       className={cn(
                         "w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl font-semibold text-sm transition-all",
-                        (isProcessing || isEditing) ? "bg-[#FF6E3C]/80" : "bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C]",
-                        "text-white shadow-lg shadow-[#FF6E3C]/30 disabled:opacity-50"
+                        (isProcessing || isEditing) ? "bg-zinc-800/80" : "bg-zinc-800",
+                        "text-white shadow-lg shadow-[var(--accent-orange)]/30 disabled:opacity-50"
                       )}
                     >
                       {isProcessing || isEditing ? (
@@ -11941,29 +12108,29 @@ export default function GeneratedPage() {
 
               {/* Analysis Section */}
               <div className="flex-1 flex flex-col min-h-0">
-                <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2 flex-shrink-0">
-                  <Activity className="w-4 h-4 text-white/40" />
-                  <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">Analysis</span>
+                <div className="px-4 py-3 border-b border-zinc-800 flex items-center gap-2 flex-shrink-0">
+                  <Activity className="w-4 h-4 text-zinc-500" />
+                  <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Analysis</span>
                 </div>
                 <div className="flex-1 p-4 overflow-auto">
                   {(isProcessing || isStreamingCode) && analysisPhase ? (
                     <div className="space-y-4">
                       {/* UX Signals */}
-                      <div className="bg-white/[0.02] rounded-lg p-3">
+                      <div className="bg-zinc-800/50 rounded-lg p-3">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">UX Signals</span>
+                          <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">UX Signals</span>
                         </div>
                         <div className="space-y-1.5">
                           {analysisPhase.uxSignals && analysisPhase.uxSignals.length > 0 ? (
                             analysisPhase.uxSignals.map((signal, i) => (
                               <div key={signal.label} className="flex items-center justify-between">
-                                <span className="text-[10px] text-white/30">{signal.label}</span>
-                                <span className="text-[10px] text-white/50">{signal.value}</span>
+                                <span className="text-[10px] text-zinc-600">{signal.label}</span>
+                                <span className="text-[10px] text-zinc-500">{signal.value}</span>
                               </div>
                             ))
                           ) : (
-                            <div className="flex items-center gap-2 text-[10px] text-white/30">
-                              <Loader2 className="w-3 h-3 animate-spin text-[#FF6E3C]/50" />
+                            <div className="flex items-center gap-2 text-[10px] text-zinc-600">
+                              <Loader2 className="w-3 h-3 animate-spin text-zinc-300/50" />
                               <span>Detecting UX patterns...</span>
                             </div>
                           )}
@@ -11972,15 +12139,15 @@ export default function GeneratedPage() {
                       
                       {/* Structure & Components */}
                       {analysisPhase.structureItems && analysisPhase.structureItems.length > 0 && (
-                        <div className="bg-white/[0.02] rounded-lg p-3">
+                        <div className="bg-zinc-800/50 rounded-lg p-3">
                           <div className="flex items-center gap-2 mb-2">
-                            <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Structure</span>
+                            <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">Structure</span>
                           </div>
                           <div className="space-y-1">
                             {analysisPhase.structureItems.map((item, i) => (
                               <div key={item.name} className="flex items-center gap-2">
-                                <div className={cn("w-1.5 h-1.5 rounded-full", item.status === "done" ? "bg-green-500/60" : "bg-[#FF6E3C]/40")} />
-                                <span className="text-[10px] text-white/50">{item.name}</span>
+                                <div className={cn("w-1.5 h-1.5 rounded-full", item.status === "done" ? "bg-green-500/60" : "bg-zinc-800/40")} />
+                                <span className="text-[10px] text-zinc-500">{item.name}</span>
                               </div>
                             ))}
                           </div>
@@ -11990,17 +12157,17 @@ export default function GeneratedPage() {
                   ) : !generatedCode ? (
                     <div className="flex flex-col items-center justify-center h-full text-center py-8">
                       <Clock className="w-8 h-8 text-white/10 mb-3" />
-                      <p className="text-xs font-medium text-white/40 uppercase tracking-wider">Waiting for generation</p>
+                      <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Waiting for generation</p>
                       <p className="text-[10px] text-white/25 mt-1">Live analysis logs will display here once generation starts.</p>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <Check className="w-4 h-4 text-green-500/60" />
-                        <span className="text-xs text-white/60">Generation complete</span>
+                        <span className="text-xs text-zinc-400">Generation complete</span>
                       </div>
                       {styleInfo && (
-                        <p className="text-[10px] text-white/40">{styleInfo.colors.length} colors, {styleInfo.fonts.length} fonts detected</p>
+                        <p className="text-[10px] text-zinc-500">{styleInfo.colors.length} colors, {styleInfo.fonts.length} fonts detected</p>
                       )}
                     </div>
                   )}
@@ -12015,28 +12182,28 @@ export default function GeneratedPage() {
       {/* Mobile Preview Panel - Static */}
       {mobilePanel === "preview" && !showHistoryMode && !showMobileMenu && (
           <div className={cn(
-            "fixed inset-x-0 top-0 z-30 md:hidden bg-[#0a0a0a] flex flex-col",
+            "fixed inset-x-0 top-0 z-30 md:hidden bg-[#111111] flex flex-col",
             isDemoMode ? "bottom-0" : "bottom-[72px]"
           )}>
             {/* Demo Mode Header - Simplified */}
             {isDemoMode ? (
-              <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 flex-shrink-0 bg-zinc-900 backdrop-blur-xl">
                 <a href="/" className="flex items-center gap-2">
-                  <LogoIcon className="w-6 h-6" color="#FF6E3C" />
-                  <span className="text-sm font-semibold text-white/80">Replay Demo</span>
+                  <LogoIcon className="w-7 h-7" color="white" />
+                  <span className="text-sm font-semibold text-zinc-200">Replay Demo</span>
                 </a>
                 <button 
                   onClick={() => setShowAuthModal(true)}
-                  className="px-4 py-2 rounded-lg bg-[#FF6E3C] text-white text-sm font-semibold"
+                  className="px-4 py-2 rounded-lg bg-zinc-800 text-white text-sm font-semibold"
                 >
                   Try Free
                 </button>
               </div>
             ) : (
               /* Regular Mobile Header */
-              <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
+              <div className="flex items-center gap-2 px-3 py-2.5 border-b border-zinc-800 flex-shrink-0 bg-zinc-900 backdrop-blur-xl">
                 <a href="/" className="flex-shrink-0 p-1.5 -ml-1.5">
-                  <LogoIcon className="w-6 h-6" color="#FF6E3C" />
+                  <LogoIcon className="w-7 h-7" color="white" />
                 </a>
                 <input
                   type="text"
@@ -12049,29 +12216,29 @@ export default function GeneratedPage() {
                       setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updated : g));
                     }
                   }}
-                  className="flex-1 min-w-0 text-sm font-medium text-white/80 bg-transparent focus:outline-none truncate"
+                  className="flex-1 min-w-0 text-sm font-medium text-zinc-200 bg-transparent focus:outline-none truncate"
                   placeholder="Untitled"
                 />
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
-                    <Plus className="w-5 h-5 text-white/50" />
+                  <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
+                    <Plus className="w-5 h-5 text-zinc-500" />
                   </button>
-                  <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Your Projects">
-                    <History className="w-5 h-5 text-white/50" />
+                  <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Your Projects">
+                    <History className="w-5 h-5 text-zinc-500" />
                   </button>
-                  <button onClick={() => setShowProjectSettings(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Settings">
-                    <Settings className="w-5 h-5 text-white/50" />
+                  <button onClick={() => setShowProjectSettings(true)} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Settings">
+                    <Settings className="w-5 h-5 text-zinc-500" />
                   </button>
-                  <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="px-3 py-2 rounded-xl hover:bg-white/5 active:bg-white/10 min-h-[44px] flex items-center justify-center">
+                  <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="px-3 py-2 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-h-[44px] flex items-center justify-center">
                     {user ? (
                       <span className={cn(
                         "text-xs font-semibold uppercase",
-                        (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-[#FF6E3C]" : "text-white/50"
+                        (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-zinc-300" : "text-zinc-500"
                       )}>
                         {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : membership?.plan === "starter" ? "Starter" : "Free"}
                       </span>
                     ) : (
-                      <User className="w-5 h-5 text-white/50" />
+                      <User className="w-5 h-5 text-zinc-500" />
                     )}
                   </button>
                 </div>
@@ -12085,11 +12252,11 @@ export default function GeneratedPage() {
                   <LoadingState />
                 </div>
               ) : previewUrl ? (
-                <div className="w-full h-full overflow-hidden bg-[#0a0a0a]" style={{ overscrollBehavior: 'none' }}>
+                <div className="w-full h-full overflow-hidden bg-[#111111]" style={{ overscrollBehavior: 'none' }}>
                   <iframe 
                     key={previewUrl}
                     src={previewUrl} 
-                    className="w-full h-full border-0 bg-[#0a0a0a]" 
+                    className="w-full h-full border-0 bg-[#111111]" 
                     style={{ 
                       overflow: 'hidden',
                       touchAction: 'pan-y',
@@ -12100,31 +12267,31 @@ export default function GeneratedPage() {
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center mb-4">
-                    <Eye className="w-8 h-8 text-[#FF6E3C]/50" />
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--accent-orange)]/20 to-[#52525b]/10 flex items-center justify-center mb-4">
+                    <Eye className="w-8 h-8 text-zinc-300/50" />
                   </div>
-                  <p className="text-sm text-white/50 font-medium">No preview yet</p>
-                  <p className="text-xs text-white/30 mt-1">Generate to see preview</p>
+                  <p className="text-sm text-zinc-500 font-medium">No preview yet</p>
+                  <p className="text-xs text-zinc-600 mt-1">Generate to see preview</p>
                 </div>
               )}
             </div>
             
             {/* Demo Mode Bottom Banner */}
             {isDemoMode && previewUrl && (
-              <div className="flex-shrink-0 p-4 border-t border-white/5 bg-gradient-to-t from-black to-transparent">
-                <div className="bg-white/[0.03] border border-white/10 rounded-xl p-4">
+              <div className="flex-shrink-0 p-4 border-t border-zinc-800 bg-gradient-to-t from-black to-transparent">
+                <div className="bg-zinc-800/50 border border-zinc-700 rounded-xl p-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-[#FF6E3C]/10 flex items-center justify-center flex-shrink-0">
-                      <Monitor className="w-5 h-5 text-[#FF6E3C]" />
+                    <div className="w-10 h-10 rounded-lg bg-zinc-800/10 flex items-center justify-center flex-shrink-0">
+                      <Monitor className="w-5 h-5 text-zinc-300" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-white">View full project on desktop</p>
-                      <p className="text-xs text-white/50 mt-0.5">Code, Flow Map, Design System & Edit with AI available on larger screens</p>
+                      <p className="text-xs text-zinc-500 mt-0.5">Code, Flow Map, Design System & Edit with AI available on larger screens</p>
                     </div>
                   </div>
                   <button 
                     onClick={() => setShowAuthModal(true)}
-                    className="w-full mt-3 py-3 rounded-lg bg-[#FF6E3C] text-white text-sm font-semibold"
+                    className="w-full mt-3 py-3 rounded-lg bg-zinc-800 text-white text-sm font-semibold"
                   >
                     Sign up free to create your own
                   </button>
@@ -12136,11 +12303,11 @@ export default function GeneratedPage() {
       
       {/* Mobile Code Panel - Static */}
       {mobilePanel === "code" && !showHistoryMode && !showMobileMenu && (
-          <div className="fixed inset-x-0 bottom-[72px] top-0 z-30 md:hidden bg-[#0a0a0a] flex flex-col">
+          <div className="fixed inset-x-0 bottom-[72px] top-0 z-30 md:hidden bg-[#111111] flex flex-col">
             {/* Unified Mobile Header */}
-            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
+            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-zinc-800 flex-shrink-0 bg-zinc-900 backdrop-blur-xl">
               <a href="/" className="flex-shrink-0 p-1.5 -ml-1.5">
-                <LogoIcon className="w-6 h-6" color="#FF6E3C" />
+                <LogoIcon className="w-7 h-7" color="white" />
               </a>
               <input
                 type="text"
@@ -12153,29 +12320,29 @@ export default function GeneratedPage() {
                     setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updated : g));
                   }
                 }}
-                className="flex-1 min-w-0 text-sm font-medium text-white/80 bg-transparent focus:outline-none truncate"
+                className="flex-1 min-w-0 text-sm font-medium text-zinc-200 bg-transparent focus:outline-none truncate"
                 placeholder="Untitled"
               />
               <div className="flex items-center gap-1 flex-shrink-0">
-                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
-                  <Plus className="w-5 h-5 text-white/50" />
+                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
+                  <Plus className="w-5 h-5 text-zinc-500" />
                 </button>
-                <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Your Projects">
-                  <History className="w-5 h-5 text-white/50" />
+                <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Your Projects">
+                  <History className="w-5 h-5 text-zinc-500" />
                 </button>
-                <button onClick={() => setShowProjectSettings(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Settings">
-                  <Settings className="w-5 h-5 text-white/50" />
+                <button onClick={() => setShowProjectSettings(true)} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Settings">
+                  <Settings className="w-5 h-5 text-zinc-500" />
                 </button>
-                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="px-3 py-2 rounded-xl hover:bg-white/5 active:bg-white/10 min-h-[44px] flex items-center justify-center">
+                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="px-3 py-2 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-h-[44px] flex items-center justify-center">
                   {user ? (
                     <span className={cn(
                       "text-xs font-semibold uppercase",
-                      (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-[#FF6E3C]" : "text-white/50"
+                      (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-zinc-300" : "text-zinc-500"
                     )}>
                       {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : membership?.plan === "starter" ? "Starter" : "Free"}
                     </span>
                   ) : (
-                    <User className="w-5 h-5 text-white/50" />
+                    <User className="w-5 h-5 text-zinc-500" />
                   )}
                 </button>
               </div>
@@ -12188,13 +12355,13 @@ export default function GeneratedPage() {
             ) : generatedCode ? (
               <>
                 {/* Secondary Header with toggle, copy, and download */}
-                <div className="flex items-center justify-between p-2 border-b border-white/10 flex-shrink-0 bg-black/50">
+                <div className="flex items-center justify-between p-2 border-b border-zinc-700 flex-shrink-0 bg-zinc-900">
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => setCodeMode("single-file")}
                       className={cn(
                         "text-[10px] px-2 py-1 rounded-md transition-colors",
-                        codeMode === "single-file" ? "bg-white/10 text-white" : "text-white/40"
+                        codeMode === "single-file" ? "bg-white/10 text-white" : "text-zinc-500"
                       )}
                     >
                       Single-file
@@ -12204,7 +12371,7 @@ export default function GeneratedPage() {
                       disabled={!generationComplete}
                       className={cn(
                         "text-[10px] px-2 py-1 rounded-md transition-colors",
-                        codeMode === "componentized" ? "bg-white/10 text-white" : "text-white/40",
+                        codeMode === "componentized" ? "bg-white/10 text-white" : "text-zinc-500",
                         !generationComplete && "opacity-50"
                       )}
                     >
@@ -12223,7 +12390,7 @@ export default function GeneratedPage() {
                         }
                       }} 
                       className={cn(
-                        "text-[10px] text-white/40 hover:text-white/60 flex items-center gap-1",
+                        "text-[10px] text-zinc-500 hover:text-zinc-400 flex items-center gap-1",
                         !isPaidPlan && "opacity-50"
                       )}
                     >
@@ -12240,7 +12407,7 @@ export default function GeneratedPage() {
                         }
                       }}
                       className={cn(
-                        "text-[10px] text-white/40 hover:text-white/60 flex items-center gap-1",
+                        "text-[10px] text-zinc-500 hover:text-zinc-400 flex items-center gap-1",
                         !isPaidPlan && "opacity-50"
                       )}
                     >
@@ -12252,7 +12419,7 @@ export default function GeneratedPage() {
                 
                 {/* File tree (compact for mobile) */}
                 {codeMode === "componentized" && generatedFiles.length > 0 && (
-                  <div className="flex overflow-x-auto gap-1 p-2 border-b border-white/5 flex-shrink-0">
+                  <div className="flex overflow-x-auto gap-1 p-2 border-b border-zinc-800 flex-shrink-0">
                     {generatedFiles.filter(f => !f.isStub).slice(0, 8).map(file => (
                       <button
                         key={file.path}
@@ -12260,8 +12427,8 @@ export default function GeneratedPage() {
                         className={cn(
                           "text-[9px] px-2 py-1 rounded whitespace-nowrap flex-shrink-0",
                           activeFilePath === file.path 
-                            ? "bg-[#FF6E3C]/20 text-[#FF6E3C]" 
-                            : "bg-white/5 text-white/50"
+                            ? "bg-zinc-800/20 text-zinc-300" 
+                            : "bg-zinc-800/50 text-zinc-500"
                         )}
                       >
                         {file.name}
@@ -12271,13 +12438,13 @@ export default function GeneratedPage() {
                 )}
                 
                 {/* Code display with syntax highlighting - Visible for all, export locked */}
-                <div className="flex-1 overflow-auto bg-[#0a0a0a] relative">
+                <div className="flex-1 overflow-auto bg-[#111111] relative">
                   {generatingFilePath && generatingFilePath === activeFilePath ? (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-3">
-                      <Loader2 className="w-6 h-6 text-[#FF6E3C] animate-spin" />
+                      <Loader2 className="w-6 h-6 text-zinc-300 animate-spin" />
                       <div className="text-center">
-                        <p className="text-xs text-white/60">Generating page...</p>
-                        <p className="text-[10px] text-white/30 mt-0.5">{activeFilePath.split('/').pop()}</p>
+                        <p className="text-xs text-zinc-400">Generating page...</p>
+                        <p className="text-[10px] text-zinc-600 mt-0.5">{activeFilePath.split('/').pop()}</p>
                       </div>
                     </div>
                   ) : (
@@ -12309,23 +12476,23 @@ export default function GeneratedPage() {
                 
                 {/* Edit with AI button */}
                 {!showFloatingEdit && !isStreamingCode && (
-                  <div className="flex-shrink-0 p-3 border-t border-white/5">
+                  <div className="flex-shrink-0 p-3 border-t border-zinc-800">
                     <button 
                       onClick={() => { setShowFloatingEdit(true); setIsDirectEditMode(false); }} 
-                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/70 text-xs font-medium"
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-zinc-800/50 border border-zinc-700 text-zinc-400 text-xs font-medium"
                     >
-                      <Sparkles className="w-3.5 h-3.5 text-[#FF6E3C]" /> Edit with AI
+                      <Sparkles className="w-3.5 h-3.5 text-zinc-300" /> Edit with AI
                     </button>
                   </div>
                 )}
               </>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center mb-4">
-                  <Code className="w-8 h-8 text-[#FF6E3C]/50" />
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--accent-orange)]/20 to-[#52525b]/10 flex items-center justify-center mb-4">
+                  <Code className="w-8 h-8 text-zinc-300/50" />
                 </div>
-                <p className="text-sm text-white/50 font-medium">No code yet</p>
-                <p className="text-xs text-white/30 mt-1">Generate to see code</p>
+                <p className="text-sm text-zinc-500 font-medium">No code yet</p>
+                <p className="text-xs text-zinc-600 mt-1">Generate to see code</p>
               </div>
             )}
           </div>
@@ -12333,11 +12500,11 @@ export default function GeneratedPage() {
       
       {/* Mobile Flow Panel - Static */}
       {mobilePanel === "flow" && !showHistoryMode && !showMobileMenu && (
-          <div className="fixed inset-x-0 bottom-[72px] top-0 z-30 md:hidden bg-[#0a0a0a] flex flex-col">
+          <div className="fixed inset-x-0 bottom-[72px] top-0 z-30 md:hidden bg-[#111111] flex flex-col">
             {/* Unified Mobile Header */}
-            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
+            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-zinc-800 flex-shrink-0 bg-zinc-900 backdrop-blur-xl">
               <a href="/" className="flex-shrink-0 p-1.5 -ml-1.5">
-                <LogoIcon className="w-6 h-6" color="#FF6E3C" />
+                <LogoIcon className="w-7 h-7" color="white" />
               </a>
               <input
                 type="text"
@@ -12350,29 +12517,29 @@ export default function GeneratedPage() {
                     setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updated : g));
                   }
                 }}
-                className="flex-1 min-w-0 text-sm font-medium text-white/80 bg-transparent focus:outline-none truncate"
+                className="flex-1 min-w-0 text-sm font-medium text-zinc-200 bg-transparent focus:outline-none truncate"
                 placeholder="Untitled"
               />
               <div className="flex items-center gap-1 flex-shrink-0">
-                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
-                  <Plus className="w-5 h-5 text-white/50" />
+                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
+                  <Plus className="w-5 h-5 text-zinc-500" />
                 </button>
-                <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Your Projects">
-                  <History className="w-5 h-5 text-white/50" />
+                <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Your Projects">
+                  <History className="w-5 h-5 text-zinc-500" />
                 </button>
-                <button onClick={() => setShowProjectSettings(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Settings">
-                  <Settings className="w-5 h-5 text-white/50" />
+                <button onClick={() => setShowProjectSettings(true)} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Settings">
+                  <Settings className="w-5 h-5 text-zinc-500" />
                 </button>
-                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="px-3 py-2 rounded-xl hover:bg-white/5 active:bg-white/10 min-h-[44px] flex items-center justify-center">
+                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="px-3 py-2 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-h-[44px] flex items-center justify-center">
                   {user ? (
                     <span className={cn(
                       "text-xs font-semibold uppercase",
-                      (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-[#FF6E3C]" : "text-white/50"
+                      (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-zinc-300" : "text-zinc-500"
                     )}>
                       {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : membership?.plan === "starter" ? "Starter" : "Free"}
                     </span>
                   ) : (
-                    <User className="w-5 h-5 text-white/50" />
+                    <User className="w-5 h-5 text-zinc-500" />
                   )}
                 </button>
               </div>
@@ -12381,10 +12548,10 @@ export default function GeneratedPage() {
             {flowNodes.length > 0 ? (
               <>
                 {/* Secondary Header with toggles */}
-                <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 flex-shrink-0 bg-black/50">
+                <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-700 flex-shrink-0 bg-zinc-900">
                   <div>
-                    <span className="text-xs text-white/50 flex items-center gap-1.5">
-                      <GitBranch className="w-3.5 h-3.5 text-[#FF6E3C]" />
+                    <span className="text-xs text-zinc-500 flex items-center gap-1.5">
+                      <GitBranch className="w-3.5 h-3.5 text-zinc-300" />
                       Product Flow
                     </span>
                   </div>
@@ -12393,7 +12560,7 @@ export default function GeneratedPage() {
                       onClick={() => setShowPossiblePaths(!showPossiblePaths)}
                       className={cn(
                         "text-[9px] px-2 py-1 rounded-lg flex items-center gap-1",
-                        showPossiblePaths ? "bg-[#FF6E3C]/20 text-[#FF6E3C]" : "bg-white/5 text-white/40"
+                        showPossiblePaths ? "bg-white text-zinc-900" : "bg-zinc-800/50 text-zinc-500 hover:bg-zinc-700/50"
                       )}
                     >
                       <GitBranch className="w-2.5 h-2.5" />
@@ -12403,7 +12570,7 @@ export default function GeneratedPage() {
                       onClick={() => setShowStructureInFlow(!showStructureInFlow)}
                       className={cn(
                         "text-[9px] px-2 py-1 rounded-lg flex items-center gap-1",
-                        showStructureInFlow ? "bg-[#FF6E3C]/20 text-[#FF6E3C]" : "bg-white/5 text-white/40"
+                        showStructureInFlow ? "bg-white text-zinc-900" : "bg-zinc-800/50 text-zinc-500 hover:bg-zinc-700/50"
                       )}
                     >
                       <Layers className="w-2.5 h-2.5" />
@@ -12428,10 +12595,10 @@ export default function GeneratedPage() {
                           isObserved
                             ? "border-emerald-500/30 bg-emerald-500/5"
                             : isDetected 
-                            ? "border-amber-500/30 bg-amber-500/5" 
+                            ? "border-zinc-600/30 bg-zinc-700/10" 
                             : isPossible 
-                            ? "border-dashed border-white/20 bg-white/5 opacity-60" 
-                            : "border-[#FF6E3C]/30 bg-[#FF6E3C]/5"
+                            ? "border-dashed border-white/20 bg-zinc-800/50 opacity-60" 
+                            : "border-zinc-700 bg-zinc-800/5"
                         )}
                         onClick={() => {
                           if (isEditing) return;
@@ -12445,33 +12612,33 @@ export default function GeneratedPage() {
                         <div className="flex items-center justify-between mb-1">
                           <div className="flex items-center gap-2">
                             {isObserved && <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
-                            {isDetected && <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
+                            {isDetected && <div className="w-1.5 h-1.5 rounded-full bg-zinc-500" />}
                             {isPossible && <div className="w-1.5 h-1.5 rounded-full bg-white/40" />}
                             <p className={cn(
                               "text-sm font-medium",
-                              isPossible ? "text-white/50 italic" : isDetected ? "text-white/70" : "text-white/80"
+                              isPossible ? "text-zinc-500 italic" : isDetected ? "text-zinc-400" : "text-zinc-200"
                             )}>{node.name}</p>
                           </div>
                           <span className={cn(
                             "text-[8px] px-1.5 py-0.5 rounded uppercase",
-                            isPossible ? "bg-white/5 text-white/30" : isDetected ? "bg-amber-500/10 text-amber-400/60" : "bg-emerald-500/10 text-emerald-400/60"
+                            isPossible ? "bg-zinc-800/50 text-zinc-600" : isDetected ? "bg-zinc-600/10 text-zinc-400" : "bg-emerald-500/10 text-emerald-400/60"
                           )}>
                             {isPossible ? "possible" : isDetected ? "detected" : "observed"}
                           </span>
                         </div>
                         {node.description && (
-                          <p className={cn("text-xs", isPossible ? "text-white/25" : isDetected ? "text-white/30" : "text-white/40")}>
+                          <p className={cn("text-xs", isPossible ? "text-white/25" : isDetected ? "text-zinc-600" : "text-zinc-500")}>
                             {node.description}
                           </p>
                         )}
                         
                         {/* Structure components (when toggle is ON) */}
                         {showStructureInFlow && node.components && node.components.length > 0 && (
-                          <div className="mt-2 pt-2 border-t border-white/10">
-                            <span className="text-[9px] text-white/30 uppercase">Components:</span>
+                          <div className="mt-2 pt-2 border-t border-zinc-700">
+                            <span className="text-[9px] text-zinc-600 uppercase">Components:</span>
                             <div className="flex flex-wrap gap-1 mt-1">
                               {node.components.map((comp, i) => (
-                                <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/50">{comp}</span>
+                                <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800/50 text-zinc-500">{comp}</span>
                               ))}
                             </div>
                           </div>
@@ -12482,8 +12649,8 @@ export default function GeneratedPage() {
                   
                   {/* Transitions section inside scrollable area */}
                   {flowEdges.filter(e => showPossiblePaths || e.type !== "possible").length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-white/10">
-                      <span className="text-xs text-white/50 block mb-2">Transitions</span>
+                    <div className="mt-4 pt-4 border-t border-zinc-700">
+                      <span className="text-xs text-zinc-500 block mb-2">Transitions</span>
                       {flowEdges
                         .filter(e => showPossiblePaths || e.type !== "possible")
                         .slice(0, 10)
@@ -12492,14 +12659,14 @@ export default function GeneratedPage() {
                           const toNode = flowNodes.find(n => n.id === edge.to);
                           if (!fromNode || !toNode) return null;
                           return (
-                            <div key={edge.id} className="text-[10px] text-white/40 py-1 flex items-center gap-1">
-                              <span className="text-white/60">{fromNode.name}</span>
+                            <div key={edge.id} className="text-[10px] text-zinc-500 py-1 flex items-center gap-1">
+                              <span className="text-zinc-400">{fromNode.name}</span>
                               <span className="text-white/20">→</span>
-                              <span className="text-[#FF6E3C]/70">{edge.label}</span>
+                              <span className="text-zinc-300/70">{edge.label}</span>
                               <span className="text-white/20">→</span>
                               <span className={cn(
-                                toNode.status === "possible" ? "text-white/30 italic" : 
-                                toNode.status === "detected" ? "text-amber-400/50" : "text-white/60"
+                                toNode.status === "possible" ? "text-zinc-600 italic" : 
+                                toNode.status === "detected" ? "text-zinc-300/50" : "text-zinc-400"
                               )}>
                                 {toNode.name}
                               </span>
@@ -12512,23 +12679,23 @@ export default function GeneratedPage() {
                 
                 {/* Edit with AI button */}
                 {!showFloatingEdit && !isProcessing && (
-                  <div className="flex-shrink-0 p-3 border-t border-white/5">
+                  <div className="flex-shrink-0 p-3 border-t border-zinc-800">
                     <button 
                       onClick={() => { setShowFloatingEdit(true); setIsDirectEditMode(false); }} 
-                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/70 text-xs font-medium"
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-zinc-800/50 border border-zinc-700 text-zinc-400 text-xs font-medium"
                     >
-                      <Sparkles className="w-3.5 h-3.5 text-[#FF6E3C]" /> Edit with AI
+                      <Sparkles className="w-3.5 h-3.5 text-zinc-300" /> Edit with AI
                     </button>
                   </div>
                 )}
               </>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center mb-4">
-                  <GitBranch className="w-8 h-8 text-[#FF6E3C]/50" />
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--accent-orange)]/20 to-[#52525b]/10 flex items-center justify-center mb-4">
+                  <GitBranch className="w-8 h-8 text-zinc-300/50" />
                 </div>
-                <p className="text-sm text-white/50 font-medium">No flow yet</p>
-                <p className="text-xs text-white/30 mt-1">Generate to see product flow</p>
+                <p className="text-sm text-zinc-500 font-medium">No flow yet</p>
+                <p className="text-xs text-zinc-600 mt-1">Generate to see product flow</p>
               </div>
             )}
           </div>
@@ -12536,11 +12703,11 @@ export default function GeneratedPage() {
       
       {/* Mobile Design Panel - Static */}
       {mobilePanel === "design" && !showHistoryMode && !showMobileMenu && (
-          <div className="fixed inset-x-0 bottom-[72px] top-0 z-30 md:hidden bg-[#0a0a0a] flex flex-col">
+          <div className="fixed inset-x-0 bottom-[72px] top-0 z-30 md:hidden bg-[#111111] flex flex-col">
             {/* Unified Mobile Header */}
-            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
+            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-zinc-800 flex-shrink-0 bg-zinc-900 backdrop-blur-xl">
               <a href="/" className="flex-shrink-0 p-1.5 -ml-1.5">
-                <LogoIcon className="w-6 h-6" color="#FF6E3C" />
+                <LogoIcon className="w-7 h-7" color="white" />
               </a>
               <input
                 type="text"
@@ -12553,29 +12720,29 @@ export default function GeneratedPage() {
                     setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updated : g));
                   }
                 }}
-                className="flex-1 min-w-0 text-sm font-medium text-white/80 bg-transparent focus:outline-none truncate"
+                className="flex-1 min-w-0 text-sm font-medium text-zinc-200 bg-transparent focus:outline-none truncate"
                 placeholder="Untitled"
               />
               <div className="flex items-center gap-1 flex-shrink-0">
-                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
-                  <Plus className="w-5 h-5 text-white/50" />
+                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
+                  <Plus className="w-5 h-5 text-zinc-500" />
                 </button>
-                <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Your Projects">
-                  <History className="w-5 h-5 text-white/50" />
+                <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Your Projects">
+                  <History className="w-5 h-5 text-zinc-500" />
                 </button>
-                <button onClick={() => setShowProjectSettings(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Settings">
-                  <Settings className="w-5 h-5 text-white/50" />
+                <button onClick={() => setShowProjectSettings(true)} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Settings">
+                  <Settings className="w-5 h-5 text-zinc-500" />
                 </button>
-                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="px-3 py-2 rounded-xl hover:bg-white/5 active:bg-white/10 min-h-[44px] flex items-center justify-center">
+                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="px-3 py-2 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-h-[44px] flex items-center justify-center">
                   {user ? (
                     <span className={cn(
                       "text-xs font-semibold uppercase",
-                      (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-[#FF6E3C]" : "text-white/50"
+                      (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-zinc-300" : "text-zinc-500"
                     )}>
                       {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : membership?.plan === "starter" ? "Starter" : "Free"}
                     </span>
                   ) : (
-                    <User className="w-5 h-5 text-white/50" />
+                    <User className="w-5 h-5 text-zinc-500" />
                   )}
                 </button>
               </div>
@@ -12585,18 +12752,18 @@ export default function GeneratedPage() {
               <div className="flex-1 overflow-auto p-4 space-y-6">
                 {/* Colors */}
                 <div>
-                  <span className="text-xs text-white/50 flex items-center gap-1.5 mb-3">
-                    <div className="w-2 h-2 rounded-full bg-[#FF6E3C]" />
+                  <span className="text-xs text-zinc-500 flex items-center gap-1.5 mb-3">
+                    <div className="w-2 h-2 rounded-full bg-zinc-800" />
                     Colors
                   </span>
                   <div className="grid grid-cols-4 gap-2">
                     {styleInfo.colors.slice(0, 8).map((color, i) => (
                       <div key={i} className="space-y-1">
                         <div 
-                          className="h-12 rounded-lg border border-white/10" 
+                          className="h-12 rounded-lg border border-zinc-700" 
                           style={{ backgroundColor: color.value }} 
                         />
-                        <p className="text-[9px] text-white/40 text-center truncate">{color.name || color.value}</p>
+                        <p className="text-[9px] text-zinc-500 text-center truncate">{color.name || color.value}</p>
                       </div>
                     ))}
                   </div>
@@ -12605,17 +12772,17 @@ export default function GeneratedPage() {
                 {/* Typography */}
                 {styleInfo.fonts.length > 0 && (
                   <div>
-                    <span className="text-xs text-white/50 flex items-center gap-1.5 mb-3">
-                      <Type className="w-3 h-3 text-[#FF6E3C]" />
+                    <span className="text-xs text-zinc-500 flex items-center gap-1.5 mb-3">
+                      <Type className="w-3 h-3 text-zinc-300" />
                       Typography
                     </span>
                     <div className="space-y-2">
                       {styleInfo.fonts.map((font, i) => (
-                        <div key={i} className="p-2 bg-white/5 rounded-lg">
-                          <p className="text-sm text-white/70" style={{ fontFamily: font.family }}>
+                        <div key={i} className="p-2 bg-zinc-800/50 rounded-lg">
+                          <p className="text-sm text-zinc-400" style={{ fontFamily: font.family }}>
                             {font.family || font.name}
                           </p>
-                          <p className="text-[10px] text-white/30">{font.usage || font.weight}</p>
+                          <p className="text-[10px] text-zinc-600">{font.usage || font.weight}</p>
                         </div>
                       ))}
                     </div>
@@ -12626,14 +12793,14 @@ export default function GeneratedPage() {
                 <div className="grid grid-cols-2 gap-4">
                   {styleInfo.spacing && (
                     <div>
-                      <span className="text-xs text-white/50 block mb-2">Spacing</span>
-                      <p className="text-sm text-white/70">{styleInfo.spacing}</p>
+                      <span className="text-xs text-zinc-500 block mb-2">Spacing</span>
+                      <p className="text-sm text-zinc-400">{styleInfo.spacing}</p>
                     </div>
                   )}
                   {styleInfo.borderRadius && (
                     <div>
-                      <span className="text-xs text-white/50 block mb-2">Radius</span>
-                      <p className="text-sm text-white/70">{styleInfo.borderRadius}</p>
+                      <span className="text-xs text-zinc-500 block mb-2">Radius</span>
+                      <p className="text-sm text-zinc-400">{styleInfo.borderRadius}</p>
                     </div>
                   )}
                 </div>
@@ -12641,18 +12808,18 @@ export default function GeneratedPage() {
                 {/* Shadows */}
                 {styleInfo.shadows && (
                   <div>
-                    <span className="text-xs text-white/50 block mb-2">Shadows</span>
-                    <p className="text-sm text-white/70">{styleInfo.shadows}</p>
+                    <span className="text-xs text-zinc-500 block mb-2">Shadows</span>
+                    <p className="text-sm text-zinc-400">{styleInfo.shadows}</p>
                   </div>
                 )}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center mb-4">
-                  <Palette className="w-8 h-8 text-[#FF6E3C]/50" />
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--accent-orange)]/20 to-[#52525b]/10 flex items-center justify-center mb-4">
+                  <Palette className="w-8 h-8 text-zinc-300/50" />
                 </div>
-                <p className="text-sm text-white/50 font-medium">No style analysis yet</p>
-                <p className="text-xs text-white/30 mt-1">Generate to see design system</p>
+                <p className="text-sm text-zinc-500 font-medium">No style analysis yet</p>
+                <p className="text-xs text-zinc-600 mt-1">Generate to see design system</p>
               </div>
             )}
           </div>
@@ -12660,11 +12827,11 @@ export default function GeneratedPage() {
       
       {/* Mobile Chat Panel - Static */}
       {mobilePanel === "chat" && generatedCode && !showHistoryMode && !showMobileMenu && (
-          <div className="fixed inset-x-0 bottom-[72px] top-0 z-30 md:hidden bg-[#0a0a0a] flex flex-col">
+          <div className="fixed inset-x-0 bottom-[72px] top-0 z-30 md:hidden bg-[#111111] flex flex-col">
             {/* Combined Header - Logo, Project Name, Actions, Avatar in one row */}
-            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5 flex-shrink-0 bg-black/95 backdrop-blur-xl">
+            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-zinc-800 flex-shrink-0 bg-zinc-900 backdrop-blur-xl">
               <a href="/" className="flex-shrink-0 p-1.5 -ml-1.5">
-                <LogoIcon className="w-6 h-6" color="#FF6E3C" />
+                <LogoIcon className="w-7 h-7" color="white" />
               </a>
               <input
                 type="text"
@@ -12677,29 +12844,29 @@ export default function GeneratedPage() {
                     setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updated : g));
                   }
                 }}
-                className="flex-1 min-w-0 text-sm font-medium text-white/80 bg-transparent focus:outline-none truncate"
+                className="flex-1 min-w-0 text-sm font-medium text-zinc-200 bg-transparent focus:outline-none truncate"
                 placeholder="Untitled"
               />
               <div className="flex items-center gap-1 flex-shrink-0">
-                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
-                  <Plus className="w-5 h-5 text-white/50" />
+                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
+                  <Plus className="w-5 h-5 text-zinc-500" />
                 </button>
-                <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Your Projects">
-                  <History className="w-5 h-5 text-white/50" />
+                <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Your Projects">
+                  <History className="w-5 h-5 text-zinc-500" />
                 </button>
-                <button onClick={() => setShowProjectSettings(true)} className="p-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Settings">
-                  <Settings className="w-5 h-5 text-white/50" />
+                <button onClick={() => setShowProjectSettings(true)} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Settings">
+                  <Settings className="w-5 h-5 text-zinc-500" />
                 </button>
-                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="px-3 py-2 rounded-xl hover:bg-white/5 active:bg-white/10 min-h-[44px] flex items-center justify-center">
+                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="px-3 py-2 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-h-[44px] flex items-center justify-center">
                   {user ? (
                     <span className={cn(
                       "text-xs font-semibold uppercase",
-                      (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-[#FF6E3C]" : "text-white/50"
+                      (membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise") ? "text-zinc-300" : "text-zinc-500"
                     )}>
                       {membership?.plan === "agency" ? "Agency" : membership?.plan === "enterprise" ? "Enterprise" : membership?.plan === "pro" ? "Pro" : membership?.plan === "starter" ? "Starter" : "Free"}
                     </span>
                   ) : (
-                    <User className="w-5 h-5 text-white/50" />
+                    <User className="w-5 h-5 text-zinc-500" />
                   )}
                 </button>
               </div>
@@ -12713,8 +12880,8 @@ export default function GeneratedPage() {
                   className={cn(
                     "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all",
                     sidebarTab === "chat" 
-                      ? "bg-white/[0.08] text-white" 
-                      : "text-white/40"
+                      ? "bg-zinc-800/50 text-white" 
+                      : "text-zinc-500"
                   )}
                 >
                   <Send className="w-3.5 h-3.5" />
@@ -12725,8 +12892,8 @@ export default function GeneratedPage() {
                   className={cn(
                     "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all",
                     sidebarTab === "style" 
-                      ? "bg-white/[0.08] text-white" 
-                      : "text-white/40"
+                      ? "bg-zinc-800/50 text-white" 
+                      : "text-zinc-500"
                   )}
                 >
                   <Boxes className="w-3.5 h-3.5" />
@@ -12750,19 +12917,19 @@ export default function GeneratedPage() {
                         /* AI Message */
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
-                            <LogoIcon className="w-4 h-4" color="#FF6E3C" />
-                            <span className="text-xs font-medium text-white/40">Replay</span>
+                            <LogoIcon className="w-4 h-4" color="var(--accent-orange)" />
+                            <span className="text-xs font-medium text-zinc-500">Replay</span>
                           </div>
-                          <div className="text-sm leading-relaxed text-white/70 space-y-2">
+                          <div className="text-sm leading-relaxed text-zinc-400 space-y-2">
                             {msg.content.split('\n').map((line, i) => {
                               if (line.includes('Complete')) {
                                 return <p key={i} className="text-emerald-400/90 font-medium flex items-center gap-1.5"><Check className="w-4 h-4" />{line.replace(/\*\*/g, '')}</p>;
                               }
                               if (line.startsWith('**') && line.endsWith('**')) {
-                                return <p key={i} className="font-semibold text-white/90">{line.replace(/\*\*/g, '')}</p>;
+                                return <p key={i} className="font-semibold text-zinc-200">{line.replace(/\*\*/g, '')}</p>;
                               }
                               if (line.startsWith('• ') || line.startsWith('- ')) {
-                                return <p key={i} className="text-white/60 pl-3 border-l-2 border-white/10">{line.substring(2)}</p>;
+                                return <p key={i} className="text-zinc-400 pl-3 border-l-2 border-zinc-700">{line.substring(2)}</p>;
                               }
                               if (line.trim()) {
                                 return <p key={i}>{line.replace(/\*\*([^*]+)\*\*/g, (_, t) => t)}</p>;
@@ -12777,7 +12944,7 @@ export default function GeneratedPage() {
                                 <button
                                   key={i}
                                   onClick={() => setChatInput(action)}
-                                  className="px-3 py-1.5 rounded-lg text-xs bg-white/[0.04] text-white/50 hover:bg-white/[0.08] hover:text-white/80 border border-white/[0.06] transition-all"
+                                  className="px-3 py-1.5 rounded-lg text-xs bg-zinc-800/50 text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-200 border border-zinc-800 transition-all"
                                 >
                                   {action}
                                 </button>
@@ -12789,7 +12956,7 @@ export default function GeneratedPage() {
                         /* User Message */
                         <div className="flex justify-end">
                           <div className="max-w-[85%]">
-                            <div className="px-4 py-2.5 rounded-2xl bg-white/[0.06] text-sm text-white/80">
+                            <div className="px-4 py-2.5 rounded-2xl bg-zinc-800/50 text-sm text-zinc-200">
                               {msg.content}
                             </div>
                             {msg.attachments && msg.attachments.length > 0 && (
@@ -12813,16 +12980,16 @@ export default function GeneratedPage() {
                     <motion.div 
                       initial={{ opacity: 0, y: 8 }} 
                       animate={{ opacity: 1, y: 0 }} 
-                      className="rounded-xl overflow-hidden border border-white/[0.08]"
+                      className="rounded-xl overflow-hidden border border-zinc-700"
                       style={{ background: '#0a0a0a' }}
                     >
                       {/* Header */}
-                      <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/[0.06]">
+                      <div className="flex items-center justify-between px-3 py-2.5 border-b border-zinc-800">
                         <div className="flex items-center gap-2">
-                          <Loader2 className="w-4 h-4 text-[#FF6E3C] animate-spin" />
-                          <span className="text-xs text-white/50">{streamingStatus || "Pracuję..."}</span>
+                          <Loader2 className="w-4 h-4 text-zinc-300 animate-spin" />
+                          <span className="text-xs text-zinc-500">{streamingStatus || "Pracuję..."}</span>
                           {streamingLines > 0 && (
-                            <span className="text-[10px] text-[#FF6E3C]/60 font-mono">{streamingLines} linii</span>
+                            <span className="text-[10px] text-zinc-300/60 font-mono">{streamingLines} linii</span>
                           )}
                         </div>
                         <button
@@ -12834,7 +13001,7 @@ export default function GeneratedPage() {
                             setStreamingLines(0);
                             showToast("Anulowano", "info");
                           }}
-                          className="p-1 rounded hover:bg-white/10 text-white/30"
+                          className="p-1 rounded hover:bg-white/10 text-zinc-600"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -12859,9 +13026,9 @@ export default function GeneratedPage() {
                               </div>
                             ))
                           ) : (
-                            <span className="text-white/30">Inicjalizuję...</span>
+                            <span className="text-zinc-600">Inicjalizuję...</span>
                           )}
-                          <span className="inline-block w-2 h-3.5 bg-[#FF6E3C] ml-0.5 animate-pulse" />
+                          <span className="inline-block w-2 h-3.5 bg-zinc-800 ml-0.5 animate-pulse" />
                         </pre>
                       </div>
                     </motion.div>
@@ -12874,7 +13041,7 @@ export default function GeneratedPage() {
                 {/* Videos Section */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-[10px] font-medium text-white/50 uppercase tracking-wider flex items-center gap-1">
+                    <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider flex items-center gap-1">
                       <Video className="w-2.5 h-2.5" /> Videos
                       {flows.length > 0 && <span className="text-[8px] bg-white/10 px-1 py-0.5 rounded">{flows.length}</span>}
                     </label>
@@ -12882,13 +13049,13 @@ export default function GeneratedPage() {
                   <div className="flex gap-1.5 mb-2">
                     <button 
                       onClick={startRecording}
-                      className="flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.06] text-[10px] text-white/60 hover:text-white/80 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg bg-zinc-800/50 border border-zinc-700 hover:bg-zinc-800/50 text-[10px] text-zinc-400 hover:text-zinc-200 transition-colors"
                     >
                       <Monitor className="w-3 h-3" /> Record
                     </button>
                     <button 
                       onClick={() => fileInputRef.current?.click()}
-                      className="flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.06] text-[10px] text-white/60 hover:text-white/80 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg bg-zinc-800/50 border border-zinc-700 hover:bg-zinc-800/50 text-[10px] text-zinc-400 hover:text-zinc-200 transition-colors"
                     >
                       <Upload className="w-3 h-3" /> Upload
                     </button>
@@ -12896,13 +13063,13 @@ export default function GeneratedPage() {
                   {/* Video list */}
                   <div className="space-y-1.5 max-h-[120px] overflow-auto">
                     {flows.map((flow) => (
-                      <button key={flow.id} onClick={() => setSelectedFlowId(flow.id)} className={cn("w-full flex items-center gap-2 p-2 rounded-lg cursor-pointer text-left", selectedFlowId === flow.id ? "bg-[#FF6E3C]/10 border border-[#FF6E3C]/20" : "bg-white/[0.03] hover:bg-white/[0.05]")} aria-label={`Select flow ${flow.name}`}>
-                        <div className="w-10 h-6 rounded overflow-hidden bg-white/5 flex-shrink-0">
+                      <button key={flow.id} onClick={() => setSelectedFlowId(flow.id)} className={cn("w-full flex items-center gap-2 p-2 rounded-lg cursor-pointer text-left", selectedFlowId === flow.id ? "bg-zinc-800/10 border border-zinc-700" : "bg-zinc-800/50 hover:bg-zinc-800/50")} aria-label={`Select flow ${flow.name}`}>
+                        <div className="w-10 h-6 rounded overflow-hidden bg-zinc-800/50 flex-shrink-0">
                           {flow.thumbnail ? <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" /> : <Film className="w-3 h-3 text-white/20 mx-auto mt-1.5" />}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs text-white/70 truncate">{flow.name}</p>
-                          <p className="text-[10px] text-white/30">{formatDuration(flow.duration)}</p>
+                          <p className="text-xs text-zinc-400 truncate">{flow.name}</p>
+                          <p className="text-[10px] text-zinc-600">{formatDuration(flow.duration)}</p>
                         </div>
                         <span onClick={(e) => { e.stopPropagation(); setFlows(prev => prev.filter(f => f.id !== flow.id)); }} className="p-1 text-white/20 hover:text-red-400" role="button" tabIndex={0} aria-label="Remove flow" onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setFlows(prev => prev.filter(f => f.id !== flow.id)); }}}>
                           <Trash2 className="w-3 h-3" />
@@ -12910,7 +13077,7 @@ export default function GeneratedPage() {
                       </button>
                     ))}
                     {flows.length === 0 && (
-                      <div className="text-center py-3 text-[10px] text-white/30">
+                      <div className="text-center py-3 text-[10px] text-zinc-600">
                         Record or upload a video to get started
                       </div>
                     )}
@@ -12919,19 +13086,19 @@ export default function GeneratedPage() {
                 
                 {/* Context */}
                 <div>
-                  <label className="text-[10px] font-medium text-white/50 uppercase tracking-wider mb-1.5 block">Context</label>
+                  <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider mb-1.5 block">Context</label>
                   <textarea
                     value={refinements}
                     onChange={(e) => setRefinements(e.target.value)}
                     placeholder="Add data logic, constraints..."
                     rows={2}
-                    className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-xs text-white/80 placeholder:text-white/30 focus:outline-none focus:border-white/15 resize-y min-h-[60px] max-h-[200px] transition-colors"
+                    className="w-full px-3 py-2 rounded-lg bg-zinc-800/50 border border-zinc-700 text-xs text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-white/15 resize-y min-h-[60px] max-h-[200px] transition-colors"
                   />
                 </div>
                 
                 {/* Visual Style */}
                 <div>
-                  <label className="text-[10px] font-medium text-white/50 uppercase tracking-wider mb-1.5 block">Visual Style</label>
+                  <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider mb-1.5 block">Visual Style</label>
                   <StyleInjector 
                     value={styleDirective} 
                     onChange={setStyleDirective} 
@@ -12946,9 +13113,9 @@ export default function GeneratedPage() {
                   <button 
                     onClick={handleGenerate}
                     disabled={isProcessing || flows.length === 0}
-                    className="w-full py-2.5 rounded-lg bg-[#FF6E3C]/10 hover:bg-[#FF6E3C]/20 border border-[#FF6E3C]/20 text-xs font-medium text-[#FF6E3C] flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+                    className="w-full py-2.5 rounded-lg bg-zinc-800/10 hover:bg-zinc-800/20 border border-zinc-700 text-xs font-medium text-zinc-300 flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
                   >
-                    <LogoIcon className="w-3.5 h-3.5" color="#FF6E3C" />
+                    <LogoIcon className="w-3.5 h-3.5" color="var(--accent-orange)" />
                     Reconstruct
                   </button>
                 </div>
@@ -12956,12 +13123,12 @@ export default function GeneratedPage() {
                 {/* Current Colors */}
                 {styleInfo?.colors && styleInfo.colors.length > 0 && (
                   <div>
-                    <label className="text-[10px] font-medium text-white/50 uppercase tracking-wider mb-1.5 block">Current Colors</label>
+                    <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider mb-1.5 block">Current Colors</label>
                     <div className="flex gap-1.5 flex-wrap">
                       {styleInfo.colors.slice(0, 6).map((color, i) => (
                         <div 
                           key={i} 
-                          className="w-7 h-7 rounded-lg border border-white/10" 
+                          className="w-7 h-7 rounded-lg border border-zinc-700" 
                           style={{ backgroundColor: color.value }}
                           title={color.name}
                         />
@@ -12974,7 +13141,7 @@ export default function GeneratedPage() {
 
             {/* Chat Input - Only show in chat tab */}
             {sidebarTab === "chat" && (
-            <div className="p-3 border-t border-white/5 flex-shrink-0 relative">
+            <div className="p-3 border-t border-zinc-800 flex-shrink-0 relative">
               {/* Auth overlay for non-logged users OR demo mode - Mobile */}
               {(!user || isDemoMode) && (
                 <div 
@@ -12982,9 +13149,9 @@ export default function GeneratedPage() {
                     setShowAuthModal(true);
                     showToast("Sign up free to edit with AI. Get 1 free generation!", "info");
                   }}
-                  className="absolute inset-0 z-10 cursor-pointer flex items-center justify-center bg-black/60 backdrop-blur-[2px]"
+                  className="absolute inset-0 z-10 cursor-pointer flex items-center justify-center bg-zinc-900 backdrop-blur-[2px]"
                 >
-                  <div className="flex items-center gap-2 text-white/60 text-sm">
+                  <div className="flex items-center gap-2 text-zinc-400 text-sm">
                     <Lock className="w-4 h-4" />
                     <span>Sign up to edit with AI</span>
                   </div>
@@ -12995,14 +13162,14 @@ export default function GeneratedPage() {
                 <div className="pb-2 flex gap-1.5 flex-wrap">
                   {editImages.map((img) => (
                     <div key={img.id} className="relative group">
-                      <img src={img.url} alt="" className="w-10 h-10 rounded-lg object-cover border border-white/10" />
+                      <img src={img.url} alt="" className="w-10 h-10 rounded-lg object-cover border border-zinc-700" />
                       <button onClick={() => setEditImages(prev => prev.filter(i => i.id !== img.id))} className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500/80 text-white flex items-center justify-center"><X className="w-2.5 h-2.5" /></button>
                     </div>
                   ))}
                 </div>
               )}
               <div className="flex items-end gap-2">
-                <div className="flex-1 bg-white/[0.03] rounded-xl border border-white/[0.06]">
+                <div className="flex-1 bg-zinc-800/50 rounded-xl border border-zinc-800">
                   <textarea
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
@@ -13131,7 +13298,7 @@ export default function GeneratedPage() {
                     }}
                     placeholder={isPlanMode ? "Plan and discuss changes..." : "Ask Replay to edit..."}
                     rows={1}
-                    className="w-full px-3 py-2.5 bg-transparent text-[11px] text-white/80 placeholder:text-white/25 resize-none focus:outline-none min-h-[36px]"
+                    className="w-full px-3 py-2.5 bg-transparent text-[11px] text-zinc-200 placeholder:text-white/25 resize-none focus:outline-none min-h-[36px]"
                   />
                   
                   {/* Attachments preview - images only on mobile */}
@@ -13139,7 +13306,7 @@ export default function GeneratedPage() {
                     <div className="px-3 pb-2 flex gap-1.5 flex-wrap">
                       {editImages.map((img) => (
                         <div key={img.id} className="relative group">
-                          <img src={img.url} alt="" className="w-8 h-8 rounded object-cover border border-white/10" />
+                          <img src={img.url} alt="" className="w-8 h-8 rounded object-cover border border-zinc-700" />
                           <button onClick={() => setEditImages(prev => prev.filter(i => i.id !== img.id))} className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100"><X className="w-2 h-2" /></button>
                         </div>
                       ))}
@@ -13153,7 +13320,7 @@ export default function GeneratedPage() {
                     const textarea = document.activeElement as HTMLTextAreaElement | null;
                     textarea?.dispatchEvent?.(new KeyboardEvent("keydown", { key: "Enter" }));
                   }}
-                  className="p-2 rounded-lg bg-[#FF6E3C]/10 border border-[#FF6E3C]/20 text-[#FF6E3C] hover:bg-[#FF6E3C]/20 transition-colors"
+                  className="p-2 rounded-lg bg-zinc-800/10 border border-zinc-700 text-zinc-300 hover:bg-zinc-800/20 transition-colors"
                   title="Send"
                 >
                   <Send className="w-4 h-4" />
@@ -13170,7 +13337,7 @@ export default function GeneratedPage() {
 // Page wrapper with Suspense for useSearchParams
 export default function Page() {
   return (
-    <Suspense fallback={<div className="h-screen bg-[#050505] flex items-center justify-center"><div className="w-8 h-8 border-2 border-[#FF6E3C] border-t-transparent rounded-full animate-spin" /></div>}>
+    <Suspense fallback={<div className="h-screen bg-[#111111] flex items-center justify-center"><div className="w-8 h-8 border-2 border-[var(--accent-orange)] border-t-transparent rounded-full animate-spin" /></div>}>
       <ReplayToolContent />
     </Suspense>
   );

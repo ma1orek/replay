@@ -400,26 +400,26 @@ export default function ChangelogPage() {
     <div className="space-y-12">
       {/* Header */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 text-sm text-white/50">
-          <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
+        <div className="flex items-center gap-2 text-sm text-zinc-500">
+          <Link href="/docs" className="hover:text-zinc-900 transition-colors">Docs</Link>
           <span>/</span>
-          <span className="text-white">Changelog</span>
+          <span className="text-zinc-900">Changelog</span>
         </div>
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-[#FF6E3C]/20">
             <Clock className="w-6 h-6 text-[#FF6E3C]" />
           </div>
-          <h1 className="text-4xl font-bold text-white">Changelog</h1>
+          <h1 className="text-4xl font-bold text-zinc-900">Changelog</h1>
         </div>
-        <p className="text-xl text-white/60">
+        <p className="text-xl text-zinc-500">
           All the latest updates, improvements, and fixes to Replay.
         </p>
       </div>
 
       {/* Subscribe */}
-      <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-2">
+      <div className="p-4 rounded-xl bg-zinc-100 border border-zinc-200 flex items-center gap-2">
         <Bell className="w-4 h-4 text-[#FF6E3C]" />
-        <p className="text-sm text-white/70">
+        <p className="text-sm text-zinc-600">
           Follow <a href="https://twitter.com/replaybuild" target="_blank" rel="noopener noreferrer" className="text-[#FF6E3C] hover:underline">@replaybuild</a> on Twitter for the latest updates.
         </p>
       </div>
@@ -434,28 +434,28 @@ export default function ChangelogPage() {
                 <span className="px-3 py-1 rounded-full bg-[#FF6E3C]/20 text-[#FF6E3C] text-sm font-mono">
                   v{release.version}
                 </span>
-                <span className="text-white/50 text-sm">{release.date}</span>
+                <span className="text-zinc-500 text-sm">{release.date}</span>
               </div>
             </div>
 
             {/* Changes */}
-            <div className="space-y-4 ml-4 border-l-2 border-white/10 pl-6">
+            <div className="space-y-4 ml-4 border-l-2 border-zinc-200 pl-6">
               {release.changes.map((change, i) => {
                 const config = typeConfig[change.type as keyof typeof typeConfig];
                 return (
                   <div key={i} className="relative">
                     {/* Timeline dot */}
-                    <div className="absolute -left-[31px] w-4 h-4 rounded-full bg-[#0a0a0a] border-2 border-white/20" />
+                    <div className="absolute -left-[31px] w-4 h-4 rounded-full bg-[#0a0a0a] border-2 border-zinc-300" />
                     
-                    <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                    <div className="p-4 rounded-xl bg-zinc-100 border border-zinc-200">
                       <div className="flex items-center gap-2 mb-2">
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs ${config.bg} ${config.color}`}>
                           <config.icon className="w-3 h-3" />
                           {config.label}
                         </span>
-                        <h3 className="font-medium text-white">{change.title}</h3>
+                        <h3 className="font-medium text-zinc-900">{change.title}</h3>
                       </div>
-                      <p className="text-sm text-white/60">{change.description}</p>
+                      <p className="text-sm text-zinc-500">{change.description}</p>
                     </div>
                   </div>
                 );
@@ -466,8 +466,8 @@ export default function ChangelogPage() {
       </div>
 
       {/* Earlier versions */}
-      <div className="text-center py-8 border-t border-white/10">
-        <p className="text-white/40 text-sm">
+      <div className="text-center py-8 border-t border-zinc-200">
+        <p className="text-zinc-400 text-sm">
           Showing recent releases. For full history, see our{" "}
           <a href="https://github.com/ma1orek/replay/releases" target="_blank" rel="noopener noreferrer" className="text-[#FF6E3C] hover:underline">
             GitHub releases

@@ -65,28 +65,28 @@ export default function StyleInjectionPage() {
     <div className="space-y-12">
       {/* Header */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 text-sm text-white/50">
-          <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
+        <div className="flex items-center gap-2 text-sm text-zinc-500">
+          <Link href="/docs" className="hover:text-zinc-900 transition-colors">Docs</Link>
           <span>/</span>
           <span>Guides</span>
           <span>/</span>
-          <span className="text-white">Style Injection</span>
+          <span className="text-zinc-900">Style Injection</span>
         </div>
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-[#FF6E3C]/20">
             <Sparkles className="w-6 h-6 text-[#FF6E3C]" />
           </div>
-          <h1 className="text-4xl font-bold text-white">Style Injection</h1>
+          <h1 className="text-4xl font-bold text-zinc-900">Style Injection</h1>
         </div>
-        <p className="text-xl text-white/60">
+        <p className="text-xl text-zinc-500">
           Transform your UI's look instantly with 30+ pre-built design styles.
         </p>
       </div>
 
       {/* Overview */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-white">What is Style Injection?</h2>
-        <p className="text-white/70 leading-relaxed">
+        <h2 className="text-2xl font-semibold text-zinc-900">What is Style Injection?</h2>
+        <p className="text-zinc-600 leading-relaxed">
           Style Injection lets you apply completely different visual aesthetics to your generated UI 
           without changing the structure. Choose from brand-inspired styles like Apple and Stripe, 
           creative effects like Datamosh Glitch, or describe your own custom style.
@@ -95,10 +95,10 @@ export default function StyleInjectionPage() {
 
       {/* Style Categories */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-white">Style Categories</h2>
+        <h2 className="text-2xl font-semibold text-zinc-900">Style Categories</h2>
         <div className="flex flex-wrap gap-2">
           {STYLE_CATEGORIES.map((cat) => (
-            <span key={cat.name} className={`px-3 py-1.5 rounded-lg text-xs bg-white/5 border border-white/10 ${cat.color}`}>
+            <span key={cat.name} className={`px-3 py-1.5 rounded-lg text-xs bg-zinc-100 border border-zinc-200 ${cat.color}`}>
               {cat.name}
             </span>
           ))}
@@ -107,12 +107,12 @@ export default function StyleInjectionPage() {
 
       {/* Featured Styles */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-white">Featured Styles</h2>
+        <h2 className="text-2xl font-semibold text-zinc-900">Featured Styles</h2>
         <div className="grid md:grid-cols-2 gap-3">
           {FEATURED_STYLES.map((style) => (
-            <div key={style.name} className="p-4 rounded-xl bg-white/5 border border-white/10">
-              <h4 className="font-medium text-white">{style.name}</h4>
-              <p className="text-xs text-white/50 mt-1">{style.desc}</p>
+            <div key={style.name} className="p-4 rounded-xl bg-zinc-100 border border-zinc-200">
+              <h4 className="font-medium text-zinc-900">{style.name}</h4>
+              <p className="text-xs text-zinc-500 mt-1">{style.desc}</p>
             </div>
           ))}
         </div>
@@ -120,16 +120,16 @@ export default function StyleInjectionPage() {
 
       {/* All 30+ Styles */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-white">All 30+ Styles</h2>
+        <h2 className="text-2xl font-semibold text-zinc-900">All 30+ Styles</h2>
         <div className="space-y-6">
           {["Creative", "Dark", "Light", "Motion", "Brand"].map((category) => (
             <div key={category}>
-              <h3 className="text-sm font-medium text-white/60 mb-2">{category}</h3>
+              <h3 className="text-sm font-medium text-zinc-500 mb-2">{category}</h3>
               <div className="grid md:grid-cols-3 gap-2">
                 {ALL_STYLES.filter(s => s.category === category).map((style) => (
-                  <div key={style.name} className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.06]">
-                    <span className="text-xs text-white/80">{style.name}</span>
-                    <p className="text-[10px] text-white/40 mt-0.5">{style.desc}</p>
+                  <div key={style.name} className="p-3 rounded-lg bg-zinc-100 border border-zinc-200">
+                    <span className="text-xs text-zinc-700">{style.name}</span>
+                    <p className="text-[10px] text-zinc-400 mt-0.5">{style.desc}</p>
                   </div>
                 ))}
               </div>
@@ -140,7 +140,7 @@ export default function StyleInjectionPage() {
 
       {/* How to use */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-white">How to Use</h2>
+        <h2 className="text-2xl font-semibold text-zinc-900">How to Use</h2>
         <div className="space-y-4">
           {[
             {
@@ -169,13 +169,13 @@ export default function StyleInjectionPage() {
               description: "Click Generate. Your UI will have the new visual style applied."
             },
           ].map((item) => (
-            <div key={item.step} className="flex gap-4 p-4 rounded-xl bg-white/5 border border-white/10">
+            <div key={item.step} className="flex gap-4 p-4 rounded-xl bg-zinc-100 border border-zinc-200">
               <div className="w-8 h-8 rounded-full bg-[#FF6E3C] flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-bold text-sm">{item.step}</span>
+                <span className="text-zinc-900 font-bold text-sm">{item.step}</span>
               </div>
               <div>
-                <h4 className="font-medium text-white">{item.title}</h4>
-                <p className="text-sm text-white/60">{item.description}</p>
+                <h4 className="font-medium text-zinc-900">{item.title}</h4>
+                <p className="text-sm text-zinc-500">{item.description}</p>
               </div>
             </div>
           ))}
@@ -184,11 +184,11 @@ export default function StyleInjectionPage() {
 
       {/* Custom styles */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-white">Custom Style Prompts</h2>
-        <p className="text-white/70 leading-relaxed">
+        <h2 className="text-2xl font-semibold text-zinc-900">Custom Style Prompts</h2>
+        <p className="text-zinc-600 leading-relaxed">
           Select "Custom" and describe any style you want:
         </p>
-        <div className="p-4 rounded-xl bg-[#1a1a1a] border border-white/10 font-mono text-sm">
+        <div className="p-4 rounded-xl bg-[#1a1a1a] border border-zinc-200 font-mono text-sm">
           <p className="text-[#FF6E3C]">"Apple-style with frosted glass and smooth animations"</p>
           <p className="text-[#FF6E3C] mt-2">"Dark mode like Linear with subtle glow effects"</p>
           <p className="text-[#FF6E3C] mt-2">"Colorful gradients like Stripe's landing page"</p>
@@ -199,14 +199,14 @@ export default function StyleInjectionPage() {
 
       {/* What changes */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-white">What Gets Changed</h2>
+        <h2 className="text-2xl font-semibold text-zinc-900">What Gets Changed</h2>
         <div className="grid md:grid-cols-2 gap-4">
           <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/30">
             <div className="flex items-center gap-2 mb-2">
               <Check className="w-4 h-4 text-green-400" />
               <h4 className="font-medium text-green-400">Changes:</h4>
             </div>
-            <ul className="space-y-1 text-sm text-white/70">
+            <ul className="space-y-1 text-sm text-zinc-600">
               <li>• Colors, gradients, and backgrounds</li>
               <li>• Font families and typography</li>
               <li>• Border radius and shadows</li>
@@ -215,12 +215,12 @@ export default function StyleInjectionPage() {
               <li>• Glass/blur effects</li>
             </ul>
           </div>
-          <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+          <div className="p-4 rounded-xl bg-zinc-100 border border-zinc-200">
             <div className="flex items-center gap-2 mb-2">
-              <Layers className="w-4 h-4 text-white/60" />
-              <h4 className="font-medium text-white">Preserved:</h4>
+              <Layers className="w-4 h-4 text-zinc-500" />
+              <h4 className="font-medium text-zinc-900">Preserved:</h4>
             </div>
-            <ul className="space-y-1 text-sm text-white/70">
+            <ul className="space-y-1 text-sm text-zinc-600">
               <li>• Layout structure</li>
               <li>• Content and text</li>
               <li>• Navigation order</li>
@@ -233,9 +233,9 @@ export default function StyleInjectionPage() {
 
       {/* Tips */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-white">Tips</h2>
+        <h2 className="text-2xl font-semibold text-zinc-900">Tips</h2>
         <div className="p-4 rounded-xl bg-[#FF6E3C]/10 border border-[#FF6E3C]/30">
-          <ul className="space-y-2 text-sm text-white/70">
+          <ul className="space-y-2 text-sm text-zinc-600">
             <li className="flex items-start gap-2">
               <Wand2 className="w-4 h-4 text-[#FF6E3C] mt-0.5" />
               <span>Use "Original" style for exact 1:1 recreation of the video</span>

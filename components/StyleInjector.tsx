@@ -3993,7 +3993,7 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
         className={cn(
-          "w-full max-w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors bg-[#0A0A0A] border border-white/[0.08] hover:border-white/15 box-border",
+          "w-full max-w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors bg-zinc-800/80 border border-zinc-700/50 hover:border-zinc-600/60 box-border",
           isOpen && "border-[#FF6E3C]/30 bg-white/[0.05]",
           disabled && "opacity-50 cursor-not-allowed"
         )}
@@ -4020,7 +4020,7 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
             transition={{ duration: 0.2 }}
             className="overflow-hidden w-full max-w-full"
           >
-            <div className="border border-white/[0.08] rounded-xl bg-[#0a0a0a]/95 backdrop-blur-xl w-full max-w-full overflow-hidden">
+            <div className="border border-zinc-700/50 rounded-xl bg-zinc-800/95 backdrop-blur-xl w-full max-w-full overflow-hidden">
               {/* Search */}
               <div className="p-2 border-b border-white/[0.06]">
                 <div className="relative">
