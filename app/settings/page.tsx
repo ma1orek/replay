@@ -27,7 +27,6 @@ import {
   ChevronDown,
   Building2,
   Sparkles,
-  Home,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/context";
 import { useCredits, PLAN_LIMITS, CREDIT_COSTS } from "@/lib/credits/context";
@@ -253,34 +252,25 @@ function SettingsContent() {
 
   return (
     <div className="min-h-screen bg-[#111111]">
-      {/* Top Bar */}
-      <header className="fixed top-0 left-0 right-0 z-50 h-12 border-b border-zinc-800/50 bg-[#111111] border-b border-zinc-800/50">
-        <div className="max-w-5xl mx-auto h-full px-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link 
-              href="/tool" 
-              className="p-2 rounded-md hover:bg-zinc-800 transition-colors"
-              title="Back to Tool"
-            >
-              <ArrowLeft className="w-5 h-5 text-zinc-500" />
-            </Link>
+      {/* Minimal Top Bar - Logo left, Back right */}
+      <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-[#141414]">
+        <div className="h-full px-6 flex items-center justify-between">
+          <Link href="/tool" className="flex items-center gap-3">
             <Logo />
-          </div>
+          </Link>
           
-          <div className="flex items-center gap-3">
-            <Link 
-              href="/tool"
-              className="px-3 py-1.5 rounded-md bg-zinc-800 text-sm font-medium text-zinc-300 hover:bg-zinc-700 transition-colors flex items-center gap-2"
-            >
-              <Home className="w-4 h-4" />
-              
-            </Link>
-          </div>
+          <Link 
+            href="/tool" 
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm">Back</span>
+          </Link>
         </div>
       </header>
 
-      <div className="relative max-w-5xl mx-auto px-4 md:px-6 pt-20 pb-12">
-        <h1 className="text-xl font-semibold text-zinc-200 mb-6">Settings</h1>
+      <div className="relative max-w-5xl mx-auto px-4 md:px-6 pt-24 pb-12">
+        <h1 className="text-2xl font-semibold text-zinc-100 mb-8">Settings</h1>
 
         {/* Tabs */}
         <div className="mb-6 border-b border-zinc-800/50">

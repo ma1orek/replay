@@ -25,7 +25,6 @@ import {
   ChevronDown,
   Menu,
   X,
-  Home,
   Sparkles,
   Clock,
 } from "lucide-react";
@@ -243,13 +242,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
 
           {/* Right side */}
           <div className="flex items-center gap-4">
-            <Link
-              href="/"
-              className="hidden md:flex items-center gap-2 text-sm text-zinc-900/60 hover:text-zinc-900 transition-colors"
-            >
-              <Home className="w-4 h-4" />
-              Back to App
-            </Link>
+{/* Back to app link removed */}
             <button
               onClick={() => setMobileMenuOpen(true)}
               className="md:hidden p-2 rounded-lg hover:bg-white/5"

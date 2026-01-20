@@ -1145,7 +1145,7 @@ function ReplayToolContent() {
   const [selectedFlowNode, setSelectedFlowNode] = useState<string | null>(null);
   const [hasAutoLayouted, setHasAutoLayouted] = useState(false);
   const [showStructureInFlow, setShowStructureInFlow] = useState(false); // Toggle to show components under nodes
-  const [showPossiblePaths, setShowPossiblePaths] = useState(true); // Toggle to show/hide possible paths in Flow
+  const [showPossiblePaths, setShowPossiblePaths] = useState(false); // Toggle to show/hide possible paths in Flow - default OFF to show only observed
   const [showPreviewsInFlow, setShowPreviewsInFlow] = useState(true); // Always show iframe previews in flow nodes by default
   const [generationComplete, setGenerationComplete] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -7481,7 +7481,7 @@ Try these prompts in Cursor or v0:
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="w-full max-w-2xl mt-6 rounded-xl border border-zinc-700 overflow-hidden"
-              style={{ background: '#0a0a0a' }}
+              style={{ background: '#111111' }}
             >
               {/* Header */}
               <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800" style={{ background: '#0d0d0d' }}>
@@ -7500,8 +7500,8 @@ Try these prompts in Cursor or v0:
               
               {/* Live Code Display */}
               <div className="p-3 h-[140px] overflow-hidden relative font-mono text-[10px] leading-relaxed">
-                <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-[#0a0a0a] to-transparent z-10" />
-                <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-[#0a0a0a] to-transparent z-10" />
+                <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-[#111111] to-transparent z-10" />
+                <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-[#111111] to-transparent z-10" />
                 <pre className="m-0 pt-2 whitespace-pre-wrap break-words">
                   {streamingCode ? (
                     streamingCode.split('\n').slice(-10).map((line, i) => (
@@ -9055,7 +9055,7 @@ Try these prompts in Cursor or v0:
                     <div 
                       onClick={() => fileInputRef.current?.click()} 
                       className={cn(
-                        "relative rounded-xl border-2 border-dashed transition-all cursor-pointer",
+                        "relative rounded-xl border border-dashed transition-all cursor-pointer",
                         isDragging 
                           ? "border-[var(--accent-orange)] bg-zinc-800/10" 
                           : "border-zinc-700 bg-zinc-800/50 hover:border-white/[0.15] hover:bg-zinc-800/50"
@@ -9120,7 +9120,7 @@ Try these prompts in Cursor or v0:
                   disabled={isProcessing}
                   rows={3}
                   className={cn(
-                    "w-full px-3 py-3 rounded-xl text-xs text-zinc-300 bg-zinc-800/80 border border-zinc-700/50 placeholder:text-zinc-600 placeholder:text-[11px] transition-colors focus:outline-none focus:border-zinc-600 min-h-[80px] max-h-[300px] resize-y",
+                    "w-full px-2.5 py-2 text-[11px] text-white/70 placeholder:text-white/25 bg-white/[0.02] border border-white/[0.05] rounded-lg resize-y focus:outline-none focus:border-white/10 transition-colors min-h-[80px] max-h-[300px]",
                     isProcessing && "opacity-50 cursor-not-allowed"
                   )}
                 />
@@ -9424,7 +9424,7 @@ Try these prompts in Cursor or v0:
         {/* Main Content */}
         <div className="flex-1 flex flex-col bg-[#111111] min-w-0 overflow-hidden">
           {/* Desktop Top Bar: Tabs Left | Options Center | User/Actions Right */}
-          <div className="hidden md:flex items-center justify-between px-4 h-12 border-b border-zinc-800/50 bg-zinc-900">
+          <div className="hidden md:flex items-center justify-between px-4 h-12 border-b border-zinc-800/50 bg-[#141414]">
             {/* Left: Navigation Tabs - Animated toggle style */}
             <div className="flex items-center bg-zinc-800/50 rounded-lg p-1">
               {[
@@ -10148,8 +10148,8 @@ Try these prompts in Cursor or v0:
                       </div>
                       
                       <div className="p-1 text-[10px]">
-                        {/* Render file tree */}
-                        {buildFileTree(generatedFiles).map((item) => (
+                        {/* Render file tree - filter out stub files to match Flow showing only observed */}
+                        {buildFileTree(generatedFiles.filter(f => !f.isStub)).map((item) => (
                           <FileTreeItem 
                             key={item.path} 
                             item={item} 
@@ -10244,7 +10244,7 @@ Try these prompts in Cursor or v0:
                                   className="p-3 text-[11px] leading-relaxed" 
                                   style={{ 
                                     ...style, 
-                                    background: "#0a0a0a", 
+                                    background: "#111111", 
                                     fontFamily: "'JetBrains Mono', monospace", 
                                     minHeight: "100%",
                                     minWidth: "fit-content"
@@ -10278,7 +10278,7 @@ Try these prompts in Cursor or v0:
                                 <pre 
                                   className="p-3 text-[11px] leading-relaxed blur-[8px] opacity-60" 
                                   style={{ 
-                                    background: "#0a0a0a", 
+                                    background: "#111111", 
                                     fontFamily: "'JetBrains Mono', monospace",
                                   }}
                                 >
@@ -10350,7 +10350,7 @@ export default function GeneratedPage() {
                               </div>
                               
                               {/* Upgrade overlay - Starter Pack + Pro options */}
-                              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-[#0a0a0a]/40 via-[#0a0a0a]/70 to-[#0a0a0a]/90">
+                              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-[#111111]/40 via-[#111111]/70 to-[#111111]/90">
                                 <div className="relative p-6 bg-[#111111] border border-zinc-700 rounded-2xl shadow-2xl max-w-md mx-4">
                                   {/* Close button */}
                                   <button 
@@ -10596,17 +10596,33 @@ export default function GeneratedPage() {
                       className={cn("arch-canvas w-full h-full bg-[#111111]", isPanning && !draggingNodeId && "dragging")} style={{ backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)", backgroundSize: "24px 24px" }}
                       onWheel={(e) => {
                         e.preventDefault();
-                        if (e.ctrlKey || e.metaKey) {
-                          // Zoom with Ctrl/Cmd + scroll
-                          const delta = e.deltaY > 0 ? -0.1 : 0.1;
-                          setArchZoom(z => Math.max(0.25, Math.min(2, z + delta)));
-                        } else {
-                          // Pan with scroll (inverted for natural feel)
-                          setCanvasPan(prev => ({
-                            x: prev.x - e.deltaX,
-                            y: prev.y - e.deltaY
-                          }));
-                        }
+                        e.stopPropagation();
+                        
+                        // Zoom towards cursor position
+                        const rect = archCanvasRef.current?.getBoundingClientRect();
+                        if (!rect) return;
+                        
+                        const delta = e.deltaY > 0 ? -0.08 : 0.08;
+                        const newZoom = Math.max(0.25, Math.min(2, archZoom + delta));
+                        
+                        // Mouse position relative to canvas
+                        const mouseX = e.clientX - rect.left;
+                        const mouseY = e.clientY - rect.top;
+                        
+                        // Canvas center (transformOrigin is center)
+                        const centerX = rect.width / 2;
+                        const centerY = rect.height / 2;
+                        
+                        // World position under cursor before zoom
+                        const worldX = (mouseX - centerX - canvasPan.x) / archZoom;
+                        const worldY = (mouseY - centerY - canvasPan.y) / archZoom;
+                        
+                        // New pan to keep same world position under cursor
+                        const newPanX = mouseX - centerX - worldX * newZoom;
+                        const newPanY = mouseY - centerY - worldY * newZoom;
+                        
+                        setArchZoom(newZoom);
+                        setCanvasPan({ x: newPanX, y: newPanY });
                       }}
                       onMouseDown={(e) => {
                         if (!draggingNodeId) handleCanvasMouseDown(e);
@@ -12058,7 +12074,7 @@ export default function GeneratedPage() {
                   placeholder="Add data logic, constraints or details (optional)"
                   disabled={isProcessing}
                   rows={3}
-                  className="w-full px-4 py-3 rounded-xl text-sm text-zinc-400 placeholder:text-zinc-600 bg-zinc-800/50 border border-zinc-800 focus:outline-none focus:border-zinc-700 min-h-[88px] max-h-[200px] resize-y leading-relaxed"
+                  className="w-full px-4 py-3 rounded-xl text-sm text-zinc-300 placeholder:text-zinc-600 bg-zinc-800/80 border border-zinc-700/50 focus:outline-none focus:border-zinc-600 min-h-[88px] max-h-[200px] resize-y leading-relaxed"
                 />
               </div>
 
@@ -12458,7 +12474,7 @@ export default function GeneratedPage() {
                           className="p-3 text-[10px] leading-relaxed min-h-full" 
                           style={{ 
                             ...style, 
-                            background: "#0a0a0a", 
+                            background: "#111111", 
                             fontFamily: "'JetBrains Mono', 'SF Mono', monospace",
                           }}
                         >
@@ -12981,7 +12997,7 @@ export default function GeneratedPage() {
                       initial={{ opacity: 0, y: 8 }} 
                       animate={{ opacity: 1, y: 0 }} 
                       className="rounded-xl overflow-hidden border border-zinc-700"
-                      style={{ background: '#0a0a0a' }}
+                      style={{ background: '#111111' }}
                     >
                       {/* Header */}
                       <div className="flex items-center justify-between px-3 py-2.5 border-b border-zinc-800">
@@ -13009,7 +13025,7 @@ export default function GeneratedPage() {
                       
                       {/* Code Streaming Display - LIVE CODE */}
                       <div className="p-3 h-[100px] overflow-hidden relative font-mono text-[9px] leading-relaxed">
-                        <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-b from-[#0a0a0a] to-transparent z-10" />
+                        <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-b from-[#111111] to-transparent z-10" />
                         <pre className="m-0 pt-1 whitespace-pre-wrap break-words">
                           {streamingCode ? (
                             streamingCode.split('\n').slice(-6).map((line, i) => (

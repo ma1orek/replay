@@ -78,7 +78,7 @@ export default function CreditsBar() {
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${percentage}%` }}
-                  className="h-full rounded-full bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C]"
+                  className={`h-full rounded-full ${percentage >= 95 ? 'bg-[#FF6E3C]' : 'bg-gradient-to-r from-zinc-500 to-zinc-400'}`}
                 />
               </div>
             </div>

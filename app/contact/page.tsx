@@ -76,19 +76,75 @@ export default function ContactPage() {
   const selectedTopic = TOPICS.find(t => t.id === formData.topic);
 
   return (
-    <div className="min-h-screen bg-white text-zinc-900">
+    <div className="min-h-screen bg-[#fafafa] text-zinc-900 relative overflow-hidden">
+      {/* Animated background - light version */}
+      <div className="absolute inset-0">
+        {/* Animated gradient orbs */}
+        <motion.div
+          className="absolute top-1/4 left-1/4 w-[600px] h-[600px] rounded-full"
+          style={{
+            background: "radial-gradient(circle, rgba(255,237,213,0.4) 0%, transparent 70%)",
+          }}
+          animate={{
+            x: [0, 50, 0],
+            y: [0, -30, 0],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] rounded-full"
+          style={{
+            background: "radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 70%)",
+          }}
+          animate={{
+            x: [0, -40, 0],
+            y: [0, 40, 0],
+          }}
+          transition={{
+            duration: 15,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        
+        {/* Subtle grid pattern */}
+        <div 
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px',
+          }}
+        />
+      </div>
+
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-zinc-200 bg-white/90 backdrop-blur-xl">
-        <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <Logo />
-          </Link>
-          <Link href="/" className="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></Link>
-        </div>
+      <header className="fixed top-0 left-0 right-0 z-50 px-4 pt-4">
+        <nav className="mx-auto max-w-4xl px-6 py-4 rounded-2xl bg-white/90 backdrop-blur-xl border border-zinc-200/60 shadow-sm">
+          <div className="flex items-center justify-between">
+            <Link href="/landing" className="flex items-center gap-2">
+              <Logo dark />
+            </Link>
+            <Link 
+              href="/landing" 
+              className="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </Link>
+          </div>
+        </nav>
       </header>
 
       {/* Main Content */}
-      <main className="pt-32 pb-20 px-6">
+      <main className="relative pt-32 pb-20 px-6">
         <div className="max-w-2xl mx-auto">
           <AnimatePresence mode="wait">
             {submitted ? (
@@ -105,16 +161,16 @@ export default function ContactPage() {
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.2, type: "spring", damping: 15 }}
-                  className="w-20 h-20 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-6"
+                  className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6"
                 >
-                  <Check className="w-10 h-10 text-emerald-400" />
+                  <Check className="w-10 h-10 text-emerald-600" />
                 </motion.div>
                 
                 <motion.h1
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="text-3xl md:text-4xl font-bold mb-4"
+                  className="text-3xl md:text-4xl font-bold mb-4 text-zinc-900"
                 >
                   Message Sent!
                 </motion.h1>
@@ -123,7 +179,7 @@ export default function ContactPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="text-white/60 text-lg mb-8 max-w-md mx-auto"
+                  className="text-zinc-500 text-lg mb-8 max-w-md mx-auto"
                 >
                   Thanks for reaching out, {formData.firstName}! We'll get back to you within 48 hours.
                 </motion.p>
@@ -135,7 +191,7 @@ export default function ContactPage() {
                 >
                   <Link
                     href="/landing"
-                    className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-[#FF6E3C] text-white font-medium hover:bg-[#FF8F5C] transition-colors"
+                    className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-zinc-900 text-white font-medium hover:bg-zinc-800 transition-colors"
                   >
                     <Home className="w-5 h-5" />
                     Back to Home
@@ -153,23 +209,23 @@ export default function ContactPage() {
               >
                 {/* Title */}
                 <div className="text-center mb-12">
-                  <h1 className="text-4xl md:text-5xl font-bold mb-4">Contact Us</h1>
-                  <p className="text-white/60 text-lg">
+                  <h1 className="text-4xl md:text-5xl font-bold mb-4 text-zinc-900">Contact Us</h1>
+                  <p className="text-zinc-500 text-lg">
                     Have a question or want to learn more about Enterprise?
                   </p>
                 </div>
 
                 {/* Direct Email Option */}
-                <div className="mb-8 p-4 rounded-2xl bg-white/[0.03] border border-zinc-200">
+                <div className="mb-8 p-4 rounded-2xl bg-white border border-zinc-200/60 shadow-sm">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#FF6E3C]/20 flex items-center justify-center flex-shrink-0">
-                      <Mail className="w-5 h-5 text-[#FF6E3C]" />
+                    <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
+                      <Mail className="w-5 h-5 text-orange-600" />
                     </div>
                     <div>
                       <p className="text-sm text-zinc-500">Prefer email? Write to us directly:</p>
                       <a
                         href="mailto:support@replay.build"
-                        className="text-[#FF6E3C] hover:text-[#FF8F5C] font-medium transition-colors"
+                        className="text-orange-600 hover:text-orange-500 font-medium transition-colors"
                       >
                         support@replay.build
                       </a>
@@ -188,7 +244,7 @@ export default function ContactPage() {
                         required
                         value={formData.firstName}
                         onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                        className="w-full px-4 py-3 rounded-xl bg-zinc-100 border border-zinc-200 text-white placeholder:text-zinc-400 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
+                        className="w-full px-4 py-3 rounded-xl bg-white border border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/10 transition-all"
                         placeholder="John"
                       />
                     </div>
@@ -199,7 +255,7 @@ export default function ContactPage() {
                         required
                         value={formData.lastName}
                         onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                        className="w-full px-4 py-3 rounded-xl bg-zinc-100 border border-zinc-200 text-white placeholder:text-zinc-400 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
+                        className="w-full px-4 py-3 rounded-xl bg-white border border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/10 transition-all"
                         placeholder="Doe"
                       />
                     </div>
@@ -213,7 +269,7 @@ export default function ContactPage() {
                       required
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl bg-zinc-100 border border-zinc-200 text-white placeholder:text-zinc-400 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
+                      className="w-full px-4 py-3 rounded-xl bg-white border border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/10 transition-all"
                       placeholder="john@company.com"
                     />
                   </div>
@@ -226,7 +282,7 @@ export default function ContactPage() {
                       required
                       value={formData.company}
                       onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl bg-zinc-100 border border-zinc-200 text-white placeholder:text-zinc-400 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
+                      className="w-full px-4 py-3 rounded-xl bg-white border border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/10 transition-all"
                       placeholder="Acme Inc."
                     />
                   </div>
@@ -238,17 +294,17 @@ export default function ContactPage() {
                       <button
                         type="button"
                         onClick={() => setShowTopicDropdown(!showTopicDropdown)}
-                        className="w-full px-4 py-3 rounded-xl bg-zinc-100 border border-zinc-200 text-white flex items-center justify-between focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
+                        className="w-full px-4 py-3 rounded-xl bg-white border border-zinc-200 text-zinc-900 flex items-center justify-between focus:outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/10 transition-all"
                       >
                         <div className="flex items-center gap-3">
                           {selectedTopic && <selectedTopic.icon className="w-4 h-4 text-zinc-500" />}
                           <span>{selectedTopic?.label}</span>
                         </div>
-                        <ChevronDown className={cn("w-4 h-4 text-zinc-500 transition-transform", showTopicDropdown && "rotate-180")} />
+                        <ChevronDown className={cn("w-4 h-4 text-zinc-400 transition-transform", showTopicDropdown && "rotate-180")} />
                       </button>
                       
                       {showTopicDropdown && (
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-zinc-200 rounded-xl overflow-hidden z-10">
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-zinc-200 rounded-xl overflow-hidden z-10 shadow-lg">
                           {TOPICS.map((topic) => (
                             <button
                               key={topic.id}
@@ -258,8 +314,8 @@ export default function ContactPage() {
                                 setShowTopicDropdown(false);
                               }}
                               className={cn(
-                                "w-full px-4 py-3 flex items-center gap-3 hover:bg-zinc-100 transition-colors text-left",
-                                formData.topic === topic.id && "bg-[#FF6E3C]/10 text-[#FF6E3C]"
+                                "w-full px-4 py-3 flex items-center gap-3 hover:bg-zinc-50 transition-colors text-left",
+                                formData.topic === topic.id && "bg-orange-50 text-orange-600"
                               )}
                             >
                               <topic.icon className="w-4 h-4" />
@@ -279,14 +335,14 @@ export default function ContactPage() {
                       rows={5}
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl bg-zinc-100 border border-zinc-200 text-white placeholder:text-zinc-400 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors resize-none"
+                      className="w-full px-4 py-3 rounded-xl bg-white border border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/10 transition-all resize-none"
                       placeholder="Tell us about your project or question..."
                     />
                   </div>
 
                   {/* Error */}
                   {error && (
-                    <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                    <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
                       {error}
                     </div>
                   )}
@@ -295,7 +351,7 @@ export default function ContactPage() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-[#FF6E3C] text-white font-medium hover:bg-[#FF8F5C] transition-colors disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-full bg-zinc-900 text-white font-medium hover:bg-zinc-800 transition-colors disabled:opacity-50 shadow-lg shadow-zinc-900/20"
                   >
                     {isSubmitting ? (
                       <>

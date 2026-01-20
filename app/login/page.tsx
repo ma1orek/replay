@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Mail, Loader2, ArrowLeft, Eye, EyeOff, Lock } from "lucide-react";
+import { DitheringShader } from "@/components/ui/dithering-shader";
 import { useAuth } from "@/lib/auth/context";
 import Logo from "@/components/Logo";
 import Link from "next/link";
@@ -23,6 +24,19 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [dimensions, setDimensions] = useState({ width: 1920, height: 1080 });
+
+  useEffect(() => {
+    const updateDimensions = () => {
+      setDimensions({ 
+        width: window.innerWidth * 2, 
+        height: window.innerHeight * 2 
+      });
+    };
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, []);
 
   const handleAuthSuccess = () => {
     router.push("/tool");
@@ -261,21 +275,33 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
-      {/* Subtle background gradient */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-orange-500/5 rounded-full blur-[150px]" />
-        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-zinc-500/5 rounded-full blur-[150px]" />
+    <div className="min-h-screen bg-[#111111] flex items-center justify-center relative overflow-hidden">
+      {/* Dithering Shader Background - same as hero but dark colors */}
+      <div className="absolute inset-0 z-0">
+        <DitheringShader
+          width={dimensions.width}
+          height={dimensions.height}
+          shape="wave"
+          type="8x8"
+          colorBack="#111111"
+          colorFront="#141414"
+          pxSize={4}
+          speed={0.3}
+          className="w-full h-full"
+          style={{ width: "100%", height: "100%" }}
+        />
+        {/* Gradient overlay for readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#111111]/80 via-[#111111]/60 to-[#111111]/80" />
       </div>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="relative w-full max-w-md"
+        className="relative w-full max-w-md px-4"
       >
         {/* Card */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 shadow-2xl">
+        <div className="bg-[#141414] border border-zinc-800/50 rounded-2xl p-8 shadow-2xl backdrop-blur-xl">
           {/* Close/Back to home */}
           <Link 
             href="/"
@@ -397,7 +423,7 @@ export default function LoginPage() {
               <button
                 onClick={handlePasswordSignIn}
                 disabled={isLoading || !email.trim() || !password.trim()}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-orange-500 text-white font-medium hover:bg-orange-400 transition-colors disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-full bg-orange-500 text-white font-medium hover:bg-orange-400 transition-colors disabled:opacity-50"
               >
                 {loadingProvider === "password" ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -460,7 +486,7 @@ export default function LoginPage() {
               <button
                 onClick={handleRegister}
                 disabled={isLoading || !email.trim() || !password.trim()}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-orange-500 text-white font-medium hover:bg-orange-400 transition-colors disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-full bg-orange-500 text-white font-medium hover:bg-orange-400 transition-colors disabled:opacity-50"
               >
                 {loadingProvider === "register" ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -490,7 +516,7 @@ export default function LoginPage() {
               <button
                 onClick={handleGoogleSignIn}
                 disabled={isLoading}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white text-black font-medium hover:bg-zinc-100 transition-colors disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-full bg-white text-black font-medium hover:bg-zinc-100 transition-colors disabled:opacity-50"
               >
                 {loadingProvider === "google" ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -509,7 +535,7 @@ export default function LoginPage() {
               <button
                 onClick={handleGitHubSignIn}
                 disabled={isLoading}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-zinc-800 text-white font-medium hover:bg-zinc-700 transition-colors disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-full bg-zinc-800 text-white font-medium hover:bg-zinc-700 transition-colors disabled:opacity-50"
               >
                 {loadingProvider === "github" ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -527,14 +553,14 @@ export default function LoginPage() {
                   <div className="w-full border-t border-zinc-800" />
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="px-3 bg-zinc-900 text-zinc-500">or</span>
+                  <span className="px-3 bg-[#141414] text-zinc-500">or</span>
                 </div>
               </div>
 
               {/* Email/Password Button */}
               <button
                 onClick={() => setAuthMode("email-password")}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-700 transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-700 transition-colors"
               >
                 <Lock className="w-5 h-5" />
                 Sign in with email & password
@@ -543,7 +569,7 @@ export default function LoginPage() {
               {/* Magic Link Button */}
               <button
                 onClick={() => setAuthMode("email-otp")}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-700 transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-700 transition-colors"
               >
                 <Mail className="w-5 h-5" />
                 Sign in with magic link
@@ -575,7 +601,7 @@ export default function LoginPage() {
               <button
                 onClick={handleEmailSignIn}
                 disabled={isLoading || !email.trim()}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-orange-500 text-white font-medium hover:bg-orange-400 transition-colors disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-full bg-orange-500 text-white font-medium hover:bg-orange-400 transition-colors disabled:opacity-50"
               >
                 {loadingProvider === "email" ? (
                   <Loader2 className="w-5 h-5 animate-spin" />

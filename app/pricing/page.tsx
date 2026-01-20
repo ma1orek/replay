@@ -15,6 +15,7 @@ import Logo from "@/components/Logo";
 const menuItems = [
   { name: "Features", href: "/landing#features" },
   { name: "Solution", href: "/landing#solution" },
+  { name: "Security", href: "/landing#security" },
   { name: "Pricing", href: "/pricing" },
   { name: "Docs", href: "/docs" },
 ];
@@ -115,7 +116,7 @@ export default function PricingPage() {
         { name: "Priority processing", included: false },
         { name: "On-premise deployment", included: false },
       ],
-      cta: "Start Free Trial",
+      cta: "Subscribe",
       variant: "outline" as const,
       popular: false
     },
@@ -134,7 +135,7 @@ export default function PricingPage() {
         { name: "Design system export", included: true },
         { name: "On-premise deployment", included: false },
       ],
-      cta: "Start Free Trial",
+      cta: "Subscribe",
       variant: "orange" as const,
       popular: true
     },

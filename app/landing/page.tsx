@@ -242,15 +242,13 @@ function HeroSection() {
         <div className="max-w-5xl mx-auto text-center">
           <AnimatedGroup preset="blur-slide" className="flex flex-col items-center">
             {/* Badge - Subtle */}
-            <div className="mb-8 self-start"><span className="inline-flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-500 border border-zinc-200 rounded-full bg-white/80 backdrop-blur-sm"><span className="w-1.5 h-1.5 rounded-full bg-orange-500" />Visual Reverse Engineering for Enterprise</span></div>
+            <div className="mb-8 self-start"><span className="inline-flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-500 border border-zinc-200 rounded-full bg-white/80 backdrop-blur-sm">Visual Reverse Engineering for Enterprise</span></div>
 
             {/* Headline */}
-            <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl xl:text-8xl leading-[1.05] tracking-tight text-zinc-900 max-w-4xl">
-              Modernize without{" "}
-              <span className="italic text-orange-600">rewriting.</span>
+            <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl leading-[1.05] tracking-tight text-zinc-900">
+              <span className="whitespace-nowrap">Modernize without{" "}<span className="italic text-orange-600">rewriting.</span></span>
               <br />
-              Document without{" "}
-              <span className="italic text-orange-600">archaeology.</span>
+              <span className="whitespace-nowrap">Document without{" "}<span className="italic text-orange-600">archaeology.</span></span>
             </h1>
 
             {/* Subheadline */}
@@ -522,143 +520,96 @@ function ProblemSection() {
           </motion.div>
         </div>
         
-        {/* Solution Banner */}
+        {/* Combined Solution Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.5, delay: 0.4 }}
-          className="mt-8 p-6 rounded-2xl bg-zinc-900 flex flex-col sm:flex-row items-center justify-between gap-4"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center">
-              <Zap className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h4 className="text-white font-semibold text-lg">Production-ready code in weeks, not years</h4>
-              <p className="text-zinc-400">Skip the discovery phase. Start with working UI components.</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-green-400 font-medium">Ready to deploy</span>
-          </div>
-        </motion.div>
-
-        {/* Timeline Visualization - Better Animated */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.6 }}
-          className="mt-16 rounded-3xl bg-gradient-to-b from-zinc-50 to-white border border-zinc-200 overflow-hidden"
+          className="mt-8 p-6 rounded-2xl bg-white/90 backdrop-blur-sm border border-zinc-200/60 shadow-sm"
         >
           {/* Header */}
-          <div className="px-8 py-6 border-b border-zinc-100 bg-white/50">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-lg font-semibold text-zinc-900">Traditional Rewrite Timeline</h4>
-                <p className="text-sm text-zinc-500 mt-1">18-24 months average enterprise modernization</p>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
+                <Zap className="w-5 h-5 text-white" />
               </div>
-              <span className="px-4 py-2 bg-red-500 text-white text-xs font-semibold rounded-full shadow-lg shadow-red-500/25">HIGH RISK</span>
+              <div>
+                <h4 className="text-zinc-800 font-medium text-base tracking-tight">Production-ready code in days, not years</h4>
+                <p className="text-zinc-500 text-sm">Skip the discovery phase. Start with working UI components.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="text-emerald-600 text-sm font-medium">Ready to deploy</span>
+            </div>
+          </div>
+
+          {/* Timeline Bars */}
+          <div className="space-y-5 pt-4 border-t border-zinc-100">
+            {/* Traditional Rewrite Bar */}
+            <div className="flex items-start gap-4">
+              <div className="w-28 flex-shrink-0 pt-1">
+                <span className="text-sm font-medium text-zinc-700">Traditional</span>
+                <p className="text-[10px] text-zinc-400">18-24 months</p>
+              </div>
+              <div className="flex-1">
+                <div className="w-full h-[2px] bg-zinc-200 rounded-full overflow-hidden">
+                  <motion.div 
+                    className="h-full rounded-full"
+                    style={{ background: "linear-gradient(90deg, #a1a1aa 0%, #a1a1aa 60%, #ef4444 100%)" }}
+                    initial={{ width: "0%" }}
+                    animate={isInView ? { width: "100%" } : {}}
+                    transition={{ duration: 2.5, delay: 0.3, ease: "easeOut" }}
+                  />
+                </div>
+                <motion.span 
+                  className="block text-right mt-1 text-[10px] font-medium text-red-400"
+                  initial={{ opacity: 0 }}
+                  animate={isInView ? { opacity: 1 } : {}}
+                  transition={{ delay: 2.5 }}
+                >
+                  ...ongoing
+                </motion.span>
+              </div>
+            </div>
+
+            {/* Replay Bar */}
+            <div className="flex items-start gap-4">
+              <div className="w-28 flex-shrink-0 pt-1">
+                <span className="text-sm font-medium text-zinc-900">Replay</span>
+                <p className="text-[10px] text-emerald-600">Days to weeks</p>
+              </div>
+              <div className="flex-1 relative">
+                <div className="w-full h-[2px] bg-zinc-200 rounded-full overflow-hidden">
+                  <motion.div 
+                    className="h-full bg-emerald-500 rounded-full"
+                    initial={{ width: "0%" }}
+                    animate={isInView ? { width: "12%" } : {}}
+                    transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
+                  />
+                </div>
+                {/* Done label below bar */}
+                <motion.span
+                  className="absolute mt-1 text-[10px] font-semibold text-emerald-600"
+                  style={{ left: "12%", transform: "translateX(-50%)" }}
+                  initial={{ opacity: 0 }}
+                  animate={isInView ? { opacity: 1 } : {}}
+                  transition={{ duration: 0.3, delay: 1.3 }}
+                >
+                  Done ✓
+                </motion.span>
+              </div>
             </div>
           </div>
           
-          {/* Timeline */}
-          <div className="px-8 py-10">
-            <div className="relative">
-              {/* Background track */}
-              <div className="absolute top-6 left-0 right-0 h-2 bg-zinc-100 rounded-full" />
-              
-              {/* Animated progress */}
-              <motion.div 
-                className="absolute top-6 left-0 h-2 rounded-full"
-                style={{
-                  background: "linear-gradient(90deg, #22c55e 0%, #eab308 30%, #f97316 60%, #ef4444 100%)"
-                }}
-                initial={{ width: "0%" }}
-                animate={isInView ? { width: "100%" } : {}}
-                transition={{ duration: 3, delay: 0.5, ease: "easeOut" }}
-              />
-              
-              {/* Steps */}
-              <div className="relative flex justify-between">
-                {[
-                  { label: "Discovery", time: "3-6 mo", status: "complete" },
-                  { label: "Development", time: "6-12 mo", status: "complete" },
-                  { label: "Testing", time: "3-6 mo", status: "delayed" },
-                  { label: "Delays", time: "+6 mo", status: "warning" },
-                  { label: "Paused", time: "∞", status: "failed" },
-                ].map((step, i) => (
-                  <motion.div 
-                    key={step.label} 
-                    className="flex flex-col items-center"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={isInView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ delay: 0.5 + i * 0.4 }}
-                  >
-                    <motion.div 
-                      className={cn(
-                        "w-12 h-12 rounded-full flex items-center justify-center z-10 border-4 border-white shadow-lg",
-                        step.status === "complete" && "bg-green-500",
-                        step.status === "delayed" && "bg-orange-500",
-                        step.status === "warning" && "bg-yellow-500",
-                        step.status === "failed" && "bg-red-500",
-                      )}
-                      animate={step.status === "failed" && isInView ? { 
-                        scale: [1, 1.15, 1],
-                        boxShadow: [
-                          "0 0 0 0 rgba(239, 68, 68, 0.4)",
-                          "0 0 0 12px rgba(239, 68, 68, 0)",
-                          "0 0 0 0 rgba(239, 68, 68, 0)"
-                        ]
-                      } : {}}
-                      transition={{ duration: 1.5, repeat: Infinity, delay: 3 }}
-                    >
-                      {step.status === "failed" ? (
-                        <X className="w-5 h-5 text-white" />
-                      ) : step.status === "warning" ? (
-                        <AlertOctagon className="w-5 h-5 text-white" />
-                      ) : (
-                        <Check className="w-5 h-5 text-white" />
-                      )}
-                    </motion.div>
-                    <div className="mt-4 text-center">
-                      <span className={cn(
-                        "text-sm font-semibold block",
-                        step.status === "failed" ? "text-red-600" : "text-zinc-700"
-                      )}>{step.label}</span>
-                      <span className={cn(
-                        "text-xs mt-0.5 block",
-                        step.status === "failed" ? "text-red-400" : "text-zinc-400"
-                      )}>{step.time}</span>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
+          {/* Scale indicator */}
+          <div className="mt-6 ml-32 flex items-center justify-between text-[9px] text-zinc-400">
+            <span>Start</span>
+            <span>6 mo</span>
+            <span>12 mo</span>
+            <span>18 mo</span>
+            <span>24 mo</span>
           </div>
-
-          {/* Replay alternative */}
-          <motion.div 
-            className="px-8 py-6 bg-zinc-900 flex flex-col sm:flex-row items-center justify-between gap-4"
-            initial={{ opacity: 0 }}
-            animate={isInView ? { opacity: 1 } : {}}
-            transition={{ delay: 2.5 }}
-          >
-            <div className="flex items-center gap-4">
-              <motion.div 
-                className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center"
-                animate={isInView ? { scale: [1, 1.1, 1] } : {}}
-                transition={{ duration: 1, repeat: Infinity, delay: 3 }}
-              >
-                <Zap className="w-5 h-5 text-white" />
-              </motion.div>
-              <div>
-                <span className="text-white font-semibold">Replay Approach</span>
-                <p className="text-zinc-400 text-sm">Production-ready components from existing workflows</p>
-              </div>
-            </div>
-            <span className="px-4 py-2 bg-green-500 text-white text-xs font-semibold rounded-full shadow-lg shadow-green-500/25">LOW RISK</span>
-          </motion.div>
         </motion.div>
       </div>
     </section>

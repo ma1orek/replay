@@ -283,7 +283,7 @@ body::before {
 /* ═══════════════════════════════════════════════════════════════ */
 
 .glass-topbar {
-  background: var(--bg-sidebar);
+  background: #141414;
   backdrop-filter: blur(var(--blur-xl));
   -webkit-backdrop-filter: blur(var(--blur-xl));
   border: 1px solid var(--border-default);
@@ -1916,7 +1916,7 @@ select:focus:not(:focus-visible) {
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(9, 9, 11, 0.8);
+  background: #141414;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
