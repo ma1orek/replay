@@ -11587,7 +11587,6 @@ export default function GeneratedPage() {
                                 <div className="absolute inset-0 rounded-full border-2 border-zinc-400 border-t-transparent animate-spin" />
                               </div>
                               <p className="text-sm text-zinc-500">Generating API documentation...</p>
-                              <p className="text-[10px] text-zinc-600 mt-1">Gemini 3 Flash</p>
                             </div>
                           ) : aiDocsApi ? (
                             <>
@@ -11714,7 +11713,6 @@ export default function GeneratedPage() {
                                 <div className="absolute inset-0 rounded-full border-2 border-zinc-400 border-t-transparent animate-spin" />
                               </div>
                               <p className="text-sm text-zinc-500">Generating QA checklist...</p>
-                              <p className="text-[10px] text-zinc-600 mt-1">Gemini 3 Flash</p>
                             </div>
                           ) : aiDocsQa ? (
                             <>
@@ -11858,7 +11856,6 @@ export default function GeneratedPage() {
                                 <div className="absolute inset-0 rounded-full border-2 border-zinc-400 border-t-transparent animate-spin" />
                               </div>
                               <p className="text-sm text-zinc-500">Generating deployment guide...</p>
-                              <p className="text-[10px] text-zinc-600 mt-1">Gemini 3 Flash</p>
                             </div>
                           ) : aiDocsDeploy ? (
                             <>

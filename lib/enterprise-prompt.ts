@@ -93,65 +93,62 @@ const data = [/* EXACT DATA FROM VIDEO */];
 - Sidebars: w-64 border-r bg-muted/40
 
 ================================================================================
-📋 OUTPUT STRUCTURE - STRICT FORMAT
+📋 OUTPUT FORMAT - COMPLETE HTML CODE
 ================================================================================
 
-Your output MUST follow this EXACT JSON structure wrapped in a code block:
+⛔ DO NOT OUTPUT JSON ANALYSIS ⛔
+⛔ OUTPUT COMPLETE, WORKING HTML CODE ONLY ⛔
 
-\`\`\`json
-{
-  "analysis": {
-    "screenInventory": {
-      "screens": [
-        {
-          "id": "SCR001",
-          "name": "User List",
-          "type": "page",
-          "url": "/users",
-          "description": "Main user management table with search and filters",
-          "timestamp": "00:05",
-          "elements": [
-            {
-              "id": "EL001",
-              "type": "table",
-              "label": "Users Table",
-              "columns": ["Name", "Email", "Role", "Status", "Actions"],
-              "sampleData": ["John Doe", "john@example.com", "Admin", "Active"]
-            },
-            {
-              "id": "EL002",
-              "type": "button",
-              "label": "Add User",
-              "action": "Opens create user modal"
-            }
-          ]
-        }
-      ]
-    },
-    "interactions": [
-      {
-        "id": "INT001",
-        "timestamp": "00:12",
-        "action": "Click 'Add User' button",
-        "result": "Opens CreateUserModal (SCR002)",
-        "elementId": "EL002"
-      }
-    ],
-    "businessRules": [
-      {
-        "id": "BL001",
-        "name": "Admin-only deletion",
-        "description": "Only users with Admin role can delete other users",
-        "evidence": "Delete button only visible when admin is logged in (00:45)",
-        "category": "permission"
-      }
-    ],
-    "validationRules": [
-      {
-        "id": "VAL001",
-        "field": "email",
-        "rule": "required, valid email format",
-        "errorMessage": "Please enter a valid email address",
+You MUST output a COMPLETE, SINGLE HTML FILE that:
+1. Is a fully working webpage
+2. Uses Recharts for ALL charts (include via CDN)
+3. Uses professional CSS (Tailwind via CDN)
+4. Contains ALL content from the video EXACTLY
+5. Is production-ready quality
+
+MANDATORY CDN INCLUDES:
+\`\`\`html
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+\`\`\`
+
+FOR CHARTS - USE RECHARTS:
+\`\`\`html
+<script type="text/babel">
+const { ResponsiveContainer, AreaChart, Area, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } = Recharts;
+
+// Chart data from video - EXACT values
+const chartData = [
+  { name: 'Jan', value: 400 },
+  { name: 'Feb', value: 300 },
+  // ... extract REAL data from video
+];
+
+function Dashboard() {
+  return (
+    <ResponsiveContainer width="100%" height={300}>
+      <AreaChart data={chartData}>
+        <defs>
+          <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.8}/>
+            <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+        <XAxis dataKey="name" stroke="#9CA3AF" />
+        <YAxis stroke="#9CA3AF" />
+        <Tooltip />
+        <Area type="monotone" dataKey="value" stroke="#6366f1" fillOpacity={1} fill="url(#colorValue)" />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+}
+</script>
+\`\`\`
         "timestamp": "01:23"
       }
     ],
@@ -486,24 +483,14 @@ You are analyzing a legacy application screen recording. Your task is to extract
 5. **DATA MODEL** - Entities, fields, relationships
 
 OUTPUT FORMAT:
-Return a JSON object with the following structure:
-
-\`\`\`json
-{
-  "screenInventory": { ... },
-  "interactionFlows": { ... },
-  "businessRules": [ ... ],
-  "dataModel": { ... },
-  "uncertainItems": [ ... ]
-}
-\`\`\`
+Generate COMPLETE HTML code that replicates the video.
 
 RULES:
 - Extract EXACT text, never paraphrase
-- Use [VERIFY] for uncertain items
-- Use [INFERRED] for logical deductions
-- Include timestamps for every observation
-- Count elements (if 6 columns, list 6 columns)
+- Include ALL content from video
+- Use Recharts for charts
+- Use Tailwind CSS for styling
+- Make it production-ready
 `;
 
 // ============================================================================
@@ -566,10 +553,17 @@ ${additionalContext}
   
   fullPrompt += `
 ================================================================================
-🚀 BEGIN ANALYSIS & GENERATION
+🚀 BEGIN CODE GENERATION
 ================================================================================
-Analyze the video recording now. Follow all rules strictly.
-Output the complete JSON structure with analysis + code.
+Analyze the video recording now. Extract ALL content accurately.
+Output a COMPLETE, WORKING HTML file with:
+- Recharts for charts
+- Tailwind CSS for styling
+- All content from video EXACTLY
+- Professional, production-ready quality
+
+START YOUR OUTPUT WITH: <!DOCTYPE html>
+DO NOT OUTPUT JSON. OUTPUT HTML CODE ONLY.
 `;
   
   return fullPrompt;
