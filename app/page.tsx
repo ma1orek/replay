@@ -333,6 +333,7 @@ import UpgradeModal from "@/components/modals/UpgradeModal";
 import AssetsModal from "@/components/modals/AssetsModal";
 import ProjectSettingsModal from "@/components/ProjectSettingsModal";
 import { Toast, useToast } from "@/components/Toast";
+import AnimatedLoadingSkeleton from "@/components/ui/animated-loading-skeleton";
 // MobileScanner removed - mobile users now use MobileLayout exclusively
 import Link from "next/link";
 import type { CodeMode, FileNode, FileTreeFolder, FileTreeFile, CodeReferenceMap } from "@/types";
@@ -7595,119 +7596,31 @@ Try these prompts in Cursor or v0:
   
   const LoadingState = ({ customMessage }: { customMessage?: string }) => {
     const defaultMsg = isEditing ? "Applying changes..." : "Reconstructing from video...";
-    const displayMessage = customMessage || streamingStatus || loadingMessage || defaultMsg;
+    const displayMessage = customMessage || loadingMessage || defaultMsg;
     
     return (
       <div className="w-full h-full flex flex-col bg-[#111111] overflow-hidden">
         {/* Main Content */}
         <div className="flex-1 flex flex-col items-center justify-center p-6">
           
-          {/* Skeleton UI with Logo in Center */}
-          <div className="w-full max-w-2xl relative">
-            {/* Centered Logo with Orange Glow - Overlay on skeleton */}
-            <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-              <div className="relative">
-                {/* Animated Orange Glow */}
-                <div 
-                  className="absolute inset-0 blur-2xl scale-[2.5] rounded-full"
-                  style={{ 
-                    background: 'radial-gradient(circle, rgba(249,115,22,0.3) 0%, transparent 70%)',
-                    animation: "pulse 2s ease-in-out infinite" 
-                  }} 
-                />
-                {/* Orange Spinner */}
-                <div className="w-12 h-12 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
-              </div>
-            </div>
-            
-            {/* Skeleton Frame with Shimmer Animation */}
-            <div className="rounded-xl border border-zinc-800 overflow-hidden bg-zinc-900/80">
-              {/* Skeleton Header */}
-              <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800">
-                <div className="w-6 h-6 rounded bg-zinc-800 skeleton-shimmer" />
-                <div className="w-24 h-3 rounded bg-zinc-800 skeleton-shimmer" style={{ animationDelay: '0.1s' }} />
-                <div className="flex-1" />
-                <div className="flex gap-2">
-                  <div className="w-16 h-6 rounded bg-zinc-800 skeleton-shimmer" style={{ animationDelay: '0.2s' }} />
-                  <div className="w-16 h-6 rounded bg-zinc-800 skeleton-shimmer" style={{ animationDelay: '0.3s' }} />
-                </div>
-              </div>
-              
-              {/* Skeleton Body */}
-              <div className="flex min-h-[220px]">
-                {/* Sidebar */}
-                <div className="w-40 border-r border-zinc-800 p-3 space-y-2 hidden sm:block">
-                  <div className="w-full h-7 rounded bg-zinc-800 skeleton-shimmer" style={{ animationDelay: '0.1s' }} />
-                  <div className="w-3/4 h-7 rounded bg-zinc-800 skeleton-shimmer" style={{ animationDelay: '0.2s' }} />
-                  <div className="w-5/6 h-7 rounded bg-zinc-800 skeleton-shimmer" style={{ animationDelay: '0.3s' }} />
-                  <div className="w-2/3 h-7 rounded bg-zinc-800 skeleton-shimmer" style={{ animationDelay: '0.4s' }} />
-                </div>
-                
-                {/* Main Content */}
-                <div className="flex-1 p-4">
-                  <div className="w-2/3 h-5 rounded bg-zinc-800 skeleton-shimmer mb-3" style={{ animationDelay: '0.1s' }} />
-                  <div className="w-1/2 h-3 rounded bg-zinc-800 skeleton-shimmer mb-6" style={{ animationDelay: '0.2s' }} />
-                  
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {[...Array(6)].map((_, i) => (
-                      <div key={i} className="rounded-lg border border-zinc-800 p-3 bg-zinc-800/30">
-                        <div className="w-8 h-8 rounded bg-zinc-800 skeleton-shimmer mb-2" style={{ animationDelay: `${0.1 * i}s` }} />
-                        <div className="w-full h-3 rounded bg-zinc-800 skeleton-shimmer mb-1.5" style={{ animationDelay: `${0.1 * i + 0.1}s` }} />
-                        <div className="w-2/3 h-2 rounded bg-zinc-800 skeleton-shimmer" style={{ animationDelay: `${0.1 * i + 0.2}s` }} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Animated Loading Skeleton */}
+          <AnimatedLoadingSkeleton />
           
-          {/* Status Message - Animated with fade */}
+          {/* Status Message */}
           <div className="h-8 mt-6 flex items-center justify-center">
-            <AnimatePresence mode="wait">
-              <motion.p
-                key={displayMessage}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -5 }}
-                transition={{ duration: 0.3 }}
-                className="text-sm text-zinc-400 text-center"
-              >
-                {displayMessage}
-              </motion.p>
-            </AnimatePresence>
+            <p className="text-sm text-zinc-500 text-center">
+              {displayMessage}
+            </p>
           </div>
           
-          {/* Tip Banner - Animated */}
+          {/* Tip Banner */}
           <div className="w-full max-w-lg mt-4 h-12 flex items-center justify-center">
-            <AnimatePresence mode="wait">
-              <motion.p
-                key={currentTipIndex}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5 }}
-                className="font-mono text-[10px] text-zinc-600 leading-relaxed text-center"
-              >
-                {GENERATION_TIPS[currentTipIndex]}
-              </motion.p>
-            </AnimatePresence>
+            <p className="font-mono text-[10px] text-zinc-600 leading-relaxed text-center">
+              {GENERATION_TIPS[currentTipIndex]}
+            </p>
           </div>
 
         </div>
-        
-        {/* CSS for skeleton shimmer */}
-        <style jsx>{`
-          .skeleton-shimmer {
-            background: linear-gradient(90deg, #27272a 0%, #3f3f46 50%, #27272a 100%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s ease-in-out infinite;
-          }
-          @keyframes shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-          }
-        `}</style>
       </div>
     );
   };
