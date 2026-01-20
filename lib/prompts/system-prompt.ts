@@ -93,6 +93,33 @@ Use these CSS patterns from shadcn/ui:
 - Inputs: flex h-10 rounded-md border bg-background px-3 py-2
 
 ================================================================================
+🌙🌙🌙 DARK THEME MANDATORY FOR DASHBOARDS & SAAS 🌙🌙🌙
+================================================================================
+
+⛔ ALL DASHBOARDS, ADMIN PANELS, AND FINANCIAL APPS MUST USE DARK THEME ⛔
+
+MANDATORY BODY STYLES - ALWAYS USE THIS:
+\`\`\`html
+<style>
+body {
+  background-color: #111111;  /* DARK BACKGROUND - NEVER #FFFFFF! */
+  color: #fafafa;             /* White text */
+  font-family: 'Inter', sans-serif;
+}
+</style>
+\`\`\`
+
+COLOR RULES FOR ALL DASHBOARDS:
+- Background: #111111 or #0a0a0a (NEVER white, NEVER #FFFFFF)
+- Cards: #1a1a1a or #18181b (zinc-900)
+- Text: #fafafa (primary), #a1a1aa (muted)
+- Borders: #27272a (zinc-800)
+- Accent colors: Use on dark backgrounds
+
+**WHY:** Modern enterprise SaaS (Stripe, Linear, Vercel, Figma) ALL use dark themes. 
+White backgrounds look dated, amateur, and unprofessional in 2026.
+
+================================================================================
 📋📋📋 CONTENT FIDELITY - 100% EXACT REPLICATION 📋📋📋
 ================================================================================
 

@@ -7663,48 +7663,20 @@ Try these prompts in Cursor or v0:
             </div>
           </div>
           
-          {/* Status Message - Below skeleton, centered with smooth fade animation */}
-          <div className="h-8 mt-6 flex items-center justify-center overflow-hidden">
-            <AnimatePresence mode="wait">
-              <motion.p
-                key={displayMessage}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.4, ease: "easeInOut" }}
-                className="text-sm text-zinc-500 text-center"
-              >
-                {displayMessage}
-              </motion.p>
-            </AnimatePresence>
+          {/* Status Message - Static, no animation to prevent flickering */}
+          <div className="h-8 mt-6 flex items-center justify-center">
+            <p className="text-sm text-zinc-500 text-center">
+              {isEditing ? "Applying changes..." : "Reconstructing from video..."}
+            </p>
           </div>
           
-          {/* Tip Banner - Below status, centered with smooth fade animation */}
-          <div className="w-full max-w-lg mt-4 h-12 flex items-center justify-center overflow-hidden">
-            <AnimatePresence mode="wait">
-              <motion.p
-                key={currentTipIndex}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.5, ease: "easeInOut" }}
-                className="font-mono text-[10px] text-zinc-500 leading-relaxed text-center"
-              >
-                {GENERATION_TIPS[currentTipIndex]}
-              </motion.p>
-            </AnimatePresence>
+          {/* Tip Banner - Slower fade animation */}
+          <div className="w-full max-w-lg mt-4 h-12 flex items-center justify-center">
+            <p className="font-mono text-[10px] text-zinc-600 leading-relaxed text-center transition-opacity duration-1000">
+              {GENERATION_TIPS[currentTipIndex]}
+            </p>
           </div>
 
-          {/* Lines being written indicator - minimal, no code display */}
-          {streamingLines > 0 && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-[10px] text-zinc-600 font-mono mt-4"
-            >
-              {streamingLines} lines written
-            </motion.div>
-          )}
         </div>
       </div>
     );
