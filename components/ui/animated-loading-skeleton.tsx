@@ -1,186 +1,105 @@
 "use client";
 
-import React, { useEffect, useState } from 'react'
-import { motion, useAnimation } from 'framer-motion'
+import React from 'react'
 
-interface GridConfig {
-    numCards: number
-    cols: number
-    xBase: number
-    yBase: number
-    xStep: number
-    yStep: number
-}
-
+// Simple, smooth skeleton loader - NO flickering, NO random restarts
 const AnimatedLoadingSkeleton = () => {
-    const [windowWidth, setWindowWidth] = useState(0)
-    const controls = useAnimation()
-
-    const getGridConfig = (width: number): GridConfig => {
-        const numCards = 6
-        const cols = width >= 1024 ? 3 : width >= 640 ? 2 : 1
-        return {
-            numCards,
-            cols,
-            xBase: 40,
-            yBase: 60,
-            xStep: 210,
-            yStep: 230
-        }
-    }
-
-    const generateSearchPath = (config: GridConfig) => {
-        const { numCards, cols, xBase, yBase, xStep, yStep } = config
-        const rows = Math.ceil(numCards / cols)
-        let allPositions = []
-
-        for (let row = 0; row < rows; row++) {
-            for (let col = 0; col < cols; col++) {
-                if ((row * cols + col) < numCards) {
-                    allPositions.push({
-                        x: xBase + (col * xStep),
-                        y: yBase + (row * yStep)
-                    })
-                }
-            }
-        }
-
-        const numRandomCards = 4
-        const shuffledPositions = allPositions
-            .sort(() => Math.random() - 0.5)
-            .slice(0, numRandomCards)
-
-        shuffledPositions.push(shuffledPositions[0])
-
-        return {
-            x: shuffledPositions.map(pos => pos.x),
-            y: shuffledPositions.map(pos => pos.y),
-            scale: Array(shuffledPositions.length).fill(1.2),
-            transition: {
-                duration: shuffledPositions.length * 2,
-                repeat: Infinity,
-                ease: [0.4, 0, 0.2, 1],
-                times: shuffledPositions.map((_, i) => i / (shuffledPositions.length - 1))
-            }
-        }
-    }
-
-    useEffect(() => {
-        setWindowWidth(window.innerWidth)
-        const handleResize = () => setWindowWidth(window.innerWidth)
-        window.addEventListener('resize', handleResize)
-        return () => window.removeEventListener('resize', handleResize)
-    }, [])
-
-    useEffect(() => {
-        const config = getGridConfig(windowWidth)
-        controls.start(generateSearchPath(config))
-    }, [windowWidth, controls])
-
-    const frameVariants = {
-        hidden: { opacity: 0, scale: 0.95 },
-        visible: { opacity: 1, scale: 1, transition: { duration: 0.5 } }
-    }
-
-    const cardVariants = {
-        hidden: { y: 20, opacity: 0 },
-        visible: (i: number) => ({
-            y: 0,
-            opacity: 1,
-            transition: { delay: i * 0.1, duration: 0.4 }
-        })
-    }
-
-    const glowVariants = {
-        animate: {
-            boxShadow: [
-                "0 0 20px rgba(39, 39, 42, 0.3)",
-                "0 0 35px rgba(39, 39, 42, 0.5)",
-                "0 0 20px rgba(39, 39, 42, 0.3)"
-            ],
-            scale: [1, 1.1, 1],
-            transition: {
-                duration: 1,
-                repeat: Infinity,
-                ease: "easeInOut"
-            }
-        }
-    }
-
-    const config = getGridConfig(windowWidth)
-
     return (
-        <motion.div
-            className="w-full max-w-2xl mx-auto p-6"
-            variants={frameVariants}
-            initial="hidden"
-            animate="visible"
-        >
-            <div className="relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/80 p-6">
-                {/* Search icon with animation */}
-                <motion.div
-                    className="absolute z-10 pointer-events-none"
-                    animate={controls}
-                    style={{ left: 24, top: 24 }}
-                >
-                    <motion.div
-                        className="bg-zinc-800/80 p-3 rounded-full backdrop-blur-sm"
-                        variants={glowVariants}
-                        animate="animate"
-                    >
-                        <svg
-                            className="w-5 h-5 text-zinc-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+        <div className="w-full max-w-2xl mx-auto p-6">
+            <div className="relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/80">
+                
+                {/* Replay Logo in center with smooth pulse */}
+                <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+                    <div className="relative">
+                        {/* Smooth glow - CSS only, no JS */}
+                        <div 
+                            className="absolute inset-0 blur-2xl bg-orange-500/20 scale-150"
+                            style={{ animation: 'skeleton-glow 2s ease-in-out infinite' }}
+                        />
+                        {/* Logo */}
+                        <svg 
+                            className="w-16 h-16 text-orange-500 relative z-10" 
+                            viewBox="0 0 82 109" 
+                            fill="currentColor"
                         >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                            />
+                            <path d="M68.099 37.2285C78.1678 43.042 78.168 57.5753 68.099 63.3887L29.5092 85.668C15.6602 93.6633 0.510418 77.4704 9.40857 64.1836L17.4017 52.248C18.1877 51.0745 18.1876 49.5427 17.4017 48.3691L9.40857 36.4336C0.509989 23.1467 15.6602 6.95306 29.5092 14.9482L68.099 37.2285Z" />
+                            <rect x="34.054" y="98.6841" width="48.6555" height="11.6182" rx="5.80909" transform="rotate(-30 34.054 98.6841)" />
                         </svg>
-                    </motion.div>
-                </motion.div>
+                    </div>
+                </div>
 
-                {/* Grid of animated cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {[...Array(config.numCards)].map((_, i) => (
-                        <motion.div
-                            key={i}
-                            variants={cardVariants}
-                            initial="hidden"
-                            animate="visible"
-                            custom={i}
-                            className="bg-zinc-800/50 rounded-lg border border-zinc-800 p-3"
-                        >
-                            <motion.div
-                                className="h-24 rounded-md mb-3"
-                                animate={{
-                                    backgroundColor: ["#27272a", "#3f3f46", "#27272a"],
-                                }}
-                                transition={{ duration: 1.5, repeat: Infinity }}
-                            />
-                            <motion.div
-                                className="h-3 w-3/4 rounded mb-2"
-                                animate={{
-                                    backgroundColor: ["#27272a", "#3f3f46", "#27272a"],
-                                }}
-                                transition={{ duration: 1.5, repeat: Infinity, delay: 0.1 }}
-                            />
-                            <motion.div
-                                className="h-2 w-1/2 rounded"
-                                animate={{
-                                    backgroundColor: ["#27272a", "#3f3f46", "#27272a"],
-                                }}
-                                transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
-                            />
-                        </motion.div>
-                    ))}
+                {/* Header skeleton */}
+                <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800">
+                    <div className="skeleton-bar w-6 h-6 rounded" />
+                    <div className="skeleton-bar w-24 h-3 rounded" />
+                    <div className="flex-1" />
+                    <div className="flex gap-2">
+                        <div className="skeleton-bar w-16 h-6 rounded" />
+                        <div className="skeleton-bar w-16 h-6 rounded" />
+                    </div>
+                </div>
+
+                {/* Body skeleton */}
+                <div className="flex min-h-[220px]">
+                    {/* Sidebar */}
+                    <div className="w-40 border-r border-zinc-800 p-3 space-y-2 hidden sm:block">
+                        <div className="skeleton-bar w-full h-7 rounded" />
+                        <div className="skeleton-bar w-3/4 h-7 rounded" />
+                        <div className="skeleton-bar w-5/6 h-7 rounded" />
+                        <div className="skeleton-bar w-2/3 h-7 rounded" />
+                    </div>
+
+                    {/* Main Content */}
+                    <div className="flex-1 p-4">
+                        <div className="skeleton-bar w-2/3 h-5 rounded mb-3" />
+                        <div className="skeleton-bar w-1/2 h-3 rounded mb-6" />
+
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {[0, 1, 2, 3, 4, 5].map((i) => (
+                                <div 
+                                    key={i} 
+                                    className="rounded-lg border border-zinc-800 p-3 bg-zinc-800/30"
+                                >
+                                    <div className="skeleton-bar w-8 h-8 rounded mb-2" />
+                                    <div className="skeleton-bar w-full h-3 rounded mb-1.5" />
+                                    <div className="skeleton-bar w-2/3 h-2 rounded" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             </div>
-        </motion.div>
+
+            {/* CSS for smooth animations - defined once, no JS restarts */}
+            <style jsx>{`
+                .skeleton-bar {
+                    background: linear-gradient(
+                        90deg,
+                        #27272a 0%,
+                        #3f3f46 50%,
+                        #27272a 100%
+                    );
+                    background-size: 200% 100%;
+                    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+                }
+
+                @keyframes skeleton-shimmer {
+                    0% { background-position: 200% 0; }
+                    100% { background-position: -200% 0; }
+                }
+
+                @keyframes skeleton-glow {
+                    0%, 100% { 
+                        opacity: 0.3;
+                        transform: scale(1.5);
+                    }
+                    50% { 
+                        opacity: 0.6;
+                        transform: scale(2);
+                    }
+                }
+            `}</style>
+        </div>
     )
 }
 
