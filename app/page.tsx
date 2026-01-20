@@ -1046,6 +1046,17 @@ function ReplayToolContent() {
   } | null>(null);
   const [flowNodeRenameValue, setFlowNodeRenameValue] = useState("");
   
+  // AI-Generated Enterprise Documentation State
+  const [aiDocsOverview, setAiDocsOverview] = useState<any>(null);
+  const [aiDocsApi, setAiDocsApi] = useState<any>(null);
+  const [aiDocsQa, setAiDocsQa] = useState<any>(null);
+  const [aiDocsDeploy, setAiDocsDeploy] = useState<any>(null);
+  const [aiFlows, setAiFlows] = useState<any>(null);
+  const [aiDesignSystem, setAiDesignSystem] = useState<any>(null);
+  const [isGeneratingDocs, setIsGeneratingDocs] = useState<string | null>(null); // Which doc is being generated
+  const [isGeneratingFlows, setIsGeneratingFlows] = useState(false);
+  const [isGeneratingDesign, setIsGeneratingDesign] = useState(false);
+  
   // Upgrade modal for FREE users
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeFeature, setUpgradeFeature] = useState<"code" | "download" | "publish" | "supabase" | "general">("general");
@@ -5670,6 +5681,154 @@ Try these prompts in Cursor or v0:
       reader.readAsDataURL(blob);
     });
   };
+
+  // AI-Powered Documentation Generation (Gemini 2.0 Flash)
+  const generateDocs = async (docType: "overview" | "api" | "qa" | "deploy") => {
+    if (!generatedCode || isGeneratingDocs) return;
+    
+    setIsGeneratingDocs(docType);
+    try {
+      const response = await fetch("/api/generate/docs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: docType,
+          projectName: activeGeneration?.title || "Generated Project",
+          generatedCode: editableCode || generatedCode,
+          flowNodes: flowNodes.map(n => ({
+            id: n.id,
+            name: n.name,
+            type: n.type,
+            status: n.status,
+            description: n.description
+          })),
+          styleInfo: styleInfo,
+          screenCount: flowNodes.filter(n => n.status === "observed").length,
+          componentCount: (editableCode || generatedCode)?.split("function ").length || 1
+        })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        switch (docType) {
+          case "overview": setAiDocsOverview(result.data); break;
+          case "api": setAiDocsApi(result.data); break;
+          case "qa": setAiDocsQa(result.data); break;
+          case "deploy": setAiDocsDeploy(result.data); break;
+        }
+      } else {
+        showToast(`Failed to generate ${docType} docs`, "error");
+      }
+    } catch (error) {
+      console.error(`[Generate Docs] Error:`, error);
+      showToast(`Error generating ${docType} documentation`, "error");
+    } finally {
+      setIsGeneratingDocs(null);
+    }
+  };
+
+  // AI-Powered Flow Diagram Generation (Gemini 2.5 Pro)
+  const generateFlows = async () => {
+    if (!generatedCode || isGeneratingFlows) return;
+    
+    setIsGeneratingFlows(true);
+    try {
+      const response = await fetch("/api/generate/flows", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectName: activeGeneration?.title || "Generated Project",
+          generatedCode: editableCode || generatedCode,
+          flowNodes: flowNodes.map(n => ({
+            id: n.id,
+            name: n.name,
+            type: n.type,
+            status: n.status,
+            description: n.description,
+            components: n.components
+          })),
+          flowEdges: flowEdges.map(e => ({
+            id: e.id,
+            from: e.from,
+            to: e.to,
+            label: e.label
+          }))
+        })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        setAiFlows(result.data);
+      } else {
+        showToast("Failed to generate flow diagrams", "error");
+      }
+    } catch (error) {
+      console.error("[Generate Flows] Error:", error);
+      showToast("Error generating flow diagrams", "error");
+    } finally {
+      setIsGeneratingFlows(false);
+    }
+  };
+
+  // AI-Powered Design System Generation (Gemini 2.5 Pro)
+  const generateDesignSystem = async () => {
+    if (!generatedCode || isGeneratingDesign) return;
+    
+    setIsGeneratingDesign(true);
+    try {
+      const response = await fetch("/api/generate/design", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectName: activeGeneration?.title || "Generated Project",
+          generatedCode: editableCode || generatedCode,
+          extractedColors: styleInfo?.colors,
+          industry: "SaaS" // Could be detected from code patterns
+        })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        setAiDesignSystem(result.data);
+      } else {
+        showToast("Failed to generate design system", "error");
+      }
+    } catch (error) {
+      console.error("[Generate Design] Error:", error);
+      showToast("Error generating design system", "error");
+    } finally {
+      setIsGeneratingDesign(false);
+    }
+  };
+
+  // Auto-generate docs when switching tabs (on-demand)
+  useEffect(() => {
+    if (viewMode === "docs" && generatedCode) {
+      if (docsSubTab === "overview" && !aiDocsOverview && !isGeneratingDocs) {
+        generateDocs("overview");
+      } else if (docsSubTab === "api" && !aiDocsApi && !isGeneratingDocs) {
+        generateDocs("api");
+      } else if (docsSubTab === "qa" && !aiDocsQa && !isGeneratingDocs) {
+        generateDocs("qa");
+      } else if (docsSubTab === "deploy" && !aiDocsDeploy && !isGeneratingDocs) {
+        generateDocs("deploy");
+      }
+    }
+  }, [viewMode, docsSubTab, generatedCode, aiDocsOverview, aiDocsApi, aiDocsQa, aiDocsDeploy, isGeneratingDocs]);
+
+  // Auto-generate flows when switching to flow tab
+  useEffect(() => {
+    if (viewMode === "flow" && generatedCode && !aiFlows && !isGeneratingFlows) {
+      generateFlows();
+    }
+  }, [viewMode, generatedCode, aiFlows, isGeneratingFlows]);
+
+  // Auto-generate design when switching to design tab
+  useEffect(() => {
+    if (viewMode === "design" && generatedCode && !aiDesignSystem && !isGeneratingDesign) {
+      generateDesignSystem();
+    }
+  }, [viewMode, generatedCode, aiDesignSystem, isGeneratingDesign]);
 
   // Streaming generation - shows LIVE AI output as it happens
   const generateWithStreaming = async (
@@ -11295,53 +11454,96 @@ export default function GeneratedPage() {
                     </div>
                   ) : (
                     <div className="max-w-4xl mx-auto">
-                      {/* Overview Sub-tab */}
+                      {/* Overview Sub-tab - AI Generated */}
                       {docsSubTab === "overview" && (
                         <div className="space-y-6">
-                          <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500/20 to-orange-600/10 flex items-center justify-center">
-                              <FileText className="w-5 h-5 text-orange-400" />
+                          {isGeneratingDocs === "overview" ? (
+                            <div className="flex flex-col items-center justify-center py-20">
+                              <div className="relative w-12 h-12 mb-4">
+                                <div className="absolute inset-0 rounded-full border-2 border-orange-500/20" />
+                                <div className="absolute inset-0 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
+                              </div>
+                              <p className="text-sm text-zinc-400">Generating documentation with AI...</p>
+                              <p className="text-xs text-zinc-600 mt-1">Using Gemini 2.0 Flash</p>
                             </div>
-                            <div>
-                              <h2 className="text-lg font-semibold text-white">{activeGeneration?.title || "Project Documentation"}</h2>
-                              <p className="text-xs text-zinc-500">Generated {new Date().toLocaleDateString()}</p>
-                            </div>
-                          </div>
+                          ) : aiDocsOverview ? (
+                            <>
+                              {/* AI Generated Header */}
+                              <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-600/10 flex items-center justify-center border border-orange-500/20">
+                                    <FileText className="w-6 h-6 text-orange-400" />
+                                  </div>
+                                  <div>
+                                    <h2 className="text-xl font-semibold text-white">{aiDocsOverview.title || activeGeneration?.title || "Project"}</h2>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-medium">{aiDocsOverview.industry || "Enterprise"}</span>
+                                      <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 text-[10px] font-medium">{aiDocsOverview.complexity || "Production"}</span>
+                                      <span className="text-[10px] text-zinc-600">• AI Generated</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <button 
+                                  onClick={() => generateDocs("overview")}
+                                  className="px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-lg transition-colors flex items-center gap-1.5"
+                                >
+                                  <RefreshCw className="w-3 h-3" /> Regenerate
+                                </button>
+                              </div>
 
-                          {/* What was delivered */}
-                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
-                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
-                              <Package className="w-4 h-4 text-emerald-400" />
-                              What Was Delivered
-                            </h3>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50">
-                                <p className="text-2xl font-bold text-white">{editableCode?.length || 0}</p>
-                                <p className="text-xs text-zinc-500">React Components</p>
-                              </div>
-                              <div className="p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50">
-                                <p className="text-2xl font-bold text-white">{flowNodes.filter(n => n.status === "observed").length}</p>
-                                <p className="text-xs text-zinc-500">Screens Mapped</p>
-                              </div>
-                              <div className="p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50">
-                                <p className="text-2xl font-bold text-white">{styleInfo?.colors?.length || 0}</p>
-                                <p className="text-xs text-zinc-500">Design Tokens</p>
-                              </div>
-                              <div className="p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50">
-                                <p className="text-2xl font-bold text-white">TypeScript</p>
-                                <p className="text-xs text-zinc-500">Strict Mode</p>
-                              </div>
-                            </div>
-                          </div>
+                              {/* AI Description */}
+                              {aiDocsOverview.description && (
+                                <p className="text-sm text-zinc-400 leading-relaxed border-l-2 border-orange-500/30 pl-4 py-2 bg-zinc-900/30 rounded-r-lg">
+                                  {aiDocsOverview.description}
+                                </p>
+                              )}
 
-                          {/* Architecture Overview */}
-                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
-                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
-                              <Layers className="w-4 h-4 text-blue-400" />
-                              Architecture
-                            </h3>
-                            <pre className="text-xs text-zinc-400 font-mono bg-zinc-800/50 rounded-lg p-4 overflow-x-auto">
-{`/src
+                              {/* Stats Grid */}
+                              <div className="grid grid-cols-4 gap-3">
+                                <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-zinc-700/50">
+                                  <p className="text-3xl font-bold text-white">{aiDocsOverview.stats?.screens || flowNodes.filter(n => n.status === "observed").length}</p>
+                                  <p className="text-xs text-zinc-500 mt-1">Screens</p>
+                                </div>
+                                <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-zinc-700/50">
+                                  <p className="text-3xl font-bold text-white">{aiDocsOverview.stats?.components || (editableCode?.split("function ").length || 1)}</p>
+                                  <p className="text-xs text-zinc-500 mt-1">Components</p>
+                                </div>
+                                <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-zinc-700/50">
+                                  <p className="text-3xl font-bold text-white">{aiDocsOverview.stats?.apiEndpoints || "~5"}</p>
+                                  <p className="text-xs text-zinc-500 mt-1">API Endpoints</p>
+                                </div>
+                                <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-zinc-700/50">
+                                  <p className="text-3xl font-bold text-white">{aiDocsOverview.stats?.designTokens || styleInfo?.colors?.length || 5}</p>
+                                  <p className="text-xs text-zinc-500 mt-1">Design Tokens</p>
+                                </div>
+                              </div>
+
+                              {/* Features */}
+                              {aiDocsOverview.features?.length > 0 && (
+                                <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
+                                  <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
+                                    <Sparkles className="w-4 h-4 text-yellow-400" />
+                                    Key Features Identified
+                                  </h3>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    {aiDocsOverview.features.map((feature: string, i: number) => (
+                                      <div key={i} className="flex items-center gap-2 p-2.5 rounded-lg bg-zinc-800/50 border border-zinc-700/30">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                        <span className="text-sm text-zinc-300">{feature}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Architecture */}
+                              <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
+                                <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
+                                  <Layers className="w-4 h-4 text-blue-400" />
+                                  Architecture
+                                </h3>
+                                <pre className="text-xs text-zinc-400 font-mono bg-zinc-800/50 rounded-lg p-4 overflow-x-auto whitespace-pre">
+{aiDocsOverview.fileStructure || `/src
 ├── /components
 │   ├── /ui          # Base shadcn/ui components
 │   └── /features    # Business logic components
@@ -11350,54 +11552,77 @@ export default function GeneratedPage() {
 ├── /types           # TypeScript definitions
 ├── /utils           # Helper functions
 └── /config          # App configuration`}
-                            </pre>
-                          </div>
+                                </pre>
+                              </div>
 
-                          {/* Quick Start */}
-                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
-                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
-                              <Zap className="w-4 h-4 text-yellow-400" />
-                              Quick Start
-                            </h3>
-                            <div className="space-y-3">
-                              <div className="flex items-start gap-3">
-                                <span className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400">1</span>
-                                <div>
-                                  <p className="text-sm text-zinc-300">Download the package</p>
-                                  <p className="text-xs text-zinc-500">Go to Design tab → Download Enterprise Package</p>
+                              {/* Quick Start */}
+                              <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
+                                <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
+                                  <Zap className="w-4 h-4 text-yellow-400" />
+                                  Quick Start
+                                </h3>
+                                <div className="space-y-3">
+                                  {(aiDocsOverview.quickStart || [
+                                    { step: 1, title: "Download", description: "Go to Design tab → Download Enterprise Package" },
+                                    { step: 2, title: "Install", command: "npm install" },
+                                    { step: 3, title: "Run", command: "npm run dev" }
+                                  ]).map((item: any, i: number) => (
+                                    <div key={i} className="flex items-start gap-3">
+                                      <span className="w-6 h-6 rounded-full bg-gradient-to-br from-orange-500/20 to-orange-600/20 flex items-center justify-center text-xs font-bold text-orange-400">{item.step || i + 1}</span>
+                                      <div className="flex-1">
+                                        <p className="text-sm text-zinc-300 font-medium">{item.title}</p>
+                                        {item.description && <p className="text-xs text-zinc-500">{item.description}</p>}
+                                        {item.command && <code className="text-xs text-orange-400 bg-zinc-800 px-2 py-0.5 rounded mt-1 inline-block">{item.command}</code>}
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
-                              <div className="flex items-start gap-3">
-                                <span className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400">2</span>
-                                <div>
-                                  <p className="text-sm text-zinc-300">Install dependencies</p>
-                                  <code className="text-xs text-orange-400 bg-zinc-800 px-2 py-0.5 rounded">npm install</code>
-                                </div>
-                              </div>
-                              <div className="flex items-start gap-3">
-                                <span className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400">3</span>
-                                <div>
-                                  <p className="text-sm text-zinc-300">Start development server</p>
-                                  <code className="text-xs text-orange-400 bg-zinc-800 px-2 py-0.5 rounded">npm run dev</code>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
 
-                          {/* Technologies Used */}
-                          <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
-                            <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
-                              <Cpu className="w-4 h-4 text-purple-400" />
-                              Technologies
-                            </h3>
-                            <div className="flex flex-wrap gap-2">
-                              {["React 18", "TypeScript", "Tailwind CSS", "shadcn/ui", "Radix UI", "React Query", "Zod", "Framer Motion"].map((tech) => (
-                                <span key={tech} className="px-2.5 py-1 rounded-full bg-zinc-800 text-xs text-zinc-400 border border-zinc-700">
-                                  {tech}
-                                </span>
-                              ))}
+                              {/* Technologies */}
+                              <div className="rounded-xl border border-white/[0.06] bg-zinc-900/50 p-5">
+                                <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
+                                  <Cpu className="w-4 h-4 text-purple-400" />
+                                  Technology Stack
+                                </h3>
+                                <div className="space-y-3">
+                                  {aiDocsOverview.architecture && Object.entries(aiDocsOverview.architecture).map(([category, techs]: [string, any]) => (
+                                    <div key={category}>
+                                      <p className="text-[10px] text-zinc-600 uppercase tracking-wider mb-2">{category}</p>
+                                      <div className="flex flex-wrap gap-2">
+                                        {(Array.isArray(techs) ? techs : [techs]).map((tech: string, i: number) => (
+                                          <span key={i} className="px-2.5 py-1 rounded-full bg-zinc-800 text-xs text-zinc-400 border border-zinc-700/50">
+                                            {tech}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  ))}
+                                  {!aiDocsOverview.architecture && (
+                                    <div className="flex flex-wrap gap-2">
+                                      {["React 18", "TypeScript", "Tailwind CSS", "shadcn/ui", "Radix UI", "React Query", "Zod"].map((tech) => (
+                                        <span key={tech} className="px-2.5 py-1 rounded-full bg-zinc-800 text-xs text-zinc-400 border border-zinc-700/50">
+                                          {tech}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            /* Fallback - basic content */
+                            <div className="flex flex-col items-center justify-center py-16 text-center">
+                              <FileText className="w-12 h-12 text-zinc-600 mb-4" />
+                              <p className="text-sm text-zinc-400 mb-2">Documentation will be generated automatically</p>
+                              <button 
+                                onClick={() => generateDocs("overview")}
+                                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg transition-colors"
+                              >
+                                Generate Now
+                              </button>
                             </div>
-                          </div>
+                          )}
                         </div>
                       )}
 
