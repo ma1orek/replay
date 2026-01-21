@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
+import { DitheringShader } from "@/components/ui/dithering-shader";
 
 interface UserData {
   id: string;
@@ -151,6 +152,17 @@ export default function AdminPage() {
   
   // Toast message for styled alerts
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [dimensions, setDimensions] = useState({ width: 1920, height: 1080 });
+
+  // Update dimensions on mount
+  useEffect(() => {
+    const updateDimensions = () => {
+      setDimensions({ width: window.innerWidth * 2, height: window.innerHeight * 2 });
+    };
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, []);
 
   // Auto-dismiss toast after 4 seconds
   useEffect(() => {
@@ -588,8 +600,23 @@ export default function AdminPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-2 border-[#FF6E3C] border-t-transparent rounded-full" />
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center relative">
+        <div className="absolute inset-0 z-0">
+          <DitheringShader
+            width={dimensions.width}
+            height={dimensions.height}
+            shape="wave"
+            type="8x8"
+            colorBack="#0a0a0a"
+            colorFront="#111111"
+            pxSize={4}
+            speed={0.2}
+            className="w-full h-full"
+            style={{ width: "100%", height: "100%" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a0a]/90 via-[#0a0a0a]/70 to-[#0a0a0a]/90" />
+        </div>
+        <div className="relative z-10 animate-spin w-8 h-8 border-2 border-[#FF6E3C] border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -597,11 +624,28 @@ export default function AdminPage() {
   // Login Screen
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4 relative overflow-hidden">
+        {/* Dithering Shader Background */}
+        <div className="absolute inset-0 z-0">
+          <DitheringShader
+            width={dimensions.width}
+            height={dimensions.height}
+            shape="wave"
+            type="8x8"
+            colorBack="#0a0a0a"
+            colorFront="#111111"
+            pxSize={4}
+            speed={0.2}
+            className="w-full h-full"
+            style={{ width: "100%", height: "100%" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a0a]/90 via-[#0a0a0a]/70 to-[#0a0a0a]/90" />
+        </div>
+        
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md"
+          className="w-full max-w-md relative z-10"
         >
           {/* Logo */}
           <div className="flex items-center justify-center gap-3 mb-8">
@@ -683,46 +727,39 @@ export default function AdminPage() {
 
   // Admin Dashboard
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#0a0a0a]/90 backdrop-blur-xl border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
-          <Link href="/landing" className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity shrink-0">
+    <div className="min-h-screen bg-[#0a0a0a] flex">
+      {/* Dithering Shader Background */}
+      <div className="fixed inset-0 z-0">
+        <DitheringShader
+          width={dimensions.width}
+          height={dimensions.height}
+          shape="wave"
+          type="8x8"
+          colorBack="#0a0a0a"
+          colorFront="#111111"
+          pxSize={4}
+          speed={0.2}
+          className="w-full h-full"
+          style={{ width: "100%", height: "100%" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a0a]/90 via-[#0a0a0a]/70 to-[#0a0a0a]/90" />
+      </div>
+
+      {/* Left Sidebar */}
+      <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[#0f0f0f]/80 backdrop-blur-xl border-r border-zinc-800/50 z-20 flex flex-col">
+        {/* Logo */}
+        <div className="p-4 border-b border-zinc-800/50">
+          <Link href="/landing" className="flex items-center gap-3">
             <Logo />
-            <div className="hidden sm:block h-6 w-px bg-white/20" />
-            <span className="hidden sm:block text-lg font-medium text-white/70">Admin Panel</span>
+            <span className="text-sm font-medium text-zinc-400">Admin</span>
           </Link>
-
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Link
-              href="/tool"
-              className="p-2 sm:px-4 sm:py-2 bg-[#FF6E3C]/10 hover:bg-[#FF6E3C]/20 border border-[#FF6E3C]/20 rounded-lg text-sm text-[#FF6E3C] flex items-center gap-2 transition-colors"
-            >
-              <Play className="w-4 h-4" />
-              <span className="hidden sm:inline">Go to Tool</span>
-            </Link>
-            <button
-              onClick={refreshData}
-              disabled={dataLoading}
-              className="p-2 sm:px-4 sm:py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-white/70 flex items-center gap-2 transition-colors"
-            >
-              <Activity className={cn("w-4 h-4", dataLoading && "animate-spin")} />
-              <span className="hidden sm:inline">Refresh</span>
-            </button>
-            <button
-              onClick={handleLogout}
-              className="p-2 sm:px-4 sm:py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg text-sm text-red-400 flex items-center gap-2 transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Logout</span>
-            </button>
-          </div>
         </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        {/* Tabs - Scrollable on mobile */}
-        <div className="flex gap-2 mb-6 sm:mb-8 overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-none">
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto py-4">
+          <div className="px-4 py-2">
+            <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Dashboard</span>
+          </div>
           {[
             { id: "overview", label: "Overview", icon: BarChart3 },
             { id: "users", label: "Users", icon: Users },
@@ -734,17 +771,47 @@ export default function AdminPage() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={cn(
-                "px-3 sm:px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all whitespace-nowrap shrink-0",
-                activeTab === tab.id
-                  ? "bg-[#FF6E3C] text-white"
-                  : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70"
+                "w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-all",
+                activeTab === tab.id 
+                  ? "bg-zinc-800/60 text-zinc-100 border-l-2 border-orange-500" 
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/30 border-l-2 border-transparent"
               )}
             >
               <tab.icon className="w-4 h-4" />
-              <span className="hidden xs:inline sm:inline">{tab.label}</span>
+              {tab.label}
             </button>
           ))}
+        </nav>
+
+        {/* Actions at bottom */}
+        <div className="p-4 border-t border-zinc-800/50 space-y-2">
+          <Link
+            href="/tool"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 rounded-xl text-sm text-orange-500 transition-colors"
+          >
+            <Play className="w-4 h-4" />
+            Go to Tool
+          </Link>
+          <button
+            onClick={refreshData}
+            disabled={dataLoading}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700 rounded-xl text-sm text-zinc-300 transition-colors disabled:opacity-50"
+          >
+            <Activity className={cn("w-4 h-4", dataLoading && "animate-spin")} />
+            Refresh Data
+          </button>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-xl text-sm text-red-400 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            Logout
+          </button>
         </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 ml-64 relative z-10 p-6 sm:p-8">
 
         {/* Overview Tab */}
         {activeTab === "overview" && (
