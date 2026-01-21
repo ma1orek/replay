@@ -5681,8 +5681,17 @@ Try these prompts in Cursor or v0:
       reader.onload = () => {
         const result = reader.result as string;
         // Remove data URL prefix to get just base64
-        const base64 = result.split(",")[1];
-        resolve(base64);
+        // Note: mimeType can contain commas (e.g., video/webm;codecs=vp8,opus)
+        // So we need to find the actual base64 data after "base64," marker
+        const base64Marker = ";base64,";
+        const base64Index = result.indexOf(base64Marker);
+        if (base64Index !== -1) {
+          resolve(result.substring(base64Index + base64Marker.length));
+        } else {
+          // Fallback: try simple comma split (for types without codecs)
+          const commaIndex = result.indexOf(",");
+          resolve(commaIndex !== -1 ? result.substring(commaIndex + 1) : result);
+        }
       };
       reader.onerror = reject;
       reader.readAsDataURL(blob);
@@ -6971,8 +6980,15 @@ Try these prompts in Cursor or v0:
         reader.onloadend = () => {
           const base64 = reader.result as string;
           // Remove data URL prefix to get just the base64
-          const base64Data = base64.split(',')[1];
-          resolve(base64Data);
+          // Handle mimeTypes that might contain commas (e.g., codecs)
+          const base64Marker = ";base64,";
+          const base64Index = base64.indexOf(base64Marker);
+          if (base64Index !== -1) {
+            resolve(base64.substring(base64Index + base64Marker.length));
+          } else {
+            const commaIndex = base64.indexOf(",");
+            resolve(commaIndex !== -1 ? base64.substring(commaIndex + 1) : null);
+          }
         };
         reader.onerror = () => resolve(null);
         reader.readAsDataURL(blob);
@@ -7161,9 +7177,16 @@ Try these prompts in Cursor or v0:
                 const reader = new FileReader();
                 reader.onloadend = () => {
                   const result = reader.result as string;
-                  if (result && result.includes(',')) {
-                    const base64Data = result.split(',')[1];
-                    resolve(base64Data || '');
+                  if (result) {
+                    // Handle mimeTypes that might contain commas (e.g., codecs)
+                    const base64Marker = ";base64,";
+                    const base64Index = result.indexOf(base64Marker);
+                    if (base64Index !== -1) {
+                      resolve(result.substring(base64Index + base64Marker.length));
+                    } else {
+                      const commaIndex = result.indexOf(",");
+                      resolve(commaIndex !== -1 ? result.substring(commaIndex + 1) : '');
+                    }
                   } else {
                     reject(new Error('Invalid base64 result'));
                   }
