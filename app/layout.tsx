@@ -9,7 +9,9 @@ export const metadata: Metadata = {
   description: "Stop guessing with prompts. Replay treats video as the source of truth to reconstruct UI behavior into production-ready React code. Instantly.",
   keywords: ["video to code", "ui rebuild", "screen recording to code", "ai code generation", "tailwind css", "react", "frontend automation", "reverse engineering", "visual development"],
   icons: {
-    icon: "/favi.png",
+    icon: "/favicon-32x32.png",
+    shortcut: "/favicon-32x32.png",
+    apple: "/favicon-32x32.png",
   },
   openGraph: {
     title: "Visual Reverse Engineering is here.",
