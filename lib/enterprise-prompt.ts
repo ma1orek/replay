@@ -241,11 +241,13 @@ DO NOT add these if not in video:
   <script type="text/babel">
     const { useState } = React;
     const Icons = lucideReact;
+    // CRITICAL: Access Recharts via window for UMD compatibility
+    const RechartsLib = window.Recharts;
     const { 
       AreaChart, Area, BarChart, Bar, LineChart, Line,
       PieChart, Pie, Cell, XAxis, YAxis, Tooltip,
       ResponsiveContainer, CartesianGrid, Legend
-    } = Recharts;
+    } = RechartsLib;
     
     // DATA - EXACT values from video
     const chartData = [
