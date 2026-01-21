@@ -9057,19 +9057,33 @@ Try these prompts in Cursor or v0:
                   <div className="p-4 border-b border-white/[0.06]">
                     <div className="flex items-center justify-between mb-3">
                       <span className="sidebar-label text-[11px] font-semibold text-white/40 uppercase tracking-wider flex items-center gap-2">
-                        <Palette className="w-3.5 h-3.5" /> {enterpriseMode ? "ENTERPRISE PRESET" : "VISUAL STYLE"}
+                        <Palette className="w-3.5 h-3.5" /> VISUAL STYLE
                       </span>
-                      <button
-                        onClick={() => setEnterpriseMode(!enterpriseMode)}
-                        className={cn(
-                          "px-2 py-1 rounded-md text-[10px] font-medium transition-all",
-                          enterpriseMode 
-                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" 
-                            : "bg-zinc-800/50 text-zinc-500 hover:text-zinc-400"
-                        )}
-                      >
-                        {enterpriseMode ? "Enterprise ✓" : "Creative"}
-                      </button>
+                      {/* Creative / Enterprise Toggle */}
+                      <div className="flex items-center bg-zinc-800/80 rounded-lg p-0.5">
+                        <button
+                          onClick={() => setEnterpriseMode(false)}
+                          className={cn(
+                            "px-2.5 py-1 rounded-md text-[10px] font-medium transition-all",
+                            !enterpriseMode 
+                              ? "bg-zinc-700 text-white shadow-sm" 
+                              : "text-zinc-500 hover:text-zinc-400"
+                          )}
+                        >
+                          Creative
+                        </button>
+                        <button
+                          onClick={() => setEnterpriseMode(true)}
+                          className={cn(
+                            "px-2.5 py-1 rounded-md text-[10px] font-medium transition-all",
+                            enterpriseMode 
+                              ? "bg-emerald-500/20 text-emerald-400 shadow-sm" 
+                              : "text-zinc-500 hover:text-zinc-400"
+                          )}
+                        >
+                          Enterprise
+                        </button>
+                      </div>
                     </div>
                     
                     {enterpriseMode ? (
@@ -13940,19 +13954,33 @@ export default function GeneratedPage() {
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
-                      {enterpriseMode ? "Enterprise Preset" : "Visual Style"}
+                      Visual Style
                     </label>
-                    <button
-                      onClick={() => setEnterpriseMode(!enterpriseMode)}
-                      className={cn(
-                        "px-1.5 py-0.5 rounded text-[9px] font-medium transition-all",
-                        enterpriseMode 
-                          ? "bg-emerald-500/20 text-emerald-400" 
-                          : "bg-zinc-800/50 text-zinc-500"
-                      )}
-                    >
-                      {enterpriseMode ? "Enterprise" : "Creative"}
-                    </button>
+                    {/* Creative / Enterprise Toggle */}
+                    <div className="flex items-center bg-zinc-800/80 rounded-md p-0.5">
+                      <button
+                        onClick={() => setEnterpriseMode(false)}
+                        className={cn(
+                          "px-2 py-0.5 rounded text-[9px] font-medium transition-all",
+                          !enterpriseMode 
+                            ? "bg-zinc-700 text-white" 
+                            : "text-zinc-500 hover:text-zinc-400"
+                        )}
+                      >
+                        Creative
+                      </button>
+                      <button
+                        onClick={() => setEnterpriseMode(true)}
+                        className={cn(
+                          "px-2 py-0.5 rounded text-[9px] font-medium transition-all",
+                          enterpriseMode 
+                            ? "bg-emerald-500/20 text-emerald-400" 
+                            : "text-zinc-500 hover:text-zinc-400"
+                        )}
+                      >
+                        Enterprise
+                      </button>
+                    </div>
                   </div>
                   
                   {enterpriseMode ? (
