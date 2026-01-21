@@ -84,8 +84,6 @@ import { stabilizePicsumUrls } from "@/lib/assets";
 import { transmuteVideoToCode } from "@/actions/transmute";
 import { getDatabaseContext, formatDatabaseContextForPrompt } from "@/lib/supabase/schema";
 import { useIsMobile } from "@/lib/useIsMobile";
-import { useGenerationJob } from "@/lib/useGenerationJob";
-import { MobileLayout } from "@/components/mobile";
 import { EnterprisePresetSelector, PresetBadge } from "@/components/EnterprisePresetSelector";
 import { EnterpriseExport } from "@/components/EnterpriseExport";
 import { ENTERPRISE_PRESETS, EnterprisePreset, getPresetById } from "@/lib/enterprise-presets";
@@ -876,11 +874,8 @@ function ReplayToolContent() {
   const { profile } = useProfile();
   const { toast, showToast, hideToast } = useToast();
   
-  // MOBILE HARD FORK - Mobile users get completely different app
+  // Check if mobile (show "Desktop only" message)
   const isMobile = useIsMobile();
-  
-  // Job-based generation for mobile (recoverable when screen turns off)
-  const { jobState, startJob, recoverPendingJob, resetJob, isJobActive } = useGenerationJob();
   
   // Demo mode state - for cached demo results
   const [isDemoMode, setIsDemoMode] = useState(false);
@@ -1826,31 +1821,6 @@ function ReplayToolContent() {
           return;
         }
         
-        // Check for pending job recovery (mobile screen was off)
-        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        if (isMobileDevice && !isProcessing && !generatedCode) {
-          console.log("[Job Recovery] Tab visible on mobile - checking for pending job...");
-          const recoveredJob = await recoverPendingJob();
-          
-          if (recoveredJob) {
-            console.log("[Job Recovery] Found job:", recoveredJob.status);
-            
-            if (recoveredJob.status === "complete" && recoveredJob.code) {
-              console.log("[Job Recovery] Job completed while away - showing result!");
-              showToast("Generation completed! Showing your result.", "success");
-              completeGeneration(recoveredJob.code);
-              return;
-            } else if (recoveredJob.status === "processing" || recoveredJob.status === "pending") {
-              // Job still running - show loading state
-              setIsProcessing(true);
-              generationStartTimeRef.current = Date.now();
-              showToast("Generation still in progress...", "info");
-            } else if (recoveredJob.status === "failed") {
-              showToast(recoveredJob.error || "Generation failed. Please try again.", "error");
-            }
-          }
-        }
-        
         // Check if generation is stuck (running too long)
         if (generationStartTimeRef.current && isProcessing) {
           const elapsedTime = Date.now() - generationStartTimeRef.current;
@@ -1871,7 +1841,7 @@ function ReplayToolContent() {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("focus", handleVisibilityChange);
     };
-  }, [completeGeneration, resetStuckGeneration, isProcessing, recoverPendingJob, generatedCode, showToast]);
+  }, [completeGeneration, resetStuckGeneration, isProcessing, generatedCode, showToast]);
   
   // Auto-timeout for stuck generations (runs every 30s)
   useEffect(() => {
@@ -1889,52 +1859,6 @@ function ReplayToolContent() {
     
     return () => clearInterval(checkInterval);
   }, [isProcessing, resetStuckGeneration]);
-  
-  // Handle job state changes from polling (mobile job recovery)
-  useEffect(() => {
-    if (jobState.status === "complete" && jobState.code && isProcessing) {
-      console.log("[Job Polling] Job completed via polling - showing result!");
-      completeGeneration(jobState.code);
-      resetJob();
-    } else if (jobState.status === "failed" && isProcessing) {
-      console.log("[Job Polling] Job failed via polling:", jobState.error);
-      showToast(jobState.error || "Generation failed. Please try again.", "error");
-      setIsProcessing(false);
-      generationStartTimeRef.current = null;
-      resetJob();
-    }
-  }, [jobState.status, jobState.code, jobState.error, isProcessing, completeGeneration, resetJob, showToast]);
-  
-  // Initial job recovery check on mobile page load
-  useEffect(() => {
-    const isMobileDevice = typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (!isMobileDevice) return;
-    
-    const checkPendingJob = async () => {
-      console.log("[Job Recovery] Checking for pending job on page load...");
-      const recoveredJob = await recoverPendingJob();
-      
-      if (recoveredJob) {
-        console.log("[Job Recovery] Found pending job on load:", recoveredJob.status);
-        
-        if (recoveredJob.status === "complete" && recoveredJob.code) {
-          console.log("[Job Recovery] Job was completed - showing result!");
-          showToast("Found completed generation! Showing your result.", "success");
-          completeGeneration(recoveredJob.code);
-        } else if (recoveredJob.status === "processing" || recoveredJob.status === "pending") {
-          // Job still running - show loading state and poll
-          setIsProcessing(true);
-          generationStartTimeRef.current = Date.now();
-          showToast("Resuming generation in progress...", "info");
-        }
-      }
-    };
-    
-    // Slight delay to let the page initialize
-    const timeoutId = setTimeout(checkPendingJob, 500);
-    return () => clearTimeout(timeoutId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount
 
   // Load demo from API if ?demo= parameter is present (instant load, no AI cost!)
   useEffect(() => {
@@ -6471,65 +6395,17 @@ Try these prompts in Cursor or v0:
           return;
         }
         
-        // MOBILE: Try FFmpeg conversion for problematic formats
-        const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        let blobToUpload = flow.videoBlob;
-        
-        if (isMobile && !videoUrl && flow.videoBlob.size > 0) {
-          const videoType = flow.videoBlob.type.toLowerCase();
-          // Check if video needs conversion (MOV, HEVC, etc.)
-          const needsConversion = videoType.includes("quicktime") || 
-                                  videoType.includes("mov") ||
-                                  videoType.includes("hevc") ||
-                                  videoType.includes("x-m4v") ||
-                                  videoType === "" ||
-                                  !videoType.includes("mp4");
-          
-          if (needsConversion) {
-            console.log("Mobile video needs FFmpeg conversion:", videoType);
-            showToast("Converting video for compatibility...", "info");
-            
-            try {
-              const { convertToMP4, isFFmpegSupported } = await import("@/lib/ffmpeg-converter");
-              
-              if (isFFmpegSupported()) {
-                const convertedBlob = await Promise.race([
-                  convertToMP4(flow.videoBlob, (progress) => {
-                    console.log("FFmpeg progress:", progress, "%");
-                  }),
-                  // 3 minute timeout for conversion
-                  new Promise<never>((_, reject) => 
-                    setTimeout(() => reject(new Error("Conversion timeout")), 180000)
-                  )
-                ]);
-                
-                console.log("FFmpeg conversion success:", convertedBlob.size, "bytes");
-                blobToUpload = convertedBlob;
-                showToast("Video converted successfully!", "success");
-              } else {
-                console.log("FFmpeg not supported, using original");
-              }
-            } catch (ffmpegError) {
-              console.error("FFmpeg conversion failed:", ffmpegError);
-              // Continue with original blob - might work, might not
-              showToast("Conversion failed, trying original format...", "info");
-            }
-          }
-        }
-        
-        // Upload to Supabase (converted or original blob)
+        // Upload to Supabase
         if (!videoUrl) {
-          // Use converted blob type if available, otherwise original
-          let videoContentType = blobToUpload.type || flow.videoBlob.type || "video/webm";
+          let videoContentType = flow.videoBlob.type || "video/webm";
           
-          // Normalize mobile formats for the upload
-          if (videoContentType === "video/quicktime" || videoContentType === "video/x-m4v" || 
-              videoContentType === "video/3gpp" || !videoContentType.startsWith("video/")) {
+          // Normalize video format
+          if (!videoContentType.startsWith("video/")) {
             videoContentType = "video/mp4";
           }
           
           const fileExt = videoContentType.includes("webm") ? "webm" : "mp4";
-          const uploadSizeMB = blobToUpload.size / (1024 * 1024);
+          const uploadSizeMB = flow.videoBlob.size / (1024 * 1024);
           console.log(`Uploading video to Supabase: type=${videoContentType}, size=${uploadSizeMB.toFixed(2)}MB`);
           
           // Get signed upload URL
@@ -6557,7 +6433,7 @@ Try these prompts in Cursor or v0:
           const uploadRes = await fetch(signedUrl, {
             method: "PUT",
             headers: { "Content-Type": videoContentType },
-            body: blobToUpload,
+            body: flow.videoBlob,
           });
           
           if (!uploadRes.ok) {
@@ -7783,37 +7659,31 @@ Try these prompts in Cursor or v0:
     !showHistoryMode && 
     !hasActiveProject;
   
+  // Mobile users see "Desktop only" message
   if (shouldShowMobileLayout) {
     return (
-      <>
-        <MobileLayout
-          user={user}
-          isPro={isPaidPlan}
-          plan={membership?.plan || "free"}
-          credits={userTotalCredits}
-          creditsLoading={creditsLoading}
-          onLogin={() => setShowAuthModal(true)}
-          onOpenCreditsModal={() => setShowProfileMenu(true)}
-          onCreditsRefresh={refreshCredits}
-          onSaveGeneration={handleMobileSaveGeneration}
-          onOpenHistory={() => setShowHistoryMode(true)}
-        />
-        <AuthModal
-          isOpen={showAuthModal}
-          onClose={() => {
-            setShowAuthModal(false);
-            setPendingAction(null);
-          }}
-          title="Sign in to continue"
-          description="Your scans and credits are saved to your account."
-        />
-        <OutOfCreditsModal
-          isOpen={showOutOfCreditsModal}
-          onClose={() => setShowOutOfCreditsModal(false)}
-          requiredCredits={CREDIT_COSTS.VIDEO_GENERATE}
-          availableCredits={userTotalCredits}
-        />
-      </>
+      <div className="min-h-screen bg-black flex items-center justify-center p-6">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
+            <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-white mb-3">Desktop Only</h1>
+          <p className="text-zinc-400 mb-6">
+            Replay.build is designed for desktop browsers. Please open this page on your computer for the best experience.
+          </p>
+          <a 
+            href="https://replay.build" 
+            className="inline-flex items-center gap-2 text-orange-400 hover:text-orange-300 transition-colors"
+          >
+            <span>Visit homepage</span>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </a>
+        </div>
+      </div>
     );
   }
 
