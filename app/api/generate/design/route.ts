@@ -21,7 +21,10 @@ interface DesignGenerationRequest {
   screenCount?: number;
 }
 
-// Build a context-aware, individualized design system prompt
+// ═══════════════════════════════════════════════════════════════════════════════
+// COMPONENT MAPPING & INVENTORY PROMPT ($100K Enterprise Value)
+// ═══════════════════════════════════════════════════════════════════════════════
+
 function buildDesignPrompt(preset: EnterprisePreset | null, request: DesignGenerationRequest): string {
   const presetInfo = preset ? `
 BASE PRESET: ${preset.name}
@@ -34,8 +37,13 @@ PRESET COLORS (as starting point):
 - Error: ${preset.colors.light.error}
 ` : "BASE PRESET: None - generate modern SaaS design";
 
-  return `You are creating a CUSTOM design system for a specific enterprise application.
-This is NOT a generic template - it's tailored to THIS app based on the analyzed code.
+  return `You are a Senior Design Systems Architect conducting a COMPONENT AUDIT and MODERNIZATION MAPPING.
+
+This is NOT a color palette generator. This is a $100,000 DESIGN SYSTEM AUDIT that shows:
+- What legacy components were detected
+- How they map to modern equivalents
+- Technical debt reduction metrics
+- Token standardization
 
 ${presetInfo}
 
@@ -45,164 +53,193 @@ PROJECT CONTEXT:
 - Screens detected: ${request.screenCount || "Multiple"}
 ${request.extractedColors?.length ? `- Colors found in original UI: ${request.extractedColors.map(c => `${c.name}(${c.hex})`).join(", ")}` : ""}
 
-YOUR TASK:
-1. Analyze the code below to identify:
-   - What components are used (tables, charts, forms, cards, etc.)
-   - What color scheme the original UI has
-   - What data types are displayed (financial, user data, analytics, etc.)
-   - What interactions exist (buttons, filters, navigation)
-
-2. Generate a CUSTOMIZED design system that:
-   - Uses the preset as a BASE but ADAPTS it to this specific app
-   - Includes SPECIFIC component tokens for components found in the code
-   - Modernizes the color scheme while maintaining app context
-   - Is WCAG AA compliant
-
 OUTPUT FORMAT (JSON):
 {
-  "name": "[Project Name] Design System",
-  "description": "Customized design system for [specific app description based on analysis]",
-  "version": "1.0.0",
-  
-  "appContext": {
-    "detectedComponents": ["Sidebar", "DataTable", "StatCard", "AreaChart", ...],
-    "dataTypes": ["financial", "user", "analytics", ...],
-    "interactions": ["navigation", "filtering", "sorting", ...],
-    "originalColorScheme": "dark/light/mixed"
+  "auditSummary": {
+    "status": "Optimized & Consolidated",
+    "sourceAnalysis": "Code analysis of reconstructed application",
+    "debtReductionScore": "85%",
+    "wcagCompliance": "AA"
   },
-  
-  "colors": {
-    "brand": {
-      "primary": { "hex": "#...", "name": "...", "usage": "Primary actions, active states", "contrast": "AA" },
-      "secondary": { "hex": "#...", "name": "...", "usage": "..." },
-      "accent": { "hex": "#...", "name": "...", "usage": "..." }
-    },
-    "semantic": {
-      "success": { "hex": "#...", "usage": "Successful transactions, positive values" },
-      "error": { "hex": "#...", "usage": "Failed payments, errors, negative values" },
-      "warning": { "hex": "#...", "usage": "Pending states, alerts" },
-      "info": { "hex": "#...", "usage": "Informational badges, tooltips" }
-    },
-    "neutral": {
-      "background": "#...",
-      "surface": "#...",
-      "border": "#...",
-      "text": { "primary": "#...", "secondary": "#...", "muted": "#..." }
-    },
-    "dark": {
-      "background": "#...",
-      "surface": "#...",
-      "border": "#...",
-      "text": { "primary": "#...", "secondary": "#...", "muted": "#..." }
-    },
-    "chart": {
-      "colors": ["#...", "#...", "#...", "#...", "#..."],
-      "gradients": ["linear-gradient(...)"]
+
+  "legacyToModernMapping": {
+    "title": "Component Transformation Report",
+    "description": "How legacy UI patterns were modernized",
+    "mappings": [
+      {
+        "id": "MAP001",
+        "category": "Buttons|Inputs|Tables|Charts|Navigation|Cards",
+        "legacy": {
+          "description": "Gray 3D beveled button with shadow",
+          "issues": ["Inconsistent sizing", "No hover states", "Not accessible"]
+        },
+        "modern": {
+          "component": "<Button variant='default' />",
+          "library": "shadcn/ui",
+          "improvements": ["WCAG AA contrast", "Keyboard accessible", "Consistent sizing"]
+        },
+        "status": "✅ Auto-Mapped"
+      }
+    ]
+  },
+
+  "debtReductionMetrics": {
+    "title": "Technical Debt Reduction",
+    "metrics": {
+      "colorConsolidation": {
+        "before": "42 inconsistent hex codes",
+        "after": "9 semantic tokens",
+        "reduction": "78%"
+      },
+      "typographyConsolidation": {
+        "before": "5 different font families",
+        "after": "1 standardized font (Inter)",
+        "reduction": "80%"
+      },
+      "componentConsolidation": {
+        "before": "14 button variations",
+        "after": "3 semantic variants (Primary, Secondary, Ghost)",
+        "reduction": "78%"
+      },
+      "spacingConsolidation": {
+        "before": "Arbitrary pixel values",
+        "after": "4px base unit system",
+        "improvement": "Consistent 4/8/16/24/32px scale"
+      }
     }
   },
-  
-  "typography": {
-    "fontFamily": { "primary": "...", "mono": "..." },
-    "scale": {
-      "display": { "size": "...", "weight": "...", "lineHeight": "..." },
-      "h1": { "size": "...", "weight": "...", "lineHeight": "..." },
-      "h2": { ... },
-      "h3": { ... },
-      "body": { ... },
-      "small": { ... },
-      "caption": { ... }
+
+  "componentInventory": {
+    "title": "Component Atlas",
+    "categories": [
+      {
+        "name": "Buttons & Actions",
+        "legacyVariantsDetected": 6,
+        "modernVariants": 3,
+        "components": [
+          {
+            "name": "Primary Button",
+            "usage": "Main CTAs, form submissions",
+            "tokens": {
+              "background": "var(--primary)",
+              "text": "var(--primary-foreground)",
+              "borderRadius": "var(--radius-md)",
+              "padding": "12px 24px"
+            }
+          }
+        ]
+      },
+      {
+        "name": "Form Inputs",
+        "legacyVariantsDetected": 4,
+        "modernVariants": 1,
+        "components": []
+      },
+      {
+        "name": "Data Display",
+        "legacyVariantsDetected": 3,
+        "modernVariants": 2,
+        "components": []
+      }
+    ]
+  },
+
+  "tokenSystem": {
+    "colors": {
+      "semantic": {
+        "primary": { "value": "#...", "usage": "Primary actions", "wcagRatio": "7.2:1" },
+        "secondary": { "value": "#...", "usage": "Secondary actions", "wcagRatio": "5.1:1" },
+        "success": { "value": "#...", "usage": "Positive values, confirmations" },
+        "error": { "value": "#...", "usage": "Errors, negative values" },
+        "warning": { "value": "#...", "usage": "Warnings, pending states" }
+      },
+      "neutral": {
+        "background": "#...",
+        "surface": "#...",
+        "border": "#...",
+        "text": "#...",
+        "textMuted": "#..."
+      },
+      "chart": ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6"]
+    },
+    "typography": {
+      "fontFamily": "Inter, system-ui, sans-serif",
+      "scale": {
+        "h1": "30px/36px bold",
+        "h2": "24px/32px semibold",
+        "h3": "20px/28px semibold",
+        "body": "14px/20px normal",
+        "small": "12px/16px normal"
+      }
+    },
+    "spacing": {
+      "unit": "4px",
+      "scale": ["0", "4px", "8px", "12px", "16px", "24px", "32px", "48px"]
+    },
+    "borderRadius": {
+      "sm": "4px",
+      "md": "6px",
+      "lg": "8px",
+      "full": "9999px"
     }
   },
-  
-  "spacing": {
-    "baseUnit": 4,
-    "scale": { "0": "0", "1": "4px", "2": "8px", "3": "12px", "4": "16px", "6": "24px", "8": "32px", "12": "48px" }
+
+  "iconMapping": {
+    "title": "Icon Modernization",
+    "description": "Bitmap icons replaced with scalable vectors",
+    "mappings": [
+      {
+        "legacy": "Pixelated floppy disk (16x16 PNG)",
+        "modern": "Lucide <Save /> SVG",
+        "improvement": "Scalable, themeable, accessible"
+      },
+      {
+        "legacy": "Low-res home icon",
+        "modern": "Lucide <Home /> SVG",
+        "improvement": "Crisp at any size"
+      }
+    ],
+    "totalReplaced": 24,
+    "library": "lucide-react"
   },
-  
-  "borderRadius": {
-    "none": "0", "sm": "4px", "md": "6px", "lg": "8px", "xl": "12px", "full": "9999px"
+
+  "accessibilityUpgrades": {
+    "title": "Accessibility Improvements",
+    "improvements": [
+      {
+        "issue": "Insufficient color contrast",
+        "legacy": "3.1:1 ratio (failed WCAG)",
+        "modern": "7.2:1 ratio (WCAG AAA)",
+        "status": "✅ Fixed"
+      },
+      {
+        "issue": "Missing focus indicators",
+        "legacy": "No visible focus states",
+        "modern": "ring-2 ring-offset-2 on all interactive elements",
+        "status": "✅ Fixed"
+      }
+    ]
   },
-  
-  "shadows": {
-    "sm": "...", "md": "...", "lg": "...", "xl": "..."
+
+  "exportableAssets": {
+    "tailwindConfig": "Complete tailwind.config.ts with custom tokens",
+    "cssVariables": "Complete :root {} with all CSS custom properties",
+    "componentsJson": "shadcn/ui components.json configuration"
   },
-  
-  "components": {
-    // SPECIFIC to components found in the code!
-    "sidebar": {
-      "width": "256px",
-      "background": "...",
-      "itemPadding": "...",
-      "activeItemBg": "...",
-      "hoverBg": "..."
-    },
-    "dataTable": {
-      "headerBg": "...",
-      "rowHover": "...",
-      "cellPadding": "...",
-      "borderColor": "...",
-      "stripedBg": "..."
-    },
-    "statCard": {
-      "padding": "...",
-      "borderRadius": "...",
-      "shadow": "...",
-      "iconSize": "..."
-    },
-    "chart": {
-      "height": "...",
-      "axisColor": "...",
-      "gridColor": "...",
-      "tooltipBg": "..."
-    },
-    "button": {
-      "primary": { "bg": "...", "text": "...", "hover": "...", "padding": "..." },
-      "secondary": { ... },
-      "ghost": { ... }
-    },
-    "input": {
-      "height": "...",
-      "padding": "...",
-      "border": "...",
-      "focusBorder": "...",
-      "focusRing": "..."
-    },
-    "badge": {
-      "success": { "bg": "...", "text": "..." },
-      "error": { "bg": "...", "text": "..." },
-      "warning": { "bg": "...", "text": "..." },
-      "default": { "bg": "...", "text": "..." }
-    },
-    "modal": {
-      "maxWidth": "...",
-      "borderRadius": "...",
-      "shadow": "...",
-      "overlayBg": "..."
-    }
-  },
-  
-  "tailwindConfig": {
-    "extend": {
-      "colors": { ... },
-      "fontFamily": { ... },
-      "borderRadius": { ... }
-    }
-  },
-  
-  "cssVariables": ":root { --color-primary: ...; ... }",
-  
+
   "recommendations": [
-    "Use primary color for main CTAs and active navigation",
-    "Consider adding motion tokens for chart animations",
-    "..."
+    { "priority": "high", "item": "Implement dark mode toggle using CSS variables" },
+    { "priority": "medium", "item": "Add motion tokens for micro-interactions" },
+    { "priority": "low", "item": "Consider adding a compact density option" }
   ]
 }
 
-IMPORTANT:
-- Make colors SPECIFIC to the app context (financial = trust blues, error handling colors)
-- Include ONLY components that are actually in the code
-- Modernize while keeping the app's character
-- All colors must be WCAG AA compliant (4.5:1 contrast)
+CRITICAL RULES:
+1. Count ACTUAL variants detected in code (don't invent numbers)
+2. Show REAL before/after comparisons
+3. All colors MUST pass WCAG AA (4.5:1 minimum)
+4. Map EVERY icon to a Lucide equivalent
+5. This must look like a $50,000 design audit deliverable
 
 ANALYZE THIS CODE:
 `;

@@ -1057,6 +1057,7 @@ function ReplayToolContent() {
   const [isGeneratingDocs, setIsGeneratingDocs] = useState<string | null>(null); // Which doc is being generated
   const [isGeneratingFlows, setIsGeneratingFlows] = useState(false);
   const [isGeneratingDesign, setIsGeneratingDesign] = useState(false);
+  const [needsAutoGenDocs, setNeedsAutoGenDocs] = useState(false); // Flag to trigger auto-gen after main generation
   
   // Upgrade modal for FREE users
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -1731,6 +1732,9 @@ function ReplayToolContent() {
     setStreamingStatus(null);
     setStreamingCode(null);
     setStreamingLines(0);
+    
+    // Mark that we need to auto-generate docs (will be picked up by useEffect)
+    setNeedsAutoGenDocs(true);
     
     // Mark all components as done
     setAnalysisPhase(prev => prev ? {
@@ -5818,6 +5822,34 @@ Try these prompts in Cursor or v0:
       }
     }
   }, [viewMode, docsSubTab, generatedCode, aiDocsOverview, aiDocsApi, aiDocsQa, aiDocsDeploy, isGeneratingDocs]);
+
+  // AUTO-GENERATE ALL DOCUMENTATION after main generation completes
+  // This runs in background - user sees "Draft Generated" status
+  useEffect(() => {
+    if (needsAutoGenDocs && generatedCode && !isGeneratingDocs) {
+      console.log("[Auto-Gen] 🚀 Starting Enterprise Migration Kit generation...");
+      setNeedsAutoGenDocs(false); // Reset flag
+      
+      // Generate all docs in parallel (background)
+      const autoGenerate = async () => {
+        try {
+          // Stagger requests to avoid overwhelming the API
+          await generateDocs("overview");
+          setTimeout(() => generateDocs("api"), 1500);
+          setTimeout(() => generateDocs("qa"), 3000);
+          setTimeout(() => generateDocs("deploy"), 4500);
+          setTimeout(() => generateFlows(), 6000);
+          setTimeout(() => generateDesignSystem(), 7500);
+          console.log("[Auto-Gen] ✅ All documentation jobs queued");
+        } catch (e) {
+          console.log("[Auto-Gen] Error:", e);
+        }
+      };
+      
+      // Wait 2 seconds for UI to settle, then start background generation
+      setTimeout(autoGenerate, 2000);
+    }
+  }, [needsAutoGenDocs, generatedCode, isGeneratingDocs]);
 
   // Auto-generate flows when switching to flow tab
   useEffect(() => {

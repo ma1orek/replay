@@ -30,63 +30,124 @@ interface FlowGenerationRequest {
   }>;
 }
 
-const FLOW_PROMPT = `You are generating interactive user flow diagrams for an enterprise React application.
+// ═══════════════════════════════════════════════════════════════════════════════
+// BUSINESS PROCESS ARCHITECTURE PROMPT ($100K Enterprise Value)
+// ═══════════════════════════════════════════════════════════════════════════════
 
-Analyze the provided code and flow data to create comprehensive Mermaid diagrams.
+const FLOW_PROMPT = `You are a Senior Business Process Architect analyzing a reconstructed legacy application.
 
-Generate JSON with multiple diagram types:
+This is NOT a sitemap. This is a BUSINESS PROCESS ARCHITECTURE diagram that shows:
+- Decision Points (where user/system makes choices)
+- Data Flow (where data moves between components and APIs)
+- State Transitions (loading, success, error states)
+- Business Rules (validation, conditional logic)
+
+Generate JSON for an ENTERPRISE PROCESS MAP:
 {
-  "userJourney": {
-    "title": "Main User Journey",
-    "description": "Description of the primary user flow",
-    "mermaid": "graph TB\\n    Start([User Opens App]) --> SCR001[Main Screen]\\n    ...",
-    "interactions": [
+  "processArchitecture": {
+    "title": "Business Process Architecture",
+    "description": "Complete process flow with decision points and data nodes",
+    "mermaid": "flowchart TB\\n    subgraph UserActions[User Actions]\\n    START([User Opens App]) --> LOAD[Load Dashboard]\\n    LOAD --> CHECK{Auth Check}\\n    CHECK -->|Authenticated| DASH[Dashboard View]\\n    CHECK -->|Not Auth| LOGIN[Login Screen]\\n    end\\n    subgraph DataLayer[Data Layer]\\n    DASH --> API[(Fetch Data)]\\n    API --> TRANSFORM[Transform Response]\\n    end",
+    "nodes": [
       {
-        "id": "INT001",
-        "action": "Click button",
-        "from": "Screen A",
-        "to": "Screen B",
-        "description": "What happens"
+        "id": "NODE001",
+        "type": "start|action|decision|api|state|end",
+        "label": "Node Label",
+        "description": "What this node represents"
       }
     ]
   },
-  "screenNavigation": {
-    "title": "Screen Navigation Map",
-    "mermaid": "graph LR\\n    Home --> Dashboard\\n    ...",
-    "screens": [
-      { "id": "SCR001", "name": "Screen Name", "type": "page|modal|section" }
+  "decisionMatrix": {
+    "title": "Decision Points Analysis",
+    "decisions": [
+      {
+        "id": "DEC001",
+        "name": "Decision Name",
+        "condition": "What is being checked",
+        "truePath": "What happens if true",
+        "falsePath": "What happens if false",
+        "sourceEvidence": "Where in UI this was detected (e.g., 'Button disabled until form valid')"
+      }
     ]
   },
-  "dataFlow": {
-    "title": "Data Flow Diagram",
-    "mermaid": "sequenceDiagram\\n    participant U as User\\n    participant F as Frontend\\n    ...",
-    "apiCalls": [
-      { "method": "GET", "endpoint": "/api/data", "description": "Fetch data" }
+  "dataContracts": {
+    "title": "API Integration Points",
+    "endpoints": [
+      {
+        "id": "API001",
+        "trigger": "What UI action triggers this",
+        "method": "GET|POST|PUT|DELETE",
+        "endpoint": "/api/...",
+        "payload": "{ field: type }",
+        "response": "{ field: type }",
+        "errorHandling": "How errors are shown to user"
+      }
+    ],
+    "mermaid": "sequenceDiagram\\n    participant U as User\\n    participant UI as Frontend\\n    participant API as Backend API\\n    participant DB as Database\\n    U->>UI: Click Submit\\n    UI->>API: POST /api/submit\\n    API->>DB: INSERT record\\n    DB-->>API: Success\\n    API-->>UI: 200 OK\\n    UI-->>U: Show Success Toast"
+  },
+  "stateMachine": {
+    "title": "Application State Flow",
+    "description": "State transitions detected from UI behavior",
+    "mermaid": "stateDiagram-v2\\n    [*] --> Idle\\n    Idle --> Loading: User Action\\n    Loading --> Success: Data Received\\n    Loading --> Error: Request Failed\\n    Success --> Idle: Reset\\n    Error --> Idle: Retry",
+    "states": [
+      {
+        "name": "State Name",
+        "entryCondition": "How to enter this state",
+        "exitCondition": "How to exit this state",
+        "uiIndicator": "What user sees (e.g., spinner, error message)"
+      }
     ]
   },
-  "stateManagement": {
-    "title": "Component State Flow",
-    "mermaid": "stateDiagram-v2\\n    [*] --> Loading\\n    Loading --> Loaded: Data fetched\\n    ..."
+  "businessRules": {
+    "title": "Extracted Business Logic",
+    "rules": [
+      {
+        "id": "BR001",
+        "name": "Rule Name",
+        "type": "validation|conditional|calculation|workflow",
+        "description": "Plain English description",
+        "implementation": "if (condition) { action } else { alternative }",
+        "sourceEvidence": "How this was detected from UI"
+      }
+    ]
   },
-  "businessLogic": [
+  "userJourneys": [
     {
-      "id": "BL001",
-      "name": "Business Rule Name",
-      "description": "What this rule does",
-      "mermaid": "graph TB\\n    Check{Condition?}\\n    Check -->|Yes| Action1\\n    Check -->|No| Action2"
+      "name": "Primary User Journey",
+      "persona": "Primary User (e.g., Bank Teller, Admin)",
+      "goal": "What user wants to achieve",
+      "steps": [
+        {
+          "step": 1,
+          "action": "User action",
+          "screen": "Screen/Component name",
+          "outcome": "What happens"
+        }
+      ],
+      "happyPath": true,
+      "estimatedTime": "2-3 minutes"
+    }
+  ],
+  "integrationPoints": [
+    {
+      "id": "INT001",
+      "location": "Component/file where integration needed",
+      "type": "API|Database|External Service|Auth",
+      "status": "TODO: CONNECT",
+      "suggestedImplementation": "Code snippet or description"
     }
   ]
 }
 
-IMPORTANT:
-- Use proper Mermaid syntax (escape special characters)
-- Make diagrams visually clear and not too complex
-- Include styling with style definitions
-- For graph diagrams, use meaningful node IDs like SCR001, BTN001
-- For sequence diagrams, use clear participant names
-- Add comments/notes to explain complex flows
+CRITICAL RULES:
+1. Use DECISION NODES (diamonds {}) for every if/else, validation check, or conditional
+2. Use DATABASE NODES (cylinders [()]) for every API call or data fetch
+3. Use SUBGRAPHS to group related functionality
+4. Show BOTH happy path AND error paths
+5. Extract REAL business rules from form validation, disabled buttons, conditional rendering
+6. Every button click should trace to an action node
 
-Generate REAL diagrams based on the actual code structure, not generic placeholders.`;
+Generate REAL analysis based on the actual code. This must look like a $50,000 consulting deliverable.`;
 
 export async function POST(request: NextRequest) {
   try {

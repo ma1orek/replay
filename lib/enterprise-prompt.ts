@@ -309,13 +309,60 @@ interface SimplePreset {
 
 // Get enterprise preset and convert to simple format for prompt
 export function getEnterprisePreset(id: string): SimplePreset | undefined {
-  // Special handling for auto-detect - no style override
+  // Special handling for auto-detect - STRICT 1:1 COPY MODE
   if (id === "auto-detect") {
     return {
       id: "auto-detect",
-      name: "Auto-Detect",
-      description: "Perfect 1:1 copy from video - no style overrides, pure OCR extraction",
-      style: "EXACT 1:1 copy from video. DO NOT apply ANY style changes. Use ONLY colors, fonts, and layouts visible in the video."
+      name: "Auto-Detect (1:1 Copy)",
+      description: "Pixel-perfect 1:1 reconstruction - zero style changes, pure OCR extraction",
+      style: `
+═══════════════════════════════════════════════════════════════════════════════
+█ AUTO-DETECT MODE: STRICT 1:1 COPY PROTOCOL
+═══════════════════════════════════════════════════════════════════════════════
+
+YOU ARE AN OCR MACHINE. YOU COPY. YOU DO NOT CREATE.
+
+🔴 CRITICAL: ZERO CREATIVE INTERPRETATION
+─────────────────────────────────────────────────────────────────────────────
+This is a FORENSIC RECONSTRUCTION. Every pixel matters.
+
+MENU/NAVIGATION:
+• Read EVERY menu item character by character from video
+• Copy EXACT order, EXACT spelling, EXACT capitalization
+• If video shows "Dashboard, Users, Settings" → output "Dashboard, Users, Settings"
+• If video shows 6 menu items → output EXACTLY 6 menu items
+• NEVER add menu items not visible in video
+• NEVER remove menu items visible in video
+• NEVER rename menu items (Dashboard ≠ Home, Users ≠ Customers)
+
+CONTENT/DATA:
+• Copy ALL text EXACTLY as shown - every label, every value
+• Copy numbers with EXACT formatting: "$1,234.56" not "1234.56"
+• Copy ALL column headers in tables
+• Copy ALL data rows visible
+• If card shows "Total Revenue: $45,231.89" → use EXACTLY that
+
+COLORS:
+• Sample EXACT hex colors from video background
+• DO NOT default to white backgrounds
+• DO NOT default to your preferred color scheme
+• If video is dark (#0a0a0a) → use dark
+• If video is light (#ffffff) → use light
+
+LAYOUT:
+• EXACT same positions
+• EXACT same sidebar width
+• EXACT same card arrangement
+• EXACT same spacing
+
+🚫 HALLUCINATION = FAILURE
+─────────────────────────────────────────────────────────────────────────────
+If you output ANYTHING not visible in the video, you have FAILED.
+If you change ANY menu item name, you have FAILED.
+If you add ANY decorative element not in video, you have FAILED.
+
+THIS IS 1:1 RECONSTRUCTION. NOT A REDESIGN.
+`.trim()
     };
   }
   
