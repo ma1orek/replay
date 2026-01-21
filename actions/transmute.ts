@@ -676,11 +676,14 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
   }
   
   try {
-    // Fetch video
+    // Fetch video from URL (server-side)
+    console.log("[transmute] Fetching video server-side from:", videoUrl?.substring(0, 80));
     const videoData = await fetchVideoAsBase64(videoUrl);
     if (!videoData) {
-      return { success: false, error: "Failed to fetch video" };
+      console.error("[transmute] Failed to fetch video from Supabase URL");
+      return { success: false, error: "Failed to fetch video from storage. Please try again." };
     }
+    console.log("[transmute] Video fetched, base64 size:", videoData.base64.length, "bytes");
     
     // Build parts array
     const parts: Part[] = [];

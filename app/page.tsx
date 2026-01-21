@@ -6527,23 +6527,31 @@ Try these prompts in Cursor or v0:
           // If streaming failed, fallback to server action
           if (!result.success) {
             console.log("[Generate] Streaming failed, falling back to server action:", result.error);
-            setStreamingStatus("⚠️ Switching to backup mode...");
+            setStreamingStatus("⚠️ Video too large for streaming. Using server-side processing...");
+            await new Promise(r => setTimeout(r, 1000)); // Show message briefly
+            setStreamingStatus("🔄 Processing via server (this may take 2-3 minutes)...");
+            console.log("[Generate] Calling server action with videoUrl:", videoUrl?.substring(0, 80));
             result = await transmuteVideoToCode({
               videoUrl,
               styleDirective: fullStyleDirective,
               databaseContext: databaseContextStr || undefined,
               styleReferenceImage: styleReferenceImage || undefined,
             });
+            console.log("[Generate] Server action completed:", result.success ? "success" : result.error);
           }
         } catch (streamError: any) {
           console.error("[Generate] Streaming error, using fallback:", streamError);
-          setStreamingStatus("⚠️ Switching to backup mode...");
+          setStreamingStatus("⚠️ Video too large for streaming. Using server-side processing...");
+          await new Promise(r => setTimeout(r, 1000)); // Show message briefly
+          setStreamingStatus("🔄 Processing via server (this may take 2-3 minutes)...");
+          console.log("[Generate] Calling server action with videoUrl:", videoUrl?.substring(0, 80));
           result = await transmuteVideoToCode({
             videoUrl,
             styleDirective: fullStyleDirective,
             databaseContext: databaseContextStr || undefined,
             styleReferenceImage: styleReferenceImage || undefined,
           });
+          console.log("[Generate] Server action completed:", result.success ? "success" : result.error);
         }
       } else {
         // Fallback to server action for URL-only cases
