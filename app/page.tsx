@@ -5849,6 +5849,14 @@ Try these prompts in Cursor or v0:
       const videoBase64 = await blobToBase64(videoBlob);
       const mimeType = videoBlob.type || "video/mp4";
       
+      // Check video size - Vercel has ~4.5MB limit
+      const videoSizeMB = (videoBase64.length * 0.75) / (1024 * 1024); // base64 is ~33% larger
+      console.log(`[streaming] Video size: ${videoSizeMB.toFixed(2)}MB`);
+      
+      if (videoSizeMB > 4) {
+        throw new Error(`Video too large (${videoSizeMB.toFixed(1)}MB). Maximum is ~4MB. Try a shorter recording.`);
+      }
+      
       setStreamingStatus("Connecting to AI...");
       
       // Call streaming endpoint
@@ -5876,6 +5884,9 @@ Try these prompts in Cursor or v0:
 
       if (!response.ok) {
         // Handle specific status codes
+        if (response.status === 413) {
+          throw new Error("Video too large! Maximum ~4MB. Try a shorter recording (5-10 seconds).");
+        }
         if (response.status === 504) {
           throw new Error("Server timeout - will try backup generation method");
         }
