@@ -36,6 +36,38 @@ function fixBrokenImageUrls(code: string): string {
   return code;
 }
 
+// Fix Recharts references - AI often generates "Recharts" instead of "window.Recharts"
+function fixRechartsReference(code: string): string {
+  if (!code) return code;
+  
+  let fixedCode = code;
+  let fixCount = 0;
+  
+  // Fix: } = Recharts; -> } = window.Recharts || {};
+  fixedCode = fixedCode.replace(/\}\s*=\s*Recharts\s*;/g, () => {
+    fixCount++;
+    return '} = window.Recharts || {};';
+  });
+  
+  // Fix: const X = Recharts; -> const X = window.Recharts;
+  fixedCode = fixedCode.replace(/const\s+(\w+)\s*=\s*Recharts\s*;/g, (_, varName) => {
+    fixCount++;
+    return `const ${varName} = window.Recharts;`;
+  });
+  
+  // Fix: Recharts.AreaChart -> window.Recharts.AreaChart (when used directly)
+  fixedCode = fixedCode.replace(/([^.\w])Recharts\./g, (_, prefix) => {
+    fixCount++;
+    return `${prefix}window.Recharts.`;
+  });
+  
+  if (fixCount > 0) {
+    console.log(`[fixRechartsReference] Fixed ${fixCount} Recharts references`);
+  }
+  
+  return fixedCode;
+}
+
 // Extract code from Gemini response
 function extractCodeFromResponse(response: string): string | null {
   let cleaned = response.trim();
@@ -593,6 +625,7 @@ Generate the complete HTML file now. Return it wrapped in \`\`\`html blocks.`;
           }
           
           cleanCode = fixBrokenImageUrls(cleanCode);
+          cleanCode = fixRechartsReference(cleanCode);
           
           // Validation: Check if menu items are present
           const menuItemsInCode = scanData?.ui?.navigation?.sidebar?.items?.filter((item: any) => 

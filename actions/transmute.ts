@@ -401,6 +401,38 @@ function fixBrokenImageUrls(code: string): string {
   return code;
 }
 
+// Fix Recharts references - AI often generates "Recharts" instead of "window.Recharts"
+function fixRechartsReference(code: string): string {
+  if (!code) return code;
+  
+  let fixedCode = code;
+  let fixCount = 0;
+  
+  // Fix: } = Recharts; -> } = window.Recharts || {};
+  fixedCode = fixedCode.replace(/\}\s*=\s*Recharts\s*;/g, () => {
+    fixCount++;
+    return '} = window.Recharts || {};';
+  });
+  
+  // Fix: const X = Recharts; -> const X = window.Recharts;
+  fixedCode = fixedCode.replace(/const\s+(\w+)\s*=\s*Recharts\s*;/g, (_, varName) => {
+    fixCount++;
+    return `const ${varName} = window.Recharts;`;
+  });
+  
+  // Fix: Recharts.AreaChart -> window.Recharts.AreaChart
+  fixedCode = fixedCode.replace(/([^.\w])Recharts\./g, (_, prefix) => {
+    fixCount++;
+    return `${prefix}window.Recharts.`;
+  });
+  
+  if (fixCount > 0) {
+    console.log(`[fixRechartsReference] Fixed ${fixCount} Recharts references`);
+  }
+  
+  return fixedCode;
+}
+
 // ============================================================================
 // MAIN TRANSMUTE FUNCTION - MULTI-PASS PIPELINE
 // ============================================================================
@@ -529,6 +561,7 @@ Generate the complete HTML file now:`;
     }
     
     code = fixBrokenImageUrls(code);
+    code = fixRechartsReference(code);
     
     // Get token usage
     const usageMetadata = assemblyResult.response.usageMetadata;
