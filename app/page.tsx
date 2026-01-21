@@ -5929,7 +5929,7 @@ Try these prompts in Cursor or v0:
       if (!response.ok) {
         // Handle specific status codes
         if (response.status === 413) {
-          throw new Error("Video too large! Vercel limit is ~4MB. Try a shorter recording (5-8 seconds) or lower quality.");
+          throw new Error("Video exceeds streaming limit. Switching to upload mode...");
         }
         if (response.status === 504) {
           throw new Error("Server timeout - will try backup generation method");

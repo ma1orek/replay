@@ -108,160 +108,62 @@ function extractCodeFromResponse(response: string): string | null {
 }
 
 // ============================================================================
-// GEMINI 3 PRO - 5-PHASE VIDEO ANALYSIS PROMPT
-// Native Multimodal Vision for Pixel-Perfect Reconstruction
+// GEMINI 3 PRO - VIBE ANALYSIS PROMPT
+// Native Vision for Visual Essence Extraction
 // ============================================================================
 
 const GEMINI3_PRO_ANALYSIS_PROMPT = `
-╔══════════════════════════════════════════════════════════════════════════════╗
-║  GEMINI 3 PRO - NATIVE VISION ANALYSIS PROTOCOL                             ║
-║  Extract ALL visual data with PIXEL-PERFECT accuracy                        ║
-╚══════════════════════════════════════════════════════════════════════════════╝
+**GEMINI 3 PRO - VISUAL ESSENCE EXTRACTION**
 
-**YOU ARE GEMINI 3 PRO.**
-Your native multimodal vision can perceive:
-- Exact HEX color values from pixels
-- Text character by character
-- Layout measurements
-- UI component types
+You are a Visual Compiler. Look at this video and extract its essence.
 
-You do NOT guess. You do NOT approximate. You EXTRACT.
+**VIBE CHECK:**
+1. What is the overall "feel"? (Dense dashboard? Airy marketing? Professional SaaS?)
+2. Is it dark mode or light mode?
+3. What's the color temperature? (Cool blues? Warm oranges? Neutral grays?)
 
-═══════════════════════════════════════════════════════════════════════════════
-EXECUTE 5-PHASE ANALYSIS:
-═══════════════════════════════════════════════════════════════════════════════
+**DATA EXTRACTION (Copy exactly, character-for-character):**
+1. app_name: The logo/brand text (top-left corner usually)
+2. menu_items: All navigation items in exact order
+3. data_values: All numbers, prices, percentages with exact formatting
+4. page_title: Main heading
+5. card_titles: Section/card headers
+6. button_texts: All button labels
 
-🔴 PHASE 1: COLOR TELEMETRY
-─────────────────────────────
-Sample pixels and report EXACT colors:
-- background_color: What is the main background? (sample center)
-- sidebar_color: What color is the sidebar?
-- card_color: What color are the cards/panels?
-- primary_color: What is the accent/brand color?
-- text_primary: Main text color
-- text_secondary: Secondary/muted text color
-- is_dark_mode: true/false (is background dark?)
+**VISUAL COMPONENTS:**
+1. chart_types: What charts are visible? (area, bar, line, pie, donut)
+2. has_sidebar: true/false
+3. has_table: true/false
+4. color_scheme: dark/light
+5. primary_color: Main accent color (approximate hex)
 
-⚠️ CRITICAL: If background looks dark, DO NOT report #ffffff!
-Dark backgrounds are typically: #0B1120, #09090b, #0a0a0a, #18181b, #1f2937
-Light backgrounds are typically: #ffffff, #f9fafb, #f3f4f6
-
-🟠 PHASE 2: TEXT EXTRACTION (OCR)
-─────────────────────────────────
-Read EVERY visible text:
-
-1. app_name: EXACT logo/brand text (top-left)
-   - Read letter by letter
-   - ⚠️ DO NOT output: "PayDash", "NexusPay", "StripeClone", "FinanceHub"
-   - These are HALLUCINATIONS! Read EXACTLY what you see!
-
-2. menu_items: Array of EVERY navigation item in EXACT order
-   - Include all sidebar/header menu items
-   - Preserve original language (don't translate)
-   - Preserve exact case
-
-3. page_title: Main heading on current view
-
-4. card_titles: All card/section titles
-
-5. data_labels: All labels for metrics (e.g., "Gross volume", "Net revenue")
-
-6. data_values: ALL numbers with EXACT formatting
-   - Currency symbols and positions: "PLN 403.47" vs "403.47 PLN" vs "$403.47"
-   - Percentages with signs: "+81%" vs "81%"
-   - Exact decimal places
-
-7. table_headers: Column headers if table present
-
-8. button_texts: All button labels
-
-9. other_texts: Any other visible text
-
-🟡 PHASE 3: LAYOUT STRUCTURE
-─────────────────────────────────
-Map the spatial arrangement:
-
-1. sidebar_width: Estimated width in pixels (240/256/280/320)
-2. header_height: Top header height in pixels
-3. grid_columns: How many columns in main content (typically 12-col grid)
-4. card_grid: Card arrangement (e.g., "4 cards in row" = col-span-3)
-5. spacing: Padding/gap estimation (tight=p-4, normal=p-6, generous=p-8)
-
-🟢 PHASE 4: COMPONENT IDENTIFICATION
-─────────────────────────────────
-List UI components present:
-
-1. chart_types: What chart types? ("area chart", "bar chart", "line chart", "donut")
-2. table_present: Is there a data table?
-3. stat_cards: How many stat/metric cards?
-4. input_fields: Any form inputs?
-5. avatars: User avatars present?
-6. badges: Status badges/tags?
-
-🔵 PHASE 5: VERIFICATION
-─────────────────────────────────
-Confirm accuracy:
-
-1. confidence_app_name: How confident are you about the app name? (high/medium/low)
-2. unclear_elements: List anything you couldn't read clearly
-
-═══════════════════════════════════════════════════════════════════════════════
-OUTPUT FORMAT (JSON):
-═══════════════════════════════════════════════════════════════════════════════
-
+**OUTPUT (JSON):**
 {
+  "vibe": "dense-financial" | "modern-saas" | "marketing" | "admin-panel" | "e-commerce",
   "colors": {
+    "is_dark_mode": true/false,
     "background": "#hex",
-    "sidebar": "#hex",
-    "card": "#hex",
-    "primary": "#hex",
-    "text_primary": "#hex",
-    "text_secondary": "#hex",
-    "is_dark_mode": true/false
+    "primary": "#hex"
   },
   "text": {
-    "app_name": "EXACT text from logo",
-    "menu_items": ["Item1", "Item2", ...],
+    "app_name": "EXACT text",
+    "menu_items": ["Item1", "Item2"],
     "page_title": "...",
-    "card_titles": ["...", "..."],
-    "data_labels": ["...", "..."],
-    "data_values": ["...", "..."],
-    "table_headers": ["...", "..."],
-    "button_texts": ["...", "..."],
-    "other_texts": ["...", "..."]
-  },
-  "layout": {
-    "sidebar_width": 256,
-    "header_height": 64,
-    "grid_columns": 12,
-    "card_grid": "col-span-3",
-    "spacing": "p-6"
+    "card_titles": ["..."],
+    "data_values": ["$1,234.56", "+12.5%", "..."],
+    "button_texts": ["..."]
   },
   "components": {
-    "chart_types": ["area chart"],
-    "table_present": false,
-    "stat_cards": 4,
-    "input_fields": [],
-    "avatars": true,
-    "badges": ["active", "pending"]
-  },
-  "verification": {
-    "confidence_app_name": "high",
-    "unclear_elements": []
+    "chart_types": ["area"],
+    "has_sidebar": true,
+    "has_table": false
   }
 }
 
-═══════════════════════════════════════════════════════════════════════════════
-⚠️ CRITICAL REMINDERS:
-═══════════════════════════════════════════════════════════════════════════════
-
-1. Read EXACTLY what you see - no interpretation!
-2. If app_name is unclear, mark it as "[unclear]" - DO NOT GUESS!
-3. NEVER output: PayDash, NexusPay, StripeClone, FinanceHub, MyApp, DashboardApp
-4. These names DO NOT EXIST in any video - they are HALLUCINATIONS!
-5. Preserve original language - DO NOT translate menu items!
-
-EXECUTE ANALYSIS NOW.
+**RULES:**
+- Copy text EXACTLY as you see it (don't invent names!)
+- Preserve original language (don't translate!)
+- If unclear, write "[unclear]" - don't guess!
 `;
 
 // ============================================================================
@@ -290,24 +192,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Initialize Gemini 3 Pro
+    // Initialize Gemini 3 Pro with VIBE CODING configuration
     const genAI = new GoogleGenerativeAI(apiKey);
     
-    // Phase 1: GEMINI 3 PRO - Vision Analysis Model (low temperature for precision)
+    // Phase 1: GEMINI 3 PRO - Vision Analysis Model
+    // Uses high thinking level for deep visual reasoning
     const analysisModel = genAI.getGenerativeModel({
       model: "gemini-3-pro-preview",
       generationConfig: {
-        temperature: 0.1, // Very low for accurate OCR
+        temperature: 0.2, // Slightly higher for vibe understanding
         maxOutputTokens: 8192,
+        // @ts-ignore - Gemini 3 Pro specific parameters
+        thinkingConfig: { thinkingBudget: 8192 }, // Enable deep reasoning
       },
     });
     
-    // Phase 2: GEMINI 3 PRO - Code Generation Model
+    // Phase 2: GEMINI 3 PRO - Code Generation Model (VIBE CODING)
+    // temperature 0.4 = perfect balance for creative yet accurate code
     const generationModel = genAI.getGenerativeModel({
       model: "gemini-3-pro-preview",
       generationConfig: {
-        temperature: enterpriseMode ? 0.2 : 0.4, // Lower for enterprise precision
+        temperature: 0.4, // Vibe Coding needs some creative flexibility
         maxOutputTokens: 100000,
+        // @ts-ignore - Gemini 3 Pro specific parameters  
+        thinkingConfig: { thinkingBudget: 24576 }, // Maximum deep reasoning for architecture
       },
     });
 
@@ -410,63 +318,23 @@ export async function POST(request: NextRequest) {
             fullPrompt += buildStylePrompt(styleDirective);
           }
           
-          // CRITICAL: Inject the extracted data as MANDATORY constraints
+          // Inject extracted data for the generation phase
           fullPrompt += `
 
-╔══════════════════════════════════════════════════════════════════════════════╗
-║  🔒 MANDATORY EXTRACTED DATA - USE THESE VALUES EXACTLY!                     ║
-║  This data was extracted by GEMINI 3 PRO Native Vision                       ║
-║  DO NOT CHANGE, DO NOT "IMPROVE", DO NOT HALLUCINATE!                        ║
-╚══════════════════════════════════════════════════════════════════════════════╝
-
+**EXTRACTED VISUAL DATA (from Phase 1):**
 ${JSON.stringify(extractedData, null, 2)}
 
-═══════════════════════════════════════════════════════════════════════════════
-⚠️ STRICT USAGE RULES:
-═══════════════════════════════════════════════════════════════════════════════
+**VIBE: ${extractedData.vibe || 'professional-dashboard'}**
+${extractedData.colors?.is_dark_mode ? '→ Dark mode detected: Use bg-zinc-950, bg-zinc-900, text-white' : '→ Light mode detected: Use bg-white, bg-gray-50, text-gray-900'}
 
-1. APP NAME: Use EXACTLY "${extractedData.text?.app_name || '[from video]'}"
-   - Put this in the logo/header area
-   - DO NOT change it to PayDash, NexusPay, StripeClone, etc.!
-   - If it says "[from video]" or "[unclear]", leave a placeholder: "App"
+**DATA TO USE (copy exactly):**
+- App Name: "${extractedData.text?.app_name || '[read from video]'}"
+- Menu Items: ${JSON.stringify(extractedData.text?.menu_items || [])}
+- Data Values: ${JSON.stringify(extractedData.text?.data_values || [])}
 
-2. MENU ITEMS: Use EXACTLY these items in EXACT order:
-   ${JSON.stringify(extractedData.text?.menu_items || [], null, 2)}
-   - DO NOT add items that aren't in this list!
-   - DO NOT remove any items!
-   - DO NOT change the order!
-   - DO NOT translate!
+**THE ONE RULE:** Copy data exactly. Interpret design freely.
 
-3. COLOR SCHEME: ${extractedData.colors?.is_dark_mode ? 'DARK MODE' : 'LIGHT MODE'}
-   - Background: ${extractedData.colors?.background || (extractedData.colors?.is_dark_mode ? '#0a0a0a' : '#ffffff')}
-   - Sidebar: ${extractedData.colors?.sidebar || extractedData.colors?.background || '#18181b'}
-   - Primary: ${extractedData.colors?.primary || '#6366f1'}
-   - ${extractedData.colors?.is_dark_mode ? 'USE: bg-zinc-950, bg-zinc-900, text-white' : 'USE: bg-white, bg-gray-50, text-gray-900'}
-
-4. DATA VALUES: Use EXACTLY these numbers/amounts:
-   ${JSON.stringify(extractedData.text?.data_values || [], null, 2)}
-   - Keep EXACT formatting (currency position, decimals, signs)
-
-5. LAYOUT:
-   - Sidebar width: ${extractedData.layout?.sidebar_width || 256}px (use w-64 for 256px)
-   - Card grid: ${extractedData.layout?.card_grid || 'col-span-3'} (4 cards per row)
-   - Spacing: ${extractedData.layout?.spacing || 'p-6'}
-
-═══════════════════════════════════════════════════════════════════════════════
-🚨 FINAL REMINDER - DO NOT HALLUCINATE!
-═══════════════════════════════════════════════════════════════════════════════
-
-The extracted data above is your ONLY source of truth.
-If something is not in the extracted data → DO NOT ADD IT!
-
-❌ Do NOT add "TEST MODE" badge
-❌ Do NOT add menu items that weren't extracted
-❌ Do NOT change the app name
-❌ Do NOT invent data values
-❌ Do NOT import from recharts or lucide-react
-
-GENERATE THE CODE NOW using ONLY the extracted data above.
-Return valid HTML wrapped in \`\`\`html code blocks.
+Generate the code now. Return valid HTML wrapped in \`\`\`html blocks.
 `;
 
           if (databaseContext && !enterpriseMode) {

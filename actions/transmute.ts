@@ -727,13 +727,15 @@ Return ONLY the HTML code wrapped in \`\`\`html code blocks.
       }
     }
     
-    // Initialize Gemini
+    // Initialize Gemini 3 Pro with VIBE CODING configuration
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
       model: "gemini-3-pro-preview",
       generationConfig: {
-        temperature: 0.7,
+        temperature: 0.4, // Vibe Coding balance
         maxOutputTokens: 100000,
+        // @ts-ignore - Gemini 3 Pro specific
+        thinkingConfig: { thinkingBudget: 24576 },
       },
     });
     
@@ -809,7 +811,7 @@ export async function editCodeWithAI(
     if (isPlanMode) {
       const model = genAI.getGenerativeModel({
         model: "gemini-3-pro-preview",
-        generationConfig: { temperature: 0.7, maxOutputTokens: 500 },
+        generationConfig: { temperature: 0.4, maxOutputTokens: 500 },
       });
       
       const prompt = `You are Replay. Keep responses SHORT (1-2 sentences).
@@ -823,10 +825,15 @@ Reply briefly and helpfully.`;
       return { success: true, code: response, isChat: true };
     }
     
-    // Edit mode - full code generation
+    // Edit mode - full code generation with VIBE CODING
     const model = genAI.getGenerativeModel({
       model: "gemini-3-pro-preview",
-      generationConfig: { temperature: 0.7, maxOutputTokens: 100000 },
+      generationConfig: { 
+        temperature: 0.4, // Vibe Coding balance
+        maxOutputTokens: 100000,
+        // @ts-ignore - Gemini 3 Pro specific
+        thinkingConfig: { thinkingBudget: 24576 },
+      },
     });
     
     const editPrompt = `You are Replay, an Elite UI Engineering AI specialized in editing production-ready HTML/CSS/Alpine.js code.
