@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 
-// Facebook Conversions API Configuration
-const PIXEL_ID = "REDACTED_FB_PIXEL_ID";
-const ACCESS_TOKEN = "REDACTED_FB_ACCESS_TOKEN";
+// Facebook Conversions API Configuration (from environment variables)
+const PIXEL_ID = process.env.FB_PIXEL_ID || "";
+const ACCESS_TOKEN = process.env.FB_ACCESS_TOKEN || "";
 const API_VERSION = "v18.0";
 
 // Hash function for PII data

@@ -3,9 +3,9 @@ import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 import crypto from "crypto";
 
-// Facebook Conversions API
-const FB_PIXEL_ID = "REDACTED_FB_PIXEL_ID";
-const FB_ACCESS_TOKEN = "REDACTED_FB_ACCESS_TOKEN";
+// Facebook Conversions API (from environment variables)
+const FB_PIXEL_ID = process.env.FB_PIXEL_ID || "";
+const FB_ACCESS_TOKEN = process.env.FB_ACCESS_TOKEN || "";
 
 async function trackFBPurchase(userId: string, email: string | null, value: number, eventName: "Purchase" | "Subscribe") {
   try {
