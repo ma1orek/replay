@@ -5808,20 +5808,8 @@ Try these prompts in Cursor or v0:
     }
   };
 
-  // Auto-generate docs when switching tabs (on-demand)
-  useEffect(() => {
-    if (viewMode === "docs" && generatedCode) {
-      if (docsSubTab === "overview" && !aiDocsOverview && !isGeneratingDocs) {
-        generateDocs("overview");
-      } else if (docsSubTab === "api" && !aiDocsApi && !isGeneratingDocs) {
-        generateDocs("api");
-      } else if (docsSubTab === "qa" && !aiDocsQa && !isGeneratingDocs) {
-        generateDocs("qa");
-      } else if (docsSubTab === "deploy" && !aiDocsDeploy && !isGeneratingDocs) {
-        generateDocs("deploy");
-      }
-    }
-  }, [viewMode, docsSubTab, generatedCode, aiDocsOverview, aiDocsApi, aiDocsQa, aiDocsDeploy, isGeneratingDocs]);
+  // NOTE: Docs now auto-generate ONLY after main code generation completes
+  // See needsAutoGenDocs useEffect below - no on-demand generation
 
   // AUTO-GENERATE ALL DOCUMENTATION after main generation completes
   // This runs in background - user sees "Draft Generated" status
@@ -11544,16 +11532,18 @@ export default function GeneratedPage() {
                               </div>
                             </>
                           ) : (
-                            /* Fallback - basic content */
+                            /* Waiting for code generation */
                             <div className="flex flex-col items-center justify-center py-16">
                               <FileText className="w-10 h-10 text-zinc-700 mb-3" />
-                              <p className="text-xs text-zinc-500 mb-3">Overview will generate automatically</p>
-                              <button 
-                                onClick={() => generateDocs("overview")}
-                                className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-xs rounded-md transition-colors"
-                              >
-                                Generate Now
-                              </button>
+                              <p className="text-sm text-zinc-400 mb-2">Migration Audit</p>
+                              <p className="text-xs text-zinc-600">
+                                {generatedCode ? "Generating documentation..." : "Waiting for code generation to complete..."}
+                              </p>
+                              {generatedCode && (
+                                <div className="mt-4">
+                                  <div className="w-6 h-6 border-2 border-zinc-700 border-t-zinc-400 rounded-full animate-spin" />
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -11674,12 +11664,18 @@ export default function GeneratedPage() {
                               )}
                             </>
                           ) : (
+                            /* Waiting for code generation */
                             <div className="flex flex-col items-center justify-center py-16">
                               <Plug className="w-10 h-10 text-zinc-700 mb-3" />
-                              <p className="text-xs text-zinc-500 mb-3">API docs will generate automatically</p>
-                              <button onClick={() => generateDocs("api")} className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-xs rounded-md transition-colors">
-                                Generate Now
-                              </button>
+                              <p className="text-sm text-zinc-400 mb-2">Data Contracts</p>
+                              <p className="text-xs text-zinc-600">
+                                {generatedCode ? "Generating documentation..." : "Waiting for code generation to complete..."}
+                              </p>
+                              {generatedCode && (
+                                <div className="mt-4">
+                                  <div className="w-6 h-6 border-2 border-zinc-700 border-t-zinc-400 rounded-full animate-spin" />
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -11817,12 +11813,18 @@ export default function GeneratedPage() {
                               )}
                             </>
                           ) : (
+                            /* Waiting for code generation */
                             <div className="flex flex-col items-center justify-center py-16">
                               <CheckSquare className="w-10 h-10 text-zinc-700 mb-3" />
-                              <p className="text-xs text-zinc-500 mb-3">QA checklist will generate automatically</p>
-                              <button onClick={() => generateDocs("qa")} className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-xs rounded-md transition-colors">
-                                Generate Now
-                              </button>
+                              <p className="text-sm text-zinc-400 mb-2">Traceability Tests</p>
+                              <p className="text-xs text-zinc-600">
+                                {generatedCode ? "Generating documentation..." : "Waiting for code generation to complete..."}
+                              </p>
+                              {generatedCode && (
+                                <div className="mt-4">
+                                  <div className="w-6 h-6 border-2 border-zinc-700 border-t-zinc-400 rounded-full animate-spin" />
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -11975,12 +11977,18 @@ export default function GeneratedPage() {
                               )}
                             </>
                           ) : (
+                            /* Waiting for code generation */
                             <div className="flex flex-col items-center justify-center py-16">
                               <Rocket className="w-10 h-10 text-zinc-700 mb-3" />
-                              <p className="text-xs text-zinc-500 mb-3">Deploy guide will generate automatically</p>
-                              <button onClick={() => generateDocs("deploy")} className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-xs rounded-md transition-colors">
-                                Generate Now
-                              </button>
+                              <p className="text-sm text-zinc-400 mb-2">Handoff Guide</p>
+                              <p className="text-xs text-zinc-600">
+                                {generatedCode ? "Generating documentation..." : "Waiting for code generation to complete..."}
+                              </p>
+                              {generatedCode && (
+                                <div className="mt-4">
+                                  <div className="w-6 h-6 border-2 border-zinc-700 border-t-zinc-400 rounded-full animate-spin" />
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
