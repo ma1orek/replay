@@ -301,6 +301,8 @@ ${generatedCode?.slice(0, 12000) || "No code provided"}
       generationConfig: {
         temperature: 0.2, // Lower for consistent output
         maxOutputTokens: 16384, // Large output for all 4 docs
+        // @ts-ignore - Gemini 3 Pro specific
+        thinkingConfig: { thinkingBudget: 0 }, // Disable thinking for fast JSON output
       },
     });
 
