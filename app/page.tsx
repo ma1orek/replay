@@ -77,7 +77,11 @@ import {
   ListTodo,
   Shield,
   Cloud,
-  Gauge
+  Gauge,
+  Network,
+  Scale,
+  Users,
+  AlertCircle
 } from "lucide-react";
 import { cn, generateId, formatDuration, updateProjectAnalytics } from "@/lib/utils";
 import { stabilizePicsumUrls } from "@/lib/assets";
@@ -1187,6 +1191,7 @@ function ReplayToolContent() {
   const [showStructureInFlow, setShowStructureInFlow] = useState(false); // Toggle to show components under nodes
   const [showPossiblePaths, setShowPossiblePaths] = useState(false); // Toggle to show/hide possible paths in Flow - default OFF to show only observed
   const [showPreviewsInFlow, setShowPreviewsInFlow] = useState(true); // Always show iframe previews in flow nodes by default
+  const [showBusinessProcess, setShowBusinessProcess] = useState(false); // Toggle Business Process Architecture panel
   const [generationComplete, setGenerationComplete] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showFloatingEdit, setShowFloatingEdit] = useState(false);
@@ -10733,6 +10738,19 @@ export default function GeneratedPage() {
                         <Eye className="w-3.5 h-3.5" />
                         Preview
                       </button>
+                      {/* Business Process Architecture toggle */}
+                      <button 
+                        onClick={() => setShowBusinessProcess(!showBusinessProcess)}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-lg border",
+                          showBusinessProcess 
+                            ? "bg-white text-zinc-900 border-white" 
+                            : "bg-zinc-900 border-zinc-700 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+                        )}
+                      >
+                        <Network className="w-3.5 h-3.5" />
+                        Process
+                      </button>
                     </div>
                     
                     {/* Node Detail Panel removed - simplified UI */}
@@ -11163,6 +11181,215 @@ export default function GeneratedPage() {
                 )}
                 
 {/* Edit with AI button removed - chat does the same thing */}
+
+                {/* Business Process Architecture Sidebar */}
+                <AnimatePresence>
+                  {showBusinessProcess && (
+                    <motion.div
+                      initial={{ width: 0, opacity: 0 }}
+                      animate={{ width: 400, opacity: 1 }}
+                      exit={{ width: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute top-0 right-0 h-full bg-zinc-950 border-l border-zinc-800 z-30 overflow-hidden flex flex-col"
+                    >
+                      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Network className="w-4 h-4 text-zinc-400" />
+                            <h3 className="text-sm font-medium text-white">Business Process Architecture</h3>
+                          </div>
+                          <button 
+                            onClick={() => setShowBusinessProcess(false)}
+                            className="p-1 hover:bg-zinc-800 rounded"
+                          >
+                            <X className="w-4 h-4 text-zinc-500" />
+                          </button>
+                        </div>
+
+                        {isGeneratingFlows ? (
+                          <div className="flex items-center gap-2 text-xs text-zinc-500">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Analyzing business logic...
+                          </div>
+                        ) : aiFlows ? (
+                          <div className="space-y-4">
+                            {/* Process Architecture */}
+                            {aiFlows.processArchitecture && (
+                              <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+                                <div className="px-3 py-2 border-b border-zinc-800 flex items-center gap-2">
+                                  <GitBranch className="w-3.5 h-3.5 text-zinc-500" />
+                                  <span className="text-xs font-medium text-zinc-400">{aiFlows.processArchitecture.title || "Process Flow"}</span>
+                                </div>
+                                <div className="p-3">
+                                  {aiFlows.processArchitecture.description && (
+                                    <p className="text-xs text-zinc-500 mb-3">{aiFlows.processArchitecture.description}</p>
+                                  )}
+                                  {aiFlows.processArchitecture.nodes?.length > 0 && (
+                                    <div className="space-y-1">
+                                      {aiFlows.processArchitecture.nodes.slice(0, 8).map((node: any, i: number) => (
+                                        <div key={i} className="flex items-center gap-2 text-[10px]">
+                                          <span className={cn(
+                                            "w-5 h-5 flex items-center justify-center rounded text-[9px]",
+                                            node.type === "decision" ? "bg-amber-500/20 text-amber-400 rotate-45" : 
+                                            node.type === "api" ? "bg-blue-500/20 text-blue-400 rounded-full" :
+                                            node.type === "start" ? "bg-emerald-500/20 text-emerald-400 rounded-full" :
+                                            node.type === "end" ? "bg-zinc-500/20 text-zinc-400 rounded-full" :
+                                            "bg-zinc-700 text-zinc-400"
+                                          )}>
+                                            {node.type === "decision" ? "◇" : node.type === "api" ? "⬤" : "○"}
+                                          </span>
+                                          <span className="text-zinc-400 flex-1 truncate">{node.label}</span>
+                                          <span className="text-zinc-600">{node.type}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Decision Matrix */}
+                            {aiFlows.decisionMatrix?.decisions?.length > 0 && (
+                              <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+                                <div className="px-3 py-2 border-b border-zinc-800 flex items-center gap-2">
+                                  <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+                                  <span className="text-xs font-medium text-zinc-400">Decision Points</span>
+                                  <span className="text-[9px] text-zinc-600 ml-auto">{aiFlows.decisionMatrix.decisions.length}</span>
+                                </div>
+                                <div className="p-2 space-y-2 max-h-48 overflow-y-auto">
+                                  {aiFlows.decisionMatrix.decisions.map((dec: any, i: number) => (
+                                    <div key={i} className="p-2 rounded bg-zinc-800/50 border border-zinc-700/50">
+                                      <p className="text-[10px] font-medium text-zinc-300 mb-1">{dec.name}</p>
+                                      <p className="text-[9px] text-zinc-500">{dec.condition}</p>
+                                      <div className="flex gap-2 mt-2 text-[9px]">
+                                        <span className="text-emerald-400">✓ {dec.truePath}</span>
+                                        <span className="text-zinc-500">|</span>
+                                        <span className="text-zinc-500">✗ {dec.falsePath}</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* API Endpoints */}
+                            {aiFlows.dataContracts?.endpoints?.length > 0 && (
+                              <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+                                <div className="px-3 py-2 border-b border-zinc-800 flex items-center gap-2">
+                                  <Database className="w-3.5 h-3.5 text-blue-500" />
+                                  <span className="text-xs font-medium text-zinc-400">API Integration Points</span>
+                                  <span className="text-[9px] text-zinc-600 ml-auto">{aiFlows.dataContracts.endpoints.length}</span>
+                                </div>
+                                <div className="p-2 space-y-1 max-h-40 overflow-y-auto">
+                                  {aiFlows.dataContracts.endpoints.map((api: any, i: number) => (
+                                    <div key={i} className="flex items-center gap-2 p-2 rounded bg-zinc-800/30 text-[10px]">
+                                      <span className={cn(
+                                        "px-1.5 py-0.5 rounded text-[8px] font-mono",
+                                        api.method === "GET" ? "bg-emerald-500/20 text-emerald-400" :
+                                        api.method === "POST" ? "bg-blue-500/20 text-blue-400" :
+                                        api.method === "PUT" ? "bg-amber-500/20 text-amber-400" :
+                                        "bg-zinc-500/20 text-zinc-400"
+                                      )}>{api.method}</span>
+                                      <span className="text-zinc-400 font-mono truncate flex-1">{api.endpoint}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* State Machine */}
+                            {aiFlows.stateMachine?.states?.length > 0 && (
+                              <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+                                <div className="px-3 py-2 border-b border-zinc-800 flex items-center gap-2">
+                                  <Activity className="w-3.5 h-3.5 text-purple-500" />
+                                  <span className="text-xs font-medium text-zinc-400">State Machine</span>
+                                </div>
+                                <div className="p-2 space-y-1">
+                                  {aiFlows.stateMachine.states.map((state: any, i: number) => (
+                                    <div key={i} className="flex items-center gap-2 p-2 rounded bg-zinc-800/30 text-[10px]">
+                                      <span className="w-2 h-2 rounded-full bg-purple-500/50" />
+                                      <span className="text-zinc-300 font-medium">{state.name}</span>
+                                      {state.uiIndicator && <span className="text-zinc-500 text-[9px] ml-auto">{state.uiIndicator}</span>}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Business Rules */}
+                            {aiFlows.businessRules?.rules?.length > 0 && (
+                              <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+                                <div className="px-3 py-2 border-b border-zinc-800 flex items-center gap-2">
+                                  <Scale className="w-3.5 h-3.5 text-emerald-500" />
+                                  <span className="text-xs font-medium text-zinc-400">Business Rules</span>
+                                  <span className="text-[9px] text-zinc-600 ml-auto">{aiFlows.businessRules.rules.length}</span>
+                                </div>
+                                <div className="p-2 space-y-2 max-h-48 overflow-y-auto">
+                                  {aiFlows.businessRules.rules.map((rule: any, i: number) => (
+                                    <div key={i} className="p-2 rounded bg-zinc-800/50 border border-zinc-700/50">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className={cn(
+                                          "text-[8px] px-1.5 py-0.5 rounded",
+                                          rule.type === "validation" ? "bg-emerald-500/20 text-emerald-400" :
+                                          rule.type === "conditional" ? "bg-amber-500/20 text-amber-400" :
+                                          rule.type === "calculation" ? "bg-blue-500/20 text-blue-400" :
+                                          "bg-zinc-500/20 text-zinc-400"
+                                        )}>{rule.type}</span>
+                                        <span className="text-[10px] font-medium text-zinc-300">{rule.name}</span>
+                                      </div>
+                                      <p className="text-[9px] text-zinc-500">{rule.description}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* User Journeys */}
+                            {aiFlows.userJourneys?.length > 0 && (
+                              <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+                                <div className="px-3 py-2 border-b border-zinc-800 flex items-center gap-2">
+                                  <Users className="w-3.5 h-3.5 text-pink-500" />
+                                  <span className="text-xs font-medium text-zinc-400">User Journeys</span>
+                                </div>
+                                <div className="p-2 space-y-2">
+                                  {aiFlows.userJourneys.map((journey: any, i: number) => (
+                                    <div key={i} className="p-2 rounded bg-zinc-800/50">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <span className="text-[10px] font-medium text-zinc-300">{journey.name}</span>
+                                        {journey.happyPath && <span className="text-[8px] text-emerald-400">✓ Happy Path</span>}
+                                      </div>
+                                      {journey.steps?.slice(0, 5).map((step: any, j: number) => (
+                                        <div key={j} className="flex items-center gap-2 text-[9px] text-zinc-500 ml-2">
+                                          <span className="text-zinc-600">{step.step}.</span>
+                                          <span>{step.action}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-8 text-center">
+                            <Network className="w-8 h-8 text-zinc-700 mb-2" />
+                            <p className="text-xs text-zinc-500">
+                              {generatedCode ? "Click to generate process analysis" : "Generate code first"}
+                            </p>
+                            {generatedCode && (
+                              <button
+                                onClick={generateFlows}
+                                className="mt-3 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs text-zinc-300 transition-colors"
+                              >
+                                Analyze Business Logic
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
             
