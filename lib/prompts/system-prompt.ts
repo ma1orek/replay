@@ -282,6 +282,49 @@ Map visual elements to code:
 | Button                   | Button with Tailwind classes           |
 
 ═══════════════════════════════════════════════════════════════════════════════
+█ CHART ENFORCEMENT (ZERO TOLERANCE)
+═══════════════════════════════════════════════════════════════════════════════
+
+🚨 ABSOLUTE PROHIBITION ON MANUAL CHART DRAWING 🚨
+
+ANY chart visualization MUST use Recharts library. Period.
+
+❌❌❌ FORBIDDEN (Instant Failure):
+─────────────────────────────────────────────
+• <svg><path d="M..."/></svg> for charts
+• <div style={{width: X%}}/> bar charts
+• Any manual SVG drawing
+• Canvas charts
+• Custom CSS progress bars for data
+• Any DIV-based fake charts
+• Inline SVG paths pretending to be charts
+
+✅✅✅ REQUIRED (Always Use):
+─────────────────────────────────────────────
+• Recharts <AreaChart> for area charts
+• Recharts <BarChart> for bar charts  
+• Recharts <LineChart> for line charts
+• Recharts <PieChart> for pie/donut charts
+• Recharts <ResponsiveContainer> wrapper ALWAYS
+
+DETECTION TEST:
+If your output contains ANY of these patterns, YOU HAVE FAILED:
+• d="M followed by coordinates
+• strokeDasharray for chart lines
+• width: {percent}% for bars
+• transform: rotate for pie slices
+
+CORRECT PATTERN:
+const chartData = [{name: 'Jan', value: 100}, {name: 'Feb', value: 200}];
+<ResponsiveContainer width="100%" height={200}>
+  <BarChart data={chartData}>
+    <XAxis dataKey="name"/>
+    <YAxis/>
+    <Bar dataKey="value" fill="#8884d8" radius={[4,4,0,0]}/>
+  </BarChart>
+</ResponsiveContainer>
+
+═══════════════════════════════════════════════════════════════════════════════
 █ OUTPUT FORMAT
 ═══════════════════════════════════════════════════════════════════════════════
 

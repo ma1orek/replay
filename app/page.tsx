@@ -5808,34 +5808,63 @@ Try these prompts in Cursor or v0:
     }
   };
 
-  // NOTE: Docs now auto-generate ONLY after main code generation completes
-  // See needsAutoGenDocs useEffect below - no on-demand generation
-
   // AUTO-GENERATE ALL DOCUMENTATION after main generation completes
-  // This runs in background - user sees "Draft Generated" status
+  // SINGLE API CALL for all 4 doc types - no more 4 separate requests
   useEffect(() => {
     if (needsAutoGenDocs && generatedCode && !isGeneratingDocs) {
-      console.log("[Auto-Gen] 🚀 Starting Enterprise Migration Kit generation...");
-      setNeedsAutoGenDocs(false); // Reset flag
+      console.log("[Auto-Gen] 🚀 Starting UNIFIED Enterprise Migration Kit generation...");
+      setNeedsAutoGenDocs(false);
       
-      // Generate all docs in parallel (background)
-      const autoGenerate = async () => {
+      const autoGenerateAll = async () => {
         try {
-          // Stagger requests to avoid overwhelming the API
-          await generateDocs("overview");
-          setTimeout(() => generateDocs("api"), 1500);
-          setTimeout(() => generateDocs("qa"), 3000);
-          setTimeout(() => generateDocs("deploy"), 4500);
-          setTimeout(() => generateFlows(), 6000);
-          setTimeout(() => generateDesignSystem(), 7500);
-          console.log("[Auto-Gen] ✅ All documentation jobs queued");
+          setIsGeneratingDocs("all"); // Mark as generating all docs
+          
+          // Single API call for ALL documentation
+          const response = await fetch("/api/generate/docs-all", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              projectName: activeGeneration?.title || "Generated Project",
+              generatedCode: generatedCode,
+              flowNodes: flowNodes.map(n => ({
+                id: n.id,
+                name: n.name,
+                type: n.type,
+                status: n.status,
+                description: n.description
+              })),
+              styleInfo: styleInfo,
+              screenCount: flowNodes.filter(n => n.type === "view").length || 1,
+              componentCount: (generatedCode?.match(/<[A-Z][a-zA-Z]+/g) || []).length
+            })
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            console.log("[Auto-Gen] ✅ All docs generated in single request");
+            
+            // Update all doc states at once
+            if (result.overview) setAiDocsOverview(result.overview);
+            if (result.api) setAiDocsApi(result.api);
+            if (result.qa) setAiDocsQa(result.qa);
+            if (result.deploy) setAiDocsDeploy(result.deploy);
+          } else {
+            console.log("[Auto-Gen] ❌ Failed to generate docs:", await response.text());
+          }
+          
+          // Also generate flows and design in parallel
+          generateFlows();
+          setTimeout(() => generateDesignSystem(), 1000);
+          
         } catch (e) {
           console.log("[Auto-Gen] Error:", e);
+        } finally {
+          setIsGeneratingDocs(null);
         }
       };
       
-      // Wait 2 seconds for UI to settle, then start background generation
-      setTimeout(autoGenerate, 2000);
+      // Wait 1.5 seconds for UI to settle, then start
+      setTimeout(autoGenerateAll, 1500);
     }
   }, [needsAutoGenDocs, generatedCode, isGeneratingDocs]);
 
