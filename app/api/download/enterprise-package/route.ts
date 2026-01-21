@@ -399,8 +399,11 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Enterprise-Package] ZIP created, size: ${zipBuffer.length} bytes`);
 
+    // Convert Buffer to Uint8Array for NextResponse compatibility
+    const uint8Array = new Uint8Array(zipBuffer);
+
     // Return as downloadable file
-    return new NextResponse(zipBuffer, {
+    return new NextResponse(uint8Array, {
       headers: {
         "Content-Type": "application/zip",
         "Content-Disposition": `attachment; filename="${safeProjectName}-enterprise-package.zip"`,
