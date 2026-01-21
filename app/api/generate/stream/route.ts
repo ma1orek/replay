@@ -293,18 +293,18 @@ export async function POST(request: NextRequest) {
     // Initialize Gemini 3 Pro
     const genAI = new GoogleGenerativeAI(apiKey);
     
-    // Phase 1: GEMINI 2.0 FLASH - Vision Analysis Model (low temperature for precision)
+    // Phase 1: GEMINI 3 PRO - Vision Analysis Model (low temperature for precision)
     const analysisModel = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-3-pro-preview",
       generationConfig: {
         temperature: 0.1, // Very low for accurate OCR
         maxOutputTokens: 8192,
       },
     });
     
-    // Phase 2: GEMINI 1.5 PRO - Code Generation Model
+    // Phase 2: GEMINI 3 PRO - Code Generation Model
     const generationModel = genAI.getGenerativeModel({
-      model: "gemini-1.5-pro",
+      model: "gemini-3-pro-preview",
       generationConfig: {
         temperature: enterpriseMode ? 0.2 : 0.4, // Lower for enterprise precision
         maxOutputTokens: 100000,

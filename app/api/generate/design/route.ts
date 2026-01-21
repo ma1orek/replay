@@ -5,7 +5,7 @@ import { getPresetById, EnterprisePreset } from "@/lib/enterprise-presets";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-const MODEL_NAME = "gemini-1.5-pro";
+const MODEL_NAME = "gemini-3-pro-preview";
 
 function getApiKey(): string | null {
   return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || null;

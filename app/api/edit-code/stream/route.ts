@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
           
           const genAI = new GoogleGenerativeAI(geminiKey);
           const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-pro",
+            model: "gemini-3-pro-preview",
             generationConfig: { temperature: 0.7, maxOutputTokens: 1000 },
           });
           
@@ -304,7 +304,7 @@ Odpowiedz krótko i przyjaźnie:`;
           
           const genAI = new GoogleGenerativeAI(geminiKey);
           const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-pro",
+            model: "gemini-3-pro-preview",
             generationConfig: { temperature: 0.8, maxOutputTokens: 100000 },
           });
           
@@ -536,7 +536,7 @@ CRITICAL RULES:
           
           const genAI = new GoogleGenerativeAI(geminiKey);
           const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-pro",
+            model: "gemini-3-pro-preview",
             generationConfig: { temperature: 0.7, maxOutputTokens: 100000 },
           });
 
