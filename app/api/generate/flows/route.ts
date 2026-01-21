@@ -182,8 +182,8 @@ ${generatedCode?.slice(0, 12000) || "No code provided"}
       generationConfig: {
         temperature: 0.4,
         maxOutputTokens: 16384,
-        // @ts-ignore - Gemini 3 Pro specific
-        thinkingConfig: { thinkingBudget: 0 }, // Disable thinking for fast JSON output
+        // @ts-ignore - Gemini 3 Pro requires thinking mode
+        thinkingConfig: { thinkingBudget: 1024 }, // Minimum budget for JSON responses
       },
     });
 

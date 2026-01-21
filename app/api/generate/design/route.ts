@@ -267,8 +267,8 @@ export async function POST(request: NextRequest) {
       generationConfig: {
         temperature: 0.4, // Lower for more consistent output
         maxOutputTokens: 16384,
-        // @ts-ignore - Gemini 3 Pro specific
-        thinkingConfig: { thinkingBudget: 0 }, // Disable thinking for fast JSON output
+        // @ts-ignore - Gemini 3 Pro requires thinking mode
+        thinkingConfig: { thinkingBudget: 1024 }, // Minimum budget for JSON responses
       },
     });
 
