@@ -219,7 +219,7 @@ export async function POST(request: NextRequest) {
     const { projectName, generatedCode, presetId, extractedColors, industry, screenCount } = body;
 
     // Get preset if specified
-    const preset = presetId ? getPresetById(presetId) : null;
+    const preset = presetId ? getPresetById(presetId) || null : null;
     
     // Build customized prompt
     const prompt = buildDesignPrompt(preset, body);
