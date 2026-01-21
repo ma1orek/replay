@@ -72,9 +72,9 @@ const Icon = ({ name, className }) => {
 \`\`\`
 
 3. **TAILWIND CSS** for styling:
-- Use colors from \`scanData.ui.colors\` as custom values: \`bg-[${scanData.ui.colors.background}]\`
-- Use grid from scanData: \`grid grid-cols-${scanData.ui.layout.gridColumns}\`
-- Use gap from scanData: \`gap-[${scanData.ui.layout.gap}]\`
+- Use colors from \`scanData.ui.colors\` as custom values: \`bg-[\${scanData.ui.colors.background}]\`
+- Use grid from scanData: \`grid grid-cols-\${scanData.ui.layout.gridColumns}\`
+- Use gap from scanData: \`gap-[\${scanData.ui.layout.gap}]\`
 
 **CODE STRUCTURE:**
 \`\`\`html
