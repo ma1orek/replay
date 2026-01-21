@@ -9400,7 +9400,7 @@ Try these prompts in Cursor or v0:
                   const isUpdateMode = hasProject && (hasContextChange || hasStyleChange) && refinements.trim();
                   
                   return (
-                    <button onClick={handleGenerate} disabled={isProcessing || isEditing || flows.length === 0} className={cn("w-full flex items-center justify-center gap-2.5 py-3 rounded-xl font-medium text-sm transition-all bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700/50", (isProcessing || isEditing) && "opacity-70")}>
+                    <button onClick={handleGenerate} disabled={isProcessing || isEditing || flows.length === 0} className={cn("w-full flex items-center justify-center gap-2.5 py-3 rounded-xl font-medium text-sm transition-all bg-black hover:bg-zinc-900 text-white border border-zinc-800", (isProcessing || isEditing) && "opacity-70")}>
                       
                       <span className="relative z-10 flex items-center gap-2.5">
                         {isProcessing || isEditing ? (
