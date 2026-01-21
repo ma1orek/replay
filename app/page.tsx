@@ -11330,10 +11330,10 @@ export default function GeneratedPage() {
                 {/* Sub-tabs navigation */}
                 <div className="flex items-center gap-1 p-3 border-b border-white/[0.06] bg-[#141414]">
                   {[
-                    { id: "overview", icon: FileText, label: "Overview" },
-                    { id: "api", icon: Plug, label: "API" },
+                    { id: "overview", icon: FileText, label: "Audit" },
+                    { id: "api", icon: Plug, label: "Contracts" },
                     { id: "qa", icon: CheckSquare, label: "QA" },
-                    { id: "deploy", icon: Rocket, label: "Deploy" },
+                    { id: "deploy", icon: Rocket, label: "Handoff" },
                   ].map((tab) => (
                     <button
                       key={tab.id}

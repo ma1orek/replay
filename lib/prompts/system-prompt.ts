@@ -346,6 +346,90 @@ STRUCTURE:
 \`\`\`
 
 ═══════════════════════════════════════════════════════════════════════════════
+█ ENTERPRISE CODE STANDARDS (Senior-Level Quality)
+═══════════════════════════════════════════════════════════════════════════════
+
+Your code must look like it was written by a $200/hr Senior React Developer.
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 1. NO INLINE SVGs                                                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ ❌ FORBIDDEN: <svg><path d="M3 12..."/></svg>                               │
+│ ✅ REQUIRED:  <Home className="w-5 h-5" /> from lucide-react               │
+│                                                                             │
+│ Every icon MUST be a named Lucide import, never raw SVG.                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 2. COMPONENT ABSTRACTION (No Div Soup)                                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ ❌ FORBIDDEN: div > div > div > div (nested meaningless divs)               │
+│ ✅ REQUIRED:  Named components with clear purpose                           │
+│                                                                             │
+│ // Define menu items as data, not duplicated JSX                           │
+│ const MENU_ITEMS = [                                                        │
+│   { icon: Home, label: 'Dashboard', href: '/' },                           │
+│   { icon: CreditCard, label: 'Payments', href: '/payments' },              │
+│ ];                                                                          │
+│                                                                             │
+│ // Then map                                                                 │
+│ {MENU_ITEMS.map((item) => (                                                │
+│   <NavItem key={item.href} {...item} />                                    │
+│ ))}                                                                         │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 3. DATA/UI SEPARATION                                                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ ❌ FORBIDDEN: Hardcoded values deep in JSX                                  │
+│ ✅ REQUIRED:  Define data at top, render in component                      │
+│                                                                             │
+│ // Define data from video                                                   │
+│ const STATS = [                                                             │
+│   { label: 'Total Revenue', value: '$45,231.89', change: '+20.1%' },       │
+│   { label: 'Active Users', value: '2,350', change: '+180.1%' },            │
+│ ];                                                                          │
+│                                                                             │
+│ // Then map with typed component                                            │
+│ {STATS.map((stat) => <StatCard key={stat.label} {...stat} />)}            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 4. CLEAN TAILWIND                                                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ ❌ FORBIDDEN: 200+ character className strings                              │
+│ ✅ REQUIRED:  Logical grouping, use template literals if needed            │
+│                                                                             │
+│ // Group by: layout, spacing, colors, typography, effects                   │
+│ <div className="                                                            │
+│   flex items-center justify-between                                         │
+│   p-4 gap-3                                                                 │
+│   bg-zinc-900 border-b border-white/10                                     │
+│   text-sm font-medium                                                       │
+│   hover:bg-zinc-800 transition-colors                                       │
+│ ">                                                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 5. NO EXTERNAL IMAGE LINKS                                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ ❌ FORBIDDEN: picsum.photos, unsplash, placeholder.com                      │
+│ ✅ REQUIRED:  Placeholder div or avatar with initials                      │
+│                                                                             │
+│ // For avatars                                                              │
+│ <div className="w-8 h-8 rounded-full bg-gradient-to-br                     │
+│   from-blue-500 to-purple-600 flex items-center justify-center">           │
+│   <span className="text-xs font-medium text-white">JD</span>               │
+│ </div>                                                                      │
+│                                                                             │
+│ // For image placeholders                                                   │
+│ <div className="w-full h-40 bg-zinc-800 rounded-lg                         │
+│   flex items-center justify-center">                                        │
+│   <ImageIcon className="w-8 h-8 text-zinc-600" />                          │
+│ </div>                                                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
 █ FINAL VERIFICATION CHECKLIST
 ═══════════════════════════════════════════════════════════════════════════════
 
@@ -356,11 +440,13 @@ Before outputting, verify:
 □ All data values are from video (exact numbers)
 □ Color scheme matches video (dark/light correct)
 □ Charts use Recharts (not raw SVG)
-□ Icons use Lucide (not inline SVG)
+□ Icons use Lucide (not inline SVG paths)
 □ Layout uses grid-cols-12
 □ No "TEST mode" or fake badges
 □ No hallucinated menu items
 □ No invented features
+□ Data defined separately from JSX
+□ No picsum/placeholder images
 
 IF ANY CHECK FAILS → FIX BEFORE OUTPUT!
 `;

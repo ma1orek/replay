@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
-// Use Gemini 3 Flash for docs (fast & cheap)
-const MODEL_NAME = "gemini-3-flash-preview";
+// Use Gemini 3 Pro for enterprise-grade docs
+const MODEL_NAME = "gemini-3-pro-preview";
 
 function getApiKey(): string | null {
   return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || null;
@@ -32,149 +32,287 @@ interface DocsGenerationRequest {
   componentCount: number;
 }
 
-// System prompts for each doc type
+// ═══════════════════════════════════════════════════════════════════════════════
+// ENTERPRISE MIGRATION KIT - DOCUMENTATION PROMPTS ($100K VALUE)
+// ═══════════════════════════════════════════════════════════════════════════════
+
 const PROMPTS = {
-  overview: `You are generating enterprise documentation for a React application reconstructed from video analysis.
+  // ────────────────────────────────────────────────────────────────────────────
+  // 1. MIGRATION AUDIT & SCOPE (replaces Overview)
+  // ────────────────────────────────────────────────────────────────────────────
+  overview: `You are a Senior Enterprise Migration Architect generating a MIGRATION AUDIT REPORT.
 
-Generate a comprehensive project overview in JSON format with these fields:
+This is NOT a tutorial. This is a $100,000 migration analysis that executives will use to approve budget.
+
+Analyze the reconstructed application and generate JSON:
 {
-  "title": "Project title",
-  "description": "2-3 sentence description of what this app does based on the code",
-  "industry": "Detected industry (Financial/Healthcare/SaaS/Government/Other)",
-  "complexity": "Simple/Medium/Complex based on component count",
-  "stats": {
-    "screens": number,
-    "components": number,
-    "apiEndpoints": number,
-    "designTokens": number
+  "migrationScope": {
+    "title": "Migration Audit: [App Name]",
+    "executiveSummary": "2-3 sentences explaining what legacy system was analyzed and modernization status",
+    "sourceAnalysis": {
+      "videoFootageAnalyzed": "Duration analyzed",
+      "interactionsDetected": number,
+      "validationsIdentified": number,
+      "errorStatesFound": number
+    }
   },
-  "features": ["Feature 1", "Feature 2", ...], // 4-6 main features identified from code
-  "architecture": {
-    "frontend": ["React 18", "TypeScript", ...],
-    "styling": ["Tailwind CSS", "shadcn/ui", ...],
-    "dataFetching": ["React Query", ...],
-    "validation": ["Zod", ...]
-  },
-  "quickStart": [
-    {"step": 1, "title": "Install", "command": "npm install"},
-    {"step": 2, "title": "Configure", "description": "Copy .env.example to .env"},
-    {"step": 3, "title": "Run", "command": "npm run dev"}
-  ],
-  "fileStructure": "ASCII tree of recommended file structure"
-}
-
-Analyze the provided code and generate accurate, specific documentation. No placeholders.`,
-
-  api: `You are generating API documentation for a React application.
-
-Analyze the code and infer what API endpoints would be needed to power this frontend.
-
-Generate JSON:
-{
-  "endpoints": [
+  "legacyToModernMapping": [
     {
-      "method": "GET|POST|PUT|DELETE",
-      "path": "/api/...",
-      "description": "What this endpoint does",
-      "requestBody": null or { "field": "type", ... },
-      "response": { "field": "type", ... },
-      "businessRules": ["Rule 1", "Rule 2"]
+      "legacyElement": "Description of old element (e.g., 'Win95-style data grid with 3D borders')",
+      "modernComponent": "<ComponentName />",
+      "migrationStatus": "✅ Auto-Mapped | ⚠️ Requires Review | 🔴 Manual Override",
+      "notes": "Any conversion notes"
     }
   ],
-  "openApiSpec": "Full OpenAPI 3.0 YAML specification as string",
-  "backendChecklist": [
-    { "item": "Implement authentication middleware", "priority": "high" },
-    ...
+  "complexityScore": {
+    "overall": "Low/Medium/High/Critical",
+    "uiComplexity": number, // 1-10
+    "dataComplexity": number, // 1-10
+    "businessLogicComplexity": number, // 1-10
+    "integrationComplexity": number // 1-10
+  },
+  "debtReductionMetrics": {
+    "inconsistentStylesRemoved": number,
+    "duplicateComponentsConsolidated": number,
+    "accessibilityIssuesFixed": number,
+    "description": "Human-readable summary of technical debt reduction"
+  },
+  "businessRulesExtracted": [
+    {
+      "ruleId": "BR001",
+      "description": "Business rule detected from UI behavior",
+      "trigger": "What triggers this rule",
+      "action": "What happens",
+      "sourceEvidence": "How we detected this (e.g., 'Button disabled until field X validated')"
+    }
+  ],
+  "riskAssessment": {
+    "dataLossRisk": "None/Low/Medium/High",
+    "functionalityGapRisk": "None/Low/Medium/High", 
+    "userAdoptionRisk": "None/Low/Medium/High",
+    "mitigationStrategies": ["Strategy 1", "Strategy 2"]
+  },
+  "recommendedActions": [
+    {
+      "priority": 1,
+      "action": "Action description",
+      "effort": "Hours estimate",
+      "impact": "Business impact"
+    }
+  ]
+}
+
+Generate REAL data based on the code analysis. No placeholders. This must look like it was written by a $500/hr consultant.`,
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // 2. DATA CONTRACTS & BACKEND SPECS (replaces API)
+  // ────────────────────────────────────────────────────────────────────────────
+  api: `You are a Senior Backend Integration Architect generating DATA CONTRACTS for a modernized frontend.
+
+This is NOT Swagger documentation. This is a Backend Integration Specification that allows a backend developer to implement APIs without asking the frontend team a single question.
+
+Analyze the UI code and generate JSON:
+{
+  "integrationOverview": {
+    "totalEndpointsRequired": number,
+    "authenticationMethod": "JWT/OAuth2/API Key/Session",
+    "primaryDataEntities": ["Entity1", "Entity2"]
+  },
+  "dataContracts": [
+    {
+      "contractId": "DC001",
+      "name": "SubmitLoanApplication",
+      "triggerPoint": "Where in UI this is called (e.g., 'Save button on /apply page')",
+      "method": "POST",
+      "endpoint": "/api/v1/applications",
+      "requestSchema": {
+        "typescript": "interface RequestPayload { ... } // Full TypeScript interface",
+        "validation": "Zod schema as string"
+      },
+      "responseSchema": {
+        "success": "{ status: 'ok', id: string, ... }",
+        "error": "{ error: string, code: number, ... }"
+      },
+      "businessRules": [
+        "Amount must be between 1000 and 50000",
+        "Customer ID required from auth context"
+      ],
+      "mockResponse": "Complete JSON mock that frontend can use for testing"
+    }
+  ],
+  "legacyFieldMapping": [
+    {
+      "legacyLabel": "Field label as shown in old UI",
+      "newApiField": "snake_case_field_name",
+      "dataType": "string/number/boolean/date",
+      "validation": "Required/Optional + any constraints",
+      "transformationNotes": "Any data transformation needed"
+    }
   ],
   "dataModels": [
-    { "name": "User", "fields": [{"name": "id", "type": "number"}, ...] }
+    {
+      "name": "ModelName",
+      "description": "What this model represents",
+      "typescript": "Complete TypeScript interface/type definition",
+      "dbSchema": "Suggested PostgreSQL/MySQL schema"
+    }
+  ],
+  "integrationChecklist": [
+    {
+      "phase": "Phase 1: Core APIs",
+      "items": [
+        { "endpoint": "/api/...", "status": "Required", "estimatedHours": number }
+      ]
+    }
   ]
 }
 
-Be specific - infer real endpoints from the UI patterns visible in the code.`,
+Generate contracts based on ACTUAL forms, buttons, and data displayed in the UI code. Backend team copies this and implements.`,
 
-  qa: `You are generating QA documentation for a React application.
+  // ────────────────────────────────────────────────────────────────────────────
+  // 3. TRACEABILITY & BEHAVIORAL TESTS (replaces QA)
+  // ────────────────────────────────────────────────────────────────────────────
+  qa: `You are a QA Automation Lead generating a TRACEABILITY MATRIX and BEHAVIORAL TEST SUITE.
 
-Analyze the code and generate comprehensive testing checklists.
+This proves that the new system behaves IDENTICALLY to the legacy system. This is compliance-grade documentation.
 
-Generate JSON:
+Analyze the code and generate JSON:
 {
-  "functionalTests": [
+  "traceabilityMatrix": {
+    "totalElementsTracked": number,
+    "coveragePercentage": "98.5%",
+    "methodology": "Video frame analysis + UI behavior mapping"
+  },
+  "visualRegressionProof": [
     {
-      "id": "TC001",
-      "category": "Navigation|Forms|Data|UI",
-      "description": "Test case description",
-      "steps": ["Step 1", "Step 2"],
-      "expected": "Expected result",
-      "priority": "critical|high|medium|low"
+      "elementId": "VR001",
+      "elementName": "Transaction Table",
+      "reconstructionAccuracy": "99.2%",
+      "differences": ["Font changed from Arial to Inter", "Row height +2px for accessibility"],
+      "verdict": "✅ Acceptable Deviation"
     }
   ],
-  "accessibilityTests": [
+  "behavioralTests": [
     {
-      "id": "A11Y001",
-      "wcagCriteria": "1.1.1",
-      "description": "Test description",
-      "howToTest": "Instructions"
+      "testId": "BT001",
+      "scenario": "Gherkin-style scenario description",
+      "given": "Initial state",
+      "when": "User action",
+      "then": "Expected outcome",
+      "automationCode": "Playwright/Cypress test code as string",
+      "sourceEvidence": "Where in legacy this behavior was observed"
     }
   ],
-  "performanceTargets": {
-    "fcp": "< 2s",
-    "lcp": "< 2.5s",
-    "cls": "< 0.1",
-    "fid": "< 100ms",
-    "bundleSize": "< 200KB gzipped"
+  "accessibilityAudit": {
+    "wcagLevel": "AA",
+    "issuesFound": number,
+    "issuesFixed": number,
+    "improvements": [
+      {
+        "issue": "Missing alt text on images",
+        "legacyStatus": "❌ Failed",
+        "modernStatus": "✅ Fixed",
+        "wcagCriteria": "1.1.1"
+      }
+    ]
   },
-  "browserSupport": [
-    { "browser": "Chrome", "version": "latest", "status": "primary" },
-    ...
-  ],
-  "securityChecklist": [
-    { "item": "XSS prevention", "status": "required" },
-    ...
-  ]
-}
-
-Generate realistic test cases based on the actual components in the code.`,
-
-  deploy: `You are generating deployment documentation for a React application.
-
-Generate comprehensive deployment configs and guides.
-
-Generate JSON:
-{
-  "dockerfile": "Complete multi-stage Dockerfile content",
-  "dockerCompose": "docker-compose.yml content",
-  "envVariables": [
-    { "name": "VITE_API_URL", "description": "Backend API URL", "required": true, "example": "https://api.example.com" }
-  ],
-  "cicd": {
-    "platform": "GitHub Actions",
-    "workflow": "Complete .github/workflows/deploy.yml content"
-  },
-  "platforms": [
-    {
-      "name": "Vercel",
-      "recommended": true,
-      "steps": ["Step 1", "Step 2"],
-      "config": "vercel.json content"
+  "performanceBaseline": {
+    "legacyEstimate": {
+      "loadTime": "3-5s (typical legacy app)",
+      "interactionDelay": "200-500ms"
     },
+    "modernTarget": {
+      "lcp": "< 2.5s",
+      "fid": "< 100ms",
+      "cls": "< 0.1",
+      "ttfb": "< 600ms"
+    },
+    "expectedImprovement": "60-80% faster"
+  },
+  "securityChecklist": [
     {
-      "name": "Docker",
-      "recommended": false,
-      "steps": ["Step 1", "Step 2"]
+      "category": "Input Validation",
+      "checks": [
+        { "item": "XSS prevention on all text inputs", "status": "✅ Implemented" },
+        { "item": "SQL injection prevention", "status": "✅ Parameterized queries required" }
+      ]
     }
   ],
-  "productionChecklist": [
-    { "category": "Security", "items": ["Item 1", "Item 2"] },
-    { "category": "Performance", "items": ["Item 1", "Item 2"] },
-    { "category": "Monitoring", "items": ["Item 1", "Item 2"] }
-  ],
-  "troubleshooting": [
-    { "issue": "Common issue", "cause": "Why it happens", "solution": "How to fix" }
+  "signOffChecklist": [
+    { "stakeholder": "QA Lead", "requirement": "All behavioral tests pass", "status": "pending" },
+    { "stakeholder": "Security", "requirement": "OWASP Top 10 addressed", "status": "pending" },
+    { "stakeholder": "Accessibility", "requirement": "WCAG 2.1 AA compliant", "status": "pending" }
   ]
 }
 
-Generate production-ready configurations.`
+Generate REAL test scenarios based on actual UI components. This is audit-grade documentation.`,
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // 4. HANDOFF & ARCHITECTURE (replaces Deploy)
+  // ────────────────────────────────────────────────────────────────────────────
+  deploy: `You are a Solutions Architect generating a TECHNICAL HANDOFF PACKAGE for the development team.
+
+This is the "keys to the car". Tech Lead reads this and knows exactly how to integrate, extend, and deploy.
+
+Generate JSON:
+{
+  "architectureOverview": {
+    "pattern": "Component-based SPA / Micro-frontend / etc",
+    "stateManagement": "How state is managed (Context/Redux/Zustand)",
+    "dataFlow": "Description of data flow in the app",
+    "keyDecisions": [
+      { "decision": "Used React Hook Form for forms", "rationale": "Performance + validation" }
+    ]
+  },
+  "componentHierarchy": {
+    "tree": "ASCII tree showing component structure",
+    "sharedComponents": ["ComponentA", "ComponentB"],
+    "pageComponents": ["DashboardPage", "SettingsPage"],
+    "featureModules": [
+      { "name": "Authentication", "components": ["LoginForm", "AuthProvider"] }
+    ]
+  },
+  "designSystemUsage": {
+    "baseLibrary": "shadcn/ui",
+    "customComponents": number,
+    "tokenUsage": {
+      "colors": number,
+      "spacing": number,
+      "typography": number
+    },
+    "deviations": ["List any custom components not from design system"]
+  },
+  "integrationPoints": [
+    {
+      "location": "src/components/Dashboard.tsx:45",
+      "marker": "TODO: CONNECT_API",
+      "description": "Replace mock data with real API call",
+      "suggestedImplementation": "Code snippet showing how to integrate"
+    }
+  ],
+  "deploymentGuide": {
+    "recommended": "Vercel",
+    "alternatives": ["AWS Amplify", "Netlify", "Docker"],
+    "envVariables": [
+      { "name": "NEXT_PUBLIC_API_URL", "required": true, "description": "Backend API URL" }
+    ],
+    "buildCommand": "npm run build",
+    "outputDir": ".next"
+  },
+  "maintenanceGuide": {
+    "updateDependencies": "npm update schedule recommendation",
+    "monitoringSetup": ["Sentry for errors", "Vercel Analytics for performance"],
+    "backupStrategy": "Git-based with tagged releases"
+  },
+  "handoffChecklist": [
+    { "item": "Code review completed", "owner": "Tech Lead" },
+    { "item": "Environment variables documented", "owner": "DevOps" },
+    { "item": "CI/CD pipeline configured", "owner": "DevOps" },
+    { "item": "Monitoring alerts set up", "owner": "SRE" }
+  ]
+}
+
+Generate a REAL architecture analysis. Tech Lead should be able to onboard a new developer using this doc alone.`
 };
 
 export async function POST(request: NextRequest) {
