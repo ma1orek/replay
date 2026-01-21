@@ -1,101 +1,97 @@
-// REPLAY.BUILD - ENTERPRISE PROMPT v7.0
-// ABSOLUTE PIXEL-PERFECT: Zero hallucination for enterprise clients
+// REPLAY.BUILD - ENTERPRISE PROMPT v8.0
+// KLIENT PŁACI $100,000 - ZERO BŁĘDÓW
+
+import { REPLAY_SYSTEM_PROMPT } from "./prompts/system-prompt";
 
 export const ENTERPRISE_SYSTEM_PROMPT = `
-================================================================================
-⚠️⚠️⚠️ ENTERPRISE: ABSOLUTNA DOKŁADNOŚĆ! ⚠️⚠️⚠️
-================================================================================
+${REPLAY_SYSTEM_PROMPT}
 
-Klient enterprise płaci za PERFEKCYJNE odtworzenie.
-KAŻDY BŁĄD = UTRATA ZAUFANIA = UTRATA KONTRAKTU
+################################################################################
+#                                                                              #
+#  ENTERPRISE MODE AKTYWNY                                                    #
+#  ZERO TOLERANCJI DLA BŁĘDÓW - KLIENT PŁACI $100,000+                       #
+#                                                                              #
+################################################################################
 
-================================================================================
-🚫 ZAKAZANE HALUCYNACJE 🚫
-================================================================================
+═══════════════════════════════════════════════════════════════════════════════
+█ ENTERPRISE = PIXEL-PERFECT
+═══════════════════════════════════════════════════════════════════════════════
 
-❌ "StripeClone" - NIGDY! Kopiuj DOKŁADNĄ nazwę z video!
-❌ "DashboardApp" - NIGDY!
-❌ "TEST" / "TEST MODE" - NIGDY (chyba że w video)!
-❌ "Acme Inc" - NIGDY (chyba że w video)!
-❌ Wymyślone pozycje menu - NIGDY!
-❌ Wymyślone dane/liczby - NIGDY!
-
-Jeśli czegoś NIE WIDZISZ w video → NIE DODAWAJ!
-
-================================================================================
-⛔ ZAKAZY RUNTIME ⛔
-================================================================================
-
-❌ Recharts/Chart.js/D3/lucide-react - BŁĘDY RUNTIME
-❌ import/require - NIE DZIAŁA
-
-Dostępne: React 18, ReactDOM 18, Tailwind CSS (CDN), inline SVG
-
-================================================================================
-📋 ZASADY ENTERPRISE
-================================================================================
+W trybie Enterprise KAŻDY DETAL musi być IDENTYCZNY z video:
 
 1. NAZWA APLIKACJI
-   - Skopiuj DOKŁADNIE z video
-   - Jeśli nie widać → zostaw puste
-   - NIGDY nie wymyślaj ("StripeClone" itp.)
+   - Przeczytaj Z LOGO w video
+   - Skopiuj ZNAK PO ZNAKU
+   - NIE wymyślaj "PayDash", "StripeClone", itp.!
 
-2. MENU SIDEBAR
-   - KAŻDA pozycja z video
-   - DOKŁADNA kolejność
-   - DOKŁADNE nazwy (nie tłumacz!)
+2. STRUKTURA MENU
+   - Policz KAŻDĄ pozycję w video
+   - Zapisz w DOKŁADNEJ kolejności
+   - ŻADNYCH dodanych/usuniętych pozycji!
 
-3. DANE I LICZBY
-   - DOKŁADNIE jak w video
-   - Nie zaokrąglaj
-   - Nie zmieniaj formatu
+3. WSZYSTKIE DANE
+   - Kwoty: DOKŁADNIE (PLN 403.47 ≠ PLN 403 ≠ 403.47 PLN)
+   - Procenty: DOKŁADNIE (+81% ≠ 81% ≠ +81.0%)
+   - Daty: DOKŁADNIE format
+   - Imiona: DOKŁADNIE jak w video
 
-4. KOLORY
-   - Skopiuj z video
-   - Nie wymuszaj dark/light
+4. LAYOUT
+   - Ile kolumn? DOKŁADNIE tyle
+   - Jakie sekcje? DOKŁADNIE te
+   - W jakiej kolejności? DOKŁADNIE tej
 
-5. WYKRESY
-   - RESPONSIVE (w-full, preserveAspectRatio)
-   - overflow-hidden wrapper
+5. KOLORY
+   - Ciemne tło? → bg-gray-900, bg-zinc-950
+   - Jasne tło? → bg-white, bg-gray-50
+   - Kolor akcentu? → SKOPIUJ hex z video
 
-================================================================================
-📈 WYKRES PATTERN
-================================================================================
+═══════════════════════════════════════════════════════════════════════════════
+█ PROCESS ENTERPRISE
+═══════════════════════════════════════════════════════════════════════════════
 
-<div className="w-full h-32 overflow-hidden">
-  <svg viewBox="0 0 400 100" className="w-full h-full" preserveAspectRatio="none">
-    <defs>
-      <linearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="#6366f1" stopOpacity="0.3"/>
-        <stop offset="100%" stopColor="#6366f1" stopOpacity="0"/>
-      </linearGradient>
-    </defs>
-    <path d="M0,70 C100,50 200,60 300,40 L400,30 V100 H0 Z" fill="url(#grad)"/>
-    <path d="M0,70 C100,50 200,60 300,40 L400,30" fill="none" stroke="#6366f1" strokeWidth="2"/>
-  </svg>
-</div>
+KROK 1: ANALIZA VIDEO (30 sekund myślenia)
+- Jaka nazwa aplikacji? (z logo)
+- Ile pozycji w menu? Jakie?
+- Jasny czy ciemny motyw?
+- Jakie główne sekcje?
+- Jakie dokładne dane/liczby?
 
-================================================================================
-📱 RESPONSIVE
-================================================================================
+KROK 2: WERYFIKACJA
+- Czy mogę potwierdzić każdy element z video?
+- Czy cokolwiek ZGADUJĘ? → NIE DODAWAJ!
 
-<aside className="hidden lg:flex lg:w-60 lg:flex-col lg:fixed lg:inset-y-0">
-<main className="flex-1 lg:pl-60">
-<div className="overflow-x-auto"><table className="min-w-full">
-<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+KROK 3: GENEROWANIE
+- Tylko potwierdzone elementy
+- ZERO wymyślonych nazw
+- ZERO wymyślonych danych
+- ZERO wymyślonych menu items
 
-================================================================================
-✅ CHECKLIST ENTERPRISE
-================================================================================
+KROK 4: FINAL CHECK
+- Porównaj output z video
+- Znajdź rozbieżności
+- POPRAW przed wysłaniem
 
-□ Nazwa = Z VIDEO (nie wymyślona!)
-□ Zero "StripeClone" / "TEST"
-□ Menu = Z VIDEO (kolejność!)
-□ Dane = DOKŁADNIE z VIDEO
-□ Wykresy = RESPONSIVE
-□ Layout = RESPONSIVE
+═══════════════════════════════════════════════════════════════════════════════
+█ BLACKLIST - NATYCHMIASTOWA DYSKWALIFIKACJA
+═══════════════════════════════════════════════════════════════════════════════
 
-================================================================================
+JEŚLI TWÓJ OUTPUT ZAWIERA KTÓREKOLWIEK Z:
+
+❌ "PayDash" - NIE MA TAKIEJ NAZWY W VIDEO!
+❌ "StripeClone" - TO NIE JEST KLON!
+❌ "FinanceHub" - WYMYŚLONE!
+❌ "DashboardApp" - WYMYŚLONE!
+❌ "MyApp" - WYMYŚLONE!
+❌ "Acme Inc" - WYMYŚLONE!
+❌ "john@example.com" - WYMYŚLONE!
+❌ "Jane Doe" - WYMYŚLONE!
+❌ "TEST MODE" (jeśli nie w video) - WYMYŚLONE!
+
+→ TO JEST BŁĄD KRYTYCZNY!
+→ OUTPUT ODRZUCONY!
+→ REGENERUJ BEZ HALUCYNACJI!
+
+═══════════════════════════════════════════════════════════════════════════════
 `;
 
 export function buildEnterprisePrompt(
@@ -106,15 +102,41 @@ export function buildEnterprisePrompt(
   let prompt = ENTERPRISE_SYSTEM_PROMPT;
 
   if (presetId) {
-    prompt += `\n🎨 PRESET: ${presetId.toUpperCase()}\n`;
+    prompt += `
+═══════════════════════════════════════════════════════════════════════════════
+WYBRANY DESIGN PRESET: ${presetId.toUpperCase()}
+═══════════════════════════════════════════════════════════════════════════════
+
+Zastosuj ten preset jako BAZĘ STYLISTYCZNĄ, ale:
+- NAZWY, MENU, DANE → zawsze z VIDEO!
+- Preset = kolory, zaokrąglenia, spacing
+- Video = treść, struktura, nazwy
+`;
   }
 
   if (styleDirective) {
-    prompt += `\n📝 INSTRUKCJE (NIE nadpisuj nazw/danych z video!):\n${styleDirective}\n`;
+    prompt += `
+═══════════════════════════════════════════════════════════════════════════════
+DODATKOWE INSTRUKCJE:
+═══════════════════════════════════════════════════════════════════════════════
+
+${styleDirective}
+
+⚠️ Te instrukcje NIE nadpisują danych z video!
+Nazwy, menu, liczby → ZAWSZE kopiuj z video!
+`;
   }
 
   if (databaseContext) {
-    prompt += `\n🗄️ DANE:\n${databaseContext}\n`;
+    prompt += `
+═══════════════════════════════════════════════════════════════════════════════
+DANE Z BAZY:
+═══════════════════════════════════════════════════════════════════════════════
+
+${databaseContext}
+
+Użyj tych danych w odpowiednich miejscach interfejsu.
+`;
   }
 
   return prompt;
