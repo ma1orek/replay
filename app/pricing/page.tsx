@@ -7,6 +7,9 @@ import { Check, Minus, ArrowRight, PhoneCall, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
+import { useAuth } from "@/lib/auth/context";
+import { useProfile } from "@/lib/profile/context";
+import Avatar from "@/components/Avatar";
 
 // ═══════════════════════════════════════════════════════════════
 // HEADER COMPONENT
@@ -22,6 +25,10 @@ const menuItems = [
 
 function Header() {
   const [menuOpen, setMenuOpen] = React.useState(false);
+  const { user, isLoading: authLoading } = useAuth();
+  const { profile } = useProfile();
+  
+  const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 px-4 pt-4">
@@ -48,12 +55,36 @@ function Header() {
           </div>
 
           <div className="hidden lg:flex items-center gap-3">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/tool">Login</Link>
-            </Button>
-            <Button variant="dark" size="sm" asChild>
-              <Link href="/contact">Request a Demo</Link>
-            </Button>
+            {authLoading ? (
+              <div className="w-8 h-8 rounded-full bg-zinc-200 animate-pulse" />
+            ) : user ? (
+              <>
+                <Link 
+                  href="/tool" 
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium transition-colors"
+                >
+                  Go to App
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link href="/settings" className="flex items-center gap-2">
+                  <Avatar 
+                    src={profile?.avatar_url} 
+                    fallback={displayName[0]?.toUpperCase() || 'U'} 
+                    size={32}
+                    className="border border-zinc-200"
+                  />
+                </Link>
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/login">Login</Link>
+                </Button>
+                <Button variant="dark" size="sm" asChild>
+                  <Link href="/contact">Request a Demo</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -80,12 +111,31 @@ function Header() {
                 </Link>
               ))}
               <div className="flex flex-col gap-2 pt-4 border-t border-zinc-200">
-                <Button variant="outline" asChild className="w-full">
-                  <Link href="/tool">Login</Link>
-                </Button>
-                <Button variant="dark" asChild className="w-full">
-                  <Link href="/contact">Request a Demo</Link>
-                </Button>
+                {user ? (
+                  <>
+                    <div className="flex items-center gap-3 py-2">
+                      <Avatar 
+                        src={profile?.avatar_url} 
+                        fallback={displayName[0]?.toUpperCase() || 'U'} 
+                        size={32}
+                        className="border border-zinc-200"
+                      />
+                      <span className="text-sm font-medium text-zinc-700">{displayName}</span>
+                    </div>
+                    <Button variant="dark" asChild className="w-full">
+                      <Link href="/tool">Go to App</Link>
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button variant="outline" asChild className="w-full">
+                      <Link href="/login">Login</Link>
+                    </Button>
+                    <Button variant="dark" asChild className="w-full">
+                      <Link href="/contact">Request a Demo</Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>
