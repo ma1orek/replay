@@ -11368,12 +11368,11 @@ export default function GeneratedPage() {
                         <div className="space-y-6">
                           {isGeneratingDocs === "overview" ? (
                             <div className="flex flex-col items-center justify-center py-20">
-                              <div className="relative w-12 h-12 mb-4">
-                                <div className="absolute inset-0 rounded-full border-2 border-orange-500/20" />
-                                <div className="absolute inset-0 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
+                              <div className="relative w-10 h-10 mb-4">
+                                <div className="absolute inset-0 rounded-full border-2 border-zinc-700" />
+                                <div className="absolute inset-0 rounded-full border-2 border-zinc-400 border-t-transparent animate-spin" />
                               </div>
-                              <p className="text-sm text-zinc-400">Generating documentation with AI...</p>
-                              <p className="text-xs text-zinc-600 mt-1">Using Gemini 3 Flash</p>
+                              <p className="text-sm text-zinc-500">Generating documentation...</p>
                             </div>
                           ) : aiDocsOverview ? (
                             <>

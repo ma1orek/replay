@@ -296,49 +296,76 @@ Before generating output, verify:
 IF ANY CHECK FAILS → DO NOT OUTPUT → FIX FIRST!
 `;
 
-// Enterprise preset styles
-export interface EnterprisePreset {
+// Import enterprise presets from main presets file
+import { getPresetById, EnterprisePreset as FullEnterprisePreset } from "./enterprise-presets";
+
+// Simplified preset interface for prompt building
+interface SimplePreset {
   id: string;
   name: string;
   description: string;
   style: string;
 }
 
-export const ENTERPRISE_PRESETS: EnterprisePreset[] = [
-  {
-    id: "fintech-dark",
-    name: "Fintech Dark",
-    description: "Premium dark theme for financial applications",
-    style: "Dark mode with zinc/slate colors, subtle gradients, indigo/purple accents"
-  },
-  {
-    id: "fintech-light", 
-    name: "Fintech Light",
-    description: "Clean light theme for banking dashboards",
-    style: "Light mode with white/gray backgrounds, blue accents, clean borders"
-  },
-  {
-    id: "enterprise-classic",
-    name: "Enterprise Classic",
-    description: "Traditional corporate dashboard style",
-    style: "Navy/gray colors, professional typography, minimal decorations"
-  },
-  {
-    id: "modern-saas",
-    name: "Modern SaaS",
-    description: "Contemporary SaaS application aesthetic",
-    style: "Dark with vibrant accents, glassmorphism effects, gradient highlights"
-  },
-  {
-    id: "minimal-clean",
-    name: "Minimal Clean",
-    description: "Extremely clean and minimal design",
-    style: "Lots of whitespace, thin borders, subtle shadows, monochrome palette"
+// Get enterprise preset and convert to simple format for prompt
+export function getEnterprisePreset(id: string): SimplePreset | undefined {
+  // Special handling for auto-detect - no style override
+  if (id === "auto-detect") {
+    return {
+      id: "auto-detect",
+      name: "Auto-Detect",
+      description: "Perfect 1:1 copy from video - no style overrides, pure OCR extraction",
+      style: "EXACT 1:1 copy from video. DO NOT apply ANY style changes. Use ONLY colors, fonts, and layouts visible in the video."
+    };
   }
-];
+  
+  const preset = getPresetById(id);
+  if (!preset) return undefined;
+  
+  // Convert full preset to simple style directive
+  return {
+    id: preset.id,
+    name: preset.name,
+    description: preset.description,
+    style: buildStyleFromPreset(preset)
+  };
+}
 
-export function getEnterprisePreset(id: string): EnterprisePreset | undefined {
-  return ENTERPRISE_PRESETS.find(p => p.id === id);
+// Build style directive from full enterprise preset
+function buildStyleFromPreset(preset: FullEnterprisePreset): string {
+  // Use dark mode colors by default (enterprise dashboards are typically dark)
+  const colors = preset.colors.dark;
+  const typography = preset.typography;
+  
+  return `
+Apply ${preset.name} design system:
+
+COLORS:
+- Background: ${colors.background}
+- Cards/Surface: ${colors.card}
+- Primary accent: ${colors.primary}
+- Secondary: ${colors.secondary}
+- Text: ${colors.foreground}
+- Text muted: ${colors.mutedForeground}
+- Border: ${colors.border}
+- Success: ${colors.success}
+- Error: ${colors.error}
+- Warning: ${colors.warning}
+
+TYPOGRAPHY:
+- Font family: ${typography.fontFamily}
+- Headings: Bold, clean hierarchy
+- Base size: ${typography.sizes.base}
+
+COMPONENTS:
+- Button radius: ${preset.components.button.borderRadius}
+- Card radius: ${preset.components.card.borderRadius}
+- Card padding: ${preset.components.card.padding}
+- Card border: ${preset.components.card.border}
+
+Industry: ${preset.industry}
+${preset.description}
+`.trim();
 }
 
 // Build complete enterprise prompt with style and database context
