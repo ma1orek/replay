@@ -202,7 +202,9 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
     
     // Add system prompt + style + context
     let fullPrompt = SYSTEM_PROMPT;
-    fullPrompt += buildStylePrompt(styleDirective);
+    if (styleDirective) {
+      fullPrompt += buildStylePrompt(styleDirective);
+    }
     
     if (databaseContext) {
       fullPrompt += `
