@@ -4691,13 +4691,15 @@ Try these prompts in Cursor or v0:
   }, [generatedFiles, codeReferenceMap, flowNodes, isEditing]);
 
   useEffect(() => {
-    if (!editableCode || !selectedFlowPage || viewMode !== "preview") return;
+    // Use displayedCode for page navigation in preview, NOT editableCode
+    // This prevents Code tab file selection from affecting Preview
+    if (!displayedCode || !selectedFlowPage || viewMode !== "preview") return;
     setPreviewUrl(prev => {
       if (prev) URL.revokeObjectURL(prev);
-      const previewCode = injectPageSelection(editableCode, selectedFlowPage);
+      const previewCode = injectPageSelection(displayedCode, selectedFlowPage);
       return createPreviewUrl(previewCode);
     });
-  }, [editableCode, selectedFlowPage, viewMode, createPreviewUrl, injectPageSelection]);
+  }, [displayedCode, selectedFlowPage, viewMode, createPreviewUrl, injectPageSelection]);
 
   const FLOW_NODE_WIDTH = 220;
   const FLOW_PREVIEW_HEIGHT = 120;
@@ -10929,13 +10931,14 @@ export default function GeneratedPage() {
                           const Icon = typeIcons[node.type] || Layout;
                           const isDragging = draggingNodeId === node.id;
                           
-                          // For preview thumbnail, use full editableCode but inject script to show correct page
-                          const hasCode = (isObserved || isAdded) && editableCode;
+                          // For preview thumbnail, use ORIGINAL displayedCode (not editableCode which changes with file selection)
+                          const hasCode = (isObserved || isAdded) && displayedCode;
                           const hasPreview = showPreviewsInFlow && hasCode;
                           
                           // Create preview code with page navigation script (use node.id)
-                          const previewCode = hasPreview && editableCode
-                            ? injectPageSelection(editableCode, node.id)
+                          // IMPORTANT: Use displayedCode here, NOT editableCode - Code tab file selection shouldn't affect Flow
+                          const previewCode = hasPreview && displayedCode
+                            ? injectPageSelection(displayedCode, node.id)
                             : null;
                           
                           // Fixed width for cleaner layout
