@@ -730,7 +730,7 @@ Return ONLY the HTML code wrapped in \`\`\`html code blocks.
     // Initialize Gemini
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: "gemini-3-pro-preview",
+      model: "gemini-1.5-pro",
       generationConfig: {
         temperature: 0.7,
         maxOutputTokens: 100000,
@@ -808,7 +808,7 @@ export async function editCodeWithAI(
     // Plan mode - quick conversational response
     if (isPlanMode) {
       const model = genAI.getGenerativeModel({
-        model: "gemini-3-pro-preview",
+        model: "gemini-1.5-pro",
         generationConfig: { temperature: 0.7, maxOutputTokens: 500 },
       });
       
@@ -825,7 +825,7 @@ Reply briefly and helpfully.`;
     
     // Edit mode - full code generation
     const model = genAI.getGenerativeModel({
-      model: "gemini-3-pro-preview",
+      model: "gemini-1.5-pro",
       generationConfig: { temperature: 0.7, maxOutputTokens: 100000 },
     });
     

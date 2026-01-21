@@ -9064,7 +9064,7 @@ Try these prompts in Cursor or v0:
                         <button
                           onClick={() => setEnterpriseMode(false)}
                           className={cn(
-                            "px-2.5 py-1 rounded-md text-[10px] font-medium transition-all",
+                            "w-[70px] py-1 rounded-md text-[10px] font-medium transition-all text-center",
                             !enterpriseMode 
                               ? "bg-zinc-700 text-white shadow-sm" 
                               : "text-zinc-500 hover:text-zinc-400"
@@ -9075,9 +9075,9 @@ Try these prompts in Cursor or v0:
                         <button
                           onClick={() => setEnterpriseMode(true)}
                           className={cn(
-                            "px-2.5 py-1 rounded-md text-[10px] font-medium transition-all",
+                            "w-[70px] py-1 rounded-md text-[10px] font-medium transition-all text-center",
                             enterpriseMode 
-                              ? "bg-emerald-500/20 text-emerald-400 shadow-sm" 
+                              ? "bg-zinc-700 text-white shadow-sm" 
                               : "text-zinc-500 hover:text-zinc-400"
                           )}
                         >
@@ -9288,17 +9288,30 @@ Try these prompts in Cursor or v0:
                       {enterpriseMode ? "Enterprise Preset" : "Style"}
                     </span>
                   </div>
-                  <button
-                    onClick={() => setEnterpriseMode(!enterpriseMode)}
-                    className={cn(
-                      "px-2 py-1 rounded-md text-[10px] font-medium transition-all",
-                      enterpriseMode 
-                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" 
-                        : "bg-zinc-800/50 text-zinc-500 hover:text-zinc-400"
-                    )}
-                  >
-                    {enterpriseMode ? "Enterprise ✓" : "Creative"}
-                  </button>
+                  <div className="flex items-center bg-zinc-800/80 rounded-md p-0.5">
+                    <button
+                      onClick={() => setEnterpriseMode(false)}
+                      className={cn(
+                        "w-[60px] py-0.5 rounded text-[9px] font-medium transition-all text-center",
+                        !enterpriseMode 
+                          ? "bg-zinc-700 text-white" 
+                          : "text-zinc-500 hover:text-zinc-400"
+                      )}
+                    >
+                      Creative
+                    </button>
+                    <button
+                      onClick={() => setEnterpriseMode(true)}
+                      className={cn(
+                        "w-[60px] py-0.5 rounded text-[9px] font-medium transition-all text-center",
+                        enterpriseMode 
+                          ? "bg-zinc-700 text-white" 
+                          : "text-zinc-500 hover:text-zinc-400"
+                      )}
+                    >
+                      Enterprise
+                    </button>
+                  </div>
                 </div>
                 
                 {enterpriseMode ? (
@@ -12924,17 +12937,30 @@ export default function GeneratedPage() {
                       {enterpriseMode ? "Enterprise Preset" : "Style"}
                     </span>
                   </div>
-                  <button
-                    onClick={() => setEnterpriseMode(!enterpriseMode)}
-                    className={cn(
-                      "px-2 py-1 rounded-md text-[10px] font-medium transition-all",
-                      enterpriseMode 
-                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" 
-                        : "bg-zinc-800/50 text-zinc-500 hover:text-zinc-400"
-                    )}
-                  >
-                    {enterpriseMode ? "Enterprise ✓" : "Creative"}
-                  </button>
+                  <div className="flex items-center bg-zinc-800/80 rounded-md p-0.5">
+                    <button
+                      onClick={() => setEnterpriseMode(false)}
+                      className={cn(
+                        "w-[60px] py-0.5 rounded text-[9px] font-medium transition-all text-center",
+                        !enterpriseMode 
+                          ? "bg-zinc-700 text-white" 
+                          : "text-zinc-500 hover:text-zinc-400"
+                      )}
+                    >
+                      Creative
+                    </button>
+                    <button
+                      onClick={() => setEnterpriseMode(true)}
+                      className={cn(
+                        "w-[60px] py-0.5 rounded text-[9px] font-medium transition-all text-center",
+                        enterpriseMode 
+                          ? "bg-zinc-700 text-white" 
+                          : "text-zinc-500 hover:text-zinc-400"
+                      )}
+                    >
+                      Enterprise
+                    </button>
+                  </div>
                 </div>
                 
                 {enterpriseMode ? (
@@ -13961,7 +13987,7 @@ export default function GeneratedPage() {
                       <button
                         onClick={() => setEnterpriseMode(false)}
                         className={cn(
-                          "px-2 py-0.5 rounded text-[9px] font-medium transition-all",
+                          "w-[55px] py-0.5 rounded text-[9px] font-medium transition-all text-center",
                           !enterpriseMode 
                             ? "bg-zinc-700 text-white" 
                             : "text-zinc-500 hover:text-zinc-400"
@@ -13972,9 +13998,9 @@ export default function GeneratedPage() {
                       <button
                         onClick={() => setEnterpriseMode(true)}
                         className={cn(
-                          "px-2 py-0.5 rounded text-[9px] font-medium transition-all",
+                          "w-[55px] py-0.5 rounded text-[9px] font-medium transition-all text-center",
                           enterpriseMode 
-                            ? "bg-emerald-500/20 text-emerald-400" 
+                            ? "bg-zinc-700 text-white" 
                             : "text-zinc-500 hover:text-zinc-400"
                         )}
                       >
