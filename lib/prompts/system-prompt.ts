@@ -30,7 +30,9 @@ You MUST use 'Recharts' components.
 
 *Code Pattern to use:*
 \`\`\`jsx
-const { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } = Recharts;
+// CRITICAL: Recharts is loaded via UMD script tag, access via window.Recharts
+const RechartsLib = window.Recharts;
+const { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } = RechartsLib;
 
 // VISUAL MATCHING RULES:
 // 1. If video shows a smooth curve -> type="monotone"
@@ -91,10 +93,14 @@ Generate a SINGLE HTML file containing the React app.
     <div id="root"></div>
 
     <script type="text/babel">
-        // ENVIRONMENT SETUP
+        // ENVIRONMENT SETUP - React
         const { useState, useEffect, useRef } = React;
+        
+        // RECHARTS - CRITICAL: Must use window.Recharts since it's loaded via UMD
+        const RechartsLib = window.Recharts;
         const { AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, 
-                XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } = Recharts;
+                XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, 
+                Legend, RadialBarChart, RadialBar } = RechartsLib;
 
         // ICON HELPER (DO NOT MODIFY)
         const Icon = ({ name, className = "w-5 h-5" }) => {

@@ -22,10 +22,12 @@ Your job is to ASSEMBLE this data into pixel-perfect React code using the pre-in
 
 **TECH STACK (Pre-installed, MUST use):**
 
-1. **RECHARTS** for ALL charts:
+1. **RECHARTS** for ALL charts (CRITICAL: use window.Recharts):
 \`\`\`jsx
+// CRITICAL: Recharts is loaded via UMD script tag, access via window.Recharts
+const RechartsLib = window.Recharts;
 const { AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie,
-        XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } = Recharts;
+        XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } = RechartsLib;
 
 // For area chart with gradient:
 <ResponsiveContainer width="100%" height="100%">
@@ -95,9 +97,14 @@ const Icon = ({ name, className }) => {
 <body class="bg-[BACKGROUND_COLOR] text-white antialiased">
   <div id="root"></div>
   <script type="text/babel">
+    // React hooks
     const { useState, useEffect, useRef } = React;
+    
+    // CRITICAL: Recharts is loaded via UMD, must access via window.Recharts
+    const RechartsLib = window.Recharts;
     const { AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie,
-            XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } = Recharts;
+            XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
+            Legend, RadialBarChart, RadialBar } = RechartsLib;
 
     // Icon component
     const Icon = ({ name, className = "w-5 h-5" }) => {
