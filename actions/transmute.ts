@@ -257,9 +257,13 @@ const ASSEMBLER_PROMPT = `You are a CODE ASSEMBLER for the Replay.build system.
 <body class="antialiased">
     <div id="root"></div>
     <script type="text/babel">
+        // React hooks
         const { useState, useEffect, useRef } = React;
+        
+        // CRITICAL: Recharts is loaded via UMD, MUST access via window.Recharts
+        const RechartsLib = window.Recharts;
         const { AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie,
-                XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } = Recharts;
+                XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } = RechartsLib;
 
         // Icon helper
         const Icon = ({ name, className = "w-5 h-5" }) => {
