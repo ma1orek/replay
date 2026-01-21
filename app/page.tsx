@@ -4705,14 +4705,15 @@ Try these prompts in Cursor or v0:
   const FLOW_PREVIEW_HEIGHT = 120;
   
   const getFlowNodeHeight = useCallback((node: ProductFlowNode) => {
-    const hasPreview = showPreviewsInFlow && editableCode && (node.status === "observed" || node.status === "added");
+    // Use displayedCode (not editableCode) - Code tab file selection shouldn't affect Flow
+    const hasPreview = showPreviewsInFlow && displayedCode && (node.status === "observed" || node.status === "added");
     const baseHeight = hasPreview ? FLOW_PREVIEW_HEIGHT : 0;
     const descriptionHeight = node.description ? 30 : 0;
     const structureRows = node.components?.length ? Math.ceil(node.components.length / 2) : 0;
     const structureHeight = showStructureInFlow ? (structureRows > 0 ? structureRows * 20 + 28 : 14) : 0;
     const contentHeight = 80 + descriptionHeight + structureHeight;
     return baseHeight + contentHeight;
-  }, [showPreviewsInFlow, editableCode, showStructureInFlow, FLOW_PREVIEW_HEIGHT]);
+  }, [showPreviewsInFlow, displayedCode, showStructureInFlow, FLOW_PREVIEW_HEIGHT]);
 
   // Auto-layout flow nodes function
   const autoLayoutFlowNodes = useCallback(() => {
