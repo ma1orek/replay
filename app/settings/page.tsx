@@ -7,7 +7,6 @@ import Link from "next/link";
 import {
   User,
   CreditCard,
-  Zap,
   Check,
   ArrowLeft,
   Calendar,
@@ -24,7 +23,6 @@ import {
   Volume2,
   VolumeX,
   ChevronDown,
-  Building2,
   Sparkles,
   FolderOpen,
   ChevronRight,
@@ -35,7 +33,7 @@ import { useProfile } from "@/lib/profile/context";
 import Logo from "@/components/Logo";
 import Avatar from "@/components/Avatar";
 import AuthModal from "@/components/modals/AuthModal";
-import { DitheringShader } from "@/components/ui/dithering-shader";
+// Removed DitheringShader - using solid background
 import { cn } from "@/lib/utils";
 
 // Loading fallback
@@ -53,16 +51,15 @@ const SIDEBAR_ITEMS = [
   { id: "preferences", label: "Preferences", icon: Settings },
   { type: "section", label: "Billing" },
   { id: "plans", label: "Plans & credits", icon: CreditCard },
-  { id: "credits", label: "Credits", icon: Zap },
+  { id: "credits", label: "Credits", icon: CreditCard },
   { type: "section", label: "Projects" },
   { id: "projects", label: "Your Projects", icon: FolderOpen },
 ];
 
-// Pricing tiers - matching homepage
+// Pricing tiers - matching homepage exactly
 const PRICING_TIERS = [
   {
     id: 'pro25',
-    label: "10 Generations",
     credits: 1500,
     monthlyPrice: 25,
     stripePriceId_Monthly: "price_1SotL1Axch1s4iBGWMvO0JBZ",
@@ -73,7 +70,6 @@ const PRICING_TIERS = [
   },
   {
     id: 'pro50',
-    label: "22 Generations",
     credits: 3300,
     monthlyPrice: 50,
     stripePriceId_Monthly: "price_1SotLqAxch1s4iBG1ViXkfc2",
@@ -84,7 +80,6 @@ const PRICING_TIERS = [
   },
   {
     id: 'pro100',
-    label: "50 Generations",
     credits: 7500,
     popular: true,
     monthlyPrice: 100,
@@ -96,7 +91,6 @@ const PRICING_TIERS = [
   },
   {
     id: 'pro200',
-    label: "110 Generations",
     credits: 16500,
     monthlyPrice: 200,
     stripePriceId_Monthly: "price_1SotN4Axch1s4iBGUJEfzznw",
@@ -105,6 +99,46 @@ const PRICING_TIERS = [
     yearlySavings: "$480",
     stripePriceId_Yearly: "price_1SotTdAxch1s4iBGpyDigl9b",
   },
+  {
+    id: 'pro300',
+    credits: 25500,
+    monthlyPrice: 300,
+    stripePriceId_Monthly: "price_1SotNMAxch1s4iBGzRD7B7VI",
+    yearlyPriceTotal: 2880,
+    yearlyPriceMonthly: 240,
+    yearlySavings: "$720",
+    stripePriceId_Yearly: "price_1SotTqAxch1s4iBGgaWwuU0Z",
+  },
+  {
+    id: 'pro500',
+    credits: 45000,
+    monthlyPrice: 500,
+    stripePriceId_Monthly: "price_1SotNuAxch1s4iBGPl81sHqx",
+    yearlyPriceTotal: 4800,
+    yearlyPriceMonthly: 400,
+    yearlySavings: "$1,200",
+    stripePriceId_Yearly: "price_1SotU1Axch1s4iBGC1uEWWXN",
+  },
+  {
+    id: 'pro1000',
+    credits: 96000,
+    monthlyPrice: 1000,
+    stripePriceId_Monthly: "price_1SotO9Axch1s4iBGCDE83jPv",
+    yearlyPriceTotal: 9600,
+    yearlyPriceMonthly: 800,
+    yearlySavings: "$2,400",
+    stripePriceId_Yearly: "price_1SotUEAxch1s4iBGUqWwl9Db",
+  },
+  {
+    id: 'pro2000',
+    credits: 225000,
+    monthlyPrice: 2000,
+    stripePriceId_Monthly: "price_1SotOOAxch1s4iBGWiUHzG1M",
+    yearlyPriceTotal: 19200,
+    yearlyPriceMonthly: 1600,
+    yearlySavings: "$4,800",
+    stripePriceId_Yearly: "price_1SotV0Axch1s4iBGZYfILH0H",
+  }
 ];
 
 const TOPUPS = [
@@ -123,7 +157,6 @@ function SettingsContent() {
   const [testMessage, setTestMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isManagingSubscription, setIsManagingSubscription] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [dimensions, setDimensions] = useState({ width: 1920, height: 1080 });
   
   const selectedTier = PRICING_TIERS[selectedTierIndex];
   
@@ -142,15 +175,6 @@ function SettingsContent() {
   const { wallet, membership, totalCredits, isLoading, refreshCredits } = useCredits();
   const { profile, updateProfile, uploadAvatar } = useProfile();
   const [showAuthModal, setShowAuthModal] = useState(false);
-
-  useEffect(() => {
-    const updateDimensions = () => {
-      setDimensions({ width: window.innerWidth * 2, height: window.innerHeight * 2 });
-    };
-    updateDimensions();
-    window.addEventListener('resize', updateDimensions);
-    return () => window.removeEventListener('resize', updateDimensions);
-  }, []);
 
   useEffect(() => {
     const tab = searchParams.get("tab");
@@ -253,26 +277,9 @@ function SettingsContent() {
   const planLimits = PLAN_LIMITS[currentPlan];
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex">
-      {/* Dithering Shader Background */}
-      <div className="fixed inset-0 z-0">
-        <DitheringShader
-          width={dimensions.width}
-          height={dimensions.height}
-          shape="wave"
-          type="8x8"
-          colorBack="#0a0a0a"
-          colorFront="#111111"
-          pxSize={4}
-          speed={0.2}
-          className="w-full h-full"
-          style={{ width: "100%", height: "100%" }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a0a]/90 via-[#0a0a0a]/70 to-[#0a0a0a]/90" />
-      </div>
-
+    <div className="min-h-screen bg-[#111111] flex">
       {/* Left Sidebar */}
-      <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[#0f0f0f]/80 backdrop-blur-xl border-r border-zinc-800/50 z-20 flex flex-col">
+      <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[#0a0a0a] border-r border-zinc-800/50 z-20 flex flex-col">
         {/* Back Link */}
         <div className="p-4 border-b border-zinc-800/50">
           <Link 
@@ -322,7 +329,7 @@ function SettingsContent() {
                 className={cn(
                   "w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-all",
                   activeTab === item.id 
-                    ? "bg-zinc-800/60 text-zinc-100 border-l-2 border-orange-500" 
+                    ? "bg-zinc-800/60 text-zinc-100 border-l-2 border-zinc-500" 
                     : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/30 border-l-2 border-transparent"
                 )}
               >
@@ -378,7 +385,7 @@ function SettingsContent() {
               <div className="bg-[#141414]/80 backdrop-blur border border-zinc-800/50 rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-base font-semibold text-zinc-200">Profile</h2>
-                  <Link href="#" className="text-xs text-orange-500 hover:text-orange-400 flex items-center gap-1">
+                  <Link href="#" className="text-xs text-zinc-100 hover:text-zinc-300 flex items-center gap-1">
                     Open profile <ExternalLink className="w-3 h-3" />
                   </Link>
                 </div>
@@ -438,7 +445,7 @@ function SettingsContent() {
                           type="text"
                           value={nameInput}
                           onChange={(e) => setNameInput(e.target.value)}
-                          className="px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-sm text-zinc-200 focus:outline-none focus:border-orange-500"
+                          className="px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500"
                           autoFocus
                         />
                         <button
@@ -452,7 +459,7 @@ function SettingsContent() {
                             }
                           }}
                           disabled={isSavingName}
-                          className="px-3 py-1.5 rounded-lg bg-orange-500 text-white text-sm hover:bg-orange-600 transition-colors disabled:opacity-50"
+                          className="px-3 py-1.5 rounded-lg bg-white text-black text-sm hover:bg-zinc-200 transition-colors disabled:opacity-50"
                         >
                           {isSavingName ? <Loader2 className="w-4 h-4 animate-spin" /> : "Update"}
                         </button>
@@ -524,11 +531,11 @@ function SettingsContent() {
                       <div className={cn(
                         "w-4 h-4 rounded-full border-2 flex items-center justify-center",
                         (opt.id === "always" && soundOnComplete) || (opt.id === "never" && !soundOnComplete)
-                          ? "border-orange-500"
+                          ? "border-zinc-500"
                           : "border-zinc-600"
                       )}>
                         {((opt.id === "always" && soundOnComplete) || (opt.id === "never" && !soundOnComplete)) && (
-                          <div className="w-2 h-2 rounded-full bg-orange-500" />
+                          <div className="w-2 h-2 rounded-full bg-zinc-100" />
                         )}
                       </div>
                       <div className="flex-1 text-left">
@@ -552,7 +559,7 @@ function SettingsContent() {
                     onClick={() => updateAutoSavePreference(!autoSaveEnabled)}
                     className={cn(
                       "w-12 h-6 rounded-full transition-colors relative",
-                      autoSaveEnabled ? "bg-orange-500" : "bg-zinc-700"
+                      autoSaveEnabled ? "bg-zinc-100" : "bg-zinc-700"
                     )}
                   >
                     <div className={cn(
@@ -574,13 +581,13 @@ function SettingsContent() {
               </div>
 
               {/* Current Plan */}
-              <div className="bg-gradient-to-r from-orange-500/10 via-[#141414]/80 to-[#141414]/80 backdrop-blur border border-orange-500/20 rounded-2xl p-6">
+              <div className="bg-gradient-to-r from-zinc-100/10 via-[#141414]/80 to-[#141414]/80 backdrop-blur border border-zinc-500/20 rounded-2xl p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-zinc-500 mb-1">Current plan</p>
                     <h2 className="text-2xl font-bold text-zinc-100 capitalize flex items-center gap-2">
                       {currentPlan}
-                      {currentPlan === "pro" && <span className="px-2 py-0.5 text-xs bg-orange-500 text-white rounded-full">PRO</span>}
+                      {currentPlan === "pro" && <span className="px-2 py-0.5 text-xs bg-white text-black rounded-full">PRO</span>}
                     </h2>
                     {membership?.current_period_end && currentPlan === "pro" && (
                       <p className="text-xs text-zinc-500 mt-1">
@@ -620,7 +627,7 @@ function SettingsContent() {
                   onClick={() => setBillingInterval(billingInterval === "monthly" ? "yearly" : "monthly")}
                   className={cn(
                     "w-12 h-6 rounded-full transition-colors relative",
-                    billingInterval === "yearly" ? "bg-orange-500" : "bg-zinc-700"
+                    billingInterval === "yearly" ? "bg-zinc-100" : "bg-zinc-700"
                   )}
                 >
                   <div className={cn(
@@ -672,13 +679,13 @@ function SettingsContent() {
                 {/* Pro */}
                 <div className={cn(
                   "bg-[#141414]/80 backdrop-blur border rounded-2xl p-6 relative",
-                  currentPlan === "pro" ? "border-orange-500" : "border-zinc-800/50"
+                  currentPlan === "pro" ? "border-zinc-500" : "border-zinc-800/50"
                 )}>
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="px-3 py-1 text-xs bg-orange-500 text-white rounded-full font-medium">Most Popular</span>
+                    <span className="px-3 py-1 text-xs bg-white text-black rounded-full font-medium">Most Popular</span>
                   </div>
                   <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-orange-500">Pro</h3>
+                    <h3 className="text-lg font-semibold text-zinc-100">Pro</h3>
                     <p className="text-sm text-zinc-500">For developers</p>
                   </div>
                   <div className="mb-2">
@@ -714,7 +721,7 @@ function SettingsContent() {
                               onClick={() => { setSelectedTierIndex(idx); setTierDropdownOpen(false); }}
                               className={cn(
                                 "w-full px-3 py-2 text-left text-sm hover:bg-zinc-800 transition-colors",
-                                idx === selectedTierIndex ? "bg-zinc-800 text-orange-500" : "text-zinc-300"
+                                idx === selectedTierIndex ? "bg-zinc-800 text-zinc-100" : "text-zinc-300"
                               )}
                             >
                               {tier.credits.toLocaleString()} credits - ${tier.monthlyPrice}/mo
@@ -728,7 +735,7 @@ function SettingsContent() {
                   <ul className="space-y-2 mb-6">
                     {[`${selectedTier.credits.toLocaleString()} credits/month`, `~${Math.floor(selectedTier.credits / 150)} generations`, "Private projects", "Publish to web"].map((f) => (
                       <li key={f} className="flex items-center gap-2 text-sm text-zinc-400">
-                        <Check className="w-4 h-4 text-orange-500" />
+                        <Check className="w-4 h-4 text-zinc-100" />
                         {f}
                       </li>
                     ))}
@@ -746,7 +753,7 @@ function SettingsContent() {
                     <button
                       onClick={handleProSubscription}
                       disabled={isCheckingOut === "pro"}
-                      className="w-full py-2.5 rounded-xl text-sm bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium hover:from-orange-600 hover:to-orange-700 transition-all"
+                      className="w-full py-2.5 rounded-xl text-sm bg-white text-black font-medium hover:bg-zinc-200 transition-all"
                     >
                       {isCheckingOut === "pro" ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Subscribe"}
                     </button>
@@ -792,24 +799,23 @@ function SettingsContent() {
               {/* Credits Overview */}
               <div className="bg-[#141414]/80 backdrop-blur border border-zinc-800/50 rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-base font-semibold text-zinc-200 flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-orange-500" />
+                  <h2 className="text-base font-semibold text-zinc-200">
                     Available credits
                   </h2>
-                  <span className="text-2xl font-bold text-orange-500">{totalCredits.toLocaleString()}</span>
+                  <span className="text-2xl font-bold text-zinc-100">{totalCredits.toLocaleString()}</span>
                 </div>
 
-                {/* Progress bar - ORANGE */}
+                {/* Progress bar */}
                 <div className="mb-6">
                   <div className="flex items-center justify-between text-sm mb-2">
                     <span className="text-zinc-500">Usage this period</span>
                     <span className="text-zinc-300">
-                      {totalCredits.toLocaleString()} / {planLimits.monthlyCredits.toLocaleString()}
+                      {planLimits.monthlyCredits.toLocaleString()} limit
                     </span>
                   </div>
                   <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-orange-500 to-orange-400 rounded-full transition-all"
+                      className="h-full bg-gradient-to-r from-zinc-400 to-zinc-300 rounded-full transition-all"
                       style={{ width: `${Math.min((totalCredits / planLimits.monthlyCredits) * 100, 100)}%` }}
                     />
                   </div>
@@ -858,7 +864,7 @@ function SettingsContent() {
                       key={topup.amount}
                       onClick={() => handleCheckout("topup", { topupAmount: topup.amount })}
                       disabled={isCheckingOut === topup.amount.toString()}
-                      className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700 hover:border-orange-500/50 hover:bg-zinc-800 transition-all text-center"
+                      className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700 hover:border-zinc-500/50 hover:bg-zinc-800 transition-all text-center"
                     >
                       {isCheckingOut === topup.amount.toString() ? (
                         <Loader2 className="w-5 h-5 animate-spin mx-auto" />
@@ -879,20 +885,43 @@ function SettingsContent() {
           {/* === PROJECTS TAB === */}
           {activeTab === "projects" && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-              <div>
-                <h1 className="text-2xl font-semibold text-zinc-100 mb-1">Your Projects</h1>
-                <p className="text-sm text-zinc-500">All your generated UI projects</p>
-              </div>
-
-              <div className="bg-[#141414]/80 backdrop-blur border border-zinc-800/50 rounded-2xl p-12 text-center">
-                <FolderOpen className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-                <p className="text-zinc-400 mb-4">Your projects will appear here</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-semibold text-zinc-100 mb-1">Your Projects</h1>
+                  <p className="text-sm text-zinc-500">All your generated UI projects</p>
+                </div>
                 <Link
                   href="/tool"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-sm font-medium transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create new
+                </Link>
+              </div>
+
+              {/* Search */}
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search projects..."
+                  className="w-full h-11 pl-10 pr-4 rounded-xl bg-[#141414] border border-zinc-800 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-600"
+                />
+                <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+
+              {/* Projects List - Empty State */}
+              <div className="bg-[#141414]/80 backdrop-blur border border-zinc-800/50 rounded-2xl p-12 text-center">
+                <FolderOpen className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
+                <p className="text-zinc-400 mb-2">No projects yet</p>
+                <p className="text-zinc-500 text-sm mb-4">Create your first project by recording a screen</p>
+                <Link
+                  href="/tool"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm font-medium transition-colors"
                 >
                   <Sparkles className="w-4 h-4" />
-                  Create your first project
+                  Go to tool
                 </Link>
               </div>
             </motion.div>
@@ -910,8 +939,8 @@ function SettingsContent() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               className="bg-[#141414] border border-zinc-800 rounded-2xl w-full max-w-sm p-6 text-center"
             >
-              <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-orange-500/20 to-orange-500/5 border border-orange-500/20 flex items-center justify-center">
-                <User className="w-8 h-8 text-orange-500" />
+              <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-zinc-600/20 to-zinc-500/5 border border-zinc-500/20 flex items-center justify-center">
+                <User className="w-8 h-8 text-zinc-100" />
               </div>
               
               <h2 className="text-xl font-semibold text-zinc-100 mb-2">Sign in required</h2>
@@ -921,12 +950,12 @@ function SettingsContent() {
               
               <button
                 onClick={() => setShowAuthModal(true)}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium hover:from-orange-600 hover:to-orange-700 transition-all mb-4"
+                className="w-full py-3 rounded-xl bg-white text-black font-medium hover:bg-zinc-200 transition-all mb-4"
               >
                 Sign in
               </button>
               
-              <Link href="/tool" className="text-orange-500 hover:text-orange-400 transition-colors text-sm">
+              <Link href="/tool" className="text-zinc-100 hover:text-zinc-300 transition-colors text-sm">
                 Go to tool →
               </Link>
             </motion.div>
