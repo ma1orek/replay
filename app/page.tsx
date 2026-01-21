@@ -3483,19 +3483,15 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
       }
     }
     
-    // Extract navigation items (links and buttons) from nav areas
-    // More comprehensive patterns to catch ALL sidebar items
+    // Extract navigation items from nav areas
+    // STRICT patterns - only actual clickable navigation elements
     const navItemPatterns = [
-      /<a[^>]*href\s*=\s*["'][^"']*["'][^>]*>([^<]{2,50})<\/a>/gi,
-      /<a[^>]*>([^<]{2,50})<\/a>/gi, // Links without href
-      /<button[^>]*>([^<]{2,50})<\/button>/gi,
-      /<button[^>]*>(?:<[^>]*>)*([^<]{2,50})/gi, // Buttons with nested elements
-      /<span[^>]*class\s*=\s*["'][^"']*(?:nav|menu|link|item)[^"']*["'][^>]*>([^<]{2,50})<\/span>/gi, // Spans with nav classes
-      /<span[^>]*font-bold[^>]*>([^<]{2,50})<\/span>/gi, // Bold spans often used for nav
-      /<li[^>]*>(?:<[^>]*>)*([^<]{2,50})/gi, // List items in nav
-      /<div[^>]*class\s*=\s*["'][^"']*(?:nav-item|menu-item|sidebar-item)[^"']*["'][^>]*>([^<]{2,50})/gi,
-      // Also look for text content between tags in nav
-      />([A-ZŁŻŹĆŃ][A-ZŁŻŹĆŃ\s]{3,45})</gi, // Uppercase Polish text (likely nav items like SALDA BIEŻĄCE)
+      // Links with href that look like navigation
+      /<a[^>]*href\s*=\s*["'](?:\/|#)[^"']*["'][^>]*>([A-Za-z][A-Za-z0-9\s]{1,30})<\/a>/gi,
+      // Buttons with click handlers (Alpine.js or onclick)
+      /<button[^>]*(?:@click|onclick)[^>]*>([A-Za-z][A-Za-z0-9\s]{1,25})<\/button>/gi,
+      // List items that contain links
+      /<li[^>]*>\s*<a[^>]*>([A-Za-z][A-Za-z0-9\s]{1,25})<\/a>/gi,
     ];
     
     // ALSO search the entire code for any Alpine.js click handlers that navigate
@@ -3522,18 +3518,21 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
         // Clean up text - remove extra whitespace
         text = text.replace(/\s+/g, ' ').trim();
         
-        // Filter out non-navigation items (less aggressive filtering)
+        // STRICT filtering - only actual navigation page names
         if (
-          text.length < 2 ||
-          text.length > 50 ||                // Allow longer Polish text
-          /^\d+:\d+/.test(text) ||           // Time format "12:34"
-          /^\d+\s*(tys|mln|K|M)/i.test(text) || // View counts
+          text.length < 3 ||                 // Min 3 chars for page name
+          text.length > 30 ||                // Max 30 chars
+          /^\d/.test(text) ||                // Starts with number
+          /\d{2,}/.test(text) ||             // Contains 2+ consecutive digits  
+          /[<>={}()]/.test(text) ||          // Contains code characters
           /\.\.\.$/.test(text) ||            // Truncated text
-          /^(więcej|more|less|mniej|see all|view all|expand|collapse)$/i.test(text) ||
-          /^(submit|send|search|login|logout|wyloguj|zaloguj)$/i.test(text) ||
-          /^\d+$/.test(text) ||              // Just numbers
           /^[\s\W]+$/.test(text) ||          // Only whitespace/symbols
-          /^[<>\/]/.test(text)               // HTML artifacts
+          // Common UI labels that are NOT pages
+          /^(submit|send|search|login|logout|wyloguj|zaloguj|cancel|ok|save|close|back|next|prev|more|less|see all|view all|expand|collapse|add|edit|delete|remove|update|create|new|copy|share|download|upload|settings|help|profile|menu|toggle|show|hide)$/i.test(text) ||
+          // Actions
+          /^(click|tap|press|select|choose)$/i.test(text) ||
+          // Common button text
+          /^(get started|sign up|sign in|learn more|read more|contact us|buy now|shop now|subscribe)$/i.test(text)
         ) continue;
         
         const id = text.toLowerCase().replace(/[^a-z0-9ąęłńóśźżć]+/g, '-').replace(/^-|-$/g, '');
@@ -11026,16 +11025,16 @@ export default function GeneratedPage() {
                               {/* Node header with status badge */}
                               <div className="p-3">
                                 {/* Top row: Icon + Name + Status Badge */}
-                                <div className="flex items-start gap-2 mb-1.5">
-                                  {/* Icon */}
+                                <div className="flex items-center gap-2 mb-1.5">
+                                  {/* Icon - perfectly centered */}
                                   <div className={cn(
-                                    "w-5 h-5 rounded flex items-center justify-center flex-shrink-0 mt-0.5",
-                                    isObserved ? "bg-zinc-600/10 text-zinc-400" 
-                                    : isAdded ? "bg-zinc-800/10 text-zinc-300"
-                                    : isDetected ? "bg-zinc-600/10 text-zinc-300"
-                                    : "bg-zinc-800/50 text-zinc-600"
+                                    "w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0",
+                                    isObserved ? "bg-emerald-500/10 text-emerald-400" 
+                                    : isAdded ? "bg-blue-500/10 text-blue-400"
+                                    : isDetected ? "bg-zinc-600/10 text-zinc-400"
+                                    : "bg-zinc-800/50 text-zinc-500"
                                   )}>
-                                    <Icon className="w-3 h-3" />
+                                    <Icon className="w-3.5 h-3.5" />
                                   </div>
                                   {/* Name - takes available space */}
                                   <div className="flex-1 min-w-0 pr-1">
