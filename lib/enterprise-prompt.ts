@@ -213,7 +213,7 @@ export function buildEnterprisePrompt(
 ): string {
   let prompt = ENTERPRISE_SYSTEM_PROMPT;
 
-  if (presetId) {
+  if (presetId && presetId !== "auto-detect") {
     prompt += `
 ═══════════════════════════════════════════════════════════════════════════════
 DESIGN SYSTEM PRESET: ${presetId.toUpperCase()}
@@ -228,6 +228,22 @@ Apply this preset for STYLING ONLY:
 ⚠️ CRITICAL: Preset affects STYLE only!
 App name, menu items, data values → ALWAYS from VIDEO!
 Never invent or modify text content based on preset.
+`;
+  } else if (presetId === "auto-detect") {
+    prompt += `
+═══════════════════════════════════════════════════════════════════════════════
+🎯 AUTO-DETECT MODE: PIXEL-PERFECT 1:1 COPY
+═══════════════════════════════════════════════════════════════════════════════
+
+In Auto-Detect mode, you MUST:
+1. Copy EVERYTHING exactly from the video - colors, fonts, spacing, layout
+2. NO style modifications - reproduce what you SEE
+3. Dark mode? Copy dark mode. Light mode? Copy light mode.
+4. Menu items? Copy EXACTLY what's in the video
+5. Data values? Copy EXACTLY with correct formatting
+6. Colors? Sample from video - don't use preset colors
+
+This is PURE RECONSTRUCTION. Zero interpretation. Zero creativity.
 `;
   }
 

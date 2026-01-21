@@ -5846,24 +5846,11 @@ Try these prompts in Cursor or v0:
       setStreamingCode(null);
       setStreamingLines(0);
       
-      let videoBase64: string;
-      let mimeType = videoBlob.type || "video/mp4";
+      const videoBase64 = await blobToBase64(videoBlob);
+      const mimeType = videoBlob.type || "video/mp4";
       
-      // Check video size and compress if needed
       const videoSizeMB = videoBlob.size / (1024 * 1024);
-      console.log(`[streaming] Original video size: ${videoSizeMB.toFixed(2)}MB`);
-      
-      if (videoSizeMB > 3.5) {
-        // Import and use compression
-        setStreamingStatus(`🗜️ Compressing video (${videoSizeMB.toFixed(1)}MB)...`);
-        const { compressVideo } = await import("@/lib/video-compress");
-        const compressed = await compressVideo(videoBlob, { maxSizeMB: 3, maxWidth: 1280, quality: 0.75 });
-        videoBase64 = compressed.base64;
-        mimeType = "video/webm";
-        console.log(`[streaming] Compressed: ${(compressed.compressedSize / 1024 / 1024).toFixed(2)}MB (${compressed.compressionRatio.toFixed(1)}x)`);
-      } else {
-        videoBase64 = await blobToBase64(videoBlob);
-      }
+      console.log(`[streaming] Video size: ${videoSizeMB.toFixed(2)}MB`);
       
       setStreamingStatus("Connecting to AI...");
       

@@ -1072,9 +1072,103 @@ export const GOVERNMENT_PRESET: EnterprisePreset = {
 };
 
 // ============================================================================
+// AUTO-DETECT PRESET (1:1 copy from video, no style overrides)
+// ============================================================================
+export const AUTO_DETECT_PRESET: EnterprisePreset = {
+  id: "auto-detect",
+  name: "Auto-Detect",
+  description: "Perfect 1:1 copy from video - no style overrides, pure OCR extraction",
+  industry: "technology",
+  colors: {
+    light: {
+      background: "#ffffff",
+      foreground: "#0a0a0a",
+      card: "#ffffff",
+      cardForeground: "#0a0a0a",
+      primary: "#0a0a0a",
+      primaryForeground: "#ffffff",
+      secondary: "#f4f4f5",
+      secondaryForeground: "#0a0a0a",
+      muted: "#f4f4f5",
+      mutedForeground: "#71717a",
+      accent: "#f4f4f5",
+      accentForeground: "#0a0a0a",
+      border: "#e4e4e7",
+      ring: "#0a0a0a",
+      success: "#22c55e",
+      warning: "#f59e0b",
+      error: "#ef4444",
+    },
+    dark: {
+      background: "#0a0a0a",
+      foreground: "#fafafa",
+      card: "#18181b",
+      cardForeground: "#fafafa",
+      primary: "#fafafa",
+      primaryForeground: "#0a0a0a",
+      secondary: "#27272a",
+      secondaryForeground: "#fafafa",
+      muted: "#27272a",
+      mutedForeground: "#a1a1aa",
+      accent: "#27272a",
+      accentForeground: "#fafafa",
+      border: "#27272a",
+      ring: "#fafafa",
+      success: "#22c55e",
+      warning: "#f59e0b",
+      error: "#ef4444",
+    },
+  },
+  typography: {
+    fontFamily: {
+      sans: "Inter, -apple-system, system-ui, sans-serif",
+      mono: "JetBrains Mono, monospace",
+    },
+    scale: { xs: "0.75rem", sm: "0.875rem", base: "1rem", lg: "1.125rem", xl: "1.25rem", "2xl": "1.5rem", "3xl": "1.875rem", "4xl": "2.25rem" },
+    lineHeight: { tight: "1.25", normal: "1.5", relaxed: "1.625" },
+    fontWeight: { normal: "400", medium: "500", semibold: "600", bold: "700" },
+  },
+  spacing: { xs: "0.25rem", sm: "0.5rem", md: "1rem", lg: "1.5rem", xl: "2rem", "2xl": "3rem" },
+  borderRadius: { sm: "0.25rem", md: "0.5rem", lg: "0.75rem", xl: "1rem", full: "9999px" },
+  shadows: {
+    sm: "0 1px 2px rgba(0, 0, 0, 0.05)",
+    md: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+    lg: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+  },
+  components: {
+    button: { borderRadius: "md", fontWeight: "medium", defaultVariant: "primary" },
+    input: { borderRadius: "md", borderWidth: "1px", focusRing: true },
+    card: { borderRadius: "lg", shadow: "sm", border: true },
+    table: { stripedRows: false, hoverHighlight: true, borderStyle: "horizontal" },
+    badge: { borderRadius: "full", fontWeight: "medium" },
+    avatar: { borderRadius: "full", sizes: { sm: "2rem", md: "2.5rem", lg: "3rem" } },
+  },
+  patterns: {
+    layoutPadding: "p-6",
+    sectionGap: "gap-6",
+    cardPadding: "p-6",
+    formFieldGap: "gap-4",
+    buttonPadding: "px-4 py-2",
+  },
+  animation: {
+    duration: { fast: "150ms", normal: "200ms", slow: "300ms" },
+    easing: { default: "ease-out", bounce: "cubic-bezier(0.68, -0.55, 0.265, 1.55)" },
+  },
+  accessibility: {
+    minContrastRatio: 4.5,
+    focusVisible: true,
+    reducedMotion: true,
+  },
+  icon: "Sparkles",
+  preview: "AD",
+  tags: ["auto-detect", "1:1", "pixel-perfect", "ocr", "copy"],
+};
+
+// ============================================================================
 // ALL PRESETS EXPORT
 // ============================================================================
 export const ENTERPRISE_PRESETS: EnterprisePreset[] = [
+  AUTO_DETECT_PRESET,
   FINANCIAL_SERVICES_PRESET,
   SAAS_DASHBOARD_PRESET,
   HEALTHCARE_PRESET,
