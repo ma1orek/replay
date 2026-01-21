@@ -557,6 +557,19 @@ Generate the complete HTML file now:`;
 // EDIT CODE FUNCTION
 // ============================================================================
 
+// Alias for backwards compatibility with edit-code route
+export async function editCodeWithAI(
+  currentCode: string,
+  editRequest: string,
+  images?: any[],
+  databaseContext?: string,
+  isPlanMode?: boolean,
+  chatHistory?: any[]
+): Promise<EditResult> {
+  // For now, ignore images and just use the basic edit function
+  return editCode(currentCode, editRequest, chatHistory || []);
+}
+
 export async function editCode(
   currentCode: string,
   instruction: string,
