@@ -11632,86 +11632,66 @@ export default function GeneratedPage() {
                                 </button>
                               </div>
 
-                              {/* Performance Targets */}
-                              {aiDocsQa.performanceTargets && (
+                              {/* Performance Baseline */}
+                              {aiDocsQa.performanceBaseline?.modernTarget && (
                                 <div className="grid grid-cols-4 gap-2">
                                   <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800">
-                                    <p className="text-lg font-semibold text-zinc-300">{aiDocsQa.performanceTargets.fcp || "< 2s"}</p>
-                                    <p className="text-[10px] text-zinc-600">FCP</p>
-                                  </div>
-                                  <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800">
-                                    <p className="text-lg font-semibold text-zinc-300">{aiDocsQa.performanceTargets.lcp || "< 2.5s"}</p>
+                                    <p className="text-lg font-semibold text-zinc-300">{aiDocsQa.performanceBaseline.modernTarget.lcp || "< 2.5s"}</p>
                                     <p className="text-[10px] text-zinc-600">LCP</p>
                                   </div>
                                   <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800">
-                                    <p className="text-lg font-semibold text-zinc-300">{aiDocsQa.performanceTargets.cls || "< 0.1"}</p>
+                                    <p className="text-lg font-semibold text-zinc-300">{aiDocsQa.performanceBaseline.modernTarget.fid || "< 100ms"}</p>
+                                    <p className="text-[10px] text-zinc-600">FID</p>
+                                  </div>
+                                  <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800">
+                                    <p className="text-lg font-semibold text-zinc-300">{aiDocsQa.performanceBaseline.modernTarget.cls || "< 0.1"}</p>
                                     <p className="text-[10px] text-zinc-600">CLS</p>
                                   </div>
                                   <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800">
-                                    <p className="text-lg font-semibold text-zinc-300">{aiDocsQa.performanceTargets.fid || "< 100ms"}</p>
-                                    <p className="text-[10px] text-zinc-600">FID</p>
+                                    <p className="text-lg font-semibold text-zinc-300">{aiDocsQa.performanceBaseline.modernTarget.ttfb || "< 600ms"}</p>
+                                    <p className="text-[10px] text-zinc-600">TTFB</p>
                                   </div>
                                 </div>
                               )}
 
-                              {/* Functional Tests */}
-                              {aiDocsQa.functionalTests?.length > 0 && (
+                              {/* Behavioral Tests */}
+                              {aiDocsQa.behavioralTests?.length > 0 && (
                                 <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
                                   <div className="px-4 py-2.5 border-b border-zinc-800">
-                                    <h3 className="text-xs font-medium text-zinc-400">Functional Tests</h3>
+                                    <h3 className="text-xs font-medium text-zinc-400">Behavioral Tests</h3>
                                   </div>
                                   <div className="p-3 space-y-1 max-h-64 overflow-y-auto">
-                                    {aiDocsQa.functionalTests.map((test: any, i: number) => (
+                                    {aiDocsQa.behavioralTests.map((test: any, i: number) => (
                                       <label key={i} className="flex items-start gap-2.5 p-2 rounded hover:bg-zinc-800/30 cursor-pointer group">
                                         <input type="checkbox" className="w-3.5 h-3.5 mt-0.5 rounded border-zinc-700 bg-zinc-800 text-zinc-400" />
                                         <div className="flex-1 min-w-0">
-                                          <p className="text-xs text-zinc-400 group-hover:text-zinc-300">{test.description || test}</p>
-                                          {test.category && <p className="text-[9px] text-zinc-600 mt-0.5">{test.category}</p>}
+                                          <p className="text-xs text-zinc-400 group-hover:text-zinc-300">{test.scenario || test.testId}</p>
+                                          {test.given && <p className="text-[9px] text-zinc-600 mt-0.5">Given: {test.given}</p>}
+                                          {test.then && <p className="text-[9px] text-zinc-500 mt-0.5">Then: {test.then}</p>}
                                         </div>
-                                        {test.priority && (
-                                          <span className={`text-[9px] px-1.5 py-0.5 rounded ${
-                                            test.priority === "critical" ? "bg-zinc-800 text-zinc-400" : "text-zinc-600"
-                                          }`}>{test.priority}</span>
-                                        )}
                                       </label>
                                     ))}
                                   </div>
                                 </div>
                               )}
 
-                              {/* Accessibility Tests */}
-                              {aiDocsQa.accessibilityTests?.length > 0 && (
+                              {/* Accessibility Audit */}
+                              {aiDocsQa.accessibilityAudit?.improvements?.length > 0 && (
                                 <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
-                                  <div className="px-4 py-2.5 border-b border-zinc-800">
-                                    <h3 className="text-xs font-medium text-zinc-400">Accessibility (WCAG AA)</h3>
+                                  <div className="px-4 py-2.5 border-b border-zinc-800 flex items-center justify-between">
+                                    <h3 className="text-xs font-medium text-zinc-400">Accessibility (WCAG {aiDocsQa.accessibilityAudit.wcagLevel || "AA"})</h3>
+                                    <span className="text-[9px] text-zinc-500">{aiDocsQa.accessibilityAudit.issuesFixed || 0} fixed</span>
                                   </div>
                                   <div className="p-3 space-y-1">
-                                    {aiDocsQa.accessibilityTests.map((test: any, i: number) => (
+                                    {aiDocsQa.accessibilityAudit.improvements.map((item: any, i: number) => (
                                       <label key={i} className="flex items-start gap-2.5 p-2 rounded hover:bg-zinc-800/30 cursor-pointer group">
-                                        <input type="checkbox" className="w-3.5 h-3.5 mt-0.5 rounded border-zinc-700 bg-zinc-800 text-zinc-400" />
+                                        <input type="checkbox" defaultChecked={item.modernStatus?.includes("✅")} className="w-3.5 h-3.5 mt-0.5 rounded border-zinc-700 bg-zinc-800 text-zinc-400" />
                                         <div className="flex-1">
-                                          <p className="text-xs text-zinc-400 group-hover:text-zinc-300">{test.description || test}</p>
-                                          {test.wcagCriteria && <p className="text-[9px] text-zinc-600 mt-0.5">WCAG {test.wcagCriteria}</p>}
+                                          <p className="text-xs text-zinc-400 group-hover:text-zinc-300">{item.issue}</p>
+                                          {item.wcagCriteria && <p className="text-[9px] text-zinc-600 mt-0.5">WCAG {item.wcagCriteria}</p>}
                                         </div>
+                                        <span className="text-[9px] text-zinc-500">{item.modernStatus}</span>
                                       </label>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Browser Support */}
-                              {aiDocsQa.browserSupport?.length > 0 && (
-                                <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
-                                  <div className="px-4 py-2.5 border-b border-zinc-800">
-                                    <h3 className="text-xs font-medium text-zinc-400">Browser Support</h3>
-                                  </div>
-                                  <div className="p-3 grid grid-cols-3 gap-2">
-                                    {aiDocsQa.browserSupport.map((browser: any, i: number) => (
-                                      <div key={i} className="flex items-center gap-2 p-2 rounded bg-zinc-800/50">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
-                                        <span className="text-xs text-zinc-400">{browser.browser || browser}</span>
-                                        {browser.status && <span className="text-[9px] text-zinc-600 ml-auto">{browser.status}</span>}
-                                      </div>
                                     ))}
                                   </div>
                                 </div>
@@ -11723,11 +11703,35 @@ export default function GeneratedPage() {
                                   <div className="px-4 py-2.5 border-b border-zinc-800">
                                     <h3 className="text-xs font-medium text-zinc-400">Security</h3>
                                   </div>
+                                  <div className="p-3 space-y-2">
+                                    {aiDocsQa.securityChecklist.map((category: any, i: number) => (
+                                      <div key={i}>
+                                        <p className="text-[10px] text-zinc-500 mb-1">{category.category}</p>
+                                        {category.checks?.map((check: any, j: number) => (
+                                          <label key={j} className="flex items-center gap-2.5 p-2 rounded hover:bg-zinc-800/30 cursor-pointer group">
+                                            <input type="checkbox" defaultChecked={check.status?.includes("✅")} className="w-3.5 h-3.5 rounded border-zinc-700 bg-zinc-800 text-zinc-400" />
+                                            <span className="text-xs text-zinc-500 group-hover:text-zinc-400 flex-1">{check.item}</span>
+                                            <span className="text-[9px] text-zinc-600">{check.status}</span>
+                                          </label>
+                                        ))}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Sign-off Checklist */}
+                              {aiDocsQa.signOffChecklist?.length > 0 && (
+                                <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+                                  <div className="px-4 py-2.5 border-b border-zinc-800">
+                                    <h3 className="text-xs font-medium text-zinc-400">Sign-off Checklist</h3>
+                                  </div>
                                   <div className="p-3 space-y-1">
-                                    {aiDocsQa.securityChecklist.map((item: any, i: number) => (
+                                    {aiDocsQa.signOffChecklist.map((item: any, i: number) => (
                                       <label key={i} className="flex items-center gap-2.5 p-2 rounded hover:bg-zinc-800/30 cursor-pointer group">
                                         <input type="checkbox" className="w-3.5 h-3.5 rounded border-zinc-700 bg-zinc-800 text-zinc-400" />
-                                        <span className="text-xs text-zinc-500 group-hover:text-zinc-400">{item.item || item}</span>
+                                        <span className="text-xs text-zinc-500 group-hover:text-zinc-400 flex-1">{item.requirement}</span>
+                                        <span className="text-[9px] text-zinc-600">{item.stakeholder}</span>
                                       </label>
                                     ))}
                                   </div>
