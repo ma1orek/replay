@@ -126,7 +126,74 @@ function extractCodeFromResponse(response: string): string | null {
 }
 
 // ============================================================================
-// STREAMING VIDEO TO CODE GENERATION
+// PHASE 1: VIDEO ANALYSIS - Extract ALL text content before generation
+// ============================================================================
+
+const VIDEO_ANALYSIS_PROMPT = `
+You are an OCR scanner. Your ONLY job is to extract ALL visible text from this video.
+
+EXTRACT AND LIST:
+
+1. **APP_NAME**: What is the name/logo text in the header? (top-left area)
+   - Look at the logo area VERY carefully
+   - Read the EXACT text character by character
+   - If you see "Replay" write "Replay", if you see "Stripe" write "Stripe"
+   - DO NOT guess or invent names like "PayDash", "NexusPay", "StripeClone"
+
+2. **MENU_ITEMS**: List ALL sidebar/navigation menu items in EXACT order
+   - Read each menu item text exactly as shown
+   - Keep original language (don't translate)
+   - Include the icon description if visible
+
+3. **PAGE_TITLE**: Main heading/title on the current page
+
+4. **CARD_TITLES**: All card/section titles visible
+
+5. **DATA_LABELS**: All labels for data (e.g., "Gross volume", "Net volume")
+
+6. **DATA_VALUES**: All numbers/amounts with exact formatting
+   - Currency symbol and position (PLN 403.47 vs 403.47 PLN)
+   - Percentage signs and values
+   - Exact decimal places
+
+7. **TABLE_HEADERS**: If there's a table, list all column headers
+
+8. **BUTTON_TEXTS**: Text on all buttons
+
+9. **OTHER_TEXT**: Any other visible text (dates, status labels, etc.)
+
+10. **COLORS**: Describe the color scheme
+    - Is the background DARK or LIGHT?
+    - What is the primary accent color?
+    - What color is the sidebar?
+
+OUTPUT FORMAT (JSON):
+{
+  "app_name": "EXACT name from logo",
+  "menu_items": ["Item 1", "Item 2", ...],
+  "page_title": "...",
+  "card_titles": ["...", "..."],
+  "data_labels": ["...", "..."],
+  "data_values": ["...", "..."],
+  "table_headers": ["...", "..."],
+  "button_texts": ["...", "..."],
+  "other_text": ["...", "..."],
+  "color_scheme": {
+    "background": "dark/light",
+    "sidebar": "...",
+    "accent": "..."
+  }
+}
+
+⚠️ CRITICAL:
+- Read EXACTLY what you see, don't guess
+- If you can't read something clearly, write "[unclear]"
+- DO NOT invent names like "PayDash", "NexusPay", "FinanceHub"
+- DO NOT add items that don't exist in the video
+`;
+
+// ============================================================================
+// STREAMING VIDEO TO CODE GENERATION (2-PHASE)
 // ============================================================================
 
 export async function POST(request: NextRequest) {
@@ -151,100 +218,26 @@ export async function POST(request: NextRequest) {
 
     // Initialize Gemini
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
+    
+    // Phase 1 model - for video analysis (lower temp for accuracy)
+    const analysisModel = genAI.getGenerativeModel({
       model: "gemini-3-pro-preview",
       generationConfig: {
-        temperature: enterpriseMode ? 0.5 : 0.7, // Lower temp for enterprise accuracy
+        temperature: 0.1, // Very low for accurate extraction
+        maxOutputTokens: 8000,
+      },
+    });
+    
+    // Phase 2 model - for code generation
+    const generationModel = genAI.getGenerativeModel({
+      model: "gemini-3-pro-preview",
+      generationConfig: {
+        temperature: enterpriseMode ? 0.3 : 0.5,
         maxOutputTokens: 100000,
       },
     });
 
-    // Build full prompt - use enterprise mode if preset selected
-    let fullPrompt: string;
-    
-    if (enterpriseMode && enterprisePresetId) {
-      // Enterprise mode: use new accuracy-focused prompt
-      fullPrompt = buildEnterprisePrompt(
-        enterprisePresetId,
-        styleDirective, // Additional context
-        databaseContext
-      );
-    } else {
-      // Legacy mode: use original creative prompt
-      fullPrompt = VIDEO_TO_CODE_SYSTEM_PROMPT;
-      fullPrompt += buildStylePrompt(styleDirective);
-    }
-    
-    // Add database context for legacy mode (enterprise mode includes it in buildEnterprisePrompt)
-    if (databaseContext && !enterpriseMode) {
-      fullPrompt += `
-
-DATABASE CONTEXT (use this data in appropriate places):
-${databaseContext}
-`;
-    }
-    
-    fullPrompt += `
-
-================================================================================
-🚨 FINAL OUTPUT INSTRUCTIONS - READ CAREFULLY! 🚨
-================================================================================
-
-Now analyze the video and generate the complete HTML code.
-
-⚠️ CRITICAL OUTPUT FORMAT:
-1. Return ONLY valid HTML code wrapped in \`\`\`html code blocks
-2. The code must start with <!DOCTYPE html> and end with </html>
-3. DO NOT output any JavaScript code as page TEXT CONTENT
-4. DO NOT put code examples, variables, or function calls as visible text on the page
-5. All JavaScript must be inside <script> tags, NOT as paragraph text
-6. All page content must be readable text, images, buttons - NOT raw code
-
-❌ WRONG (code as content):
-<p>this.page = 'home'; Math.floor(Math.random() * 100);</p>
-
-✅ CORRECT (actual content):
-<p>Welcome to our amazing website with great features.</p>
-
-Return clean, valid HTML that renders as a VISUAL webpage, not a code dump.
-`;
-
-    // Build parts array
-    const parts: any[] = [
-      { text: fullPrompt },
-      {
-        inlineData: {
-          mimeType,
-          data: videoBase64,
-        },
-      },
-    ];
-
-    // Add style reference image if provided
-    if (styleReferenceImage?.base64) {
-      parts.push({
-        inlineData: {
-          mimeType: styleReferenceImage.mimeType || "image/png",
-          data: styleReferenceImage.base64,
-        },
-      });
-      parts.push({ text: `
-STYLE REFERENCE IMAGE INSTRUCTIONS:
-Use this image ONLY as a visual style reference for:
-- Color palette (extract dominant colors for backgrounds, text, accents)
-- Typography style (font weights, sizes feel)
-- Visual mood and aesthetic
-
-⚠️ CRITICAL: 
-- DO NOT put this image's content into the page
-- DO NOT describe or reference this image in the output
-- Generate the same HTML structure as the VIDEO shows
-- Only apply the COLOR SCHEME and VISUAL STYLE from this reference image
-- The page CONTENT must come from the VIDEO, not this style image
-` });
-    }
-
-    console.log("[stream] Starting streaming generation...");
+    console.log("[stream] Starting 2-phase generation...");
     const startTime = Date.now();
 
     // Create streaming response
@@ -253,53 +246,157 @@ Use this image ONLY as a visual style reference for:
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          // Send initial status - video analysis
+          // ============================================================
+          // PHASE 1: Video Analysis - Extract all text
+          // ============================================================
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
             type: "status", 
             phase: "analyzing",
-            message: "🎬 Analyzing video frames...",
+            message: "🔍 Phase 1: Scanning video for text content...",
             progress: 5
           })}\n\n`));
           
-          // Start streaming generation
-          const result = await model.generateContentStream(parts);
+          const analysisResult = await analysisModel.generateContent([
+            { text: VIDEO_ANALYSIS_PROMPT },
+            {
+              inlineData: {
+                mimeType,
+                data: videoBase64,
+              },
+            },
+          ]);
+          
+          const analysisText = analysisResult.response.text();
+          console.log("[stream] Phase 1 analysis complete:", analysisText.substring(0, 500));
+          
+          // Try to parse the analysis JSON
+          let extractedData: any = {};
+          try {
+            const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              extractedData = JSON.parse(jsonMatch[0]);
+            }
+          } catch (e) {
+            console.log("[stream] Could not parse analysis JSON, using raw text");
+            extractedData = { raw_analysis: analysisText };
+          }
+          
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+            type: "status", 
+            phase: "analyzed",
+            message: `✅ Found: "${extractedData.app_name || 'app'}" with ${extractedData.menu_items?.length || '?'} menu items`,
+            progress: 15,
+            extractedData
+          })}\n\n`));
+          
+          // ============================================================
+          // PHASE 2: Code Generation - Use extracted data
+          // ============================================================
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+            type: "status", 
+            phase: "generating",
+            message: "🧠 Phase 2: Generating code from extracted content...",
+            progress: 20
+          })}\n\n`));
+
+          // Build the generation prompt with MANDATORY extracted data
+          let fullPrompt: string;
+          
+          if (enterpriseMode && enterprisePresetId) {
+            fullPrompt = buildEnterprisePrompt(enterprisePresetId, styleDirective, databaseContext);
+          } else {
+            fullPrompt = VIDEO_TO_CODE_SYSTEM_PROMPT;
+            fullPrompt += buildStylePrompt(styleDirective);
+          }
+          
+          // CRITICAL: Inject the extracted data
+          fullPrompt += `
+
+================================================================================
+🔒 MANDATORY EXTRACTED DATA - USE ONLY THESE VALUES!
+================================================================================
+
+The following data was extracted directly from the video using OCR.
+You MUST use these EXACT values. DO NOT change or "improve" them!
+
+${JSON.stringify(extractedData, null, 2)}
+
+================================================================================
+⚠️ STRICT RULES FOR USING EXTRACTED DATA:
+================================================================================
+
+1. APP NAME: Use EXACTLY "${extractedData.app_name || '[from video]'}"
+   - Put this in the logo/header
+   - DO NOT change it to "PayDash", "NexusPay", or anything else!
+
+2. MENU ITEMS: Use EXACTLY these items in this order:
+   ${JSON.stringify(extractedData.menu_items || [])}
+   - DO NOT add items that aren't in this list!
+   - DO NOT remove any items!
+   - DO NOT change the order!
+
+3. DATA VALUES: Use EXACTLY these numbers/amounts:
+   ${JSON.stringify(extractedData.data_values || [])}
+   - Keep exact formatting (currency position, decimals)
+
+4. COLOR SCHEME: ${JSON.stringify(extractedData.color_scheme || {})}
+   - Use this to determine dark/light mode
+
+================================================================================
+`;
+
+          if (databaseContext && !enterpriseMode) {
+            fullPrompt += `\nDATABASE CONTEXT:\n${databaseContext}\n`;
+          }
+          
+          fullPrompt += `
+
+Now generate the complete HTML code using ONLY the extracted data above.
+Return valid HTML wrapped in \`\`\`html code blocks.
+`;
+
+          // Build parts array for generation
+          const parts: any[] = [
+            { text: fullPrompt },
+            {
+              inlineData: {
+                mimeType,
+                data: videoBase64,
+              },
+            },
+          ];
+
+          // Add style reference image if provided
+          if (styleReferenceImage?.base64) {
+            parts.push({
+              inlineData: {
+                mimeType: styleReferenceImage.mimeType || "image/png",
+                data: styleReferenceImage.base64,
+              },
+            });
+            parts.push({ text: "Use this image for COLOR SCHEME only, not content." });
+          }
+
+          // Stream the code generation
+          const result = await generationModel.generateContentStream(parts);
           
           let fullText = "";
           let chunkCount = 0;
           let codeStarted = false;
-          let lastProgressUpdate = Date.now();
           
-          // Send status update - AI is thinking
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
-            type: "status", 
-            phase: "thinking",
-            message: "🧠 AI is reconstructing the design...",
-            progress: 15
-          })}\n\n`));
-          
-          // Stream chunks as they arrive from Gemini
           for await (const chunk of result.stream) {
             const chunkText = chunk.text();
             fullText += chunkText;
             chunkCount++;
             
-            // Detect when code generation starts
             if (!codeStarted && (fullText.includes("```html") || fullText.includes("<!DOCTYPE"))) {
               codeStarted = true;
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
-                type: "status", 
-                phase: "generating",
-                message: "✨ Generating production code...",
-                progress: 25
-              })}\n\n`));
             }
             
-            // Calculate progress based on typical code length (~30KB average)
             const estimatedProgress = codeStarted 
-              ? Math.min(25 + Math.floor((fullText.length / 30000) * 65), 90)
-              : 20;
+              ? Math.min(20 + Math.floor((fullText.length / 30000) * 70), 90)
+              : 25;
             
-            // Send chunk with line count info
             const lineCount = (fullText.match(/\n/g) || []).length;
             
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
@@ -310,31 +407,14 @@ Use this image ONLY as a visual style reference for:
               lineCount: lineCount,
               progress: estimatedProgress
             })}\n\n`));
-            
-            // Send periodic status updates during long generations
-            const now = Date.now();
-            if (now - lastProgressUpdate > 3000 && codeStarted) {
-              lastProgressUpdate = now;
-              const sections = (fullText.match(/<section/gi) || []).length;
-              const components = (fullText.match(/<div class/gi) || []).length;
-              
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
-                type: "progress",
-                message: `Building: ${sections} sections, ${components} components...`,
-                lineCount: lineCount,
-                progress: estimatedProgress
-              })}\n\n`));
-            }
           }
           
-          // Get final response for metadata
           const finalResponse = await result.response;
           const usageMetadata = finalResponse.usageMetadata;
           
           const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-          console.log(`[stream] Completed in ${duration}s. Chunks: ${chunkCount}, Total length: ${fullText.length}`);
+          console.log(`[stream] Completed in ${duration}s`);
           
-          // Extract clean code from response
           let cleanCode = extractCodeFromResponse(fullText);
           
           if (!cleanCode) {
@@ -346,13 +426,12 @@ Use this image ONLY as a visual style reference for:
             return;
           }
           
-          // Fix any broken image URLs (Unsplash, Pexels, etc. -> picsum)
           cleanCode = fixBrokenImageUrls(cleanCode);
           
-          // Send completion with token usage and final code
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
             type: "complete",
             code: cleanCode,
+            extractedData,
             tokenUsage: usageMetadata ? {
               promptTokens: usageMetadata.promptTokenCount || 0,
               candidatesTokens: usageMetadata.candidatesTokenCount || 0,
