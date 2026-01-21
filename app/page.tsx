@@ -5730,7 +5730,7 @@ Try these prompts in Cursor or v0:
     }
   };
 
-  // AI-Powered Flow Diagram Generation (Gemini 2.5 Pro)
+  // AI-Powered Flow Diagram Generation (Gemini 3 Pro)
   const generateFlows = async () => {
     if (!generatedCode || isGeneratingFlows) return;
     
@@ -5773,7 +5773,7 @@ Try these prompts in Cursor or v0:
     }
   };
 
-  // AI-Powered Design System Generation (Gemini 2.5 Pro)
+  // AI-Powered Design System Generation (Gemini 3 Pro)
   const generateDesignSystem = async () => {
     if (!generatedCode || isGeneratingDesign) return;
     
