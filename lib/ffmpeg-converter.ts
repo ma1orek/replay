@@ -1,31 +1,51 @@
 "use client";
 
 import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { fetchFile, toBlobURL } from "@ffmpeg/util";
+import { fetchFile } from "@ffmpeg/util";
 
 let ffmpeg: FFmpeg | null = null;
 let isLoaded = false;
+let loadPromise: Promise<FFmpeg> | null = null;
 
-// Load FFmpeg (only once)
+// Load FFmpeg (only once, with proper singleton pattern)
 async function loadFFmpeg(): Promise<FFmpeg> {
+  // Return existing instance if already loaded
   if (ffmpeg && isLoaded) {
     return ffmpeg;
   }
-
-  ffmpeg = new FFmpeg();
   
-  // Load FFmpeg core from CDN
-  const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
+  // If loading in progress, wait for it
+  if (loadPromise) {
+    return loadPromise;
+  }
   
-  await ffmpeg.load({
-    coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
-    wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
-  });
+  // Start loading
+  loadPromise = (async () => {
+    try {
+      ffmpeg = new FFmpeg();
+      
+      // Use direct CDN URLs instead of blob URLs for better mobile compatibility
+      const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd";
+      
+      await ffmpeg.load({
+        coreURL: `${baseURL}/ffmpeg-core.js`,
+        wasmURL: `${baseURL}/ffmpeg-core.wasm`,
+      });
+      
+      isLoaded = true;
+      console.log("[FFmpeg] Loaded successfully");
+      
+      return ffmpeg;
+    } catch (error) {
+      // Reset state on failure
+      ffmpeg = null;
+      isLoaded = false;
+      loadPromise = null;
+      throw error;
+    }
+  })();
   
-  isLoaded = true;
-  console.log("FFmpeg loaded successfully");
-  
-  return ffmpeg;
+  return loadPromise;
 }
 
 // Convert video to MP4 H.264 (Gemini-compatible format)
@@ -33,7 +53,7 @@ export async function convertToMP4(
   inputBlob: Blob, 
   onProgress?: (progress: number) => void
 ): Promise<Blob> {
-  console.log("Starting FFmpeg conversion, input size:", inputBlob.size);
+  console.log("[FFmpeg] Starting conversion, input size:", inputBlob.size, "bytes");
   
   const ff = await loadFFmpeg();
   
@@ -44,49 +64,78 @@ export async function convertToMP4(
     });
   }
   
-  // Write input file
-  const inputFileName = "input.mov";
-  const outputFileName = "output.mp4";
+  // Use unique filenames to avoid conflicts
+  const timestamp = Date.now();
+  const inputFileName = `input_${timestamp}.webm`;
+  const outputFileName = `output_${timestamp}.mp4`;
   
-  await ff.writeFile(inputFileName, await fetchFile(inputBlob));
-  
-  // Convert to MP4 with H.264 codec
-  // -c:v libx264 - use H.264 video codec
-  // -preset ultrafast - fastest encoding (less compression but quick)
-  // -crf 23 - quality level (lower = better, 23 is high quality)
-  // -vf scale=-2:1080 - scale to 1080p height, auto width (divisible by 2)
-  // -c:a aac - use AAC audio codec
-  // -movflags +faststart - optimize for streaming
-  await ff.exec([
-    "-i", inputFileName,
-    "-c:v", "libx264",
-    "-preset", "ultrafast",
-    "-crf", "23",
-    "-vf", "scale=-2:1080",
-    "-c:a", "aac",
-    "-b:a", "128k",
-    "-movflags", "+faststart",
-    "-y",
-    outputFileName
-  ]);
-  
-  // Read output file
-  const data = await ff.readFile(outputFileName);
-  
-  // Clean up
-  await ff.deleteFile(inputFileName);
-  await ff.deleteFile(outputFileName);
-  
-  // Convert to Blob - use any to bypass TypeScript strict checks
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const outputBlob = new Blob([data as any], { type: "video/mp4" });
-  console.log("FFmpeg conversion complete, output size:", outputBlob.size);
-  
-  return outputBlob;
+  try {
+    // Write input file
+    await ff.writeFile(inputFileName, await fetchFile(inputBlob));
+    
+    // Convert to MP4 with H.264 codec
+    // Using simpler settings for mobile compatibility:
+    // -c:v libx264 - use H.264 video codec
+    // -preset veryfast - good balance of speed/quality
+    // -crf 28 - slightly lower quality for smaller file
+    // -vf scale=-2:720 - scale to 720p for faster processing
+    // -c:a aac - use AAC audio codec
+    // -movflags +faststart - optimize for streaming
+    await ff.exec([
+      "-i", inputFileName,
+      "-c:v", "libx264",
+      "-preset", "veryfast",
+      "-crf", "28",
+      "-vf", "scale=-2:720",
+      "-c:a", "aac",
+      "-b:a", "96k",
+      "-movflags", "+faststart",
+      "-y",
+      outputFileName
+    ]);
+    
+    // Read output file
+    const data = await ff.readFile(outputFileName);
+    
+    // Clean up
+    try {
+      await ff.deleteFile(inputFileName);
+      await ff.deleteFile(outputFileName);
+    } catch {
+      // Ignore cleanup errors
+    }
+    
+    // Convert to Blob
+    const outputBlob = new Blob([data], { type: "video/mp4" });
+    console.log("[FFmpeg] Conversion complete, output size:", outputBlob.size, "bytes");
+    
+    return outputBlob;
+  } catch (error) {
+    // Clean up on error
+    try {
+      await ff.deleteFile(inputFileName);
+      await ff.deleteFile(outputFileName);
+    } catch {
+      // Ignore cleanup errors
+    }
+    throw error;
+  }
 }
 
-// Check if FFmpeg is supported (WebAssembly required)
+// Check if FFmpeg is supported
 export function isFFmpegSupported(): boolean {
-  return typeof WebAssembly !== "undefined";
+  // Check for WebAssembly support
+  if (typeof WebAssembly === "undefined") {
+    console.log("[FFmpeg] WebAssembly not supported");
+    return false;
+  }
+  
+  // Check for SharedArrayBuffer (required for FFmpeg threading)
+  // Note: This requires COOP/COEP headers to be set
+  if (typeof SharedArrayBuffer === "undefined") {
+    console.log("[FFmpeg] SharedArrayBuffer not available - FFmpeg may run slower");
+    // Still return true - FFmpeg can work without it, just slower
+  }
+  
+  return true;
 }
-
