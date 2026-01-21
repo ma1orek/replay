@@ -196,28 +196,38 @@ export async function POST(request: NextRequest) {
     const genAI = new GoogleGenerativeAI(apiKey);
     
     // Phase 1: GEMINI 3 PRO - Vision Analysis Model
-    // Uses high thinking level for deep visual reasoning
+    // Reduced thinking budget to prevent API hangs
     const analysisModel = genAI.getGenerativeModel({
       model: "gemini-3-pro-preview",
       generationConfig: {
-        temperature: 0.2, // Slightly higher for vibe understanding
+        temperature: 0.2,
         maxOutputTokens: 8192,
         // @ts-ignore - Gemini 3 Pro specific parameters
-        thinkingConfig: { thinkingBudget: 8192 }, // Enable deep reasoning
+        thinkingConfig: { thinkingBudget: 4096 }, // Reduced from 8192
       },
     });
     
-    // Phase 2: GEMINI 3 PRO - Code Generation Model (VIBE CODING)
-    // temperature 0.4 = perfect balance for creative yet accurate code
+    // Phase 2: GEMINI 3 PRO - Code Generation Model
+    // Balanced thinking for reliable code generation
     const generationModel = genAI.getGenerativeModel({
       model: "gemini-3-pro-preview",
       generationConfig: {
-        temperature: 0.4, // Vibe Coding needs some creative flexibility
+        temperature: 0.4,
         maxOutputTokens: 100000,
         // @ts-ignore - Gemini 3 Pro specific parameters  
-        thinkingConfig: { thinkingBudget: 24576 }, // Maximum deep reasoning for architecture
+        thinkingConfig: { thinkingBudget: 12288 }, // Reduced from 24576 to prevent hangs
       },
     });
+    
+    // Helper to add timeout to API calls (120s max per call)
+    const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> => {
+      return Promise.race([
+        promise,
+        new Promise<T>((_, reject) => 
+          setTimeout(() => reject(new Error(`${operation} timed out after ${timeoutMs/1000}s`)), timeoutMs)
+        )
+      ]);
+    };
 
     console.log("[stream] GEMINI 3 PRO - Starting 2-phase visual compilation...");
     const startTime = Date.now();
@@ -237,17 +247,21 @@ export async function POST(request: NextRequest) {
             progress: 5
           })}\n\n`));
           
-          console.log("[stream] Phase 1: Starting 5-phase visual analysis...");
+          console.log("[stream] Phase 1: Starting visual analysis with 120s timeout...");
           
-          const analysisResult = await analysisModel.generateContent([
-            { text: GEMINI3_PRO_ANALYSIS_PROMPT },
-            {
-              inlineData: {
-                mimeType,
-                data: videoBase64,
+          const analysisResult = await withTimeout(
+            analysisModel.generateContent([
+              { text: GEMINI3_PRO_ANALYSIS_PROMPT },
+              {
+                inlineData: {
+                  mimeType,
+                  data: videoBase64,
+                },
               },
-            },
-          ]);
+            ]),
+            120000, // 120 second timeout for analysis
+            "Phase 1 Analysis"
+          );
           
           const analysisText = analysisResult.response.text();
           console.log("[stream] Phase 1 complete. Raw analysis:", analysisText.substring(0, 1000));
@@ -363,9 +377,13 @@ Generate the code now. Return valid HTML wrapped in \`\`\`html blocks.
             parts.push({ text: "Use this image for COLOR PALETTE reference only, not content." });
           }
 
-          // Stream the code generation
-          console.log("[stream] Phase 2: Starting code generation stream...");
-          const result = await generationModel.generateContentStream(parts);
+          // Stream the code generation with timeout
+          console.log("[stream] Phase 2: Starting code generation stream with 180s timeout...");
+          const result = await withTimeout(
+            generationModel.generateContentStream(parts),
+            180000, // 180 second timeout for code generation
+            "Phase 2 Code Generation"
+          );
           
           let fullText = "";
           let chunkCount = 0;
