@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getPresetById, EnterprisePreset } from "@/lib/enterprise-presets";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-// Use Gemini 3 Pro for design (better visual understanding)
 const MODEL_NAME = "gemini-3-pro-preview";
 
 function getApiKey(): string | null {
@@ -14,171 +14,170 @@ function getApiKey(): string | null {
 interface DesignGenerationRequest {
   projectName: string;
   generatedCode: string;
-  presetId?: string; // Optional preset to base on
+  presetId?: string;
   extractedColors?: Array<{ name: string; hex: string }>;
   industry?: string;
+  detectedComponents?: string[];
+  screenCount?: number;
 }
 
-const DESIGN_PROMPT = `You are generating a modern, production-ready design system for an enterprise React application.
+// Build a context-aware, individualized design system prompt
+function buildDesignPrompt(preset: EnterprisePreset | null, request: DesignGenerationRequest): string {
+  const presetInfo = preset ? `
+BASE PRESET: ${preset.name}
+INDUSTRY: ${preset.industry}
+PRESET COLORS (as starting point):
+- Primary: ${preset.colors.light.primary}
+- Secondary: ${preset.colors.light.secondary}
+- Accent: ${preset.colors.light.accent}
+- Success: ${preset.colors.light.success}
+- Error: ${preset.colors.light.error}
+` : "BASE PRESET: None - generate modern SaaS design";
 
-Create a complete design system that:
-- Uses modern 2024-2026 design trends
-- Is WCAG AA compliant (4.5:1 contrast minimum)
-- Works with Tailwind CSS
-- Includes shadcn/ui component configurations
+  return `You are creating a CUSTOM design system for a specific enterprise application.
+This is NOT a generic template - it's tailored to THIS app based on the analyzed code.
 
-Generate JSON:
+${presetInfo}
+
+PROJECT CONTEXT:
+- Name: ${request.projectName}
+- Industry: ${request.industry || "Enterprise SaaS"}
+- Screens detected: ${request.screenCount || "Multiple"}
+${request.extractedColors?.length ? `- Colors found in original UI: ${request.extractedColors.map(c => `${c.name}(${c.hex})`).join(", ")}` : ""}
+
+YOUR TASK:
+1. Analyze the code below to identify:
+   - What components are used (tables, charts, forms, cards, etc.)
+   - What color scheme the original UI has
+   - What data types are displayed (financial, user data, analytics, etc.)
+   - What interactions exist (buttons, filters, navigation)
+
+2. Generate a CUSTOMIZED design system that:
+   - Uses the preset as a BASE but ADAPTS it to this specific app
+   - Includes SPECIFIC component tokens for components found in the code
+   - Modernizes the color scheme while maintaining app context
+   - Is WCAG AA compliant
+
+OUTPUT FORMAT (JSON):
 {
-  "name": "Design System Name",
-  "description": "Brief description",
+  "name": "[Project Name] Design System",
+  "description": "Customized design system for [specific app description based on analysis]",
   "version": "1.0.0",
+  
+  "appContext": {
+    "detectedComponents": ["Sidebar", "DataTable", "StatCard", "AreaChart", ...],
+    "dataTypes": ["financial", "user", "analytics", ...],
+    "interactions": ["navigation", "filtering", "sorting", ...],
+    "originalColorScheme": "dark/light/mixed"
+  },
   
   "colors": {
     "brand": {
-      "primary": { "hex": "#...", "name": "Primary Blue", "usage": "Primary buttons, links, active states" },
-      "secondary": { "hex": "#...", "name": "Secondary", "usage": "Secondary buttons, borders" },
-      "accent": { "hex": "#...", "name": "Accent", "usage": "Highlights, badges, CTAs" }
+      "primary": { "hex": "#...", "name": "...", "usage": "Primary actions, active states", "contrast": "AA" },
+      "secondary": { "hex": "#...", "name": "...", "usage": "..." },
+      "accent": { "hex": "#...", "name": "...", "usage": "..." }
     },
     "semantic": {
-      "success": { "hex": "#10B981", "name": "Success Green" },
-      "error": { "hex": "#EF4444", "name": "Error Red" },
-      "warning": { "hex": "#F59E0B", "name": "Warning Amber" },
-      "info": { "hex": "#3B82F6", "name": "Info Blue" }
+      "success": { "hex": "#...", "usage": "Successful transactions, positive values" },
+      "error": { "hex": "#...", "usage": "Failed payments, errors, negative values" },
+      "warning": { "hex": "#...", "usage": "Pending states, alerts" },
+      "info": { "hex": "#...", "usage": "Informational badges, tooltips" }
     },
     "neutral": {
-      "white": "#FFFFFF",
-      "background": "#F9FAFB",
-      "surface": "#FFFFFF",
-      "border": "#E5E7EB",
-      "text": {
-        "primary": "#111827",
-        "secondary": "#6B7280",
-        "disabled": "#9CA3AF",
-        "inverse": "#FFFFFF"
-      }
+      "background": "#...",
+      "surface": "#...",
+      "border": "#...",
+      "text": { "primary": "#...", "secondary": "#...", "muted": "#..." }
     },
     "dark": {
-      "background": "#0A0A0A",
-      "surface": "#141414",
-      "border": "#27272A",
-      "text": {
-        "primary": "#FAFAFA",
-        "secondary": "#A1A1AA",
-        "disabled": "#52525B"
-      }
+      "background": "#...",
+      "surface": "#...",
+      "border": "#...",
+      "text": { "primary": "#...", "secondary": "#...", "muted": "#..." }
+    },
+    "chart": {
+      "colors": ["#...", "#...", "#...", "#...", "#..."],
+      "gradients": ["linear-gradient(...)"]
     }
   },
   
   "typography": {
-    "fontFamily": {
-      "primary": "Inter",
-      "secondary": "Inter",
-      "monospace": "JetBrains Mono",
-      "fallback": "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-    },
+    "fontFamily": { "primary": "...", "mono": "..." },
     "scale": {
-      "display": { "size": "48px", "weight": "700", "lineHeight": "1.1", "letterSpacing": "-0.02em" },
-      "h1": { "size": "36px", "weight": "700", "lineHeight": "1.2", "letterSpacing": "-0.02em" },
-      "h2": { "size": "28px", "weight": "600", "lineHeight": "1.3" },
-      "h3": { "size": "22px", "weight": "600", "lineHeight": "1.4" },
-      "h4": { "size": "18px", "weight": "600", "lineHeight": "1.4" },
-      "body": { "size": "15px", "weight": "400", "lineHeight": "1.6" },
-      "bodySmall": { "size": "13px", "weight": "400", "lineHeight": "1.5" },
-      "caption": { "size": "12px", "weight": "500", "lineHeight": "1.4" },
-      "overline": { "size": "11px", "weight": "600", "lineHeight": "1.3", "letterSpacing": "0.05em", "textTransform": "uppercase" }
+      "display": { "size": "...", "weight": "...", "lineHeight": "..." },
+      "h1": { "size": "...", "weight": "...", "lineHeight": "..." },
+      "h2": { ... },
+      "h3": { ... },
+      "body": { ... },
+      "small": { ... },
+      "caption": { ... }
     }
   },
   
   "spacing": {
     "baseUnit": 4,
-    "scale": {
-      "0": "0px",
-      "1": "4px",
-      "2": "8px",
-      "3": "12px",
-      "4": "16px",
-      "5": "20px",
-      "6": "24px",
-      "8": "32px",
-      "10": "40px",
-      "12": "48px",
-      "16": "64px",
-      "20": "80px"
-    }
+    "scale": { "0": "0", "1": "4px", "2": "8px", "3": "12px", "4": "16px", "6": "24px", "8": "32px", "12": "48px" }
   },
   
   "borderRadius": {
-    "none": "0px",
-    "sm": "4px",
-    "md": "6px",
-    "lg": "8px",
-    "xl": "12px",
-    "2xl": "16px",
-    "full": "9999px"
+    "none": "0", "sm": "4px", "md": "6px", "lg": "8px", "xl": "12px", "full": "9999px"
   },
   
   "shadows": {
-    "sm": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
-    "md": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
-    "lg": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
-    "xl": "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
-    "inner": "inset 0 2px 4px 0 rgb(0 0 0 / 0.05)"
+    "sm": "...", "md": "...", "lg": "...", "xl": "..."
   },
   
   "components": {
+    // SPECIFIC to components found in the code!
+    "sidebar": {
+      "width": "256px",
+      "background": "...",
+      "itemPadding": "...",
+      "activeItemBg": "...",
+      "hoverBg": "..."
+    },
+    "dataTable": {
+      "headerBg": "...",
+      "rowHover": "...",
+      "cellPadding": "...",
+      "borderColor": "...",
+      "stripedBg": "..."
+    },
+    "statCard": {
+      "padding": "...",
+      "borderRadius": "...",
+      "shadow": "...",
+      "iconSize": "..."
+    },
+    "chart": {
+      "height": "...",
+      "axisColor": "...",
+      "gridColor": "...",
+      "tooltipBg": "..."
+    },
     "button": {
-      "primary": {
-        "bg": "brand.primary",
-        "text": "white",
-        "hoverBg": "darken(brand.primary, 10%)",
-        "height": "40px",
-        "padding": "8px 16px",
-        "borderRadius": "md",
-        "fontWeight": "500",
-        "fontSize": "14px"
-      },
-      "secondary": {
-        "bg": "transparent",
-        "text": "brand.primary",
-        "border": "1px solid currentColor",
-        "hoverBg": "brand.primary/5%"
-      },
-      "ghost": {
-        "bg": "transparent",
-        "text": "neutral.text.secondary",
-        "hoverBg": "neutral.background"
-      }
+      "primary": { "bg": "...", "text": "...", "hover": "...", "padding": "..." },
+      "secondary": { ... },
+      "ghost": { ... }
     },
     "input": {
-      "height": "44px",
-      "padding": "10px 14px",
-      "border": "1px solid neutral.border",
-      "borderRadius": "md",
-      "fontSize": "15px",
-      "focusBorder": "brand.primary",
-      "focusRing": "0 0 0 3px brand.primary/20%",
-      "errorBorder": "semantic.error",
-      "errorRing": "0 0 0 3px semantic.error/20%"
+      "height": "...",
+      "padding": "...",
+      "border": "...",
+      "focusBorder": "...",
+      "focusRing": "..."
     },
-    "card": {
-      "bg": "neutral.surface",
-      "border": "1px solid neutral.border",
-      "borderRadius": "xl",
-      "padding": "24px",
-      "shadow": "sm"
+    "badge": {
+      "success": { "bg": "...", "text": "..." },
+      "error": { "bg": "...", "text": "..." },
+      "warning": { "bg": "...", "text": "..." },
+      "default": { "bg": "...", "text": "..." }
     },
     "modal": {
-      "bg": "neutral.surface",
-      "borderRadius": "xl",
-      "shadow": "xl",
-      "overlayBg": "black/50%",
-      "maxWidth": "500px"
-    },
-    "table": {
-      "headerBg": "neutral.background",
-      "rowHoverBg": "neutral.background/50%",
-      "borderColor": "neutral.border",
-      "cellPadding": "12px 16px"
+      "maxWidth": "...",
+      "borderRadius": "...",
+      "shadow": "...",
+      "overlayBg": "..."
     }
   },
   
@@ -186,58 +185,57 @@ Generate JSON:
     "extend": {
       "colors": { ... },
       "fontFamily": { ... },
-      "borderRadius": { ... },
-      "boxShadow": { ... }
+      "borderRadius": { ... }
     }
   },
   
-  "cssVariables": ":root { --color-primary: #...; ... }"
+  "cssVariables": ":root { --color-primary: ...; ... }",
+  
+  "recommendations": [
+    "Use primary color for main CTAs and active navigation",
+    "Consider adding motion tokens for chart animations",
+    "..."
+  ]
 }
 
 IMPORTANT:
-- Generate colors that work well together and meet accessibility standards
-- Use modern, clean aesthetics suitable for enterprise SaaS
-- If extracting from code, modernize the colors (don't copy legacy UI exactly)
-- Include both light and dark mode tokens
-- Generate valid Tailwind config that can be used directly`;
+- Make colors SPECIFIC to the app context (financial = trust blues, error handling colors)
+- Include ONLY components that are actually in the code
+- Modernize while keeping the app's character
+- All colors must be WCAG AA compliant (4.5:1 contrast)
+
+ANALYZE THIS CODE:
+`;
+}
 
 export async function POST(request: NextRequest) {
   try {
     const apiKey = getApiKey();
     if (!apiKey) {
-      return NextResponse.json(
-        { error: "API key not configured" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "API key not configured" }, { status: 500 });
     }
 
     const body: DesignGenerationRequest = await request.json();
-    const { projectName, generatedCode, presetId, extractedColors, industry } = body;
+    const { projectName, generatedCode, presetId, extractedColors, industry, screenCount } = body;
 
-    // Build context
-    const context = `
-PROJECT: ${projectName}
-INDUSTRY: ${industry || "SaaS/Enterprise"}
-PRESET BASE: ${presetId || "Modern SaaS"}
-
-${extractedColors?.length ? `EXTRACTED COLORS (modernize these):\n${extractedColors.map(c => `${c.name}: ${c.hex}`).join("\n")}` : ""}
-
-CODE PATTERNS (extract component styles):
-${generatedCode?.slice(0, 10000) || "No code provided"}
-`;
+    // Get preset if specified
+    const preset = presetId ? getPresetById(presetId) : null;
+    
+    // Build customized prompt
+    const prompt = buildDesignPrompt(preset, body);
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
       model: MODEL_NAME,
       generationConfig: {
-        temperature: 0.5,
+        temperature: 0.4, // Lower for more consistent output
         maxOutputTokens: 16384,
       },
     });
 
     const result = await model.generateContent([
-      { text: DESIGN_PROMPT },
-      { text: `\n\nCONTEXT:\n${context}\n\nGenerate the complete design system:` }
+      { text: prompt },
+      { text: `\n\nCODE TO ANALYZE:\n${generatedCode?.slice(0, 15000) || "No code provided"}\n\nGenerate the customized design system JSON:` }
     ]);
 
     const responseText = result.response.text();
@@ -261,10 +259,20 @@ ${generatedCode?.slice(0, 10000) || "No code provided"}
       }
     }
 
+    // Add preset info to response
+    if (preset) {
+      jsonContent.basePreset = {
+        id: preset.id,
+        name: preset.name,
+        industry: preset.industry
+      };
+    }
+
     return NextResponse.json({
       success: true,
       data: jsonContent,
-      generatedAt: new Date().toISOString()
+      generatedAt: new Date().toISOString(),
+      model: MODEL_NAME
     });
 
   } catch (error: any) {
