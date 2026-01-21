@@ -5683,7 +5683,7 @@ Try these prompts in Cursor or v0:
     });
   };
 
-  // AI-Powered Documentation Generation (Gemini 2.0 Flash)
+  // AI-Powered Documentation Generation (Gemini 3 Flash)
   const generateDocs = async (docType: "overview" | "api" | "qa" | "deploy") => {
     if (!generatedCode || isGeneratingDocs) return;
     
@@ -11337,7 +11337,7 @@ export default function GeneratedPage() {
                                 <div className="absolute inset-0 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
                               </div>
                               <p className="text-sm text-zinc-400">Generating documentation with AI...</p>
-                              <p className="text-xs text-zinc-600 mt-1">Using Gemini 2.0 Flash</p>
+                              <p className="text-xs text-zinc-600 mt-1">Using Gemini 3 Flash</p>
                             </div>
                           ) : aiDocsOverview ? (
                             <>

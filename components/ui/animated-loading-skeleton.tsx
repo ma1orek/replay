@@ -1,98 +1,82 @@
 "use client";
 
-import React from 'react'
+// ULTRA-MINIMAL loading skeleton
+// 100% CSS animations via global styles - completely independent of React lifecycle
+// No state, no effects, no re-render dependencies
 
-// Ultra-subtle, professional loading skeleton
-// 100% CSS - NO React state, completely independent loop
 const AnimatedLoadingSkeleton = () => {
     return (
-        <div className="w-full max-w-2xl mx-auto p-6">
-            <div className="relative overflow-hidden rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-6 backdrop-blur-sm">
-                
-                {/* Subtle scanning line - very minimal */}
-                <div className="scan-line" />
-
-                {/* Grid of skeleton cards */}
-                <div className="grid grid-cols-3 gap-4" style={{ minHeight: '280px' }}>
-                    {[0, 1, 2, 3, 4, 5].map((i) => (
-                        <div
-                            key={i}
-                            className="card-skeleton rounded-lg p-4"
-                            style={{ animationDelay: `${i * 0.15}s` }}
-                        >
-                            <div className="shimmer-bar h-20 rounded mb-3" />
-                            <div className="shimmer-bar h-2.5 w-3/4 rounded mb-2" />
-                            <div className="shimmer-bar h-2 w-1/2 rounded" />
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* All CSS - independent of React lifecycle */}
-            <style jsx>{`
-                /* Subtle scanning effect */
-                .scan-line {
+        <>
+            {/* Global styles - injected once, never re-rendered */}
+            <style dangerouslySetInnerHTML={{ __html: `
+                @keyframes skeleton-pulse {
+                    0%, 100% { opacity: 0.4; }
+                    50% { opacity: 0.7; }
+                }
+                @keyframes skeleton-shimmer {
+                    0% { transform: translateX(-100%); }
+                    100% { transform: translateX(100%); }
+                }
+                .skel-card {
+                    background: rgba(39, 39, 42, 0.4);
+                    border: 1px solid rgba(63, 63, 70, 0.3);
+                    border-radius: 8px;
+                    padding: 16px;
+                    animation: skeleton-pulse 2s ease-in-out infinite;
+                }
+                .skel-card:nth-child(1) { animation-delay: 0s; }
+                .skel-card:nth-child(2) { animation-delay: 0.15s; }
+                .skel-card:nth-child(3) { animation-delay: 0.3s; }
+                .skel-card:nth-child(4) { animation-delay: 0.45s; }
+                .skel-card:nth-child(5) { animation-delay: 0.6s; }
+                .skel-card:nth-child(6) { animation-delay: 0.75s; }
+                .skel-bar {
+                    background: rgba(63, 63, 70, 0.5);
+                    border-radius: 4px;
+                    position: relative;
+                    overflow: hidden;
+                }
+                .skel-bar::after {
+                    content: '';
                     position: absolute;
                     top: 0;
                     left: 0;
                     right: 0;
-                    height: 1px;
-                    background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.3), transparent);
-                    animation: scan 4s ease-in-out infinite;
-                    opacity: 0.6;
+                    bottom: 0;
+                    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+                    animation: skeleton-shimmer 2s ease-in-out infinite;
                 }
+            `}} />
+            
+            <div style={{
+                width: '100%',
+                maxWidth: '600px',
+                margin: '0 auto',
+                padding: '24px'
+            }}>
+                <div style={{
+                    background: 'rgba(24, 24, 27, 0.5)',
+                    border: '1px solid rgba(63, 63, 70, 0.2)',
+                    borderRadius: '12px',
+                    padding: '24px'
+                }}>
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(3, 1fr)',
+                        gap: '16px'
+                    }}>
+                        {[0,1,2,3,4,5].map(i => (
+                            <div key={i} className="skel-card">
+                                <div className="skel-bar" style={{ height: '80px', marginBottom: '12px' }} />
+                                <div className="skel-bar" style={{ height: '10px', width: '75%', marginBottom: '8px' }} />
+                                <div className="skel-bar" style={{ height: '8px', width: '50%' }} />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </>
+    );
+};
 
-                @keyframes scan {
-                    0%, 100% { 
-                        top: 0;
-                        opacity: 0;
-                    }
-                    10% {
-                        opacity: 0.6;
-                    }
-                    90% {
-                        opacity: 0.6;
-                    }
-                    50% { 
-                        top: calc(100% - 1px);
-                    }
-                }
-
-                /* Card with subtle border pulse */
-                .card-skeleton {
-                    background: rgba(39, 39, 42, 0.3);
-                    border: 1px solid rgba(63, 63, 70, 0.3);
-                    animation: card-fade 3s ease-in-out infinite;
-                }
-
-                @keyframes card-fade {
-                    0%, 100% { 
-                        border-color: rgba(63, 63, 70, 0.2);
-                    }
-                    50% { 
-                        border-color: rgba(63, 63, 70, 0.4);
-                    }
-                }
-
-                /* Shimmer bars - very subtle */
-                .shimmer-bar {
-                    background: linear-gradient(
-                        90deg,
-                        rgba(39, 39, 42, 0.5) 0%,
-                        rgba(63, 63, 70, 0.5) 50%,
-                        rgba(39, 39, 42, 0.5) 100%
-                    );
-                    background-size: 200% 100%;
-                    animation: shimmer 2.5s ease-in-out infinite;
-                }
-
-                @keyframes shimmer {
-                    0% { background-position: 200% 0; }
-                    100% { background-position: -200% 0; }
-                }
-            `}</style>
-        </div>
-    )
-}
-
-export default AnimatedLoadingSkeleton
+export default AnimatedLoadingSkeleton;
