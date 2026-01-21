@@ -1058,6 +1058,16 @@ function ReplayToolContent() {
   const [isGeneratingDesign, setIsGeneratingDesign] = useState(false);
   const [needsAutoGenDocs, setNeedsAutoGenDocs] = useState(false); // Flag to trigger auto-gen after main generation
   
+  // Multi-Pass Pipeline v2.0 - New outputs
+  const [scanData, setScanData] = useState<any>(null); // Unified scan result (Source of Truth)
+  const [apiContracts, setApiContracts] = useState<any>(null); // Swagger/TypeScript specs
+  const [debtAudit, setDebtAudit] = useState<any>(null); // Technical Debt Reduction Report
+  const [e2eTests, setE2eTests] = useState<any>(null); // Playwright/Cypress tests
+  const [isGeneratingApiContracts, setIsGeneratingApiContracts] = useState(false);
+  const [isGeneratingDebtAudit, setIsGeneratingDebtAudit] = useState(false);
+  const [isGeneratingE2ETests, setIsGeneratingE2ETests] = useState(false);
+  const [isDownloadingPackage, setIsDownloadingPackage] = useState(false);
+  
   // Upgrade modal for FREE users
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeFeature, setUpgradeFeature] = useState<"code" | "download" | "publish" | "supabase" | "general">("general");
@@ -5746,6 +5756,153 @@ Try these prompts in Cursor or v0:
     }
   };
 
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // MULTI-PASS PIPELINE v2.0 - NEW GENERATORS
+  // ═══════════════════════════════════════════════════════════════════════════════
+
+  // Generate API Contracts (Swagger/TypeScript)
+  const generateApiContracts = async () => {
+    if (!generatedCode || isGeneratingApiContracts) return;
+    
+    setIsGeneratingApiContracts(true);
+    try {
+      const response = await fetch("/api/generate/api-contracts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectName: activeGeneration?.title || "Generated Project",
+          generatedCode: editableCode || generatedCode,
+          scanData: scanData
+        })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        setApiContracts(result.data);
+        showToast("API contracts generated successfully", "success");
+      } else {
+        showToast("Failed to generate API contracts", "error");
+      }
+    } catch (error) {
+      console.error("[Generate API Contracts] Error:", error);
+      showToast("Error generating API contracts", "error");
+    } finally {
+      setIsGeneratingApiContracts(false);
+    }
+  };
+
+  // Generate Technical Debt Audit (replaces basic Design System)
+  const generateDebtAudit = async () => {
+    if (!generatedCode || isGeneratingDebtAudit) return;
+    
+    setIsGeneratingDebtAudit(true);
+    try {
+      const response = await fetch("/api/generate/debt-audit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectName: activeGeneration?.title || "Generated Project",
+          generatedCode: editableCode || generatedCode,
+          scanData: scanData
+        })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        setDebtAudit(result.data);
+        showToast("Debt audit generated successfully", "success");
+      } else {
+        showToast("Failed to generate debt audit", "error");
+      }
+    } catch (error) {
+      console.error("[Generate Debt Audit] Error:", error);
+      showToast("Error generating debt audit", "error");
+    } finally {
+      setIsGeneratingDebtAudit(false);
+    }
+  };
+
+  // Generate E2E Tests (Playwright + Cypress)
+  const generateE2ETests = async () => {
+    if (!generatedCode || isGeneratingE2ETests) return;
+    
+    setIsGeneratingE2ETests(true);
+    try {
+      const response = await fetch("/api/generate/e2e-tests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectName: activeGeneration?.title || "Generated Project",
+          generatedCode: editableCode || generatedCode,
+          scanData: scanData
+        })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        setE2eTests(result.data);
+        showToast("E2E tests generated successfully", "success");
+      } else {
+        showToast("Failed to generate E2E tests", "error");
+      }
+    } catch (error) {
+      console.error("[Generate E2E Tests] Error:", error);
+      showToast("Error generating E2E tests", "error");
+    } finally {
+      setIsGeneratingE2ETests(false);
+    }
+  };
+
+  // Download Enterprise Package (ZIP with everything)
+  const downloadEnterprisePackage = async () => {
+    if (!generatedCode || isDownloadingPackage) return;
+    
+    setIsDownloadingPackage(true);
+    try {
+      const response = await fetch("/api/download/enterprise-package", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectName: activeGeneration?.title || "Generated Project",
+          generatedCode: editableCode || generatedCode,
+          scanData: scanData,
+          apiContracts: apiContracts,
+          debtAudit: debtAudit,
+          e2eTests: e2eTests,
+          flowDiagram: aiFlows,
+          docs: {
+            audit: aiDocsOverview,
+            contracts: aiDocsApi,
+            qa: aiDocsQa,
+            handoff: aiDocsDeploy
+          }
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to generate package");
+      }
+      
+      // Download the ZIP file
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(activeGeneration?.title || "project").replace(/[^a-zA-Z0-9-_\s]/g, '')}-enterprise-package.zip`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      showToast("Enterprise package downloaded!", "success");
+    } catch (error) {
+      console.error("[Download Package] Error:", error);
+      showToast("Error downloading enterprise package", "error");
+    } finally {
+      setIsDownloadingPackage(false);
+    }
+  };
+
   // AUTO-GENERATE ALL DOCUMENTATION after main generation completes
   // SINGLE API CALL for all 4 doc types - no more 4 separate requests
   useEffect(() => {
@@ -5826,7 +5983,7 @@ Try these prompts in Cursor or v0:
     styleDirective: string,
     databaseContext?: string,
     styleReferenceImage?: { url: string; base64?: string }
-  ): Promise<{ success: boolean; code?: string; error?: string; tokenUsage?: any }> => {
+  ): Promise<{ success: boolean; code?: string; error?: string; tokenUsage?: any; scanData?: any }> => {
     try {
       // Convert video blob to base64
       setStreamingStatus("📦 Preparing video for AI...");
@@ -5944,11 +6101,17 @@ Try these prompts in Cursor or v0:
               case "complete":
                 setStreamingStatus("Generation complete!");
                 tokenUsage = data.tokenUsage;
+                // Save scan data from Multi-Pass Pipeline (Source of Truth)
+                if (data.scanData) {
+                  console.log("[streaming] Saving scanData to state");
+                  setScanData(data.scanData);
+                }
                 // Return the clean extracted code
                 return { 
                   success: true, 
                   code: data.code, 
-                  tokenUsage: data.tokenUsage 
+                  tokenUsage: data.tokenUsage,
+                  scanData: data.scanData
                 };
                 
               case "error":
@@ -6496,7 +6659,7 @@ Try these prompts in Cursor or v0:
       console.log("[Generate] styleDirective:", fullStyleDirective.substring(0, 200));
       
       // Use STREAMING for real-time AI output when we have a video blob
-      let result;
+      let result: { success: boolean; code?: string; error?: string; tokenUsage?: any; scanData?: any };
       let videoBlobToUse = flow.videoBlob;
       
       // If blob is empty but we have a URL, fetch the video first
@@ -6587,6 +6750,12 @@ Try these prompts in Cursor or v0:
       if (result && result.success && result.code) {
         // Track analytics
         updateProjectAnalytics(flow.id, "generation", result.tokenUsage?.totalTokens);
+        
+        // Save scanData from Multi-Pass Pipeline (Source of Truth for all other generators)
+        if (result.scanData) {
+          console.log("[Generate] Saving scanData from result");
+          setScanData(result.scanData);
+        }
         
         // Set code and preview URL
         setGeneratedCode(result.code);
@@ -11416,96 +11585,211 @@ export default function GeneratedPage() {
             )}
             
 
-            {/* Design System */}
+            {/* Design System - Enhanced with Multi-Pass Pipeline outputs */}
             {viewMode === "design" && (
               <div className="flex-1 overflow-auto p-6 relative">
                 {(isProcessing || isStreamingCode) ? (
                   <div className="w-full h-full flex items-center justify-center">
                     <LoadingState />
                   </div>
-                ) : styleInfo ? (
-                  <div className="max-w-3xl mx-auto space-y-6">
+                ) : generatedCode ? (
+                  <div className="max-w-4xl mx-auto space-y-6">
                     <div className="flex items-center gap-2 mb-6"><Paintbrush className="w-5 h-5 text-zinc-300/60" /><h3 className="text-sm font-medium text-zinc-400">Design System</h3></div>
                     
-                    {/* Colors with usage badges - Grid Layout */}
-                    <div className="style-card">
-                      <div className="flex items-center gap-2 mb-6"><Droplet className="w-4 h-4 text-zinc-300/60" /><span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Colors</span></div>
-                      <div className="grid grid-cols-2 gap-4">
-                        {styleInfo.colors.map((color, i) => {
-                          const usageHints: Record<string, string> = {
-                            "Primary": "Primary CTAs, Active states, Links",
-                            "Secondary": "Secondary buttons, Borders, Icons",
-                            "Accent": "Highlights, Badges, Alerts",
-                            "Background": "Page background, Cards",
-                            "Text": "Body text, Headings",
-                            "Border": "Dividers, Input borders"
-                          };
-                          return (
+                    {/* Colors - from styleInfo or scanData */}
+                    {(styleInfo?.colors || scanData?.ui?.colors) && (
+                      <div className="style-card">
+                        <div className="flex items-center gap-2 mb-6"><Droplet className="w-4 h-4 text-zinc-300/60" /><span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Colors</span></div>
+                        <div className="grid grid-cols-2 gap-4">
+                          {styleInfo?.colors ? styleInfo.colors.map((color, i) => (
                             <div key={i} className="flex items-center gap-4 p-3 rounded-lg bg-zinc-900/50 border border-zinc-800/50">
                               <div className="w-16 h-16 rounded-lg flex-shrink-0 shadow-lg" style={{ backgroundColor: color.value, border: '1px solid rgba(255,255,255,0.1)' }} />
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-zinc-200">{color.name}</p>
                                 <p className="text-xs text-zinc-400 font-mono mt-0.5">{color.value}</p>
-                                <p className="text-[10px] text-zinc-600 mt-1">{usageHints[color.name] || "UI elements"}</p>
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    
-                    {/* Typography with usage badges */}
-                    <div className="style-card">
-                      <div className="flex items-center gap-2 mb-4"><Type className="w-4 h-4 text-zinc-300/60" /><span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Typography</span></div>
-                      <div className="space-y-4">
-                        {styleInfo.fonts.map((font, i) => {
-                          const fontUsageHints = [
-                            "Used in: Headers (H1–H3), Hero titles, CTAs",
-                            "Used in: Body text, Paragraphs, Forms",
-                            "Used in: Labels, Captions, Meta info",
-                            "Used in: Code blocks, Data displays"
-                          ];
-                          return (
-                            <div key={i} className="font-preview">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="text-lg text-zinc-200" style={{ fontFamily: font.family }}>{font.name}</p>
-                                  <p className="text-[10px] text-zinc-500">{font.usage}</p>
-                                </div>
-                                <div className="text-right">
-                                  <span className="text-xs text-zinc-600">{font.weight}</span>
-                                  <p className="text-[10px] text-white/20 font-mono mt-1">{font.family}</p>
-                                </div>
+                          )) : Object.entries(scanData?.ui?.colors || {}).slice(0, 6).map(([name, value], i) => (
+                            <div key={i} className="flex items-center gap-4 p-3 rounded-lg bg-zinc-900/50 border border-zinc-800/50">
+                              <div className="w-16 h-16 rounded-lg flex-shrink-0 shadow-lg" style={{ backgroundColor: value as string, border: '1px solid rgba(255,255,255,0.1)' }} />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-zinc-200 capitalize">{name}</p>
+                                <p className="text-xs text-zinc-400 font-mono mt-0.5">{value as string}</p>
                               </div>
-                              <p className="text-[9px] text-zinc-600 mt-1 pt-1 border-t border-zinc-800">{fontUsageHints[i] || "Used in: Various UI elements"}</p>
                             </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    
-                    {/* Other Styles */}
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="style-card"><p className="text-[10px] text-zinc-500 uppercase mb-2">Spacing</p><p className="text-sm text-zinc-400">{styleInfo.spacing}</p></div>
-                      <div className="style-card"><p className="text-[10px] text-zinc-500 uppercase mb-2">Border Radius</p><p className="text-sm text-zinc-400">{styleInfo.borderRadius}</p></div>
-                      <div className="style-card"><p className="text-[10px] text-zinc-500 uppercase mb-2">Shadows</p><p className="text-sm text-zinc-400">{styleInfo.shadows}</p></div>
-                    </div>
-                    
-                    {/* Enterprise Export Package */}
-                    {generatedCode && (
-                      <div className="style-card mt-6">
-                        <EnterpriseExport
-                          projectName={activeGeneration?.title || "Replay Project"}
-                          generatedCode={generatedCode}
-                          preset={enterprisePresetId ? getPresetById(enterprisePresetId) || null : null}
-                          onExport={(format) => {
-                            showToast(`Enterprise package exported as ${format.toUpperCase()}!`, "success");
-                          }}
-                        />
+                          ))}
+                        </div>
                       </div>
                     )}
                     
-{/* Edit with AI button removed - chat does the same thing */}
+                    {/* Typography */}
+                    {(styleInfo?.fonts || scanData?.ui?.typography) && (
+                      <div className="style-card">
+                        <div className="flex items-center gap-2 mb-4"><Type className="w-4 h-4 text-zinc-300/60" /><span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Typography</span></div>
+                        <div className="p-4 rounded-lg bg-zinc-900/30 border border-zinc-800/30">
+                          <p className="text-2xl text-zinc-200" style={{ fontFamily: styleInfo?.fonts?.[0]?.family || scanData?.ui?.typography?.fontFamily || 'Inter' }}>
+                            {styleInfo?.fonts?.[0]?.name || scanData?.ui?.typography?.fontFamily || 'Inter'}
+                          </p>
+                          <p className="text-xs text-zinc-500 mt-1">Primary font</p>
+                          <div className="flex gap-4 mt-3 text-[10px] text-zinc-600">
+                            <span>400-700</span>
+                            <span>•</span>
+                            <span>'{styleInfo?.fonts?.[0]?.family || scanData?.ui?.typography?.fontFamily || 'Inter'}', sans-serif</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Other Styles */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="style-card"><p className="text-[10px] text-zinc-500 uppercase mb-2">Spacing</p><p className="text-sm text-zinc-400">{styleInfo?.spacing || 'Tailwind spacing scale'}</p></div>
+                      <div className="style-card"><p className="text-[10px] text-zinc-500 uppercase mb-2">Border Radius</p><p className="text-sm text-zinc-400">{styleInfo?.borderRadius || 'Medium (8px)'}</p></div>
+                      <div className="style-card"><p className="text-[10px] text-zinc-500 uppercase mb-2">Shadows</p><p className="text-sm text-zinc-400">{styleInfo?.shadows || 'Subtle shadows'}</p></div>
+                    </div>
+                    
+                    {/* Enterprise Package Download - PROMINENT */}
+                    <div className="style-card bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border-emerald-500/20">
+                      <button
+                        onClick={downloadEnterprisePackage}
+                        disabled={isDownloadingPackage}
+                        className="w-full flex items-center justify-center gap-3 py-4 text-emerald-400 hover:text-emerald-300 transition-colors disabled:opacity-50"
+                      >
+                        {isDownloadingPackage ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                            <span className="text-sm font-medium">Packaging...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Download className="w-5 h-5" />
+                            <span className="text-sm font-medium">Download Enterprise Package</span>
+                          </>
+                        )}
+                      </button>
+                      <p className="text-[10px] text-zinc-600 text-center mt-2">
+                        Includes production-ready code, API specs, documentation, design tokens, and deployment configs. Ready for backend integration.
+                      </p>
+                    </div>
+                    
+                    {/* Package Contents */}
+                    <div className="style-card">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Package className="w-4 h-4 text-zinc-300/60" />
+                        <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Package Contents</span>
+                        <span className="text-[10px] text-zinc-600 ml-auto">{12 + (apiContracts ? 2 : 0) + (debtAudit ? 2 : 0) + (e2eTests ? 4 : 0)} files</span>
+                      </div>
+                      <div className="space-y-1">
+                        {/* Source Code */}
+                        <div className="flex items-center gap-2 py-2 px-3 rounded-md bg-zinc-900/30">
+                          <Code className="w-3.5 h-3.5 text-zinc-500" />
+                          <span className="text-xs text-zinc-400">Source Code</span>
+                          <span className="text-[10px] text-zinc-600 ml-auto">3 files</span>
+                          <Check className="w-3 h-3 text-emerald-500" />
+                        </div>
+                        <div className="ml-6 space-y-0.5 text-[10px] text-zinc-600">
+                          <p>├─ 1-source-code/index.html</p>
+                          <p>├─ 2-source-code/package.json</p>
+                          <p>└─ 3-source-code/tsconfig.json</p>
+                        </div>
+                        
+                        {/* API Specs */}
+                        <div 
+                          className="flex items-center gap-2 py-2 px-3 rounded-md bg-zinc-900/30 cursor-pointer hover:bg-zinc-800/50 transition-colors"
+                          onClick={() => !apiContracts && !isGeneratingApiContracts && generateApiContracts()}
+                        >
+                          <Plug className="w-3.5 h-3.5 text-zinc-500" />
+                          <span className="text-xs text-zinc-400">API Specs</span>
+                          <span className="text-[10px] text-zinc-600 ml-auto">2 files</span>
+                          {isGeneratingApiContracts ? (
+                            <div className="w-3 h-3 border border-zinc-500 border-t-transparent rounded-full animate-spin" />
+                          ) : apiContracts ? (
+                            <Check className="w-3 h-3 text-emerald-500" />
+                          ) : (
+                            <ChevronRight className="w-3 h-3 text-zinc-600" />
+                          )}
+                        </div>
+                        
+                        {/* Documentation */}
+                        <div className="flex items-center gap-2 py-2 px-3 rounded-md bg-zinc-900/30 cursor-pointer hover:bg-zinc-800/50 transition-colors">
+                          <FileText className="w-3.5 h-3.5 text-zinc-500" />
+                          <span className="text-xs text-zinc-400">Documentation</span>
+                          <span className="text-[10px] text-zinc-600 ml-auto">4 files</span>
+                          {(aiDocsOverview || aiDocsApi || aiDocsQa || aiDocsDeploy) ? (
+                            <Check className="w-3 h-3 text-emerald-500" />
+                          ) : (
+                            <ChevronRight className="w-3 h-3 text-zinc-600" />
+                          )}
+                        </div>
+                        
+                        {/* Design System / Debt Audit */}
+                        <div 
+                          className="flex items-center gap-2 py-2 px-3 rounded-md bg-zinc-900/30 cursor-pointer hover:bg-zinc-800/50 transition-colors"
+                          onClick={() => !debtAudit && !isGeneratingDebtAudit && generateDebtAudit()}
+                        >
+                          <Paintbrush className="w-3.5 h-3.5 text-zinc-500" />
+                          <span className="text-xs text-zinc-400">Design System</span>
+                          <span className="text-[10px] text-zinc-600 ml-auto">2 files</span>
+                          {isGeneratingDebtAudit ? (
+                            <div className="w-3 h-3 border border-zinc-500 border-t-transparent rounded-full animate-spin" />
+                          ) : (debtAudit || aiDesignSystem) ? (
+                            <Check className="w-3 h-3 text-emerald-500" />
+                          ) : (
+                            <ChevronRight className="w-3 h-3 text-zinc-600" />
+                          )}
+                        </div>
+                        
+                        {/* Quality Assurance */}
+                        <div 
+                          className="flex items-center gap-2 py-2 px-3 rounded-md bg-zinc-900/30 cursor-pointer hover:bg-zinc-800/50 transition-colors"
+                          onClick={() => !e2eTests && !isGeneratingE2ETests && generateE2ETests()}
+                        >
+                          <CheckSquare className="w-3.5 h-3.5 text-zinc-500" />
+                          <span className="text-xs text-zinc-400">Quality Assurance</span>
+                          <span className="text-[10px] text-zinc-600 ml-auto">4 files</span>
+                          {isGeneratingE2ETests ? (
+                            <div className="w-3 h-3 border border-zinc-500 border-t-transparent rounded-full animate-spin" />
+                          ) : (e2eTests || aiDocsQa) ? (
+                            <Check className="w-3 h-3 text-emerald-500" />
+                          ) : (
+                            <ChevronRight className="w-3 h-3 text-zinc-600" />
+                          )}
+                        </div>
+                        
+                        {/* Deployment */}
+                        <div className="flex items-center gap-2 py-2 px-3 rounded-md bg-zinc-900/30">
+                          <Rocket className="w-3.5 h-3.5 text-zinc-500" />
+                          <span className="text-xs text-zinc-400">Deployment</span>
+                          <span className="text-[10px] text-zinc-600 ml-auto">2 files</span>
+                          {aiDocsDeploy ? (
+                            <Check className="w-3 h-3 text-emerald-500" />
+                          ) : (
+                            <ChevronRight className="w-3 h-3 text-zinc-600" />
+                          )}
+                        </div>
+                        
+                        {/* Enterprise Package */}
+                        <div className="flex items-center gap-2 py-2 px-3 rounded-md bg-emerald-500/10 border border-emerald-500/20 mt-2">
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                          <span className="text-xs text-emerald-400">Enterprise Package</span>
+                          <span className="text-[10px] text-emerald-600 ml-auto">Complete ZIP</span>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-zinc-600 mt-3 pt-3 border-t border-zinc-800">
+                        Includes production-ready code, API specs, documentation, design tokens, and deployment configs. Ready for backend integration.
+                      </p>
+                    </div>
+                    
+                    {/* Legacy Enterprise Export */}
+                    <div className="style-card">
+                      <EnterpriseExport
+                        projectName={activeGeneration?.title || "Replay Project"}
+                        generatedCode={generatedCode}
+                        preset={enterprisePresetId ? getPresetById(enterprisePresetId) || null : null}
+                        onExport={(format) => {
+                          showToast(`Enterprise package exported as ${format.toUpperCase()}!`, "success");
+                        }}
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
