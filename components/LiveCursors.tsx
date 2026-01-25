@@ -3,16 +3,10 @@
 import React, { useEffect, useCallback, memo, useState } from "react";
 import { useOthers, useUpdateMyPresence } from "@/liveblocks.config";
 
-// Cursor colors matching the design
+// Cursor colors - MUST match liveblocks-auth/route.ts
 const CURSOR_COLORS = [
-  "#FF6E3C", // Orange
-  "#3B82F6", // Blue
-  "#EC4899", // Pink
-  "#8B5CF6", // Purple
-  "#EF4444", // Red
-  "#10B981", // Emerald
-  "#F59E0B", // Amber
-  "#6366F1", // Indigo
+  "#E57373", "#9575CD", "#4FC3F7", "#81C784", 
+  "#FFB74D", "#F06292", "#4DB6AC", "#7986CB",
 ];
 
 function getCursorColor(id: string): string {
