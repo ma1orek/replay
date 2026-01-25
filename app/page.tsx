@@ -11997,13 +11997,13 @@ ${publishCode}
                     <ShimmerButton 
                       onClick={handleGenerate}
                       disabled={isProcessing || flows.length === 0}
-                      shimmerColor="#FF6E3C"
-                      shimmerDuration="2.5s"
+                      shimmerColor="#ffffff"
+                      shimmerDuration="2s"
                       background="#111111"
-                      borderRadius="12px"
+                      borderRadius="9999px"
                       className="w-full py-3.5 text-[13px] font-semibold disabled:opacity-50"
                     >
-                      <LogoIcon className="w-4 h-4 mr-2" color="#FF6E3C" />
+                      <LogoIcon className="w-4 h-4 mr-2" color="white" />
                       <span className="text-white font-semibold">Reconstruct</span>
                     </ShimmerButton>
                   </div>
