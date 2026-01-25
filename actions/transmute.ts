@@ -231,8 +231,49 @@ HOW TO GET THE REAL NAME:
     "userJourney": [],
     "loadingStates": [],
     "validations": []
+  },
+  
+  "pages": {
+    "detected": [
+      {
+        "id": "home",
+        "name": "Home",
+        "navLabel": "EXACT nav label",
+        "isVisible": true,
+        "sections": [
+          {
+            "type": "hero",
+            "headline": "EXACT headline text",
+            "subheadline": "EXACT subheadline",
+            "cta": "Button text",
+            "hasImage": true
+          }
+        ]
+      }
+    ],
+    "totalPages": 1,
+    "hasMultiplePages": false
   }
 }
+
+═══════════════════════════════════════════════════════════════════════════════
+🚨 CRITICAL: DETECT ALL PAGES IN VIDEO!
+═══════════════════════════════════════════════════════════════════════════════
+
+Watch the ENTIRE video carefully:
+1. Look at the NAVIGATION - every menu item = potential page
+2. Watch for PAGE TRANSITIONS - user clicking menu items
+3. Note DIFFERENT LAYOUTS - each unique layout = different page
+4. Extract FULL CONTENT for each page - headlines, text, images, forms
+
+If video shows:
+- "Home" page → extract hero, features, testimonials
+- "About" page → extract team, mission, values
+- "Contact" page → extract form fields, address, map
+- "Pricing" page → extract plans, features, CTAs
+- "Blog/News" → extract article cards, categories
+
+EVERY page shown in video MUST be included in "pages.detected" array!
 
 Analyze the video and extract EVERYTHING:`;
 
@@ -348,6 +389,58 @@ Add to <style>:
 .glassmorphism { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
 
 ═══════════════════════════════════════════════════════════════════════════════
+📄 MULTI-PAGE SPA - CRITICAL FOR MULTIPLE PAGES!
+═══════════════════════════════════════════════════════════════════════════════
+
+If scanData.pages.hasMultiplePages is true, CREATE ALL PAGES using React state:
+
+const [currentPage, setCurrentPage] = useState('home');
+
+// Navigation - ONLY show links for pages that EXIST in scanData.pages.detected!
+<nav>
+  {/* Map through scanData.pages.detected - don't add links for pages not created! */}
+  <button onClick={() => setCurrentPage('home')} className={currentPage === 'home' ? 'text-white' : 'text-white/50'}>Home</button>
+  <button onClick={() => setCurrentPage('about')} className={currentPage === 'about' ? 'text-white' : 'text-white/50'}>About</button>
+</nav>
+
+// Pages - EACH PAGE MUST HAVE FULL CONTENT!
+{currentPage === 'home' && <HomePage />}
+{currentPage === 'about' && <AboutPage />}
+{currentPage === 'contact' && <ContactPage />}
+
+🚨 CRITICAL RULES FOR MULTI-PAGE:
+1. ONLY create navigation links for pages you ACTUALLY build
+2. If page not built → DON'T add its nav link (prevents black screen!)
+3. EVERY page must have FULL content - no empty pages!
+4. Each page needs its own component with real sections
+
+═══════════════════════════════════════════════════════════════════════════════
+🚫 NO EMPTY SECTIONS - EVERY SECTION MUST HAVE CONTENT!
+═══════════════════════════════════════════════════════════════════════════════
+
+WRONG - Empty section:
+<section className="py-20">
+  <div className="container">
+    {/* TODO: Add content */}
+  </div>
+</section>
+
+CORRECT - Full section:
+<section className="py-20 fade-up">
+  <div className="container mx-auto px-4">
+    <h2 className="text-4xl font-bold mb-8 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Our Services</h2>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 stagger-cards">
+      <div className="card p-6 glassmorphism rounded-xl hover-lift">
+        <img src="https://picsum.photos/seed/service-1/400/300" className="w-full h-48 object-cover rounded-lg mb-4" />
+        <h3 className="text-xl font-semibold mb-2">Service Name</h3>
+        <p className="text-white/70">Detailed description of the service with real value proposition.</p>
+      </div>
+      {/* More cards... */}
+    </div>
+  </div>
+</section>
+
+═══════════════════════════════════════════════════════════════════════════════
 📋 CODE TEMPLATE
 ═══════════════════════════════════════════════════════════════════════════════
 
@@ -443,11 +536,29 @@ Add to <style>:
 ✅ CHECKLIST - Your code MUST have:
 ═══════════════════════════════════════════════════════════════════════════════
 
+📄 MULTI-PAGE (if scanData.pages.hasMultiplePages):
+☑ ALL pages from scanData.pages.detected are built
+☑ Navigation only shows links for pages you ACTUALLY created
+☑ NO nav link without page content (causes black screen!)
+☑ Use React state: const [currentPage, setCurrentPage] = useState('home')
+☑ Render pages conditionally: {currentPage === 'about' && <AboutPage />}
+
+🚫 NO EMPTY SECTIONS:
+☑ EVERY section has real content (headlines, text, images)
+☑ NO "TODO" or placeholder comments
+☑ NO empty div wrappers
+
+🎬 ANIMATIONS:
 ☑ GSAP + ScrollTrigger scripts in <head>
 ☑ GSAP animations initialized in useEffect
-☑ DIFFERENT animation class on each section (fade-up, slide-left, stagger-cards, etc.)
+☑ DIFFERENT animation class on each section (fade-up, slide-left, stagger-cards)
 ☑ Hover effects on ALL buttons and cards
-☑ Real images from Picsum (https://picsum.photos/seed/NAME/W/H)
+
+🖼️ IMAGES:
+☑ Picsum: https://picsum.photos/seed/NAME/W/H
+☑ Avatars: https://i.pravatar.cc/150?img=XX
+
+🎨 STYLE:
 ☑ Glassmorphism on cards/panels
 ☑ Gradient text on headings
 ☑ Colored shadows (not gray)

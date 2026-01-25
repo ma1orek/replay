@@ -420,27 +420,60 @@ BORDERS:
 - Gradient borders for emphasis
 
 ═══════════════════════════════════════════════════════════════════════════════
-📄 MULTI-PAGE SPA (Alpine.js)
+📄 MULTI-PAGE SPA - DETECT ALL PAGES FROM VIDEO!
 ═══════════════════════════════════════════════════════════════════════════════
 
-If video shows multiple pages, implement with Alpine.js:
+🚨 CRITICAL: Watch the ENTIRE video and BUILD ALL PAGES shown!
 
-<body x-data="{ page: 'home' }" class="animated-gradient min-h-screen">
-  <!-- Navigation -->
-  <nav>
-    <a @click="page='home'" :class="page==='home' ? 'text-white' : 'text-white/50'" class="cursor-pointer">Home</a>
-    <a @click="page='about'" :class="page==='about' ? 'text-white' : 'text-white/50'" class="cursor-pointer">About</a>
+If video shows navigation with: Home, About, Services, Contact
+→ You MUST create ALL 4 pages with FULL content!
+
+Implementation with Alpine.js:
+
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+<body x-data="{ page: 'home' }" class="min-h-screen bg-[#0a0a0a] text-white">
+  <!-- Navigation - ONLY links for pages you actually build! -->
+  <nav class="fixed top-0 w-full z-50 glassmorphism py-4">
+    <div class="container mx-auto flex justify-between items-center px-4">
+      <div class="text-xl font-bold">Logo</div>
+      <div class="flex gap-6">
+        <!-- Only add buttons for pages you create! -->
+        <button @click="page='home'" :class="page==='home' ? 'text-white' : 'text-white/50'" class="hover:text-white transition">Home</button>
+        <button @click="page='about'" :class="page==='about' ? 'text-white' : 'text-white/50'" class="hover:text-white transition">About</button>
+        <button @click="page='services'" :class="page==='services' ? 'text-white' : 'text-white/50'" class="hover:text-white transition">Services</button>
+        <button @click="page='contact'" :class="page==='contact' ? 'text-white' : 'text-white/50'" class="hover:text-white transition">Contact</button>
+      </div>
+    </div>
   </nav>
   
-  <!-- Pages -->
-  <div x-show="page==='home'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4">
-    <!-- Home content -->
+  <!-- HOME PAGE - Full content! -->
+  <div x-show="page==='home'" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 translate-y-8" class="pt-20">
+    <section class="py-32 fade-up">
+      <h1 class="text-6xl font-bold">Hero Headline</h1>
+      <p class="text-xl text-white/70">Subheadline with real content</p>
+      <button class="btn-primary px-8 py-3 bg-indigo-600 rounded-lg mt-8">Get Started</button>
+    </section>
+    <!-- More sections... -->
   </div>
   
-  <div x-show="page==='about'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4">
-    <!-- About content -->
+  <!-- ABOUT PAGE - Full content! -->
+  <div x-show="page==='about'" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 translate-y-8" class="pt-20">
+    <section class="py-32 slide-left">
+      <h1 class="text-5xl font-bold">About Us</h1>
+      <p class="text-lg text-white/70 max-w-2xl">Real content about the company...</p>
+      <img src="https://picsum.photos/seed/about-team/800/500" class="rounded-xl mt-8" />
+    </section>
   </div>
+  
+  <!-- Continue for ALL pages shown in video... -->
 </body>
+
+🚫 CRITICAL RULES:
+1. DON'T add nav link if you don't build the page → prevents black screen!
+2. EVERY page must have FULL sections with real content
+3. If video shows 5 pages → create all 5 pages
+4. NO empty pages, NO placeholder content
 
 ═══════════════════════════════════════════════════════════════════════════════
 📱 RESPONSIVE & MOBILE
@@ -520,25 +553,34 @@ If video shows multiple pages, implement with Alpine.js:
 □ GSAP + ScrollTrigger CDN in <head>
 □ GSAP animation script before </body>
 
+📄 MULTI-PAGE (if video shows multiple pages):
+□ ALL pages from video are created (Home, About, Services, Contact, etc.)
+□ Navigation only has links for pages you BUILT
+□ NO nav link without corresponding page content → causes black screen!
+□ EVERY page has FULL content, no empty pages
+
 🎬 SCROLL ANIMATIONS - EACH SECTION MUST HAVE DIFFERENT ANIMATION:
-□ Section 1: Use "hero-content" class (fade up)
+□ Section 1: Use "hero-content" or "fade-up" class
 □ Section 2: Use "slide-left" or "slide-right" class
 □ Section 3: Use "scale-up" class (scale + fade)
-□ Section 4: Use "stagger-cards" with ".card" children (stagger effect)
-□ Section 5: Use "rotate-in" class (rotate + fade)
-□ Section 6: Use "blur-in" class (blur reveal)
-□ Section 7: Use "bounce-in" class (elastic bounce)
-□ Stats/Numbers: Use "counter" class (number count up)
+□ Section 4: Use "stagger-cards" with ".card" children
+□ Section 5: Use "rotate-in" class
+□ Section 6: Use "blur-in" class
+□ Stats/Numbers: Use "counter" class
+
+🚫 NO EMPTY SECTIONS:
+□ Every section has REAL content (text, images, cards)
+□ No "TODO" comments, no placeholder text
+□ No sections with just wrapper divs
 
 🖼️ IMAGES - MANDATORY:
-□ ALL images use Pollinations.ai with &model=flux&seed=XXX
-□ NO picsum, placehold, unsplash, empty src!
-□ Every image visible on video MUST have real URL!
+□ ALL images use Picsum: https://picsum.photos/seed/NAME/W/H
+□ Avatars use: https://i.pravatar.cc/150?img=XX
+□ NO pollinations, unsplash, empty src!
 
 🎨 VISUAL DESIGN:
 □ CSS hover animations in <style> (.hover-lift, .hover-glow)
 □ Glassmorphism on cards (backdrop-blur, bg-white/5)
-□ Gradient backgrounds (animated-gradient class)
 □ Gradient text on main headings
 □ Hover states on ALL buttons/cards
 □ Mobile responsive (flex-col lg:flex-row)
