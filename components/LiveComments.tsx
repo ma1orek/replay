@@ -205,17 +205,17 @@ export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef 
             {comment.resolved ? <Check size={14} /> : comment.replies.length + 1}
           </button>
 
-          {/* Rozwinięty komentarz */}
+          {/* Rozwinięty komentarz - dark theme */}
           {activeComment === comment.id && (
             <div 
-              className="absolute left-10 top-0 w-72 bg-[#1a1a1a] rounded-xl shadow-2xl border border-white/10 overflow-hidden"
+              className="absolute left-10 top-0 w-80 bg-[#141414] rounded-xl shadow-2xl border border-zinc-700/50 overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between p-3 border-b border-white/10">
+              <div className="flex items-center justify-between p-3 border-b border-zinc-700/50">
                 <div className="flex items-center gap-2">
                   <div 
-                    className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white"
                     style={{ backgroundColor: comment.author.color }}
                   >
                     {comment.author.avatar ? (
@@ -226,20 +226,20 @@ export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef 
                   </div>
                   <div>
                     <div className="text-sm font-medium text-white">{comment.author.name}</div>
-                    <div className="text-xs text-white/40">{formatTime(comment.timestamp)}</div>
+                    <div className="text-xs text-zinc-500">{formatTime(comment.timestamp)}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
                   <button 
                     onClick={() => handleResolve(comment.id)}
-                    className={`p-1.5 rounded hover:bg-white/10 ${comment.resolved ? "text-green-400" : "text-white/40"}`}
+                    className={`p-1.5 rounded hover:bg-zinc-700 ${comment.resolved ? "text-green-400" : "text-zinc-500"}`}
                     title={comment.resolved ? "Unresolve" : "Resolve"}
                   >
                     <Check size={14} />
                   </button>
                   <button 
                     onClick={() => handleDelete(comment.id)}
-                    className="p-1.5 rounded hover:bg-white/10 text-white/40 hover:text-red-400"
+                    className="p-1.5 rounded hover:bg-zinc-700 text-zinc-500 hover:text-red-400"
                     title="Delete"
                   >
                     <Trash2 size={14} />
@@ -248,15 +248,15 @@ export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef 
               </div>
 
               {/* Treść komentarza */}
-              <div className={`p-3 text-sm text-white/80 ${comment.resolved ? "line-through opacity-50" : ""}`}>
+              <div className={`p-3 text-sm text-zinc-300 ${comment.resolved ? "line-through opacity-50" : ""}`}>
                 {comment.text}
               </div>
 
               {/* Odpowiedzi */}
               {comment.replies.length > 0 && (
-                <div className="border-t border-white/10">
+                <div className="border-t border-zinc-700/50">
                   {comment.replies.map((reply) => (
-                    <div key={reply.id} className="p-3 border-b border-white/5 last:border-0">
+                    <div key={reply.id} className="p-3 border-b border-zinc-800 last:border-0">
                       <div className="flex items-center gap-2 mb-1">
                         <div 
                           className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
@@ -264,29 +264,29 @@ export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef 
                         >
                           {reply.author.name.charAt(0)}
                         </div>
-                        <span className="text-xs font-medium text-white/70">{reply.author.name}</span>
-                        <span className="text-xs text-white/30">{formatTime(reply.timestamp)}</span>
+                        <span className="text-xs font-medium text-zinc-400">{reply.author.name}</span>
+                        <span className="text-xs text-zinc-600">{formatTime(reply.timestamp)}</span>
                       </div>
-                      <div className="text-sm text-white/70 pl-7">{reply.text}</div>
+                      <div className="text-sm text-zinc-400 pl-7">{reply.text}</div>
                     </div>
                   ))}
                 </div>
               )}
 
               {/* Input odpowiedzi */}
-              <div className="p-2 border-t border-white/10 flex gap-2">
+              <div className="p-3 border-t border-zinc-700/50 flex gap-2">
                 <input
                   type="text"
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleAddReply(comment.id)}
                   placeholder="Reply..."
-                  className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50"
+                  className="flex-1 bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-600"
                 />
                 <button
                   onClick={() => handleAddReply(comment.id)}
                   disabled={!replyText.trim()}
-                  className="p-2 bg-[#FF6E3C] text-white rounded-lg hover:bg-[#FF8F5C] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <Send size={14} />
                 </button>
@@ -311,9 +311,9 @@ export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef 
             <MessageCircle size={16} />
           </div>
 
-          {/* Input */}
-          <div className="absolute left-10 top-0 w-72 bg-[#1a1a1a] rounded-xl shadow-2xl border border-white/10 overflow-hidden">
-            <div className="p-3">
+          {/* Input - dark theme matching app */}
+          <div className="absolute left-10 top-0 w-80 bg-[#141414] rounded-xl shadow-2xl border border-zinc-700/50 overflow-hidden">
+            <div className="p-4">
               <textarea
                 ref={inputRef}
                 value={newCommentText}
@@ -325,22 +325,22 @@ export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef 
                   }
                 }}
                 placeholder="Add a comment..."
-                className="w-full bg-transparent text-white text-sm placeholder:text-white/30 resize-none focus:outline-none"
+                className="w-full bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-3 py-2 text-white text-sm placeholder:text-zinc-500 resize-none focus:outline-none focus:border-zinc-600"
                 rows={3}
                 autoFocus
               />
             </div>
-            <div className="px-3 pb-3 flex justify-between items-center">
+            <div className="px-4 pb-4 flex justify-between items-center">
               <button
                 onClick={() => setNewCommentPosition(null)}
-                className="text-xs text-white/40 hover:text-white"
+                className="text-xs text-zinc-500 hover:text-white transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleAddComment}
                 disabled={!newCommentText.trim()}
-                className="px-3 py-1.5 bg-[#FF6E3C] text-white text-sm font-medium rounded-lg hover:bg-[#FF8F5C] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors"
               >
                 <Send size={12} />
                 Post
