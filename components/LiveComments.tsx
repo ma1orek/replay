@@ -353,7 +353,7 @@ export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef 
   );
 }
 
-// Przycisk do włączania trybu komentarzy
+// Przycisk do włączania trybu komentarzy - okrągła ikonka
 export function CommentModeToggle({ 
   isActive, 
   onClick,
@@ -367,21 +367,17 @@ export function CommentModeToggle({
     <button
       onClick={onClick}
       className={`
-        relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all
+        relative w-9 h-9 flex items-center justify-center rounded-full transition-all
         ${isActive 
           ? "bg-[#FF6E3C] text-white" 
-          : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+          : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white"
         }
       `}
       title="Toggle Comment Mode (C)"
     >
-      <MessageCircle size={16} />
-      <span className="hidden sm:inline">Comment</span>
+      <MessageCircle size={18} />
       {commentCount > 0 && (
-        <span className={`
-          min-w-[18px] h-[18px] rounded-full text-xs flex items-center justify-center
-          ${isActive ? "bg-white/20" : "bg-[#FF6E3C]/20 text-[#FF6E3C]"}
-        `}>
+        <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] rounded-full text-[10px] font-bold flex items-center justify-center bg-[#FF6E3C] text-white">
           {commentCount}
         </span>
       )}
