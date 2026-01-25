@@ -330,10 +330,21 @@ src="https://image.pollinations.ai/prompt/abstract%20gradient%20mesh%20purple%20
 REAL ESTATE/INTERIOR:
 src="https://image.pollinations.ai/prompt/luxury%20modern%20apartment%20interior%20minimalist%20natural%20light?width=800&height=600&nologo=true&model=flux&seed=601"
 
+ARCHITECTURE/RESIDENCE (for luxury projects like Maison Aurum):
+src="https://image.pollinations.ai/prompt/luxury%20stone%20house%20residence%20japanese%20architecture%20raw%20concrete%20warm%20oak%20natural%20light?width=800&height=600&nologo=true&model=flux&seed=701"
+src="https://image.pollinations.ai/prompt/modern%20minimalist%20architecture%20house%20exterior%20golden%20hour%20dramatic%20shadows?width=800&height=600&nologo=true&model=flux&seed=702"
+src="https://image.pollinations.ai/prompt/luxury%20penthouse%20living%20room%20floor%20to%20ceiling%20windows%20city%20view%20night?width=800&height=600&nologo=true&model=flux&seed=703"
+
+FURNITURE/LUXURY PRODUCTS:
+src="https://image.pollinations.ai/prompt/luxury%20modular%20sofa%20minimalist%20design%20natural%20fabric%20studio%20lighting?width=800&height=600&nologo=true&model=flux&seed=801"
+src="https://image.pollinations.ai/prompt/designer%20furniture%20chair%20sculptural%20form%20high%20end%20craftsmanship?width=800&height=600&nologo=true&model=flux&seed=802"
+
 FOOD/RESTAURANT:
 src="https://image.pollinations.ai/prompt/gourmet%20dish%20fine%20dining%20dark%20moody%20photography?width=600&height=400&nologo=true&model=flux&seed=701"
 
 🚫🚫🚫 ABSOLUTELY FORBIDDEN (WILL BREAK THE PAGE):
+- TEXT PLACEHOLDERS like "[Image: ...]" or "[Project Image: ...]" - BANNED! Use real <img> tags!
+- Div with text describing image - BANNED! Always use <img src="...">!
 - picsum.photos - BANNED! NEVER USE! Creates empty gray boxes!
 - unsplash.com - BANNED! Auth required, will fail!
 - placeholder.com - BANNED!
@@ -343,11 +354,18 @@ src="https://image.pollinations.ai/prompt/gourmet%20dish%20fine%20dining%20dark%
 - src={variable} - BANNED! Must be hardcoded URL!
 - Any URL without &seed= - BANNED! Causes rate limit!
 
-✅ ONLY ALLOWED SOURCES:
-1. https://image.pollinations.ai/prompt/... (with &model=flux&seed=XXX)
-2. https://i.pravatar.cc/... (for avatars only)
+✅ ONLY ALLOWED FOR IMAGES:
+1. <img src="https://image.pollinations.ai/prompt/DESCRIPTION?width=800&height=600&nologo=true&model=flux&seed=XXX" />
+2. <img src="https://i.pravatar.cc/150?img=XX" /> (for avatars only)
 
-REMEMBER: Every <img> tag visible on the video MUST have a working Pollinations URL!
+⚠️ CRITICAL: If the video shows an image area, you MUST use a real <img> tag with Pollinations URL!
+NEVER use text like "[Project Image]" or "[Masterpiece: ...]" - these are NOT images!
+
+EXAMPLE - WRONG:
+<div class="bg-gray-200">[Project Image: KYOTO, JAPAN]</div>
+
+EXAMPLE - CORRECT:
+<img src="https://image.pollinations.ai/prompt/luxury%20stone%20house%20residence%20kyoto%20japan%20modern%20architecture%20natural%20light?width=800&height=600&nologo=true&model=flux&seed=101" class="w-full h-full object-cover" alt="Project" />
 
 ═══════════════════════════════════════════════════════════════════════════════
 🎨 VISUAL DESIGN SYSTEM
