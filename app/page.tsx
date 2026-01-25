@@ -12856,8 +12856,8 @@ ${publishCode}
                 <OnlineUsers />
               )}
               
-              {/* Comment Mode Toggle */}
-              {generatedCode && viewMode === "preview" && (
+              {/* Comment Mode Toggle - available on all tabs */}
+              {activeGeneration && (
                 <CommentModeToggle 
                   isActive={isCommentMode}
                   onClick={() => setIsCommentMode(!isCommentMode)}
