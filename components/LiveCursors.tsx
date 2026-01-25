@@ -199,7 +199,7 @@ export function OnlineUsers() {
               onMouseLeave={() => setHoveredIdx(null)}
             >
               <div
-                className="w-full h-full rounded-full flex items-center justify-center text-[8px] font-medium text-white overflow-hidden"
+                className="w-full h-full rounded-full flex items-center justify-center text-[7px] font-medium text-white overflow-hidden"
                 style={{ backgroundColor: color }}
               >
                 {avatar ? (
@@ -208,11 +208,11 @@ export function OnlineUsers() {
                   initials
                 )}
               </div>
-              {/* Animated tooltip on hover */}
+              {/* Animated tooltip on hover - below avatar */}
               <div
                 className="absolute left-1/2 px-2 py-0.5 bg-zinc-800 text-white text-[10px] font-medium rounded whitespace-nowrap pointer-events-none border border-zinc-700"
                 style={{
-                  top: -26,
+                  top: 32,
                   transform: `translateX(-50%) scale(${isHovered ? 1 : 0.8})`,
                   opacity: isHovered ? 1 : 0,
                   transition: "all 0.2s cubic-bezier(0.4,0,0.2,1)",
