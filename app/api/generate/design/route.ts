@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { getPresetById, EnterprisePreset } from "@/lib/enterprise-presets";
+// Enterprise presets REMOVED - always use premium modern design
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-const MODEL_NAME = "gemini-3-pro-preview";
+const MODEL_NAME = "gemini-3-pro-preview"; // Using PRO for best quality design extraction
 
 function getApiKey(): string | null {
   return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || null;
@@ -25,18 +25,7 @@ interface DesignGenerationRequest {
 // COMPONENT MAPPING & INVENTORY PROMPT ($100K Enterprise Value)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function buildDesignPrompt(preset: EnterprisePreset | null, request: DesignGenerationRequest): string {
-  const presetInfo = preset ? `
-BASE PRESET: ${preset.name}
-INDUSTRY: ${preset.industry}
-PRESET COLORS (as starting point):
-- Primary: ${preset.colors.light.primary}
-- Secondary: ${preset.colors.light.secondary}
-- Accent: ${preset.colors.light.accent}
-- Success: ${preset.colors.light.success}
-- Error: ${preset.colors.light.error}
-` : "BASE PRESET: None - generate modern SaaS design";
-
+function buildDesignPrompt(request: DesignGenerationRequest): string {
   return `You are a Senior Design Systems Architect conducting a COMPONENT AUDIT and MODERNIZATION MAPPING.
 
 This is NOT a color palette generator. This is a $100,000 DESIGN SYSTEM AUDIT that shows:
@@ -45,7 +34,7 @@ This is NOT a color palette generator. This is a $100,000 DESIGN SYSTEM AUDIT th
 - Technical debt reduction metrics
 - Token standardization
 
-${presetInfo}
+BASE STYLE: Premium Dark Theme (zinc-950, indigo accents, glassmorphism)
 
 PROJECT CONTEXT:
 - Name: ${request.projectName}
@@ -253,13 +242,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body: DesignGenerationRequest = await request.json();
-    const { projectName, generatedCode, presetId, extractedColors, industry, screenCount } = body;
-
-    // Get preset if specified
-    const preset = presetId ? getPresetById(presetId) || null : null;
+    const { projectName, generatedCode, extractedColors, industry, screenCount } = body;
     
-    // Build customized prompt
-    const prompt = buildDesignPrompt(preset, body);
+    // Build prompt (no presets - using premium modern design only)
+    const prompt = buildDesignPrompt(body);
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
@@ -267,8 +253,6 @@ export async function POST(request: NextRequest) {
       generationConfig: {
         temperature: 0.4, // Lower for more consistent output
         maxOutputTokens: 16384,
-        // @ts-ignore - Gemini 3 Pro requires thinking mode
-        thinkingConfig: { thinkingBudget: 1024 }, // Minimum budget for JSON responses
       },
     });
 
@@ -296,15 +280,6 @@ export async function POST(request: NextRequest) {
           throw new Error("Could not parse JSON from response");
         }
       }
-    }
-
-    // Add preset info to response
-    if (preset) {
-      jsonContent.basePreset = {
-        id: preset.id,
-        name: preset.name,
-        industry: preset.industry
-      };
     }
 
     return NextResponse.json({

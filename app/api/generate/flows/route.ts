@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-// Use Gemini 3 Pro for flows (better reasoning)
+// Use Gemini 3 Pro Preview for best quality flow detection
 const MODEL_NAME = "gemini-3-pro-preview";
 
 function getApiKey(): string | null {
@@ -182,8 +182,6 @@ ${generatedCode?.slice(0, 12000) || "No code provided"}
       generationConfig: {
         temperature: 0.4,
         maxOutputTokens: 16384,
-        // @ts-ignore - Gemini 3 Pro requires thinking mode
-        thinkingConfig: { thinkingBudget: 1024 }, // Minimum budget for JSON responses
       },
     });
 

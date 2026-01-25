@@ -97,7 +97,7 @@ Deploy your UI to the web instantly. Share the link with anyone.
 |-------|------------|
 | **Framework** | Next.js 14 (App Router) |
 | **Styling** | Tailwind CSS |
-| **AI** | Google Gemini 2.5 Flash / Gemini 3 Pro |
+| **AI** | Google Gemini 3 Pro Preview |
 | **Database** | Supabase (PostgreSQL) |
 | **Auth** | Supabase Auth (Google OAuth) |
 | **Payments** | Stripe (Subscriptions + One-time) |

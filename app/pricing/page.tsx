@@ -80,7 +80,7 @@ function Header() {
                 <Button variant="ghost" size="sm" asChild>
                   <Link href="/login">Login</Link>
                 </Button>
-                <Button variant="dark" size="sm" asChild>
+                <Button variant="orange" size="sm" asChild>
                   <Link href="/contact">Request a Demo</Link>
                 </Button>
               </>
@@ -122,7 +122,7 @@ function Header() {
                       />
                       <span className="text-sm font-medium text-zinc-700">{displayName}</span>
                     </div>
-                    <Button variant="dark" asChild className="w-full">
+                    <Button variant="orange" asChild className="w-full">
                       <Link href="/tool">Go to App</Link>
                     </Button>
                   </>
@@ -131,7 +131,7 @@ function Header() {
                     <Button variant="outline" asChild className="w-full">
                       <Link href="/login">Login</Link>
                     </Button>
-                    <Button variant="dark" asChild className="w-full">
+                    <Button variant="orange" asChild className="w-full">
                       <Link href="/contact">Request a Demo</Link>
                     </Button>
                   </>
@@ -407,7 +407,7 @@ export default function PricingPage() {
             className="text-center mt-16"
           >
             <p className="text-zinc-600 mb-4">Have questions about which plan is right for you?</p>
-            <Button variant="dark" size="lg" asChild>
+            <Button variant="orange" size="lg" asChild>
               <Link href="/contact">
                 Talk to Sales
                 <ArrowRight className="ml-2 w-4 h-4" />

@@ -177,7 +177,7 @@ function Header() {
                 <Button variant="ghost" size="sm" asChild>
                   <Link href="/login">Login</Link>
                 </Button>
-                <Button variant="dark" size="sm" asChild>
+                <Button variant="orange" size="sm" asChild>
                   <Link href="/contact">Request a Demo</Link>
                 </Button>
               </>
@@ -200,7 +200,7 @@ function Header() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="lg:hidden border-t border-zinc-200 px-6 py-4"
+              className="lg:hidden border-t border-zinc-200 px-6 py-4 bg-white rounded-b-2xl"
             >
               <div className="flex flex-col gap-4">
                 {menuItems.map((item) => (
@@ -213,7 +213,7 @@ function Header() {
                     {item.name}
                   </Link>
                 ))}
-                <div className="flex flex-col gap-2 pt-4 border-t border-zinc-200">
+                <div className="flex flex-col gap-3 pt-4 border-t border-zinc-200">
                   {user ? (
                     <>
                       <div className="flex items-center gap-3 py-2">
@@ -225,16 +225,16 @@ function Header() {
                         />
                         <span className="text-sm font-medium text-zinc-700">{displayName}</span>
                       </div>
-                      <Button variant="dark" asChild className="w-full">
+                      <Button variant="orange" asChild className="w-full">
                         <Link href="/tool">Go to App</Link>
                       </Button>
                     </>
                   ) : (
                     <>
-                      <Button variant="outline" asChild className="w-full">
+                      <Button variant="dark-outline" asChild className="w-full">
                         <Link href="/login">Login</Link>
                       </Button>
-                      <Button variant="dark" asChild className="w-full">
+                      <Button variant="orange" asChild className="w-full">
                         <Link href="/contact">Request a Demo</Link>
                       </Button>
                     </>
@@ -329,7 +329,7 @@ function HeroSection() {
 
             {/* CTAs */}
             <div className="mt-12 flex flex-col sm:flex-row gap-4">
-              <Button variant="dark" size="xl" asChild className="group">
+              <Button variant="orange" size="xl" asChild className="group">
                 <Link href="/contact">
                   Book a pilot
                   <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -823,7 +823,7 @@ function SolutionSection() {
           transition={{ delay: 0.8 }}
           className="mt-16 text-center"
         >
-          <Button variant="dark" size="lg" asChild className="group">
+          <Button variant="orange" size="lg" asChild className="group">
             <Link href="/tool">
               Try it with your own workflow
               <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -1186,7 +1186,7 @@ function FooterSection() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="dark" size="xl" asChild className="group bg-white text-zinc-900 hover:bg-zinc-100">
+              <Button variant="orange" size="xl" asChild className="group">
                 <Link href="/contact">
                   Request a Demo
                   <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />

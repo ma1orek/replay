@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect, Suspense, useMemo } from "react";
+import React, { useState, useCallback, useRef, useEffect, Suspense, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -67,6 +67,10 @@ import {
   Rocket,
   Globe,
   Zap,
+  Lightbulb,
+  Puzzle,
+  Target,
+  Tag,
   PanelLeftClose,
   PanelLeft,
   FileText,
@@ -81,16 +85,28 @@ import {
   Network,
   Scale,
   Users,
-  AlertCircle
+  AlertCircle,
+  Library,
+  BookOpen,
+  ToggleLeft,
+  Accessibility,
+  Ruler,
+  Grid3X3,
+  Map,
+  Move,
+  Link2,
+  Maximize2,
+  ChevronUp,
+  AlertTriangle,
+  Save
 } from "lucide-react";
+import * as LucideIcons from 'lucide-react';
 import { cn, generateId, formatDuration, updateProjectAnalytics } from "@/lib/utils";
 import { stabilizePicsumUrls } from "@/lib/assets";
 import { transmuteVideoToCode } from "@/actions/transmute";
 import { getDatabaseContext, formatDatabaseContextForPrompt } from "@/lib/supabase/schema";
 import { useIsMobile } from "@/lib/useIsMobile";
-import { EnterprisePresetSelector, PresetBadge } from "@/components/EnterprisePresetSelector";
-import { EnterpriseExport } from "@/components/EnterpriseExport";
-import { ENTERPRISE_PRESETS, EnterprisePreset, getPresetById } from "@/lib/enterprise-presets";
+// Enterprise presets REMOVED - using only system-prompt.ts for premium styling
 // Demo is now loaded from /api/demo/[id] endpoint
 
 // Global abort controller for canceling AI requests
@@ -493,6 +509,8 @@ interface GenerationRecord {
     totalTokens: number;
   };
   costCredits?: number;
+  // Component library data (persisted per project)
+  libraryData?: LibraryData | null;
 }
 
 // Chat message for Agentic Sidebar
@@ -509,7 +527,106 @@ interface ChatMessage {
   quickActions?: string[];
 }
 
-type ViewMode = "preview" | "code" | "flow" | "design" | "docs" | "input";
+// ═══════════════════════════════════════════════════════════════════════════════
+// LIBRARY INTERFACES (Storybook-like component library)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+type ComponentCategory = "layout" | "inputs" | "data" | "feedback" | "navigation";
+
+interface ComponentProp {
+  name: string;
+  type: "string" | "number" | "boolean" | "enum" | "function" | "ReactNode";
+  required: boolean;
+  defaultValue: any;
+  description: string;
+  options?: string[];  // For enums
+  control: "input" | "select" | "toggle" | "range" | "color" | "object" | "action";
+}
+
+interface ComponentVariant {
+  name: string;           // "Default", "Primary", "Disabled"
+  props: Record<string, any>;
+  screenshot?: string;
+}
+
+interface AccessibilityCheck {
+  rule: string;
+  status: "pass" | "fail" | "warning";
+  description: string;
+  count?: number;
+}
+
+interface InteractionTest {
+  name: string;
+  steps: string[];
+  status: "pass" | "fail" | "pending";
+  duration?: number;
+}
+
+interface LibraryComponent {
+  id: string;
+  name: string;                    // "Button"
+  category: ComponentCategory;
+  description: string;             // AI generated
+  
+  // Code
+  code: string;                    // React component code
+  usage: string;                   // Import + usage example
+  
+  // Props (AI extracted)
+  props: ComponentProp[];
+  
+  // Variants (AI detected from video)
+  variants: ComponentVariant[];
+  
+  // Usage tracking (for Blueprints/Library)
+  usageCount?: number;             // Number of times component is used
+  usageLocations?: string[];       // Where component is used
+  
+  // Documentation (AI generated)
+  docs: {
+    description: string;
+    usage: string;
+    accessibility: string;
+    bestPractices: string[];
+  };
+  
+  // Testing
+  accessibility: AccessibilityCheck[];
+  interactions: InteractionTest[];
+}
+
+interface LibraryDoc {
+  id: string;
+  title: string;
+  type: "welcome" | "getting-started" | "iconography" | "colors" | "typography" | "spacing" | "examples" | "changelog";
+  content: string;  // MDX content
+}
+
+interface DesignTokens {
+  colors: Record<string, string>;
+  typography: {
+    fontFamily: Record<string, string>;
+    fontSize: Record<string, string>;
+    fontWeight: Record<string, number>;
+    lineHeight: Record<string, string>;
+  };
+  spacing: Record<string, string>;
+  borderRadius: Record<string, string>;
+  shadows: Record<string, string>;
+}
+
+interface LibraryData {
+  components: LibraryComponent[];
+  docs: LibraryDoc[];
+  tokens: DesignTokens;
+}
+
+// Library UI state
+type LibraryPanel = "controls" | "actions" | "interactions" | "visual" | "accessibility" | "usage";
+type LibrarySidebarItem = { type: "doc" | "component"; id: string; name: string; category?: string; children?: LibrarySidebarItem[] };
+
+type ViewMode = "preview" | "code" | "flow" | "design" | "docs" | "input" | "library" | "blueprints";
 type DocsSubTab = "overview" | "api" | "qa" | "deploy";
 type SidebarMode = "config" | "chat";
 type SidebarTab = "chat" | "tree" | "style";
@@ -768,6 +885,1371 @@ const GENERATION_TIPS = [
   "Show hover states in your video — Replay will recreate them with smooth CSS transitions.",
 ];
 
+// Apply props override to component code (for live Storybook-like preview)
+const applyPropsToCode = (code: string, props: any[], propsOverride: Record<string, any>): string => {
+  if (!code) return code;
+  
+  let modifiedCode = code;
+  
+  // Build a style injection object for all overrides
+  const styleOverrides: string[] = [];
+  const textReplacements: { from: string; to: string }[] = [];
+  
+  // Process each prop with an override value
+  Object.entries(propsOverride).forEach(([propName, overrideValue]) => {
+    if (overrideValue === undefined || overrideValue === '') return;
+    
+    const prop = props?.find(p => p.name === propName);
+    const defaultValue = prop?.defaultValue || '';
+    const propNameLower = propName.toLowerCase();
+    
+    // Color properties - TARGETED replacement based on prop name AND default value
+    if (propNameLower.includes('color') || propNameLower.includes('colour')) {
+      const hexMatch = String(overrideValue).match(/^#[0-9A-Fa-f]{3,8}$/);
+      const escapedDefault = defaultValue ? String(defaultValue).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
+      const defaultStr = String(defaultValue || '');
+      
+      // Detect if default is a background class (bg-*)
+      const defaultIsBgClass = defaultStr.startsWith('bg-');
+      const defaultIsTextClass = defaultStr.startsWith('text-');
+      const defaultIsBorderClass = defaultStr.startsWith('border-');
+      
+      // Handle HEX colors
+      if (hexMatch) {
+        // First: Replace any existing hex color that matches default
+        if (escapedDefault && String(defaultValue).match(/^#[0-9A-Fa-f]{3,8}$/)) {
+          modifiedCode = modifiedCode.replace(new RegExp(escapedDefault, 'gi'), overrideValue);
+        }
+        
+        // If default is a bg-* class, this is a background color prop!
+        if (defaultIsBgClass) {
+          styleOverrides.push(`background-color: ${overrideValue}`);
+          // Replace the specific default class
+          modifiedCode = modifiedCode.replace(new RegExp(escapedDefault, 'g'), `bg-[${overrideValue}]`);
+          // Also replace any bg-[] arbitrary values
+          modifiedCode = modifiedCode.replace(/bg-\[(#[0-9A-Fa-f]{3,8})\]/g, `bg-[${overrideValue}]`);
+        }
+        // If default is a text-* class, this is a text color prop!
+        else if (defaultIsTextClass) {
+          styleOverrides.push(`color: ${overrideValue}`);
+          modifiedCode = modifiedCode.replace(new RegExp(escapedDefault, 'g'), `text-[${overrideValue}]`);
+          modifiedCode = modifiedCode.replace(/text-\[(#[0-9A-Fa-f]{3,8})\]/g, `text-[${overrideValue}]`);
+        }
+        // If default is a border-* class
+        else if (defaultIsBorderClass) {
+          styleOverrides.push(`border-color: ${overrideValue}`);
+          modifiedCode = modifiedCode.replace(new RegExp(escapedDefault, 'g'), `border-[${overrideValue}]`);
+        }
+        // Fallback to name-based detection
+        else if (propNameLower.includes('background') || propNameLower.includes('bg') || propNameLower.includes('active')) {
+          styleOverrides.push(`background-color: ${overrideValue}`);
+          modifiedCode = modifiedCode.replace(/bg-\[(#[0-9A-Fa-f]{3,8})\]/g, `bg-[${overrideValue}]`);
+          modifiedCode = modifiedCode.replace(/bg-(yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|red|orange|amber)-\d{2,3}/g, `bg-[${overrideValue}]`);
+        } else if (propNameLower.includes('border')) {
+          styleOverrides.push(`border-color: ${overrideValue}`);
+          modifiedCode = modifiedCode.replace(/border-\[(#[0-9A-Fa-f]{3,8})\]/g, `border-[${overrideValue}]`);
+        } else if (propNameLower.includes('text') || propNameLower.includes('font')) {
+          styleOverrides.push(`color: ${overrideValue}`);
+          modifiedCode = modifiedCode.replace(/text-\[(#[0-9A-Fa-f]{3,8})\]/g, `text-[${overrideValue}]`);
+        } else if (propNameLower.includes('hover')) {
+          styleOverrides.push(`--hover-color: ${overrideValue}`);
+        } else {
+          // Generic "color" prop - assume background if name is just "color"
+          if (propNameLower === 'color') {
+            styleOverrides.push(`background-color: ${overrideValue}`);
+            modifiedCode = modifiedCode.replace(/bg-\[(#[0-9A-Fa-f]{3,8})\]/g, `bg-[${overrideValue}]`);
+            modifiedCode = modifiedCode.replace(/bg-(yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|red|orange|amber)-\d{2,3}/g, `bg-[${overrideValue}]`);
+          } else {
+            styleOverrides.push(`--${propName}: ${overrideValue}`);
+          }
+        }
+      } else if (escapedDefault) {
+        // Non-hex value (Tailwind class) - replace default with new value
+        modifiedCode = modifiedCode.replace(new RegExp(escapedDefault, 'g'), String(overrideValue));
+      }
+    }
+    
+    // Speed/duration/animation properties - inject via style
+    if (propNameLower.includes('speed') || propNameLower.includes('duration') || propNameLower.includes('delay')) {
+      styleOverrides.push(`animation-duration: ${overrideValue}`);
+      styleOverrides.push(`transition-duration: ${overrideValue}`);
+      // Replace in Tailwind animation classes
+      modifiedCode = modifiedCode.replace(/duration-\[\d+s?\]/g, `duration-[${overrideValue}]`);
+      modifiedCode = modifiedCode.replace(/animate-\[[\w\s]+\d+s[^\]]*\]/g, (match) => {
+        return match.replace(/\d+s/, overrideValue);
+      });
+    }
+    
+    // Font size properties
+    if (propNameLower.includes('fontsize') || propNameLower.includes('size') && !propNameLower.includes('color')) {
+      if (overrideValue.startsWith('text-')) {
+        // Tailwind class - replace existing text-* class
+        modifiedCode = modifiedCode.replace(/text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)/g, overrideValue);
+      } else {
+        styleOverrides.push(`font-size: ${overrideValue}`);
+      }
+    }
+    
+    // Text content replacement
+    if (propNameLower.includes('text') || propNameLower.includes('label') || propNameLower.includes('title') || propNameLower.includes('content')) {
+      if (typeof defaultValue === 'string' && defaultValue.length > 2) {
+        const escapedDefault = defaultValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        modifiedCode = modifiedCode.replace(new RegExp(`>${escapedDefault}<`, 'g'), `>${overrideValue}<`);
+        modifiedCode = modifiedCode.replace(new RegExp(`"${escapedDefault}"`, 'g'), `"${overrideValue}"`);
+      }
+    }
+    
+    // Generic string replacement for other props
+    if (typeof defaultValue === 'string' && defaultValue.length > 1 && typeof overrideValue === 'string') {
+      const escapedDefault = defaultValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      modifiedCode = modifiedCode.replace(new RegExp(`>${escapedDefault}<`, 'g'), `>${overrideValue}<`);
+      modifiedCode = modifiedCode.replace(new RegExp(`="${escapedDefault}"`, 'g'), `="${overrideValue}"`);
+      modifiedCode = modifiedCode.replace(new RegExp(`='${escapedDefault}'`, 'g'), `='${overrideValue}'`);
+    }
+  });
+  
+  // Inject collected style overrides into ALL relevant elements
+  if (styleOverrides.length > 0) {
+    const styleString = styleOverrides.join('; ');
+    
+    // Inject into first element
+    if (modifiedCode.match(/<[^>]+style="[^"]*"/)) {
+      modifiedCode = modifiedCode.replace(
+        /(<[^>]+style=")([^"]*)(")/,
+        `$1$2; ${styleString}$3`
+      );
+    } else {
+      modifiedCode = modifiedCode.replace(
+        /(<\w+)(\s|>)/,
+        `$1 style="${styleString}"$2`
+      );
+    }
+    
+    // For background colors - also inject into any element with bg-* class
+    const bgColorMatch = styleOverrides.find(s => s.includes('background-color:'));
+    if (bgColorMatch) {
+      const bgColor = bgColorMatch.split(':')[1].trim();
+      // Add inline style to elements with bg-* classes
+      modifiedCode = modifiedCode.replace(
+        /class="([^"]*bg-[^"]*)"/g,
+        (match, classes) => `class="${classes}" style="background-color: ${bgColor} !important"`
+      );
+    }
+    
+    // For text colors - inject into elements with text-* classes
+    const textColorMatch = styleOverrides.find(s => s.startsWith('color:'));
+    if (textColorMatch) {
+      const textColor = textColorMatch.split(':')[1].trim();
+      modifiedCode = modifiedCode.replace(
+        /class="([^"]*text-\[#[^\]]+\][^"]*)"/g,
+        (match, classes) => `class="${classes}" style="color: ${textColor} !important"`
+      );
+    }
+  }
+  
+  return modifiedCode;
+};
+
+// Generate live code preview with current prop values
+const generateLiveCode = (componentName: string, props: any[], propsOverride: Record<string, any>): string => {
+  if (!props?.length) return `<${componentName} />`;
+  
+  const propsString = props.map((prop: any) => {
+    const value = propsOverride[prop.name] ?? prop.defaultValue;
+    if (value === undefined || value === '') return null;
+    if (typeof value === 'boolean') return value ? prop.name : null;
+    if (typeof value === 'number') return `${prop.name}={${value}}`;
+    return `${prop.name}="${value}"`;
+  }).filter(Boolean).join('\n  ');
+  
+  if (!propsString) return `<${componentName} />`;
+  
+  return `<${componentName}\n  ${propsString}\n/>`;
+};
+
+// ==========================================
+// LIVE BLUEPRINT EDITOR - JSON RENDERER
+// ==========================================
+
+// Component Registry for JSON-based rendering
+const ComponentRegistry: Record<string, React.FC<any>> = {
+  // Container
+  Container: ({ children, padding = 'p-4', gap = 'gap-4', layout = 'flex', direction = 'col', align, justify, className = '' }) => (
+    <div className={cn(
+      layout === 'grid' ? 'grid' : 'flex',
+      layout === 'flex' && (direction === 'row' ? 'flex-row' : 'flex-col'),
+      padding, gap, align, justify, className
+    )}>
+      {children}
+    </div>
+  ),
+  
+  // Card
+  Card: ({ children, elevation = 'md', border = true, padding = 'p-6', rounded = 'lg', className = '' }) => (
+    <div className={cn(
+      'bg-zinc-900',
+      elevation === 'sm' && 'shadow-sm',
+      elevation === 'md' && 'shadow-md',
+      elevation === 'lg' && 'shadow-lg shadow-black/20',
+      border && 'border border-zinc-800',
+      padding,
+      rounded === 'sm' && 'rounded-sm',
+      rounded === 'md' && 'rounded-md',
+      rounded === 'lg' && 'rounded-lg',
+      rounded === 'xl' && 'rounded-xl',
+      className
+    )}>
+      {children}
+    </div>
+  ),
+  
+  // Button
+  Button: ({ children, variant = 'primary', size = 'md', icon, iconPosition = 'left', disabled, loading, className = '' }) => {
+    const IconComponent = icon ? (LucideIcons as any)[icon] : null;
+    return (
+      <button className={cn(
+        'inline-flex items-center justify-center font-medium transition-all rounded-lg',
+        // Size
+        size === 'xs' && 'px-2 py-1 text-xs gap-1',
+        size === 'sm' && 'px-3 py-1.5 text-sm gap-1.5',
+        size === 'md' && 'px-4 py-2 text-sm gap-2',
+        size === 'lg' && 'px-6 py-3 text-base gap-2',
+        // Variant
+        variant === 'primary' && 'bg-blue-600 text-white hover:bg-blue-700',
+        variant === 'secondary' && 'bg-zinc-700 text-white hover:bg-zinc-600',
+        variant === 'danger' && 'bg-red-600 text-white hover:bg-red-700',
+        variant === 'outline' && 'border border-zinc-600 text-zinc-300 hover:bg-zinc-800',
+        variant === 'ghost' && 'text-zinc-400 hover:bg-zinc-800 hover:text-white',
+        disabled && 'opacity-50 cursor-not-allowed',
+        className
+      )} disabled={disabled}>
+        {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+        {!loading && IconComponent && iconPosition === 'left' && <IconComponent className="w-4 h-4" />}
+        {children}
+        {!loading && IconComponent && iconPosition === 'right' && <IconComponent className="w-4 h-4" />}
+      </button>
+    );
+  },
+  
+  // Badge
+  Badge: ({ children, status = 'neutral', size = 'md', className = '' }) => (
+    <span className={cn(
+      'inline-flex items-center font-medium rounded-full',
+      size === 'sm' && 'px-2 py-0.5 text-xs',
+      size === 'md' && 'px-2.5 py-1 text-xs',
+      status === 'success' && 'bg-emerald-500/20 text-emerald-400',
+      status === 'warning' && 'bg-yellow-500/20 text-yellow-400',
+      status === 'error' && 'bg-red-500/20 text-red-400',
+      status === 'info' && 'bg-blue-500/20 text-blue-400',
+      status === 'neutral' && 'bg-zinc-700 text-zinc-300',
+      className
+    )}>
+      {children}
+    </span>
+  ),
+  
+  // Alert
+  Alert: ({ severity = 'info', title, message, icon, dismissible, onDismiss, className = '' }) => {
+    const icons: Record<string, any> = {
+      info: Info,
+      success: CheckCircle,
+      warning: AlertTriangle,
+      error: AlertCircle,
+    };
+    const IconComponent = icon ? (LucideIcons as any)[icon] : icons[severity];
+    return (
+      <div className={cn(
+        'p-4 rounded-lg border flex gap-3',
+        severity === 'info' && 'bg-blue-500/10 border-blue-500/30 text-blue-400',
+        severity === 'success' && 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400',
+        severity === 'warning' && 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400',
+        severity === 'error' && 'bg-red-500/10 border-red-500/30 text-red-400',
+        className
+      )}>
+        {IconComponent && <IconComponent className="w-5 h-5 flex-shrink-0 mt-0.5" />}
+        <div className="flex-1 min-w-0">
+          {title && <div className="font-semibold mb-1">{title}</div>}
+          {message && <div className="text-sm opacity-90">{message}</div>}
+        </div>
+        {dismissible && (
+          <button onClick={onDismiss} className="p-1 hover:bg-white/10 rounded">
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+    );
+  },
+  
+  // Text
+  Text: ({ children, size = 'base', weight = 'normal', color = 'text-zinc-300', className = '' }) => (
+    <p className={cn(
+      size === 'xs' && 'text-xs',
+      size === 'sm' && 'text-sm',
+      size === 'base' && 'text-base',
+      size === 'lg' && 'text-lg',
+      size === 'xl' && 'text-xl',
+      size === '2xl' && 'text-2xl',
+      size === '3xl' && 'text-3xl',
+      weight === 'normal' && 'font-normal',
+      weight === 'medium' && 'font-medium',
+      weight === 'semibold' && 'font-semibold',
+      weight === 'bold' && 'font-bold',
+      color,
+      className
+    )}>
+      {children}
+    </p>
+  ),
+  
+  // Heading
+  Heading: ({ children, level = 2, className = '' }) => {
+    const sizes: Record<number, string> = {
+      1: 'text-4xl font-bold',
+      2: 'text-3xl font-bold',
+      3: 'text-2xl font-semibold',
+      4: 'text-xl font-semibold',
+      5: 'text-lg font-medium',
+      6: 'text-base font-medium',
+    };
+    return <div className={cn(sizes[level], 'text-white', className)}>{children}</div>;
+  },
+  
+  // Input
+  Input: ({ type = 'text', placeholder, label, error, disabled, className = '' }) => (
+    <div className={cn('space-y-1.5', className)}>
+      {label && <label className="text-sm font-medium text-zinc-400">{label}</label>}
+      <input
+        type={type}
+        placeholder={placeholder}
+        disabled={disabled}
+        className={cn(
+          'w-full px-3 py-2 bg-zinc-800 border rounded-lg text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2',
+          error ? 'border-red-500 focus:ring-red-500/30' : 'border-zinc-700 focus:ring-blue-500/30 focus:border-blue-500',
+          disabled && 'opacity-50 cursor-not-allowed'
+        )}
+      />
+      {error && <p className="text-xs text-red-400">{error}</p>}
+    </div>
+  ),
+  
+  // Avatar
+  Avatar: ({ src, alt, size = 'md', fallback, className = '' }) => {
+    const sizes: Record<string, string> = {
+      xs: 'w-6 h-6 text-xs',
+      sm: 'w-8 h-8 text-sm',
+      md: 'w-10 h-10 text-base',
+      lg: 'w-12 h-12 text-lg',
+      xl: 'w-16 h-16 text-xl',
+    };
+    return (
+      <div className={cn(
+        'rounded-full bg-zinc-700 flex items-center justify-center overflow-hidden',
+        sizes[size],
+        className
+      )}>
+        {src ? (
+          <img src={src} alt={alt || ''} className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-zinc-400 font-medium">{fallback || '?'}</span>
+        )}
+      </div>
+    );
+  },
+  
+  // Icon
+  Icon: ({ name, size = 'md', color = 'text-zinc-400', className = '' }) => {
+    const IconComponent = (LucideIcons as any)[name];
+    if (!IconComponent) return null;
+    const sizes: Record<string, string> = { sm: 'w-4 h-4', md: 'w-5 h-5', lg: 'w-6 h-6' };
+    return <IconComponent className={cn(sizes[size], color, className)} />;
+  },
+  
+  // Divider
+  Divider: ({ orientation = 'horizontal', className = '' }) => (
+    <div className={cn(
+      'bg-zinc-800',
+      orientation === 'horizontal' ? 'h-px w-full' : 'w-px h-full',
+      className
+    )} />
+  ),
+  
+  // Progress
+  Progress: ({ value = 0, size = 'md', color = 'bg-blue-500', showLabel, className = '' }) => (
+    <div className={cn('w-full', className)}>
+      <div className={cn(
+        'w-full bg-zinc-800 rounded-full overflow-hidden',
+        size === 'sm' && 'h-1',
+        size === 'md' && 'h-2',
+        size === 'lg' && 'h-3',
+      )}>
+        <div 
+          className={cn('h-full transition-all duration-300', color)}
+          style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+        />
+      </div>
+      {showLabel && <div className="text-xs text-zinc-500 mt-1 text-right">{value}%</div>}
+    </div>
+  ),
+  
+  // Image
+  Image: ({ src, alt, rounded = 'md', aspectRatio = 'auto', className = '' }) => (
+    <div className={cn(
+      'overflow-hidden bg-zinc-800',
+      rounded === 'sm' && 'rounded-sm',
+      rounded === 'md' && 'rounded-md',
+      rounded === 'lg' && 'rounded-lg',
+      rounded === 'full' && 'rounded-full',
+      aspectRatio === 'square' && 'aspect-square',
+      aspectRatio === 'video' && 'aspect-video',
+      aspectRatio === 'wide' && 'aspect-[21/9]',
+      className
+    )}>
+      <img src={src || 'https://picsum.photos/400/300'} alt={alt || ''} className="w-full h-full object-cover" />
+    </div>
+  ),
+  
+  // Spacer
+  Spacer: ({ size = 'md' }) => {
+    const sizes: Record<string, string> = {
+      xs: 'h-2', sm: 'h-4', md: 'h-6', lg: 'h-8', xl: 'h-12'
+    };
+    return <div className={sizes[size]} />;
+  },
+  
+  // Grid
+  Grid: ({ children, cols = 2, gap = 'gap-4', className = '' }) => (
+    <div className={cn(
+      'grid',
+      cols === 1 && 'grid-cols-1',
+      cols === 2 && 'grid-cols-2',
+      cols === 3 && 'grid-cols-3',
+      cols === 4 && 'grid-cols-4',
+      cols === 6 && 'grid-cols-6',
+      cols === 12 && 'grid-cols-12',
+      gap,
+      className
+    )}>
+      {children}
+    </div>
+  ),
+};
+
+// JSON Renderer - renders JSON schema to live components
+const JsonRenderer: React.FC<{ schema: any; depth?: number }> = ({ schema, depth = 0 }) => {
+  // Prevent infinite recursion
+  if (depth > 20) return null;
+  
+  // Handle null/undefined
+  if (schema === null || schema === undefined) return null;
+  
+  // If it's a string, render as text
+  if (typeof schema === 'string') return <>{schema}</>;
+  
+  // If it's a number or boolean, render as string
+  if (typeof schema === 'number' || typeof schema === 'boolean') {
+    return <>{String(schema)}</>;
+  }
+  
+  // If it's an array, render each item
+  if (Array.isArray(schema)) {
+    return <>{schema.map((item, i) => <JsonRenderer key={i} schema={item} depth={depth + 1} />)}</>;
+  }
+  
+  // Must be an object with component property
+  if (typeof schema !== 'object' || !schema.component) {
+    // Not a valid component schema - render as debug info
+    console.warn('[JsonRenderer] Invalid schema:', schema);
+    return null;
+  }
+  
+  const { component, props = {}, children, className } = schema;
+  
+  // Get component from registry
+  const Component = ComponentRegistry[component];
+  
+  if (!Component) {
+    // Fallback for unknown components
+    return (
+      <div className="p-2 border border-dashed border-yellow-500/50 rounded text-yellow-500 text-xs">
+        Unknown: {component}
+      </div>
+    );
+  }
+  
+  // Render children recursively
+  const renderedChildren = children ? (
+    typeof children === 'string' ? children : <JsonRenderer schema={children} depth={depth + 1} />
+  ) : null;
+  
+  return (
+    <Component {...props} className={cn(props.className, className)}>
+      {renderedChildren}
+    </Component>
+  );
+};
+
+// Syntax highlighter for code display - Storybook-like colors
+const highlightCode = (code: string): string => {
+  if (!code) return '';
+  
+  let highlighted = code
+    // Escape HTML first
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  
+  // Opening tag brackets and tag name - cyan for tag, gray for brackets
+  highlighted = highlighted.replace(
+    /(&lt;)(\/?)([\w-]+)/g,
+    '<span class="text-zinc-500">$1</span>$2<span class="text-cyan-400">$3</span>'
+  );
+  
+  // Closing brackets - gray
+  highlighted = highlighted.replace(
+    /(\/?&gt;)/g,
+    '<span class="text-zinc-500">$1</span>'
+  );
+  
+  // Attributes before = sign - purple/violet
+  highlighted = highlighted.replace(
+    /\s([\w-]+)(=)/g,
+    ' <span class="text-purple-400">$1</span><span class="text-zinc-500">$2</span>'
+  );
+  
+  // String values in double quotes - amber/orange
+  highlighted = highlighted.replace(
+    /"([^"]*)"/g,
+    '<span class="text-zinc-500">"</span><span class="text-amber-400">$1</span><span class="text-zinc-500">"</span>'
+  );
+  
+  // String values in single quotes - amber/orange  
+  highlighted = highlighted.replace(
+    /'([^']*)'/g,
+    '<span class="text-zinc-500">\'</span><span class="text-amber-400">$1</span><span class="text-zinc-500">\'</span>'
+  );
+  
+  // Numbers - blue
+  highlighted = highlighted.replace(
+    /\b(\d+\.?\d*)\b/g,
+    '<span class="text-blue-400">$1</span>'
+  );
+  
+  // Comments - muted gray
+  highlighted = highlighted.replace(
+    /(\/\/[^\n]*)/g,
+    '<span class="text-zinc-600 italic">$1</span>'
+  );
+  highlighted = highlighted.replace(
+    /(\/\*[\s\S]*?\*\/)/g,
+    '<span class="text-zinc-600 italic">$1</span>'
+  );
+  
+  // JSX expressions {..} - yellow/gold
+  highlighted = highlighted.replace(
+    /(\{[^}]*\})/g,
+    '<span class="text-yellow-300">$1</span>'
+  );
+  
+  // Boolean and special keywords - pink
+  highlighted = highlighted.replace(
+    /\b(true|false|null|undefined)\b/g,
+    '<span class="text-pink-400">$1</span>'
+  );
+  
+  // Component names (PascalCase) - emerald
+  highlighted = highlighted.replace(
+    /(&lt;\/?)(<span class="text-cyan-400">)([A-Z][A-Za-z0-9]*)/g,
+    '$1$2<span class="text-emerald-400">$3</span>'
+  );
+  
+  return highlighted;
+};
+
+// Convert JSX code to plain HTML for rendering (Storybook-like preview)
+const jsxToHtml = (jsxCode: string): string => {
+  if (!jsxCode) return '';
+  
+  let html = jsxCode;
+  
+  // ═══════════════════════════════════════════════════════════════════════════
+  // FIX INCOMPLETE/BROKEN CSS CLASSES (common AI generation errors)
+  // ═══════════════════════════════════════════════════════════════════════════
+  
+  // Fix incomplete Tailwind classes ending with hyphen (e.g., "animate-" -> "animate-pulse")
+  // These cause Babel syntax errors: "Unterminated string constant"
+  html = html.replace(/class="([^"]*)"/g, (match, classes) => {
+    const fixedClasses = classes
+      // Fix incomplete animate- classes
+      .replace(/\banimate-(?=\s|"|$)/g, 'animate-pulse ')
+      // Fix incomplete text- classes
+      .replace(/\btext-(?=\s|"|$)/g, 'text-base ')
+      // Fix incomplete bg- classes
+      .replace(/\bbg-(?=\s|"|$)/g, 'bg-zinc-900 ')
+      // Fix incomplete border- classes
+      .replace(/\bborder-(?=\s|"|$)/g, 'border-zinc-700 ')
+      // Fix incomplete p- classes
+      .replace(/\bp-(?=\s|"|$)/g, 'p-4 ')
+      // Fix incomplete m- classes
+      .replace(/\bm-(?=\s|"|$)/g, 'm-0 ')
+      // Fix incomplete rounded- classes
+      .replace(/\brounded-(?=\s|"|$)/g, 'rounded-lg ')
+      // Fix incomplete flex- classes
+      .replace(/\bflex-(?=\s|"|$)/g, 'flex-1 ')
+      // Fix incomplete gap- classes
+      .replace(/\bgap-(?=\s|"|$)/g, 'gap-4 ')
+      // Fix incomplete w- classes
+      .replace(/\bw-(?=\s|"|$)/g, 'w-full ')
+      // Fix incomplete h- classes
+      .replace(/\bh-(?=\s|"|$)/g, 'h-auto ')
+      // Remove any class that still ends with hyphen (catch-all)
+      .replace(/\b[a-z]+-(?=\s|$)/g, '')
+      // Clean up multiple spaces
+      .replace(/\s+/g, ' ')
+      .trim();
+    return `class="${fixedClasses}"`;
+  });
+  
+  // Also fix className (before conversion to class)
+  html = html.replace(/className="([^"]*)"/g, (match, classes) => {
+    const fixedClasses = classes
+      .replace(/\banimate-(?=\s|"|$)/g, 'animate-pulse ')
+      .replace(/\btext-(?=\s|"|$)/g, 'text-base ')
+      .replace(/\bbg-(?=\s|"|$)/g, 'bg-zinc-900 ')
+      .replace(/\bborder-(?=\s|"|$)/g, 'border-zinc-700 ')
+      .replace(/\bp-(?=\s|"|$)/g, 'p-4 ')
+      .replace(/\bm-(?=\s|"|$)/g, 'm-0 ')
+      .replace(/\brounded-(?=\s|"|$)/g, 'rounded-lg ')
+      .replace(/\bflex-(?=\s|"|$)/g, 'flex-1 ')
+      .replace(/\bgap-(?=\s|"|$)/g, 'gap-4 ')
+      .replace(/\bw-(?=\s|"|$)/g, 'w-full ')
+      .replace(/\bh-(?=\s|"|$)/g, 'h-auto ')
+      .replace(/\b[a-z]+-(?=\s|$)/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return `className="${fixedClasses}"`;
+  });
+  
+  // First: Convert class={...} to class="..." (handle JSX curly brace classes)
+  // This handles: class={`...`} or class={'...'} or class={"..."}
+  html = html.replace(/class=\{[`'"](.*?)[`'"]\}/g, 'class="$1"');
+  html = html.replace(/class=\{([^}]+)\}/g, (match, content) => {
+    // Try to extract string value from expressions like cn('...', ...) or clsx(...)
+    const stringMatch = content.match(/['"`]([^'"`]+)['"`]/);
+    if (stringMatch) {
+      return `class="${stringMatch[1]}"`;
+    }
+    // Fallback: just remove the attribute if we can't parse it
+    return '';
+  });
+  
+  // Replace className with class (JSX -> HTML)
+  html = html.replace(/className=/g, 'class=');
+  
+  // Handle className={...} same way
+  html = html.replace(/class=\{[`'"](.*?)[`'"]\}/g, 'class="$1"');
+  html = html.replace(/class=\{([^}]+)\}/g, (match, content) => {
+    const stringMatch = content.match(/['"`]([^'"`]+)['"`]/);
+    if (stringMatch) return `class="${stringMatch[1]}"`;
+    return '';
+  });
+  
+  // Replace htmlFor with for
+  html = html.replace(/htmlFor=/g, 'for=');
+  
+  // Replace tabIndex with tabindex
+  html = html.replace(/tabIndex=/g, 'tabindex=');
+  
+  // Remove React-specific attributes (all event handlers)
+  html = html.replace(/\s+(on[A-Z][a-zA-Z]*)=\{[^}]*\}/g, '');
+  html = html.replace(/\s+key=\{[^}]*\}/g, '');
+  html = html.replace(/\s+ref=\{[^}]*\}/g, '');
+  
+  // Convert style={{ ... }} to style="..."
+  html = html.replace(/style=\{\{([^}]+)\}\}/g, (match, styles) => {
+    const cssString = styles
+      .replace(/([a-zA-Z]+):/g, (m: string, prop: string) => {
+        // Convert camelCase to kebab-case
+        return prop.replace(/([A-Z])/g, '-$1').toLowerCase() + ':';
+      })
+      .replace(/,\s*/g, '; ')
+      .replace(/'/g, '')
+      .replace(/"/g, '');
+    return `style="${cssString}"`;
+  });
+  
+  // Extended icon map with more icons
+  // Unicode-only icon map (NO EMOJI - clean professional look)
+  const iconMap: Record<string, string> = {
+    'mail': '✉', 'bell': '◉', 'star': '★', 'heart': '♥', 
+    'check': '✓', 'x': '✕', 'plus': '+', 'minus': '−',
+    'arrowright': '→', 'arrowleft': '←', 'chevronright': '›', 
+    'chevrondown': '⌄', 'chevronup': '⌃', 'fire': '◆', 
+    'tag': '◇', 'user': '●', 'settings': '⚙', 'home': '⌂',
+    'search': '⌕', 'menu': '☰', 'close': '✕', 'bookmark': '⚑',
+    'share': '↗', 'thumbsup': '▲', 'thumbsdown': '▼',
+    'messagesquare': '▢', 'clock': '◷', 'calendar': '▦',
+    'image': '▣', 'video': '▶', 'music': '♪', 'file': '▤',
+    'folder': '▧', 'download': '↓', 'upload': '↑',
+    'trash': '⌫', 'edit': '✎', 'copy': '⧉', 'link': '⛓',
+    'externallink': '↗', 'eye': '◉', 'eyeoff': '○',
+    'lock': '⚿', 'unlock': '⚿', 'shield': '⛨', 'zap': '⚡',
+    'flame': '◆', 'sun': '☀', 'moon': '☽', 'cloud': '☁',
+    'gift': '◈', 'percent': '%', 'dollar': '$', 'euro': '€',
+    'play': '▶', 'pause': '⏸', 'stop': '■', 'skip': '⏭',
+    'playicon': '▶', 'playcircle': '▶', 'youtube': '▶',
+    'shorts': '⚡', 'subscriptions': '▣', 'library': '▤',
+    'history': '◷', 'liked': '▲', 'watchlater': '◷',
+    'trending': '◆', 'shopping': '◈', 'gaming': '▣',
+    'live': '●', 'sports': '●', 'learning': '▤', 'fashion': '◇',
+    'podcast': '◉', 'premium': '◆', 'arrowdown': '↓', 'arrowup': '↑',
+  };
+  
+  // Replace <Icon /> or <IconName /> or <IconNameIcon /> patterns
+  for (const [icon, emoji] of Object.entries(iconMap)) {
+    // Match: <Home />, <HomeIcon />, <Home className="..." />, etc.
+    const regex = new RegExp(`<${icon}(icon)?[^>]*\\/?>`, 'gi');
+    html = html.replace(regex, `<span class="text-xl">${emoji}</span>`);
+  }
+  
+  // Replace remaining self-closing JSX components <Component /> with placeholder
+  html = html.replace(/<([A-Z][a-zA-Z]*)\s+[^>]*\/>/g, '<span class="text-xs text-zinc-500">[$1]</span>');
+  html = html.replace(/<([A-Z][a-zA-Z]*)\s*\/>/g, '<span class="text-xs text-zinc-500">[$1]</span>');
+  
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CONVERT JSX src/href EXPRESSIONS TO PLAIN STRINGS FIRST
+  // ═══════════════════════════════════════════════════════════════════════════
+  
+  // Convert src={`...`} template literals to src="..."
+  html = html.replace(/src=\{`([^`]+)`\}/g, 'src="$1"');
+  html = html.replace(/href=\{`([^`]+)`\}/g, 'href="$1"');
+  
+  // Convert src={variable} or src={"..."} to src="..."
+  html = html.replace(/src=\{"([^"]+)"\}/g, 'src="$1"');
+  html = html.replace(/src=\{'([^']+)'\}/g, 'src="$1"');
+  html = html.replace(/href=\{"([^"]+)"\}/g, 'href="$1"');
+  html = html.replace(/href=\{'([^']+)'\}/g, 'href="$1"');
+  
+  // Convert src={props.imageUrl} or src={imageUrl} or src={image} to placeholder
+  html = html.replace(/src=\{[a-zA-Z_.[\]]+\}/g, 'src="https://picsum.photos/id/42/400/300"');
+  html = html.replace(/href=\{[a-zA-Z_.[\]]+\}/g, 'href="#"');
+  
+  // AGGRESSIVE: Fix ALL remaining src with curly braces (JSX expressions)
+  html = html.replace(/src=\{[^}]+\}/g, 'src="https://picsum.photos/id/43/400/300"');
+  
+  // Remove JSX expressions like {variable} - but be careful not to break template literals
+  // Only remove if it's clearly a JSX expression (not inside an attribute value)
+  html = html.replace(/>\s*\{[^{}]*\}\s*</g, '><'); // Remove expressions between tags
+  html = html.replace(/\{[^{}]*\}/g, ''); // Remove remaining expressions
+  
+  // Remove React fragments
+  html = html.replace(/<React\.Fragment>/g, '');
+  html = html.replace(/<\/React\.Fragment>/g, '');
+  html = html.replace(/<>/g, '');
+  html = html.replace(/<\/>/g, '');
+  
+  // Clean up whitespace
+  html = html.replace(/\s+>/g, '>');
+  html = html.replace(/\s+class="/g, ' class="');
+  html = html.replace(/class="\s+/g, 'class="');
+  html = html.replace(/"\s+>/g, '">');
+  
+  // Remove empty class attributes
+  html = html.replace(/\s+class=""/g, '');
+  
+  // ═══════════════════════════════════════════════════════════════════════════
+  // FIX BROKEN IMAGE URLs (common AI generation errors)
+  // ═══════════════════════════════════════════════════════════════════════════
+  
+  // Fix URLs with trailing )} from template literal errors
+  html = html.replace(/src="([^"]+)\)?\}"/g, (match, url) => {
+    const cleanUrl = url.replace(/[\)\}\`]+$/, '').replace(/\$\{.*$/, '');
+    return `src="${cleanUrl}"`;
+  });
+  
+  // Fix picsum.photos URLs with syntax errors
+  html = html.replace(/https:\/\/picsum\.photos\/[^"'\s>]+/g, (url) => {
+    // Clean up any trailing garbage
+    return url.replace(/[\)\}\`\$\{]+/g, '').replace(/[^0-9a-zA-Z\/\.\-\?=&]/g, '');
+  });
+  
+  // Replace broken/invalid image sources with working placeholders
+  html = html.replace(/src="[^"]*undefined[^"]*"/g, 'src="https://picsum.photos/400/300"');
+  html = html.replace(/src=""/g, 'src="https://picsum.photos/400/300"');
+  html = html.replace(/src="\$\{[^}]*\}"/g, 'src="https://picsum.photos/400/300"');
+  
+  // ═══════════════════════════════════════════════════════════════════════════
+  // INJECT PLACEHOLDER IMAGES FOR COMPONENTS THAT SHOULD HAVE IMAGES
+  // ═══════════════════════════════════════════════════════════════════════════
+  
+  // Check if this looks like a card/hero/banner but has no images
+  const looksLikeImageComponent = /card|hero|banner|feature|testimonial|product|profile|avatar|team|gallery|poster|thumbnail|cover/i.test(html);
+  const hasNoImages = !/<img\s/i.test(html);
+  const hasImagePlaceholder = /\[Image\]|\[Placeholder\]|image-placeholder/i.test(html);
+  
+  // If it looks like it should have images but doesn't, inject one
+  if ((looksLikeImageComponent || hasImagePlaceholder) && hasNoImages) {
+    // Find a good place to inject - after opening div or at start of content
+    const imageId = Math.floor(Math.random() * 50) + 10; // Random id 10-60
+    const placeholderImg = `<img src="https://picsum.photos/id/${imageId}/400/300" class="w-full h-48 object-cover rounded-lg mb-4" alt="Preview" />`;
+    
+    // Try to inject after first opening tag
+    if (html.match(/^<[a-z]+[^>]*>/i)) {
+      html = html.replace(/^(<[a-z]+[^>]*>)/i, `$1${placeholderImg}`);
+    }
+  }
+  
+  // Fix any remaining broken image patterns
+  // src with curly braces anywhere
+  html = html.replace(/src="\{[^"]*\}"/g, 'src="https://picsum.photos/id/44/400/300"');
+  // src with backticks
+  html = html.replace(/src="`[^`]*`"/g, 'src="https://picsum.photos/id/45/400/300"');
+  // src pointing to localhost or relative paths
+  html = html.replace(/src="\/[^"]*"/g, 'src="https://picsum.photos/id/46/400/300"');
+  html = html.replace(/src="\.\.?\/[^"]*"/g, 'src="https://picsum.photos/id/47/400/300"');
+  // Empty or whitespace-only src
+  html = html.replace(/src="\s*"/g, 'src="https://picsum.photos/id/48/400/300"');
+  // src with undefined or null text
+  html = html.replace(/src="undefined"/g, 'src="https://picsum.photos/id/49/400/300"');
+  html = html.replace(/src="null"/g, 'src="https://picsum.photos/id/50/400/300"');
+  // src with just a variable name
+  html = html.replace(/src="[a-zA-Z_]+"/g, (match) => {
+    // Don't replace valid URLs
+    if (match.includes('http') || match.includes('data:')) return match;
+    return 'src="https://picsum.photos/id/51/400/300"';
+  });
+  
+  // For avatar-like components, use pravatar
+  if (/avatar|profile|user|team|author/i.test(html)) {
+    const userId = Math.floor(Math.random() * 70) + 1;
+    html = html.replace(/src="https:\/\/picsum\.photos\/[^"]+"/g, `src="https://i.pravatar.cc/150?img=${userId}"`);
+  }
+  
+  // FINAL FIX: Ensure ALL <img> tags have valid src
+  // Find <img> tags without src or with broken src
+  html = html.replace(/<img([^>]*)>/gi, (match, attrs) => {
+    // Check if has valid src
+    if (attrs.includes('src="http') || attrs.includes("src='http") || attrs.includes('src="data:')) {
+      return match; // Already has valid src
+    }
+    // If has no src attribute or empty/broken src, add one
+    if (!attrs.includes('src=') || attrs.match(/src=["']\s*["']/)) {
+      const imgId = Math.floor(Math.random() * 50) + 20;
+      // Add src attribute
+      return `<img src="https://picsum.photos/id/${imgId}/400/300"${attrs.replace(/src=["'][^"']*["']/g, '')}>`;
+    }
+    return match;
+  });
+  
+  // Also fix background-image URLs
+  html = html.replace(/background-image:\s*url\(\s*['"]?([^)'"]+)['"]?\s*\)/gi, (match, url) => {
+    if (url.startsWith('http') || url.startsWith('data:')) return match;
+    const imgId = Math.floor(Math.random() * 50) + 30;
+    return `background-image: url('https://picsum.photos/id/${imgId}/800/600')`;
+  });
+  
+  return html;
+};
+
+// Iframe Preview Component (like Storybook)
+// Uses iframe with Tailwind CDN for full CSS support
+const ShadowPreview = ({ 
+  html, 
+  background = "dark",
+  className = ""
+}: { 
+  html: string; 
+  background?: "light" | "dark";
+  className?: string;
+}) => {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [iframeHeight, setIframeHeight] = useState(200);
+  
+  // Convert JSX to HTML
+  const cleanHtml = useMemo(() => jsxToHtml(html || ''), [html]);
+  
+  // Create full HTML document for iframe
+  const iframeDoc = useMemo(() => `<!DOCTYPE html>
+<html lang="en" class="${background === "dark" ? "dark" : ""}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          colors: {
+            primary: { 50: '#fff7ed', 100: '#ffedd5', 500: '#f97316', 600: '#ea580c', 700: '#c2410c' },
+            zinc: { 50: '#fafafa', 100: '#f4f4f5', 200: '#e4e4e7', 300: '#d4d4d8', 400: '#a1a1aa', 500: '#71717a', 600: '#52525b', 700: '#3f3f46', 800: '#27272a', 900: '#18181b', 950: '#09090b' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; max-width: 100%; }
+    html, body { 
+      font-family: 'Inter', system-ui, sans-serif;
+      background: ${background === "light" ? "#ffffff" : "#18181b"};
+      color: ${background === "light" ? "#18181b" : "#ffffff"};
+      overflow-x: hidden;
+    }
+    body {
+      padding: 16px;
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+    .preview-wrapper {
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
+    }
+    /* Force responsive */
+    img, video, iframe, svg { max-width: 100%; height: auto; }
+    div, section, aside, nav, header, footer, main, article { max-width: 100%; overflow-x: hidden; }
+    /* Marquee animation */
+    @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+    .animate-marquee { animation: marquee 20s linear infinite; }
+    /* Glass effect */
+    .glass, [class*="backdrop-blur"] {
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    /* Fix flex layouts */
+    .flex { display: flex !important; }
+    .inline-flex { display: inline-flex !important; }
+    .items-center { align-items: center !important; }
+    .justify-between { justify-content: space-between !important; }
+    .justify-center { justify-content: center !important; }
+    .gap-1 { gap: 0.25rem !important; }
+    .gap-2 { gap: 0.5rem !important; }
+    .gap-3 { gap: 0.75rem !important; }
+    .gap-4 { gap: 1rem !important; }
+    .gap-6 { gap: 1.5rem !important; }
+    /* Force visible text */
+    [class*="text-white"] { color: white !important; }
+    [class*="text-black"] { color: black !important; }
+    /* Buttons base */
+    button, [class*="btn"], a[class*="px-"] {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+    }
+    /* Common backgrounds */
+    .bg-black { background-color: #000 !important; }
+    .bg-white { background-color: #fff !important; }
+    .bg-zinc-900 { background-color: #18181b !important; }
+    .bg-zinc-800 { background-color: #27272a !important; }
+    .bg-zinc-950 { background-color: #09090b !important; }
+    /* Borders */
+    .border { border-width: 1px !important; }
+    .border-white\\/10 { border-color: rgba(255,255,255,0.1) !important; }
+    .border-zinc-800 { border-color: #27272a !important; }
+    .rounded-lg { border-radius: 0.5rem !important; }
+    .rounded-xl { border-radius: 0.75rem !important; }
+    .rounded-full { border-radius: 9999px !important; }
+    /* Padding */
+    .p-2 { padding: 0.5rem !important; }
+    .p-3 { padding: 0.75rem !important; }
+    .p-4 { padding: 1rem !important; }
+    .px-3 { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+    .px-4 { padding-left: 1rem !important; padding-right: 1rem !important; }
+    .py-2 { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+    .py-3 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
+    /* Text sizes */
+    .text-xs { font-size: 0.75rem !important; }
+    .text-sm { font-size: 0.875rem !important; }
+    .text-base { font-size: 1rem !important; }
+    .text-lg { font-size: 1.125rem !important; }
+    .text-xl { font-size: 1.25rem !important; }
+    .font-medium { font-weight: 500 !important; }
+    .font-semibold { font-weight: 600 !important; }
+    .font-bold { font-weight: 700 !important; }
+  </style>
+</head>
+<body>
+  <div class="preview-wrapper" id="preview-content">${cleanHtml}</div>
+  <script>
+    // Auto-resize iframe to content
+    function sendHeight() {
+      const height = document.getElementById('preview-content')?.scrollHeight || 200;
+      window.parent.postMessage({ type: 'IFRAME_HEIGHT', height: Math.max(height + 32, 120) }, '*');
+    }
+    // Send on load and after Tailwind processes
+    window.addEventListener('load', () => setTimeout(sendHeight, 100));
+    setTimeout(sendHeight, 500);
+    setTimeout(sendHeight, 1000);
+  </script>
+</body>
+</html>`, [cleanHtml, background]);
+
+  // Listen for height messages from iframe
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'IFRAME_HEIGHT' && typeof event.data.height === 'number') {
+        setIframeHeight(event.data.height);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  return (
+    <iframe
+      ref={iframeRef}
+      srcDoc={iframeDoc}
+      className={cn("w-full border-0", className)}
+      style={{ height: `${iframeHeight}px`, background: 'transparent', minHeight: '120px' }}
+      sandbox="allow-scripts allow-same-origin"
+      referrerPolicy="no-referrer"
+      title="Component Preview"
+    />
+  );
+};
+
+// Interactive React Preview - Real React components with Tailwind + interactivity!
+// Uses iframe with React runtime for full functionality (like Storybook/Sandpack)
+const InteractiveReactPreview = ({ 
+  code, 
+  background = "dark",
+  className = ""
+}: { 
+  code: string; 
+  background?: "light" | "dark";
+  className?: string;
+}) => {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [iframeHeight, setIframeHeight] = useState(200);
+  const [error, setError] = useState<string | null>(null);
+
+  // Build full React app in iframe
+  const iframeDoc = useMemo(() => {
+    if (!code) return '';
+    
+    // Clean up code for React rendering
+    let jsxCode = code;
+    
+    // Remove imports (we provide React globally)
+    jsxCode = jsxCode.replace(/import\s+.*from\s+['"][^'"]+['"];?\n?/g, '');
+    
+    // CRITICAL: Convert HTML comments to JSX comments
+    // <!-- comment --> -> {/* comment */}
+    jsxCode = jsxCode.replace(/<!--\s*([\s\S]*?)\s*-->/g, '{/* $1 */}');
+    
+    // CRITICAL: Convert HTML void tags to JSX self-closing format
+    // <br> -> <br />
+    jsxCode = jsxCode.replace(/<br\s*>/gi, '<br />');
+    // <hr> -> <hr />
+    jsxCode = jsxCode.replace(/<hr\s*>/gi, '<hr />');
+    // <img ...> -> <img ... /> (if not already self-closing)
+    jsxCode = jsxCode.replace(/<img([^>]*[^\/])>/gi, '<img$1 />');
+    // <input ...> -> <input ... />
+    jsxCode = jsxCode.replace(/<input([^>]*[^\/])>/gi, '<input$1 />');
+    // <meta ...> -> <meta ... />
+    jsxCode = jsxCode.replace(/<meta([^>]*[^\/])>/gi, '<meta$1 />');
+    // <link ...> -> <link ... />
+    jsxCode = jsxCode.replace(/<link([^>]*[^\/])>/gi, '<link$1 />');
+    // <source ...> -> <source ... />
+    jsxCode = jsxCode.replace(/<source([^>]*[^\/])>/gi, '<source$1 />');
+    // <area ...> -> <area ... />
+    jsxCode = jsxCode.replace(/<area([^>]*[^\/])>/gi, '<area$1 />');
+    // <embed ...> -> <embed ... />
+    jsxCode = jsxCode.replace(/<embed([^>]*[^\/])>/gi, '<embed$1 />');
+    
+    // If code is wrapped in function component, extract it
+    const componentMatch = jsxCode.match(/(?:export\s+default\s+)?function\s+(\w+)\s*\([^)]*\)\s*\{([\s\S]*)\}/);
+    let componentName = 'PreviewComponent';
+    let componentBody = jsxCode;
+    
+    if (componentMatch) {
+      componentName = componentMatch[1] || 'PreviewComponent';
+      componentBody = componentMatch[2];
+    }
+    
+    // If it's just JSX (starts with <), wrap in component
+    if (jsxCode.trim().startsWith('<') && !componentMatch) {
+      componentBody = `return (${jsxCode})`;
+    }
+
+    const bgColor = background === 'dark' ? '#18181b' : '#ffffff';
+    const textColor = background === 'dark' ? '#ffffff' : '#18181b';
+
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { 
+      background: transparent; 
+      color: ${textColor}; 
+      font-family: system-ui, -apple-system, sans-serif;
+      width: fit-content;
+      min-width: 100%;
+    }
+    #root { 
+      width: fit-content;
+      min-width: 100%;
+      display: inline-block;
+    }
+    .error-display {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      padding: 12px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+    }
+    /* Icon placeholders */
+    .icon-placeholder { 
+      display: inline-flex; 
+      align-items: center; 
+      justify-content: center;
+      width: 1em; 
+      height: 1em; 
+    }
+  </style>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3b82f6',
+            secondary: '#6366f1',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="${background === 'dark' ? 'dark' : ''}">
+  <div id="root"></div>
+  <script type="text/babel" data-presets="react">
+    const { useState, useEffect, useCallback, useMemo, useRef, Fragment } = React;
+    
+    // Mock common icon components
+    const ChevronDown = () => <span className="icon-placeholder">▼</span>;
+    const ChevronUp = () => <span className="icon-placeholder">▲</span>;
+    const ChevronLeft = () => <span className="icon-placeholder">◀</span>;
+    const ChevronRight = () => <span className="icon-placeholder">▶</span>;
+    const Check = () => <span className="icon-placeholder">✓</span>;
+    const X = () => <span className="icon-placeholder">✕</span>;
+    const Search = () => <span className="icon-placeholder">🔍</span>;
+    const Menu = () => <span className="icon-placeholder">☰</span>;
+    const Plus = () => <span className="icon-placeholder">+</span>;
+    const Minus = () => <span className="icon-placeholder">−</span>;
+    const Star = () => <span className="icon-placeholder">★</span>;
+    const Heart = () => <span className="icon-placeholder">♥</span>;
+    const User = () => <span className="icon-placeholder">👤</span>;
+    const Settings = () => <span className="icon-placeholder">⚙</span>;
+    const Home = () => <span className="icon-placeholder">🏠</span>;
+    const Mail = () => <span className="icon-placeholder">✉</span>;
+    const Phone = () => <span className="icon-placeholder">📞</span>;
+    const Calendar = () => <span className="icon-placeholder">📅</span>;
+    const Clock = () => <span className="icon-placeholder">🕐</span>;
+    const Image = () => <span className="icon-placeholder">🖼</span>;
+    const Video = () => <span className="icon-placeholder">🎬</span>;
+    const Music = () => <span className="icon-placeholder">🎵</span>;
+    const File = () => <span className="icon-placeholder">📄</span>;
+    const Folder = () => <span className="icon-placeholder">📁</span>;
+    const Download = () => <span className="icon-placeholder">⬇</span>;
+    const Upload = () => <span className="icon-placeholder">⬆</span>;
+    const Share = () => <span className="icon-placeholder">↗</span>;
+    const Copy = () => <span className="icon-placeholder">📋</span>;
+    const Trash = () => <span className="icon-placeholder">🗑</span>;
+    const Edit = () => <span className="icon-placeholder">✏</span>;
+    const Eye = () => <span className="icon-placeholder">👁</span>;
+    const EyeOff = () => <span className="icon-placeholder">👁‍🗨</span>;
+    const Lock = () => <span className="icon-placeholder">🔒</span>;
+    const Unlock = () => <span className="icon-placeholder">🔓</span>;
+    const Bell = () => <span className="icon-placeholder">🔔</span>;
+    const Info = () => <span className="icon-placeholder">ℹ</span>;
+    const AlertCircle = () => <span className="icon-placeholder">⚠</span>;
+    const CheckCircle = () => <span className="icon-placeholder">✅</span>;
+    const XCircle = () => <span className="icon-placeholder">❌</span>;
+    const ArrowRight = () => <span className="icon-placeholder">→</span>;
+    const ArrowLeft = () => <span className="icon-placeholder">←</span>;
+    const ArrowUp = () => <span className="icon-placeholder">↑</span>;
+    const ArrowDown = () => <span className="icon-placeholder">↓</span>;
+    const ExternalLink = () => <span className="icon-placeholder">↗</span>;
+    const Loader2 = () => <span className="icon-placeholder animate-spin">⟳</span>;
+    const MoreHorizontal = () => <span className="icon-placeholder">⋯</span>;
+    const MoreVertical = () => <span className="icon-placeholder">⋮</span>;
+    
+    // cn utility (simplified)
+    const cn = (...classes) => classes.filter(Boolean).join(' ');
+    
+    // Recharts mock components (Recharts doesn't have UMD build, so we provide Chart.js-based fallbacks)
+    const ResponsiveContainer = ({ children, width, height }) => (
+      <div style={{ width: width || '100%', height: height || 300 }}>{children}</div>
+    );
+    const LineChart = ({ children, data, width, height }) => {
+      const canvasRef = useRef(null);
+      useEffect(() => {
+        if (!canvasRef.current || !window.Chart || !data) return;
+        const chart = new window.Chart(canvasRef.current, {
+          type: 'line',
+          data: { labels: data.map((d, i) => d.name || i), datasets: [{ data: data.map(d => d.value || d.uv || d.pv || 0), borderColor: '#6366f1', tension: 0.4 }] },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+        return () => chart.destroy();
+      }, [data]);
+      return <div style={{ width: width || '100%', height: height || 300 }}><canvas ref={canvasRef} /></div>;
+    };
+    const AreaChart = LineChart;
+    const BarChart = ({ children, data, width, height }) => {
+      const canvasRef = useRef(null);
+      useEffect(() => {
+        if (!canvasRef.current || !window.Chart || !data) return;
+        const chart = new window.Chart(canvasRef.current, {
+          type: 'bar',
+          data: { labels: data.map((d, i) => d.name || i), datasets: [{ data: data.map(d => d.value || d.uv || d.pv || 0), backgroundColor: '#6366f1' }] },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+        return () => chart.destroy();
+      }, [data]);
+      return <div style={{ width: width || '100%', height: height || 300 }}><canvas ref={canvasRef} /></div>;
+    };
+    const PieChart = ({ children, data, width, height }) => {
+      const canvasRef = useRef(null);
+      useEffect(() => {
+        if (!canvasRef.current || !window.Chart || !data) return;
+        const chart = new window.Chart(canvasRef.current, {
+          type: 'doughnut',
+          data: { labels: data.map((d, i) => d.name || i), datasets: [{ data: data.map(d => d.value || 0), backgroundColor: ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899'] }] },
+          options: { responsive: true, maintainAspectRatio: false }
+        });
+        return () => chart.destroy();
+      }, [data]);
+      return <div style={{ width: width || '100%', height: height || 300 }}><canvas ref={canvasRef} /></div>;
+    };
+    // Recharts sub-components (no-op, data is passed to parent)
+    const Line = () => null;
+    const Area = () => null;
+    const Bar = () => null;
+    const Pie = () => null;
+    const XAxis = () => null;
+    const YAxis = () => null;
+    const CartesianGrid = () => null;
+    const Tooltip = () => null;
+    const Legend = () => null;
+    const Cell = () => null;
+    
+    // Chart.js component wrapper
+    const ChartComponent = ({ type = 'line', data, options, className = '' }) => {
+      const canvasRef = useRef(null);
+      const chartRef = useRef(null);
+      
+      useEffect(() => {
+        if (!canvasRef.current || !window.Chart) return;
+        
+        // Destroy existing chart
+        if (chartRef.current) {
+          chartRef.current.destroy();
+        }
+        
+        // Create new chart
+        chartRef.current = new window.Chart(canvasRef.current, {
+          type,
+          data: data || { labels: ['Jan', 'Feb', 'Mar'], datasets: [{ data: [10, 20, 30] }] },
+          options: { responsive: true, maintainAspectRatio: false, ...options }
+        });
+        
+        return () => {
+          if (chartRef.current) {
+            chartRef.current.destroy();
+          }
+        };
+      }, [type, data, options]);
+      
+      return <canvas ref={canvasRef} className={className} />;
+    };
+    
+    // Component code
+    function ${componentName}() {
+      ${componentBody}
+    }
+    
+    // Render
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<${componentName} />);
+    
+    // Height reporting
+    const sendHeight = () => {
+      const height = Math.max(
+        document.body.scrollHeight,
+        document.body.offsetHeight,
+        document.documentElement.scrollHeight,
+        100
+      );
+      window.parent.postMessage({ type: 'IFRAME_HEIGHT', height }, '*');
+    };
+    
+    // Initial + resize + mutation observer
+    setTimeout(sendHeight, 100);
+    setTimeout(sendHeight, 500);
+    setTimeout(sendHeight, 1500);
+    window.addEventListener('resize', sendHeight);
+    
+    const observer = new MutationObserver(sendHeight);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+  </script>
+</body>
+</html>`;
+  }, [code, background]);
+
+  // Listen for height messages
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'IFRAME_HEIGHT' && typeof event.data.height === 'number') {
+        setIframeHeight(Math.min(event.data.height + 20, 800)); // Cap at 800px
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  return (
+    <div className={cn("w-full relative inline-block", className)}>
+      {error && (
+        <div className="absolute top-2 left-2 right-2 z-10 bg-red-500/90 text-white text-xs p-2 rounded">
+          {error}
+        </div>
+      )}
+      <iframe
+        ref={iframeRef}
+        srcDoc={iframeDoc}
+        className="border-0"
+        style={{ 
+          width: 'fit-content',
+          minWidth: '100%',
+          height: `${iframeHeight}px`, 
+          background: 'transparent',
+        }}
+        sandbox="allow-scripts allow-same-origin"
+        title="Interactive React Preview"
+      />
+    </div>
+  );
+};
+
 const LogoIcon = ({ className, color = "currentColor" }: { className?: string; color?: string }) => (
   <svg className={className} viewBox="0 0 82 109" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M68.099 37.2285C78.1678 43.042 78.168 57.5753 68.099 63.3887L29.5092 85.668C15.6602 93.6633 0.510418 77.4704 9.40857 64.1836L17.4017 52.248C18.1877 51.0745 18.1876 49.5427 17.4017 48.3691L9.40857 36.4336C0.509989 23.1467 15.6602 6.95306 29.5092 14.9482L68.099 37.2285Z" stroke={color} strokeWidth="11.6182" strokeLinejoin="round"/>
@@ -825,7 +2307,7 @@ const analyzeCodeChanges = (oldCode: string, newCode: string, userRequest: strin
   }
   
   if (isColors || addedGradient) {
-    insights.push("Zmieniłem kolory 🎨");
+    insights.push("Zmieniłem kolory");
   }
   
   if (isButtons) {
@@ -989,9 +2471,7 @@ function ReplayToolContent() {
   // Initialize to empty string to avoid hydration mismatch
   const [styleDirective, setStyleDirective] = useState("");
   
-  // Enterprise preset state
-  const [enterprisePresetId, setEnterprisePresetId] = useState<string | null>(null);
-  const [enterpriseMode, setEnterpriseMode] = useState(false);
+  // Enterprise removed - using system-prompt.ts only for premium styling
   
   // Load default style from localStorage after mount
   useEffect(() => {
@@ -999,20 +2479,9 @@ function ReplayToolContent() {
     if (savedStyle) {
       setStyleDirective(savedStyle);
     }
-    // Load saved enterprise preset
-    const savedPreset = localStorage.getItem("replay_enterprise_preset");
-    if (savedPreset) {
-      setEnterprisePresetId(savedPreset);
-      setEnterpriseMode(true);
-    }
+    // Enterprise preset loading removed - always use Creative mode
   }, []);
   
-  // Save enterprise preset to localStorage
-  useEffect(() => {
-    if (enterprisePresetId) {
-      localStorage.setItem("replay_enterprise_preset", enterprisePresetId);
-    }
-  }, [enterprisePresetId]);
   
   const [styleReferenceImage, setStyleReferenceImage] = useState<{ url: string; name: string } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -1210,6 +2679,147 @@ function ReplayToolContent() {
   const [archBuilding, setArchBuilding] = useState(false);
   const [selectedArchNode, setSelectedArchNode] = useState<string | null>(null);
   const [styleInfo, setStyleInfo] = useState<StyleInfo | null>(null);
+  
+  // Library state (Storybook-like component library)
+  const [libraryData, setLibraryData] = useState<LibraryData | null>(null);
+  const [selectedLibraryItem, setSelectedLibraryItem] = useState<string | null>(null);
+  const [libraryPanel, setLibraryPanel] = useState<LibraryPanel>("controls");
+  const [libraryPropsOverride, setLibraryPropsOverride] = useState<Record<string, any>>({});
+  const [libraryZoom, setLibraryZoom] = useState(100);
+  const [libraryBackground, setLibraryBackground] = useState<"light" | "dark" | "transparent">("dark");
+  const [libraryNeedsRegeneration, setLibraryNeedsRegeneration] = useState(false);
+  const [libraryCodeHash, setLibraryCodeHash] = useState<string | null>(null); // Track which code library was generated from
+  const [showLibraryGrid, setShowLibraryGrid] = useState(false);
+  // Library sidebar collapse states
+  const [librarySectionsExpanded, setLibrarySectionsExpanded] = useState<Record<string, boolean>>({ docs: true, components: true });
+  const [libraryCategoriesExpanded, setLibraryCategoriesExpanded] = useState<Record<string, boolean>>({});
+  const [showLibraryOutline, setShowLibraryOutline] = useState(false);
+  const [showLibraryCode, setShowLibraryCode] = useState(false);
+  const [libraryViewport, setLibraryViewport] = useState<"desktop" | "mobile">("desktop");
+  const [isLibraryFullscreen, setIsLibraryFullscreen] = useState(false);
+  const [libraryPanelCollapsed, setLibraryPanelCollapsed] = useState(false);
+  
+  // Handle Escape key to close fullscreen
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isLibraryFullscreen) {
+        setIsLibraryFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isLibraryFullscreen]);
+  
+  const [blueprintsZoom, setBlueprintsZoom] = useState(100);
+  const [blueprintsOffset, setBlueprintsOffset] = useState({ x: 0, y: 0 });
+  const [isBlueprintsPanning, setIsBlueprintsPanning] = useState(false);
+  const [blueprintsPanStart, setBlueprintsPanStart] = useState({ x: 0, y: 0 });
+  const [blueprintsComponentPrompt, setBlueprintsComponentPrompt] = useState("");
+  const [isGeneratingBlueprintsComponent, setIsGeneratingBlueprintsComponent] = useState(false);
+  const [blueprintsBackground, setBlueprintsBackground] = useState<"dark" | "light">("dark");
+  
+  // Blueprints Analysis State (Single Source of Truth)
+  const [blueprintsAnalysis, setBlueprintsAnalysis] = useState<any>(null);
+  const [isAnalyzingBlueprints, setIsAnalyzingBlueprints] = useState(false);
+  const [blueprintDetailView, setBlueprintDetailView] = useState<"ai" | "props" | "variants" | "code" | "usage">("ai");
+  const [blueprintStatuses, setBlueprintStatuses] = useState<Record<string, "draft" | "approved" | "deprecated">>({});
+  const [blueprintPropsOverride, setBlueprintPropsOverride] = useState<Record<string, any>>({}); // Live props editing
+  // JSON Live Editor state
+  const [blueprintJsonSchema, setBlueprintJsonSchema] = useState<any>(null);
+  const [blueprintEditedCode, setBlueprintEditedCode] = useState<string | null>(null); // Edited component code
+  const [blueprintChatInput, setBlueprintChatInput] = useState("");
+  const [blueprintChatHistory, setBlueprintChatHistory] = useState<{role: 'user' | 'ai', content: string}[]>([]);
+  const [isEditingBlueprint, setIsEditingBlueprint] = useState(false);
+  const [showJsonView, setShowJsonView] = useState(false);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [generatePromptInput, setGeneratePromptInput] = useState("");
+  const blueprintsCanvasRef = useRef<HTMLDivElement>(null);
+  // Draggable component positions on canvas
+  const [blueprintPositions, setBlueprintPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const [draggingComponent, setDraggingComponent] = useState<string | null>(null);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [selectedBlueprintComponent, setSelectedBlueprintComponent] = useState<string | null>(null);
+  
+  // Auto layout function for Blueprints - MASONRY STYLE (varied sizes)
+  const autoLayoutBlueprints = useCallback(() => {
+    if (!libraryData?.components || libraryData.components.length === 0) return;
+    
+    const newPositions: Record<string, { x: number; y: number }> = {};
+    
+    // Group by category
+    const categories: Record<string, any[]> = {};
+    libraryData.components.forEach((comp: any) => {
+      const cat = comp.category || 'other';
+      if (!categories[cat]) categories[cat] = [];
+      categories[cat].push(comp);
+    });
+    
+    // MASONRY LAYOUT - components flow naturally
+    const GAP = 40;
+    const CATEGORY_GAP = 80;
+    const START_Y = 100;
+    
+    let currentX = 60;
+    
+    Object.entries(categories).forEach(([category, comps]) => {
+      // Track column heights for masonry
+      const columnHeights = [0, 0]; // 2 columns per category
+      const COLUMN_WIDTH = 320;
+      
+      comps.forEach((comp: any, idx: number) => {
+        const id = `comp-${comp.id}`;
+        
+        // Estimate component height based on type/name
+        let estimatedHeight = 150;
+        const name = (comp.name || '').toLowerCase();
+        if (name.includes('sidebar') || name.includes('nav')) estimatedHeight = 400;
+        else if (name.includes('card') || name.includes('table')) estimatedHeight = 250;
+        else if (name.includes('header') || name.includes('banner')) estimatedHeight = 120;
+        else if (name.includes('button') || name.includes('badge')) estimatedHeight = 80;
+        else if (name.includes('stat') || name.includes('metric')) estimatedHeight = 180;
+        
+        // Find shortest column
+        const shortestCol = columnHeights[0] <= columnHeights[1] ? 0 : 1;
+        
+        newPositions[id] = { 
+          x: currentX + shortestCol * (COLUMN_WIDTH + GAP), 
+          y: START_Y + columnHeights[shortestCol]
+        };
+        
+        // Update column height
+        columnHeights[shortestCol] += estimatedHeight + GAP;
+      });
+      
+      // Move to next category
+      currentX += 2 * COLUMN_WIDTH + GAP + CATEGORY_GAP;
+    });
+    
+    setBlueprintPositions(newPositions);
+    // Reset zoom and offset
+    setBlueprintsZoom(75);
+    setBlueprintsOffset({ x: 0, y: 0 });
+  }, [libraryData?.components]);
+
+  // Initialize positions when library data changes - always auto-layout on new components
+  useEffect(() => {
+    if (libraryData?.components && libraryData.components.length > 0) {
+      // Get component IDs from library
+      const componentIds = libraryData.components.map((c: any) => `comp-${c.id}`);
+      const existingPositionIds = Object.keys(blueprintPositions);
+      
+      // Auto-layout if: no positions yet, OR new components were added
+      const hasNewComponents = componentIds.some((id: string) => !existingPositionIds.includes(id));
+      const positionsExist = existingPositionIds.length > 0;
+      
+      if (!positionsExist || hasNewComponents) {
+        // Small delay to ensure state is ready
+        setTimeout(() => autoLayoutBlueprints(), 50);
+      }
+    }
+  }, [libraryData?.components?.length, libraryData?.components, autoLayoutBlueprints]);
+  
+  const [isGeneratingLibrary, setIsGeneratingLibrary] = useState(false);
+  
   const [archZoom, setArchZoom] = useState(1);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedNodeModal, setSelectedNodeModal] = useState<ArchNode | null>(null);
@@ -1276,6 +2886,9 @@ function ReplayToolContent() {
   const [showAssetsModal, setShowAssetsModal] = useState(false);
   const [selectedAssetUrl, setSelectedAssetUrl] = useState<string | null>(null);
   const [selectedAssetOccurrence, setSelectedAssetOccurrence] = useState<number | null>(null);
+  
+  // Video preview modal
+  const [videoPreviewModal, setVideoPreviewModal] = useState<{ open: boolean; url: string; name: string } | null>(null);
   
   // Helper to inject image click handlers into preview HTML
   const injectAssetClickHandler = useCallback((html: string): string => {
@@ -1745,6 +3358,9 @@ function ReplayToolContent() {
     
     // Mark that we need to auto-generate docs (will be picked up by useEffect)
     setNeedsAutoGenDocs(true);
+    
+    // Mark that Library needs regeneration with new code
+    setLibraryNeedsRegeneration(true);
     
     // Mark all components as done
     setAnalysisPhase(prev => prev ? {
@@ -2444,14 +4060,18 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
             // Merge with existing generations to preserve full data for current session
             // IMPORTANT: Supabase is the source of truth - don't keep old local-only generations
             setGenerations(prev => {
-              const supabaseMap = new Map<string, GenerationRecord>(
-                data.generations.map((g: GenerationRecord) => [g.id, g])
-              );
+              // Use Record object instead of Map for better TS compatibility
+              const supabaseById: Record<string, GenerationRecord> = {};
+              data.generations.forEach((g: GenerationRecord) => {
+                supabaseById[g.id] = g;
+              });
+              
               const merged: GenerationRecord[] = [];
+              const processedIds = new Set<string>();
               
               // Only keep generations that exist in Supabase, but preserve full data from prev
               for (const prevGen of prev) {
-                const newGen = supabaseMap.get(prevGen.id);
+                const newGen = supabaseById[prevGen.id];
                 if (newGen) {
                   // Merge: keep code/versions from prev if not in new (minimal fetch)
                   merged.push({
@@ -2464,16 +4084,18 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
                     styleDirective: prevGen.styleDirective || newGen.styleDirective || '',
                     refinements: prevGen.refinements || newGen.refinements || '',
                   } as GenerationRecord);
-                  supabaseMap.delete(prevGen.id);
+                  processedIds.add(prevGen.id);
                 }
                 // REMOVED: Don't keep local-only generations - Supabase is source of truth
                 // Old stale data in localStorage was causing projects to show that don't exist
               }
               
-              // Add any new generations from Supabase
-              for (const newGen of supabaseMap.values()) {
-                merged.push(newGen);
-              }
+              // Add any new generations from Supabase that weren't in prev
+              data.generations.forEach((newGen: GenerationRecord) => {
+                if (!processedIds.has(newGen.id)) {
+                  merged.push(newGen);
+                }
+              });
               
               // Sort by timestamp (newest first)
               return merged.sort((a, b) => b.timestamp - a.timestamp);
@@ -2629,14 +4251,37 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
       styleInfo: styleInfo,
       styleDirective: styleDirective,
       title: generationTitle || activeGeneration.title,
-      status: "complete"
+      status: "complete",
+      // Persist component library data
+      libraryData: libraryData,
     };
     
     setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
     
     // Sync to Supabase
     saveGenerationToSupabase(updatedGen);
-  }, [generatedCode, flowNodes, flowEdges, styleInfo, styleDirective, generationTitle, generationComplete, activeGeneration?.id, saveGenerationToSupabase]);
+  }, [generatedCode, flowNodes, flowEdges, styleInfo, styleDirective, generationTitle, generationComplete, activeGeneration?.id, saveGenerationToSupabase, libraryData]);
+  
+  // Separate effect for Library data persistence (can update even without code changes)
+  useEffect(() => {
+    if (!activeGeneration || !libraryData) return;
+    
+    // Only save if library data actually changed
+    const currentLibrary = JSON.stringify(libraryData);
+    const savedLibrary = JSON.stringify(activeGeneration.libraryData);
+    if (currentLibrary === savedLibrary) return;
+    
+    console.log("[Library] Saving library data to project:", activeGeneration.id);
+    
+    const updatedGen: GenerationRecord = {
+      ...activeGeneration,
+      libraryData: libraryData,
+    };
+    
+    setActiveGeneration(updatedGen);
+    setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
+    saveGenerationToSupabase(updatedGen);
+  }, [libraryData, activeGeneration?.id]);
 
   // Video time update
   useEffect(() => {
@@ -3272,9 +4917,9 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
     setArchBuilding(false);
   };
 
-  // Build PRODUCT FLOW MAP from ACTUAL code content
+  // Build PRODUCT FLOW MAP from ACTUAL code content or SCAN DATA
   // Analyzes the generated code to detect:
-  // - CONFIRMED pages: x-show Alpine.js pages with actual content
+  // - CONFIRMED pages: x-show Alpine.js pages with actual content OR scanData.pages
   // - POSSIBLE pages: Navigation items without content (marked with comments)
   // - Flow edges: Navigation relationships between pages
   const buildFlowLive = async (code: string) => {
@@ -3294,58 +4939,240 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
     };
     
     // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 1: Detect CONFIRMED pages (Alpine.js x-show with actual content)
-    // These are pages that were actually shown in the video
+    // PRIORITY: Use scanData.pages if available (from video analysis)
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    if (scanData?.pages && Array.isArray(scanData.pages) && scanData.pages.length > 0) {
+      console.log('[buildFlowLive] Using scanData.pages:', scanData.pages.length, 'pages');
+      
+      // Separate pages by seenInVideo status
+      const observedPages = scanData.pages.filter((p: any) => p.seenInVideo === true || p.isDefault);
+      const possiblePages = scanData.pages.filter((p: any) => p.seenInVideo === false && !p.isDefault);
+      
+      console.log('[buildFlowLive] Observed:', observedPages.length, 'Possible:', possiblePages.length);
+      
+      // Add OBSERVED nodes first
+      for (let i = 0; i < observedPages.length; i++) {
+        const page = observedPages[i];
+        await addNode({
+          id: page.id || `page-${i}`,
+          name: page.title || page.name || page.id,
+          type: 'view',
+          status: 'observed',
+          description: page.description || `Path: ${page.path || '/'}`,
+          x: 100 + (i % 3) * 300,
+          y: 100 + Math.floor(i / 3) * 220,
+          confidence: 'high'
+        });
+      }
+      
+      // Add POSSIBLE nodes (not seen but in navigation)
+      for (let i = 0; i < possiblePages.length; i++) {
+        const page = possiblePages[i];
+        await addNode({
+          id: page.id || `possible-${i}`,
+          name: page.title || page.name || page.id,
+          type: 'view',
+          status: 'possible',
+          description: page.description || `Present in navigation, not shown in video`,
+          x: 100 + (i % 3) * 300,
+          y: 400 + Math.floor(i / 3) * 220,
+          confidence: 'medium'
+        });
+      }
+      
+      // Also add EXTRA possible pages from sidebar navigation items not in pages array
+      if (scanData?.ui?.navigation?.sidebar?.items) {
+        const navItems = scanData.ui.navigation.sidebar.items;
+        const existingPageIds = new Set(scanData.pages.map((p: any) => (p.id || '').toLowerCase()));
+        
+        let extraIndex = possiblePages.length;
+        for (const item of navItems) {
+          const itemId = (item.label || item.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+          if (itemId && itemId.length > 2 && !existingPageIds.has(itemId)) {
+            existingPageIds.add(itemId);
+            await addNode({
+              id: itemId,
+              name: item.label || item.name,
+              type: 'view',
+              status: 'possible',
+              description: `Navigation item - not visited in video`,
+              x: 100 + (extraIndex % 3) * 300,
+              y: 400 + Math.floor(extraIndex / 3) * 220,
+              confidence: 'low'
+            });
+            extraIndex++;
+          }
+        }
+      }
+      
+      // Add edges between pages (navigation flow)
+      const allPageIds = scanData.pages.map((p: any) => p.id || '');
+      for (let i = 0; i < allPageIds.length - 1; i++) {
+        if (allPageIds[i] && allPageIds[i + 1]) {
+          await addEdge({
+            id: `edge-${allPageIds[i]}-${allPageIds[i+1]}`,
+            from: allPageIds[i],
+            to: allPageIds[i + 1],
+            label: 'navigates',
+            type: 'navigation'
+          });
+        }
+      }
+      
+      setFlowBuilding(false);
+      return; // Done - skip old detection logic
+    }
+    
+    console.log('[buildFlowLive] No scanData.pages, falling back to AGGRESSIVE code analysis');
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // AGGRESSIVE FALLBACK: Extract ALL navigation from code
     // ═══════════════════════════════════════════════════════════════════════════
     
     interface DetectedPage {
       id: string;
       name: string;
-      isConfirmed: boolean; // Has actual content (shown in video)
+      isConfirmed: boolean;
       hasContent: boolean;
       contentPreview?: string;
-      isAddedByAI?: boolean; // Was this page added by Edit with AI?
+      isAddedByAI?: boolean;
     }
     
     const detectedPages: DetectedPage[] = [];
     const processedIds = new Set<string>();
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // STEP 1: AGGRESSIVE extraction of ALL navigation items from entire code
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    const navNames = new Set<string>();
+    
+    // Pattern 1: ALL anchor links with text
+    const linkRegex = /<a[^>]*>([^<]{2,30})<\/a>/gi;
+    let m;
+    while ((m = linkRegex.exec(code)) !== null) {
+      const text = m[1].trim().replace(/\s+/g, ' ');
+      // Filter: must start with letter, no code, reasonable length
+      if (text.length > 1 && text.length < 30 && /^[A-Za-zĄĘŁŃÓŚŹŻąęłńóśźż]/.test(text) && !/[<>=\{\}]/.test(text)) {
+        navNames.add(text);
+      }
+    }
+    
+    // Pattern 2: Navigation menu items - look for text in common nav patterns
+    const navPatterns = [
+      // Items in nav/header/sidebar
+      /<(?:nav|header|aside|ul)[^>]*class\s*=\s*["'][^"']*(?:nav|menu|sidebar|header)[^"']*["'][^>]*>[\s\S]*?<\/(?:nav|header|aside|ul)>/gi,
+      // Flex containers in header
+      /<div[^>]*class\s*=\s*["'][^"']*(?:flex|gap)[^"']*["'][^>]*>[\s\S]*?<\/div>/gi,
+    ];
+    
+    for (const pattern of navPatterns) {
+      let areaMatch;
+      while ((areaMatch = pattern.exec(code)) !== null) {
+        const area = areaMatch[0];
+        // Extract all text from links in this area
+        const innerLinkRegex = /<a[^>]*>([^<]{2,25})<\/a>/gi;
+        let linkMatch;
+        while ((linkMatch = innerLinkRegex.exec(area)) !== null) {
+          const text = linkMatch[1].trim();
+          if (text.length > 1 && /^[A-Za-zĄĘŁŃÓŚŹŻ]/.test(text)) {
+            navNames.add(text);
+          }
+        }
+        // Extract button text
+        const btnRegex = /<button[^>]*>([^<]{2,20})<\/button>/gi;
+        while ((linkMatch = btnRegex.exec(area)) !== null) {
+          const text = linkMatch[1].trim();
+          if (text.length > 1 && /^[A-Za-zĄĘŁŃÓŚŹŻ]/.test(text)) {
+            navNames.add(text);
+          }
+        }
+      }
+    }
+    
+    // Pattern 3: Common navigation words that appear near "href" or "@click"
+    const navContextRegex = /(?:href|@click)[^>]*>([A-Za-zĄĘŁŃÓŚŹŻąęłńóśźż][A-Za-z0-9ĄĘŁŃÓŚŹŻąęłńóśźż\s]{1,25})</gi;
+    while ((m = navContextRegex.exec(code)) !== null) {
+      const text = m[1].trim();
+      if (text.length > 1 && text.length < 25) {
+        navNames.add(text);
+      }
+    }
+    
+    // Filter out common non-page words
+    const excludeWords = new Set([
+      'apply', 'submit', 'send', 'search', 'login', 'logout', 'log in', 'sign up', 
+      'sign in', 'wyloguj', 'zaloguj', 'cancel', 'ok', 'save', 'close', 'back', 
+      'next', 'prev', 'more', 'less', 'see all', 'view all', 'expand', 'collapse',
+      'add', 'edit', 'delete', 'remove', 'update', 'create', 'new', 'copy', 'share',
+      'download', 'upload', 'help', 'menu', 'toggle', 'show', 'hide', 'get started',
+      'learn more', 'read more', 'contact us', 'buy now', 'shop now', 'subscribe',
+      'click', 'tap', 'press', 'select', 'choose', 'home', 'y', 'x', 'icon'
+    ]);
+    
+    const filteredNavNames = Array.from(navNames).filter(name => {
+      const lower = name.toLowerCase();
+      return !excludeWords.has(lower) && name.length > 2;
+    });
+    
+    console.log('[buildFlowLive] Found nav names (aggressive):', filteredNavNames);
     
     // Check if code has Alpine.js multi-page structure
     const hasAlpinePages = /x-show\s*=\s*["'](?:currentPage|page|activeTab|activeView)/i.test(code);
     console.log('[buildFlowLive] hasAlpinePages:', hasAlpinePages);
     
     // Pattern 1: Find ALL x-show page identifiers first
+    // Support multiple patterns: activeTab === 'Dashboard', currentPage === "home", etc.
     const pageIdentifiers: string[] = [];
-    const pageIdRegex = /x-show\s*=\s*["'](?:currentPage|page|activeTab|activeView)\s*===?\s*['"]([^'"]+)['"]/gi;
+    const pageIdPatterns = [
+      // x-show="activeTab === 'Dashboard'" or x-show='activeTab === "Dashboard"'
+      /x-show\s*=\s*["'](?:currentPage|page|activeTab|activeView)\s*===?\s*['"]([^'"]+)['"]/gi,
+      // x-show="tab === 'analytics'"
+      /x-show\s*=\s*["']tab\s*===?\s*['"]([^'"]+)['"]/gi,
+      // x-show="selected === 'settings'"  
+      /x-show\s*=\s*["'](?:selected|active|current)\s*===?\s*['"]([^'"]+)['"]/gi,
+    ];
+    
     let match;
-    while ((match = pageIdRegex.exec(code)) !== null) {
-      const pageId = match[1];
-      if (!pageIdentifiers.includes(pageId)) {
-        pageIdentifiers.push(pageId);
+    for (const pageIdRegex of pageIdPatterns) {
+      while ((match = pageIdRegex.exec(code)) !== null) {
+        const pageId = match[1];
+        if (pageId && !pageIdentifiers.includes(pageId) && pageId.length > 1 && pageId.length < 50) {
+          pageIdentifiers.push(pageId);
+        }
       }
     }
     console.log('[buildFlowLive] Found page identifiers:', pageIdentifiers);
     
     // For each page identifier, check if it has real content
+    // ALL pages with x-show content should be marked as OBSERVED (they exist in the generated code)
     for (const pageId of pageIdentifiers) {
       const normalizedId = pageId.toLowerCase().replace(/[^a-z0-9]+/g, '-');
       if (processedIds.has(normalizedId)) continue;
       processedIds.add(normalizedId);
       
-      // Look for the content of this page
-      const contentRegex = new RegExp(
-        `x-show\\s*=\\s*["'](?:currentPage|page|activeTab|activeView)\\s*===?\\s*['"]${pageId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"][^>]*>([\\s\\S]*?)(?=<(?:main|div|section)[^>]*x-show\\s*=|</body>|$)`,
-        'i'
-      );
-      const contentMatch = code.match(contentRegex);
-      const content = contentMatch ? contentMatch[1] : '';
+      // Look for the content of this page - check ALL x-show patterns
+      const escapedPageId = pageId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const contentPatterns = [
+        new RegExp(`x-show\\s*=\\s*["'](?:currentPage|page|activeTab|activeView|tab|selected|active|current)\\s*===?\\s*['"]${escapedPageId}['"][^>]*>([\\s\\S]*?)(?=<(?:main|div|section)[^>]*x-show\\s*=|</body>|$)`, 'i'),
+      ];
+      
+      let content = '';
+      for (const contentRegex of contentPatterns) {
+        const contentMatch = code.match(contentRegex);
+        if (contentMatch && contentMatch[1]) {
+          content = contentMatch[1];
+          break;
+        }
+      }
       
       // Check if has real content (not placeholder)
-      const hasRealContent = content.length > 100 && 
+      const hasRealContent = content.length > 50 && 
                             !content.includes('Page not shown in video') &&
                             !content.includes('POSSIBLE:') &&
                             !content.includes('not yet created') &&
-                            (/<(?:div|section|article|img|h[1-6]|p|ul|table|form)/i.test(content));
+                            (/<(?:div|section|article|img|h[1-6]|p|ul|table|form|canvas|svg)/i.test(content));
       
       const pageName = pageId
         .replace(/[-_]/g, ' ')
@@ -3355,14 +5182,17 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
       const aiMarkerRegex = new RegExp(`<!--\\s*=+\\s*${pageId.toUpperCase()}\\s+PAGE\\s*=+\\s*-->`, 'i');
       const isAddedByAI = aiMarkerRegex.test(code);
       
+      // If page has x-show content, it's CONFIRMED (observed in generated code)
       detectedPages.push({
         id: normalizedId,
         name: pageName,
-        isConfirmed: hasRealContent,
+        isConfirmed: hasRealContent, // Pages with real content are OBSERVED
         hasContent: hasRealContent,
         contentPreview: content.slice(0, 100),
         isAddedByAI
       });
+      
+      console.log('[buildFlowLive] Page detected:', pageName, '| hasContent:', hasRealContent, '| contentLen:', content.length);
     }
     
     // Pattern 2: Navigation buttons that set currentPage (to find pages we might have missed)
@@ -3408,19 +5238,29 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
     
     // ALSO look in the ENTIRE code for @click navigation buttons
     // This catches Alpine.js navigation buttons anywhere in the page
-    const alpineNavRegex = /@click\s*=\s*["'](?:currentPage|page|activeTab|activeView)\s*=\s*['"]([^'"]+)['"]['"]/gi;
-    while ((match = alpineNavRegex.exec(code)) !== null) {
-      const pageId = match[1].toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      if (!processedIds.has(pageId)) {
-        processedIds.add(pageId);
-        // Check if this page has content
-        const hasContent = new RegExp(`x-show\\s*=\\s*["'][^"']*${match[1]}`, 'i').test(code);
-        if (!hasContent) {
+    // These are items in navigation that the user CAN click - mark as DETECTED
+    const alpineNavPatterns = [
+      /@click\s*=\s*["'](?:currentPage|page|activeTab|activeView|tab|selected)\s*=\s*['"]([^'"]+)['"]['"]/gi,
+      /@click\s*=\s*["'](?:currentPage|page|activeTab|activeView|tab|selected)\s*=\s*['"]([^'"]+)['"]/gi,
+    ];
+    
+    for (const alpineNavRegex of alpineNavPatterns) {
+      while ((match = alpineNavRegex.exec(code)) !== null) {
+        const rawPageId = match[1];
+        const pageId = rawPageId.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        if (!processedIds.has(pageId) && pageId.length > 1) {
+          processedIds.add(pageId);
+          // Check if this page has x-show content
+          const hasContent = new RegExp(`x-show\\s*=\\s*["'][^"']*['"]${rawPageId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]`, 'i').test(code);
+          
+          const pageName = rawPageId.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          console.log('[buildFlowLive] Nav button found:', pageName, '| hasContent:', hasContent);
+          
           detectedPages.push({
             id: pageId,
-            name: match[1].replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-            isConfirmed: false,
-            hasContent: false
+            name: pageName,
+            isConfirmed: hasContent, // If has x-show content = observed, otherwise detected
+            hasContent: hasContent
           });
         }
       }
@@ -3435,7 +5275,31 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
       /<button[^>]*(?:@click|onclick)[^>]*>([A-Za-z][A-Za-z0-9\s]{1,25})<\/button>/gi,
       // List items that contain links
       /<li[^>]*>\s*<a[^>]*>([A-Za-z][A-Za-z0-9\s]{1,25})<\/a>/gi,
+      // Span/div with navigation-like text after icons (common pattern in sidebars)
+      /<(?:span|div)[^>]*class\s*=\s*["'][^"']*(?:nav|menu|sidebar|item)[^"']*["'][^>]*>([A-Za-z][A-Za-z0-9\s]{2,20})<\/(?:span|div)>/gi,
     ];
+    
+    // ALSO extract sidebar items with icons (very common pattern)
+    // Pattern: <li><button @click="..."><Icon /><span>Dashboard</span></button></li>
+    const sidebarItemRegex = /<(?:li|button|a|div)[^>]*@click[^>]*>[\s\S]*?(?:<span[^>]*>|>)([A-Za-z][A-Za-z\s]{2,20})(?:<\/span>|<)/gi;
+    while ((match = sidebarItemRegex.exec(navAreas)) !== null) {
+      const text = match[1].trim();
+      if (text.length > 2 && text.length < 25 && /^[A-Za-z]/.test(text)) {
+        const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        if (!processedIds.has(id)) {
+          processedIds.add(id);
+          // Check if this has x-show content
+          const hasContent = pageIdentifiers.some(p => p.toLowerCase() === text.toLowerCase());
+          console.log('[buildFlowLive] Sidebar item:', text, '| hasContent:', hasContent);
+          detectedPages.push({
+            id,
+            name: text,
+            isConfirmed: hasContent,
+            hasContent: hasContent
+          });
+        }
+      }
+    }
     
     // ALSO search the entire code for any Alpine.js click handlers that navigate
     const globalAlpineNavRegex = /@click\s*=\s*["'][^"']*(?:currentPage|page|activeTab)\s*=\s*['"]([^'"]+)['"]/gi;
@@ -3493,6 +5357,21 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
     
     console.log('[buildFlowLive] Total detected pages after nav extraction:', detectedPages.length);
     
+    // ═════ ADD navigation names as POSSIBLE pages (AGGRESSIVE) ═════
+    for (const navName of filteredNavNames) {
+      const id = navName.toLowerCase().replace(/[^a-z0-9ąęłńóśźżć]+/g, '-').replace(/^-|-$/g, '');
+      if (!processedIds.has(id) && id.length > 1) {
+        processedIds.add(id);
+        detectedPages.push({
+          id,
+          name: navName,
+          isConfirmed: false,
+          hasContent: false
+        });
+      }
+    }
+    console.log('[buildFlowLive] After adding filtered nav names:', detectedPages.length, 'pages');
+    
     // ═══════════════════════════════════════════════════════════════════════════
     // STEP 3: Check for POSSIBLE comments in code
     // Pattern: <!-- POSSIBLE: Page not shown in video -->
@@ -3534,10 +5413,34 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
     
     // Separate confirmed from possible pages
     let confirmedPages = detectedPages.filter(p => p.isConfirmed);
-    const possiblePages = detectedPages.filter(p => !p.isConfirmed);
+    let possiblePages = detectedPages.filter(p => !p.isConfirmed);
+    
+    console.log('[buildFlowLive] Before fallback - confirmed:', confirmedPages.length, 'possible:', possiblePages.length);
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // FALLBACK: If no pages detected, extract from common page sections
+    // ═══════════════════════════════════════════════════════════════════════════
+    if (possiblePages.length === 0) {
+      // Look for h1/h2 headings that might indicate page sections
+      const headingRegex = /<h[12][^>]*>([^<]{3,40})<\/h[12]>/gi;
+      let hm;
+      while ((hm = headingRegex.exec(code)) !== null) {
+        const text = hm[1].trim();
+        const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        if (id.length > 2 && !processedIds.has(id)) {
+          processedIds.add(id);
+          possiblePages.push({
+            id,
+            name: text,
+            isConfirmed: false,
+            hasContent: false
+          });
+        }
+      }
+      console.log('[buildFlowLive] Added headings as pages:', possiblePages.length);
+    }
     
     // If we have generated code but no confirmed pages, the entire page is "Home" - CONFIRMED
-    // This happens when there's no Alpine.js multi-page structure
     if (confirmedPages.length === 0 && code.length > 500) {
       confirmedPages = [{
         id: 'home',
@@ -3546,6 +5449,47 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
         hasContent: true,
         isAddedByAI: false
       }];
+      
+      // ALSO: Look for page titles/headings that indicate we visited specific pages
+      // Common pattern: <h1>Startup Jobs</h1> means we visited "Startup Jobs" page
+      const titleRegex = /<title>([^<]+)<\/title>|<h1[^>]*>([^<]{3,50})<\/h1>/gi;
+      let titleMatch;
+      while ((titleMatch = titleRegex.exec(code)) !== null) {
+        const title = (titleMatch[1] || titleMatch[2] || '').trim();
+        if (title && title.length > 2 && title.length < 50) {
+          const pageId = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+          // Check if this title indicates a specific page (not just site name)
+          const isSpecificPage = !/(home|main|welcome|index)/i.test(pageId) && 
+                                 pageId.length > 3 &&
+                                 !processedIds.has(pageId);
+          if (isSpecificPage) {
+            processedIds.add(pageId);
+            // Move from possible to confirmed if it exists there
+            const inPossibleIdx = possiblePages.findIndex(p => 
+              p.id === pageId || 
+              p.name.toLowerCase() === title.toLowerCase() ||
+              p.id.includes(pageId) ||
+              pageId.includes(p.id)
+            );
+            if (inPossibleIdx >= 0) {
+              const page = possiblePages.splice(inPossibleIdx, 1)[0];
+              page.isConfirmed = true;
+              page.hasContent = true;
+              confirmedPages.push(page);
+              console.log('[buildFlowLive] Promoted to confirmed from title:', title);
+            } else {
+              confirmedPages.push({
+                id: pageId,
+                name: title,
+                isConfirmed: true,
+                hasContent: true,
+                isAddedByAI: false
+              });
+              console.log('[buildFlowLive] Added confirmed from title:', title);
+            }
+          }
+        }
+      }
     }
     
     // Make sure Home is in confirmed if it exists
@@ -3671,14 +5615,14 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
     const allColors = [...hexMatches, ...rgbMatches];
     const neutrals = ['#fff', '#ffffff', '#000', '#000000', '#fff', 'rgba(0', 'rgb(0', 'rgba(255', 'rgb(255'];
     
-    const colorFrequency = new Map<string, number>();
+    const colorFrequency: Record<string, number> = {};
     allColors.forEach(c => {
       const normalized = c.toLowerCase();
-      colorFrequency.set(normalized, (colorFrequency.get(normalized) || 0) + 1);
+      colorFrequency[normalized] = (colorFrequency[normalized] || 0) + 1;
     });
     
     // Sort by frequency and filter out pure black/white
-    const sortedColors = [...colorFrequency.entries()]
+    const sortedColors = Object.entries(colorFrequency)
       .sort((a, b) => b[1] - a[1])
       .filter(([c]) => !neutrals.some(n => c.startsWith(n)))
       .slice(0, 4);
@@ -4394,9 +6338,9 @@ export const shadows = {
 ║                    AI-Optimized Code Context for Cursor/v0                   ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
-📋 PROJECT: ${projectName || 'Untitled Project'}
-🔧 GENERATED BY: Replay (https://replay.build)
-📅 DATE: ${new Date().toLocaleDateString()}
+PROJECT: ${projectName || 'Untitled Project'}
+GENERATED BY: Replay (https://replay.build)
+DATE: ${new Date().toLocaleDateString()}
 
 ═══════════════════════════════════════════════════════════════════════════════
                               QUICK START GUIDE
@@ -4512,8 +6456,7 @@ Try these prompts in Cursor or v0:
   
   // Build file tree structure from files
   const buildFileTree = useCallback((files: FileNode[]): (FileTreeFolder | FileTreeFile)[] => {
-    const root: Map<string, FileTreeFolder | FileTreeFile> = new Map();
-    const folders: Map<string, FileTreeFolder> = new Map();
+    const folders: Record<string, FileTreeFolder> = {};
     
     // Create folders
     files.forEach(file => {
@@ -4524,7 +6467,7 @@ Try these prompts in Cursor or v0:
         const parentPath = currentPath;
         currentPath = currentPath ? `${currentPath}/${part}` : `/${part}`;
         
-        if (!folders.has(currentPath)) {
+        if (!folders[currentPath]) {
           const folder: FileTreeFolder = {
             name: part,
             path: currentPath,
@@ -4532,13 +6475,10 @@ Try these prompts in Cursor or v0:
             children: [],
             expanded: expandedFolders.has(currentPath)
           };
-          folders.set(currentPath, folder);
+          folders[currentPath] = folder;
           
-          if (parentPath) {
-            const parent = folders.get(parentPath);
-            if (parent) {
-              parent.children.push(folder);
-            }
+          if (parentPath && folders[parentPath]) {
+            folders[parentPath].children.push(folder);
           }
         }
       });
@@ -4548,7 +6488,7 @@ Try these prompts in Cursor or v0:
     files.forEach(file => {
       const parts = file.path.split('/').filter(Boolean);
       const folderPath = '/' + parts.slice(0, -1).join('/');
-      const folder = folders.get(folderPath);
+      const folder = folders[folderPath];
       
       const fileNode: FileTreeFile = {
         name: file.name,
@@ -4566,7 +6506,7 @@ Try these prompts in Cursor or v0:
     
     // Get root level folders
     const rootFolders: (FileTreeFolder | FileTreeFile)[] = [];
-    folders.forEach((folder, path) => {
+    Object.entries(folders).forEach(([path, folder]) => {
       if (path.split('/').filter(Boolean).length === 1) {
         rootFolders.push(folder);
       }
@@ -4693,18 +6633,31 @@ Try these prompts in Cursor or v0:
     setCanvasPan({ x: 0, y: 0 });
   }, [flowNodes]);
 
-  // Auto-layout on initial load or when structure toggle changes
+  // Auto-layout on initial load or when flow building completes
   useEffect(() => {
     if (flowNodes.length > 0 && !flowBuilding && !hasAutoLayouted) {
-      autoLayoutFlowNodes();
-      setHasAutoLayouted(true);
+      // Small delay to ensure all nodes are rendered
+      const timer = setTimeout(() => {
+        console.log('[Flow] Auto-layout triggered, nodes:', flowNodes.length);
+        autoLayoutFlowNodes();
+        setHasAutoLayouted(true);
+      }, 150);
+      return () => clearTimeout(timer);
     }
   }, [flowNodes.length, flowBuilding, hasAutoLayouted, autoLayoutFlowNodes]);
 
-  // Reset auto-layout flag when project changes
+  // Reset auto-layout flag when project changes OR when flow nodes change significantly
   useEffect(() => {
     setHasAutoLayouted(false);
-  }, [activeGeneration]);
+  }, [activeGeneration?.id]);
+  
+  // Also reset when flowBuilding finishes
+  useEffect(() => {
+    if (!flowBuilding && flowNodes.length > 0) {
+      console.log('[Flow] Building complete, resetting auto-layout flag');
+      setHasAutoLayouted(false);
+    }
+  }, [flowBuilding]);
   
   // Toggle folder expansion
   const toggleFolder = useCallback((path: string) => {
@@ -4875,11 +6828,37 @@ Try these prompts in Cursor or v0:
     }
 
     try {
-      const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+      // Request HIGHEST QUALITY screen capture for AI analysis
+      const screenStream = await navigator.mediaDevices.getDisplayMedia({ 
+        video: {
+          width: { ideal: 2560, max: 3840 },
+          height: { ideal: 1440, max: 2160 },
+          frameRate: { ideal: 30, max: 60 },
+          // @ts-ignore - cursor is valid for screen capture
+          cursor: "always"
+        }, 
+        audio: false,
+        // @ts-ignore - preferCurrentTab helps quality
+        preferCurrentTab: false,
+        // @ts-ignore - selfBrowserSurface helps quality
+        selfBrowserSurface: "include"
+      });
       streamRef.current = screenStream;
       chunksRef.current = [];
       const mimeType = getSupportedMimeType();
-      const mediaRecorder = new MediaRecorder(screenStream, { mimeType });
+      
+      // MAXIMUM QUALITY recording - 16 Mbps bitrate for crystal clear UI text
+      // This is critical for AI to read small text and recognize UI elements
+      const mediaRecorder = new MediaRecorder(screenStream, { 
+        mimeType,
+        videoBitsPerSecond: 16000000 // 16 Mbps - maximum quality for text readability
+      });
+      
+      console.log("[Recording] Started with:", {
+        mimeType,
+        bitrate: "16 Mbps",
+        resolution: `${screenStream.getVideoTracks()[0]?.getSettings()?.width}x${screenStream.getVideoTracks()[0]?.getSettings()?.height}`
+      });
       
       mediaRecorder.ondataavailable = (e) => { 
         console.log("Data chunk received:", e.data.size);
@@ -4920,9 +6899,14 @@ Try these prompts in Cursor or v0:
           const blob = new Blob(chunks, { type: mimeType });
           console.log("Created blob, size:", blob.size, "bytes");
           
+          // CRITICAL: Capture recording duration BEFORE reset
+          // This is needed because webm duration is often Infinity and needs estimation
+          const capturedDuration = recordingDuration;
+          console.log("Captured recording duration:", capturedDuration, "seconds");
+          
           try {
-            await addVideoToFlows(blob, "");
-            console.log("Flow added successfully");
+            await addVideoToFlows(blob, "", capturedDuration);
+            console.log("Flow added successfully with duration:", capturedDuration);
           } catch (e) {
             console.error("Error adding flow:", e);
           }
@@ -4977,8 +6961,8 @@ Try these prompts in Cursor or v0:
     }
   };
 
-  const addVideoToFlows = async (blob: Blob, name: string) => {
-    console.log("addVideoToFlows called, blob size:", blob.size, "type:", blob.type);
+  const addVideoToFlows = async (blob: Blob, name: string, knownDuration?: number) => {
+    console.log("addVideoToFlows called, blob size:", blob.size, "type:", blob.type, "knownDuration:", knownDuration);
     
     // Validate blob
     if (!blob || blob.size === 0) {
@@ -5024,13 +7008,26 @@ Try these prompts in Cursor or v0:
       // Get valid duration - handle Infinity for webm
       const getValidDuration = (): number => {
         const d = video.duration;
+        // First try: video metadata duration (works for mp4, sometimes webm)
         if (d && isFinite(d) && !isNaN(d) && d > 0 && d < 7200) {
+          console.log("Using video.duration:", d);
           return Math.round(d);
         }
-        if (recordingDuration > 0) return recordingDuration;
-        // Estimate from blob size (rough average ~800KB/s)
-        const est = Math.max(5, Math.round(blob.size / 800000));
-        console.log("Estimated duration from blob size:", est);
+        // Second try: known duration passed from recording timer (most reliable for recordings)
+        if (knownDuration && knownDuration > 0) {
+          console.log("Using knownDuration from recording timer:", knownDuration);
+          return knownDuration;
+        }
+        // Third try: recordingDuration state (fallback)
+        if (recordingDuration > 0) {
+          console.log("Using recordingDuration state:", recordingDuration);
+          return recordingDuration;
+        }
+        // Last resort: estimate from blob size
+        // With 16 Mbps bitrate: ~2MB per second of video
+        const bytesPerSecond = 2000000; // 2MB/s at 16Mbps
+        const est = Math.max(5, Math.round(blob.size / bytesPerSecond));
+        console.log("Estimated duration from blob size:", est, "seconds (blob size:", blob.size, "bytes)");
         return Math.min(est, 300);
       };
       
@@ -5725,6 +7722,41 @@ Try these prompts in Cursor or v0:
     }
   };
 
+  // AI-Powered Blueprints Analysis (Single Source of Truth)
+  const analyzeBlueprints = async () => {
+    if (!generatedCode || isAnalyzingBlueprints) return;
+    
+    setIsAnalyzingBlueprints(true);
+    try {
+      const response = await fetch("/api/generate/blueprints", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: editableCode || generatedCode,
+          styleInfo: styleInfo
+        })
+      });
+      
+      const result = await response.json();
+      if (result.success && result.data) {
+        setBlueprintsAnalysis(result.data);
+        // Initialize statuses for all blueprints
+        const statuses: Record<string, "draft" | "approved" | "deprecated"> = {};
+        result.data.blueprints?.forEach((bp: any) => {
+          statuses[bp.id] = bp.status || "draft";
+        });
+        setBlueprintStatuses(statuses);
+        console.log("[Blueprints] Analysis complete:", result.data.blueprints?.length, "blueprints found");
+      } else {
+        console.error("[Blueprints] Analysis failed:", result.error);
+      }
+    } catch (error) {
+      console.error("[Blueprints] Analysis error:", error);
+    } finally {
+      setIsAnalyzingBlueprints(false);
+    }
+  };
+
   // AI-Powered Design System Generation (Gemini 3 Pro)
   const generateDesignSystem = async () => {
     if (!generatedCode || isGeneratingDesign) return;
@@ -5903,79 +7935,45 @@ Try these prompts in Cursor or v0:
     }
   };
 
-  // AUTO-GENERATE ALL DOCUMENTATION after main generation completes
-  // SINGLE API CALL for all 4 doc types - no more 4 separate requests
+  // AUTO-GENERATION DISABLED - saves API quota!
+  // All docs/flows/design are now ON-DEMAND only (click buttons when needed)
   useEffect(() => {
-    if (needsAutoGenDocs && generatedCode && !isGeneratingDocs) {
-      console.log("[Auto-Gen] 🚀 Starting UNIFIED Enterprise Migration Kit generation...");
-      setNeedsAutoGenDocs(false);
-      
-      const autoGenerateAll = async () => {
-        try {
-          setIsGeneratingDocs("all"); // Mark as generating all docs
-          
-          // Single API call for ALL documentation
-          const response = await fetch("/api/generate/docs-all", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              projectName: activeGeneration?.title || "Generated Project",
-              generatedCode: generatedCode,
-              flowNodes: flowNodes.map(n => ({
-                id: n.id,
-                name: n.name,
-                type: n.type,
-                status: n.status,
-                description: n.description
-              })),
-              styleInfo: styleInfo,
-              screenCount: flowNodes.filter(n => n.type === "view").length || 1,
-              componentCount: (generatedCode?.match(/<[A-Z][a-zA-Z]+/g) || []).length
-            })
-          });
-          
-          if (response.ok) {
-            const result = await response.json();
-            console.log("[Auto-Gen] ✅ All docs generated in single request");
-            
-            // Update all doc states at once
-            if (result.overview) setAiDocsOverview(result.overview);
-            if (result.api) setAiDocsApi(result.api);
-            if (result.qa) setAiDocsQa(result.qa);
-            if (result.deploy) setAiDocsDeploy(result.deploy);
-          } else {
-            console.log("[Auto-Gen] ❌ Failed to generate docs:", await response.text());
-          }
-          
-          // Also generate flows and design in parallel
-          generateFlows();
-          setTimeout(() => generateDesignSystem(), 1000);
-          
-        } catch (e) {
-          console.log("[Auto-Gen] Error:", e);
-        } finally {
-          setIsGeneratingDocs(null);
-        }
-      };
-      
-      // Wait 1.5 seconds for UI to settle, then start
-      setTimeout(autoGenerateAll, 1500);
+    if (needsAutoGenDocs) {
+      setNeedsAutoGenDocs(false); // Just reset the flag, don't auto-generate
     }
-  }, [needsAutoGenDocs, generatedCode, isGeneratingDocs]);
+  }, [needsAutoGenDocs]);
+  
+  // AUTO-REGENERATE LIBRARY when code changes and library needs update
+  useEffect(() => {
+    if (!libraryNeedsRegeneration || !generatedCode || isGeneratingLibrary) return;
+    
+    // Hash the code to track what we generated from
+    const codeHash = generatedCode.slice(0, 500) + generatedCode.length;
+    
+    // If we already generated library from this code, skip
+    if (libraryCodeHash === codeHash) {
+      setLibraryNeedsRegeneration(false);
+      return;
+    }
+    
+    // Auto-regenerate library DISABLED - user can click "Generate Library" button manually
+    // This saves Gemini 3 Pro API quota (1 request per generation instead of 2)
+    console.log("[Library] Auto-regeneration disabled. User can generate manually.");
+    setLibraryNeedsRegeneration(false);
+  }, [libraryNeedsRegeneration, generatedCode, editableCode, styleInfo, isGeneratingLibrary, libraryCodeHash]);
 
-  // Auto-generate flows when switching to flow tab
+  // Auto-select Welcome when entering Library tab with generated library
   useEffect(() => {
-    if (viewMode === "flow" && generatedCode && !aiFlows && !isGeneratingFlows) {
-      generateFlows();
+    if (viewMode === "library" && libraryData && !selectedLibraryItem) {
+      setSelectedLibraryItem("doc-welcome");
     }
-  }, [viewMode, generatedCode, aiFlows, isGeneratingFlows]);
+  }, [viewMode, libraryData, selectedLibraryItem]);
 
-  // Auto-generate design when switching to design tab
-  useEffect(() => {
-    if (viewMode === "design" && generatedCode && !aiDesignSystem && !isGeneratingDesign) {
-      generateDesignSystem();
-    }
-  }, [viewMode, generatedCode, aiDesignSystem, isGeneratingDesign]);
+  // Auto-generate flows DISABLED - user can click "Generate" button in Flow tab
+  // useEffect removed to save API quota
+
+  // Auto-generate design DISABLED - user can click "Generate" button in Design tab
+  // useEffect removed to save API quota
 
   // Streaming generation - shows LIVE AI output as it happens
   const generateWithStreaming = async (
@@ -5986,7 +7984,7 @@ Try these prompts in Cursor or v0:
   ): Promise<{ success: boolean; code?: string; error?: string; tokenUsage?: any; scanData?: any }> => {
     try {
       // Convert video blob to base64
-      setStreamingStatus("📦 Preparing video for AI...");
+      setStreamingStatus("Preparing video for AI...");
       setStreamingCode(null);
       setStreamingLines(0);
       
@@ -6012,9 +8010,6 @@ Try these prompts in Cursor or v0:
           styleDirective,
           databaseContext,
           styleReferenceImage,
-          // Enterprise mode parameters
-          enterpriseMode,
-          enterprisePresetId,
         }),
         signal: controller.signal,
       });
@@ -6374,6 +8369,8 @@ Try these prompts in Cursor or v0:
     setDisplayedCode("");
     setEditableCode("");
     setMobileSyncShownForGeneration(null); // Reset so modal can show for new generation
+    setLibraryData(null); // Reset library for new generation
+    setLibraryPropsOverride({}); // Reset library props
     // Auto-switch to Preview mode when generation starts
     setViewMode("preview");
     
@@ -6679,7 +8676,7 @@ Try these prompts in Cursor or v0:
       
       if (videoBlobToUse && videoBlobToUse.size > 0) {
         const videoSizeMB = videoBlobToUse.size / (1024 * 1024);
-        const STREAMING_SIZE_LIMIT_MB = 4; // Vercel limit is 4.5MB, use 4MB to be safe
+        const STREAMING_SIZE_LIMIT_MB = 3; // Vercel limit is 4.5MB, but base64 adds ~33%, so 3MB raw = ~4MB base64
         
         // SMART ROUTING: Skip streaming for large videos, go directly to server action
         if (videoSizeMB > STREAMING_SIZE_LIMIT_MB) {
@@ -6850,6 +8847,9 @@ Try these prompts in Cursor or v0:
           timestamp: Date.now(),
           quickActions: ["Make it mobile-friendly", "Tweak the colors", "Add hover effects", "Improve the spacing"]
         }]);
+        
+        // Library extraction is now ON-DEMAND only (click "Extract Components" button)
+        // This saves API requests - user can manually trigger when needed
         
         // Generation complete - no toast needed, UI shows the result
       } else {
@@ -7900,6 +9900,50 @@ Try these prompts in Cursor or v0:
         }}
       />
       
+      {/* Video Preview Modal */}
+      <AnimatePresence>
+        {videoPreviewModal?.open && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+            onClick={() => setVideoPreviewModal(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative w-full max-w-4xl mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-white text-sm font-medium truncate max-w-[80%]">
+                  {videoPreviewModal.name}
+                </h3>
+                <button
+                  onClick={() => setVideoPreviewModal(null)}
+                  className="p-2 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-white/70 hover:text-white transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              {/* Video Player */}
+              <div className="rounded-lg overflow-hidden bg-black border border-white/10 shadow-2xl">
+                <video
+                  src={videoPreviewModal.url}
+                  controls
+                  autoPlay
+                  className="w-full max-h-[70vh]"
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
       {/* Auth Modal for Desktop */}
       <AuthModal
         isOpen={showAuthModal}
@@ -8117,7 +10161,7 @@ Try these prompts in Cursor or v0:
               <button 
                 onClick={() => { setSidebarCollapsed(false); setSidebarView("detail"); }}
                 className="w-10 h-10 rounded-lg bg-zinc-800/50 hover:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-zinc-200 transition-all"
-                title="Configuration"
+                title="Input"
               >
                 <Boxes className="w-5 h-5" />
               </button>
@@ -8287,6 +10331,13 @@ Try these prompts in Cursor or v0:
                             // Load chat messages for this project
                             setChatMessages(genToLoad.chatMessages || []);
                             lastSavedChatRef.current = JSON.stringify((genToLoad.chatMessages || []).map(m => m.id));
+                            
+                            // Load library data for this project
+                            if (genToLoad.libraryData) {
+                              setLibraryData(genToLoad.libraryData);
+                            } else {
+                              setLibraryData(null); // Reset library when switching projects
+                            }
                             
                             // Auto-expand versions if there are any
                             if (genToLoad.versions && genToLoad.versions.length > 0) {
@@ -8592,8 +10643,449 @@ Try these prompts in Cursor or v0:
                 )}
               </div>
             </div>
-          ) : !sidebarCollapsed && sidebarView === "detail" && sidebarMode === "chat" && generationComplete ? (
-            /* AGENTIC CHAT MODE - After Generation - With Tabs */
+          ) : !sidebarCollapsed && sidebarView === "detail" && viewMode === "blueprints" && generationComplete ? (
+            /* BLUEPRINTS VIEW SIDEBAR - Figma-style Component List */
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <div className="flex-shrink-0 px-3 py-2 border-b border-zinc-800">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Layers</span>
+                  <button 
+                    onClick={() => {
+                      const name = prompt("New component name:", "MyComponent");
+                      if (name) {
+                        const newId = `new-${Date.now()}`;
+                        const newComp = {
+                          id: newId,
+                          name: name,
+                          category: 'custom',
+                          code: `<div className="p-6 bg-white rounded-xl shadow-lg border border-zinc-200"><h3 className="text-lg font-semibold text-zinc-900">${name}</h3></div>`,
+                          props: [],
+                          variants: []
+                        };
+                        setLibraryData((prev: any) => ({
+                          ...prev,
+                          components: [...(prev?.components || []), newComp]
+                        }));
+                        setSelectedBlueprintComponent(`comp-${newId}`);
+                      }
+                    }}
+                    className="p-1 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+              {/* Search */}
+              <div className="flex-shrink-0 px-3 py-2">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600" />
+                  <input
+                    type="text"
+                    placeholder="Search components..."
+                    className="w-full pl-8 pr-3 py-1.5 rounded-md bg-zinc-800/50 border border-zinc-700/50 text-xs text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600"
+                  />
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                {(libraryData?.components?.length ?? 0) > 0 ? (
+                  <div className="py-1">
+                    {/* Group by category */}
+                    {Object.entries(
+                      (libraryData?.components || []).reduce((acc: any, comp: any) => {
+                        const cat = comp.category || 'other';
+                        if (!acc[cat]) acc[cat] = [];
+                        acc[cat].push(comp);
+                        return acc;
+                      }, {})
+                    ).map(([category, comps]: [string, any]) => (
+                      <div key={category} className="mb-2">
+                        <div className="px-3 py-1 text-[9px] font-semibold uppercase tracking-wider text-zinc-600">
+                          {category}
+                        </div>
+                        {comps.map((comp: any) => (
+                          <button
+                            key={comp.id}
+                            onClick={() => setSelectedBlueprintComponent(`comp-${comp.id}`)}
+                            onDoubleClick={() => {
+                              const newName = prompt("Rename component:", comp.name);
+                              if (newName) {
+                                setLibraryData((prev: any) => ({
+                                  ...prev,
+                                  components: prev?.components?.map((c: any) => 
+                                    c.id === comp.id ? { ...c, name: newName } : c
+                                  ) || []
+                                }));
+                              }
+                            }}
+                            className={cn(
+                              "w-full flex items-center gap-2 px-3 py-1.5 text-left transition-all text-[11px] group",
+                              selectedBlueprintComponent === `comp-${comp.id}` 
+                                ? "bg-blue-500/20 text-blue-400" 
+                                : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
+                            )}
+                          >
+                            <Box className="w-3 h-3 flex-shrink-0 opacity-60" />
+                            <span className="truncate flex-1">{comp.name}</span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Duplicate
+                                const newId = `${comp.id}-copy-${Date.now()}`;
+                                const newComp = { ...comp, id: newId, name: `${comp.name} (Copy)` };
+                                setLibraryData((prev: any) => ({
+                                  ...prev,
+                                  components: [...(prev?.components || []), newComp]
+                                }));
+                              }}
+                              className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-zinc-700 text-zinc-500 hover:text-white"
+                              title="Duplicate"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </button>
+                          </button>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-zinc-500 text-xs">
+                    <Layers className="w-6 h-6 mx-auto mb-2 opacity-50" />
+                    <p>No components</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : !sidebarCollapsed && sidebarView === "detail" && viewMode === "library" && generationComplete ? (
+            /* LIBRARY VIEW SIDEBAR - Full Tree (1:1 with removed middle panel) */
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[#111111]">
+              {/* Search */}
+              <div className="p-3 border-b border-zinc-800/50">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600" />
+                  <input
+                    type="text"
+                    placeholder="Find components..."
+                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-zinc-800/50 border border-zinc-700/50 rounded-md text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600"
+                  />
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-zinc-600">⌘K</span>
+                </div>
+              </div>
+              
+              {/* Tree */}
+              <div className="flex-1 overflow-auto p-2">
+                {!libraryData ? (
+                  <div className="flex flex-col items-center justify-center h-full p-4 text-center">
+                    <Library className="w-8 h-8 text-zinc-700 mb-3" />
+                    <p className="text-xs text-zinc-500 mb-1">No library yet</p>
+                    <p className="text-[10px] text-zinc-600 mb-4">Generate code to extract components</p>
+                    {generatedCode && (
+                      <button
+                        onClick={async () => {
+                          setIsGeneratingLibrary(true);
+                          try {
+                            const response = await fetch("/api/generate/library", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ code: editableCode || generatedCode, styleInfo })
+                            });
+                            const result = await response.json();
+                            if (result.success && result.data) {
+                              setLibraryData(result.data);
+                              setSelectedLibraryItem("doc-welcome");
+                            }
+                          } catch (e) {
+                            console.error("Library generation failed:", e);
+                          } finally {
+                            setIsGeneratingLibrary(false);
+                          }
+                        }}
+                        disabled={isGeneratingLibrary}
+                        className="px-3 py-1.5 text-xs bg-[var(--accent-orange)] text-black rounded-md hover:opacity-90 disabled:opacity-50"
+                      >
+                        {isGeneratingLibrary ? (
+                          <span className="flex items-center gap-1.5">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            Extracting...
+                          </span>
+                        ) : "Extract Components"}
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {/* Regenerate Button */}
+                    {generatedCode && (
+                      <button
+                        onClick={async () => {
+                          setIsGeneratingLibrary(true);
+                          try {
+                            const response = await fetch("/api/generate/library", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ code: editableCode || generatedCode, styleInfo })
+                            });
+                            const result = await response.json();
+                            if (result.success && result.data) {
+                              setLibraryData(result.data);
+                              setLibraryCodeHash((editableCode || generatedCode).slice(0, 500) + (editableCode || generatedCode).length);
+                              setSelectedLibraryItem("doc-welcome");
+                            }
+                          } catch (e) {
+                            console.error("Library generation failed:", e);
+                          } finally {
+                            setIsGeneratingLibrary(false);
+                          }
+                        }}
+                        disabled={isGeneratingLibrary}
+                        className="w-full mb-2 px-3 py-1.5 text-[10px] border border-zinc-700/50 bg-zinc-800/30 text-zinc-400 rounded-md hover:bg-zinc-800 hover:text-zinc-300 disabled:opacity-50 flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        {isGeneratingLibrary ? (
+                          <><Loader2 className="w-3 h-3 animate-spin" />Regenerating...</>
+                        ) : (
+                          <><RefreshCw className="w-3 h-3" />Regenerate Library</>
+                        )}
+                      </button>
+                    )}
+                    
+                    {/* DOCS Section */}
+                    <div className="mb-2">
+                      <button 
+                        onClick={() => setLibrarySectionsExpanded(prev => ({ ...prev, docs: !prev.docs }))}
+                        className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-semibold text-zinc-500 uppercase tracking-wider hover:text-zinc-300 hover:bg-zinc-800/30 rounded transition-colors"
+                      >
+                        {librarySectionsExpanded.docs ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                        <FileText className="w-3 h-3" />
+                        DOCS
+                        <span className="text-zinc-600 ml-auto">{libraryData.docs?.length || 4}</span>
+                      </button>
+                      {librarySectionsExpanded.docs && (
+                        <div className="ml-2 space-y-0.5 mt-1">
+                          {(libraryData.docs?.length > 0 ? libraryData.docs : [
+                            { id: "welcome", title: "Welcome", type: "welcome" },
+                            { id: "getting-started", title: "Getting Started" },
+                            { id: "colors", title: "Colors" },
+                            { id: "typography", title: "Typography" },
+                          ]).map((doc: any) => (
+                            <button
+                              key={doc.id}
+                              onClick={() => setSelectedLibraryItem(`doc-${doc.id}`)}
+                              className={cn(
+                                "w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md transition-colors",
+                                selectedLibraryItem === `doc-${doc.id}` ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300"
+                              )}
+                            >
+                              <FileText className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span className="truncate">{doc.title}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* COMPONENTS Section */}
+                    <div>
+                      <button 
+                        onClick={() => setLibrarySectionsExpanded(prev => ({ ...prev, components: !prev.components }))}
+                        className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-semibold text-zinc-500 uppercase tracking-wider hover:text-zinc-300 hover:bg-zinc-800/30 rounded transition-colors"
+                      >
+                        {librarySectionsExpanded.components ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                        <Box className="w-3 h-3" />
+                        COMPONENTS
+                        <span className="text-zinc-600 ml-auto">{libraryData.components?.length || 0}</span>
+                      </button>
+                      {librarySectionsExpanded.components && (
+                        <div className="ml-2 space-y-1 mt-1">
+                          {(() => {
+                            const getCategoryIcon = (cat: string) => {
+                              const icons: Record<string, React.ReactNode> = {
+                                layout: <Layout className="w-3 h-3" />,
+                                navigation: <Map className="w-3 h-3" />,
+                                buttons: <MousePointer className="w-3 h-3" />,
+                                cards: <Box className="w-3 h-3" />,
+                                other: <Box className="w-3 h-3" />,
+                              };
+                              return icons[cat] || <Box className="w-3 h-3" />;
+                            };
+                            
+                            const categories: Record<string, { color: string; components: any[] }> = {};
+                            libraryData.components?.forEach((comp: any) => {
+                              const cat = comp.category?.toLowerCase() || "other";
+                              if (!categories[cat]) categories[cat] = { color: "text-zinc-400", components: [] };
+                              categories[cat].components.push(comp);
+                            });
+                            
+                            return Object.entries(categories).map(([catName, cat]) => {
+                              const isExpanded = libraryCategoriesExpanded[catName] !== false;
+                              return (
+                                <div key={catName}>
+                                  <button 
+                                    onClick={() => setLibraryCategoriesExpanded(prev => ({ ...prev, [catName]: !isExpanded }))}
+                                    className="w-full flex items-center gap-2 px-2 py-1 text-[10px] font-medium text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30 rounded transition-colors"
+                                  >
+                                    {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                                    {getCategoryIcon(catName)}
+                                    <span>{catName.charAt(0).toUpperCase() + catName.slice(1)}</span>
+                                    <span className="text-zinc-600 ml-auto">{cat.components.length}</span>
+                                  </button>
+                                  {isExpanded && (
+                                    <div className="ml-5 space-y-0.5">
+                                      {cat.components.map((comp: any) => (
+                                        <button
+                                          key={comp.id}
+                                          onClick={() => {
+                                            setSelectedLibraryItem(`comp-${comp.id}`);
+                                            setLibraryPropsOverride({});
+                                          }}
+                                          className={cn(
+                                            "w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md transition-colors",
+                                            selectedLibraryItem === `comp-${comp.id}` ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300"
+                                          )}
+                                        >
+                                          <Box className="w-3 h-3 flex-shrink-0" />
+                                          <span className="truncate flex-1 text-left">{comp.name}</span>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : !sidebarCollapsed && sidebarView === "detail" && viewMode === "flow" && generationComplete ? (
+            /* FLOW VIEW SIDEBAR - Pages & Connections List */
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <div className="flex-shrink-0 px-3 py-2 border-b border-zinc-800">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Flow Map</span>
+              </div>
+              <div className="flex-1 overflow-y-auto p-3 space-y-4">
+                {/* Observed Pages */}
+                <div>
+                  <div className="text-[9px] font-semibold uppercase tracking-wider text-emerald-500/80 mb-2 flex items-center gap-1.5">
+                    <Check className="w-3 h-3" /> Observed Pages
+                  </div>
+                  {flowNodes.filter((n: any) => n.data?.isConfirmed).length > 0 ? (
+                    <div className="space-y-1">
+                      {flowNodes.filter((n: any) => n.data?.isConfirmed).map((node: any) => (
+                        <div
+                          key={node.id}
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span className="truncate">{node.data?.label || node.id}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-zinc-600 px-2">No pages observed</p>
+                  )}
+                </div>
+                {/* Detected Pages - with Generate button */}
+                <div>
+                  <div className="text-[9px] font-semibold uppercase tracking-wider text-amber-500/80 mb-2 flex items-center gap-1.5">
+                    <AlertCircle className="w-3 h-3" /> Detected (Not Visited)
+                  </div>
+                  {flowNodes.filter((n: any) => !n.data?.isConfirmed).length > 0 ? (
+                    <div className="space-y-1">
+                      {flowNodes.filter((n: any) => !n.data?.isConfirmed).map((node: any) => (
+                        <div
+                          key={node.id}
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400/80 text-xs group"
+                        >
+                          <FileText className="w-3.5 h-3.5 opacity-60" />
+                          <span className="truncate flex-1">{node.data?.label || node.id}</span>
+                          <button
+                            onClick={() => {
+                              setEditInput(`@${node.data?.label || node.id} Create this page with full content matching the design`);
+                              setShowFloatingEdit(true);
+                              setTimeout(() => editInputRef.current?.focus(), 100);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 px-2 py-0.5 text-[9px] bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 rounded transition-all"
+                          >
+                            Generate
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-zinc-600 px-2">No additional pages</p>
+                  )}
+                </div>
+                {/* Connections */}
+                <div>
+                  <div className="text-[9px] font-semibold uppercase tracking-wider text-zinc-500 mb-2 flex items-center gap-1.5">
+                    <ArrowRight className="w-3 h-3" /> Connections
+                  </div>
+                  {flowEdges.length > 0 ? (
+                    <div className="space-y-1">
+                      {flowEdges.map((edge: any, i: number) => (
+                        <div key={i} className="flex items-center gap-2 text-[11px] text-zinc-500 px-2 py-1">
+                          <span className="truncate">{edge.source}</span>
+                          <ArrowRight className="w-3 h-3 flex-shrink-0 text-zinc-600" />
+                          <span className="truncate">{edge.target}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-zinc-600 px-2">No connections</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : !sidebarCollapsed && sidebarView === "detail" && viewMode === "code" && generationComplete ? (
+            /* CODE VIEW SIDEBAR - Full File Tree (1:1 with removed middle panel) */
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[#111111]">
+              <div className="p-2 border-b border-zinc-800 sticky top-0 bg-[#111111] z-10">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-[9px] text-zinc-500 uppercase tracking-wider">
+                    <FolderTree className="w-3 h-3" />
+                    <span>Files</span>
+                  </div>
+                  <span className="text-[8px] text-white/20">{generatedFiles.length} files</span>
+                </div>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-1 text-[10px]">
+                {displayedCode && generatedFiles.length > 0 ? (
+                  buildFileTree(generatedFiles.filter(f => !f.isStub)).map((item) => (
+                    <FileTreeItem 
+                      key={item.path} 
+                      item={item} 
+                      activeFilePath={activeFilePath}
+                      onFileClick={(path, isStub, nodeId) => {
+                        if (isStub && nodeId) {
+                          if (isEditing) return;
+                          const node = flowNodes.find(n => n.id === nodeId);
+                          if (node) {
+                            setEditInput(`@${node.name} Create this page with full content and layout`);
+                            setShowFloatingEdit(true);
+                            setTimeout(() => editInputRef.current?.focus(), 100);
+                          }
+                        } else {
+                          setActiveFilePath(path);
+                        }
+                      }}
+                      onFolderToggle={toggleFolder}
+                      expandedFolders={expandedFolders}
+                      generatingPath={generatingFilePath}
+                    />
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-32 p-4 text-center">
+                    <FolderTree className="w-6 h-6 text-zinc-700 mb-2" />
+                    <p className="text-xs text-zinc-500">No files yet</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : !sidebarCollapsed && sidebarView === "detail" && sidebarMode === "chat" && generationComplete && viewMode === "preview" ? (
+            /* AGENTIC CHAT MODE - Only in Preview */
             <div className="flex-1 flex flex-col min-h-0">
               
               {/* Tabs: Replay AI | Settings */}
@@ -8621,7 +11113,7 @@ Try these prompts in Cursor or v0:
                     )}
                   >
                     <Boxes className="w-3 h-3" />
-                    Configuration
+                    Input
                   </button>
                 </div>
               </div>
@@ -9103,7 +11595,7 @@ Try these prompts in Cursor or v0:
                   </div>
                 </div>
               ) : (
-                /* TAB: Configuration - Simplified with Quick Start */
+                /* TAB: Input - Video & Style Configuration */
                 <div className="flex-1 overflow-y-auto custom-scrollbar" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}>
                   
                   {/* Upload Section - Primary */}
@@ -9162,18 +11654,32 @@ Try these prompts in Cursor or v0:
                         {/* Video List */}
                         <div className="space-y-2">
                           {flows.map((flow) => (
-                            <button key={flow.id} onClick={() => setSelectedFlowId(flow.id)} className={cn("w-full flex items-center gap-3 p-3 rounded-xl cursor-pointer text-left transition-all", selectedFlowId === flow.id ? "bg-zinc-800/50 border border-white/[0.12]" : "bg-zinc-800/50 border border-transparent hover:bg-zinc-800/50 hover:border-white/[0.06]")} aria-label={`Select flow ${flow.name || flow.id}`}>
-                              <div className="w-12 h-8 rounded-lg overflow-hidden bg-zinc-800/50 flex-shrink-0">
-                                {flow.thumbnail ? <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" /> : <Film className="w-4 h-4 text-white/20 mx-auto mt-2" />}
-                              </div>
-                              <div className="flex-1 min-w-0">
+                            <div key={flow.id} className={cn("w-full flex items-center gap-3 p-2.5 rounded-lg cursor-pointer text-left transition-all", selectedFlowId === flow.id ? "bg-zinc-800/70 border border-white/[0.12]" : "bg-zinc-800/50 border border-transparent hover:bg-zinc-800/60 hover:border-white/[0.06]")}>
+                              {/* Thumbnail - clickable to preview */}
+                              <button 
+                                onClick={() => flow.videoUrl && setVideoPreviewModal({ open: true, url: flow.videoUrl, name: flow.name })}
+                                className="w-12 h-8 rounded overflow-hidden bg-zinc-900 flex-shrink-0 relative group"
+                                title="Click to preview video"
+                              >
+                                {flow.thumbnail ? (
+                                  <>
+                                    <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" />
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                      <Play className="w-4 h-4 text-white" />
+                                    </div>
+                                  </>
+                                ) : (
+                                  <Film className="w-4 h-4 text-white/20 mx-auto mt-2" />
+                                )}
+                              </button>
+                              <button onClick={() => setSelectedFlowId(flow.id)} className="flex-1 min-w-0 text-left">
                                 <p className="text-[13px] text-white/80 truncate">{flow.name}</p>
                                 <p className="text-[11px] text-white/30">{formatDuration(flow.duration)}</p>
-                              </div>
-                              <span onClick={(e) => { e.stopPropagation(); setFlows(prev => prev.filter(f => f.id !== flow.id)); }} className="p-1.5 text-white/20 hover:text-red-400 hover:bg-zinc-800/50 rounded-lg transition-colors" role="button" tabIndex={0} aria-label="Remove flow" onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setFlows(prev => prev.filter(f => f.id !== flow.id)); }}}>
+                              </button>
+                              <span onClick={(e) => { e.stopPropagation(); setFlows(prev => prev.filter(f => f.id !== flow.id)); }} className="p-1.5 text-white/20 hover:text-red-400 hover:bg-zinc-700/50 rounded transition-colors" role="button" tabIndex={0} aria-label="Remove flow" onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setFlows(prev => prev.filter(f => f.id !== flow.id)); }}}>
                                 <Trash2 className="w-3.5 h-3.5" />
                               </span>
-                            </button>
+                            </div>
                           ))}
                         </div>
                       </>
@@ -9197,62 +11703,25 @@ Try these prompts in Cursor or v0:
                     />
                   </div>
                   
-                  {/* Design System Section */}
+                  {/* Design System Section - Creative Only */}
                   <div className="p-4 border-b border-white/[0.06]">
                     <div className="flex items-center justify-between mb-3">
                       <span className="sidebar-label text-[11px] font-semibold text-white/40 uppercase tracking-wider flex items-center gap-2">
-                        <Palette className="w-3.5 h-3.5" /> VISUAL STYLE
+                        <Palette className="w-3.5 h-3.5" /> STYLE
                       </span>
-                      {/* Creative / Enterprise Toggle */}
-                      <div className="flex items-center bg-zinc-800/80 rounded-lg p-0.5">
-                        <button
-                          onClick={() => setEnterpriseMode(false)}
-                          className={cn(
-                            "w-[70px] py-1 rounded-md text-[10px] font-medium transition-all text-center",
-                            !enterpriseMode 
-                              ? "bg-zinc-700 text-white shadow-sm" 
-                              : "text-zinc-500 hover:text-zinc-400"
-                          )}
-                        >
-                          Creative
-                        </button>
-                        <button
-                          onClick={() => setEnterpriseMode(true)}
-                          className={cn(
-                            "w-[70px] py-1 rounded-md text-[10px] font-medium transition-all text-center",
-                            enterpriseMode 
-                              ? "bg-zinc-700 text-white shadow-sm" 
-                              : "text-zinc-500 hover:text-zinc-400"
-                          )}
-                        >
-                          Enterprise
-                        </button>
-                      </div>
                     </div>
                     
-                    {enterpriseMode ? (
-                      <EnterprisePresetSelector
-                        selectedPresetId={enterprisePresetId}
-                        onSelect={(preset) => {
-                          setEnterprisePresetId(preset.id);
-                          setStyleDirective(`Apply ${preset.name} design system`);
-                        }}
-                        compact={true}
-                        disabled={isProcessing}
-                      />
-                    ) : (
-                      <StyleInjector 
-                        value={styleDirective} 
-                        onChange={setStyleDirective} 
-                        disabled={isProcessing}
-                        referenceImage={styleReferenceImage}
-                        onReferenceImageChange={setStyleReferenceImage}
-                      />
-                    )}
+                    <StyleInjector 
+                      value={styleDirective} 
+                      onChange={setStyleDirective} 
+                      disabled={isProcessing}
+                      referenceImage={styleReferenceImage}
+                      onReferenceImageChange={setStyleReferenceImage}
+                    />
                   </div>
                   
                   {/* Generate Button */}
-                  <div className="p-4">
+                  <div className="p-4 border-b border-white/[0.06]">
                     <button 
                       onClick={handleGenerate}
                       disabled={isProcessing || flows.length === 0}
@@ -9425,58 +11894,20 @@ Try these prompts in Cursor or v0:
               </div>
 
               <div className="p-4 border-b border-zinc-800">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Palette className="w-4 h-4 text-zinc-500" />
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                      {enterpriseMode ? "Enterprise Preset" : "Style"}
-                    </span>
-                  </div>
-                  <div className="flex items-center bg-zinc-800/80 rounded-md p-0.5">
-                    <button
-                      onClick={() => setEnterpriseMode(false)}
-                      className={cn(
-                        "w-[60px] py-0.5 rounded text-[9px] font-medium transition-all text-center",
-                        !enterpriseMode 
-                          ? "bg-zinc-700 text-white" 
-                          : "text-zinc-500 hover:text-zinc-400"
-                      )}
-                    >
-                      Creative
-                    </button>
-                    <button
-                      onClick={() => setEnterpriseMode(true)}
-                      className={cn(
-                        "w-[60px] py-0.5 rounded text-[9px] font-medium transition-all text-center",
-                        enterpriseMode 
-                          ? "bg-zinc-700 text-white" 
-                          : "text-zinc-500 hover:text-zinc-400"
-                      )}
-                    >
-                      Enterprise
-                    </button>
-                  </div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Palette className="w-4 h-4 text-zinc-500" />
+                  <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                    Style
+                  </span>
                 </div>
                 
-                {enterpriseMode ? (
-                  <EnterprisePresetSelector
-                    selectedPresetId={enterprisePresetId}
-                    onSelect={(preset) => {
-                      setEnterprisePresetId(preset.id);
-                      setStyleDirective(`Apply ${preset.name} design system`);
-                    }}
-                    compact={true}
-                    disabled={isProcessing}
-                  />
-                ) : (
-                  <StyleInjector 
-                    value={styleDirective} 
-                    onChange={setStyleDirective} 
-                    disabled={isProcessing}
-                    referenceImage={styleReferenceImage}
-                    onReferenceImageChange={setStyleReferenceImage}
-                  />
-                )}
+                <StyleInjector 
+                  value={styleDirective} 
+                  onChange={setStyleDirective} 
+                  disabled={isProcessing}
+                  referenceImage={styleReferenceImage}
+                  onReferenceImageChange={setStyleReferenceImage}
+                />
               </div>
 
               {/* Generate Button */}
@@ -9771,11 +12202,10 @@ Try these prompts in Cursor or v0:
             <div className="flex items-center bg-zinc-800/50 rounded-lg p-1">
               {[
                 { id: "preview", icon: Eye, label: "Preview" },
-                { id: "code", icon: Code, label: "Code" },
+                { id: "library", icon: Library, label: "Library" },
+                { id: "blueprints", icon: Map, label: "Blueprints" },
                 { id: "flow", icon: GitBranch, label: "Flow" },
-                { id: "design", icon: Palette, label: "Design" },
-                { id: "docs", icon: FileText, label: "Docs" },
-                { id: "input", icon: FileInput, label: "Input" },
+                { id: "code", icon: Code, label: "Code" },
               ].map((tab) => (
                 <button 
                   key={tab.id} 
@@ -10197,7 +12627,7 @@ Try these prompts in Cursor or v0:
                 ) : previewUrl ? (
                   <>
                     {/* Iframe container */}
-                    <div className={cn("flex-1 flex items-center justify-center bg-[#111111] overflow-hidden relative", isMobilePreview && "py-4")} style={{ overscrollBehavior: 'none' }}>
+                    <div className={cn("flex-1 flex items-center justify-center bg-[#111111] relative", isMobilePreview && "py-4")} style={{ overscrollBehavior: 'contain' }}>
                       <iframe 
                         key={previewUrl}
                         ref={previewIframeRef}
@@ -10218,9 +12648,10 @@ Try these prompts in Cursor or v0:
                           isPointAndEdit && "cursor-crosshair",
                           isEditing && "opacity-50"
                         )} 
-                        style={{ overscrollBehavior: 'none', backgroundColor: '#0a0a0a' }}
+                        style={{ overscrollBehavior: 'contain', backgroundColor: '#0a0a0a' }}
                         title="Preview" 
-                        sandbox="allow-scripts allow-same-origin" 
+                        sandbox="allow-scripts allow-same-origin"
+                        referrerPolicy="no-referrer" 
                       />
                       {/* Editing overlay indicator */}
                       {isEditing && (
@@ -10284,6 +12715,20 @@ Try these prompts in Cursor or v0:
                             title={!generationComplete ? "Complete generation first" : ""}
                           >
                             Componentized
+                          </button>
+                          <button
+                            onClick={() => generationComplete && setCodeMode("architecture")}
+                            disabled={!generationComplete}
+                            className={cn(
+                              "px-3 py-1 rounded-md text-[10px] font-medium transition-all",
+                              !generationComplete && "opacity-50 cursor-not-allowed",
+                              codeMode === "architecture" 
+                                ? "bg-white/10 text-white" 
+                                : "text-zinc-500 hover:text-zinc-400"
+                            )}
+                            title={!generationComplete ? "Complete generation first" : "Shows imports from Blueprints"}
+                          >
+                            Architecture
                           </button>
                         </div>
                         
@@ -10475,54 +12920,8 @@ Try these prompts in Cursor or v0:
                   </div>
                 )}
                 
-                {/* Main Code Area */}
+                {/* Main Code Area (file tree panel removed - now in left sidebar) */}
                 <div className="flex-1 flex min-h-0 overflow-hidden">
-                  {/* File Tree Panel - Same width for both modes */}
-                  {displayedCode && (
-                    <div className="w-56 flex-shrink-0 border-r border-zinc-800 overflow-y-auto bg-[#111111]">
-                      <div className="p-2 border-b border-zinc-800 sticky top-0 bg-[#111111] z-10">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5 text-[9px] text-zinc-500 uppercase tracking-wider">
-                            <FolderTree className="w-3 h-3" />
-                            <span>Files</span>
-                          </div>
-                          <span className="text-[8px] text-white/20">{generatedFiles.length} files</span>
-                        </div>
-                      </div>
-                      
-                      <div className="p-1 text-[10px]">
-                        {/* Render file tree - filter out stub files to match Flow showing only observed */}
-                        {buildFileTree(generatedFiles.filter(f => !f.isStub)).map((item) => (
-                          <FileTreeItem 
-                            key={item.path} 
-                            item={item} 
-                            activeFilePath={activeFilePath}
-                            onFileClick={(path, isStub, nodeId) => {
-                              if (isStub && nodeId) {
-                                // For stubs, only fill the edit input - DON'T start generating yet
-                                // Generation only starts when user clicks the send button
-                                // Block if currently editing
-                                if (isEditing) return;
-                                const node = flowNodes.find(n => n.id === nodeId);
-                                if (node) {
-                                  setEditInput(`@${node.name} Create this page with full content and layout`);
-                                  setShowFloatingEdit(true);
-                                  // Focus the edit input
-                                  setTimeout(() => editInputRef.current?.focus(), 100);
-                                }
-                              } else {
-                                setActiveFilePath(path);
-                              }
-                            }}
-                            onFolderToggle={toggleFolder}
-                            expandedFolders={expandedFolders}
-                            generatingPath={generatingFilePath}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
                   {/* Code Editor Panel */}
                   <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                     {/* Breadcrumb bar */}
@@ -10556,7 +12955,187 @@ Try these prompts in Cursor or v0:
                     
                     {/* Code content */}
                     <div ref={codeContainerRef} className="flex-1 overflow-auto">
-                      {isCodeEditable ? (
+                      {/* Architecture Mode - Shows imports from Blueprints */}
+                      {codeMode === "architecture" && displayedCode ? (
+                        <div className="h-full bg-[#111111] p-6 overflow-auto">
+                          <div className="max-w-4xl mx-auto space-y-6">
+                            {/* Header */}
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h2 className="text-lg font-semibold text-white">Project Architecture</h2>
+                                <p className="text-xs text-zinc-500 mt-1">
+                                  {libraryData?.components?.length 
+                                    ? `${libraryData.components.length} components from Blueprints • Ready to copy`
+                                    : "Generate Library first to see component architecture"}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {!libraryData?.components?.length && (
+                                  <button 
+                                    onClick={() => setViewMode("library")}
+                                    className="flex items-center gap-2 px-3 py-2 text-xs bg-white text-zinc-900 rounded-lg hover:bg-zinc-100 font-medium"
+                                  >
+                                    <Box className="w-4 h-4" />
+                                    Go to Library
+                                  </button>
+                                )}
+                                <button 
+                                  onClick={() => {
+                                    const allCode = generatedFiles.map(f => `// ${f.path}\n${f.content}`).join('\n\n');
+                                    navigator.clipboard.writeText(allCode);
+                                    showToast("All files copied!", "success");
+                                  }}
+                                  className="flex items-center gap-2 px-3 py-2 text-xs bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 hover:text-white"
+                                >
+                                  <Download className="w-4 h-4" />
+                                  Export All
+                                </button>
+                              </div>
+                            </div>
+                            
+                            {/* Project Structure Overview */}
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="p-4 bg-zinc-900 rounded-xl border border-zinc-800">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <FolderTree className="w-4 h-4 text-zinc-400" />
+                                  <span className="text-sm font-medium text-white">Structure</span>
+                                </div>
+                                <div className="space-y-1 text-[10px] font-mono text-zinc-400">
+                                  <div className="flex items-center gap-2"><Folder className="w-3 h-3 text-zinc-600" /> /app</div>
+                                  <div className="flex items-center gap-2 pl-4"><span className="text-emerald-400">page.tsx</span></div>
+                                  <div className="flex items-center gap-2 pl-4"><Folder className="w-3 h-3 text-zinc-600" /> /components</div>
+                                  {libraryData?.components?.slice(0, 5).map((c: any, i: number) => (
+                                    <div key={i} className="flex items-center gap-2 pl-8">
+                                      <span className="text-blue-400">{c.name}.tsx</span>
+                                    </div>
+                                  ))}
+                                  {(libraryData?.components?.length || 0) > 5 && (
+                                    <div className="pl-8 text-zinc-600">+{(libraryData?.components?.length || 0) - 5} more...</div>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div className="p-4 bg-zinc-900 rounded-xl border border-zinc-800">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <Box className="w-4 h-4 text-zinc-400" />
+                                  <span className="text-sm font-medium text-white">Blueprints Used</span>
+                                </div>
+                                <div className="space-y-2">
+                                  {libraryData?.components?.slice(0, 4).map((c: any, i: number) => (
+                                    <div key={i} className="flex items-center justify-between text-xs">
+                                      <span className="text-zinc-300">{c.name}</span>
+                                      <span className={cn(
+                                        "px-1.5 py-0.5 rounded text-[9px]",
+                                        blueprintStatuses[c.id] === 'approved' ? "bg-emerald-900/30 text-emerald-400" : "bg-zinc-800 text-zinc-500"
+                                      )}>
+                                        {blueprintStatuses[c.id] || 'draft'}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Main Page Code with Imports */}
+                            <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
+                              <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <FileText className="w-4 h-4 text-emerald-400" />
+                                  <span className="text-sm font-medium text-white">/app/page.tsx</span>
+                                </div>
+                                <button 
+                                  onClick={() => {
+                                    const imports = libraryData?.components?.map((c: any) => 
+                                      `import { ${c.name} } from '@/components/${c.name}';`
+                                    ).join('\n') || '';
+                                    const pageCode = `${imports}\n\nexport default function Page() {\n  return (\n    <main>\n      {/* Your page content using Blueprint components */}\n    </main>\n  );\n}`;
+                                    navigator.clipboard.writeText(pageCode);
+                                    showToast("Page template copied!", "success");
+                                  }}
+                                  className="text-xs text-zinc-500 hover:text-white flex items-center gap-1"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                  Copy
+                                </button>
+                              </div>
+                              <Highlight 
+                                theme={themes.nightOwl} 
+                                code={`// Import components from Blueprints (Single Source of Truth)
+${libraryData?.components?.map((c: any) => `import { ${c.name} } from '@/components/${c.name}';`).join('\n') || '// No components yet'}
+
+export default function Page() {
+  return (
+    <main className="min-h-screen">
+      {/* Components are pre-built in Blueprints */}
+      {/* Modify props here, styles come from Blueprint definitions */}
+${libraryData?.components?.slice(0, 3).map((c: any) => `      <${c.name} />`).join('\n') || '      {/* Add components */}'}
+    </main>
+  );
+}`}
+                                language="tsx"
+                              >
+                                {({ style, tokens, getLineProps, getTokenProps }) => (
+                                  <pre className="p-4 text-xs overflow-x-auto" style={{ ...style, background: 'transparent', fontFamily: "'JetBrains Mono', monospace" }}>
+                                    {tokens.map((line, i) => (
+                                      <div key={i} {...getLineProps({ line })}>
+                                        <span className="inline-block w-6 pr-3 text-right text-white/15 select-none text-[10px]">{i + 1}</span>
+                                        {line.map((token, key) => <span key={key} {...getTokenProps({ token })} />)}
+                                      </div>
+                                    ))}
+                                  </pre>
+                                )}
+                              </Highlight>
+                            </div>
+                            
+                            {/* Component Files */}
+                            <div>
+                              <h3 className="text-sm font-medium text-white mb-3">Component Files (from Blueprints)</h3>
+                              <div className="space-y-3">
+                                {libraryData?.components?.slice(0, 3).map((comp: any, i: number) => (
+                                  <div key={i} className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
+                                    <div className="px-4 py-2 border-b border-zinc-800 flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <Box className="w-3 h-3 text-blue-400" />
+                                        <span className="text-xs font-medium text-zinc-300">/components/{comp.name}.tsx</span>
+                                      </div>
+                                      <button 
+                                        onClick={() => {
+                                          const code = `export const ${comp.name} = ({ ${comp.props?.map((p: any) => p.name).join(', ') || ''} }) => {\n  return (\n    ${comp.code?.substring(0, 150) || '<div>Component</div>'}...\n  );\n};`;
+                                          navigator.clipboard.writeText(code);
+                                          showToast(`${comp.name} copied!`, "success");
+                                        }}
+                                        className="text-[10px] text-zinc-500 hover:text-white flex items-center gap-1"
+                                      >
+                                        <Copy className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                    <pre className="p-3 text-[10px] text-zinc-400 font-mono overflow-x-auto" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+{`export const ${comp.name} = ({ ${comp.props?.map((p: any) => p.name).join(', ') || ''} }) => {
+  return (
+    // Component code from Blueprint
+  );
+};`}
+                                    </pre>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            
+                            {/* Tip */}
+                            <div className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl">
+                              <div className="flex items-start gap-3">
+                                <Lightbulb className="w-5 h-5 text-zinc-500 mt-0.5" />
+                                <div>
+                                  <p className="text-xs text-zinc-400">
+                                    <span className="text-white font-medium">Tip:</span> Modify components in <span className="text-blue-400">Blueprints</span> tab. 
+                                    Changes apply everywhere they're used. This is your <span className="text-emerald-400">Single Source of Truth</span>.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ) : isCodeEditable ? (
                         <textarea 
                           value={editableCode} 
                           onChange={(e) => setEditableCode(e.target.value)} 
@@ -11186,27 +13765,12 @@ export default function GeneratedPage() {
                                       transform: 'scale(0.125)',
                                       transformOrigin: 'top left'
                                     }}
-                                    sandbox="allow-scripts"
+                                    sandbox="allow-scripts allow-same-origin"
+                                    referrerPolicy="no-referrer"
                                     title={`Preview: ${node.name}`}
                                   />
                                   {/* Glass overlay on preview */}
                                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                                  
-                                  {/* Status Badge inside preview area */}
-                                  <div className="absolute top-2 right-2">
-                                    <span className={cn(
-                                      "text-[9px] px-2 py-0.5 rounded-full capitalize font-medium backdrop-blur-md border",
-                                      isObserved 
-                                        ? "bg-zinc-600/20 border-zinc-600/30 text-zinc-300" 
-                                        : isAdded
-                                        ? "bg-zinc-800/20 border-zinc-700 text-zinc-300"
-                                        : isDetected
-                                        ? "bg-zinc-600/20 border-zinc-600/30 text-zinc-300"
-                                        : "bg-white/10 border-zinc-700 text-zinc-500"
-                                    )}>
-                                      {isObserved ? "observed" : isAdded ? "generated" : isDetected ? "detected" : "possible"}
-                                    </span>
-                                  </div>
                                 </div>
                               )}
                               
@@ -11463,25 +14027,108 @@ export default function GeneratedPage() {
                               </div>
                             )}
 
-                            {/* API Endpoints */}
+                            {/* Event Mapping - Trigger → Action → Result */}
+                            {(aiFlows.eventMapping?.length > 0 || flowNodes.length > 0) && (
+                              <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+                                <div className="px-3 py-2 border-b border-zinc-800 flex items-center gap-2">
+                                  <Zap className="w-3.5 h-3.5 text-yellow-500" />
+                                  <span className="text-xs font-medium text-zinc-400">Event Mapping</span>
+                                  <button 
+                                    onClick={() => {
+                                      const events = flowNodes.map(n => `Trigger: ${n.name} click\n  → Action: Navigate to ${n.name}\n  → Result: Show ${n.name} page`).join('\n\n');
+                                      navigator.clipboard.writeText(events);
+                                      showToast("Events copied!", "success");
+                                    }}
+                                    className="ml-auto text-[9px] text-zinc-600 hover:text-white"
+                                  >
+                                    Copy
+                                  </button>
+                                </div>
+                                <div className="p-2 space-y-2 max-h-48 overflow-y-auto">
+                                  {(aiFlows.eventMapping || flowNodes.slice(0, 5).map((n: any) => ({
+                                    trigger: `${n.name} click`,
+                                    action: `Navigate to ${n.name}`,
+                                    result: `Render ${n.name} page`,
+                                    component: n.components?.[0] || 'Button'
+                                  }))).map((event: any, i: number) => (
+                                    <div key={i} className="p-2 rounded bg-zinc-800/50 border border-zinc-700/50">
+                                      <div className="flex items-center gap-2 text-[9px]">
+                                        <span className="px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400">Trigger</span>
+                                        <span className="text-zinc-300 font-mono">{event.trigger}</span>
+                                      </div>
+                                      <div className="flex items-center gap-2 text-[9px] mt-1 ml-4">
+                                        <span className="text-zinc-600">→</span>
+                                        <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">Action</span>
+                                        <span className="text-zinc-400">{event.action}</span>
+                                      </div>
+                                      <div className="flex items-center gap-2 text-[9px] mt-1 ml-8">
+                                        <span className="text-zinc-600">→</span>
+                                        <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400">Result</span>
+                                        <span className="text-zinc-500">{event.result}</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* API Contracts with JSON */}
                             {aiFlows.dataContracts?.endpoints?.length > 0 && (
                               <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
                                 <div className="px-3 py-2 border-b border-zinc-800 flex items-center gap-2">
                                   <Database className="w-3.5 h-3.5 text-blue-500" />
-                                  <span className="text-xs font-medium text-zinc-400">API Integration Points</span>
-                                  <span className="text-[9px] text-zinc-600 ml-auto">{aiFlows.dataContracts.endpoints.length}</span>
+                                  <span className="text-xs font-medium text-zinc-400">API Contracts</span>
+                                  <span className="text-[9px] text-zinc-600 ml-auto">{aiFlows.dataContracts.endpoints.length} endpoints</span>
                                 </div>
-                                <div className="p-2 space-y-1 max-h-40 overflow-y-auto">
+                                <div className="p-2 space-y-2 max-h-64 overflow-y-auto">
                                   {aiFlows.dataContracts.endpoints.map((api: any, i: number) => (
-                                    <div key={i} className="flex items-center gap-2 p-2 rounded bg-zinc-800/30 text-[10px]">
-                                      <span className={cn(
-                                        "px-1.5 py-0.5 rounded text-[8px] font-mono",
-                                        api.method === "GET" ? "bg-emerald-500/20 text-emerald-400" :
-                                        api.method === "POST" ? "bg-blue-500/20 text-blue-400" :
-                                        api.method === "PUT" ? "bg-amber-500/20 text-amber-400" :
-                                        "bg-zinc-500/20 text-zinc-400"
-                                      )}>{api.method}</span>
-                                      <span className="text-zinc-400 font-mono truncate flex-1">{api.endpoint}</span>
+                                    <div key={i} className="p-2 rounded bg-zinc-800/50 border border-zinc-700/50">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <span className={cn(
+                                          "px-1.5 py-0.5 rounded text-[8px] font-mono font-bold",
+                                          api.method === "GET" ? "bg-emerald-500/20 text-emerald-400" :
+                                          api.method === "POST" ? "bg-blue-500/20 text-blue-400" :
+                                          api.method === "PUT" ? "bg-amber-500/20 text-amber-400" :
+                                          api.method === "DELETE" ? "bg-red-500/20 text-red-400" :
+                                          "bg-zinc-500/20 text-zinc-400"
+                                        )}>{api.method}</span>
+                                        <span className="text-zinc-300 font-mono text-[10px] flex-1 truncate">{api.endpoint}</span>
+                                        <button 
+                                          onClick={() => {
+                                            const contract = `// ${api.method} ${api.endpoint}\n// Request:\n${JSON.stringify(api.request || {}, null, 2)}\n\n// Response:\n${JSON.stringify(api.response || { success: true }, null, 2)}`;
+                                            navigator.clipboard.writeText(contract);
+                                            showToast("Contract copied!", "success");
+                                          }}
+                                          className="text-[9px] text-zinc-600 hover:text-white"
+                                        >
+                                          <Copy className="w-3 h-3" />
+                                        </button>
+                                      </div>
+                                      {api.description && (
+                                        <p className="text-[9px] text-zinc-500 mb-2">{api.description}</p>
+                                      )}
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                          <span className="text-[8px] text-zinc-600 uppercase">Request</span>
+                                          <pre className="text-[9px] text-zinc-400 font-mono bg-zinc-900 rounded p-1.5 mt-1 overflow-x-auto">
+                                            {JSON.stringify(api.request || { "...": "payload" }, null, 2)}
+                                          </pre>
+                                        </div>
+                                        <div>
+                                          <span className="text-[8px] text-zinc-600 uppercase">Response</span>
+                                          <pre className="text-[9px] text-emerald-400/70 font-mono bg-zinc-900 rounded p-1.5 mt-1 overflow-x-auto">
+                                            {JSON.stringify(api.response || { success: true }, null, 2)}
+                                          </pre>
+                                        </div>
+                                      </div>
+                                      {api.usedIn && (
+                                        <div className="mt-2 flex items-center gap-1 text-[8px] text-zinc-600">
+                                          <span>Used in:</span>
+                                          {api.usedIn.map((page: string, j: number) => (
+                                            <span key={j} className="px-1 py-0.5 bg-zinc-800 rounded">{page}</span>
+                                          ))}
+                                        </div>
+                                      )}
                                     </div>
                                   ))}
                                 </div>
@@ -11779,17 +14426,6 @@ export default function GeneratedPage() {
                       </p>
                     </div>
                     
-                    {/* Legacy Enterprise Export */}
-                    <div className="style-card">
-                      <EnterpriseExport
-                        projectName={activeGeneration?.title || "Replay Project"}
-                        generatedCode={generatedCode}
-                        preset={enterprisePresetId ? getPresetById(enterprisePresetId) || null : null}
-                        onExport={(format) => {
-                          showToast(`Enterprise package exported as ${format.toUpperCase()}!`, "success");
-                        }}
-                      />
-                    </div>
                   </div>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
@@ -12458,6 +15094,2370 @@ export default function GeneratedPage() {
               </div>
             )}
 
+            {/* Library - Storybook-like component library */}
+            {viewMode === "library" && (
+              <div className="flex-1 overflow-hidden flex bg-[#111111]">
+                {/* Fullscreen Preview Overlay */}
+                {isLibraryFullscreen && (() => {
+                  const selectedComponent = selectedLibraryItem?.startsWith("comp-") 
+                    ? libraryData?.components?.find((c: any) => `comp-${c.id}` === selectedLibraryItem)
+                    : null;
+                  return selectedComponent?.code ? (
+                    <div className="fixed inset-0 z-50 bg-black/95 flex flex-col">
+                      {/* Fullscreen Header */}
+                      <div className="flex-shrink-0 h-12 border-b border-zinc-800 bg-zinc-900 flex items-center justify-between px-4">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-medium text-white">{selectedComponent.name}</span>
+                          <span className="text-xs text-zinc-500">Fullscreen Preview</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {/* Viewport toggles */}
+                          <button 
+                            onClick={() => setLibraryViewport("mobile")}
+                            className={cn("p-2 rounded-md", libraryViewport === "mobile" ? "bg-zinc-700 text-white" : "hover:bg-zinc-800 text-zinc-400")} 
+                          >
+                            <Smartphone className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => setLibraryViewport("desktop")}
+                            className={cn("p-2 rounded-md", libraryViewport === "desktop" ? "bg-zinc-700 text-white" : "hover:bg-zinc-800 text-zinc-400")} 
+                          >
+                            <Monitor className="w-4 h-4" />
+                          </button>
+                          <div className="w-px h-6 bg-zinc-700 mx-2" />
+                          {/* Background toggles */}
+                          {(["light", "dark"] as const).map((bg) => (
+                            <button
+                              key={bg}
+                              onClick={() => setLibraryBackground(bg)}
+                              className={cn("px-3 py-1.5 text-xs rounded-md", libraryBackground === bg ? "bg-zinc-700 text-white" : "text-zinc-400 hover:text-white")}
+                            >
+                              {bg.charAt(0).toUpperCase() + bg.slice(1)}
+                            </button>
+                          ))}
+                          <div className="w-px h-6 bg-zinc-700 mx-2" />
+                          <button 
+                            onClick={() => setIsLibraryFullscreen(false)}
+                            className="p-2 hover:bg-zinc-800 rounded-md text-zinc-400 hover:text-white"
+                            title="Exit fullscreen (Esc)"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      {/* Fullscreen Content */}
+                      <div className={cn(
+                        "flex-1 overflow-auto flex items-center justify-center p-8",
+                        libraryBackground === "dark" ? "bg-zinc-950" : "bg-white"
+                      )}>
+                        <div className={cn(
+                          "transition-all duration-300",
+                          libraryViewport === "mobile" ? "w-[375px]" : "w-full max-w-6xl"
+                        )}>
+                          <InteractiveReactPreview 
+                            code={selectedComponent.code}
+                            background={libraryBackground === "light" ? "light" : "dark"}
+                            className="min-h-[300px]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
+                {/* Main Area - Canvas + Bottom Panel (middle panel removed - now in left sidebar) */}
+                <div className="flex-1 flex flex-col min-w-0">
+                  {/* Toolbar */}
+                  <div className="h-10 border-b border-zinc-800/50 bg-[#111111] flex items-center justify-between px-3">
+                    {/* Left: Canvas controls */}
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => setLibraryZoom(Math.max(50, libraryZoom - 25))} className="p-1.5 hover:bg-zinc-800 rounded-md" title="Zoom Out">
+                        <ZoomOut className="w-3.5 h-3.5 text-zinc-500" />
+                      </button>
+                      <span className="text-[10px] text-zinc-500 w-10 text-center">{libraryZoom}%</span>
+                      <button onClick={() => setLibraryZoom(Math.min(200, libraryZoom + 25))} className="p-1.5 hover:bg-zinc-800 rounded-md" title="Zoom In">
+                        <ZoomIn className="w-3.5 h-3.5 text-zinc-500" />
+                      </button>
+                      <button onClick={() => setLibraryZoom(100)} className="p-1.5 hover:bg-zinc-800 rounded-md" title="Reset Zoom">
+                        <RefreshCw className="w-3.5 h-3.5 text-zinc-500" />
+                      </button>
+                      <div className="w-px h-4 bg-zinc-800 mx-1" />
+                      <button 
+                        onClick={() => setShowLibraryGrid(!showLibraryGrid)} 
+                        className={cn("p-1.5 rounded-md", showLibraryGrid ? "bg-zinc-700 text-white" : "hover:bg-zinc-800 text-zinc-500")}
+                        title="Toggle Grid"
+                      >
+                        <Grid3X3 className="w-3.5 h-3.5" />
+                      </button>
+                      <button 
+                        onClick={() => setShowLibraryOutline(!showLibraryOutline)}
+                        className={cn("p-1.5 rounded-md", showLibraryOutline ? "bg-zinc-700 text-white" : "hover:bg-zinc-800 text-zinc-500")}
+                        title="Toggle Outline"
+                      >
+                        <Ruler className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    
+                    {/* Center: Background selector */}
+                    <div className="flex items-center gap-1 bg-zinc-900 rounded-md p-0.5">
+                      {(["light", "dark", "transparent"] as const).map((bg) => (
+                        <button
+                          key={bg}
+                          onClick={() => setLibraryBackground(bg)}
+                          className={cn(
+                            "px-2 py-1 text-[10px] rounded transition-colors",
+                            libraryBackground === bg ? "bg-zinc-700 text-white" : "text-zinc-500 hover:text-zinc-300"
+                          )}
+                        >
+                          {bg.charAt(0).toUpperCase() + bg.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    {/* Right: Viewport & actions */}
+                    <div className="flex items-center gap-1">
+                      <button 
+                        onClick={() => setLibraryViewport("mobile")}
+                        className={cn("p-1.5 rounded-md transition-colors", libraryViewport === "mobile" ? "bg-zinc-700 text-white" : "hover:bg-zinc-800 text-zinc-500")} 
+                        title="Mobile view (375px)"
+                      >
+                        <Smartphone className="w-3.5 h-3.5" />
+                      </button>
+                      <button 
+                        onClick={() => setLibraryViewport("desktop")}
+                        className={cn("p-1.5 rounded-md transition-colors", libraryViewport === "desktop" ? "bg-zinc-700 text-white" : "hover:bg-zinc-800 text-zinc-500")} 
+                        title="Desktop view (full width)"
+                      >
+                        <Monitor className="w-3.5 h-3.5" />
+                      </button>
+                      <div className="w-px h-4 bg-zinc-800 mx-1" />
+                      <button 
+                        onClick={() => setIsLibraryFullscreen(!isLibraryFullscreen)}
+                        className={cn("p-1.5 rounded-md transition-colors", isLibraryFullscreen ? "bg-zinc-700 text-white" : "hover:bg-zinc-800 text-zinc-500")} 
+                        title={isLibraryFullscreen ? "Exit fullscreen" : "Fullscreen preview"}
+                      >
+                        <Maximize2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Canvas - Component Preview - STORYBOOK STYLE */}
+                  {(() => {
+                    // Find selected component from libraryData
+                    const selectedComponent = selectedLibraryItem?.startsWith("comp-") 
+                      ? libraryData?.components?.find((c: any) => `comp-${c.id}` === selectedLibraryItem)
+                      : null;
+                    const selectedDoc = selectedLibraryItem?.startsWith("doc-")
+                      ? libraryData?.docs?.find((d: any) => `doc-${d.id}` === selectedLibraryItem)
+                      : null;
+                    
+                    return (
+                      <>
+                        <div className={cn(
+                          "flex-1 overflow-auto",
+                          libraryBackground === "dark" ? "bg-[#1a1a1c]" : 
+                          libraryBackground === "light" ? "bg-white" : 
+                          "bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHJlY3QgZmlsbD0iIzFhMWExYSIgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIi8+PHJlY3QgZmlsbD0iIzI1MjUyNSIgeD0iMTAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIvPjxyZWN0IGZpbGw9IiMyNTI1MjUiIHk9IjEwIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiLz48cmVjdCBmaWxsPSIjMWExYTFhIiB4PSIxMCIgeT0iMTAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3QgZmlsbD0idXJsKCNncmlkKSIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIvPjwvc3ZnPg==')]",
+                          showLibraryGrid && "bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:16px_16px]"
+                        )}>
+                          {!selectedLibraryItem ? (
+                            <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                              <BookOpen className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
+                              <p className="text-sm text-zinc-500">Select a component from the sidebar</p>
+                              <p className="text-xs text-zinc-600 mt-1">or extract components from your code</p>
+                            </div>
+                          ) : selectedDoc ? (
+                            /* Documentation view - Rich Solenis-style rendering */
+                            <div className="w-full max-w-4xl mx-auto p-8 pb-24">
+                              
+                              {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+                              {/* WELCOME PAGE - Clean Lucide Icons */}
+                              {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+                              {selectedDoc.type === "welcome" && (
+                                <div className="space-y-10">
+                                  <div>
+                                    <h1 className={cn("text-4xl font-bold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
+                                      {selectedDoc.title || "Design System"}
+                                    </h1>
+                                    <p className={cn("text-lg leading-relaxed", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
+                                      Welcome to your Design System - a comprehensive collection of reusable components built with modern standards and designed for scalability, accessibility, and developer experience.
+                                    </p>
+                                  </div>
+                                  
+                                  {/* Vision & Purpose */}
+                                  <div>
+                                    <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
+                                      <Rocket className="w-5 h-5 text-zinc-400" /> Vision & Purpose
+                                    </h2>
+                                    <p className={cn("text-sm leading-relaxed", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
+                                      Create one accessible, performant, and framework-agnostic UI layer that every product can rely on—reducing duplication, accelerating delivery, and elevating consistency.
+                                    </p>
+                                  </div>
+                                  
+                                  {/* Why It Matters */}
+                                  <div>
+                                    <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
+                                      <Lightbulb className="w-5 h-5 text-zinc-400" /> Why It Matters
+                                    </h2>
+                                    <p className={cn("text-sm mb-4", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
+                                      We invest in a design system because it provides durable leverage:
+                                    </p>
+                                    <div className="grid grid-cols-2 gap-3">
+                                      {[
+                                        { icon: <Puzzle className="w-4 h-4" />, title: "Reusable Components", desc: "Build once, use everywhere" },
+                                        { icon: <Palette className="w-4 h-4" />, title: "Unified Design", desc: "Shared visual language" },
+                                        { icon: <Settings className="w-4 h-4" />, title: "Developer Efficiency", desc: "Faster builds with modern tooling" },
+                                        { icon: <Eye className="w-4 h-4" />, title: "Inclusive Accessibility", desc: "WCAG 2.1 AA as baseline" },
+                                        { icon: <Zap className="w-4 h-4" />, title: "Speed to Market", desc: "Shorter concept-to-production" },
+                                        { icon: <Shield className="w-4 h-4" />, title: "Lower Maintenance", desc: "Centralized evolution" },
+                                        { icon: <RefreshCw className="w-4 h-4" />, title: "Flexible Migration", desc: "Switch frameworks easily" },
+                                        { icon: <Users className="w-4 h-4" />, title: "Team Autonomy", desc: "Same composable primitives" },
+                                      ].map((item, i) => (
+                                        <div key={i} className={cn("flex items-start gap-3 p-3 rounded-lg", libraryBackground === "light" ? "bg-zinc-50" : "bg-zinc-900/50")}>
+                                          <div className="text-zinc-400 mt-0.5">{item.icon}</div>
+                                          <div>
+                                            <div className={cn("font-medium text-sm", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{item.title}</div>
+                                            <div className={cn("text-xs", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{item.desc}</div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Stats */}
+                                  <div className="grid grid-cols-4 gap-4">
+                                    <div className={cn("p-5 rounded-xl border text-center", libraryBackground === "light" ? "bg-white border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
+                                      <div className={cn("text-3xl font-bold", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>{libraryData?.components?.length || 0}</div>
+                                      <div className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Components</div>
+                                    </div>
+                                    <div className={cn("p-5 rounded-xl border text-center", libraryBackground === "light" ? "bg-white border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
+                                      <div className={cn("text-3xl font-bold", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>{Object.keys(libraryData?.tokens?.colors || {}).length}</div>
+                                      <div className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Colors</div>
+                                    </div>
+                                    <div className={cn("p-5 rounded-xl border text-center", libraryBackground === "light" ? "bg-white border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
+                                      <div className={cn("text-3xl font-bold", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>{[...new Set(libraryData?.components?.map((c: any) => c.category) || [])].length}</div>
+                                      <div className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Categories</div>
+                                    </div>
+                                    <div className={cn("p-5 rounded-xl border text-center", libraryBackground === "light" ? "bg-white border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
+                                      <div className={cn("text-3xl font-bold", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>A+</div>
+                                      <div className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Accessibility</div>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Design Principles */}
+                                  <div>
+                                    <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
+                                      <Target className="w-5 h-5 text-zinc-400" /> Design Principles
+                                    </h2>
+                                    <div className="grid grid-cols-3 gap-4">
+                                      <div className={cn("p-4 rounded-xl border", libraryBackground === "light" ? "bg-white border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
+                                        <h3 className={cn("font-semibold mb-2 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>
+                                          <Eye className="w-4 h-4 text-zinc-400" /> Accessibility First
+                                        </h3>
+                                        <ul className={cn("text-xs space-y-1", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
+                                          <li>• WCAG 2.1 AA compliance</li>
+                                          <li>• Keyboard navigation</li>
+                                          <li>• Screen reader support</li>
+                                          <li>• High contrast modes</li>
+                                        </ul>
+                                      </div>
+                                      <div className={cn("p-4 rounded-xl border", libraryBackground === "light" ? "bg-white border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
+                                        <h3 className={cn("font-semibold mb-2 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>
+                                          <Palette className="w-4 h-4 text-zinc-400" /> Consistency
+                                        </h3>
+                                        <ul className={cn("text-xs space-y-1", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
+                                          <li>• Unified visual language</li>
+                                          <li>• Standardized interactions</li>
+                                          <li>• Cohesive typography</li>
+                                          <li>• Consistent spacing</li>
+                                        </ul>
+                                      </div>
+                                      <div className={cn("p-4 rounded-xl border", libraryBackground === "light" ? "bg-white border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
+                                        <h3 className={cn("font-semibold mb-2 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>
+                                          <Code className="w-4 h-4 text-zinc-400" /> Developer Experience
+                                        </h3>
+                                        <ul className={cn("text-xs space-y-1", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
+                                          <li>• TypeScript support</li>
+                                          <li>• Clear documentation</li>
+                                          <li>• Live examples</li>
+                                          <li>• Modern build tools</li>
+                                        </ul>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Quick Links */}
+                                  <div>
+                                    <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
+                                      <Link2 className="w-5 h-5 text-zinc-400" /> Quick Links
+                                    </h2>
+                                    <div className="flex flex-wrap gap-2">
+                                      {["Getting Started", "Colors", "Typography", "Iconography", "Examples"].map((link) => (
+                                        <button key={link} onClick={() => setSelectedLibraryItem(`doc-${link.toLowerCase().replace(" ", "-")}`)} className="px-4 py-2 text-sm bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 hover:text-white transition-colors">
+                                          {link}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+                              {/* GETTING STARTED PAGE */}
+                              {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+                              {selectedDoc.type === "getting-started" && (
+                                <div className="space-y-8">
+                                  <div>
+                                    <h1 className={cn("text-4xl font-bold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Getting Started</h1>
+                                    <p className={cn("text-lg", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
+                                      Learn how to install and use the design system components in your project.
+                                    </p>
+                                  </div>
+                                  
+                                  {/* Installation */}
+                                  <div>
+                                    <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
+                                      <Package className="w-5 h-5 text-zinc-400" /> Installation
+                                    </h2>
+                                    <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
+                                      <div className={cn("px-4 py-2 text-xs font-mono border-b flex items-center justify-between", libraryBackground === "light" ? "bg-zinc-100 border-zinc-200 text-zinc-600" : "bg-zinc-900 border-zinc-800 text-zinc-400")}>
+                                        <span>Terminal</span>
+                                        <button onClick={() => navigator.clipboard.writeText("npm install @company/design-system")} className="text-zinc-400 hover:text-white">Copy</button>
+                                      </div>
+                                      <pre className={cn("p-4 text-sm font-mono overflow-x-auto", libraryBackground === "light" ? "bg-zinc-50" : "bg-[#0d0d0d]")}>
+                                        <code className={libraryBackground === "light" ? "text-zinc-800" : "text-zinc-300"}>npm install @company/design-system</code>
+                                      </pre>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Usage */}
+                                  <div>
+                                    <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
+                                      <Rocket className="w-5 h-5 text-zinc-400" /> Basic Usage
+                                    </h2>
+                                    <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
+                                      <div className={cn("px-4 py-2 text-xs font-mono border-b", libraryBackground === "light" ? "bg-zinc-100 border-zinc-200 text-zinc-600" : "bg-zinc-900 border-zinc-800 text-zinc-400")}>React</div>
+                                      <Highlight 
+                                        theme={themes.nightOwl} 
+                                        code={`import { Button, Card, Input } from '@company/ui';
+
+export default function App() {
+  return (
+    <Card className="p-6">
+      <h2>Welcome</h2>
+      <Input placeholder="Enter your email..." />
+      <Button variant="primary">Subscribe</Button>
+    </Card>
+  );
+}`}
+                                        language="tsx"
+                                      >
+                                        {({ style, tokens, getLineProps, getTokenProps }) => (
+                                          <pre className="p-4 text-sm overflow-x-auto" style={{ ...style, background: "#0d0d0d", fontFamily: "'JetBrains Mono', monospace" }}>
+                                            {tokens.map((line, i) => (
+                                              <div key={i} {...getLineProps({ line })}>
+                                                {line.map((token, key) => <span key={key} {...getTokenProps({ token })} />)}
+                                              </div>
+                                            ))}
+                                          </pre>
+                                        )}
+                                      </Highlight>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Features */}
+                                  <div>
+                                    <h2 className={cn("text-xl font-semibold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Features</h2>
+                                    <div className="grid grid-cols-2 gap-4">
+                                      {[
+                                        { title: "Live Preview", desc: "Interactive preview with zoom controls", icon: <Eye className="w-5 h-5" /> },
+                                        { title: "Code Export", desc: "Copy-ready HTML/JSX code", icon: <FileText className="w-5 h-5" /> },
+                                        { title: "Controls", desc: "Configurable props with live updates", icon: <Settings className="w-5 h-5" /> },
+                                        { title: "Variants", desc: "Pre-built component variations", icon: <GitBranch className="w-5 h-5" /> },
+                                      ].map((f, i) => (
+                                        <div key={i} className={cn("p-4 rounded-xl border", libraryBackground === "light" ? "bg-white border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
+                                          <div className="text-zinc-400 mb-2">{f.icon}</div>
+                                          <h3 className={cn("font-semibold", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{f.title}</h3>
+                                          <p className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{f.desc}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+                              {/* COLORS PAGE - Like Solenis */}
+                              {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+                              {selectedDoc.type === "colors" && (
+                                <div className="space-y-10">
+                                  <div>
+                                    <h1 className={cn("text-4xl font-bold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Colors</h1>
+                                    <p className={cn("text-lg", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
+                                      A comprehensive color system with multiple palettes, semantic colors, and utility classes for consistent color usage.
+                                    </p>
+                                  </div>
+                                  
+                                  {/* Color Philosophy */}
+                                  <div>
+                                    <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
+                                      <Palette className="w-5 h-5 text-zinc-400" /> Color Philosophy
+                                    </h2>
+                                    <p className={cn("text-sm mb-4", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
+                                      Our color system is built on the principle of <strong>semantic meaning</strong> and <strong>accessibility</strong>. Each color serves a specific purpose:
+                                    </p>
+                                    <ul className={cn("space-y-2 text-sm", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
+                                      <li>• <strong className="text-white">Primary</strong> - Brand color for buttons and links</li>
+                                      <li>• <strong className="text-emerald-500">Success</strong> - Positive actions and confirmations</li>
+                                      <li>• <strong className="text-red-500">Error</strong> - Errors and destructive actions</li>
+                                      <li>• <strong className="text-amber-500">Warning</strong> - Warnings and cautions</li>
+                                      <li>• <strong className="text-zinc-500">Neutral</strong> - Text, backgrounds, borders</li>
+                                    </ul>
+                                  </div>
+                                  
+                                  {/* CSS Custom Properties */}
+                                  <div>
+                                    <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
+                                      <Code className="w-5 h-5 text-zinc-400" /> CSS Custom Properties
+                                    </h2>
+                                    <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
+                                      <div className={cn("px-4 py-2 text-xs font-mono border-b flex items-center justify-between", libraryBackground === "light" ? "bg-zinc-100 border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
+                                        <span>CSS Variables</span>
+                                        <button onClick={() => navigator.clipboard.writeText(`:root {\n${Object.entries(libraryData?.tokens?.colors || {}).map(([n,v]) => `  --color-${n}: ${v};`).join('\n')}\n}`)} className="text-zinc-400 text-xs hover:text-white">Copy</button>
+                                      </div>
+                                      <Highlight 
+                                        theme={themes.nightOwl} 
+                                        code={`:root {\n${Object.entries(libraryData?.tokens?.colors || { primary: '#6366f1', background: '#09090b' }).map(([n,v]) => `  --color-${n}: ${v};`).join('\n')}\n}`}
+                                        language="css"
+                                      >
+                                        {({ style, tokens, getLineProps, getTokenProps }) => (
+                                          <pre className="p-4 text-xs overflow-x-auto" style={{ ...style, background: "#0d0d0d", fontFamily: "'JetBrains Mono', monospace" }}>
+                                            {tokens.map((line, i) => (
+                                              <div key={i} {...getLineProps({ line })}>
+                                                {line.map((token, key) => <span key={key} {...getTokenProps({ token })} />)}
+                                              </div>
+                                            ))}
+                                          </pre>
+                                        )}
+                                      </Highlight>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Color Palettes */}
+                                  <div>
+                                    <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
+                                      <Palette className="w-5 h-5 text-zinc-400" /> Primitive Color Palettes
+                                    </h2>
+                                    {Object.keys(libraryData?.tokens?.colors || {}).length > 0 ? (
+                                      <div className="space-y-4">
+                                        {Object.entries(libraryData?.tokens?.colors || {}).map(([name, value]) => (
+                                          <div key={name} className={cn("rounded-lg border overflow-hidden", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
+                                            <div className={cn("flex items-center justify-between px-4 py-3", libraryBackground === "light" ? "bg-zinc-50" : "bg-zinc-900/50")}>
+                                              <span className={cn("font-medium capitalize", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>{name}</span>
+                                              <span className={cn("font-mono text-xs", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{value as string}</span>
+                                            </div>
+                                            <div className="h-12 w-full" style={{ backgroundColor: value as string }} />
+                                            <div className={cn("px-4 py-2 flex justify-end", libraryBackground === "light" ? "bg-zinc-50" : "bg-zinc-900/50")}>
+                                              <button onClick={() => navigator.clipboard.writeText(value as string)} className="text-xs text-zinc-400 hover:text-white">Copy</button>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <div className="grid grid-cols-1 gap-4">
+                                        {[
+                                          { name: "Blue Palette", colors: ["#eff6ff", "#dbeafe", "#bfdbfe", "#93c5fd", "#60a5fa", "#3b82f6", "#2563eb", "#1d4ed8", "#1e40af", "#1e3a8a"] },
+                                          { name: "Green Palette", colors: ["#ecfdf5", "#d1fae5", "#a7f3d0", "#6ee7b7", "#34d399", "#10b981", "#059669", "#047857", "#065f46", "#064e3b"] },
+                                          { name: "Red Palette", colors: ["#fef2f2", "#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ef4444", "#dc2626", "#b91c1c", "#991b1b", "#7f1d1d"] },
+                                        ].map((palette) => (
+                                          <div key={palette.name}>
+                                            <h3 className={cn("text-sm font-medium mb-2", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>{palette.name}</h3>
+                                            <div className="flex rounded-lg overflow-hidden">
+                                              {palette.colors.map((c, i) => (
+                                                <div key={i} className="flex-1 h-10" style={{ backgroundColor: c }} title={c} />
+                                              ))}
+                                            </div>
+                                            <div className="flex mt-1">
+                                              {["50", "100", "200", "300", "400", "500", "600", "700", "800", "900"].map((v, i) => (
+                                                <div key={i} className={cn("flex-1 text-center text-[8px] font-mono", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>{v}</div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Semantic Colors */}
+                                  <div>
+                                    <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
+                                      <Tag className="w-5 h-5 text-zinc-400" /> Semantic Colors
+                                    </h2>
+                                    <p className={cn("text-sm mb-4", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
+                                      Semantic colors provide meaningful names for common use cases, making it easier to maintain consistent theming.
+                                    </p>
+                                    <div className="flex gap-2 rounded-lg overflow-hidden">
+                                      {[
+                                        { name: "primary", color: "#3b82f6" },
+                                        { name: "hover", color: "#2563eb" },
+                                        { name: "success", color: "#10b981" },
+                                        { name: "error", color: "#ef4444" },
+                                        { name: "warning", color: "#f59e0b" },
+                                      ].map((s) => (
+                                        <div key={s.name} className="flex-1 text-center">
+                                          <div className="h-16 rounded-lg" style={{ backgroundColor: s.color }} />
+                                          <div className={cn("text-xs mt-2", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>{s.name}</div>
+                                          <div className={cn("text-[10px] font-mono", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>{s.color}</div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+                              {/* TYPOGRAPHY PAGE */}
+                              {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+                              {selectedDoc.type === "typography" && (
+                                <div className="space-y-10">
+                                  <div>
+                                    <h1 className={cn("text-4xl font-bold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Typography</h1>
+                                    <p className={cn("text-lg", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
+                                      The typography system is built on the Inter font family, providing a comprehensive set of utility classes for consistent text styling.
+                                    </p>
+                                  </div>
+                                  
+                                  {/* Font Family */}
+                                  <div>
+                                    <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
+                                      <Type className="w-5 h-5 text-zinc-400" /> Font Family
+                                    </h2>
+                                    <p className={cn("text-sm mb-4", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
+                                      We use <strong>Inter</strong> as our primary font family, a highly legible typeface designed specifically for user interfaces.
+                                    </p>
+                                    <ul className={cn("text-sm space-y-1", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
+                                      <li>• Variable font-weight support (100-900)</li>
+                                      <li>• Both normal and italic styles</li>
+                                      <li>• Optimized for screen readability</li>
+                                    </ul>
+                                  </div>
+                                  
+                                  {/* Typography Scale */}
+                                  <div>
+                                    <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
+                                      <Ruler className="w-5 h-5 text-zinc-400" /> Typography Scale
+                                    </h2>
+                                    <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
+                                      <table className="w-full text-sm">
+                                        <thead>
+                                          <tr className={cn("border-b", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50")}>
+                                            <th className={cn("px-4 py-3 text-left font-medium", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Style Name</th>
+                                            <th className={cn("px-4 py-3 text-left font-medium", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Value</th>
+                                            <th className={cn("px-4 py-3 text-left font-medium", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Description</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {[
+                                            { style: "H1", size: "text-4xl", font: "Inter Bold 44/56", desc: "Main page titles" },
+                                            { style: "H2", size: "text-3xl", font: "Inter Bold 30/38", desc: "Section headings" },
+                                            { style: "H3", size: "text-2xl", font: "Inter Bold 20/24", desc: "Subsection headings" },
+                                            { style: "H4", size: "text-xl", font: "Inter Bold 16/20", desc: "Card titles" },
+                                            { style: "Body1", size: "text-base", font: "Inter Regular 16/24", desc: "Main content" },
+                                            { style: "Body2", size: "text-sm", font: "Inter Regular 14/20", desc: "Secondary content" },
+                                            { style: "Caption", size: "text-xs", font: "Inter Medium 12/18", desc: "Captions, metadata" },
+                                            { style: "Label", size: "text-xs", font: "Inter Regular 12/18", desc: "Input labels" },
+                                          ].map((row, i) => (
+                                            <tr key={i} className={cn("border-b last:border-0", libraryBackground === "light" ? "border-zinc-100" : "border-zinc-800/50")}>
+                                              <td className={cn("px-4 py-3 font-semibold", row.size, libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{row.style}</td>
+                                              <td className={cn("px-4 py-3 font-mono text-xs", libraryBackground === "light" ? "text-blue-600" : "text-blue-400")}>{row.font}</td>
+                                              <td className={cn("px-4 py-3", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{row.desc}</td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+                              {/* ICONOGRAPHY PAGE */}
+                              {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+                              {selectedDoc.type === "iconography" && (
+                                <div className="space-y-10">
+                                  <div>
+                                    <h1 className={cn("text-4xl font-bold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Icons</h1>
+                                    <p className={cn("text-lg", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
+                                      A comprehensive icon library with multiple weight variants to ensure visual consistency across all applications.
+                                    </p>
+                                  </div>
+                                  
+                                  {/* Icon Grid - Bold */}
+                                  <div>
+                                    <h2 className={cn("text-lg font-semibold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Base Bold</h2>
+                                    <div className="grid grid-cols-8 gap-2">
+                                      {["Home", "Search", "Settings", "User", "Bell", "Mail", "Heart", "Star", "Check", "X", "Plus", "Minus", "Edit", "Trash", "Download", "Upload", "Copy", "Link", "Eye", "Lock", "Unlock", "Menu", "Grid", "List"].map((icon) => (
+                                        <div key={icon} className={cn("flex flex-col items-center gap-1.5 p-3 rounded-lg border hover:border-zinc-500 transition-colors cursor-pointer", libraryBackground === "light" ? "border-zinc-200 hover:bg-zinc-50" : "border-zinc-800 hover:bg-zinc-800/50")}>
+                                          <div className={cn("w-5 h-5", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>
+                                            <svg fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" className="w-full h-full"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                                          </div>
+                                          <span className={cn("text-[9px] font-mono truncate w-full text-center", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{icon.toLowerCase()}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Icon Grid - Regular */}
+                                  <div>
+                                    <h2 className={cn("text-lg font-semibold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Base Regular</h2>
+                                    <div className="grid grid-cols-8 gap-2">
+                                      {["add", "arrow-down", "arrow-up", "arrow-left", "arrow-right", "calendar", "clock", "filter", "sort", "refresh", "share", "bookmark", "flag", "tag", "folder", "file"].map((icon) => (
+                                        <div key={icon} className={cn("flex flex-col items-center gap-1.5 p-3 rounded-lg border hover:border-zinc-500 transition-colors cursor-pointer", libraryBackground === "light" ? "border-zinc-200 hover:bg-zinc-50" : "border-zinc-800 hover:bg-zinc-800/50")}>
+                                          <div className={cn("w-5 h-5", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>
+                                            <svg fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" className="w-full h-full"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+                                          </div>
+                                          <span className={cn("text-[9px] font-mono truncate w-full text-center", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{icon}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  
+                                  <p className={cn("text-xs", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
+                                    Using Lucide Icons - <a href="https://lucide.dev" target="_blank" rel="noopener" className="text-zinc-400 hover:text-white hover:underline">lucide.dev</a>
+                                  </p>
+                                </div>
+                              )}
+                              
+                              {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+                              {/* EXAMPLES PAGE */}
+                              {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+                              {selectedDoc.type === "examples" && (
+                                <div className="space-y-10">
+                                  <div>
+                                    <h1 className={cn("text-4xl font-bold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Real-World Examples</h1>
+                                    <p className={cn("text-lg", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
+                                      Discover how the design system powers applications across different frameworks and technology stacks.
+                                    </p>
+                                  </div>
+                                  
+                                  {/* React Applications */}
+                                  <div>
+                                    <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
+                                      <span>⚛️</span> React Applications
+                                    </h2>
+                                    <p className={cn("text-sm mb-4", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
+                                      See how the Design System integrates seamlessly into React applications.
+                                    </p>
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
+                                        <div className={cn("h-40 flex items-center justify-center", libraryBackground === "light" ? "bg-gradient-to-br from-blue-50 to-indigo-100" : "bg-gradient-to-br from-blue-950/50 to-indigo-950/50")}>
+                                          <div className={cn("text-sm", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Preview Image</div>
+                                        </div>
+                                        <div className="p-4">
+                                          <h3 className={cn("font-semibold", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>Dashboard App</h3>
+                                          <p className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>A modern dashboard with metrics, charts, and data tables.</p>
+                                          <div className="flex gap-2 mt-3">
+                                            <button className="px-3 py-1.5 text-xs bg-zinc-700 text-white rounded-lg hover:bg-zinc-600">Preview</button>
+                                            <button className={cn("px-3 py-1.5 text-xs rounded-lg border", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-700")}>Code</button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className={cn("rounded-xl border overflow-hidden flex items-center justify-center", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50")}>
+                                        <div className="text-center p-8">
+                                          <Rocket className="w-8 h-8 text-zinc-500 mx-auto mb-2" />
+                                          <p className={cn("text-sm font-medium", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>More Coming Soon</p>
+                                          <p className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>We're building more examples</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Categories */}
+                                  <div>
+                                    <h2 className={cn("text-xl font-semibold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Components by Category</h2>
+                                    <div className="space-y-3">
+                                      {[...new Set(libraryData?.components?.map((c: any) => c.category) || ["layout", "navigation", "feedback"])].map((cat: any) => {
+                                        const catComponents = libraryData?.components?.filter((c: any) => c.category === cat) || [];
+                                        return (
+                                          <div key={cat} className={cn("p-4 rounded-lg border", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
+                                            <h3 className={cn("font-semibold capitalize mb-2", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{cat || "Other"}</h3>
+                                            <div className="flex flex-wrap gap-2">
+                                              {(catComponents.length > 0 ? catComponents : [{ name: "Example" }]).map((comp: any, i: number) => (
+                                                <span key={i} className={cn("px-2 py-1 text-xs rounded", libraryBackground === "light" ? "bg-zinc-100 text-zinc-600" : "bg-zinc-800 text-zinc-400")}>{comp.name}</span>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Default/other docs */}
+                              {!["welcome", "colors", "typography", "getting-started", "iconography", "examples"].includes(selectedDoc.type || "") && (
+                                <div>
+                                  <h1 className={cn("text-4xl font-bold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>{selectedDoc.title}</h1>
+                                  <div className={cn("prose prose-sm max-w-none", libraryBackground === "light" ? "prose-zinc" : "prose-invert")}>
+                                    <div className="whitespace-pre-wrap text-sm opacity-80">{selectedDoc.content}</div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ) : selectedComponent ? (
+                            /* STORYBOOK-STYLE Component Documentation */
+                            <div className="w-full h-full flex flex-col">
+                              {/* Scrollable content area */}
+                              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                              {/* Header with badges and Copy button */}
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <h1 className={cn("text-3xl font-bold", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
+                                      {selectedComponent.name}
+                                    </h1>
+                                    {/* Auto-Generated badge */}
+                                    <span className={cn(
+                                      "px-2 py-0.5 text-[10px] font-medium rounded border",
+                                      libraryBackground === "light" 
+                                        ? "bg-zinc-100 text-zinc-500 border-zinc-200" 
+                                        : "bg-zinc-800/60 text-zinc-400 border-zinc-700"
+                                    )}>
+                                      Auto-Generated
+                                    </span>
+                                    {/* Usage count badge */}
+                                    {selectedComponent.usageCount && (
+                                      <span className={cn(
+                                        "px-2 py-0.5 text-[10px] font-medium rounded border",
+                                        libraryBackground === "light" 
+                                          ? "bg-zinc-100 text-zinc-500 border-zinc-200" 
+                                          : "bg-zinc-800/60 text-zinc-400 border-zinc-700"
+                                      )}>
+                                        {selectedComponent.usageCount}x used
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className={cn("text-base", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
+                                    {selectedComponent.description || "No description available"}
+                                  </p>
+                                </div>
+                                {/* Copy Implementation button */}
+                                <button
+                                  onClick={() => {
+                                    const jsxCode = `<${selectedComponent.name}\n  ${(selectedComponent.props || []).map((p: any) => 
+                                      `${p.name}="${libraryPropsOverride[p.name] ?? p.defaultValue ?? ''}"`
+                                    ).join('\n  ')}\n/>`;
+                                    navigator.clipboard.writeText(jsxCode);
+                                    showToast("JSX copied to clipboard!", "success");
+                                  }}
+                                  className={cn(
+                                    "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all",
+                                    libraryBackground === "light"
+                                      ? "bg-zinc-900 text-white hover:bg-zinc-800"
+                                      : "bg-white text-zinc-900 hover:bg-zinc-100"
+                                  )}
+                                >
+                                  <Copy className="w-4 h-4" />
+                                  Copy JSX
+                                </button>
+                              </div>
+                              
+                              {/* Preview Box with Show Code button */}
+                              <div className={cn(
+                                "rounded-xl border overflow-hidden",
+                                libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50"
+                              )}>
+                                {/* Preview Toolbar */}
+                                <div className={cn(
+                                  "flex items-center justify-between px-4 py-2 border-b",
+                                  libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900"
+                                )}>
+                                  <div className="flex items-center gap-1">
+                                    <button 
+                                      onClick={() => setLibraryZoom(Math.max(50, libraryZoom - 25))}
+                                      className={cn(
+                                        "p-1.5 rounded-md transition-colors",
+                                        libraryBackground === "light" ? "hover:bg-zinc-200 text-zinc-600" : "hover:bg-zinc-800 text-zinc-400"
+                                      )}
+                                      title="Zoom out"
+                                    >
+                                      <ZoomOut className="w-4 h-4" />
+                                    </button>
+                                    <span className={cn("text-xs w-12 text-center font-mono", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
+                                      {libraryZoom}%
+                                    </span>
+                                    <button 
+                                      onClick={() => setLibraryZoom(Math.min(200, libraryZoom + 25))}
+                                      className={cn(
+                                        "p-1.5 rounded-md transition-colors",
+                                        libraryBackground === "light" ? "hover:bg-zinc-200 text-zinc-600" : "hover:bg-zinc-800 text-zinc-400"
+                                      )}
+                                      title="Zoom in"
+                                    >
+                                      <ZoomIn className="w-4 h-4" />
+                                    </button>
+                                    <button 
+                                      onClick={() => setLibraryZoom(100)}
+                                      className={cn(
+                                        "p-1.5 rounded-md transition-colors",
+                                        libraryBackground === "light" ? "hover:bg-zinc-200 text-zinc-600" : "hover:bg-zinc-800 text-zinc-400"
+                                      )}
+                                      title="Reset zoom"
+                                    >
+                                      <RefreshCw className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                  <button
+                                    onClick={() => setShowLibraryCode(!showLibraryCode)}
+                                    className={cn(
+                                      "flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+                                      libraryBackground === "light" 
+                                        ? "text-zinc-700 hover:bg-zinc-200 border border-zinc-300" 
+                                        : "text-zinc-300 hover:bg-zinc-800 border border-zinc-700"
+                                    )}
+                                  >
+                                    <Code className="w-3.5 h-3.5" />
+                                    {showLibraryCode ? "Hide code" : "Show code"}
+                                  </button>
+                                </div>
+                                
+                                {/* Component Preview - LIVE with props override - TOP LEFT, ACTUAL SIZE */}
+                                {(() => {
+                                  // Apply live props to code for preview
+                                  const liveCode = applyPropsToCode(
+                                    selectedComponent.code || '', 
+                                    selectedComponent.props || [], 
+                                    libraryPropsOverride
+                                  );
+                                  
+                                  return (
+                                    <div className="overflow-auto w-full h-full">
+                                      <div 
+                                        className="p-6 relative transition-transform duration-200"
+                                        style={{ 
+                                          transform: `scale(${libraryZoom / 100})`, 
+                                          transformOrigin: 'top left'
+                                        }}
+                                      >
+                                      {liveCode ? (
+                                        <div 
+                                          className={cn(
+                                            "transition-all duration-300 relative group/measure inline-block",
+                                            showLibraryOutline && "outline outline-2 outline-dashed outline-blue-400/50"
+                                          )}
+                                        >
+                                          {/* Storybook-like measurement overlay on hover */}
+                                          {showLibraryOutline && (
+                                            <>
+                                              {/* Top dimension line */}
+                                              <div className="absolute -top-6 left-0 right-0 flex items-center justify-center opacity-0 group-hover/measure:opacity-100 transition-opacity">
+                                                <div className="h-px bg-emerald-400 flex-1" />
+                                                <span className="px-2 text-[10px] font-mono text-emerald-400 bg-zinc-900/80 rounded">W: auto</span>
+                                                <div className="h-px bg-emerald-400 flex-1" />
+                                              </div>
+                                              {/* Left dimension line */}
+                                              <div className="absolute -left-6 top-0 bottom-0 flex flex-col items-center justify-center opacity-0 group-hover/measure:opacity-100 transition-opacity">
+                                                <div className="w-px bg-emerald-400 flex-1" />
+                                                <span className="py-1 px-1 text-[10px] font-mono text-emerald-400 bg-zinc-900/80 rounded whitespace-nowrap" style={{writingMode: 'vertical-rl', transform: 'rotate(180deg)'}}>H: auto</span>
+                                                <div className="w-px bg-emerald-400 flex-1" />
+                                              </div>
+                                            </>
+                                          )}
+                                          <InteractiveReactPreview 
+                                            code={liveCode}
+                                            background={libraryBackground === "light" ? "light" : "dark"}
+                                            className=""
+                                          />
+                                        </div>
+                                      ) : (
+                                        <div className="px-6 py-3 rounded-lg font-medium bg-blue-600 text-white inline-block">
+                                          {selectedComponent.name}
+                                        </div>
+                                      )}
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+                                
+                                {/* Code Display (collapsible) - LIVE with props override */}
+                                {showLibraryCode && (() => {
+                                  // Generate live usage code with current props
+                                  const liveUsageCode = generateLiveCode(
+                                    selectedComponent.name,
+                                    selectedComponent.props || [],
+                                    libraryPropsOverride
+                                  );
+                                  const liveHtmlCode = applyPropsToCode(
+                                    selectedComponent.code || '', 
+                                    selectedComponent.props || [], 
+                                    libraryPropsOverride
+                                  );
+                                  
+                                  return (
+                                    <div className={cn(
+                                      "border-t",
+                                      libraryBackground === "light" ? "border-zinc-200 bg-[#1e1e1e]" : "border-zinc-800 bg-[#0d0d0d]"
+                                    )}>
+                                      {/* Usage Code */}
+                                      <div className="border-b border-zinc-800/50">
+                                        <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-800/30">
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-[10px] text-emerald-500 font-medium uppercase">Usage</span>
+                                            <span className="text-[11px] text-zinc-500 font-mono">{selectedComponent.name}</span>
+                                          </div>
+                                          <button 
+                                            className="p-1.5 hover:bg-zinc-800 rounded-md transition-colors" 
+                                            title="Copy usage"
+                                            onClick={() => {
+                                              navigator.clipboard.writeText(liveUsageCode);
+                                              showToast("Usage copied!", "success");
+                                            }}
+                                          >
+                                            <Copy className="w-3.5 h-3.5 text-zinc-400" />
+                                          </button>
+                                        </div>
+                                        <Highlight theme={themes.nightOwl} code={liveUsageCode} language="tsx">
+                                          {({ style, tokens, getLineProps, getTokenProps }) => (
+                                            <pre className="p-4 text-[13px] leading-relaxed" style={{ ...style, background: "transparent", fontFamily: "'JetBrains Mono', monospace" }}>
+                                              {tokens.map((line, i) => (
+                                                <div key={i} {...getLineProps({ line })}>
+                                                  {line.map((token, key) => <span key={key} {...getTokenProps({ token })} />)}
+                                                </div>
+                                              ))}
+                                            </pre>
+                                          )}
+                                        </Highlight>
+                                      </div>
+                                      
+                                      {/* HTML Output */}
+                                      <div>
+                                        <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-800/30">
+                                          <div className="flex items-center gap-2">
+                                            <Code className="w-3.5 h-3.5 text-zinc-500" />
+                                            <span className="text-[11px] text-zinc-400 font-mono">{selectedComponent.name}.tsx</span>
+                                          </div>
+                                          <button 
+                                            className="p-1.5 hover:bg-zinc-800 rounded-md transition-colors" 
+                                            title="Copy HTML"
+                                            onClick={() => {
+                                              navigator.clipboard.writeText(liveHtmlCode);
+                                              showToast("HTML copied!", "success");
+                                            }}
+                                          >
+                                            <Copy className="w-3.5 h-3.5 text-zinc-400" />
+                                          </button>
+                                        </div>
+                                        <Highlight theme={themes.nightOwl} code={liveHtmlCode || "// No code available"} language="html">
+                                          {({ style, tokens, getLineProps, getTokenProps }) => (
+                                            <pre className="p-4 text-[13px] leading-relaxed overflow-x-auto max-h-[300px] overflow-y-auto" style={{ ...style, background: "transparent", fontFamily: "'JetBrains Mono', monospace" }}>
+                                              {tokens.map((line, i) => (
+                                                <div key={i} {...getLineProps({ line })}>
+                                                  {line.map((token, key) => <span key={key} {...getTokenProps({ token })} />)}
+                                                </div>
+                                              ))}
+                                            </pre>
+                                          )}
+                                        </Highlight>
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                              </div>{/* End scrollable content */}
+                              
+                              {/* Storybook-style Panel with Tabs: Controls, Actions, Interactions, Visual tests, Accessibility */}
+                              {/* STICKY AT BOTTOM with collapsible panel */}
+                              {(() => {
+                                const propsCount = selectedComponent.props?.length || 0;
+                                const variantsCount = selectedComponent.variants?.length || 0;
+                                
+                                // Tab definitions like Storybook
+                                const tabs = [
+                                  { id: "controls", label: "Controls", count: propsCount },
+                                  { id: "actions", label: "Actions", count: 0 },
+                                  { id: "interactions", label: "Interactions", count: variantsCount },
+                                  { id: "visual", label: "Visual tests", count: 0 },
+                                  { id: "accessibility", label: "Accessibility", count: 1 },
+                                  { id: "usage", label: "Usage", count: selectedComponent.usageLocations?.length || 1 },
+                                ];
+                                
+                                return (
+                                  <div className={cn(
+                                    "border-t w-full flex-shrink-0 transition-all duration-200",
+                                    libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-[#111111]",
+                                    libraryPanelCollapsed ? "h-10" : "h-[280px]"
+                                  )}>
+                                    {/* Tab Bar with collapse toggle */}
+                                    <div className={cn(
+                                      "flex items-center justify-between px-4 border-b h-10 flex-shrink-0",
+                                      libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800"
+                                    )}>
+                                      <div className="flex items-center gap-1">
+                                      {tabs.map((tab) => (
+                                        <button
+                                          key={tab.id}
+                                          onClick={() => setLibraryPanel(tab.id as LibraryPanel)}
+                                          className={cn(
+                                            "flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors",
+                                            libraryPanel === tab.id
+                                              ? libraryBackground === "light" 
+                                                ? "border-zinc-400 text-zinc-800" 
+                                                : "border-zinc-400 text-white"
+                                              : libraryBackground === "light"
+                                                ? "border-transparent text-zinc-500 hover:text-zinc-700"
+                                                : "border-transparent text-zinc-500 hover:text-zinc-300"
+                                          )}
+                                        >
+                                          {tab.label}
+                                          {tab.count > 0 && (
+                                            <span className={cn(
+                                              "text-[10px] px-1.5 py-0.5 rounded-full",
+                                              libraryPanel === tab.id
+                                                ? "bg-zinc-700 text-white"
+                                                : libraryBackground === "light" 
+                                                  ? "bg-zinc-200 text-zinc-600"
+                                                  : "bg-zinc-800 text-zinc-500"
+                                            )}>
+                                              {tab.count}
+                                            </span>
+                                          )}
+                                        </button>
+                                      ))}
+                                      </div>
+                                      {/* Collapse toggle button */}
+                                      <button
+                                        onClick={() => setLibraryPanelCollapsed(!libraryPanelCollapsed)}
+                                        className={cn(
+                                          "p-1.5 rounded-md transition-colors",
+                                          libraryBackground === "light" ? "hover:bg-zinc-200 text-zinc-500" : "hover:bg-zinc-800 text-zinc-500"
+                                        )}
+                                        title={libraryPanelCollapsed ? "Expand panel" : "Collapse panel"}
+                                      >
+                                        {libraryPanelCollapsed ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                      </button>
+                                    </div>
+                                    
+                                    {/* Tab Content - Fixed height with scroll */}
+                                    {!libraryPanelCollapsed && (
+                                    <div className="w-full h-[240px] overflow-y-auto">
+                                      {/* Controls Tab */}
+                                      {libraryPanel === "controls" && propsCount > 0 && (
+                                        <table className="w-full text-sm">
+                                          <colgroup>
+                                            <col style={{ width: '140px' }} />
+                                            <col style={{ width: '35%' }} />
+                                            <col style={{ width: '100px' }} />
+                                            <col style={{ width: '180px' }} />
+                                          </colgroup>
+                                          <thead className="sticky top-0 z-10">
+                                            <tr className={cn(
+                                              "text-left border-b",
+                                              libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900"
+                                            )}>
+                                              <th className={cn("px-3 py-2 font-medium text-xs whitespace-nowrap", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Name</th>
+                                              <th className={cn("px-3 py-2 font-medium text-xs", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Description</th>
+                                              <th className={cn("px-3 py-2 font-medium text-xs whitespace-nowrap", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Default</th>
+                                              <th className={cn("px-3 py-2 font-medium text-xs whitespace-nowrap", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Control</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody>
+                                            {selectedComponent.props?.map((prop: any) => (
+                                              <tr key={prop.name} className={cn(
+                                                "border-b last:border-b-0",
+                                                libraryBackground === "light" ? "border-zinc-100 hover:bg-zinc-50" : "border-zinc-800/50 hover:bg-zinc-800/30"
+                                              )}>
+                                                <td className="px-3 py-2 align-top">
+                                                  <div className="flex flex-col">
+                                                    <span className={cn("font-mono text-xs font-medium truncate", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>
+                                                      {prop.name}
+                                                      {prop.required && <span className="text-red-500 ml-0.5">*</span>}
+                                                    </span>
+                                                    <span className={cn("text-[10px]", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>
+                                                      {prop.type || "string"}
+                                                    </span>
+                                                  </div>
+                                                </td>
+                                                <td className={cn("px-3 py-2 text-xs align-top", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
+                                                  <span className="line-clamp-2">{prop.description || "-"}</span>
+                                                </td>
+                                                <td className={cn("px-3 py-2 font-mono text-[10px] truncate align-top", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>
+                                                  {prop.defaultValue !== undefined && prop.defaultValue !== "" ? String(prop.defaultValue).slice(0, 15) : '""'}
+                                                </td>
+                                                <td className="px-3 py-2 align-top">
+                                                  {prop.control === "select" || prop.type === "enum" ? (
+                                                    <select 
+                                                      className={cn(
+                                                        "rounded-md px-2.5 py-1.5 text-xs border cursor-pointer min-w-[120px]",
+                                                        libraryBackground === "light" 
+                                                          ? "bg-white border-zinc-300 text-zinc-900 hover:border-zinc-400" 
+                                                          : "bg-zinc-800 border-zinc-700 text-zinc-200 hover:border-zinc-600"
+                                                      )}
+                                                      value={libraryPropsOverride[prop.name] ?? prop.defaultValue ?? ''}
+                                                      onChange={(e) => setLibraryPropsOverride(prev => ({ ...prev, [prop.name]: e.target.value }))}
+                                                    >
+                                                      <option value="">Choose...</option>
+                                                      {(prop.options || []).map((opt: string) => (
+                                                        <option key={opt} value={opt}>{opt}</option>
+                                                      ))}
+                                                    </select>
+                                                  ) : prop.control === "toggle" || prop.type === "boolean" ? (
+                                                    (() => {
+                                                      // Convert string "true"/"false" to actual boolean
+                                                      const rawValue = libraryPropsOverride[prop.name] ?? prop.defaultValue;
+                                                      const isTrue = rawValue === true || rawValue === 'true' || rawValue === 'True';
+                                                      return (
+                                                        <div className="inline-flex items-center p-0.5 rounded-lg bg-zinc-800 border border-zinc-700">
+                                                          <button 
+                                                            type="button"
+                                                            className={cn(
+                                                              "px-3 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap",
+                                                              !isTrue
+                                                                ? "bg-zinc-700 text-white shadow-sm"
+                                                                : "text-zinc-500 hover:text-zinc-300"
+                                                            )}
+                                                            onClick={() => setLibraryPropsOverride(prev => ({ ...prev, [prop.name]: false }))}
+                                                          >
+                                                            False
+                                                          </button>
+                                                          <button 
+                                                            type="button"
+                                                            className={cn(
+                                                              "px-3 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap",
+                                                              isTrue
+                                                                ? "bg-zinc-700 text-white shadow-sm"
+                                                                : "text-zinc-500 hover:text-zinc-300"
+                                                            )}
+                                                            onClick={() => setLibraryPropsOverride(prev => ({ ...prev, [prop.name]: true }))}
+                                                          >
+                                                            True
+                                                          </button>
+                                                        </div>
+                                                      );
+                                                    })()
+                                                  ) : prop.control === "number" || prop.type === "number" ? (
+                                                    <input 
+                                                      type="number"
+                                                      value={libraryPropsOverride[prop.name] ?? prop.defaultValue ?? ''} 
+                                                      className={cn(
+                                                        "rounded-md px-2.5 py-1.5 text-xs border w-24 font-mono",
+                                                        libraryBackground === "light" 
+                                                          ? "bg-white border-zinc-300 text-zinc-900 focus:border-blue-400" 
+                                                          : "bg-zinc-800 border-zinc-700 text-zinc-200 focus:border-zinc-500"
+                                                      )}
+                                                      onChange={(e) => setLibraryPropsOverride(prev => ({ ...prev, [prop.name]: e.target.value }))}
+                                                    />
+                                                  ) : prop.name.toLowerCase().includes('color') ? (
+                                                    <div className="flex items-center gap-2">
+                                                      {/* Simple color picker - one circle + hex input */}
+                                                      {(() => {
+                                                        const currentVal = (libraryPropsOverride[prop.name] ?? prop.defaultValue ?? '').toString();
+                                                        const isHex = currentVal.match(/^#[0-9A-Fa-f]{3,8}$/);
+                                                        return (
+                                                          <>
+                                                            <label className="relative cursor-pointer group shrink-0">
+                                                              <div 
+                                                                className={cn(
+                                                                  "w-7 h-7 rounded-full border-2 shadow-md transition-all group-hover:scale-110",
+                                                                  libraryBackground === "light" ? "border-zinc-300" : "border-zinc-600"
+                                                                )}
+                                                                style={{ backgroundColor: isHex ? currentVal : '#6366f1' }}
+                                                              />
+                                                              <input 
+                                                                type="color"
+                                                                value={isHex ? currentVal : '#6366f1'} 
+                                                                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                                                                onChange={(e) => setLibraryPropsOverride(prev => ({ ...prev, [prop.name]: e.target.value }))}
+                                                              />
+                                                            </label>
+                                                            <input 
+                                                              type="text"
+                                                              value={libraryPropsOverride[prop.name] ?? prop.defaultValue ?? ''} 
+                                                              placeholder="#FFFFFF"
+                                                              className={cn(
+                                                                "rounded-lg px-2 py-1 text-xs border font-mono w-20",
+                                                                libraryBackground === "light" 
+                                                                  ? "bg-white border-zinc-300 text-zinc-900" 
+                                                                  : "bg-zinc-800 border-zinc-700 text-zinc-200"
+                                                              )}
+                                                              onChange={(e) => setLibraryPropsOverride(prev => ({ ...prev, [prop.name]: e.target.value }))}
+                                                            />
+                                                          </>
+                                                        );
+                                                      })()}
+                                                    </div>
+                                                  ) : (
+                                                    <input 
+                                                      type="text"
+                                                      value={libraryPropsOverride[prop.name] ?? prop.defaultValue ?? ''} 
+                                                      placeholder={prop.name}
+                                                      className={cn(
+                                                        "rounded px-2 py-1 text-xs border w-full max-w-[160px]",
+                                                        libraryBackground === "light" 
+                                                          ? "bg-white border-zinc-300 text-zinc-900 focus:border-blue-400" 
+                                                          : "bg-zinc-800 border-zinc-700 text-zinc-200 focus:border-zinc-500"
+                                                      )}
+                                                      onChange={(e) => setLibraryPropsOverride(prev => ({ ...prev, [prop.name]: e.target.value }))}
+                                                    />
+                                                  )}
+                                                </td>
+                                              </tr>
+                                            ))}
+                                          </tbody>
+                                        </table>
+                                      )}
+                                      
+                                      {libraryPanel === "controls" && propsCount === 0 && (
+                                        <div className="p-4">
+                                          <p className={cn("text-xs mb-3", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
+                                            Default controls (no custom props detected)
+                                          </p>
+                                          <table className="w-full text-sm">
+                                            <tbody>
+                                              <tr className={cn("border-b", libraryBackground === "light" ? "border-zinc-100" : "border-zinc-800/50")}>
+                                                <td className="px-4 py-2.5">
+                                                  <span className={cn("font-mono text-xs font-medium", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>className</span>
+                                                  <br /><span className={cn("text-[10px]", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>string</span>
+                                                </td>
+                                                <td className={cn("px-4 py-2.5 text-xs", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Additional CSS classes</td>
+                                                <td className={cn("px-4 py-2.5 font-mono text-[10px]", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>""</td>
+                                                <td className="px-4 py-2.5">
+                                                  <input type="text" placeholder="e.g. mt-4 p-2" className={cn("rounded px-2 py-1 text-xs border w-32", libraryBackground === "light" ? "bg-white border-zinc-300" : "bg-zinc-800 border-zinc-700 text-zinc-200")} />
+                                                </td>
+                                              </tr>
+                                              <tr className={cn("border-b", libraryBackground === "light" ? "border-zinc-100" : "border-zinc-800/50")}>
+                                                <td className="px-4 py-2.5">
+                                                  <span className={cn("font-mono text-xs font-medium", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>children</span>
+                                                  <br /><span className={cn("text-[10px]", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>ReactNode</span>
+                                                </td>
+                                                <td className={cn("px-4 py-2.5 text-xs", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Content inside component</td>
+                                                <td className={cn("px-4 py-2.5 font-mono text-[10px]", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>-</td>
+                                                <td className="px-4 py-2.5">
+                                                  <input type="text" placeholder="Text content..." className={cn("rounded px-2 py-1 text-xs border w-32", libraryBackground === "light" ? "bg-white border-zinc-300" : "bg-zinc-800 border-zinc-700 text-zinc-200")} />
+                                                </td>
+                                              </tr>
+                                              <tr>
+                                                <td className="px-4 py-2.5">
+                                                  <span className={cn("font-mono text-xs font-medium", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>onClick</span>
+                                                  <br /><span className={cn("text-[10px]", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>function</span>
+                                                </td>
+                                                <td className={cn("px-4 py-2.5 text-xs", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Click handler</td>
+                                                <td className={cn("px-4 py-2.5 font-mono text-[10px]", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>-</td>
+                                                <td className="px-4 py-2.5">
+                                                  <span className={cn("text-xs px-2 py-1 rounded", libraryBackground === "light" ? "bg-zinc-100 text-zinc-500" : "bg-zinc-800 text-zinc-500")}>() =&gt; {"{}"}</span>
+                                                </td>
+                                              </tr>
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Actions Tab */}
+                                      {libraryPanel === "actions" && (
+                                        <div className="p-8 text-center">
+                                          <Activity className={cn("w-8 h-8 mx-auto mb-3", libraryBackground === "light" ? "text-zinc-300" : "text-zinc-700")} />
+                                          <p className={cn("text-sm font-medium mb-1", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>
+                                            No actions recorded
+                                          </p>
+                                          <p className={cn("text-xs", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
+                                            Interact with the component to see actions here.
+                                          </p>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Interactions Tab */}
+                                      {libraryPanel === "interactions" && (
+                                        <div className="p-4">
+                                          {variantsCount > 0 ? (
+                                            <div className="space-y-3">
+                                              <p className={cn("text-xs mb-3", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
+                                                Component interactions and variant states
+                                              </p>
+                                              {selectedComponent.variants?.map((variant: any, i: number) => (
+                                                <div 
+                                                  key={i}
+                                                  className={cn(
+                                                    "flex items-center gap-3 p-3 rounded-lg border",
+                                                    libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-800/50"
+                                                  )}
+                                                >
+                                                  <Check className="w-4 h-4 text-emerald-500" />
+                                                  <div className="flex-1">
+                                                    <p className={cn("text-sm font-medium", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>
+                                                      {variant.name}
+                                                    </p>
+                                                    <p className={cn("text-xs", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
+                                                      {Object.keys(variant.props || {}).length} props configured
+                                                    </p>
+                                                  </div>
+                                                  <button
+                                                    onClick={() => setLibraryPropsOverride(variant.props || {})}
+                                                    className="text-xs text-zinc-400 hover:text-white"
+                                                  >
+                                                    Apply
+                                                  </button>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          ) : (
+                                            <div className="text-center py-8">
+                                              <Play className={cn("w-8 h-8 mx-auto mb-3", libraryBackground === "light" ? "text-zinc-300" : "text-zinc-700")} />
+                                              <p className={cn("text-sm", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
+                                                No interactions defined
+                                              </p>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Visual tests Tab */}
+                                      {libraryPanel === "visual" && (
+                                        <div className="p-8 text-center">
+                                          <Eye className={cn("w-8 h-8 mx-auto mb-3", libraryBackground === "light" ? "text-zinc-300" : "text-zinc-700")} />
+                                          <p className={cn("text-sm font-medium mb-1", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>
+                                            Visual tests
+                                          </p>
+                                          <p className={cn("text-xs", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
+                                            Compare visual snapshots of this component.
+                                          </p>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Accessibility Tab */}
+                                      {libraryPanel === "accessibility" && (
+                                        <div className="p-4">
+                                          <div className={cn(
+                                            "flex items-center gap-3 p-3 rounded-lg border",
+                                            libraryBackground === "light" ? "border-emerald-200 bg-emerald-50" : "border-emerald-900/50 bg-emerald-950/30"
+                                          )}>
+                                            <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center">
+                                              <Check className="w-4 h-4 text-white" />
+                                            </div>
+                                            <div className="flex-1">
+                                              <p className={cn("text-sm font-medium", libraryBackground === "light" ? "text-emerald-700" : "text-emerald-400")}>
+                                                Accessibility check passed
+                                              </p>
+                                              <p className={cn("text-xs", libraryBackground === "light" ? "text-emerald-600" : "text-emerald-500")}>
+                                                No violations found
+                                              </p>
+                                            </div>
+                                          </div>
+                                          <div className="mt-4 space-y-2">
+                                            <div className={cn("flex items-center justify-between py-2 border-b", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
+                                              <span className={cn("text-xs", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>ARIA labels</span>
+                                              <span className="text-xs text-emerald-500">Pass</span>
+                                            </div>
+                                            <div className={cn("flex items-center justify-between py-2 border-b", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
+                                              <span className={cn("text-xs", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Color contrast</span>
+                                              <span className="text-xs text-emerald-500">Pass</span>
+                                            </div>
+                                            <div className={cn("flex items-center justify-between py-2", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
+                                              <span className={cn("text-xs", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Keyboard navigation</span>
+                                              <span className="text-xs text-emerald-500">Pass</span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Usage Tab - shows where component is used */}
+                                      {libraryPanel === "usage" && (
+                                        <div className="p-4">
+                                          <div className={cn(
+                                            "p-4 rounded-lg border mb-4",
+                                            libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50"
+                                          )}>
+                                            <div className="flex items-center gap-3 mb-3">
+                                              <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", libraryBackground === "light" ? "bg-blue-100" : "bg-blue-900/30")}>
+                                                <Link2 className={cn("w-5 h-5", libraryBackground === "light" ? "text-blue-600" : "text-blue-400")} />
+                                              </div>
+                                              <div>
+                                                <p className={cn("text-sm font-medium", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>
+                                                  Component Usage
+                                                </p>
+                                                <p className={cn("text-xs", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
+                                                  Found in {selectedComponent.usageLocations?.length || 1} location(s)
+                                                </p>
+                                              </div>
+                                            </div>
+                                          </div>
+                                          
+                                          <h4 className={cn("text-xs font-semibold uppercase tracking-wider mb-3", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
+                                            Used in Pages
+                                          </h4>
+                                          <div className="space-y-2">
+                                            {(selectedComponent.usageLocations || ['Main Page', 'Generated UI']).map((location: string, i: number) => (
+                                              <div 
+                                                key={i}
+                                                className={cn(
+                                                  "flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors",
+                                                  libraryBackground === "light" 
+                                                    ? "border-zinc-200 hover:bg-zinc-50" 
+                                                    : "border-zinc-800 hover:bg-zinc-800/50"
+                                                )}
+                                              >
+                                                <div className="flex items-center gap-3">
+                                                  <FileText className={cn("w-4 h-4", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-500")} />
+                                                  <span className={cn("text-sm", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>
+                                                    {location}
+                                                  </span>
+                                                </div>
+                                                <ChevronRight className={cn("w-4 h-4", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")} />
+                                              </div>
+                                            ))}
+                                          </div>
+                                          
+                                          <div className={cn("mt-6 p-3 rounded-lg", libraryBackground === "light" ? "bg-amber-50 border border-amber-200" : "bg-amber-950/30 border border-amber-900/50")}>
+                                            <p className={cn("text-xs", libraryBackground === "light" ? "text-amber-700" : "text-amber-400")}>
+                                              <strong>Tip:</strong> Changes to this component will propagate to all usage locations automatically.
+                                            </p>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+                              
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                              <p className="text-sm text-zinc-500">Component not found</p>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
+                  
+                </div>
+              </div>
+            )}
+
+            {/* Blueprints - Infinite Canvas with Draggable Components */}
+            {viewMode === "blueprints" && (
+              <div className="flex-1 overflow-hidden relative flex flex-col bg-[#0a0a0b]">
+                {/* Show loader when processing */}
+                {(isProcessing || isStreamingCode || isGeneratingBlueprintsComponent) ? (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <LoadingState />
+                  </div>
+                ) : (
+                  <>
+                    {/* Toolbar with controls */}
+                    <div className="flex-shrink-0 h-12 border-b border-zinc-800/50 bg-[#111111] flex items-center justify-between px-4">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-zinc-300 font-medium">Blueprints</span>
+                        <span className="text-xs text-zinc-600">•</span>
+                        <span className="text-xs text-zinc-500">
+                          {libraryData?.components?.length || 0} components
+                        </span>
+                        {selectedBlueprintComponent && (
+                          <>
+                            <span className="text-xs text-zinc-600">•</span>
+                            <span className="text-xs text-blue-400">{selectedBlueprintComponent.replace('comp-', '').replace('page-', '')}</span>
+                          </>
+                        )}
+                      </div>
+                      
+                      {/* Center: Zoom controls */}
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800/70 rounded-lg">
+                        <button 
+                          onClick={() => setBlueprintsZoom(Math.max(25, blueprintsZoom - 25))}
+                          className="p-1.5 hover:bg-zinc-700 rounded text-zinc-400 hover:text-white transition-colors"
+                          title="Zoom out"
+                        >
+                          <ZoomOut className="w-4 h-4" />
+                        </button>
+                        <span className="text-xs text-zinc-300 w-12 text-center font-mono">{blueprintsZoom}%</span>
+                        <button 
+                          onClick={() => setBlueprintsZoom(Math.min(200, blueprintsZoom + 25))}
+                          className="p-1.5 hover:bg-zinc-700 rounded text-zinc-400 hover:text-white transition-colors"
+                          title="Zoom in"
+                        >
+                          <ZoomIn className="w-4 h-4" />
+                        </button>
+                        <div className="w-px h-4 bg-zinc-700 mx-1" />
+                        <button 
+                          onClick={() => { 
+                            setBlueprintsZoom(100); 
+                            setBlueprintsOffset({ x: 0, y: 0 }); 
+                          }}
+                          className="p-1.5 hover:bg-zinc-700 rounded text-zinc-400 hover:text-white transition-colors"
+                          title="Reset view"
+                        >
+                          <Maximize2 className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={autoLayoutBlueprints}
+                          className="p-1.5 hover:bg-zinc-700 rounded text-zinc-400 hover:text-white transition-colors"
+                          title="Auto-arrange components"
+                        >
+                          <Grid3X3 className="w-4 h-4" />
+                        </button>
+                        <div className="w-px h-4 bg-zinc-700 mx-1" />
+                        {/* Background toggle */}
+                        <div className="flex items-center bg-zinc-900 rounded-md p-0.5">
+                          {(['light', 'dark'] as const).map((bg) => (
+                            <button
+                              key={bg}
+                              onClick={() => setBlueprintsBackground(bg as any)}
+                              className={cn(
+                                "px-2.5 py-0.5 text-[10px] font-medium rounded transition-colors",
+                                blueprintsBackground === bg
+                                  ? "bg-zinc-700 text-white"
+                                  : "text-zinc-500 hover:text-zinc-300"
+                              )}
+                            >
+                              {bg === 'light' ? 'Light' : 'Dark'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Right: Actions */}
+                      <div className="flex items-center gap-2">
+                        <button 
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg transition-all",
+                            isAnalyzingBlueprints 
+                              ? "bg-zinc-800 text-zinc-500 cursor-wait"
+                              : "bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                          )}
+                          onClick={analyzeBlueprints}
+                          disabled={isAnalyzingBlueprints || !generatedCode}
+                        >
+                          {isAnalyzingBlueprints ? (
+                            <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Analyzing...</>
+                          ) : (
+                            <><Search className="w-3.5 h-3.5" /> Detect Duplicates</>
+                          )}
+                        </button>
+                        <button 
+                          className="flex items-center gap-2 px-3 py-1.5 text-xs bg-white text-zinc-900 rounded-lg hover:bg-zinc-100 transition-all font-medium"
+                          onClick={() => setShowGenerateModal(true)}
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          New Component
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Live Component Creator Modal - On Canvas */}
+                    {showGenerateModal && (
+                      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-8">
+                        <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-[600px] max-h-[80vh] overflow-hidden shadow-2xl flex flex-col">
+                          {/* Header */}
+                          <div className="p-4 border-b border-zinc-800 flex items-center justify-between flex-shrink-0">
+                            <div className="flex items-center gap-3">
+                              <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+                              <span className="text-sm font-medium bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                                Live Component Creator
+                              </span>
+                            </div>
+                            <button 
+                              onClick={() => {
+                                setShowGenerateModal(false);
+                                setBlueprintEditedCode(null);
+                                setBlueprintChatHistory([]);
+                                setGeneratePromptInput("");
+                              }}
+                              className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-500 hover:text-white"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                          
+                          {/* Live Preview */}
+                          <div className="flex-1 min-h-[250px] bg-zinc-950/50 p-6 overflow-auto">
+                            {blueprintEditedCode ? (
+                              <InteractiveReactPreview 
+                                code={blueprintEditedCode}
+                                background="dark"
+                                className="min-h-[200px]"
+                              />
+                            ) : (
+                              <div className="h-full flex items-center justify-center min-h-[200px]">
+                                <div className="text-center">
+                                  <Sparkles className="w-12 h-12 text-zinc-700 mx-auto mb-3" />
+                                  <p className="text-sm text-zinc-400 mb-2">Describe your component</p>
+                                  <p className="text-xs text-zinc-600">e.g., "Create a pricing card with gradient border"</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Chat History */}
+                          {blueprintChatHistory.length > 0 && (
+                            <div className="px-4 py-2 border-t border-zinc-800 max-h-24 overflow-y-auto">
+                              <div className="space-y-1.5">
+                                {blueprintChatHistory.slice(-3).map((msg, i) => (
+                                  <div 
+                                    key={i} 
+                                    className={cn(
+                                      "px-3 py-1.5 rounded-lg text-xs",
+                                      msg.role === 'user' 
+                                        ? "bg-zinc-800 text-zinc-300" 
+                                        : "bg-purple-900/30 text-purple-300"
+                                    )}
+                                  >
+                                    <span className="text-[9px] uppercase text-zinc-500 mr-2">
+                                      {msg.role === 'user' ? 'You' : 'AI'}
+                                    </span>
+                                    {msg.content}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Quick Suggestions */}
+                          {!blueprintEditedCode && (
+                            <div className="px-4 py-3 border-t border-zinc-800 flex-shrink-0">
+                              <div className="flex flex-wrap gap-1.5">
+                                {[
+                                  "Pricing card",
+                                  "Stats widget",
+                                  "User avatar",
+                                  "Progress bar",
+                                  "Notification",
+                                  "Search input"
+                                ].map(suggestion => (
+                                  <button
+                                    key={suggestion}
+                                    onClick={() => setGeneratePromptInput(suggestion)}
+                                    className="px-2.5 py-1 text-[11px] bg-zinc-800 text-zinc-400 rounded-md hover:bg-zinc-700 hover:text-white transition-colors"
+                                  >
+                                    {suggestion}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Input + Actions */}
+                          <div className="p-4 border-t border-zinc-800 flex-shrink-0">
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={generatePromptInput}
+                                onChange={(e) => setGeneratePromptInput(e.target.value)}
+                                onKeyDown={async (e) => {
+                                  if (e.key === 'Enter' && generatePromptInput.trim() && !isEditingBlueprint) {
+                                    e.preventDefault();
+                                    const userMessage = generatePromptInput.trim();
+                                    setGeneratePromptInput("");
+                                    setBlueprintChatHistory(prev => [...prev, { role: 'user', content: userMessage }]);
+                                    setIsEditingBlueprint(true);
+                                    
+                                    try {
+                                      const currentCode = blueprintEditedCode || '<div className="p-4 bg-zinc-800 rounded-lg text-white">New Component</div>';
+                                      
+                                      const response = await fetch('/api/blueprint/edit', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                          componentCode: currentCode,
+                                          componentName: 'NewComponent',
+                                          userRequest: blueprintEditedCode ? userMessage : `Create: ${userMessage}`,
+                                          componentStyle: 'Dark theme with zinc backgrounds, rounded corners, subtle shadows, modern design'
+                                        })
+                                      });
+                                      
+                                      const data = await response.json();
+                                      if (data.success && data.code) {
+                                        setBlueprintEditedCode(data.code);
+                                        setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: blueprintEditedCode ? 'Applied changes ✓' : 'Created ✓' }]);
+                                      } else {
+                                        setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: `Error: ${data.error || 'Failed'}` }]);
+                                      }
+                                    } catch (error: any) {
+                                      setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: `Error: ${error.message}` }]);
+                                    } finally {
+                                      setIsEditingBlueprint(false);
+                                    }
+                                  }
+                                }}
+                                placeholder={blueprintEditedCode ? "Describe changes..." : "Describe component to create..."}
+                                className="flex-1 px-3 py-2.5 text-sm bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none"
+                                disabled={isEditingBlueprint}
+                                autoFocus
+                              />
+                              <button
+                                onClick={async () => {
+                                  if (!generatePromptInput.trim() || isEditingBlueprint) return;
+                                  const userMessage = generatePromptInput.trim();
+                                  setGeneratePromptInput("");
+                                  setBlueprintChatHistory(prev => [...prev, { role: 'user', content: userMessage }]);
+                                  setIsEditingBlueprint(true);
+                                  
+                                  try {
+                                    const currentCode = blueprintEditedCode || '<div className="p-4 bg-zinc-800 rounded-lg text-white">New Component</div>';
+                                    
+                                    const response = await fetch('/api/blueprint/edit', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        componentCode: currentCode,
+                                        componentName: 'NewComponent',
+                                        userRequest: blueprintEditedCode ? userMessage : `Create: ${userMessage}`,
+                                        componentStyle: 'Dark theme with zinc backgrounds, rounded corners, subtle shadows, modern design'
+                                      })
+                                    });
+                                    
+                                    const data = await response.json();
+                                    if (data.success && data.code) {
+                                      setBlueprintEditedCode(data.code);
+                                      setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: blueprintEditedCode ? 'Applied changes ✓' : 'Created ✓' }]);
+                                    } else {
+                                      setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: `Error: ${data.error || 'Failed'}` }]);
+                                    }
+                                  } catch (error: any) {
+                                    setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: `Error: ${error.message}` }]);
+                                  } finally {
+                                    setIsEditingBlueprint(false);
+                                  }
+                                }}
+                                disabled={!generatePromptInput.trim() || isEditingBlueprint}
+                                className={cn(
+                                  "px-4 py-2.5 rounded-lg transition-all flex items-center gap-2",
+                                  generatePromptInput.trim() && !isEditingBlueprint
+                                    ? "bg-purple-600 hover:bg-purple-500 text-white"
+                                    : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                                )}
+                              >
+                                {isEditingBlueprint ? (
+                                  <RefreshCw className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Send className="w-4 h-4" />
+                                )}
+                              </button>
+                            </div>
+                            
+                            {/* Add to Canvas button */}
+                            {blueprintEditedCode && (
+                              <div className="mt-3 flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    // Add component to canvas
+                                    const newId = `canvas-${Date.now()}`;
+                                    const newComp = {
+                                      id: newId,
+                                      name: `Component ${(libraryData?.components?.length || 0) + 1}`,
+                                      category: 'custom',
+                                      code: blueprintEditedCode,
+                                      props: [],
+                                      variants: []
+                                    };
+                                    setLibraryData((prev: any) => ({
+                                      ...prev,
+                                      components: [...(prev?.components || []), newComp]
+                                    }));
+                                    setSelectedBlueprintComponent(`comp-${newId}`);
+                                    setShowGenerateModal(false);
+                                    setBlueprintEditedCode(null);
+                                    setBlueprintChatHistory([]);
+                                    setGeneratePromptInput("");
+                                    showToast("Component added to canvas!", "success");
+                                  }}
+                                  className="flex-1 px-4 py-2.5 text-sm bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors flex items-center justify-center gap-2 font-medium"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                  Add to Canvas
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setBlueprintEditedCode(null);
+                                    setBlueprintChatHistory([]);
+                                  }}
+                                  className="px-4 py-2.5 text-sm bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg transition-colors"
+                                >
+                                  Reset
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Infinite Canvas - Pan & Zoom with Draggable Elements */}
+                    <div 
+                      ref={blueprintsCanvasRef}
+                      className={cn(
+                        "flex-1 overflow-hidden relative",
+                        draggingComponent ? "cursor-grabbing" : isBlueprintsPanning ? "cursor-grabbing" : "cursor-default",
+                        blueprintsBackground === "light" ? "bg-zinc-100" : "bg-[#111111]"
+                      )}
+                      style={{ 
+                        backgroundImage: blueprintsBackground === "light"
+                          ? `radial-gradient(circle, rgba(0,0,0,0.05) 1px, transparent 1px)`
+                          : `radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px)`,
+                        backgroundSize: `${24 * blueprintsZoom / 100}px ${24 * blueprintsZoom / 100}px`,
+                        backgroundPosition: `${blueprintsOffset.x}px ${blueprintsOffset.y}px`
+                      }}
+                      onMouseDown={(e) => {
+                        // Only start panning if clicking on canvas background (not on a component)
+                        if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('canvas-content')) {
+                          setIsBlueprintsPanning(true);
+                          setBlueprintsPanStart({ x: e.clientX - blueprintsOffset.x, y: e.clientY - blueprintsOffset.y });
+                          setSelectedBlueprintComponent(null);
+                        }
+                      }}
+                      onDoubleClick={(e) => {
+                        // Create new component at click position
+                        if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('canvas-content')) {
+                          const rect = blueprintsCanvasRef.current?.getBoundingClientRect();
+                          if (!rect) return;
+                          const scale = blueprintsZoom / 100;
+                          const clickX = (e.clientX - rect.left - blueprintsOffset.x) / scale;
+                          const clickY = (e.clientY - rect.top - blueprintsOffset.y) / scale;
+                          
+                          const componentName = prompt("New component name:", "MyComponent");
+                          if (componentName) {
+                            const newId = `new-${Date.now()}`;
+                            const newComp = {
+                              id: newId,
+                              name: componentName,
+                              category: 'custom',
+                              code: `<div className="p-6 bg-white rounded-xl shadow-lg border border-zinc-200">
+  <h3 className="text-lg font-semibold text-zinc-900">${componentName}</h3>
+  <p className="text-sm text-zinc-500 mt-2">Double-click to edit in the panel</p>
+</div>`,
+                              props: [],
+                              variants: []
+                            };
+                            setLibraryData((prev: any) => ({
+                              ...prev,
+                              components: [...(prev?.components || []), newComp]
+                            }));
+                            setBlueprintPositions(prev => ({
+                              ...prev,
+                              [`comp-${newId}`]: { x: clickX, y: clickY }
+                            }));
+                            setSelectedBlueprintComponent(`comp-${newId}`);
+                          }
+                        }
+                      }}
+                      onMouseMove={(e) => {
+                        if (draggingComponent) {
+                          // Move component
+                          const rect = blueprintsCanvasRef.current?.getBoundingClientRect();
+                          if (!rect) return;
+                          const scale = blueprintsZoom / 100;
+                          const newX = (e.clientX - rect.left - blueprintsOffset.x) / scale - dragStart.x;
+                          const newY = (e.clientY - rect.top - blueprintsOffset.y) / scale - dragStart.y;
+                          setBlueprintPositions(prev => ({
+                            ...prev,
+                            [draggingComponent]: { x: newX, y: newY }
+                          }));
+                        } else if (isBlueprintsPanning) {
+                          setBlueprintsOffset({
+                            x: e.clientX - blueprintsPanStart.x,
+                            y: e.clientY - blueprintsPanStart.y
+                          });
+                        }
+                      }}
+                      onMouseUp={() => {
+                        setDraggingComponent(null);
+                        setIsBlueprintsPanning(false);
+                      }}
+                      onMouseLeave={() => {
+                        setDraggingComponent(null);
+                        setIsBlueprintsPanning(false);
+                      }}
+                      onWheel={(e) => {
+                        e.preventDefault();
+                        const rect = blueprintsCanvasRef.current?.getBoundingClientRect();
+                        if (!rect) return;
+                        
+                        const mouseX = e.clientX - rect.left;
+                        const mouseY = e.clientY - rect.top;
+                        const delta = e.deltaY > 0 ? -10 : 10;
+                        const newZoom = Math.min(200, Math.max(25, blueprintsZoom + delta));
+                        const zoomFactor = newZoom / blueprintsZoom;
+                        
+                        const newOffsetX = mouseX - (mouseX - blueprintsOffset.x) * zoomFactor;
+                        const newOffsetY = mouseY - (mouseY - blueprintsOffset.y) * zoomFactor;
+                        
+                        setBlueprintsZoom(newZoom);
+                        setBlueprintsOffset({ x: newOffsetX, y: newOffsetY });
+                      }}
+                    >
+                      {/* Canvas content layer */}
+                      <div 
+                        className="canvas-content absolute inset-0"
+                        style={{ 
+                          transform: `translate(${blueprintsOffset.x}px, ${blueprintsOffset.y}px) scale(${blueprintsZoom / 100})`,
+                          transformOrigin: '0 0'
+                        }}
+                      >
+                        {/* Empty state */}
+                        {(!libraryData || !libraryData.components || libraryData.components.length === 0) ? (
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style={{ transform: `translate(-50%, -50%) scale(${100/blueprintsZoom})` }}>
+                            <div className="bg-zinc-900/80 backdrop-blur-xl rounded-2xl border border-zinc-800 p-8 text-center max-w-md">
+                              <Map className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
+                              <h3 className="text-lg font-semibold text-white mb-2">Component Canvas</h3>
+                              <p className="text-sm text-zinc-400 mb-6">
+                                Drag components around to arrange your design system. Each component is a separate draggable element.
+                              </p>
+                              <div className="flex gap-3 justify-center">
+                                <button
+                                  onClick={() => setViewMode("library")}
+                                  className="px-4 py-2 text-sm bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 transition-colors"
+                                >
+                                  Go to Library
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const name = prompt("Describe the component to generate:");
+                                    if (name) {
+                                      setEditInput(`Create a new component: ${name}`);
+                                      setViewMode("preview");
+                                    }
+                                  }}
+                                  className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                                >
+                                  <Sparkles className="w-4 h-4" />
+                                  Generate
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            {/* Category Labels - above each column */}
+                            {(() => {
+                              const categories = new Set(libraryData.components.map((c: any) => c.category || 'other'));
+                              let labelX = 60;
+                              const CATEGORY_WIDTH = 720; // Match masonry layout (2 columns + gap)
+                              return Array.from(categories).map((cat, i) => {
+                                const x = labelX;
+                                labelX += CATEGORY_WIDTH + 80;
+                                return (
+                                  <div 
+                                    key={`label-${cat}`}
+                                    className="absolute text-[11px] font-semibold uppercase tracking-widest text-zinc-600/50 select-none"
+                                    style={{ left: x, top: 50 }}
+                                  >
+                                    {cat as string}
+                                  </div>
+                                );
+                              });
+                            })()}
+                            
+                            {/* Draggable Components - FIGMA STYLE: just component + small name */}
+                            {libraryData.components.map((comp: any) => {
+                              const id = `comp-${comp.id}`;
+                              const pos = blueprintPositions[id] || { x: 50, y: 100 };
+                              const isSelected = selectedBlueprintComponent === id;
+                              const isDragging = draggingComponent === id;
+                              
+                              return (
+                                <div
+                                  key={id}
+                                  className="absolute cursor-move select-none group"
+                                  style={{ 
+                                    left: pos.x, 
+                                    top: pos.y,
+                                    zIndex: isDragging ? 100 : isSelected ? 50 : 1
+                                  }}
+                                  onMouseDown={(e) => {
+                                    e.stopPropagation();
+                                    setDraggingComponent(id);
+                                    if (selectedBlueprintComponent !== id) {
+                                      setSelectedBlueprintComponent(id);
+                                      setBlueprintEditedCode(null);
+                                      setBlueprintChatHistory([]);
+                                    }
+                                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                    const canvasRect = blueprintsCanvasRef.current?.getBoundingClientRect();
+                                    if (canvasRect) {
+                                      const scale = blueprintsZoom / 100;
+                                      setDragStart({
+                                        x: (e.clientX - rect.left) / scale,
+                                        y: (e.clientY - rect.top) / scale
+                                      });
+                                    }
+                                  }}
+                                  onDoubleClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedLibraryItem(id);
+                                    setViewMode("library");
+                                  }}
+                                >
+                                  {/* Figma-style: name + quick actions */}
+                                  <div className="mb-2 flex items-center justify-between gap-2">
+                                    <span className={cn(
+                                      "text-[11px] font-medium",
+                                      isSelected ? "text-blue-400" : "text-zinc-500"
+                                    )}>{comp.name}</span>
+                                    {/* Quick actions on hover/select */}
+                                    <div className={cn(
+                                      "flex items-center gap-1 transition-opacity",
+                                      isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                                    )}>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          // Duplicate component
+                                          const newId = `${comp.id}-copy-${Date.now()}`;
+                                          const newComp = {
+                                            ...comp,
+                                            id: newId,
+                                            name: `${comp.name} (Copy)`
+                                          };
+                                          setLibraryData((prev: any) => ({
+                                            ...prev,
+                                            components: [...(prev?.components || []), newComp]
+                                          }));
+                                          // Position near original
+                                          const pos = blueprintPositions[id] || { x: 100, y: 100 };
+                                          setBlueprintPositions(prev => ({
+                                            ...prev,
+                                            [`comp-${newId}`]: { x: pos.x + 50, y: pos.y + 50 }
+                                          }));
+                                        }}
+                                        className="p-1 rounded bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white"
+                                        title="Duplicate"
+                                      >
+                                        <Copy className="w-3 h-3" />
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const newName = prompt("Save to library as:", comp.name);
+                                          if (newName) {
+                                            // Update component name in library
+                                            setLibraryData((prev: any) => ({
+                                              ...prev,
+                                              components: prev?.components?.map((c: any) => 
+                                                c.id === comp.id ? { ...c, name: newName } : c
+                                              ) || []
+                                            }));
+                                          }
+                                        }}
+                                        className="p-1 rounded bg-zinc-800/80 hover:bg-emerald-600 text-zinc-400 hover:text-white"
+                                        title="Save to Library"
+                                      >
+                                        <Save className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Pure component - no box, no border, just the component */}
+                                  <div className={cn(
+                                    "transition-all",
+                                    isSelected && "ring-2 ring-blue-500/50 ring-offset-2 ring-offset-zinc-950 rounded-sm",
+                                    isDragging && "opacity-80"
+                                  )}>
+                                    {comp.code ? (() => {
+                                      // Apply live props override for selected component
+                                      const liveCode = isSelected && Object.keys(blueprintPropsOverride).length > 0
+                                        ? applyPropsToCode(comp.code, comp.props || [], blueprintPropsOverride)
+                                        : comp.code;
+                                      
+                                      // Stabilize image URLs by adding seed based on component id
+                                      const stableCode = liveCode
+                                        .replace(/pravatar\.cc\/(\d+)\?(?!img=)/g, `pravatar.cc/$1?img=${Math.abs(comp.id?.charCodeAt(0) || 1) % 70 + 1}&`)
+                                        .replace(/pravatar\.cc\/(\d+)(?:\?img=\d+)?$/g, `pravatar.cc/$1?img=${Math.abs(comp.id?.charCodeAt(0) || 1) % 70 + 1}`)
+                                        .replace(/pollinations\.ai\/prompt\/([^?]+)\?/g, `pollinations.ai/prompt/$1?seed=${comp.id || 'stable'}&`);
+                                      
+                                      return (
+                                      <div className="relative">
+                                        {/* Live indicator */}
+                                        {isSelected && Object.keys(blueprintPropsOverride).length > 0 && (
+                                          <div className="absolute -top-2 -right-2 z-10 flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/90 rounded text-[8px] text-white font-medium shadow-lg">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                                            LIVE
+                                          </div>
+                                        )}
+                                        <iframe
+                                          key={`bp-iframe-${comp.id}`}
+                                          srcDoc={`<!DOCTYPE html>
+<html><head>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;scrollbar-width:none;-ms-overflow-style:none}
+html,body{font-family:Inter,system-ui,sans-serif;background:white;overflow:visible!important;width:max-content;height:max-content}
+body{display:block;padding:12px}
+#root{display:block}
+*::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
+img{max-width:100%;height:auto}
+</style>
+</head><body>${jsxToHtml(stableCode)}</body></html>`}
+                                          className="border-0 pointer-events-none rounded-lg shadow-lg"
+                                          scrolling="no"
+                                          loading="lazy"
+                                          style={{ 
+                                            width: 'auto',
+                                            minWidth: '120px',
+                                            maxWidth: '500px',
+                                            height: 'auto',
+                                            minHeight: '60px',
+                                            background: 'white'
+                                          }}
+                                          sandbox="allow-scripts allow-same-origin"
+                                          referrerPolicy="no-referrer"
+                                        />
+                                      </div>
+                                      );
+                                    })() : (
+                                      <div className="px-4 py-2 bg-zinc-800/50 rounded text-xs text-zinc-500">
+                                        {comp.name}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </>
+                        )}
+                      </div>
+                      
+                      {/* ═══════════════════════════════════════════════════════════════════════════
+                          FLOATING AI COMMAND BAR - Vercel v0 / Spotlight Style
+                          Bottom-center, glassmorphic, appears when component is selected
+                         ═══════════════════════════════════════════════════════════════════════════ */}
+                      {selectedBlueprintComponent && (() => {
+                        const compId = selectedBlueprintComponent.replace('comp-', '');
+                        const selectedComp = libraryData?.components?.find((c: any) => c.id === compId);
+                        if (!selectedComp) return null;
+                        
+                        return (
+                          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-4">
+                            {/* Main Floating Bar */}
+                            <div className="bg-zinc-900/95 backdrop-blur-xl border border-zinc-700/50 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden">
+                              {/* Selected Component Header */}
+                              <div className="px-4 py-2.5 border-b border-zinc-800/50 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className={cn(
+                                    "w-2 h-2 rounded-full",
+                                    blueprintEditedCode ? "bg-amber-500 animate-pulse" : "bg-blue-500"
+                                  )} />
+                                  <span className="text-sm font-medium text-white">{selectedComp.name}</span>
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 uppercase">
+                                    {blueprintStatuses[compId] || 'draft'}
+                                  </span>
+                                  {blueprintEditedCode && (
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                                      Unsaved Changes
+                                    </span>
+                                  )}
+                                </div>
+                                <button 
+                                  onClick={() => {
+                                    setSelectedBlueprintComponent(null);
+                                    setBlueprintEditedCode(null);
+                                    setBlueprintChatHistory([]);
+                                  }}
+                                  className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-500 hover:text-white transition-colors"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                              
+                              {/* AI Input - Main Action Area */}
+                              <div className="p-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 relative">
+                                    <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-400" />
+                                    <input
+                                      type="text"
+                                      value={blueprintChatInput}
+                                      onChange={(e) => setBlueprintChatInput(e.target.value)}
+                                      onKeyDown={async (e) => {
+                                        if (e.key === 'Enter' && blueprintChatInput.trim() && !isEditingBlueprint) {
+                                          e.preventDefault();
+                                          const userMessage = blueprintChatInput.trim();
+                                          setBlueprintChatInput("");
+                                          setBlueprintChatHistory(prev => [...prev, { role: 'user', content: userMessage }]);
+                                          setIsEditingBlueprint(true);
+                                          
+                                          try {
+                                            const currentCode = blueprintEditedCode || selectedComp.code || '';
+                                            const response = await fetch('/api/blueprint/edit', {
+                                              method: 'POST',
+                                              headers: { 'Content-Type': 'application/json' },
+                                              body: JSON.stringify({
+                                                componentCode: currentCode,
+                                                componentName: selectedComp.name,
+                                                userRequest: userMessage,
+                                                componentStyle: 'Dark theme with zinc backgrounds, rounded corners, subtle shadows'
+                                              })
+                                            });
+                                            
+                                            const data = await response.json();
+                                            if (data.success && data.code) {
+                                              setBlueprintEditedCode(data.code);
+                                              setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: 'Applied ✓' }]);
+                                            } else {
+                                              setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: `Error: ${data.error || 'Failed'}` }]);
+                                            }
+                                          } catch (error: any) {
+                                            setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: `Error: ${error.message}` }]);
+                                          } finally {
+                                            setIsEditingBlueprint(false);
+                                          }
+                                        }
+                                      }}
+                                      placeholder="Ask AI to change... (e.g., 'Make it red', 'Add icon')"
+                                      className="w-full pl-10 pr-4 py-3 text-sm bg-zinc-800/50 border border-zinc-700/50 rounded-xl text-white placeholder-zinc-500 focus:border-purple-500/50 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
+                                      disabled={isEditingBlueprint}
+                                      autoFocus
+                                    />
+                                  </div>
+                                  <button
+                                    onClick={async () => {
+                                      if (!blueprintChatInput.trim() || isEditingBlueprint) return;
+                                      const userMessage = blueprintChatInput.trim();
+                                      setBlueprintChatInput("");
+                                      setBlueprintChatHistory(prev => [...prev, { role: 'user', content: userMessage }]);
+                                      setIsEditingBlueprint(true);
+                                      
+                                      try {
+                                        const currentCode = blueprintEditedCode || selectedComp.code || '';
+                                        const response = await fetch('/api/blueprint/edit', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({
+                                            componentCode: currentCode,
+                                            componentName: selectedComp.name,
+                                            userRequest: userMessage,
+                                            componentStyle: 'Dark theme with zinc backgrounds, rounded corners, subtle shadows'
+                                          })
+                                        });
+                                        
+                                        const data = await response.json();
+                                        if (data.success && data.code) {
+                                          setBlueprintEditedCode(data.code);
+                                          setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: 'Applied ✓' }]);
+                                        } else {
+                                          setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: `Error: ${data.error || 'Failed'}` }]);
+                                        }
+                                      } catch (error: any) {
+                                        setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: `Error: ${error.message}` }]);
+                                      } finally {
+                                        setIsEditingBlueprint(false);
+                                      }
+                                    }}
+                                    disabled={isEditingBlueprint || !blueprintChatInput.trim()}
+                                    className={cn(
+                                      "px-4 py-3 rounded-xl transition-all flex items-center gap-2 font-medium",
+                                      isEditingBlueprint 
+                                        ? "bg-zinc-700 text-zinc-400 cursor-wait" 
+                                        : blueprintChatInput.trim()
+                                          ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white shadow-lg shadow-purple-500/20"
+                                          : "bg-zinc-800 text-zinc-500"
+                                    )}
+                                  >
+                                    {isEditingBlueprint ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <Send className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                </div>
+                                
+                                {/* Quick Actions */}
+                                <div className="mt-2 flex items-center gap-1.5 overflow-x-auto pb-1">
+                                  {['Make it red', 'Add icon', 'Add button', 'Add line chart', 'Make bigger', 'Add shadow'].map(action => (
+                                    <button
+                                      key={action}
+                                      onClick={() => setBlueprintChatInput(action)}
+                                      className="flex-shrink-0 px-2.5 py-1 text-[11px] bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-lg transition-colors"
+                                    >
+                                      {action}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                              
+                              {/* Accept/Discard Actions - Only show when there are changes */}
+                              {blueprintEditedCode && (
+                                <div className="px-3 pb-3 flex items-center gap-2">
+                                  <button
+                                    onClick={() => {
+                                      // Accept: Update the component in library
+                                      if (libraryData && blueprintEditedCode) {
+                                        setLibraryData({
+                                          ...libraryData,
+                                          components: libraryData.components?.map((c: any) => 
+                                            c.id === compId ? { ...c, code: blueprintEditedCode } : c
+                                          ) || []
+                                        });
+                                        setBlueprintEditedCode(null);
+                                        setBlueprintChatHistory([]);
+                                        showToast("Changes accepted!", "success");
+                                      }
+                                    }}
+                                    className="flex-1 py-2.5 text-sm bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-colors flex items-center justify-center gap-2 font-medium"
+                                  >
+                                    <Check className="w-4 h-4" />
+                                    Accept
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      // Discard: Reset to original
+                                      setBlueprintEditedCode(null);
+                                      setBlueprintChatHistory([]);
+                                    }}
+                                    className="flex-1 py-2.5 text-sm bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-xl transition-colors flex items-center justify-center gap-2"
+                                  >
+                                    <X className="w-4 h-4" />
+                                    Discard
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      // Publish to Library: Add as approved component
+                                      if (libraryData && blueprintEditedCode) {
+                                        const newComponent: any = {
+                                          id: `pub-${Date.now()}`,
+                                          name: selectedComp.name,
+                                          description: `Published from Blueprints`,
+                                          category: selectedComp.category || 'Other',
+                                          code: blueprintEditedCode,
+                                          props: selectedComp.props || [],
+                                          variants: [],
+                                        };
+                                        setLibraryData({
+                                          ...libraryData,
+                                          components: [...(libraryData.components || []), newComponent]
+                                        });
+                                        setBlueprintStatuses(prev => ({ ...prev, [`pub-${Date.now()}`]: 'approved' }));
+                                        setBlueprintEditedCode(null);
+                                        setBlueprintChatHistory([]);
+                                        showToast("Published to Library!", "success");
+                                      }
+                                    }}
+                                    className="py-2.5 px-4 text-sm bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-xl transition-colors flex items-center justify-center gap-2 font-medium shadow-lg shadow-purple-500/20"
+                                  >
+                                    <Upload className="w-4 h-4" />
+                                    Publish
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Mini hint below bar */}
+                            <div className="mt-2 text-center text-[10px] text-zinc-600">
+                              Press <kbd className="px-1.5 py-0.5 bg-zinc-800 rounded text-zinc-400">Enter</kbd> to send • <kbd className="px-1.5 py-0.5 bg-zinc-800 rounded text-zinc-400">Esc</kbd> to deselect
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      
+                      {/* Canvas info overlay - moved to top-left corner */}
+                      <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-2 bg-zinc-900/80 backdrop-blur-sm rounded-lg border border-zinc-800/50 text-[10px] text-zinc-500 z-10">
+                        <Move className="w-3 h-3" />
+                        <span>Click to select • Drag to move • Scroll to zoom • Double-click for new</span>
+                      </div>
+                    </div>
+                    
+                  </>
+                )}
+              </div>
+            )}
+
             {/* Input - Custom Video Player with better trim */}
             {viewMode === "input" && (
               <div className="flex-1 bg-black flex flex-col overflow-hidden">
@@ -12477,10 +17477,6 @@ export default function GeneratedPage() {
                         }}
                         onLoadedMetadata={(e) => {
                           const video = e.currentTarget;
-                          // Seek to 0.5s to show a good frame instead of black
-                          if (video.currentTime === 0) {
-                            video.currentTime = 0.5;
-                          }
                           // Always update duration when we get valid metadata (fixes loaded projects showing wrong duration)
                           if (video.duration && isFinite(video.duration) && video.duration > 0) {
                             const newDuration = Math.round(video.duration);
@@ -12493,17 +17489,26 @@ export default function GeneratedPage() {
                               ));
                             }
                           }
+                          // IMPORTANT: Reset playhead to start position
+                          setCurrentTime(0);
                         }}
                         onPlay={() => setIsPlaying(true)} 
                         onPause={() => setIsPlaying(false)}
                         onCanPlay={(e) => {
-                          // Force first frame display when video data is ready
+                          // Seek to tiny offset to show first frame instead of black screen
+                          // This doesn't affect playhead position which stays at 0
                           const video = e.currentTarget;
-                          if (video.currentTime === 0 && video.paused) {
-                            video.currentTime = 0.001;
+                          if (video.paused && video.currentTime < 0.01) {
+                            video.currentTime = 0.01;
                           }
                         }}
-                        onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+                        onTimeUpdate={(e) => {
+                          const time = e.currentTarget.currentTime;
+                          // Only update state for real playback, ignore initial seek for thumbnail
+                          if (time >= 0.02 || time === 0) {
+                            setCurrentTime(time);
+                          }
+                        }}
                       />
                     </div>
                     <div className="p-4 border-t border-zinc-800 bg-[#111111]">
@@ -12994,17 +17999,6 @@ export default function GeneratedPage() {
           </button>
           
           <button 
-            onClick={() => setMobilePanel("code")}
-            className={cn(
-              "flex flex-col items-center justify-center gap-1 rounded-xl transition-colors min-w-[64px] min-h-[56px]",
-              mobilePanel === "code" && !showHistoryMode ? "text-zinc-300 bg-zinc-800/10" : "text-zinc-500"
-            )}
-          >
-            <Code className="w-6 h-6" />
-            <span className="text-[10px] font-medium">Code</span>
-          </button>
-          
-          <button 
             onClick={() => setMobilePanel("flow")}
             className={cn(
               "flex flex-col items-center justify-center gap-1 rounded-xl transition-colors min-w-[64px] min-h-[56px]",
@@ -13013,6 +18007,17 @@ export default function GeneratedPage() {
           >
             <GitBranch className="w-6 h-6" />
             <span className="text-[10px] font-medium">Flow</span>
+          </button>
+          
+          <button 
+            onClick={() => setMobilePanel("code")}
+            className={cn(
+              "flex flex-col items-center justify-center gap-1 rounded-xl transition-colors min-w-[64px] min-h-[56px]",
+              mobilePanel === "code" && !showHistoryMode ? "text-zinc-300 bg-zinc-800/10" : "text-zinc-500"
+            )}
+          >
+            <Code className="w-6 h-6" />
+            <span className="text-[10px] font-medium">Code</span>
           </button>
           
           <button 
@@ -13434,58 +18439,20 @@ export default function GeneratedPage() {
 
               {/* Design System Section - Consistent sizing */}
               <div className="p-4 border-b border-zinc-800 flex-shrink-0">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Palette className="w-4 h-4 text-zinc-500" />
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                      {enterpriseMode ? "Enterprise Preset" : "Style"}
-                    </span>
-                  </div>
-                  <div className="flex items-center bg-zinc-800/80 rounded-md p-0.5">
-                    <button
-                      onClick={() => setEnterpriseMode(false)}
-                      className={cn(
-                        "w-[60px] py-0.5 rounded text-[9px] font-medium transition-all text-center",
-                        !enterpriseMode 
-                          ? "bg-zinc-700 text-white" 
-                          : "text-zinc-500 hover:text-zinc-400"
-                      )}
-                    >
-                      Creative
-                    </button>
-                    <button
-                      onClick={() => setEnterpriseMode(true)}
-                      className={cn(
-                        "w-[60px] py-0.5 rounded text-[9px] font-medium transition-all text-center",
-                        enterpriseMode 
-                          ? "bg-zinc-700 text-white" 
-                          : "text-zinc-500 hover:text-zinc-400"
-                      )}
-                    >
-                      Enterprise
-                    </button>
-                  </div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Palette className="w-4 h-4 text-zinc-500" />
+                  <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                    Style
+                  </span>
                 </div>
                 
-                {enterpriseMode ? (
-                  <EnterprisePresetSelector
-                    selectedPresetId={enterprisePresetId}
-                    onSelect={(preset) => {
-                      setEnterprisePresetId(preset.id);
-                      setStyleDirective(`Apply ${preset.name} design system`);
-                    }}
-                    compact={true}
-                    disabled={isProcessing}
-                  />
-                ) : (
-                  <StyleInjector 
-                    value={styleDirective} 
-                    onChange={setStyleDirective} 
-                    disabled={isProcessing}
-                    referenceImage={styleReferenceImage}
-                    onReferenceImageChange={setStyleReferenceImage}
-                  />
-                )}
+                <StyleInjector 
+                  value={styleDirective} 
+                  onChange={setStyleDirective} 
+                  disabled={isProcessing}
+                  referenceImage={styleReferenceImage}
+                  onReferenceImageChange={setStyleReferenceImage}
+                />
               </div>
 
               {/* Generate Button */}
@@ -13663,15 +18630,14 @@ export default function GeneratedPage() {
                   <LoadingState />
                 </div>
               ) : previewUrl ? (
-                <div className="w-full h-full overflow-hidden bg-[#111111]" style={{ overscrollBehavior: 'none' }}>
+                <div className="w-full h-full bg-[#111111]" style={{ overscrollBehavior: 'contain' }}>
                   <iframe 
                     key={previewUrl}
                     src={previewUrl} 
                     className="w-full h-full border-0 bg-[#111111]" 
                     style={{ 
-                      overflow: 'hidden',
-                      touchAction: 'pan-y',
-                      overscrollBehavior: 'none',
+                      touchAction: 'auto',
+                      overscrollBehavior: 'contain',
                       backgroundColor: '#0a0a0a'
                     }}
                   />
@@ -14283,7 +19249,7 @@ export default function GeneratedPage() {
               </div>
             </div>
             
-            {/* Tabs: Replay AI | Configuration */}
+            {/* Tabs: Replay AI | Input */}
             <div className="flex-shrink-0 px-3 py-1.5 border-b border-white/[0.03]">
               <div className="flex gap-1">
                 <button
@@ -14420,7 +19386,7 @@ export default function GeneratedPage() {
                 </div>
               </>
             ) : (
-              /* Configuration Tab - Same as PC sidebar */
+              /* Input Tab - Video & Style Configuration */
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {/* Videos Section */}
                 <div>
@@ -14480,58 +19446,21 @@ export default function GeneratedPage() {
                   />
                 </div>
                 
-                {/* Visual Style / Enterprise Preset */}
+                {/* Visual Style */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
-                      Visual Style
+                      Style
                     </label>
-                    {/* Creative / Enterprise Toggle */}
-                    <div className="flex items-center bg-zinc-800/80 rounded-md p-0.5">
-                      <button
-                        onClick={() => setEnterpriseMode(false)}
-                        className={cn(
-                          "w-[55px] py-0.5 rounded text-[9px] font-medium transition-all text-center",
-                          !enterpriseMode 
-                            ? "bg-zinc-700 text-white" 
-                            : "text-zinc-500 hover:text-zinc-400"
-                        )}
-                      >
-                        Creative
-                      </button>
-                      <button
-                        onClick={() => setEnterpriseMode(true)}
-                        className={cn(
-                          "w-[55px] py-0.5 rounded text-[9px] font-medium transition-all text-center",
-                          enterpriseMode 
-                            ? "bg-zinc-700 text-white" 
-                            : "text-zinc-500 hover:text-zinc-400"
-                        )}
-                      >
-                        Enterprise
-                      </button>
-                    </div>
                   </div>
                   
-                  {enterpriseMode ? (
-                    <EnterprisePresetSelector
-                      selectedPresetId={enterprisePresetId}
-                      onSelect={(preset) => {
-                        setEnterprisePresetId(preset.id);
-                        setStyleDirective(`Apply ${preset.name} design system`);
-                      }}
-                      compact={true}
-                      disabled={isProcessing}
-                    />
-                  ) : (
-                    <StyleInjector 
-                      value={styleDirective} 
-                      onChange={setStyleDirective} 
-                      disabled={isProcessing}
-                      referenceImage={styleReferenceImage}
-                      onReferenceImageChange={setStyleReferenceImage}
-                    />
-                  )}
+                  <StyleInjector 
+                    value={styleDirective} 
+                    onChange={setStyleDirective} 
+                    disabled={isProcessing}
+                    referenceImage={styleReferenceImage}
+                    onReferenceImageChange={setStyleReferenceImage}
+                  />
                 </div>
                 
                 {/* Reconstruct Button */}

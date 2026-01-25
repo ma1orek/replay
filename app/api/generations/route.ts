@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
         videoUrl: gen.input_video_url,
         versions: gen.versions || [],
         publishedSlug: gen.published_slug || null,
+        libraryData: gen.library_data || null,
       };
 
       return NextResponse.json({ success: true, generation: record });
@@ -114,6 +115,7 @@ export async function GET(request: NextRequest) {
         videoUrl: gen.input_video_url,
         versions: gen.versions || [],
         publishedSlug: gen.published_slug || null,
+        libraryData: gen.library_data || null,
       };
     });
 
@@ -166,7 +168,8 @@ export async function POST(request: NextRequest) {
       versions,
       tokenUsage,
       costCredits,
-      publishedSlug
+      publishedSlug,
+      libraryData
     } = body;
 
     // Use UPSERT to avoid race conditions (duplicate key errors)
@@ -195,6 +198,11 @@ export async function POST(request: NextRequest) {
     // Only add published_slug if provided
     if (publishedSlug) {
       upsertData.published_slug = publishedSlug;
+    }
+    
+    // Only add library_data if provided
+    if (libraryData) {
+      upsertData.library_data = libraryData;
     }
     
     console.log("Upserting generation:", id);

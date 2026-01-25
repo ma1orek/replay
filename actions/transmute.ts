@@ -44,15 +44,35 @@ interface EditResult {
 
 const UNIFIED_SCAN_PROMPT = `You are a VISUAL REVERSE ENGINEERING SYSTEM with pixel-perfect vision.
 
-**YOUR MISSION:** Perform a COMPLETE forensic analysis of this legacy UI. Extract EVERY piece of data visible.
+**YOUR MISSION:** Perform a COMPLETE forensic analysis of this UI. Extract EVERY piece of data visible.
+
+═══════════════════════════════════════════════════════════════════════════════
+🚫 CRITICAL: DO NOT INVENT APP NAMES
+═══════════════════════════════════════════════════════════════════════════════
+
+BANNED NAMES (NEVER USE THESE):
+- StripeClone, PayDash, NexusPay, FinanceHub, PayFlow
+- DashPro, AdminPro, DataVault, MetricsHub
+- AppName, MyApp, SaaSApp, DashboardApp
+- TEST, Demo, Example, Acme
+
+HOW TO GET THE REAL NAME:
+1. Look at the TOP-LEFT corner of the video
+2. Read the logo text LETTER BY LETTER
+3. "S-t-r-i-p-e" → output "Stripe"
+4. "R-e-p-l-a-y" → output "Replay"
+5. If logo unclear → use "Dashboard" (NOT invented names!)
+
+═══════════════════════════════════════════════════════════════════════════════
 
 **CRITICAL RULES:**
 1. EXACT TEXT: Copy all text character-for-character. "Customers" ≠ "Users".
 2. COMPLETE MENU: Count every navigation item. If 15 items exist, list all 15.
-3. EXACT NUMBERS: "$1,234.56" not "$1234". "+12.5%" not "12%".
+3. EXACT NUMBERS: "$1,234.56" not "$1234". "+12.5%" not "12%". "PLN" not "$".
 4. ACCURATE COLORS: Sample hex values from actual pixels.
-5. FULL TABLES: Capture all visible rows and columns.
+5. FULL TABLES: Capture all visible rows and columns - not just first 3!
 6. CHART DATA: Estimate data points from axis scales.
+7. LOGO TEXT: Read the EXACT logo text - letter by letter. DO NOT invent.
 
 **OUTPUT UNIFIED JSON:**
 {
@@ -224,13 +244,26 @@ const ASSEMBLER_PROMPT = `You are a CODE ASSEMBLER for the Replay.build system.
 
 **YOUR ROLE:** Generate React code from STRUCTURED DATA. You do NOT see video - only JSON.
 
+═══════════════════════════════════════════════════════════════════════════════
+🚫 CRITICAL: DO NOT INVENT APP NAMES
+═══════════════════════════════════════════════════════════════════════════════
+
+BANNED NAMES (USING ANY = FAILURE):
+- StripeClone, PayDash, NexusPay, FinanceHub, PayFlow, DataDash
+- AppName, MyApp, SaaSApp, DashboardApp, AdminApp
+- TEST, Demo, Example, Acme, AcmeCorp
+
+USE THE NAME FROM scanData.ui.navigation.sidebar.logo.text
+If that's empty or unclear → use "Dashboard" (NOT invented names!)
+
+═══════════════════════════════════════════════════════════════════════════════
+
 **MANDATORY TECH STACK (Pre-installed):**
 
-1. **RECHARTS** - ALL charts MUST use Recharts:
-   - AreaChart with gradient fill
-   - BarChart with rounded corners
-   - LineChart for line charts
-   - PieChart for pie/donut
+1. **CHART.JS** - ALL charts MUST use Chart.js via ChartComponent:
+   - type="line" with fill:true for area charts
+   - type="bar" for bar charts
+   - type="pie" or type="doughnut" for pie charts
 
 2. **LUCIDE ICONS** - via lucide global
 
@@ -247,7 +280,7 @@ const ASSEMBLER_PROMPT = `You are a CODE ASSEMBLER for the Replay.build system.
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -260,10 +293,22 @@ const ASSEMBLER_PROMPT = `You are a CODE ASSEMBLER for the Replay.build system.
         // React hooks
         const { useState, useEffect, useRef } = React;
         
-        // CRITICAL: Recharts is loaded via UMD, MUST access via window.Recharts
-        const RechartsLib = window.Recharts;
-        const { AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie,
-                XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } = RechartsLib;
+        // CHART.JS - React wrapper component
+        const ChartComponent = ({ type, data, options = {} }) => {
+            const canvasRef = useRef(null);
+            const chartRef = useRef(null);
+            useEffect(() => {
+                if (canvasRef.current) {
+                    if (chartRef.current) chartRef.current.destroy();
+                    chartRef.current = new Chart(canvasRef.current, {
+                        type, data,
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, ...options }
+                    });
+                }
+                return () => { if (chartRef.current) chartRef.current.destroy(); };
+            }, [type, data, options]);
+            return <canvas ref={canvasRef} />;
+        };
 
         // Icon helper
         const Icon = ({ name, className = "w-5 h-5" }) => {
@@ -298,7 +343,7 @@ const ASSEMBLER_PROMPT = `You are a CODE ASSEMBLER for the Replay.build system.
 
 **RULES:**
 1. Use EXACT data from scanData
-2. Charts MUST use Recharts (no SVG!)
+2. Charts MUST use ChartComponent (Chart.js) - NOT Recharts!
 3. All menu items from scanData
 
 Generate complete HTML:`;
@@ -401,34 +446,61 @@ function fixBrokenImageUrls(code: string): string {
   return code;
 }
 
-// Fix Recharts references - AI often generates "Recharts" instead of "window.Recharts"
-function fixRechartsReference(code: string): string {
+// Fix chart references - ensure Chart.js is properly set up
+function fixChartReference(code: string): string {
   if (!code) return code;
   
   let fixedCode = code;
-  let fixCount = 0;
   
-  // Fix: } = Recharts; -> } = window.Recharts || {};
-  fixedCode = fixedCode.replace(/\}\s*=\s*Recharts\s*;/g, () => {
-    fixCount++;
-    return '} = window.Recharts || {};';
-  });
+  // Chart.js component wrapper
+  const chartComponent = `
+        // CHART.JS - React wrapper component
+        const ChartComponent = ({ type, data, options = {} }) => {
+            const canvasRef = useRef(null);
+            const chartRef = useRef(null);
+            
+            useEffect(() => {
+                if (canvasRef.current) {
+                    if (chartRef.current) chartRef.current.destroy();
+                    chartRef.current = new Chart(canvasRef.current, {
+                        type,
+                        data,
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            ...options
+                        }
+                    });
+                }
+                return () => { if (chartRef.current) chartRef.current.destroy(); };
+            }, [type, data, options]);
+            
+            return <canvas ref={canvasRef} />;
+        };
+`;
+
+  // Check if code uses charts but doesn't have ChartComponent
+  const usesCharts = fixedCode.includes('ChartComponent') || 
+                     fixedCode.includes('new Chart(') ||
+                     fixedCode.includes('chart.js');
   
-  // Fix: const X = Recharts; -> const X = window.Recharts;
-  fixedCode = fixedCode.replace(/const\s+(\w+)\s*=\s*Recharts\s*;/g, (_, varName) => {
-    fixCount++;
-    return `const ${varName} = window.Recharts;`;
-  });
+  const hasChartComponent = fixedCode.includes('const ChartComponent');
   
-  // Fix: Recharts.AreaChart -> window.Recharts.AreaChart
-  fixedCode = fixedCode.replace(/([^.\w])Recharts\./g, (_, prefix) => {
-    fixCount++;
-    return `${prefix}window.Recharts.`;
-  });
-  
-  if (fixCount > 0) {
-    console.log(`[fixRechartsReference] Fixed ${fixCount} Recharts references`);
+  // Inject ChartComponent if charts are used but component is missing
+  if (usesCharts && !hasChartComponent) {
+    fixedCode = fixedCode.replace(
+      /(const\s*\{\s*useState\s*,\s*useEffect[^}]*\}\s*=\s*React\s*;?)/,
+      (match) => {
+        return match + '\n' + chartComponent;
+      }
+    );
   }
+  
+  // Remove any Recharts imports/references (AI might still generate them)
+  fixedCode = fixedCode.replace(/const\s*\{[^}]+\}\s*=\s*(?:window\.)?Recharts[^;]*;?/g, '// Recharts removed - use ChartComponent instead');
+  fixedCode = fixedCode.replace(/<(?:Area|Bar|Line|Pie)Chart[^>]*>[\s\S]*?<\/(?:Area|Bar|Line|Pie)Chart>/g, 
+    '<div style={{height: "300px", display: "flex", alignItems: "center", justifyContent: "center", background: "#1f2937", borderRadius: "8px"}}><span style={{color: "#9ca3af"}}>Chart placeholder - use ChartComponent</span></div>');
   
   return fixedCode;
 }
@@ -448,9 +520,23 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
     return { success: false, error: "API key not configured" };
   }
   
+  // Timeout helper - CRITICAL to avoid 504 errors on Vercel
+  const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> => {
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) => 
+        setTimeout(() => reject(new Error(`${operation} timed out after ${timeoutMs/1000}s`)), timeoutMs)
+      )
+    ]);
+  };
+  
   try {
-    // Fetch video from URL
-    const videoData = await fetchVideoAsBase64(videoUrl);
+    // Fetch video from URL (with 30s timeout)
+    const videoData = await withTimeout(
+      fetchVideoAsBase64(videoUrl),
+      30000,
+      "Video fetch"
+    );
     if (!videoData) {
       return { success: false, error: "Failed to fetch video from storage" };
     }
@@ -460,23 +546,61 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
     
     // ════════════════════════════════════════════════════════════════
     // PHASE 1: UNIFIED SCAN - Extract everything from video
+    // Max 120s to leave room for Phase 2 within Vercel's 300s limit
     // ════════════════════════════════════════════════════════════════
     console.log("[transmute] Phase 1: Starting unified scan...");
     
-    const scannerModel = genAI.getGenerativeModel({
-      model: "gemini-3-pro-preview",
-      generationConfig: {
-        temperature: 0.1,
-        maxOutputTokens: 16384,
-        // @ts-ignore
-        thinkingConfig: { thinkingBudget: 8192 },
-      },
-    });
+    // Try Pro first, fallback to Flash if quota exceeded
+    let scanResult;
+    let usedModel = "gemini-3-pro-preview";
     
-    const scanResult = await scannerModel.generateContent([
-      { text: UNIFIED_SCAN_PROMPT },
-      { inlineData: { mimeType: videoData.mimeType, data: videoData.base64 } },
-    ]);
+    try {
+      const scannerModel = genAI.getGenerativeModel({
+        model: "gemini-3-pro-preview",
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 16384,
+          // @ts-ignore
+          thinkingConfig: { thinkingBudget: 8192 },
+        },
+      });
+      
+      scanResult = await withTimeout(
+        scannerModel.generateContent([
+          { text: UNIFIED_SCAN_PROMPT },
+          { inlineData: { mimeType: videoData.mimeType, data: videoData.base64 } },
+        ]),
+        120000, // 120s timeout for Phase 1
+        "Phase 1 Unified Scan"
+      );
+    } catch (proError: any) {
+      // If Pro quota exceeded, fallback to Flash
+      if (proError?.message?.includes("429") || proError?.message?.includes("quota")) {
+        console.log("[transmute] Pro quota exceeded, falling back to Flash...");
+        usedModel = "gemini-3-flash-preview";
+        
+        const fallbackModel = genAI.getGenerativeModel({
+          model: "gemini-3-flash-preview",
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 16384,
+          },
+        });
+        
+        scanResult = await withTimeout(
+          fallbackModel.generateContent([
+            { text: UNIFIED_SCAN_PROMPT },
+            { inlineData: { mimeType: videoData.mimeType, data: videoData.base64 } },
+          ]),
+          120000, // 120s timeout
+          "Phase 1 Unified Scan (Flash fallback)"
+        );
+      } else {
+        throw proError;
+      }
+    }
+    
+    console.log("[transmute] Phase 1 used model:", usedModel);
     
     const scanText = scanResult.response.text();
     console.log("[transmute] Phase 1 complete. Scan length:", scanText.length);
@@ -501,16 +625,6 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
     // PHASE 2: ASSEMBLER - Generate code from SCAN DATA ONLY
     // ════════════════════════════════════════════════════════════════
     console.log("[transmute] Phase 2: Starting code assembly (NO VIDEO)...");
-    
-    const assemblerModel = genAI.getGenerativeModel({
-      model: "gemini-3-pro-preview",
-      generationConfig: {
-        temperature: 0.3,
-        maxOutputTokens: 100000,
-        // @ts-ignore
-        thinkingConfig: { thinkingBudget: 16384 },
-      },
-    });
     
     // Build assembler prompt
     let assemblerPrompt = ASSEMBLER_PROMPT;
@@ -539,16 +653,67 @@ ${JSON.stringify(scanData, null, 2)}
 **ASSEMBLY INSTRUCTIONS:**
 1. Build sidebar with EXACTLY ${menuCount} menu items
 2. Create ${metricCount} metric cards with EXACT values
-3. Create ${chartCount} charts using Recharts
+3. Create ${chartCount} charts using ChartComponent (Chart.js)
 4. Create ${tableCount} tables with all rows
 5. Use colors from scanData.ui.colors
 
 Generate the complete HTML file now:`;
     
-    // CRITICAL: Only send TEXT to assembler - no video!
-    const assemblyResult = await assemblerModel.generateContent([
-      { text: assemblerPrompt }
-    ]);
+    // Try Pro first, fallback to Flash if quota exceeded
+    let assemblyResult;
+    let assemblerUsedModel = "gemini-3-pro-preview";
+    
+    // Calculate remaining time for Phase 2 (max 140s to stay within 300s Vercel limit)
+    const elapsedMs = Date.now() - startTime;
+    const phase2Timeout = Math.min(140000, 280000 - elapsedMs); // Max 140s, but respect total 280s limit
+    console.log("[transmute] Phase 2 timeout:", Math.round(phase2Timeout / 1000), "s");
+    
+    try {
+      const assemblerModel = genAI.getGenerativeModel({
+        model: "gemini-3-pro-preview",
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 100000,
+          // @ts-ignore
+          thinkingConfig: { thinkingBudget: 16384 },
+        },
+      });
+      
+      // CRITICAL: Only send TEXT to assembler - no video!
+      assemblyResult = await withTimeout(
+        assemblerModel.generateContent([
+          { text: assemblerPrompt }
+        ]),
+        phase2Timeout,
+        "Phase 2 Code Assembly"
+      );
+    } catch (proError: any) {
+      // If Pro quota exceeded or timeout, fallback to Flash
+      if (proError?.message?.includes("429") || proError?.message?.includes("quota") || proError?.message?.includes("timed out")) {
+        console.log("[transmute] Pro quota exceeded or timeout for assembler, falling back to Flash...");
+        assemblerUsedModel = "gemini-3-flash-preview";
+        
+        const fallbackModel = genAI.getGenerativeModel({
+          model: "gemini-3-flash-preview",
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 65536,
+          },
+        });
+        
+        assemblyResult = await withTimeout(
+          fallbackModel.generateContent([
+            { text: assemblerPrompt }
+          ]),
+          phase2Timeout,
+          "Phase 2 Code Assembly (Flash fallback)"
+        );
+      } else {
+        throw proError;
+      }
+    }
+    
+    console.log("[transmute] Phase 2 used model:", assemblerUsedModel);
     
     const assemblyText = assemblyResult.response.text();
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -561,7 +726,7 @@ Generate the complete HTML file now:`;
     }
     
     code = fixBrokenImageUrls(code);
-    code = fixRechartsReference(code);
+    code = fixChartReference(code);
     
     // Get token usage
     const usageMetadata = assemblyResult.response.usageMetadata;

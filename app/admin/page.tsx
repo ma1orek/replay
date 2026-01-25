@@ -11,7 +11,7 @@ import {
   User, Mail, Shield, AlertTriangle, Loader2,
   DollarSign, Cpu, MessageSquare, ThumbsUp, ThumbsDown, Meh,
   Play, FileText, PenSquare, Trash2, Plus, Send, Sparkles, Check, X, ExternalLink,
-  Layers, GitBranch, Monitor, Maximize2, Copy
+  Layers, GitBranch, Monitor, Maximize2, Copy, Menu
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
@@ -148,6 +148,7 @@ export default function AdminPage() {
   const [blogFilter, setBlogFilter] = useState<"all" | "draft" | "review" | "published">("all");
   const [autoMode, setAutoMode] = useState(true); // Auto-generate mode (AI picks topics)
   const [autoCount, setAutoCount] = useState(10); // Number of articles to auto-generate
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false); // Mobile sidebar state
   const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0, currentTitle: "" });
   
   // Toast message for styled alerts
@@ -745,14 +746,38 @@ export default function AdminPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a0a]/90 via-[#0a0a0a]/70 to-[#0a0a0a]/90" />
       </div>
 
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {showMobileSidebar && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowMobileSidebar(false)}
+            className="fixed inset-0 bg-black/60 z-30 lg:hidden"
+          />
+        )}
+      </AnimatePresence>
+
       {/* Left Sidebar */}
-      <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[#0f0f0f]/80 backdrop-blur-xl border-r border-zinc-800/50 z-20 flex flex-col">
+      <aside className={cn(
+        "fixed left-0 top-0 bottom-0 w-64 bg-[#0f0f0f]/95 backdrop-blur-xl border-r border-zinc-800/50 z-40 flex flex-col transition-transform duration-300",
+        "lg:translate-x-0",
+        showMobileSidebar ? "translate-x-0" : "-translate-x-full"
+      )}>
         {/* Logo */}
-        <div className="p-4 border-b border-zinc-800/50">
+        <div className="p-4 border-b border-zinc-800/50 flex items-center justify-between">
           <Link href="/landing" className="flex items-center gap-3">
             <Logo />
             <span className="text-sm font-medium text-zinc-400">Admin</span>
           </Link>
+          {/* Close button on mobile */}
+          <button
+            onClick={() => setShowMobileSidebar(false)}
+            className="lg:hidden p-2 rounded-lg hover:bg-zinc-800 text-zinc-400"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Navigation */}
@@ -769,7 +794,10 @@ export default function AdminPage() {
           ].map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => {
+                setActiveTab(tab.id as any);
+                setShowMobileSidebar(false);
+              }}
               className={cn(
                 "w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-all",
                 activeTab === tab.id 
@@ -811,7 +839,27 @@ export default function AdminPage() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 ml-64 relative z-10 p-6 sm:p-8">
+      <main className="flex-1 lg:ml-64 relative z-10 p-4 sm:p-6 lg:p-8">
+        {/* Mobile Header */}
+        <div className="lg:hidden flex items-center justify-between mb-6 -mt-2">
+          <button
+            onClick={() => setShowMobileSidebar(true)}
+            className="p-2 rounded-xl bg-zinc-800/50 border border-zinc-700 text-zinc-300"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <div className="flex items-center gap-2">
+            <Logo />
+            <span className="text-sm font-medium text-zinc-400">Admin</span>
+          </div>
+          <button
+            onClick={refreshData}
+            disabled={dataLoading}
+            className="p-2 rounded-xl bg-zinc-800/50 border border-zinc-700 text-zinc-300 disabled:opacity-50"
+          >
+            <Activity className={cn("w-5 h-5", dataLoading && "animate-spin")} />
+          </button>
+        </div>
 
         {/* Overview Tab */}
         {activeTab === "overview" && (
@@ -1870,46 +1918,60 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black z-50 flex flex-col"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-[#0a0a0a]">
-              <div className="flex items-center gap-4">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center">
-                  <Code className="w-4 h-4 text-[#FF6E3C]" />
+            {/* Header - Responsive */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between px-4 py-3 border-b border-white/10 bg-[#0a0a0a] gap-3">
+              <div className="flex items-center justify-between lg:justify-start gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center shrink-0">
+                    <Code className="w-4 h-4 text-[#FF6E3C]" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-base font-semibold text-white truncate">{previewGeneration.title || "Generation Preview"}</h3>
+                    <p className="text-xs text-white/50 truncate">
+                      {previewGeneration.user_email} • {new Date(previewGeneration.created_at).toLocaleString()}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-base font-semibold text-white">{previewGeneration.title || "Generation Preview"}</h3>
-                  <p className="text-xs text-white/50">
-                    {previewGeneration.user_email} • {new Date(previewGeneration.created_at).toLocaleString()}
-                  </p>
+                {/* Close button - mobile only */}
+                <button
+                  onClick={() => {
+                    setPreviewGeneration(null);
+                    setPreviewTab("preview");
+                  }}
+                  className="lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
+                >
+                  <X className="w-5 h-5 text-white/60" />
+                </button>
+              </div>
+              
+              {/* Tabs - scrollable on mobile */}
+              <div className="overflow-x-auto -mx-4 px-4 lg:mx-0 lg:px-0">
+                <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1 w-max lg:w-auto">
+                  {[
+                    { id: "preview", label: "Preview", icon: Monitor },
+                    { id: "input", label: "Input", icon: Video },
+                    { id: "code", label: "Code", icon: Code },
+                    { id: "design", label: "Design", icon: Palette },
+                    { id: "flow", label: "Flow", icon: GitBranch },
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setPreviewTab(tab.id as any)}
+                      className={cn(
+                        "px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all whitespace-nowrap",
+                        previewTab === tab.id
+                          ? "bg-[#FF6E3C] text-white"
+                          : "text-white/50 hover:text-white/70 hover:bg-white/5"
+                      )}
+                    >
+                      <tab.icon className="w-4 h-4" />
+                      <span className="hidden sm:inline">{tab.label}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
               
-              {/* Tabs */}
-              <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1">
-                {[
-                  { id: "preview", label: "Preview", icon: Monitor },
-                  { id: "input", label: "Input", icon: Video },
-                  { id: "code", label: "Code", icon: Code },
-                  { id: "design", label: "Design System", icon: Palette },
-                  { id: "flow", label: "Flow Map", icon: GitBranch },
-                ].map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setPreviewTab(tab.id as any)}
-                    className={cn(
-                      "px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all",
-                      previewTab === tab.id
-                        ? "bg-[#FF6E3C] text-white"
-                        : "text-white/50 hover:text-white/70 hover:bg-white/5"
-                    )}
-                  >
-                    <tab.icon className="w-4 h-4" />
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-              
-              <div className="flex items-center gap-2">
+              <div className="hidden lg:flex items-center gap-2">
                 <button
                   onClick={() => {
                     if (previewGeneration.code) {
@@ -2086,7 +2148,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                             <h4 className="text-sm font-medium text-white/70 mb-4">
                               {ds?.colors?.length ? "Design Colors" : "Extracted Colors"}
                             </h4>
-                            <div className="grid grid-cols-6 gap-3">
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
                               {colors.length > 0 ? colors.map((color: string, i: number) => (
                                 <button
                                   key={i}
@@ -2103,7 +2165,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                                   <span className="text-[10px] text-white/40 font-mono">{color}</span>
                                 </button>
                               )) : (
-                                <p className="col-span-6 text-white/30 text-sm">No colors detected</p>
+                                <p className="col-span-full text-white/30 text-sm">No colors detected</p>
                               )}
                             </div>
                           </div>
@@ -2287,7 +2349,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                           {/* Structure Analysis */}
                           <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
                             <h4 className="text-sm font-medium text-white/70 mb-4">Structure Analysis</h4>
-                            <div className="grid grid-cols-4 gap-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                               {hasStoredFlow && (
                                 <>
                                   <div className="p-4 bg-[#FF6E3C]/10 rounded-lg text-center border border-[#FF6E3C]/20">
@@ -2331,12 +2393,12 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
             </div>
             
             {/* Footer with meta info */}
-            <div className="px-4 py-2 border-t border-white/10 bg-[#0a0a0a] flex items-center gap-6 text-xs text-white/50">
-              <span>ID: <span className="text-white/70 font-mono">{previewGeneration.id.slice(0, 12)}...</span></span>
-              <span>Style: <span className="text-white/70">{previewGeneration.style_directive || "Auto-Detect"}</span></span>
+            <div className="px-4 py-2 border-t border-white/10 bg-[#0a0a0a] flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/50">
+              <span>ID: <span className="text-white/70 font-mono">{previewGeneration.id.slice(0, 8)}...</span></span>
+              <span className="hidden sm:inline">Style: <span className="text-white/70">{previewGeneration.style_directive || "Auto"}</span></span>
               <span>Status: <span className={previewGeneration.status === "complete" ? "text-green-400" : "text-yellow-400"}>{previewGeneration.status}</span></span>
               <span>Credits: <span className="text-[#FF6E3C]">{previewGeneration.credits_used}</span></span>
-              <span>Duration: <span className="text-white/70">{previewGeneration.video_duration || "N/A"}s</span></span>
+              <span className="hidden sm:inline">Duration: <span className="text-white/70">{previewGeneration.video_duration || "N/A"}s</span></span>
             </div>
           </motion.div>
         )}

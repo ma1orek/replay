@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
           
           const genAI = new GoogleGenerativeAI(geminiKey);
           const model = genAI.getGenerativeModel({
-            model: "gemini-3-pro-preview",
+            model: "gemini-3-flash-preview", // Flash for plan mode
             generationConfig: { temperature: 0.7, maxOutputTokens: 1000 },
           });
           
@@ -304,8 +304,8 @@ Odpowiedz krótko i przyjaźnie:`;
           
           const genAI = new GoogleGenerativeAI(geminiKey);
           const model = genAI.getGenerativeModel({
-            model: "gemini-3-pro-preview",
-            generationConfig: { temperature: 0.8, maxOutputTokens: 100000 },
+            model: "gemini-3-pro-preview", // Pro for quality code edits
+            generationConfig: { temperature: 0.8, maxOutputTokens: 65536 },
           });
           
           // Check if user wants to replace an asset (logo, image, etc.)
@@ -536,8 +536,8 @@ CRITICAL RULES:
           
           const genAI = new GoogleGenerativeAI(geminiKey);
           const model = genAI.getGenerativeModel({
-            model: "gemini-3-pro-preview",
-            generationConfig: { temperature: 0.7, maxOutputTokens: 100000 },
+            model: "gemini-3-pro-preview", // Pro for quality code edits
+            generationConfig: { temperature: 0.7, maxOutputTokens: 65536 },
           });
 
           send("status", { message: "Writing code...", phase: "writing" });

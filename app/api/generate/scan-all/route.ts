@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 export const runtime = "nodejs";
 export const maxDuration = 300; // 5 minutes for all passes
 
-const MODEL_NAME = "gemini-3-pro-preview";
+const MODEL_NAME = "gemini-3-pro-preview"; // Pro for maximum video understanding
 
 function getApiKey(): string | null {
   return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || null;
@@ -18,7 +18,7 @@ function getApiKey(): string | null {
 // Simplified combined prompt for efficiency (single API call with structured output)
 const UNIFIED_SCAN_PROMPT = `You are a VISUAL REVERSE ENGINEERING SYSTEM. Your job is to perform a COMPLETE analysis of this legacy UI.
 
-Perform THREE analysis passes and output a UNIFIED JSON:
+Perform FOUR analysis passes and output a UNIFIED JSON:
 
 **PASS 1 - UI STRUCTURE:**
 - Extract EXACT navigation (every menu item, in order)
@@ -37,6 +37,66 @@ Perform THREE analysis passes and output a UNIFIED JSON:
 - Note loading states and durations
 - Document validation errors
 - Map navigation flows
+
+**═══════════════════════════════════════════════════════════════════════════════
+PASS 4 - PAGE/SCREEN DETECTION (MOST CRITICAL!!!)
+═══════════════════════════════════════════════════════════════════════════════**
+
+THIS IS THE MOST IMPORTANT PASS! You MUST identify ALL unique pages/screens/views:
+
+⚠️⚠️⚠️ **CRITICAL MULTI-PAGE DETECTION** ⚠️⚠️⚠️
+
+1. **WATCH THE ENTIRE VIDEO** from start to end - FRAME BY FRAME!
+2. **COUNT EVERY SCREEN CHANGE** - anytime URL, content, or view changes significantly
+3. **EACH NAVIGATION CLICK = POTENTIAL NEW PAGE**
+
+**HOW TO DETECT PAGES:**
+- Look at the URL bar (if visible) - each unique path = separate page
+- Look at sidebar/menu highlights - each highlighted item when clicked = page
+- Look at tabs at top - each tab = separate page
+- Look at main content area - significant change = NEW PAGE
+- Look at breadcrumbs - each level = potentially different page
+
+**PAGE DETECTION RULES (MANDATORY):**
+- Navigation click that changes main content = NEW PAGE ✓
+- Tab switch showing different content = NEW PAGE ✓
+- Sidebar item click = NEW PAGE ✓
+- If you see 2 different screens = MINIMUM 2 PAGES
+- If you see 3 different screens = MINIMUM 3 PAGES
+- NEVER merge multiple visible screens into 1 page!
+- Modal/dialog = NOT a page (mark separately)
+- Scroll = same page
+
+**EXAMPLES:**
+- Video shows: "Strona główna" then "Oferty" = 2 PAGES!
+- Video shows: Dashboard, Users list, User detail = 3 PAGES!
+- Video shows: Home tab, About tab, Contact tab = 3 PAGES!
+- Sidebar has: Home, Products, Orders, Settings = 4 PAGES (minimum!)
+
+**EXTRACT FOR EACH PAGE:**
+- id: unique identifier (home, listings, detail, settings)
+- title: "EXACT TEXT from header/breadcrumb"
+- path: logical route ("/", "/listings", "/listings/123", "/settings")
+- timestamp: "MM:SS" when first visible
+- components: what's visible on this page
+- seenInVideo: true if shown, false if only in nav
+- description: what this page does
+
+**COMMON PAGES TO DETECT:**
+- Landing page / Home / Strona główna
+- List views (Products, Users, Orders, Offers/Oferty)
+- Detail views (Product detail, User profile)
+- Dashboard / Panel
+- Settings / Ustawienia
+- Contact / Kontakt
+- About / O nas
+- ANY menu/tab item visible = potential page!
+
+⚠️ **ABSOLUTE REQUIREMENT - DO NOT IGNORE:**
+- If video shows 2 different screens → pages array MUST have ≥2 items
+- If video shows homepage THEN listings → pages = [{home}, {listings}]
+- NEVER return only 1 page if multiple screens are visible in video!
+- Return EVERY page visible in navigation, even if not clicked
 
 **OUTPUT UNIFIED JSON:**
 {
@@ -196,16 +256,68 @@ Perform THREE analysis passes and output a UNIFIED JSON:
       "description": "Plain English description",
       "evidence": "What in the video shows this rule"
     }
+  ],
+  
+  "pages": [
+    {
+      "id": "home",
+      "title": "Home / Dashboard",
+      "path": "/",
+      "isDefault": true,
+      "seenInVideo": true,
+      "timestamp": "00:00",
+      "components": ["sidebar", "header", "metrics-grid", "chart-area"],
+      "description": "Main dashboard view with key metrics"
+    },
+    {
+      "id": "transactions",
+      "title": "Transactions",
+      "path": "/transactions",
+      "isDefault": false,
+      "seenInVideo": true,
+      "timestamp": "00:15",
+      "components": ["sidebar", "header", "transactions-table", "filters"],
+      "description": "List of all transactions with filtering"
+    },
+    {
+      "id": "settings",
+      "title": "Settings",
+      "path": "/settings",
+      "isDefault": false,
+      "seenInVideo": false,
+      "timestamp": null,
+      "components": ["sidebar", "header", "settings-form"],
+      "description": "User and app settings - visible in nav but not shown"
+    }
   ]
 }
 
-**CRITICAL:**
-1. EXACT text transcription - no paraphrasing
-2. COMPLETE menu listing - count every item
-3. ACCURATE color sampling - sample from actual pixels
-4. ESTIMATED data for charts - use axis labels to estimate values
+**⚠️⚠️⚠️ PAGES ARRAY IS ABSOLUTELY REQUIRED! ⚠️⚠️⚠️**
 
-Analyze the video completely:`;
+**RULES FOR PAGES ARRAY:**
+- Count EVERY distinct screen/view shown in video
+- If video shows screen A, then screen B = pages array MUST have 2+ items!
+- NEVER combine multiple screens into 1 page!
+- If sidebar has N menu items = N potential pages (add all with seenInVideo: true/false)
+
+**MINIMUM PAGES:**
+- Video shows 1 screen → 1 page minimum
+- Video shows 2 screens → 2 pages minimum  
+- Video shows 3 screens → 3 pages minimum
+- Navigation has 5 items → 5 pages (some seenInVideo: false)
+
+**VALIDATION:**
+- pages.length MUST match number of distinct screens + nav items!
+- If result has only 1 page but video shows multiple screens = WRONG!
+
+**CRITICAL INSTRUCTIONS:**
+1. EXACT text transcription - no paraphrasing or translating
+2. COMPLETE menu listing - count every single item
+3. ACCURATE color sampling - sample from actual pixels  
+4. ESTIMATED data for charts - use axis labels to estimate values
+5. MULTIPLE PAGES - detect ALL screens shown in video!
+
+Now analyze the video completely and return the unified JSON:`;
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -231,8 +343,6 @@ export async function POST(request: NextRequest) {
       generationConfig: {
         temperature: 0.1,
         maxOutputTokens: 32768, // Large output for comprehensive analysis
-        // @ts-ignore - Gemini 3 Pro requires thinking mode
-        thinkingConfig: { thinkingBudget: 16384 }, // Maximum thinking for complex analysis
       },
     });
 

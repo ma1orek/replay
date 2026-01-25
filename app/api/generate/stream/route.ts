@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { buildEnterprisePrompt } from "@/lib/enterprise-prompt";
+import { REPLAY_SYSTEM_PROMPT } from "@/lib/prompts/system-prompt";
+// Enterprise prompt REMOVED - only system-prompt.ts is used!
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -10,59 +11,203 @@ function getApiKey(): string | null {
   return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || null;
 }
 
-// Fix broken image URLs - replace ALL external images with picsum
-function fixBrokenImageUrls(code: string): string {
+// Fix broken image URLs - replace deprecated sources with Pollinations.ai contextual images
+function fixBrokenImageUrls(code: string, context?: string): string {
   if (!code) return code;
   
-  const validPicsumIds = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 130, 131, 133, 134, 137, 139, 140, 141, 142, 143, 144, 145, 146, 147, 149, 152, 153, 154, 155, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 206, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 247, 248, 249, 250];
+  // Detect context from code content for contextual image generation
+  const lowerCode = code.toLowerCase();
+  const lowerContext = (context || '').toLowerCase();
+  
+  // Determine image context based on code content
+  type ImageCategory = 'realestate' | 'tech' | 'food' | 'travel' | 'business' | 'nature' | 'fitness' | 'cruise' | 'abstract';
+  let primaryCategory: ImageCategory = 'abstract';
+  
+  // Detect category from code/context
+  if (lowerCode.includes('cruise') || lowerCode.includes('ship') || lowerCode.includes('serenity') || lowerCode.includes('voyage') || lowerCode.includes('ocean')) {
+    primaryCategory = 'cruise';
+  } else if (lowerCode.includes('real estate') || lowerCode.includes('property') || lowerCode.includes('house') || lowerCode.includes('apartment')) {
+    primaryCategory = 'realestate';
+  } else if (lowerCode.includes('dashboard') || lowerCode.includes('analytics') || lowerCode.includes('saas') || lowerCode.includes('tech')) {
+    primaryCategory = 'tech';
+  } else if (lowerCode.includes('restaurant') || lowerCode.includes('food') || lowerCode.includes('menu') || lowerCode.includes('recipe') || lowerCode.includes('cafe')) {
+    primaryCategory = 'food';
+  } else if (lowerCode.includes('travel') || lowerCode.includes('hotel') || lowerCode.includes('vacation') || lowerCode.includes('destination')) {
+    primaryCategory = 'travel';
+  } else if (lowerCode.includes('finance') || lowerCode.includes('bank') || lowerCode.includes('capital') || lowerCode.includes('wealth')) {
+    primaryCategory = 'business';
+  } else if (lowerCode.includes('gym') || lowerCode.includes('fitness') || lowerCode.includes('workout') || lowerCode.includes('yoga')) {
+    primaryCategory = 'fitness';
+  } else if (lowerCode.includes('nature') || lowerCode.includes('outdoor') || lowerCode.includes('landscape')) {
+    primaryCategory = 'nature';
+  }
+  
+  // Contextual Pollinations prompts for each category
+  const categoryPrompts: Record<ImageCategory, string[]> = {
+    cruise: [
+      'luxury%20cruise%20ship%20ocean%20sunset%20aerial%20view%20cinematic%204k',
+      'elegant%20ship%20deck%20lounge%20sunset%20luxury%20travel',
+      'tropical%20island%20destination%20cruise%20turquoise%20water%204k',
+      'luxury%20suite%20cabin%20ocean%20view%20modern%20interior',
+      'fine%20dining%20cruise%20restaurant%20elegant%20evening',
+    ],
+    realestate: [
+      'modern%20luxury%20apartment%20interior%20minimalist%20design%20natural%20light',
+      'contemporary%20house%20exterior%20architecture%20blue%20sky',
+      'penthouse%20living%20room%20city%20skyline%20view%20premium',
+      'modern%20kitchen%20interior%20design%20marble%20countertop',
+    ],
+    tech: [
+      'abstract%203d%20technology%20shapes%20glowing%20blue%20neon%20futuristic',
+      'data%20visualization%20holographic%20interface%20dark%20background',
+      'modern%20office%20workspace%20tech%20startup%20minimal',
+    ],
+    food: [
+      'gourmet%20dish%20fine%20dining%20plating%20cinematic%20dark%20moody',
+      'cozy%20cafe%20interior%20warm%20lighting%20coffee%20aesthetic',
+      'fresh%20ingredients%20cooking%20professional%20kitchen',
+    ],
+    travel: [
+      'exotic%20destination%20sunset%20beach%20palm%20trees%20paradise',
+      'mountain%20landscape%20adventure%20travel%20scenic%20view',
+      'luxury%20hotel%20lobby%20modern%20architecture%20elegant',
+    ],
+    business: [
+      'corporate%20office%20skyline%20view%20professional%20modern',
+      'business%20meeting%20conference%20room%20professional',
+      'financial%20district%20skyscrapers%20dramatic%20lighting',
+    ],
+    fitness: [
+      'athletic%20woman%20gym%20workout%20dramatic%20lighting',
+      'modern%20gym%20interior%20equipment%20professional',
+      'yoga%20studio%20peaceful%20minimalist%20natural%20light',
+    ],
+    nature: [
+      'beautiful%20landscape%20mountains%20sunrise%20dramatic%20sky',
+      'forest%20path%20sunlight%20through%20trees%20peaceful',
+      'ocean%20waves%20dramatic%20coastline%20sunset',
+    ],
+    abstract: [
+      'abstract%20gradient%20shapes%20modern%20art%20minimal',
+      'geometric%20patterns%20colorful%20contemporary%20design',
+      'liquid%20marble%20texture%20elegant%20premium%20background',
+    ],
+  };
+  
+  const prompts = categoryPrompts[primaryCategory];
   let imageCounter = 0;
   
-  const getNextPicsumUrl = (width = 800, height = 600) => {
-    const id = validPicsumIds[imageCounter % validPicsumIds.length];
+  const getPollinationsUrl = (width = 800, height = 600) => {
+    const prompt = prompts[imageCounter % prompts.length];
+    const seed = 100 + imageCounter; // Static seed per image for caching
     imageCounter++;
-    return `https://picsum.photos/id/${id}/${width}/${height}`;
+    return `https://image.pollinations.ai/prompt/${prompt}?width=${width}&height=${height}&nologo=true&model=flux&seed=${seed}`;
   };
   
   let replacedCount = 0;
   
-  code = code.replace(/https?:\/\/[^"'\s)]*unsplash[^"'\s)]*/gi, () => { replacedCount++; return getNextPicsumUrl(); });
-  code = code.replace(/https?:\/\/[^"'\s)]*pexels[^"'\s)]*/gi, () => { replacedCount++; return getNextPicsumUrl(); });
-  code = code.replace(/https?:\/\/via\.placeholder\.com[^"'\s)]*/gi, () => { replacedCount++; return getNextPicsumUrl(); });
-  code = code.replace(/https?:\/\/placehold\.co[^"'\s)]*/gi, () => { replacedCount++; return getNextPicsumUrl(); });
-  code = code.replace(/https?:\/\/placeholder\.com[^"'\s)]*/gi, () => { replacedCount++; return getNextPicsumUrl(); });
-  code = code.replace(/https?:\/\/dummyimage\.com[^"'\s)]*/gi, () => { replacedCount++; return getNextPicsumUrl(); });
+  // Replace deprecated/broken image sources with Pollinations.ai
+  // DO NOT replace: pollinations.ai, placehold.co, pravatar.cc (these are allowed)
+  code = code.replace(/https?:\/\/[^"'\s)]*unsplash[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
+  code = code.replace(/https?:\/\/[^"'\s)]*pexels[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
+  code = code.replace(/https?:\/\/via\.placeholder\.com[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
+  code = code.replace(/https?:\/\/placeholder\.com[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
+  code = code.replace(/https?:\/\/dummyimage\.com[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
+  code = code.replace(/https?:\/\/picsum\.photos[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
   
-  console.log(`[fixBrokenImageUrls] Replaced ${replacedCount} image URLs`);
+  console.log(`[fixBrokenImageUrls] Replaced ${replacedCount} image URLs with Pollinations.ai (category: ${primaryCategory})`);
   return code;
 }
 
-// Fix Recharts references - AI often generates "Recharts" instead of "window.Recharts"
-function fixRechartsReference(code: string): string {
+// Fix template literal syntax errors (missing closing backticks) - ULTRA AGGRESSIVE VERSION
+function fixTemplateLiteralErrors(code: string): string {
   if (!code) return code;
   
   let fixedCode = code;
   let fixCount = 0;
   
-  // Fix: } = Recharts; -> } = window.Recharts || {};
-  fixedCode = fixedCode.replace(/\}\s*=\s*Recharts\s*;/g, () => {
-    fixCount++;
-    return '} = window.Recharts || {};';
-  });
+  // NUCLEAR OPTION: Find ANY src={` that doesn't have `} on same line or next few chars
+  // This is the pattern from the error:
+  // src={`https://picsum.photos/id/10/800/600 
+  //                             alt="Property"
   
-  // Fix: const X = Recharts; -> const X = window.Recharts;
-  fixedCode = fixedCode.replace(/const\s+(\w+)\s*=\s*Recharts\s*;/g, (_, varName) => {
-    fixCount++;
-    return `const ${varName} = window.Recharts;`;
-  });
+  // Pattern 1: MULTILINE - src={`URL followed by newline then alt/className (with = or ")
+  fixedCode = fixedCode.replace(
+    /src=\{\`(https?:\/\/[^\s`"'<>\n]+)\s*\n\s*(alt|className|style|onClick|onError|width|height|loading)/gi,
+    (match, url, attr) => {
+      fixCount++;
+      console.log(`[fixTemplate] Fixed multiline: ${url.substring(0, 40)}...`);
+      return `src={\`${url.trim()}\`}\n                                    ${attr}`;
+    }
+  );
   
-  // Fix: Recharts.AreaChart -> window.Recharts.AreaChart (when used directly)
-  fixedCode = fixedCode.replace(/([^.\w])Recharts\./g, (_, prefix) => {
-    fixCount++;
-    return `${prefix}window.Recharts.`;
-  });
+  // Pattern 2: SAME LINE - src={`URL followed by space then attribute (catches alt="...")
+  fixedCode = fixedCode.replace(
+    /src=\{\`(https?:\/\/[^`\s"'<>\n]+)\s+(alt|className|style|onClick|onError|width|height|loading)/gi,
+    (match, url, attr) => {
+      fixCount++;
+      console.log(`[fixTemplate] Fixed same-line: ${url.substring(0, 40)}...`);
+      return `src={\`${url.trim()}\`} ${attr}`;
+    }
+  );
+  
+  // Pattern 3: src={`url /> - missing `} before />
+  fixedCode = fixedCode.replace(
+    /src=\{\`(https?:\/\/[^`"'\s>\n]+)\s*\/>/gi,
+    (match, url) => {
+      fixCount++;
+      return `src={\`${url.trim()}\`} />`;
+    }
+  );
+  
+  // Pattern 4: src={`url > - missing `} before >
+  fixedCode = fixedCode.replace(
+    /src=\{\`(https?:\/\/[^`"'\s>\n]+)\s*>/gi,
+    (match, url) => {
+      fixCount++;
+      return `src={\`${url.trim()}\`}>`;
+    }
+  );
+  
+  // Pattern 5: href={`url without closing
+  fixedCode = fixedCode.replace(
+    /href=\{\`(https?:\/\/[^`\s"'<>\n]+)\s+(className|target|rel|onClick|alt)/gi,
+    (match, url, attr) => {
+      fixCount++;
+      return `href={\`${url.trim()}\`} ${attr}`;
+    }
+  );
+  
+  // Pattern 6: ULTIMATE FALLBACK - any src={` followed by any chars until we see alt/class/style
+  // Use lazy matching to find the URL
+  fixedCode = fixedCode.replace(
+    /src=\{\`(https?:\/\/[^\s`]+?)(\s+)(alt|className|style|width|height|loading|onError)(?=[="])/gi,
+    (match, url, space, attr) => {
+      // Only fix if url doesn't already end with `}
+      if (!url.endsWith('`}') && !url.includes('`}')) {
+        fixCount++;
+        console.log(`[fixTemplate] Fixed fallback: ${url.substring(0, 40)}...`);
+        return `src={\`${url.trim()}\`}${space}${attr}`;
+      }
+      return match;
+    }
+  );
+  
+  // Pattern 7: Fix img tags specifically - most common issue
+  // <img src={`URL alt="..." or className=
+  fixedCode = fixedCode.replace(
+    /<img([^>]*?)src=\{\`(https?:\/\/[^`\s"'<>\n]+)([^`}]*?)(alt|className|style|\/?>)/gi,
+    (match, before, url, junk, after) => {
+      // Check if already properly closed
+      if (junk.includes('`}')) return match;
+      fixCount++;
+      console.log(`[fixTemplate] Fixed img tag: ${url.substring(0, 40)}...`);
+      return `<img${before}src={\`${url.trim()}\`} ${after}`;
+    }
+  );
   
   if (fixCount > 0) {
-    console.log(`[fixRechartsReference] Fixed ${fixCount} Recharts references`);
+    console.log(`[fixTemplateLiteralErrors] Fixed ${fixCount} broken template literals`);
   }
   
   return fixedCode;
@@ -96,306 +241,9 @@ function extractCodeFromResponse(response: string): string | null {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// MULTI-PASS PIPELINE v2.0
-// Phase 1: UNIFIED SCAN - Extract EVERYTHING from video (UI, Data, Behavior)
-// Phase 2: ASSEMBLER - Generate code from JSON data ONLY (no video!)
+// DIRECT VISION PIPELINE - Gemini 3 Pro sees video and generates code
+// NO intermediate JSON, NO templates, NO code examples in prompt
 // ═══════════════════════════════════════════════════════════════════════════════
-
-const UNIFIED_SCAN_PROMPT = `You are a VISUAL REVERSE ENGINEERING SYSTEM with pixel-perfect vision.
-
-**YOUR MISSION:** Perform a COMPLETE forensic analysis of this legacy UI. Extract EVERY piece of data visible.
-
-**CRITICAL RULES:**
-1. EXACT TEXT: Copy all text character-for-character. "Customers" ≠ "Users".
-2. COMPLETE MENU: Count every navigation item. If 15 items exist, list all 15.
-3. EXACT NUMBERS: "$1,234.56" not "$1234". "+12.5%" not "12%".
-4. ACCURATE COLORS: Sample hex values from actual pixels.
-5. FULL TABLES: Capture all visible rows and columns.
-6. CHART DATA: Estimate data points from axis scales.
-
-**OUTPUT UNIFIED JSON:**
-{
-  "meta": {
-    "confidence": 0.0-1.0,
-    "screensAnalyzed": 1,
-    "warnings": []
-  },
-  
-  "ui": {
-    "navigation": {
-      "sidebar": {
-        "exists": true,
-        "position": "left",
-        "width": "256px",
-        "backgroundColor": "#0f172a",
-        "logo": {
-          "text": "EXACT logo text",
-          "hasIcon": true
-        },
-        "items": [
-          {
-            "order": 1,
-            "label": "EXACT menu label",
-            "icon": "Home",
-            "isActive": false,
-            "href": "/path",
-            "badge": null,
-            "isSeparator": false,
-            "isHeader": false,
-            "indent": 0
-          }
-        ],
-        "footer": {
-          "hasUserSection": true,
-          "userName": "name if visible",
-          "userEmail": "email if visible"
-        }
-      },
-      "topbar": {
-        "exists": true,
-        "height": "64px",
-        "hasSearch": true,
-        "hasNotifications": true,
-        "hasUserMenu": true,
-        "breadcrumbs": ["Home", "Dashboard"]
-      }
-    },
-    "layout": {
-      "type": "sidebar-main",
-      "gridColumns": 12,
-      "gap": "24px",
-      "padding": "32px"
-    },
-    "colors": {
-      "background": "#0a0a0a",
-      "surface": "#18181b",
-      "primary": "#6366f1",
-      "secondary": "#8b5cf6",
-      "text": "#fafafa",
-      "textMuted": "#71717a",
-      "border": "#27272a",
-      "success": "#22c55e",
-      "error": "#ef4444",
-      "warning": "#f59e0b"
-    },
-    "typography": {
-      "fontFamily": "Inter",
-      "headingWeight": 600,
-      "bodySize": "14px"
-    }
-  },
-  
-  "data": {
-    "metrics": [
-      {
-        "id": "metric_001",
-        "label": "EXACT label",
-        "value": "EXACT formatted value",
-        "rawValue": 12345.67,
-        "change": "+12.5%",
-        "changeDirection": "up",
-        "icon": "DollarSign",
-        "gridPosition": "col-span-3"
-      }
-    ],
-    "tables": [
-      {
-        "id": "table_001",
-        "title": "EXACT table title",
-        "columns": [
-          { "key": "col1", "header": "EXACT header", "type": "string", "align": "left" }
-        ],
-        "rows": [
-          { "col1": "EXACT cell value" }
-        ],
-        "totalRows": 10,
-        "hasFilters": true,
-        "filterOptions": ["All", "Active", "Pending"],
-        "currentFilter": "All",
-        "hasSearch": true,
-        "hasActions": true
-      }
-    ],
-    "charts": [
-      {
-        "id": "chart_001",
-        "title": "EXACT chart title",
-        "type": "area",
-        "gridPosition": "col-span-6",
-        "xAxis": {
-          "labels": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-          "type": "category"
-        },
-        "yAxis": {
-          "min": 0,
-          "max": 50000,
-          "unit": "$"
-        },
-        "series": [
-          {
-            "name": "Revenue",
-            "color": "#6366f1",
-            "data": [12000, 15000, 18000, 22000, 19000, 25000]
-          }
-        ],
-        "style": {
-          "hasGradient": true,
-          "showGrid": true,
-          "showDots": false,
-          "curveType": "monotone"
-        }
-      }
-    ],
-    "forms": [
-      {
-        "id": "form_001",
-        "title": "Form title",
-        "fields": [
-          {
-            "name": "fieldName",
-            "label": "EXACT label",
-            "type": "text",
-            "placeholder": "placeholder text",
-            "required": true
-          }
-        ],
-        "submitButton": "EXACT button text"
-      }
-    ]
-  },
-  
-  "behavior": {
-    "currentPage": "/dashboard",
-    "pageTitle": "EXACT page title",
-    "userJourney": [
-      {
-        "timestamp": "00:05",
-        "action": "click",
-        "target": "element clicked",
-        "result": "what happened"
-      }
-    ],
-    "loadingStates": [
-      {
-        "component": "table",
-        "indicator": "skeleton",
-        "duration": "2s"
-      }
-    ],
-    "validations": [
-      {
-        "field": "email",
-        "rule": "email format",
-        "errorMessage": "Invalid email"
-      }
-    ]
-  }
-}
-
-**VALIDATION CHECKLIST:**
-- Every menu item counted and listed
-- Every metric card captured with exact values
-- Every table column and row extracted
-- Chart data estimated from visual axis reading
-- All colors sampled as hex values
-
-Analyze the video and extract EVERYTHING:`;
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// ASSEMBLER PROMPT - Generates code from SCAN DATA ONLY (no video!)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const ASSEMBLER_PROMPT = `You are a CODE ASSEMBLER for the Replay.build system.
-
-**YOUR ROLE:** Generate React code from STRUCTURED DATA. You do NOT see video - only JSON.
-
-**MANDATORY TECH STACK (Pre-installed):**
-
-1. **RECHARTS** - ALL charts MUST use Recharts components:
-   - AreaChart with gradient fill for area charts
-   - BarChart with rounded corners for bar charts
-   - LineChart for line charts
-   - PieChart for pie/donut charts
-
-2. **LUCIDE ICONS** - ALL icons via lucide global:
-   - Use the Icon component helper provided
-
-3. **TAILWIND CSS** - ALL styling via Tailwind:
-   - Use exact colors from scanData.ui.colors
-   - Use grid-cols-12 for layout
-
-**CODE TEMPLATE:**
-\`\`\`html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-    </style>
-</head>
-<body class="antialiased">
-    <div id="root"></div>
-    <script type="text/babel">
-        // React hooks
-        const { useState, useEffect, useRef } = React;
-        
-        // CRITICAL: Recharts is loaded via UMD, MUST access via window.Recharts
-        const RechartsLib = window.Recharts;
-        const { AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie,
-                XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } = RechartsLib;
-
-        // Icon helper
-        const Icon = ({ name, className = "w-5 h-5" }) => {
-            const ref = useRef(null);
-            useEffect(() => {
-                if (ref.current && lucide.icons[name]) {
-                    ref.current.innerHTML = '';
-                    const svg = lucide.createElement(lucide.icons[name]);
-                    svg.setAttribute('class', className);
-                    ref.current.appendChild(svg);
-                }
-            }, [name, className]);
-            return <span ref={ref} className="inline-flex items-center justify-center" />;
-        };
-
-        // YOUR COMPONENTS HERE - Use SCAN_DATA to populate
-
-        const App = () => {
-            // Build UI from SCAN_DATA
-            return (
-                <div>
-                    {/* Sidebar with EXACT menu items from scanData.ui.navigation.sidebar.items */}
-                    {/* Metric cards with EXACT values from scanData.data.metrics */}
-                    {/* Charts using Recharts with data from scanData.data.charts */}
-                    {/* Tables with data from scanData.data.tables */}
-                </div>
-            );
-        };
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-</body>
-</html>
-\`\`\`
-
-**CRITICAL RULES:**
-1. Use EXACT menu items from scanData - do not invent!
-2. Use EXACT values from metrics - do not round or change!
-3. Use EXACT colors from scanData.ui.colors
-4. Charts MUST use Recharts (no manual SVG!)
-5. Tables must have all rows from scanData
-
-Generate complete HTML using the provided SCAN_DATA:`;
 
 export async function POST(request: NextRequest) {
   const apiKey = getApiKey();
@@ -408,7 +256,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { videoBase64, mimeType, styleDirective, databaseContext, styleReferenceImage, enterprisePresetId, enterpriseMode } = body;
+    const { videoBase64, mimeType, styleDirective, databaseContext, styleReferenceImage } = body;
 
     if (!videoBase64 || !mimeType) {
       return new Response(
@@ -419,24 +267,14 @@ export async function POST(request: NextRequest) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     
-    // Phase 1: SCANNER - Extract everything from video
-    const scannerModel = genAI.getGenerativeModel({
+    // SINGLE MODEL: Gemini 3 Pro with VISION
+    // Pro SEES the video directly and generates code - NO intermediate JSON!
+    const model = genAI.getGenerativeModel({
       model: "gemini-3-pro-preview",
       generationConfig: {
-        temperature: 0.1, // Low for accuracy
-        maxOutputTokens: 16384,
-        // @ts-ignore
-        thinkingConfig: { thinkingBudget: 8192 },
-      },
-    });
-    
-    // Phase 2: ASSEMBLER - Generate code from data (no video!)
-    const assemblerModel = genAI.getGenerativeModel({
-      model: "gemini-3-pro-preview",
-      generationConfig: {
-        temperature: 0.3, // Slightly higher for code creativity
+        temperature: 0.85, // High for creative Awwwards-level designs
         maxOutputTokens: 100000,
-        // @ts-ignore
+        // @ts-ignore - thinking for better code quality
         thinkingConfig: { thinkingBudget: 16384 },
       },
     });
@@ -451,7 +289,7 @@ export async function POST(request: NextRequest) {
       ]);
     };
 
-    console.log("[stream] MULTI-PASS PIPELINE v2.0 - Starting...");
+    console.log("[stream] DIRECT VISION PIPELINE - Gemini 3 Pro sees video and codes!");
     const startTime = Date.now();
     const encoder = new TextEncoder();
     
@@ -459,130 +297,62 @@ export async function POST(request: NextRequest) {
       async start(controller) {
         try {
           // ════════════════════════════════════════════════════════════════
-          // PHASE 1: UNIFIED SCAN - Extract everything from video
+          // SINGLE PHASE: Gemini 3 Pro LOOKS at video and generates code!
+          // NO JSON extraction, NO intermediate steps - PURE VISION!
           // ════════════════════════════════════════════════════════════════
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
             type: "status", 
-            phase: "scanning",
-            message: "🔍 Phase 1: Scanning UI structure, data, and behavior...",
-            progress: 5
+            phase: "generating",
+            message: "👀 Gemini 3 Pro analyzing video and generating code...",
+            progress: 10
           })}\n\n`));
           
-          console.log("[stream] Phase 1: Starting unified scan...");
+          console.log("[stream] Starting direct vision code generation...");
           
-          const scanResult = await withTimeout(
-            scannerModel.generateContent([
-              { text: UNIFIED_SCAN_PROMPT },
+          // Build prompt - ONLY system-prompt.ts (no enterprise presets!)
+          let prompt = REPLAY_SYSTEM_PROMPT;
+          
+          // Add user's style directive if provided (simple text, no enterprise stuff)
+          if (styleDirective && styleDirective.trim()) {
+            prompt += `\n\n═══════════════════════════════════════════════════════════════
+🎨 USER STYLE REQUEST
+═══════════════════════════════════════════════════════════════
+${styleDirective}`;
+          }
+          
+          // Add database context if provided
+          if (databaseContext && databaseContext.trim()) {
+            prompt += `\n\n═══════════════════════════════════════════════════════════════
+💾 DATABASE CONTEXT
+═══════════════════════════════════════════════════════════════
+${databaseContext}`;
+          }
+          
+          // MINIMAL VISION INSTRUCTIONS - NO CODE EXAMPLES!
+          prompt += `
+
+WATCH THE VIDEO. CREATE AWWWARDS-QUALITY OUTPUT.
+
+If multiple pages shown: use Alpine.js x-data/x-show for navigation.
+Include GSAP + ScrollTrigger for animations.
+Wrap in \`\`\`html blocks.`;
+
+
+          // SEND VIDEO TO GEMINI 3 PRO - IT SEES AND CODES!
+          const result = await withTimeout(
+            model.generateContentStream([
+              { text: prompt },
               { inlineData: { mimeType, data: videoBase64 } },
             ]),
-            150000, // 150 second timeout
-            "Phase 1 Unified Scan"
-          );
-          
-          const scanText = scanResult.response.text();
-          console.log("[stream] Phase 1 complete. Scan length:", scanText.length);
-          
-          // Parse scan data
-          let scanData: any = null;
-          try {
-            const jsonMatch = scanText.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-              scanData = JSON.parse(jsonMatch[0]);
-              console.log("[stream] Parsed scan data successfully");
-              console.log("[stream] Menu items found:", scanData?.ui?.navigation?.sidebar?.items?.length || 0);
-              console.log("[stream] Metrics found:", scanData?.data?.metrics?.length || 0);
-              console.log("[stream] Tables found:", scanData?.data?.tables?.length || 0);
-              console.log("[stream] Charts found:", scanData?.data?.charts?.length || 0);
-            }
-          } catch (e) {
-            console.error("[stream] Failed to parse scan JSON:", e);
-          }
-          
-          if (!scanData) {
-            throw new Error("Failed to extract structured data from video");
-          }
-          
-          // Send scan summary
-          const menuCount = scanData?.ui?.navigation?.sidebar?.items?.length || 0;
-          const metricCount = scanData?.data?.metrics?.length || 0;
-          const tableCount = scanData?.data?.tables?.length || 0;
-          const chartCount = scanData?.data?.charts?.length || 0;
-          
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
-            type: "status", 
-            phase: "scanned",
-            message: `✅ Extracted: ${menuCount} menu items | ${metricCount} metrics | ${chartCount} charts | ${tableCount} tables`,
-            progress: 30,
-            scanData: {
-              menuItems: menuCount,
-              metrics: metricCount,
-              charts: chartCount,
-              tables: tableCount,
-              colors: scanData?.ui?.colors,
-              logo: scanData?.ui?.navigation?.sidebar?.logo?.text
-            }
-          })}\n\n`));
-          
-          // ════════════════════════════════════════════════════════════════
-          // PHASE 2: ASSEMBLER - Generate code from SCAN DATA ONLY
-          // KEY: We do NOT send the video again! Only the JSON data.
-          // ════════════════════════════════════════════════════════════════
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
-            type: "status", 
-            phase: "assembling",
-            message: "🛠️ Phase 2: Assembling code from extracted data...",
-            progress: 35
-          })}\n\n`));
-
-          // Build assembler prompt with scan data
-          let assemblerPrompt = ASSEMBLER_PROMPT;
-          
-          // Add enterprise styling if applicable
-          if (enterpriseMode && enterprisePresetId) {
-            const enterprisePrompt = buildEnterprisePrompt(enterprisePresetId, styleDirective, databaseContext);
-            assemblerPrompt += `\n\n**ENTERPRISE STYLING:**\n${enterprisePrompt}`;
-          } else if (styleDirective) {
-            assemblerPrompt += `\n\n**STYLE DIRECTIVE:**\n${styleDirective}`;
-          }
-          
-          if (databaseContext) {
-            assemblerPrompt += `\n\n**DATABASE CONTEXT:**\n${databaseContext}`;
-          }
-          
-          // Inject the scan data
-          assemblerPrompt += `\n\n**═══════════════════════════════════════════════════════════════**
-**SCAN DATA (Source of Truth - USE THIS DATA ONLY):**
-**═══════════════════════════════════════════════════════════════**
-
-\`\`\`json
-${JSON.stringify(scanData, null, 2)}
-\`\`\`
-
-**ASSEMBLY INSTRUCTIONS:**
-1. Build sidebar with EXACTLY ${menuCount} menu items from scanData.ui.navigation.sidebar.items
-2. Create ${metricCount} metric cards with EXACT values from scanData.data.metrics
-3. Create ${chartCount} charts using Recharts with data from scanData.data.charts
-4. Create ${tableCount} tables with all rows from scanData.data.tables
-5. Use colors from scanData.ui.colors (background: ${scanData?.ui?.colors?.background || '#0a0a0a'})
-
-Generate the complete HTML file now. Return it wrapped in \`\`\`html blocks.`;
-
-          console.log("[stream] Phase 2: Starting code assembly (NO VIDEO - only scan data)...");
-          
-          // CRITICAL: We only send TEXT to the assembler - no video!
-          const assemblyResult = await withTimeout(
-            assemblerModel.generateContentStream([
-              { text: assemblerPrompt }
-            ]),
-            180000, // 180 second timeout
-            "Phase 2 Code Assembly"
+            240000, // 4 minute timeout for complex generation
+            "Direct Vision Code Generation"
           );
           
           let fullText = "";
           let chunkCount = 0;
           let codeStarted = false;
           
-          for await (const chunk of assemblyResult.stream) {
+          for await (const chunk of result.stream) {
             const chunkText = chunk.text();
             fullText += chunkText;
             chunkCount++;
@@ -592,8 +362,8 @@ Generate the complete HTML file now. Return it wrapped in \`\`\`html blocks.`;
             }
             
             const estimatedProgress = codeStarted 
-              ? Math.min(35 + Math.floor((fullText.length / 40000) * 55), 90)
-              : 40;
+              ? Math.min(10 + Math.floor((fullText.length / 50000) * 80), 95)
+              : 15;
             
             const lineCount = (fullText.match(/\n/g) || []).length;
             
@@ -607,7 +377,7 @@ Generate the complete HTML file now. Return it wrapped in \`\`\`html blocks.`;
             })}\n\n`));
           }
           
-          const finalResponse = await assemblyResult.response;
+          const finalResponse = await result.response;
           const usageMetadata = finalResponse.usageMetadata;
           
           const duration = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -624,34 +394,26 @@ Generate the complete HTML file now. Return it wrapped in \`\`\`html blocks.`;
             return;
           }
           
+          // Fix broken images and template literals
           cleanCode = fixBrokenImageUrls(cleanCode);
-          cleanCode = fixRechartsReference(cleanCode);
+          cleanCode = fixTemplateLiteralErrors(cleanCode);
           
-          // Validation: Check if menu items are present
-          const menuItemsInCode = scanData?.ui?.navigation?.sidebar?.items?.filter((item: any) => 
-            item.label && cleanCode.includes(item.label)
-          ).length || 0;
-          
-          const validationWarning = menuItemsInCode < menuCount * 0.8 
-            ? `Warning: Only ${menuItemsInCode}/${menuCount} menu items found in output`
-            : null;
-          
-          if (validationWarning) {
-            console.log(`[stream] VALIDATION WARNING: ${validationWarning}`);
+          // Extract flow data if present
+          let flowData = null;
+          const flowMatch = cleanCode.match(/<!--\s*FLOW_DATA:\s*([\s\S]*?)\s*-->/);
+          if (flowMatch) {
+            try {
+              flowData = JSON.parse(flowMatch[1]);
+              console.log("[stream] Extracted flow data:", flowData);
+            } catch (e) {
+              console.log("[stream] Could not parse flow data");
+            }
           }
           
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
             type: "complete",
             code: cleanCode,
-            scanData,
-            validationWarning,
-            validation: {
-              menuItemsExpected: menuCount,
-              menuItemsFound: menuItemsInCode,
-              metricsExpected: metricCount,
-              chartsExpected: chartCount,
-              tablesExpected: tableCount
-            },
+            flowData, // Include flow data for building the flow map
             tokenUsage: usageMetadata ? {
               promptTokens: usageMetadata.promptTokenCount || 0,
               candidatesTokens: usageMetadata.candidatesTokenCount || 0,

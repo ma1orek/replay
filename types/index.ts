@@ -4,18 +4,6 @@
 
 // Re-export enterprise types
 export * from "./enterprise-output";
-export { 
-  ENTERPRISE_PRESETS, 
-  getPresetById, 
-  getPresetsByIndustry,
-  generateCSSVariables,
-  generateTailwindConfig,
-  type EnterprisePreset,
-  type ColorPalette,
-  type TypographyScale,
-  type ComponentConfig,
-  type ChartConfig,
-} from "@/lib/enterprise-presets";
 
 export interface Flow {
   id: string;
@@ -163,7 +151,7 @@ export type StylePreset = {
 // Code Generation Types
 // ============================================
 
-export type CodeMode = "single-file" | "componentized";
+export type CodeMode = "single-file" | "componentized" | "architecture";
 
 export interface FileNode {
   path: string;

@@ -20,8 +20,8 @@ const buttonVariants = cva(
         // Enterprise landing variants
         orange: "bg-orange-500 text-white hover:bg-orange-600 shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:-translate-y-0.5",
         "orange-outline": "border-2 border-orange-500 text-orange-600 hover:bg-orange-50 hover:text-orange-700",
-        "dark": "bg-zinc-900 text-white hover:bg-zinc-800 shadow-lg",
-        "dark-outline": "border border-zinc-300 text-zinc-700 hover:bg-zinc-50",
+        "dark": "bg-zinc-900 text-white hover:bg-zinc-800 shadow-lg [&>*]:text-white [&>*]:!text-white [&_*]:text-white !text-white",
+        "dark-outline": "border border-zinc-300 text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900",
       },
       size: {
         default: "h-10 px-4 py-2 rounded-full",

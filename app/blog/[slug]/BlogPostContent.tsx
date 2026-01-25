@@ -401,8 +401,35 @@ export default function BlogPostContent({ post }: { post: BlogPost }) {
                   hr: () => (
                     <hr className="my-10 border-white/10" />
                   ),
-                  // Images - hide placeholder images from AI
-                  img: () => null,
+                  // Images - show real images, hide placeholder ones from AI
+                  img: ({ src, alt }) => {
+                    // Hide placeholder/broken images
+                    if (!src || 
+                        src.includes('placeholder.com') || 
+                        src.includes('placehold.co') || 
+                        src.includes('via.placeholder') ||
+                        src.includes('dummyimage.com') ||
+                        src.includes('[Image') ||
+                        src.startsWith('data:image/svg')) {
+                      return null;
+                    }
+                    // Show real images (screenshots, diagrams, etc.) in full glory
+                    return (
+                      <figure className="my-8">
+                        <img 
+                          src={src} 
+                          alt={alt || ''} 
+                          className="w-full rounded-xl border border-white/10 shadow-2xl"
+                          loading="lazy"
+                        />
+                        {alt && (
+                          <figcaption className="text-center text-sm text-white/40 mt-3 italic">
+                            {alt}
+                          </figcaption>
+                        )}
+                      </figure>
+                    );
+                  },
                 }}
               >
                 {post.content}

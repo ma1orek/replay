@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-const MODEL_NAME = "gemini-3-pro-preview";
+const MODEL_NAME = "gemini-3-flash-preview"; // Flash to save API quota
 
 function getApiKey(): string | null {
   return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || null;
@@ -162,8 +162,6 @@ export async function POST(request: NextRequest) {
       generationConfig: {
         temperature: 0.2,
         maxOutputTokens: 16384,
-        // @ts-ignore
-        thinkingConfig: { thinkingBudget: 4096 },
       },
     });
 

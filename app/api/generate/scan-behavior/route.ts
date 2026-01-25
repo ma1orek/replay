@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-const MODEL_NAME = "gemini-3-pro-preview";
+const MODEL_NAME = "gemini-3-flash-preview"; // Flash to save API quota
 
 function getApiKey(): string | null {
   return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || null;
@@ -205,8 +205,6 @@ export async function POST(request: NextRequest) {
       generationConfig: {
         temperature: 0.2, // Slightly higher for inferring behavior
         maxOutputTokens: 16384,
-        // @ts-ignore - Gemini 3 Pro requires thinking mode
-        thinkingConfig: { thinkingBudget: 8192 }, // More thinking for complex analysis
       },
     });
 
