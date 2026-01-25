@@ -14,6 +14,61 @@ interface Project {
   hide_badge?: boolean;
 }
 
+// Convert JSX/React code to plain HTML for rendering
+function jsxToHtml(code: string): string {
+  if (!code) return '';
+  
+  let html = code;
+  
+  // If code is a React component, extract the JSX from return statement
+  if (html.includes('export default function') || html.includes('function HomePage')) {
+    // Extract everything inside return ( ... )
+    const returnMatch = html.match(/return\s*\(\s*([\s\S]*?)\s*\)\s*;?\s*\}?\s*$/);
+    if (returnMatch) {
+      html = returnMatch[1].trim();
+    } else {
+      // Try to extract JSX from between return and closing
+      const simpleReturn = html.match(/return\s+([\s\S]+?)\s*;?\s*\}\s*$/);
+      if (simpleReturn) {
+        html = simpleReturn[1].trim();
+      }
+    }
+    
+    // Remove React fragments
+    html = html.replace(/<>\s*/g, '').replace(/\s*<\/>/g, '');
+    html = html.replace(/<React\.Fragment>\s*/g, '').replace(/\s*<\/React\.Fragment>/g, '');
+  }
+  
+  // Convert className to class
+  html = html.replace(/className=/g, 'class=');
+  
+  // Convert JSX self-closing tags
+  html = html.replace(/<([a-z][a-zA-Z0-9]*)\s+([^>]*?)\s*\/>/gi, '<$1 $2></$1>');
+  
+  // Remove JSX expressions that can't be rendered as static HTML
+  html = html.replace(/\{\/\*[\s\S]*?\*\/\}/g, ''); // JSX comments
+  html = html.replace(/\{[^}]*\}/g, ''); // Simple JSX expressions (may need refinement)
+  
+  // Fix htmlFor -> for
+  html = html.replace(/htmlFor=/g, 'for=');
+  
+  // Fix boolean attributes
+  html = html.replace(/(\w+)=\{true\}/g, '$1');
+  html = html.replace(/(\w+)=\{false\}/g, '');
+  
+  // Convert style objects to strings (basic)
+  html = html.replace(/style=\{\{([^}]+)\}\}/g, (_, styles) => {
+    const cssStyles = styles
+      .replace(/([A-Z])/g, '-$1')
+      .toLowerCase()
+      .replace(/:\s*['"]?([^'",}]+)['"]?/g, ': $1')
+      .replace(/,\s*/g, '; ');
+    return `style="${cssStyles}"`;
+  });
+  
+  return html;
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { slug: string } }
@@ -123,6 +178,9 @@ export async function GET(
     </script>
   ` : '';
   
+  // Convert code to HTML if it's JSX/React
+  const htmlContent = jsxToHtml(typedProject.code);
+  
   // Full HTML document - CLEAN, just the output
   const fullHtml = `<!DOCTYPE html>
 <html lang="en">
@@ -152,13 +210,20 @@ export async function GET(
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   
+  <!-- GSAP for animations -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  
+  <!-- Alpine.js for interactivity -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { min-height: 100vh; }
   </style>
 </head>
 <body>
-${typedProject.code}
+${htmlContent}
 ${badgeHtml}
 </body>
 </html>`;
