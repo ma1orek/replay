@@ -2153,8 +2153,6 @@ const InteractiveReactPreview = ({
 </body>
 </html>`;
   }, [code, background]);
-
-  const [iframeWidth, setIframeWidth] = useState<number | null>(null);
   
   // Listen for size messages
   useEffect(() => {
