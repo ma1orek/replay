@@ -12738,7 +12738,7 @@ ${publishCode}
                   </button>
                   {/* Custom tooltip - only show when tab is not active */}
                   {viewMode !== tab.id && (
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2 py-1 bg-zinc-800 text-zinc-300 text-[10px] font-medium rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-zinc-700/50">
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2 py-1 bg-zinc-800 text-zinc-300 text-[10px] font-medium rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-zinc-700/50 z-[9999]">
                       {tab.label}
                     </div>
                   )}
