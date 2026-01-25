@@ -1,6 +1,6 @@
 // ============================================================================
-// REPLAY.BUILD - SYSTEM PROMPT v34.0 (AWWWARDS QUALITY + FULL ANIMATIONS)
-// Every element MUST be animated. Every image MUST be from Pollinations.ai
+// REPLAY.BUILD - SYSTEM PROMPT v35.0 (AWWWARDS QUALITY + FULL ANIMATIONS)
+// Every element MUST be animated. Images from Picsum (no rate limits!)
 // ============================================================================
 
 export const REPLAY_SYSTEM_PROMPT = `
