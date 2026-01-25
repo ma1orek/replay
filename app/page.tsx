@@ -344,6 +344,9 @@ import { useCredits, CREDIT_COSTS } from "@/lib/credits/context";
 import { useProfile } from "@/lib/profile/context";
 import Image from "next/image";
 import Avatar from "@/components/Avatar";
+import { OnlineUsers } from "@/components/LiveCursors";
+import { CommentModeToggle } from "@/components/LiveComments";
+import { LiveCollaboration } from "@/components/LiveCollaboration";
 import AuthModal from "@/components/modals/AuthModal";
 import OutOfCreditsModal from "@/components/modals/OutOfCreditsModal";
 import FeedbackGateModal from "@/components/modals/FeedbackGateModal";
@@ -2448,6 +2451,7 @@ function ReplayToolContent() {
   const [isStreamingCode, setIsStreamingCode] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("preview");
+  const [isCommentMode, setIsCommentMode] = useState(false);
   const [docsSubTab, setDocsSubTab] = useState<DocsSubTab>("overview");
   const [selectedFlowId, setSelectedFlowId] = useState<string | null>(null);
   // const [showUserMenu, setShowUserMenu] = useState(false); // Removed in favor of direct link
@@ -10062,6 +10066,11 @@ ${publishCode}
 
   // ====== DESKTOP APP ======
   return (
+    <LiveCollaboration
+      projectId={activeGeneration?.id || null}
+      isCommentMode={isCommentMode}
+      onToggleCommentMode={() => setIsCommentMode(!isCommentMode)}
+    >
     <div className="h-screen flex flex-col bg-[#111111] overflow-hidden">
 
       <AssetsModal
@@ -12611,6 +12620,19 @@ ${publishCode}
             
             {/* Right: User Menu + Refresh + Mobile + Publish */}
             <div className="flex items-center gap-2">
+              {/* Online Users - show other users in this project */}
+              {activeGeneration && (
+                <OnlineUsers />
+              )}
+              
+              {/* Comment Mode Toggle */}
+              {generatedCode && viewMode === "preview" && (
+                <CommentModeToggle 
+                  isActive={isCommentMode}
+                  onClick={() => setIsCommentMode(!isCommentMode)}
+                />
+              )}
+              
               {/* User Menu */}
               <div className="relative" ref={profileMenuRef}>
                 {user ? (
@@ -19586,6 +19608,7 @@ new ResizeObserver(autoResize).observe(document.body);
           </div>
       )}
     </div>
+    </LiveCollaboration>
   );
 }
 
