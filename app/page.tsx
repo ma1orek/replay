@@ -9584,25 +9584,15 @@ Try these prompts in Cursor or v0:
       // PRIORITY: Find index.html from generatedFiles (this is the actual HTML output)
       let publishCode = '';
       
-      // Helper to find file recursively in FileNode structure
-      const findHtmlFile = (files: FileNode[]): string | null => {
-        for (const file of files) {
-          if (file.type === 'file' && (file.path === '/pages/index.html' || file.name === 'index.html')) {
-            return file.content || '';
-          }
-          if (file.type === 'folder' && file.children) {
-            const found = findHtmlFile(file.children);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
+      // Find HTML file in generatedFiles (flat FileNode array)
+      const htmlFile = generatedFiles.find(f => 
+        f.language === 'html' && (f.path.includes('index.html') || f.name === 'index.html')
+      );
       
       // Try to get HTML from generatedFiles first
-      const htmlFromFiles = findHtmlFile(generatedFiles);
-      if (htmlFromFiles && htmlFromFiles.includes('<') && !htmlFromFiles.includes('export default function')) {
-        publishCode = htmlFromFiles;
-        console.log('[handlePublish] Using HTML from generatedFiles');
+      if (htmlFile?.content && htmlFile.content.includes('<') && !htmlFile.content.includes('export default function')) {
+        publishCode = htmlFile.content;
+        console.log('[handlePublish] Using HTML from generatedFiles:', htmlFile.path);
       } else {
         // Fallback to editableCode
         publishCode = editableCode;
