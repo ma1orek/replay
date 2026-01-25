@@ -3664,12 +3664,16 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
   }, [activeGeneration?.id, searchParams, isDemoMode]);
 
   // Handle ?project=xxx URL param - load specific project for multiplayer collaboration
+  const [hasLoadedFromUrl, setHasLoadedFromUrl] = useState(false);
   useEffect(() => {
     const projectIdParam = searchParams.get('project');
-    if (!projectIdParam || hasLoadedFromStorage || activeGeneration?.id === projectIdParam) return;
-    const projectId = projectIdParam; // Now TypeScript knows it's string, not null
+    // Skip if no project param, already loaded this project from URL, or code already exists for this project
+    if (!projectIdParam || hasLoadedFromUrl) return;
+    if (activeGeneration?.id === projectIdParam && generatedCode) return; // Already have this project with code
     
-    console.log("[Project URL] Loading project from URL:", projectId);
+    const projectId = projectIdParam;
+    
+    console.log("[Project URL] Loading project from URL:", projectId, "| hasLoadedFromUrl:", hasLoadedFromUrl);
     
     async function loadProjectFromUrl() {
       try {
@@ -3713,10 +3717,10 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
           return;
         }
         
-        console.log("[Project URL] Loaded from Supabase:", gen.title);
+        console.log("[Project URL] Loaded from Supabase:", gen.title, "| code length:", gen.code?.length || 0);
         
         // Load the project data
-        if (gen.code) {
+        if (gen.code && gen.code.length > 0) {
           setGeneratedCode(gen.code);
           setDisplayedCode(gen.code);
           setEditableCode(gen.code);
@@ -3788,19 +3792,20 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
         // Clear the localStorage redirect flag
         localStorage.removeItem("replay_load_project");
         
-        // Mark as loaded to prevent re-loading
-        setHasLoadedFromStorage(true);
+        // Mark as loaded from URL to prevent re-loading
+        setHasLoadedFromUrl(true);
         
         console.log("[Project URL] Project fully loaded and displayed");
         
       } catch (err) {
         console.error("[Project URL] Error loading project:", err);
         showToast("Failed to load project", "error");
+        setHasLoadedFromUrl(true); // Prevent infinite retry
       }
     }
     
     loadProjectFromUrl();
-  }, [searchParams, hasLoadedFromStorage, activeGeneration?.id, showToast, previewUrl]);
+  }, [searchParams, hasLoadedFromUrl, activeGeneration?.id, generatedCode, showToast]);
 
   // When new code arrives, either stream it or mark as pending
   useEffect(() => {
