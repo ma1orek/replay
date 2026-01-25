@@ -3717,41 +3717,43 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
           return;
         }
         
-        console.log("[Project URL] Loaded from Supabase:", gen.title, "| code length:", gen.code?.length || 0);
+        console.log("[Project URL] Loaded from Supabase:", gen.title, "| code length:", gen.output_code?.length || 0);
         
-        // Load the project data
-        if (gen.code && gen.code.length > 0) {
-          setGeneratedCode(gen.code);
-          setDisplayedCode(gen.code);
-          setEditableCode(gen.code);
+        // Load the project data - column is output_code in Supabase
+        if (gen.output_code && gen.output_code.length > 0) {
+          setGeneratedCode(gen.output_code);
+          setDisplayedCode(gen.output_code);
+          setEditableCode(gen.output_code);
           setGenerationComplete(true);
           setSidebarMode("chat");
           
           // CRITICAL: Create preview URL so iframe displays the code
           if (previewUrl) URL.revokeObjectURL(previewUrl);
-          setPreviewUrl(createPreviewUrl(gen.code));
+          setPreviewUrl(createPreviewUrl(gen.output_code));
           console.log("[Project URL] Preview URL created");
         }
         
         setGenerationTitle(gen.title || "Untitled Project");
         
-        // Load flow data
-        if (gen.flow_nodes?.length > 0) {
-          setFlowNodes(gen.flow_nodes);
+        // Load flow data - stored as output_architecture.flowNodes/flowEdges in Supabase
+        if (gen.output_architecture?.flowNodes?.length > 0) {
+          setFlowNodes(gen.output_architecture.flowNodes);
         }
-        if (gen.flow_edges?.length > 0) {
-          setFlowEdges(gen.flow_edges);
+        if (gen.output_architecture?.flowEdges?.length > 0) {
+          setFlowEdges(gen.output_architecture.flowEdges);
         }
         
-        // Load style info
-        if (gen.style_info) {
-          setStyleInfo(gen.style_info);
+        // Load style info - stored as output_design_system in Supabase
+        if (gen.output_design_system) {
+          setStyleInfo(gen.output_design_system);
         }
-        if (gen.style_directive) {
-          setStyleDirective(gen.style_directive);
+        // input_style in Supabase
+        if (gen.input_style) {
+          setStyleDirective(gen.input_style);
         }
-        if (gen.refinements) {
-          setRefinements(gen.refinements);
+        // input_context in Supabase
+        if (gen.input_context) {
+          setRefinements(gen.input_context);
         }
         
         // Load files if componentized
