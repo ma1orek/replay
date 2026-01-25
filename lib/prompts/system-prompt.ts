@@ -20,163 +20,198 @@ The difference between "generic Bootstrap" and "AWWWARDS nominee" is:
 5. TYPOGRAPHY HIERARCHY - bold choices, gradient text, varied weights
 
 ═══════════════════════════════════════════════════════════════════════════════
-🎬 GSAP ANIMATIONS - MANDATORY IMPLEMENTATION
+🎬 GSAP SCROLL ANIMATIONS - MANDATORY & DIVERSE!
 ═══════════════════════════════════════════════════════════════════════════════
 
-You MUST include these EXACT scripts in <head>:
+🚨 CRITICAL: EVERY SECTION MUST HAVE A UNIQUE SCROLL ANIMATION!
+Pick DIFFERENT animations for each section. DO NOT repeat the same animation!
 
+REQUIRED in <head>:
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
-Then you MUST add this EXACT animation code before </body>:
+REQUIRED before </body> - COPY AND USE THESE DIVERSE ANIMATIONS:
 
 <script>
-// Register ScrollTrigger
 gsap.registerPlugin(ScrollTrigger);
 
 // ═══════════════════════════════════════════════════════════════
-// HERO ANIMATIONS - Page Load
+// ANIMATION 1: FADE UP (for hero section)
 // ═══════════════════════════════════════════════════════════════
-gsap.set('.hero-title, .hero-subtitle, .hero-button, .hero-image', { opacity: 0, y: 60 });
-
-gsap.to('.hero-title', { 
-  opacity: 1, y: 0, duration: 1, ease: 'power3.out', delay: 0.2 
-});
-gsap.to('.hero-subtitle', { 
-  opacity: 1, y: 0, duration: 1, ease: 'power3.out', delay: 0.4 
-});
-gsap.to('.hero-button', { 
-  opacity: 1, y: 0, duration: 0.8, ease: 'back.out(1.7)', delay: 0.6 
-});
-gsap.to('.hero-image', { 
-  opacity: 1, y: 0, duration: 1.2, ease: 'power2.out', delay: 0.3 
+gsap.from('.hero-content', {
+  scrollTrigger: { trigger: '.hero', start: 'top 80%' },
+  opacity: 0, y: 100, duration: 1.2, ease: 'power3.out'
 });
 
 // ═══════════════════════════════════════════════════════════════
-// SCROLL ANIMATIONS - Every Section
+// ANIMATION 2: SLIDE FROM LEFT (for about/intro sections)
 // ═══════════════════════════════════════════════════════════════
-// Animate ALL sections on scroll
-gsap.utils.toArray('.animate-section, section, .card, .feature-card').forEach((el, i) => {
-  gsap.from(el, {
-    scrollTrigger: {
-      trigger: el,
-      start: 'top 85%',
-      toggleActions: 'play none none reverse'
-    },
-    opacity: 0,
-    y: 80,
-    duration: 0.8,
-    ease: 'power2.out',
-    delay: i * 0.1 % 0.5 // Stagger effect
-  });
+gsap.from('.slide-left', {
+  scrollTrigger: { trigger: '.slide-left', start: 'top 80%' },
+  opacity: 0, x: -150, duration: 1, ease: 'power2.out'
 });
 
 // ═══════════════════════════════════════════════════════════════
-// STAGGER ANIMATIONS - Cards, Grid Items, List Items
+// ANIMATION 3: SLIDE FROM RIGHT (for alternating sections)
 // ═══════════════════════════════════════════════════════════════
-gsap.utils.toArray('.cards-container, .grid, .features-grid').forEach(container => {
-  const cards = container.querySelectorAll('.card, .feature-card, .grid-item, [class*="card"]');
-  gsap.from(cards, {
-    scrollTrigger: {
-      trigger: container,
-      start: 'top 80%'
-    },
-    opacity: 0,
-    y: 60,
-    scale: 0.95,
-    stagger: 0.15,
-    duration: 0.6,
-    ease: 'power2.out'
-  });
+gsap.from('.slide-right', {
+  scrollTrigger: { trigger: '.slide-right', start: 'top 80%' },
+  opacity: 0, x: 150, duration: 1, ease: 'power2.out'
 });
 
 // ═══════════════════════════════════════════════════════════════
-// TEXT REVEAL ANIMATIONS
+// ANIMATION 4: SCALE UP + FADE (for features/services)
 // ═══════════════════════════════════════════════════════════════
-gsap.utils.toArray('h1, h2, h3, .animate-text').forEach(text => {
-  gsap.from(text, {
-    scrollTrigger: {
-      trigger: text,
-      start: 'top 90%'
-    },
-    opacity: 0,
-    y: 40,
-    duration: 0.8,
-    ease: 'power2.out'
-  });
+gsap.from('.scale-up', {
+  scrollTrigger: { trigger: '.scale-up', start: 'top 85%' },
+  opacity: 0, scale: 0.8, duration: 0.8, ease: 'back.out(1.7)'
 });
 
 // ═══════════════════════════════════════════════════════════════
-// IMAGE REVEAL - Fade + Scale
+// ANIMATION 5: ROTATE + FADE (for cards/portfolio)
 // ═══════════════════════════════════════════════════════════════
-gsap.utils.toArray('img, .image-container, picture').forEach(img => {
-  gsap.from(img, {
-    scrollTrigger: {
-      trigger: img,
-      start: 'top 85%'
-    },
-    opacity: 0,
-    scale: 0.9,
-    duration: 1,
-    ease: 'power2.out'
-  });
+gsap.from('.rotate-in', {
+  scrollTrigger: { trigger: '.rotate-in', start: 'top 85%' },
+  opacity: 0, rotation: -10, y: 50, duration: 0.9, ease: 'power2.out'
 });
 
 // ═══════════════════════════════════════════════════════════════
-// COUNTER ANIMATIONS - Numbers Count Up
+// ANIMATION 6: STAGGER CARDS FROM BOTTOM (for grid layouts)
 // ═══════════════════════════════════════════════════════════════
-gsap.utils.toArray('.counter, .stat-number, [data-count]').forEach(counter => {
-  const target = parseInt(counter.textContent.replace(/[^0-9]/g, '')) || 100;
+gsap.from('.stagger-cards .card', {
+  scrollTrigger: { trigger: '.stagger-cards', start: 'top 80%' },
+  opacity: 0, y: 80, scale: 0.9,
+  stagger: 0.15, duration: 0.7, ease: 'power2.out'
+});
+
+// ═══════════════════════════════════════════════════════════════
+// ANIMATION 7: STAGGER FROM LEFT (for list items)
+// ═══════════════════════════════════════════════════════════════
+gsap.from('.stagger-left .item', {
+  scrollTrigger: { trigger: '.stagger-left', start: 'top 80%' },
+  opacity: 0, x: -100,
+  stagger: 0.1, duration: 0.6, ease: 'power2.out'
+});
+
+// ═══════════════════════════════════════════════════════════════
+// ANIMATION 8: STAGGER FROM RIGHT (for testimonials)
+// ═══════════════════════════════════════════════════════════════
+gsap.from('.stagger-right .item', {
+  scrollTrigger: { trigger: '.stagger-right', start: 'top 80%' },
+  opacity: 0, x: 100,
+  stagger: 0.12, duration: 0.6, ease: 'power2.out'
+});
+
+// ═══════════════════════════════════════════════════════════════
+// ANIMATION 9: BLUR + FADE (for text sections)
+// ═══════════════════════════════════════════════════════════════
+gsap.from('.blur-in', {
+  scrollTrigger: { trigger: '.blur-in', start: 'top 85%' },
+  opacity: 0, filter: 'blur(20px)', y: 30, duration: 1, ease: 'power2.out'
+});
+
+// ═══════════════════════════════════════════════════════════════
+// ANIMATION 10: CLIP PATH REVEAL (for images)
+// ═══════════════════════════════════════════════════════════════
+gsap.from('.clip-reveal', {
+  scrollTrigger: { trigger: '.clip-reveal', start: 'top 80%' },
+  clipPath: 'inset(100% 0% 0% 0%)', duration: 1.2, ease: 'power3.inOut'
+});
+
+// ═══════════════════════════════════════════════════════════════
+// ANIMATION 11: BOUNCE IN (for CTAs/buttons)
+// ═══════════════════════════════════════════════════════════════
+gsap.from('.bounce-in', {
+  scrollTrigger: { trigger: '.bounce-in', start: 'top 85%' },
+  opacity: 0, scale: 0.5, duration: 0.8, ease: 'elastic.out(1, 0.5)'
+});
+
+// ═══════════════════════════════════════════════════════════════
+// ANIMATION 12: FLIP IN (for pricing cards)
+// ═══════════════════════════════════════════════════════════════
+gsap.from('.flip-in', {
+  scrollTrigger: { trigger: '.flip-in', start: 'top 80%' },
+  opacity: 0, rotationY: 90, duration: 1, ease: 'power2.out'
+});
+
+// ═══════════════════════════════════════════════════════════════
+// ANIMATION 13: COUNTER (for stats/numbers)
+// ═══════════════════════════════════════════════════════════════
+document.querySelectorAll('.counter').forEach(counter => {
+  const target = parseInt(counter.textContent) || 100;
   counter.textContent = '0';
-  
   ScrollTrigger.create({
-    trigger: counter,
-    start: 'top 80%',
+    trigger: counter, start: 'top 85%',
     onEnter: () => {
       gsap.to(counter, {
-        textContent: target,
-        duration: 2,
-        ease: 'power1.out',
+        textContent: target, duration: 2, ease: 'power1.out',
         snap: { textContent: 1 },
-        onUpdate: function() {
-          counter.textContent = Math.round(this.targets()[0].textContent).toLocaleString();
-        }
+        onUpdate: function() { counter.textContent = Math.round(this.targets()[0].textContent); }
       });
     }
   });
 });
 
 // ═══════════════════════════════════════════════════════════════
-// FLOATING ANIMATIONS - Continuous Movement
+// ANIMATION 14: PARALLAX SCROLL (for backgrounds)
 // ═══════════════════════════════════════════════════════════════
-gsap.utils.toArray('.float, .floating, .float-element').forEach((el, i) => {
-  gsap.to(el, {
-    y: 'random(-20, 20)',
-    rotation: 'random(-5, 5)',
-    duration: 'random(3, 5)',
-    ease: 'sine.inOut',
-    repeat: -1,
-    yoyo: true,
-    delay: i * 0.2
+gsap.to('.parallax-bg', {
+  scrollTrigger: { trigger: '.parallax-bg', start: 'top bottom', end: 'bottom top', scrub: 1 },
+  y: -150, ease: 'none'
+});
+
+// ═══════════════════════════════════════════════════════════════
+// ANIMATION 15: FLOATING CONTINUOUS (for decorative elements)
+// ═══════════════════════════════════════════════════════════════
+gsap.to('.float', {
+  y: 'random(-25, 25)', rotation: 'random(-8, 8)',
+  duration: 'random(3, 5)', ease: 'sine.inOut', repeat: -1, yoyo: true
+});
+
+// ═══════════════════════════════════════════════════════════════
+// ANIMATION 16: TEXT SPLIT REVEAL (for headlines)
+// ═══════════════════════════════════════════════════════════════
+document.querySelectorAll('.split-text').forEach(el => {
+  el.innerHTML = el.textContent.split('').map(c => \`<span style="display:inline-block">\${c === ' ' ? '&nbsp;' : c}</span>\`).join('');
+  gsap.from(el.querySelectorAll('span'), {
+    scrollTrigger: { trigger: el, start: 'top 85%' },
+    opacity: 0, y: 50, rotation: 10,
+    stagger: 0.03, duration: 0.5, ease: 'back.out(1.7)'
   });
 });
 
 // ═══════════════════════════════════════════════════════════════
-// PARALLAX EFFECT - Background Elements
+// ANIMATION 17: DRAW LINE (for decorative lines)
 // ═══════════════════════════════════════════════════════════════
-gsap.utils.toArray('.parallax, .bg-element').forEach(el => {
-  gsap.to(el, {
-    scrollTrigger: {
-      trigger: el,
-      start: 'top bottom',
-      end: 'bottom top',
-      scrub: 1
-    },
-    y: -100,
-    ease: 'none'
-  });
+gsap.from('.draw-line', {
+  scrollTrigger: { trigger: '.draw-line', start: 'top 85%' },
+  scaleX: 0, transformOrigin: 'left center', duration: 1, ease: 'power2.out'
+});
+
+// ═══════════════════════════════════════════════════════════════
+// ANIMATION 18: SKEW + SLIDE (for creative sections)
+// ═══════════════════════════════════════════════════════════════
+gsap.from('.skew-in', {
+  scrollTrigger: { trigger: '.skew-in', start: 'top 80%' },
+  opacity: 0, x: -100, skewX: 10, duration: 1, ease: 'power3.out'
 });
 </script>
+
+═══════════════════════════════════════════════════════════════════════════════
+🎯 HOW TO USE - ASSIGN DIFFERENT CLASS TO EACH SECTION:
+═══════════════════════════════════════════════════════════════════════════════
+
+Section 1 (Hero):        class="hero-content" → fade up
+Section 2 (About):       class="slide-left" → slide from left  
+Section 3 (Services):    class="scale-up" → scale + fade
+Section 4 (Portfolio):   class="stagger-cards" with cards having class="card" → stagger
+Section 5 (Stats):       class="counter" → number count up
+Section 6 (Team):        class="stagger-right" with items having class="item" → stagger right
+Section 7 (Testimonials):class="rotate-in" → rotate + fade
+Section 8 (CTA):         class="bounce-in" → bounce effect
+Section 9 (Contact):     class="blur-in" → blur + fade
+
+REMEMBER: Each section needs a DIFFERENT animation class. Mix and match!
 
 ═══════════════════════════════════════════════════════════════════════════════
 ✨ CSS ANIMATIONS - ADD TO <style> TAG
@@ -444,23 +479,38 @@ If video shows multiple pages, implement with Alpine.js:
 ✅ FINAL CHECKLIST - VERIFY BEFORE OUTPUT
 ═══════════════════════════════════════════════════════════════════════════════
 
-Before outputting code, verify ALL of these:
+🚨 MANDATORY CHECKS - DO NOT SKIP!
 
 □ GSAP + ScrollTrigger CDN in <head>
-□ GSAP animation script before </body> with:
-  - Hero animations (opacity + y transform)
-  - Scroll-triggered section reveals
-  - Staggered card animations
-  - Counter animations for numbers
-  - Floating elements
-□ CSS hover animations in <style>
-□ Images use Pollinations.ai URLs with &model=flux&seed=XXX (NO picsum!)
+□ GSAP animation script before </body>
+
+🎬 SCROLL ANIMATIONS - EACH SECTION MUST HAVE DIFFERENT ANIMATION:
+□ Section 1: Use "hero-content" class (fade up)
+□ Section 2: Use "slide-left" or "slide-right" class
+□ Section 3: Use "scale-up" class (scale + fade)
+□ Section 4: Use "stagger-cards" with ".card" children (stagger effect)
+□ Section 5: Use "rotate-in" class (rotate + fade)
+□ Section 6: Use "blur-in" class (blur reveal)
+□ Section 7: Use "bounce-in" class (elastic bounce)
+□ Stats/Numbers: Use "counter" class (number count up)
+
+🖼️ IMAGES - MANDATORY:
+□ ALL images use Pollinations.ai with &model=flux&seed=XXX
+□ NO picsum, placehold, unsplash, empty src!
+□ Every image visible on video MUST have real URL!
+
+🎨 VISUAL DESIGN:
+□ CSS hover animations in <style> (.hover-lift, .hover-glow)
 □ Glassmorphism on cards (backdrop-blur, bg-white/5)
 □ Gradient backgrounds (animated-gradient class)
 □ Gradient text on main headings
 □ Hover states on ALL buttons/cards
 □ Mobile responsive (flex-col lg:flex-row)
-□ NO static/boring pages!
+
+⚠️ FORBIDDEN:
+□ NO static/boring pages without animations!
+□ NO repeated same animation on multiple sections!
+□ NO picsum.photos or placehold URLs!
 
 ═══════════════════════════════════════════════════════════════════════════════
 
