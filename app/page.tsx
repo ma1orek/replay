@@ -9410,8 +9410,14 @@ Try these prompts in Cursor or v0:
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        onError(errorData.error || 'Request failed');
+        // Try to parse as JSON error, but handle SSE format too
+        const text = await response.text();
+        try {
+          const errorData = JSON.parse(text);
+          onError(errorData.error || 'Request failed');
+        } catch {
+          onError(`Request failed (${response.status})`);
+        }
         return;
       }
       
@@ -9423,6 +9429,7 @@ Try these prompts in Cursor or v0:
       
       const decoder = new TextDecoder();
       let buffer = '';
+      let lastPartialCode = '';
       
       while (true) {
         const { done, value } = await reader.read();
@@ -9430,27 +9437,40 @@ Try these prompts in Cursor or v0:
         
         buffer += decoder.decode(value, { stream: true });
         
-        // Process SSE events
-        const lines = buffer.split('\n\n');
+        // Process SSE events - split by newline(s)
+        const lines = buffer.split(/\n\n+/);
         buffer = lines.pop() || '';
         
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
+          const dataLine = line.trim();
+          if (dataLine.startsWith('data: ')) {
             try {
-              const data = JSON.parse(line.slice(6));
+              const jsonStr = dataLine.slice(6).trim();
+              if (!jsonStr) continue;
+              
+              const data = JSON.parse(jsonStr);
               
               if (data.type === 'partial' && data.code) {
+                lastPartialCode = data.code;
                 onPartial(data.code);
               } else if (data.type === 'done' && data.success && data.code) {
                 onComplete(data.code);
+                return; // Done, exit early
               } else if (data.type === 'error') {
                 onError(data.error || 'Unknown error');
+                return;
               }
-            } catch {
-              // Ignore parse errors for incomplete JSON
+            } catch (parseErr) {
+              // Ignore parse errors for incomplete JSON chunks
+              console.log('SSE parse skip:', dataLine.slice(0, 50));
             }
           }
         }
+      }
+      
+      // If stream ended without 'done' event but we have partial code, use it
+      if (lastPartialCode) {
+        onComplete(lastPartialCode);
       }
     } catch (error: any) {
       onError(error.message || 'Network error');
