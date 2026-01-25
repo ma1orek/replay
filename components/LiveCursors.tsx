@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useCallback, memo } from "react";
+import React, { useEffect, useCallback, memo, useState } from "react";
 import { useOthers, useUpdateMyPresence } from "@/liveblocks.config";
 
 // Cursor colors matching the design
@@ -135,50 +135,84 @@ export function useOnlineUsers() {
   return others.length;
 }
 
-// Online users indicator - normal avatars with initials
+// Online users indicator - AvatarGroup style with hover animation
 export function OnlineUsers() {
   const others = useOthers();
-
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  
   if (others.length === 0) return null;
+  
+  const maxVisible = 4;
+  const size = 36;
+  const overlap = 12;
+  const visibleUsers = others.slice(0, maxVisible);
+  const extraCount = others.length - maxVisible;
 
   return (
-    <div className="flex items-center -space-x-2">
-      {others.slice(0, 4).map(({ connectionId, info }) => {
-        const color = info?.color || getCursorColor(String(connectionId));
-        const name = info?.name || `User ${connectionId}`;
-        const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-        const avatar = info?.avatar;
-        
-        return (
-          <div
-            key={connectionId}
-            className="relative group"
-          >
+    <div className="flex items-center">
+      <div className="flex">
+        {visibleUsers.map(({ connectionId, info }, idx) => {
+          const color = info?.color || getCursorColor(String(connectionId));
+          const name = info?.name || `User ${connectionId}`;
+          const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+          const avatar = info?.avatar;
+          const isHovered = hoveredIdx === idx;
+          
+          return (
             <div
-              className="w-7 h-7 rounded-full border-2 border-[#141414] flex items-center justify-center text-[10px] font-bold text-white overflow-hidden"
-              style={{ backgroundColor: color }}
-              title={name}
+              key={connectionId}
+              className="relative rounded-full bg-[#141414] border-[3px] border-[#141414]"
+              style={{
+                width: size,
+                height: size,
+                zIndex: isHovered ? 100 : visibleUsers.length - idx,
+                marginLeft: idx === 0 ? 0 : -overlap,
+                transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1), z-index 0s",
+                transform: isHovered ? "translateY(-6px)" : "translateY(0)",
+              }}
+              onMouseEnter={() => setHoveredIdx(idx)}
+              onMouseLeave={() => setHoveredIdx(null)}
             >
-              {avatar ? (
-                <img src={avatar} alt={name} className="w-full h-full object-cover" />
-              ) : (
-                initials
-              )}
+              <div
+                className="w-full h-full rounded-full flex items-center justify-center text-[11px] font-bold text-white overflow-hidden"
+                style={{ backgroundColor: color }}
+              >
+                {avatar ? (
+                  <img src={avatar} alt={name} className="w-full h-full object-cover" draggable={false} />
+                ) : (
+                  initials
+                )}
+              </div>
+              {/* Animated tooltip on hover */}
+              <div
+                className="absolute left-1/2 px-2.5 py-1 bg-zinc-800 text-white text-[11px] font-medium rounded-md whitespace-nowrap pointer-events-none border border-zinc-700"
+                style={{
+                  top: -32,
+                  transform: `translateX(-50%) scale(${isHovered ? 1 : 0.8})`,
+                  opacity: isHovered ? 1 : 0,
+                  transition: "all 0.2s cubic-bezier(0.4,0,0.2,1)",
+                }}
+              >
+                {name}
+              </div>
             </div>
-            {/* Online indicator dot */}
-            <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-[#141414]" />
-            {/* Tooltip on hover */}
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-900 rounded text-[10px] text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-zinc-700">
-              {name}
-            </div>
+          );
+        })}
+        {extraCount > 0 && (
+          <div
+            className="flex items-center justify-center bg-zinc-700 text-zinc-300 font-semibold border-[3px] border-[#141414] rounded-full"
+            style={{
+              width: size,
+              height: size,
+              marginLeft: -overlap,
+              zIndex: 0,
+              fontSize: size * 0.32,
+            }}
+          >
+            +{extraCount}
           </div>
-        );
-      })}
-      {others.length > 4 && (
-        <div className="w-7 h-7 rounded-full border-2 border-[#141414] bg-zinc-700 flex items-center justify-center text-[10px] font-medium text-zinc-300">
-          +{others.length - 4}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
