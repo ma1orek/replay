@@ -3,16 +3,16 @@
 import React, { useEffect, useCallback, memo } from "react";
 import { useOthers, useUpdateMyPresence } from "@/liveblocks.config";
 
-// Subtler cursor colors matching app theme
+// Cursor colors matching the design
 const CURSOR_COLORS = [
-  "#6366f1", // Indigo
-  "#8b5cf6", // Violet  
-  "#ec4899", // Pink
-  "#14b8a6", // Teal
-  "#f59e0b", // Amber
-  "#10b981", // Emerald
-  "#3b82f6", // Blue
-  "#ef4444", // Red
+  "#FF6E3C", // Orange
+  "#3B82F6", // Blue
+  "#EC4899", // Pink
+  "#8B5CF6", // Purple
+  "#EF4444", // Red
+  "#10B981", // Emerald
+  "#F59E0B", // Amber
+  "#6366F1", // Indigo
 ];
 
 function getCursorColor(id: string): string {
@@ -20,26 +20,27 @@ function getCursorColor(id: string): string {
   return CURSOR_COLORS[hash % CURSOR_COLORS.length];
 }
 
-// Minimal cursor SVG - clean arrow style
+// Custom cursor shape from kursor.svg - rounded triangle pointer
 const CursorIcon = memo(({ color }: { color: string }) => (
-  <svg
-    width="16"
-    height="20"
-    viewBox="0 0 16 20"
+  <svg 
+    width="18" 
+    height="18" 
+    viewBox="0 0 23 23" 
     fill="none"
-    style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.5))" }}
+    style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))" }}
   >
-    <path
-      d="M0.5 0.5L15 7.5L8 9L5.5 19L0.5 0.5Z"
-      fill={color}
-      stroke="#1a1a1a"
-      strokeWidth="1"
+    <path 
+      d="M5.88279 9.07156C5.36416 7.13575 7.13585 5.36399 9.07168 5.88268L16.4908 7.87142C19.1531 8.58498 19.0262 12.4049 16.3223 12.9399L13.893 13.4205C13.6542 13.4678 13.468 13.6541 13.4207 13.8929L12.94 16.3222C12.4051 19.0262 8.58505 19.1531 7.87153 16.4907L5.88279 9.07156Z" 
+      fill={color} 
+      stroke={color} 
+      strokeWidth="2" 
+      strokeLinejoin="round"
     />
   </svg>
 ));
 CursorIcon.displayName = "CursorIcon";
 
-// Single cursor - minimal style, just name label
+// Single cursor with pill-shaped name badge
 const Cursor = memo(({ 
   x, 
   y, 
@@ -58,15 +59,15 @@ const Cursor = memo(({
       transition: "transform 50ms linear",
     }}
   >
+    {/* Cursor icon */}
     <CursorIcon color={color} />
     
-    {/* Name label - minimal dark style */}
+    {/* Name badge - pill shape, positioned at bottom-right of cursor */}
     <div
-      className="absolute left-4 top-4 rounded px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap"
+      className="absolute left-3 top-3 rounded-full px-3 py-1 text-[11px] font-semibold text-white whitespace-nowrap"
       style={{ 
         backgroundColor: color,
-        color: "#fff",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.3)"
+        boxShadow: "0 2px 8px rgba(0,0,0,0.25)"
       }}
     >
       {name}
@@ -134,44 +135,30 @@ export function useOnlineUsers() {
   return others.length;
 }
 
-// Online users avatars for header - minimal style
+// Online users indicator - just colored dots, no count text
 export function OnlineUsers() {
   const others = useOthers();
 
   if (others.length === 0) return null;
 
   return (
-    <div className="flex items-center gap-1">
-      {/* User count badge */}
-      <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-zinc-800 border border-zinc-700">
-        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-        <span className="text-xs text-zinc-300 font-medium">
-          {others.length} online
-        </span>
-      </div>
-      
-      {/* User initials */}
-      <div className="flex -space-x-1.5">
-        {others.slice(0, 3).map(({ connectionId, info }) => {
-          const color = info?.color || getCursorColor(String(connectionId));
-          return (
-            <div
-              key={connectionId}
-              className="w-6 h-6 rounded-full border-2 border-[#141414] flex items-center justify-center text-[10px] font-bold text-white"
-              style={{ backgroundColor: color }}
-              title={info?.name || `User ${connectionId}`}
-            >
-              {info?.name?.charAt(0).toUpperCase() || "?"}
-            </div>
-          );
-        })}
-        
-        {others.length > 3 && (
-          <div className="w-6 h-6 rounded-full border-2 border-[#141414] bg-zinc-700 flex items-center justify-center text-[10px] font-medium text-zinc-300">
-            +{others.length - 3}
-          </div>
-        )}
-      </div>
+    <div className="flex items-center -space-x-1">
+      {others.slice(0, 5).map(({ connectionId, info }) => {
+        const color = info?.color || getCursorColor(String(connectionId));
+        return (
+          <div
+            key={connectionId}
+            className="w-3 h-3 rounded-full border-2 border-[#141414]"
+            style={{ backgroundColor: color }}
+            title={info?.name || `User ${connectionId}`}
+          />
+        );
+      })}
+      {others.length > 5 && (
+        <div className="w-3 h-3 rounded-full border-2 border-[#141414] bg-zinc-600 flex items-center justify-center">
+          <span className="text-[6px] text-white font-bold">+</span>
+        </div>
+      )}
     </div>
   );
 }
