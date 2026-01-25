@@ -422,8 +422,8 @@ export default function AssetsModal({
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-[#FF6E3C]/20 flex items-center justify-center">
-                <ImageIcon className="w-4 h-4 text-[#FF6E3C]" />
+              <div className="w-8 h-8 rounded-lg bg-zinc-700/50 flex items-center justify-center">
+                <ImageIcon className="w-4 h-4 text-zinc-300" />
               </div>
               <div>
                 <h2 className="text-sm font-semibold text-white">Assets</h2>
@@ -449,8 +449,8 @@ export default function AssetsModal({
                   className={cn(
                     "flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all relative group bg-white/5",
                     selectedAsset?.id === asset.id
-                      ? "border-[#FF6E3C] ring-2 ring-[#FF6E3C]/30"
-                      : "border-transparent hover:border-white/30"
+                      ? "border-zinc-400 ring-2 ring-zinc-400/30"
+                      : "border-transparent hover:border-zinc-600"
                   )}
                 >
                   <img 
@@ -466,8 +466,8 @@ export default function AssetsModal({
                     }}
                   />
                   {selectedAsset?.id === asset.id && (
-                    <div className="absolute inset-0 bg-[#FF6E3C]/20 flex items-center justify-center">
-                      <Check className="w-4 h-4 text-[#FF6E3C]" />
+                    <div className="absolute inset-0 bg-zinc-400/20 flex items-center justify-center">
+                      <Check className="w-4 h-4 text-zinc-300" />
                     </div>
                   )}
                 </button>
@@ -491,8 +491,8 @@ export default function AssetsModal({
                 className={cn(
                   "flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-all border-b-2",
                   activeTab === tab.id
-                    ? "text-[#FF6E3C] border-[#FF6E3C]"
-                    : "text-white/40 border-transparent hover:text-white/60"
+                    ? "text-zinc-200 border-zinc-400"
+                    : "text-zinc-500 border-transparent hover:text-zinc-300"
                 )}
               >
                 <tab.icon className="w-3.5 h-3.5" />
@@ -511,7 +511,7 @@ export default function AssetsModal({
                     <div className="aspect-video rounded-xl overflow-hidden bg-black/30 border border-white/10 relative">
                       {isPreviewLoading && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
-                          <Loader2 className="w-8 h-8 text-[#FF6E3C] animate-spin" />
+                          <Loader2 className="w-8 h-8 text-zinc-400 animate-spin" />
                         </div>
                       )}
                       <img 
@@ -527,7 +527,7 @@ export default function AssetsModal({
                     
                     {/* Info */}
                     <div className="flex items-center gap-2 text-xs text-white/40">
-                      <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 font-medium">
+                      <span className="px-2 py-0.5 rounded bg-zinc-700 text-zinc-300 font-medium">
                         {selectedAsset.type === "img" ? "Image" : "BG"}
                       </span>
                       {selectedAsset.width && selectedAsset.height && (
@@ -539,16 +539,16 @@ export default function AssetsModal({
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={handleRandomReplace}
-                        className="flex items-center justify-center gap-2 p-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white/70 hover:bg-[#FF6E3C]/10 hover:border-[#FF6E3C]/30 hover:text-white transition-all"
+                        className="flex items-center justify-center gap-2 p-3 rounded-xl bg-zinc-800 border border-zinc-700 text-sm text-zinc-300 hover:bg-zinc-700 hover:border-zinc-600 hover:text-white transition-all"
                       >
-                        <Shuffle className="w-4 h-4 text-[#FF6E3C]" />
+                        <Shuffle className="w-4 h-4 text-zinc-400" />
                         Random
                       </button>
                       <button
                         onClick={handleAvatarReplace}
-                        className="flex items-center justify-center gap-2 p-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white/70 hover:bg-[#FF6E3C]/10 hover:border-[#FF6E3C]/30 hover:text-white transition-all"
+                        className="flex items-center justify-center gap-2 p-3 rounded-xl bg-zinc-800 border border-zinc-700 text-sm text-zinc-300 hover:bg-zinc-700 hover:border-zinc-600 hover:text-white transition-all"
                       >
-                        <User className="w-4 h-4 text-[#FF6E3C]" />
+                        <User className="w-4 h-4 text-zinc-400" />
                         Avatar
                       </button>
                     </div>
@@ -565,12 +565,12 @@ export default function AssetsModal({
                             onChange={(e) => setCustomUrl(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && handleApplyCustomUrl()}
                             placeholder="https://..."
-                            className="w-full pl-9 pr-3 py-2 rounded-lg bg-white/5 border border-white/10 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50"
+                            className="w-full pl-9 pr-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-xs text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500"
                           />
                         </div>
                         <button
                           onClick={handleApplyCustomUrl}
-                          className="px-3 py-2 rounded-lg bg-[#FF6E3C] text-white text-xs font-medium hover:bg-[#FF6E3C]/90 transition-colors"
+                          className="px-3 py-2 rounded-lg bg-zinc-600 text-white text-xs font-medium hover:bg-zinc-500 transition-colors"
                         >
                           Apply
                         </button>
@@ -596,12 +596,12 @@ export default function AssetsModal({
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                       placeholder="Search any image..."
-                      className="w-full pl-9 pr-16 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50"
+                      className="w-full pl-9 pr-16 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500"
                     />
                     <button
                       onClick={handleSearch}
                       disabled={isSearching}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-md bg-[#FF6E3C] text-white text-xs font-medium disabled:opacity-50"
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-md bg-zinc-600 text-white text-xs font-medium hover:bg-zinc-500 disabled:opacity-50 transition-colors"
                     >
                       {isSearching ? "..." : "Go"}
                     </button>
@@ -616,8 +616,8 @@ export default function AssetsModal({
                         className={cn(
                           "px-2 py-0.5 rounded text-[10px] transition-colors",
                           activeCategory === cat.label
-                            ? "bg-[#FF6E3C] text-white"
-                            : "bg-white/5 text-white/50 hover:text-white/80 hover:bg-white/10"
+                            ? "bg-zinc-600 text-white"
+                            : "bg-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700"
                         )}
                       >
                         {cat.label}
@@ -630,7 +630,7 @@ export default function AssetsModal({
                 <div className="flex-1 overflow-y-auto p-3">
                   {isSearching ? (
                     <div className="h-32 flex items-center justify-center">
-                      <Loader2 className="w-6 h-6 text-[#FF6E3C] animate-spin" />
+                      <Loader2 className="w-6 h-6 text-zinc-400 animate-spin" />
                     </div>
                   ) : unsplashImages.length > 0 ? (
                     <div className="grid grid-cols-3 gap-1.5">
@@ -638,7 +638,7 @@ export default function AssetsModal({
                         <button
                           key={image.id}
                           onClick={() => handleSelectImage(image)}
-                          className="aspect-square rounded-lg overflow-hidden bg-white/5 hover:ring-2 hover:ring-[#FF6E3C] transition-all group relative"
+                          className="aspect-square rounded-lg overflow-hidden bg-zinc-800 hover:ring-2 hover:ring-zinc-500 transition-all group relative"
                         >
                           <img 
                             src={image.thumbUrl} 
@@ -667,7 +667,7 @@ export default function AssetsModal({
                   <div className="aspect-video rounded-xl overflow-hidden bg-black/30 border border-white/10 flex-shrink-0 relative">
                     {isPreviewLoading && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
-                        <Loader2 className="w-8 h-8 text-[#FF6E3C] animate-spin" />
+                        <Loader2 className="w-8 h-8 text-zinc-400 animate-spin" />
                       </div>
                     )}
                     <img 
@@ -696,15 +696,15 @@ export default function AssetsModal({
                   className={cn(
                     "flex-1 min-h-[120px] rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-3 transition-all",
                     isUploading 
-                      ? "border-[#FF6E3C]/50 bg-[#FF6E3C]/5" 
-                      : "border-white/20 hover:border-[#FF6E3C]/50 hover:bg-white/5",
+                      ? "border-zinc-500/50 bg-zinc-500/5" 
+                      : "border-zinc-700 hover:border-zinc-500 hover:bg-zinc-800/50",
                     !selectedAsset && "opacity-50 cursor-not-allowed"
                   )}
                 >
                   {isUploading ? (
                     <>
-                      <Loader2 className="w-8 h-8 text-[#FF6E3C] animate-spin" />
-                      <span className="text-sm text-[#FF6E3C]">Uploading...</span>
+                      <Loader2 className="w-8 h-8 text-zinc-400 animate-spin" />
+                      <span className="text-sm text-zinc-300">Uploading...</span>
                     </>
                   ) : (
                     <>
