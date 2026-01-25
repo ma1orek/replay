@@ -192,7 +192,11 @@ export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef,
       )}
 
       {/* Existing comments - pins */}
-      {comments.map((comment) => (
+      {comments.map((comment) => {
+        // Check if popup should open on left side (comment near right edge)
+        const openOnLeft = typeof window !== 'undefined' && comment.x > window.innerWidth - 400;
+        
+        return (
         <div
           key={comment.id}
           data-comment
@@ -213,10 +217,10 @@ export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef,
             {comment.resolved ? <Check size={14} /> : comment.replies.length + 1}
           </button>
 
-          {/* Expanded comment - dark theme */}
+          {/* Expanded comment - dark theme, opens left if near right edge */}
           {activeComment === comment.id && (
             <div 
-              className="absolute left-10 top-0 w-80 bg-[#1a1a1a] rounded-xl shadow-2xl border border-zinc-700/50 overflow-hidden"
+              className={`absolute top-0 w-80 bg-[#1a1a1a] rounded-xl shadow-2xl border border-zinc-700/50 overflow-hidden ${openOnLeft ? 'right-10' : 'left-10'}`}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
@@ -302,10 +306,13 @@ export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef,
             </div>
           )}
         </div>
-      ))}
+        );
+      })}
 
       {/* New comment popup */}
-      {newCommentPosition && (
+      {newCommentPosition && (() => {
+        const openOnLeft = typeof window !== 'undefined' && newCommentPosition.x > window.innerWidth - 400;
+        return (
         <div 
           className="absolute z-50"
           style={{ left: newCommentPosition.x, top: newCommentPosition.y }}
@@ -319,8 +326,8 @@ export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef,
             <MessageCircle size={16} />
           </div>
 
-          {/* Input - dark theme */}
-          <div className="absolute left-10 top-0 w-80 bg-[#1a1a1a] rounded-xl shadow-2xl border border-zinc-700/50 overflow-hidden">
+          {/* Input - dark theme, opens left if near right edge */}
+          <div className={`absolute top-0 w-80 bg-[#1a1a1a] rounded-xl shadow-2xl border border-zinc-700/50 overflow-hidden ${openOnLeft ? 'right-10' : 'left-10'}`}>
             <div className="p-4">
               <textarea
                 ref={inputRef}
@@ -356,7 +363,8 @@ export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef,
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </>
   );
 }
