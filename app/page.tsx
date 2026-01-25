@@ -3722,6 +3722,11 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
           setEditableCode(gen.code);
           setGenerationComplete(true);
           setSidebarMode("chat");
+          
+          // CRITICAL: Create preview URL so iframe displays the code
+          if (previewUrl) URL.revokeObjectURL(previewUrl);
+          setPreviewUrl(createPreviewUrl(gen.code));
+          console.log("[Project URL] Preview URL created");
         }
         
         setGenerationTitle(gen.title || "Untitled Project");
@@ -3783,6 +3788,11 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
         // Clear the localStorage redirect flag
         localStorage.removeItem("replay_load_project");
         
+        // Mark as loaded to prevent re-loading
+        setHasLoadedFromStorage(true);
+        
+        console.log("[Project URL] Project fully loaded and displayed");
+        
       } catch (err) {
         console.error("[Project URL] Error loading project:", err);
         showToast("Failed to load project", "error");
@@ -3790,7 +3800,7 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
     }
     
     loadProjectFromUrl();
-  }, [searchParams, hasLoadedFromStorage, activeGeneration?.id, showToast]);
+  }, [searchParams, hasLoadedFromStorage, activeGeneration?.id, showToast, previewUrl]);
 
   // When new code arrives, either stream it or mark as pending
   useEffect(() => {
