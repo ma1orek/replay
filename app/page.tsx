@@ -2701,6 +2701,8 @@ function ReplayToolContent() {
   const [draggingComponent, setDraggingComponent] = useState<string | null>(null);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [selectedBlueprintComponent, setSelectedBlueprintComponent] = useState<string | null>(null);
+  const [editingComponentName, setEditingComponentName] = useState<string | null>(null); // For inline name editing
+  const [editingNameValue, setEditingNameValue] = useState("");
   
   // Auto layout function for Blueprints - MASONRY STYLE (varied sizes)
   const autoLayoutBlueprints = useCallback(() => {
@@ -10987,25 +10989,28 @@ ${publishCode}
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Layers</span>
                   <button 
                     onClick={() => {
-                      const name = prompt("New component name:", "MyComponent");
-                      if (name) {
-                        const newId = `new-${Date.now()}`;
-                        const newComp = {
-                          id: newId,
-                          name: name,
-                          category: 'custom',
-                          code: `<div className="p-6 bg-white rounded-xl shadow-lg border border-zinc-200"><h3 className="text-lg font-semibold text-zinc-900">${name}</h3></div>`,
-                          props: [],
-                          variants: []
-                        };
-                        setLibraryData((prev: any) => ({
-                          ...prev,
-                          components: [...(prev?.components || []), newComp]
-                        }));
-                        setSelectedBlueprintComponent(`comp-${newId}`);
-                      }
+                      // Create new component with default name - no prompt
+                      const newId = `new-${Date.now()}`;
+                      const defaultName = "New Component";
+                      const newComp = {
+                        id: newId,
+                        name: defaultName,
+                        category: 'custom',
+                        code: `<div className="p-6 bg-white rounded-xl shadow-lg border border-zinc-200"><h3 className="text-lg font-semibold text-zinc-900">${defaultName}</h3></div>`,
+                        props: [],
+                        variants: []
+                      };
+                      setLibraryData((prev: any) => ({
+                        ...prev,
+                        components: [...(prev?.components || []), newComp]
+                      }));
+                      setSelectedBlueprintComponent(`comp-${newId}`);
+                      // Start inline editing immediately
+                      setEditingComponentName(newId);
+                      setEditingNameValue(defaultName);
                     }}
                     className="p-1 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white"
+                    title="Add new component"
                   >
                     <Plus className="w-3.5 h-3.5" />
                   </button>
@@ -11047,29 +11052,66 @@ ${publishCode}
                           {category}
                         </div>
                         {comps.map((comp: any) => (
-                          <button
+                          <div
                             key={comp.id}
-                            onClick={() => setSelectedBlueprintComponent(`comp-${comp.id}`)}
-                            onDoubleClick={() => {
-                              const newName = prompt("Rename component:", comp.name);
-                              if (newName) {
-                                setLibraryData((prev: any) => ({
-                                  ...prev,
-                                  components: prev?.components?.map((c: any) => 
-                                    c.id === comp.id ? { ...c, name: newName } : c
-                                  ) || []
-                                }));
+                            onClick={() => {
+                              if (editingComponentName !== comp.id) {
+                                setSelectedBlueprintComponent(`comp-${comp.id}`);
                               }
                             }}
+                            onDoubleClick={() => {
+                              // Start inline editing on double-click
+                              setEditingComponentName(comp.id);
+                              setEditingNameValue(comp.name);
+                            }}
                             className={cn(
-                              "w-full flex items-center gap-2 px-3 py-1.5 text-left transition-all text-[11px] group",
+                              "w-full flex items-center gap-2 px-3 py-1.5 text-left transition-all text-[11px] group cursor-pointer",
                               selectedBlueprintComponent === `comp-${comp.id}` 
                                 ? "bg-emerald-500/20 text-emerald-400" 
                                 : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
                             )}
                           >
                             <Box className="w-3 h-3 flex-shrink-0 opacity-60" />
-                            <span className="truncate flex-1">{comp.name}</span>
+                            {editingComponentName === comp.id ? (
+                              <input
+                                type="text"
+                                value={editingNameValue}
+                                onChange={(e) => setEditingNameValue(e.target.value)}
+                                onBlur={() => {
+                                  // Save on blur
+                                  if (editingNameValue.trim()) {
+                                    setLibraryData((prev: any) => ({
+                                      ...prev,
+                                      components: prev?.components?.map((c: any) => 
+                                        c.id === comp.id ? { ...c, name: editingNameValue.trim() } : c
+                                      ) || []
+                                    }));
+                                  }
+                                  setEditingComponentName(null);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    // Save on Enter
+                                    if (editingNameValue.trim()) {
+                                      setLibraryData((prev: any) => ({
+                                        ...prev,
+                                        components: prev?.components?.map((c: any) => 
+                                          c.id === comp.id ? { ...c, name: editingNameValue.trim() } : c
+                                        ) || []
+                                      }));
+                                    }
+                                    setEditingComponentName(null);
+                                  } else if (e.key === 'Escape') {
+                                    setEditingComponentName(null);
+                                  }
+                                }}
+                                className="flex-1 bg-zinc-800 border border-zinc-600 rounded px-1.5 py-0.5 text-[11px] text-white focus:outline-none focus:border-emerald-500"
+                                autoFocus
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            ) : (
+                              <span className="truncate flex-1">{comp.name}</span>
+                            )}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -11086,7 +11128,7 @@ ${publishCode}
                             >
                               <Copy className="w-3 h-3" />
                             </button>
-                          </button>
+                          </div>
                         ))}
                       </div>
                     ))}
@@ -16850,7 +16892,7 @@ export default function App() {
                         }
                       }}
                       onDoubleClick={(e) => {
-                        // Create new component at click position
+                        // Create new component at click position - no prompt, inline editing
                         if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('canvas-content')) {
                           const rect = blueprintsCanvasRef.current?.getBoundingClientRect();
                           if (!rect) return;
@@ -16858,30 +16900,31 @@ export default function App() {
                           const clickX = (e.clientX - rect.left - blueprintsOffset.x) / scale;
                           const clickY = (e.clientY - rect.top - blueprintsOffset.y) / scale;
                           
-                          const componentName = prompt("New component name:", "MyComponent");
-                          if (componentName) {
-                            const newId = `new-${Date.now()}`;
-                            const newComp = {
-                              id: newId,
-                              name: componentName,
-                              category: 'custom',
-                              code: `<div className="p-6 bg-white rounded-xl shadow-lg border border-zinc-200">
-  <h3 className="text-lg font-semibold text-zinc-900">${componentName}</h3>
+                          const newId = `new-${Date.now()}`;
+                          const defaultName = "New Component";
+                          const newComp = {
+                            id: newId,
+                            name: defaultName,
+                            category: 'custom',
+                            code: `<div className="p-6 bg-white rounded-xl shadow-lg border border-zinc-200">
+  <h3 className="text-lg font-semibold text-zinc-900">${defaultName}</h3>
   <p className="text-sm text-zinc-500 mt-2">Double-click to edit in the panel</p>
 </div>`,
-                              props: [],
-                              variants: []
-                            };
-                            setLibraryData((prev: any) => ({
-                              ...prev,
-                              components: [...(prev?.components || []), newComp]
-                            }));
-                            setBlueprintPositions(prev => ({
-                              ...prev,
-                              [`comp-${newId}`]: { x: clickX, y: clickY }
-                            }));
-                            setSelectedBlueprintComponent(`comp-${newId}`);
-                          }
+                            props: [],
+                            variants: []
+                          };
+                          setLibraryData((prev: any) => ({
+                            ...prev,
+                            components: [...(prev?.components || []), newComp]
+                          }));
+                          setBlueprintPositions(prev => ({
+                            ...prev,
+                            [`comp-${newId}`]: { x: clickX, y: clickY }
+                          }));
+                          setSelectedBlueprintComponent(`comp-${newId}`);
+                          // Start inline editing for new component name
+                          setEditingComponentName(newId);
+                          setEditingNameValue(defaultName);
                         }
                       }}
                       onMouseMove={(e) => {
