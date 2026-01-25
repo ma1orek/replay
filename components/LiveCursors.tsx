@@ -204,7 +204,7 @@ export function OnlineUsers() {
               </div>
               {/* Animated tooltip on hover - below avatar */}
               <div
-                className="absolute left-1/2 px-2 py-0.5 bg-zinc-800 text-white text-[10px] font-medium rounded whitespace-nowrap pointer-events-none border border-zinc-700"
+                className="absolute left-1/2 px-2 py-1 bg-zinc-800 text-zinc-300 text-[10px] font-medium rounded-md whitespace-nowrap pointer-events-none border border-zinc-700/50"
                 style={{
                   top: 32,
                   transform: `translateX(-50%) scale(${isHovered ? 1 : 0.8})`,

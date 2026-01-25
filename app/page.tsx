@@ -12710,33 +12710,39 @@ ${publishCode}
                 { id: "flow", icon: GitBranch, label: "Flow" },
                 { id: "code", icon: Code, label: "Code" },
               ].map((tab) => (
-                <button 
-                  key={tab.id} 
-                  onClick={() => setViewMode(tab.id as ViewMode)} 
-                  title={tab.label}
-                  className={cn(
-                    "relative flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium transition-all duration-200 rounded-md", 
-                    viewMode === tab.id 
-                      ? "text-white bg-zinc-700" 
-                      : "text-zinc-500 hover:text-zinc-300"
-                  )}
-                >
-                  <tab.icon className="w-3.5 h-3.5" />
-                  <AnimatePresence mode="wait">
-                    {viewMode === tab.id && (
-                      <motion.span
-                        key={tab.id}
-                        initial={{ width: 0, opacity: 0 }}
-                        animate={{ width: "auto", opacity: 1 }}
-                        exit={{ width: 0, opacity: 0 }}
-                        transition={{ duration: 0.15 }}
-                        className="overflow-hidden whitespace-nowrap"
-                      >
-                        {tab.label}
-                      </motion.span>
+                <div key={tab.id} className="relative group">
+                  <button 
+                    onClick={() => setViewMode(tab.id as ViewMode)} 
+                    className={cn(
+                      "relative flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium transition-all duration-200 rounded-md", 
+                      viewMode === tab.id 
+                        ? "text-white bg-zinc-700" 
+                        : "text-zinc-500 hover:text-zinc-300"
                     )}
-                  </AnimatePresence>
-                </button>
+                  >
+                    <tab.icon className="w-3.5 h-3.5" />
+                    <AnimatePresence mode="wait">
+                      {viewMode === tab.id && (
+                        <motion.span
+                          key={tab.id}
+                          initial={{ width: 0, opacity: 0 }}
+                          animate={{ width: "auto", opacity: 1 }}
+                          exit={{ width: 0, opacity: 0 }}
+                          transition={{ duration: 0.15 }}
+                          className="overflow-hidden whitespace-nowrap"
+                        >
+                          {tab.label}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </button>
+                  {/* Custom tooltip - only show when tab is not active */}
+                  {viewMode !== tab.id && (
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2 py-1 bg-zinc-800 text-zinc-300 text-[10px] font-medium rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-zinc-700/50">
+                      {tab.label}
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
             
