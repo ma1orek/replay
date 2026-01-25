@@ -3,73 +3,84 @@
 import React, { useEffect, useCallback, memo } from "react";
 import { useOthers, useUpdateMyPresence } from "@/liveblocks.config";
 
-// Kursor SVG (styl Figma)
+// Subtler cursor colors matching app theme
+const CURSOR_COLORS = [
+  "#6366f1", // Indigo
+  "#8b5cf6", // Violet  
+  "#ec4899", // Pink
+  "#14b8a6", // Teal
+  "#f59e0b", // Amber
+  "#10b981", // Emerald
+  "#3b82f6", // Blue
+  "#ef4444", // Red
+];
+
+function getCursorColor(id: string): string {
+  const hash = id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return CURSOR_COLORS[hash % CURSOR_COLORS.length];
+}
+
+// Minimal cursor SVG - clean arrow style
 const CursorIcon = memo(({ color }: { color: string }) => (
   <svg
-    width="24"
-    height="36"
-    viewBox="0 0 24 36"
+    width="16"
+    height="20"
+    viewBox="0 0 16 20"
     fill="none"
-    className="drop-shadow-lg"
-    style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))" }}
+    style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.5))" }}
   >
     <path
-      d="M5.65376 12.3673H5.46026L5.31717 12.4976L0.500002 16.8829L0.500002 1.19709L15.2116 1.19709L5.65376 12.3673Z"
+      d="M0.5 0.5L15 7.5L8 9L5.5 19L0.5 0.5Z"
       fill={color}
-      stroke="white"
+      stroke="#1a1a1a"
       strokeWidth="1"
     />
   </svg>
 ));
 CursorIcon.displayName = "CursorIcon";
 
-// Pojedynczy kursor innego usera
+// Single cursor - minimal style, just name label
 const Cursor = memo(({ 
   x, 
   y, 
   color, 
-  name, 
-  avatar 
+  name 
 }: { 
   x: number; 
   y: number; 
   color: string; 
   name: string;
-  avatar?: string;
 }) => (
   <div
     className="pointer-events-none fixed left-0 top-0 z-[9999]"
     style={{
       transform: `translate(${x}px, ${y}px)`,
-      transition: "transform 0.1s ease-out",
+      transition: "transform 50ms linear",
     }}
   >
     <CursorIcon color={color} />
     
-    {/* Etykieta z imieniem (jak w Figmie) */}
+    {/* Name label - minimal dark style */}
     <div
-      className="absolute left-5 top-4 flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium text-white whitespace-nowrap shadow-lg"
-      style={{ backgroundColor: color }}
+      className="absolute left-4 top-4 rounded px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap"
+      style={{ 
+        backgroundColor: color,
+        color: "#fff",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.3)"
+      }}
     >
-      {avatar && (
-        <img 
-          src={avatar} 
-          alt={name} 
-          className="w-4 h-4 rounded-full border border-white/30"
-        />
-      )}
-      <span>{name}</span>
+      {name}
     </div>
   </div>
 ));
 Cursor.displayName = "Cursor";
 
-// Główny komponent - renderuje kursory innych userów
+// Main component - renders other users' cursors
 export function LiveCursors() {
   const others = useOthers();
   const updateMyPresence = useUpdateMyPresence();
 
-  // Śledzenie ruchu myszki
+  // Track mouse movement
   const handlePointerMove = useCallback(
     (e: PointerEvent) => {
       updateMyPresence({
@@ -79,7 +90,7 @@ export function LiveCursors() {
     [updateMyPresence]
   );
 
-  // Myszka opuściła okno
+  // Mouse left window
   const handlePointerLeave = useCallback(() => {
     updateMyPresence({ cursor: null });
   }, [updateMyPresence]);
@@ -94,20 +105,22 @@ export function LiveCursors() {
     };
   }, [handlePointerMove, handlePointerLeave]);
 
-  // Renderowanie kursorów innych userów
+  // Render other users' cursors
   return (
     <>
       {others.map(({ connectionId, presence, info }) => {
         if (!presence?.cursor) return null;
+
+        const color = info?.color || getCursorColor(String(connectionId));
+        const name = info?.name || `User ${connectionId}`;
 
         return (
           <Cursor
             key={connectionId}
             x={presence.cursor.x}
             y={presence.cursor.y}
-            color={info?.color || "#FF6E3C"}
-            name={info?.name || `User ${connectionId}`}
-            avatar={info?.avatar}
+            color={color}
+            name={name}
           />
         );
       })}
@@ -115,49 +128,50 @@ export function LiveCursors() {
   );
 }
 
-// Hook do pokazywania liczby userów online
+// Hook to get online users count
 export function useOnlineUsers() {
   const others = useOthers();
   return others.length;
 }
 
-// Komponent pokazujący avatary userów online (do header)
+// Online users avatars for header - minimal style
 export function OnlineUsers() {
   const others = useOthers();
 
   if (others.length === 0) return null;
 
   return (
-    <div className="flex items-center -space-x-2">
-      {others.slice(0, 5).map(({ connectionId, info }) => (
-        <div
-          key={connectionId}
-          className="relative group"
-        >
-          <div
-            className="w-7 h-7 rounded-full border-2 border-[#1a1a1a] flex items-center justify-center text-xs font-bold text-white overflow-hidden"
-            style={{ backgroundColor: info?.color || "#FF6E3C" }}
-            title={info?.name || `User ${connectionId}`}
-          >
-            {info?.avatar ? (
-              <img src={info.avatar} alt={info.name} className="w-full h-full object-cover" />
-            ) : (
-              info?.name?.charAt(0).toUpperCase() || "?"
-            )}
-          </div>
-          
-          {/* Tooltip */}
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-black/90 rounded text-xs text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-            {info?.name || `User ${connectionId}`}
-          </div>
-        </div>
-      ))}
+    <div className="flex items-center gap-1">
+      {/* User count badge */}
+      <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-zinc-800 border border-zinc-700">
+        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+        <span className="text-xs text-zinc-300 font-medium">
+          {others.length} online
+        </span>
+      </div>
       
-      {others.length > 5 && (
-        <div className="w-7 h-7 rounded-full border-2 border-[#1a1a1a] bg-white/10 flex items-center justify-center text-xs font-medium text-white/70">
-          +{others.length - 5}
-        </div>
-      )}
+      {/* User initials */}
+      <div className="flex -space-x-1.5">
+        {others.slice(0, 3).map(({ connectionId, info }) => {
+          const color = info?.color || getCursorColor(String(connectionId));
+          return (
+            <div
+              key={connectionId}
+              className="w-6 h-6 rounded-full border-2 border-[#141414] flex items-center justify-center text-[10px] font-bold text-white"
+              style={{ backgroundColor: color }}
+              title={info?.name || `User ${connectionId}`}
+            >
+              {info?.name?.charAt(0).toUpperCase() || "?"}
+            </div>
+          );
+        })}
+        
+        {others.length > 3 && (
+          <div className="w-6 h-6 rounded-full border-2 border-[#141414] bg-zinc-700 flex items-center justify-center text-[10px] font-medium text-zinc-300">
+            +{others.length - 3}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

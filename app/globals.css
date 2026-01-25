@@ -4,6 +4,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hide Liveblocks badge */
+[data-liveblocks-badge], div[title="Liveblocks"], a[href*="lblcks.io"] { display: none !important; }
+
 /* ═══════════════════════════════════════════════════════════════ */
 /* PREMIUM GLASSMORPHISM DESIGN SYSTEM                              */
 /* ═══════════════════════════════════════════════════════════════ */
