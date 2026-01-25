@@ -3143,10 +3143,10 @@ ${processedCode}
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
   const dragStartPos = useRef({ x: 0, y: 0, nodeX: 0, nodeY: 0 });
   
-  // Code tab state - Componentized (default) vs Single-file mode
-  const [codeMode, setCodeMode] = useState<CodeMode>("componentized");
+  // Code tab state - Single-file (default for HTML output) vs Componentized mode
+  const [codeMode, setCodeMode] = useState<CodeMode>("single-file");
   const [generatedFiles, setGeneratedFiles] = useState<FileNode[]>([]);
-  const [activeFilePath, setActiveFilePath] = useState<string>("/pages/index.tsx");
+  const [activeFilePath, setActiveFilePath] = useState<string>("/pages/index.html");
   const [generatingFilePath, setGeneratingFilePath] = useState<string | null>(null); // Track which file is being generated
   const [codeReferenceMap, setCodeReferenceMap] = useState<CodeReferenceMap[]>([]);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(["/pages", "/components"]));
