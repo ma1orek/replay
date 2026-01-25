@@ -1858,14 +1858,17 @@ const ShadowPreview = ({
 const InteractiveReactPreview = ({ 
   code, 
   background = "dark",
-  className = ""
+  className = "",
+  onSizeChange
 }: { 
   code: string; 
   background?: "light" | "dark";
   className?: string;
+  onSizeChange?: (size: { width: number; height: number }) => void;
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [iframeHeight, setIframeHeight] = useState(200);
+  const [iframeWidth, setIframeWidth] = useState(200);
   const [error, setError] = useState<string | null>(null);
 
   // Build full React app in iframe
@@ -2157,11 +2160,15 @@ const InteractiveReactPreview = ({
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'IFRAME_SIZE') {
-        if (typeof event.data.height === 'number') {
-          setIframeHeight(Math.min(event.data.height + 20, 800)); // Cap at 800px
-        }
-        if (typeof event.data.width === 'number') {
-          setIframeWidth(event.data.width + 20);
+        const newHeight = typeof event.data.height === 'number' ? Math.min(event.data.height + 20, 800) : null;
+        const newWidth = typeof event.data.width === 'number' ? event.data.width + 20 : null;
+        
+        if (newHeight !== null) setIframeHeight(newHeight);
+        if (newWidth !== null) setIframeWidth(newWidth);
+        
+        // Call size change callback
+        if (onSizeChange && newWidth !== null && newHeight !== null) {
+          onSizeChange({ width: event.data.width, height: event.data.height });
         }
       }
       // Backwards compatibility
@@ -2171,7 +2178,7 @@ const InteractiveReactPreview = ({
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, [onSizeChange]);
 
   return (
     <div className={cn("relative inline-block", className)}>
@@ -2645,6 +2652,7 @@ function ReplayToolContent() {
   const [showLibraryOutline, setShowLibraryOutline] = useState(false);
   const [showLibraryCode, setShowLibraryCode] = useState(false);
   const [libraryViewport, setLibraryViewport] = useState<"desktop" | "mobile">("desktop");
+  const [libraryPreviewSize, setLibraryPreviewSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const [isLibraryFullscreen, setIsLibraryFullscreen] = useState(false);
   const [libraryPanelCollapsed, setLibraryPanelCollapsed] = useState(false);
   
@@ -15769,13 +15777,17 @@ export default function App() {
                                               {/* Top dimension line */}
                                               <div className="absolute -top-6 left-0 right-0 flex items-center justify-center opacity-0 group-hover/measure:opacity-100 transition-opacity">
                                                 <div className="h-px bg-emerald-400 flex-1" />
-                                                <span className="px-2 text-[10px] font-mono text-emerald-400 bg-zinc-900/80 rounded">W: auto</span>
+                                                <span className="px-2 text-[10px] font-mono text-emerald-400 bg-zinc-900/80 rounded">
+                                                  {libraryPreviewSize.width > 0 ? `${libraryPreviewSize.width}px` : 'auto'}
+                                                </span>
                                                 <div className="h-px bg-emerald-400 flex-1" />
                                               </div>
                                               {/* Left dimension line */}
                                               <div className="absolute -left-6 top-0 bottom-0 flex flex-col items-center justify-center opacity-0 group-hover/measure:opacity-100 transition-opacity">
                                                 <div className="w-px bg-emerald-400 flex-1" />
-                                                <span className="py-1 px-1 text-[10px] font-mono text-emerald-400 bg-zinc-900/80 rounded whitespace-nowrap" style={{writingMode: 'vertical-rl', transform: 'rotate(180deg)'}}>H: auto</span>
+                                                <span className="py-1 px-1 text-[10px] font-mono text-emerald-400 bg-zinc-900/80 rounded whitespace-nowrap" style={{writingMode: 'vertical-rl', transform: 'rotate(180deg)'}}>
+                                                  {libraryPreviewSize.height > 0 ? `${libraryPreviewSize.height}px` : 'auto'}
+                                                </span>
                                                 <div className="w-px bg-emerald-400 flex-1" />
                                               </div>
                                             </>
@@ -15784,6 +15796,7 @@ export default function App() {
                                             code={liveCode}
                                             background={libraryBackground === "light" ? "light" : "dark"}
                                             className=""
+                                            onSizeChange={setLibraryPreviewSize}
                                           />
                                         </div>
                                       ) : (
