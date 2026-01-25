@@ -11398,7 +11398,7 @@ ${publishCode}
                     <p className="text-xs text-zinc-500 mb-1">No library yet</p>
                     <p className="text-[10px] text-zinc-600 mb-4">Generate code to extract components</p>
                     {generatedCode && (
-                      <ShimmerButton
+                      <button
                         onClick={async () => {
                           setIsGeneratingLibrary(true);
                           try {
@@ -11419,23 +11419,20 @@ ${publishCode}
                           }
                         }}
                         disabled={isGeneratingLibrary}
-                        shimmerColor="#ffffff"
-                        shimmerDuration="2s"
-                        background="linear-gradient(135deg, #f97316 0%, #ea580c 100%)"
-                        className="w-full px-3 py-2 text-xs font-semibold"
+                        className="w-full px-3 py-2 text-xs font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg border border-zinc-700 transition-colors disabled:opacity-50"
                       >
                         {isGeneratingLibrary ? (
-                          <span className="flex items-center justify-center gap-1.5 text-white">
+                          <span className="flex items-center justify-center gap-1.5">
                             <Loader2 className="w-3 h-3 animate-spin" />
                             Extracting...
                           </span>
                         ) : (
-                          <span className="flex items-center justify-center gap-1.5 text-white">
+                          <span className="flex items-center justify-center gap-1.5">
                             <Sparkles className="w-3.5 h-3.5" />
                             Extract Components
                           </span>
                         )}
-                      </ShimmerButton>
+                      </button>
                     )}
                   </div>
                 ) : (
@@ -15623,7 +15620,7 @@ export default function GeneratedPage() {
                     ? libraryData?.components?.find((c: any) => `comp-${c.id}` === selectedLibraryItem)
                     : null;
                   return selectedComponent?.code ? (
-                    <div className="fixed inset-0 z-50 bg-black/95 flex flex-col">
+                    <div className="fixed inset-0 z-50 bg-[#111111] flex flex-col">
                       {/* Fullscreen Header */}
                       <div className="flex-shrink-0 h-12 border-b border-zinc-800 bg-zinc-900 flex items-center justify-between px-4">
                         <div className="flex items-center gap-3">
@@ -15686,7 +15683,7 @@ export default function GeneratedPage() {
                 })()}
                 {/* Main Area - Canvas + Bottom Panel (middle panel removed - now in left sidebar) */}
                 <div className="flex-1 flex flex-col min-w-0 relative">
-                  {/* Center Toolbar - Tool controls (floating over canvas) - responsive */}
+                  {/* Center Toolbar - Tool controls (floating over canvas) - neutral colors */}
                   <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex flex-wrap items-center justify-center gap-1 bg-zinc-900/98 backdrop-blur-xl rounded-xl p-1.5 border border-zinc-700/50 shadow-2xl shadow-black/40 max-w-[calc(100%-2rem)] sm:max-w-none">
                     {/* Grid toggle */}
                     <button 
@@ -15694,7 +15691,7 @@ export default function GeneratedPage() {
                       className={cn(
                         "p-2 rounded-lg transition-all duration-150 group relative",
                         showLibraryGrid 
-                          ? "bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/30" 
+                          ? "bg-zinc-700 text-white" 
                           : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
                       )}
                     >
@@ -15708,7 +15705,7 @@ export default function GeneratedPage() {
                         className={cn(
                           "p-2 rounded-lg transition-all duration-150 flex items-center gap-1",
                           libraryBackground !== "dark" 
-                            ? "bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/30" 
+                            ? "bg-zinc-700 text-white" 
                             : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
                         )}
                       >
@@ -15739,7 +15736,7 @@ export default function GeneratedPage() {
                       className={cn(
                         "p-2 rounded-lg transition-all duration-150 group relative",
                         showLibraryRuler 
-                          ? "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30" 
+                          ? "bg-zinc-700 text-white" 
                           : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
                       )}
                     >
@@ -15753,7 +15750,7 @@ export default function GeneratedPage() {
                       className={cn(
                         "p-2 rounded-lg transition-all duration-150 group relative",
                         showLibraryOutline 
-                          ? "bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/30" 
+                          ? "bg-zinc-700 text-white" 
                           : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
                       )}
                     >
@@ -15769,7 +15766,7 @@ export default function GeneratedPage() {
                         className={cn(
                           "p-2 rounded-lg transition-all duration-150 flex items-center gap-1",
                           libraryVisionMode !== "none" 
-                            ? "bg-rose-500/20 text-rose-400 ring-1 ring-rose-500/30" 
+                            ? "bg-zinc-700 text-white" 
                             : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
                         )}
                       >
@@ -15800,74 +15797,8 @@ export default function GeneratedPage() {
                         ))}
                       </div>
                     </div>
-                    
-                    <div className="w-px h-5 bg-zinc-700 mx-1" />
-                    
-                    {/* Viewport toggles */}
-                    <button 
-                      onClick={() => setLibraryViewport("mobile")}
-                      className={cn(
-                        "p-2 rounded-lg transition-all duration-150 group relative",
-                        libraryViewport === "mobile" 
-                          ? "bg-cyan-500/20 text-cyan-400 ring-1 ring-cyan-500/30" 
-                          : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
-                      )}
-                    >
-                      <Smartphone className="w-4 h-4" />
-                      <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Mobile</span>
-                    </button>
-                    <button 
-                      onClick={() => setLibraryViewport("desktop")}
-                      className={cn(
-                        "p-2 rounded-lg transition-all duration-150 group relative",
-                        libraryViewport === "desktop" 
-                          ? "bg-cyan-500/20 text-cyan-400 ring-1 ring-cyan-500/30" 
-                          : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
-                      )}
-                    >
-                      <Monitor className="w-4 h-4" />
-                      <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Desktop</span>
-                    </button>
-                    <button 
-                      onClick={() => setIsLibraryFullscreen(!isLibraryFullscreen)}
-                      className={cn(
-                        "p-2 rounded-lg transition-all duration-150 group relative",
-                        isLibraryFullscreen 
-                          ? "bg-zinc-600/50 text-white ring-1 ring-zinc-500/30" 
-                          : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
-                      )}
-                    >
-                      <Maximize2 className="w-4 h-4" />
-                      <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Fullscreen</span>
-                    </button>
                   </div>
                   
-                  {/* Zoom controls - bottom left (like Flow) */}
-                  <div className="absolute bottom-4 left-4 z-30 flex items-center gap-1 bg-zinc-900/95 backdrop-blur-sm rounded-lg p-1 border border-zinc-800 shadow-xl">
-                    <button 
-                      onClick={() => setLibraryZoom(Math.max(50, libraryZoom - 25))}
-                      className="p-1.5 rounded hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-white"
-                      title="Zoom out"
-                    >
-                      <ZoomOut className="w-4 h-4" />
-                    </button>
-                    <span className="text-xs text-zinc-300 w-12 text-center font-mono">{libraryZoom}%</span>
-                    <button 
-                      onClick={() => setLibraryZoom(Math.min(200, libraryZoom + 25))}
-                      className="p-1.5 rounded hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-white"
-                      title="Zoom in"
-                    >
-                      <ZoomIn className="w-4 h-4" />
-                    </button>
-                    <div className="w-px h-4 bg-zinc-700 mx-1" />
-                    <button 
-                      onClick={() => setLibraryZoom(100)}
-                      className="px-2 py-1 rounded hover:bg-zinc-800 transition-colors text-[10px] text-zinc-400 hover:text-white"
-                      title="Reset zoom"
-                    >
-                      Reset
-                    </button>
-                  </div>
                   
                   {/* Canvas - Component Preview - STORYBOOK STYLE */}
                   {(() => {
@@ -17299,7 +17230,7 @@ export default function App() {
                         setBlueprintsOffset({ x: newOffsetX, y: newOffsetY });
                       }}
                     >
-                      {/* Center Toolbar - Tool controls - responsive */}
+                      {/* Center Toolbar - Tool controls - neutral colors */}
                       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex flex-wrap items-center justify-center gap-1 bg-zinc-900/98 backdrop-blur-xl rounded-xl p-1.5 border border-zinc-700/50 shadow-2xl shadow-black/40 max-w-[calc(100%-2rem)] sm:max-w-none">
                         {/* Grid toggle */}
                         <button 
@@ -17307,7 +17238,7 @@ export default function App() {
                           className={cn(
                             "p-2 rounded-lg transition-all duration-150 group relative",
                             showBlueprintsGrid 
-                              ? "bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/30" 
+                              ? "bg-zinc-700 text-white" 
                               : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
                           )}
                         >
@@ -17321,7 +17252,7 @@ export default function App() {
                           className={cn(
                             "p-2 rounded-lg transition-all duration-150 group relative",
                             blueprintsBackground === "light" 
-                              ? "bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/30" 
+                              ? "bg-zinc-700 text-white" 
                               : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
                           )}
                         >
@@ -17335,7 +17266,7 @@ export default function App() {
                           className={cn(
                             "p-2 rounded-lg transition-all duration-150 group relative",
                             showBlueprintsRuler 
-                              ? "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30" 
+                              ? "bg-zinc-700 text-white" 
                               : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
                           )}
                         >
@@ -17349,7 +17280,7 @@ export default function App() {
                           className={cn(
                             "p-2 rounded-lg transition-all duration-150 group relative",
                             showBlueprintsOutline 
-                              ? "bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/30" 
+                              ? "bg-zinc-700 text-white" 
                               : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
                           )}
                         >
@@ -17365,7 +17296,7 @@ export default function App() {
                             className={cn(
                               "p-2 rounded-lg transition-all duration-150 flex items-center gap-1",
                               blueprintsVisionMode !== "none" 
-                                ? "bg-rose-500/20 text-rose-400 ring-1 ring-rose-500/30" 
+                                ? "bg-zinc-700 text-white" 
                                 : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
                             )}
                           >
@@ -17396,46 +17327,6 @@ export default function App() {
                             ))}
                           </div>
                         </div>
-                        
-                        <div className="w-px h-5 bg-zinc-700 mx-1" />
-                        
-                        {/* Viewport toggles */}
-                        <button 
-                          onClick={() => setBlueprintsViewport("mobile")}
-                          className={cn(
-                            "p-2 rounded-lg transition-all duration-150 group relative",
-                            blueprintsViewport === "mobile" 
-                              ? "bg-cyan-500/20 text-cyan-400 ring-1 ring-cyan-500/30" 
-                              : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
-                          )}
-                        >
-                          <Smartphone className="w-4 h-4" />
-                          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Mobile</span>
-                        </button>
-                        <button 
-                          onClick={() => setBlueprintsViewport("desktop")}
-                          className={cn(
-                            "p-2 rounded-lg transition-all duration-150 group relative",
-                            blueprintsViewport === "desktop" 
-                              ? "bg-cyan-500/20 text-cyan-400 ring-1 ring-cyan-500/30" 
-                              : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
-                          )}
-                        >
-                          <Monitor className="w-4 h-4" />
-                          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Desktop</span>
-                        </button>
-                        <button 
-                          onClick={() => setIsBlueprintsFullscreen(!isBlueprintsFullscreen)}
-                          className={cn(
-                            "p-2 rounded-lg transition-all duration-150 group relative",
-                            isBlueprintsFullscreen 
-                              ? "bg-zinc-600/50 text-white ring-1 ring-zinc-500/30" 
-                              : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
-                          )}
-                        >
-                          <Maximize2 className="w-4 h-4" />
-                          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Fullscreen</span>
-                        </button>
                       </div>
                       
                       {/* Zoom controls - bottom left (like Flow) */}
@@ -17771,7 +17662,7 @@ document.querySelectorAll('img').forEach(img=>{
                                             });
                                           }}
                                         >
-                                          <div className="w-1 h-full bg-blue-500 rounded-full opacity-0 group-hover/handle:opacity-100 transition-opacity" />
+                                          <div className="w-1 h-full bg-zinc-500 rounded-full opacity-0 group-hover/handle:opacity-100 transition-opacity" />
                                         </div>
                                         {/* Bottom edge */}
                                         <div
@@ -17789,7 +17680,7 @@ document.querySelectorAll('img').forEach(img=>{
                                             });
                                           }}
                                         >
-                                          <div className="h-1 w-full bg-blue-500 rounded-full opacity-0 group-hover/handle:opacity-100 transition-opacity" />
+                                          <div className="h-1 w-full bg-zinc-500 rounded-full opacity-0 group-hover/handle:opacity-100 transition-opacity" />
                                         </div>
                                         {/* Bottom-right corner */}
                                         <div
@@ -17807,7 +17698,7 @@ document.querySelectorAll('img').forEach(img=>{
                                             });
                                           }}
                                         >
-                                          <div className="w-full h-full bg-blue-500 rounded-sm opacity-60 group-hover/handle:opacity-100 transition-opacity" />
+                                          <div className="w-full h-full bg-zinc-500 rounded-sm opacity-60 group-hover/handle:opacity-100 transition-opacity" />
                                         </div>
                                         {/* Left edge */}
                                         <div
@@ -17825,7 +17716,7 @@ document.querySelectorAll('img').forEach(img=>{
                                             });
                                           }}
                                         >
-                                          <div className="w-1 h-full bg-blue-500 rounded-full opacity-0 group-hover/handle:opacity-100 transition-opacity" />
+                                          <div className="w-1 h-full bg-zinc-500 rounded-full opacity-0 group-hover/handle:opacity-100 transition-opacity" />
                                         </div>
                                         {/* Top edge */}
                                         <div
@@ -17843,7 +17734,7 @@ document.querySelectorAll('img').forEach(img=>{
                                             });
                                           }}
                                         >
-                                          <div className="h-1 w-full bg-blue-500 rounded-full opacity-0 group-hover/handle:opacity-100 transition-opacity" />
+                                          <div className="h-1 w-full bg-zinc-500 rounded-full opacity-0 group-hover/handle:opacity-100 transition-opacity" />
                                         </div>
                                       </>
                                     )}
@@ -17853,7 +17744,7 @@ document.querySelectorAll('img').forEach(img=>{
                                   {comp.isNew && isSelected && (
                                     <div className="mt-3 bg-zinc-900/95 border border-zinc-700 rounded-xl p-3 shadow-xl min-w-[300px]">
                                       <div className="flex items-center gap-2 mb-2">
-                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                        <div className="w-2 h-2 rounded-full bg-zinc-500 animate-pulse" />
                                         <span className="text-[10px] text-zinc-400">Describe your component</span>
                                       </div>
                                       <div className="flex gap-2">
@@ -18006,7 +17897,7 @@ document.querySelectorAll('img').forEach(img=>{
                                     {blueprintStatuses[compId] || 'draft'}
                                   </span>
                                   {blueprintEditedCode && (
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-700 text-zinc-300 border border-zinc-600">
                                       Unsaved Changes
                                     </span>
                                   )}
@@ -18095,7 +17986,7 @@ document.querySelectorAll('img').forEach(img=>{
                                       isEditingBlueprint 
                                         ? "bg-zinc-700 text-zinc-400 cursor-wait" 
                                         : blueprintChatInput.trim()
-                                          ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
+                                          ? "bg-zinc-700 hover:bg-zinc-600 text-white"
                                           : "bg-zinc-800 text-zinc-500"
                                     )}
                                   >
@@ -18139,7 +18030,7 @@ document.querySelectorAll('img').forEach(img=>{
                                         showToast("Changes accepted!", "success");
                                       }
                                     }}
-                                    className="flex-1 py-2.5 text-sm bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-colors flex items-center justify-center gap-2 font-medium"
+                                    className="flex-1 py-2.5 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded-xl transition-colors flex items-center justify-center gap-2 font-medium"
                                   >
                                     <Check className="w-4 h-4" />
                                     Accept
@@ -18150,7 +18041,7 @@ document.querySelectorAll('img').forEach(img=>{
                                       setBlueprintEditedCode(null);
                                       setBlueprintChatHistory([]);
                                     }}
-                                    className="flex-1 py-2.5 text-sm bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-xl transition-colors flex items-center justify-center gap-2"
+                                    className="flex-1 py-2.5 text-sm bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-xl transition-colors flex items-center justify-center gap-2"
                                   >
                                     <X className="w-4 h-4" />
                                     Discard
@@ -18175,7 +18066,7 @@ document.querySelectorAll('img').forEach(img=>{
                                         showToast(`${selectedComp.name} saved to Library!`, "success");
                                       }
                                     }}
-                                    className="py-2.5 px-4 text-sm bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-colors flex items-center justify-center gap-2 font-medium shadow-lg shadow-emerald-500/20"
+                                    className="py-2.5 px-4 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded-xl transition-colors flex items-center justify-center gap-2 font-medium"
                                   >
                                     <Upload className="w-4 h-4" />
                                     Publish
@@ -18192,11 +18083,6 @@ document.querySelectorAll('img').forEach(img=>{
                         );
                       })()}
                       
-                      {/* Canvas info overlay - moved to top-left corner */}
-                      <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-2 bg-zinc-900/80 backdrop-blur-sm rounded-lg border border-zinc-800/50 text-[10px] text-zinc-500 z-10">
-                        <Move className="w-3 h-3" />
-                        <span>Click to select • Drag to move • Scroll to zoom • Double-click for new</span>
-                      </div>
                     </div>
                     
                   </>
