@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No code provided" }, { status: 400 });
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" }); // Flash for faster analysis
+    const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" }); // Gemini 3 Flash for fast analysis
 
     const result = await model.generateContent([
       { text: BLUEPRINTS_ANALYSIS_PROMPT },
