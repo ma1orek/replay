@@ -386,6 +386,72 @@ CORRECT:
 <img src="https://picsum.photos/seed/project-kyoto/800/600" class="w-full h-full object-cover" alt="Project" />
 
 ═══════════════════════════════════════════════════════════════════════════════
+🎯 ICONS - USE ONLY LUCIDE (MANDATORY!)
+═══════════════════════════════════════════════════════════════════════════════
+
+🚨 CRITICAL: Use ONLY Lucide icons for ALL UI elements!
+Lucide is already included via CDN. Use the data-lucide attribute.
+
+HOW TO USE LUCIDE ICONS:
+<i data-lucide="icon-name" class="w-5 h-5"></i>
+
+COMMON ICONS (use these exact names):
+- Navigation: home, menu, x, chevron-right, chevron-left, chevron-down, chevron-up
+- Actions: search, plus, minus, check, trash-2, edit, copy, download, upload, share-2
+- Media: play, pause, volume-2, mic, camera, image, video, music
+- Communication: mail, message-square, phone, send, bell
+- Social: heart, star, thumbs-up, bookmark, share
+- User: user, users, user-plus, settings, log-out
+- Status: check-circle, x-circle, alert-circle, info, loader
+- Arrows: arrow-right, arrow-left, arrow-up, arrow-down, external-link
+- Interface: eye, eye-off, filter, grid, list, layout, maximize, minimize
+- Commerce: shopping-cart, credit-card, package, truck, gift
+- Time: clock, calendar, timer, history
+- Files: file, file-text, folder, folder-open, archive
+- Weather: sun, moon, cloud, cloud-rain, wind, thermometer
+- Other: zap, flame, rocket, target, award, crown, shield, lock, unlock
+
+EXAMPLE USAGE:
+<button class="flex items-center gap-2 px-4 py-2 bg-indigo-600 rounded-lg">
+  <i data-lucide="rocket" class="w-5 h-5"></i>
+  Launch
+</button>
+
+<div class="flex items-center gap-2 text-white/70">
+  <i data-lucide="check-circle" class="w-4 h-4 text-green-400"></i>
+  <span>Verified</span>
+</div>
+
+<nav class="flex gap-4">
+  <a href="#" class="flex items-center gap-2">
+    <i data-lucide="home" class="w-4 h-4"></i> Home
+  </a>
+  <a href="#" class="flex items-center gap-2">
+    <i data-lucide="settings" class="w-4 h-4"></i> Settings
+  </a>
+</nav>
+
+🚨 MANDATORY: Call lucide.createIcons() after DOM loads!
+Add this before </body>:
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    lucide.createIcons();
+  });
+</script>
+
+🚫 FORBIDDEN:
+- <Icon /> or <IconName /> React components - these DON'T WORK in HTML!
+- FontAwesome icons - NOT INCLUDED!
+- Hero Icons - NOT INCLUDED!
+- Custom SVG icon components - WON'T RENDER!
+
+EXCEPTION (Only for company logos):
+If you need company logos (Twitter, GitHub, etc.), use Simple Icons CDN:
+<img src="https://cdn.simpleicons.org/github/white" class="w-5 h-5" />
+<img src="https://cdn.simpleicons.org/twitter/white" class="w-5 h-5" />
+<img src="https://cdn.simpleicons.org/linkedin/white" class="w-5 h-5" />
+
+═══════════════════════════════════════════════════════════════════════════════
 🎨 VISUAL DESIGN SYSTEM
 ═══════════════════════════════════════════════════════════════════════════════
 
@@ -612,7 +678,7 @@ Implementation with Alpine.js:
   <!-- Alpine.js -->
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   
-  <!-- Lucide Icons -->
+  <!-- Lucide Icons - MANDATORY FOR ALL ICONS -->
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   
   <style>

@@ -99,7 +99,10 @@ import {
   Maximize2,
   ChevronUp,
   AlertTriangle,
-  Save
+  Save,
+  Moon,
+  Sun,
+  Grid2X2
 } from "lucide-react";
 import * as LucideIcons from 'lucide-react';
 import { cn, generateId, formatDuration, updateProjectAnalytics } from "@/lib/utils";
@@ -1546,43 +1549,165 @@ const jsxToHtml = (jsxCode: string): string => {
     return `style="${cssString}"`;
   });
   
-  // Extended icon map with more icons
-  // Unicode-only icon map (NO EMOJI - clean professional look)
-  const iconMap: Record<string, string> = {
-    'mail': '✉', 'bell': '◉', 'star': '★', 'heart': '♥', 
-    'check': '✓', 'x': '✕', 'plus': '+', 'minus': '−',
-    'arrowright': '→', 'arrowleft': '←', 'chevronright': '›', 
-    'chevrondown': '⌄', 'chevronup': '⌃', 'fire': '◆', 
-    'tag': '◇', 'user': '●', 'settings': '⚙', 'home': '⌂',
-    'search': '⌕', 'menu': '☰', 'close': '✕', 'bookmark': '⚑',
-    'share': '↗', 'thumbsup': '▲', 'thumbsdown': '▼',
-    'messagesquare': '▢', 'clock': '◷', 'calendar': '▦',
-    'image': '▣', 'video': '▶', 'music': '♪', 'file': '▤',
-    'folder': '▧', 'download': '↓', 'upload': '↑',
-    'trash': '⌫', 'edit': '✎', 'copy': '⧉', 'link': '⛓',
-    'externallink': '↗', 'eye': '◉', 'eyeoff': '○',
-    'lock': '⚿', 'unlock': '⚿', 'shield': '⛨', 'zap': '⚡',
-    'flame': '◆', 'sun': '☀', 'moon': '☽', 'cloud': '☁',
-    'gift': '◈', 'percent': '%', 'dollar': '$', 'euro': '€',
-    'play': '▶', 'pause': '⏸', 'stop': '■', 'skip': '⏭',
-    'playicon': '▶', 'playcircle': '▶', 'youtube': '▶',
-    'shorts': '⚡', 'subscriptions': '▣', 'library': '▤',
-    'history': '◷', 'liked': '▲', 'watchlater': '◷',
-    'trending': '◆', 'shopping': '◈', 'gaming': '▣',
-    'live': '●', 'sports': '●', 'learning': '▤', 'fashion': '◇',
-    'podcast': '◉', 'premium': '◆', 'arrowdown': '↓', 'arrowup': '↑',
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LUCIDE ICONS CONVERSION - Map React component names to Lucide icon names
+  // ═══════════════════════════════════════════════════════════════════════════
+  
+  // Map React icon component names to Lucide data-lucide attribute names
+  const lucideIconMap: Record<string, string> = {
+    // Navigation & Menu
+    'home': 'home', 'menu': 'menu', 'x': 'x', 'close': 'x',
+    'chevronright': 'chevron-right', 'chevronleft': 'chevron-left',
+    'chevrondown': 'chevron-down', 'chevronup': 'chevron-up',
+    'arrowright': 'arrow-right', 'arrowleft': 'arrow-left',
+    'arrowup': 'arrow-up', 'arrowdown': 'arrow-down',
+    'externallink': 'external-link', 'morevertical': 'more-vertical',
+    'morehorizontal': 'more-horizontal',
+    
+    // Actions
+    'search': 'search', 'plus': 'plus', 'minus': 'minus',
+    'check': 'check', 'trash': 'trash-2', 'trash2': 'trash-2',
+    'edit': 'edit', 'edit2': 'edit-2', 'edit3': 'edit-3',
+    'copy': 'copy', 'download': 'download', 'upload': 'upload',
+    'share': 'share-2', 'share2': 'share-2', 'refresh': 'refresh-cw',
+    'filter': 'filter', 'sort': 'arrow-up-down',
+    
+    // Media
+    'play': 'play', 'pause': 'pause', 'stop': 'stop-circle',
+    'playcircle': 'play-circle', 'pausecircle': 'pause-circle',
+    'skipforward': 'skip-forward', 'skipback': 'skip-back',
+    'volume': 'volume-2', 'volume2': 'volume-2', 'volumex': 'volume-x',
+    'mic': 'mic', 'micoff': 'mic-off', 'camera': 'camera',
+    'image': 'image', 'video': 'video', 'music': 'music',
+    'youtube': 'youtube', 'tv': 'tv',
+    
+    // Communication
+    'mail': 'mail', 'inbox': 'inbox', 'send': 'send',
+    'messagesquare': 'message-square', 'messagecircle': 'message-circle',
+    'phone': 'phone', 'phonecall': 'phone-call',
+    'bell': 'bell', 'belloff': 'bell-off', 'bellring': 'bell-ring',
+    
+    // Social & Favorites
+    'heart': 'heart', 'star': 'star', 'thumbsup': 'thumbs-up',
+    'thumbsdown': 'thumbs-down', 'bookmark': 'bookmark',
+    
+    // User & Account
+    'user': 'user', 'users': 'users', 'user2': 'user',
+    'userplus': 'user-plus', 'userminus': 'user-minus',
+    'usercheck': 'user-check', 'userx': 'user-x',
+    'settings': 'settings', 'cog': 'cog', 'sliders': 'sliders',
+    'logout': 'log-out', 'login': 'log-in',
+    
+    // Status & Feedback
+    'checkcircle': 'check-circle', 'checkcircle2': 'check-circle-2',
+    'xcircle': 'x-circle', 'alertcircle': 'alert-circle',
+    'alerttriangle': 'alert-triangle', 'info': 'info',
+    'helpercircle': 'help-circle', 'loader': 'loader', 'loader2': 'loader-2',
+    
+    // Interface
+    'eye': 'eye', 'eyeoff': 'eye-off',
+    'grid': 'grid', 'grid3x3': 'grid-3x3', 'list': 'list',
+    'layout': 'layout', 'layoutdashboard': 'layout-dashboard',
+    'layoutgrid': 'layout-grid', 'columns': 'columns',
+    'maximize': 'maximize', 'maximize2': 'maximize-2',
+    'minimize': 'minimize', 'minimize2': 'minimize-2',
+    'expand': 'expand', 'shrink': 'shrink',
+    'fullscreen': 'maximize', 'exitfullscreen': 'minimize',
+    
+    // Commerce
+    'shoppingcart': 'shopping-cart', 'shoppingbag': 'shopping-bag',
+    'creditcard': 'credit-card', 'package': 'package',
+    'truck': 'truck', 'gift': 'gift', 'tag': 'tag', 'tags': 'tags',
+    'receipt': 'receipt', 'wallet': 'wallet',
+    
+    // Time & Date
+    'clock': 'clock', 'calendar': 'calendar', 'timer': 'timer',
+    'history': 'history', 'alarm': 'alarm-clock',
+    
+    // Files & Folders
+    'file': 'file', 'filetext': 'file-text', 'filex': 'file-x',
+    'folder': 'folder', 'folderopen': 'folder-open',
+    'folderplus': 'folder-plus', 'archive': 'archive',
+    
+    // Weather
+    'sun': 'sun', 'moon': 'moon', 'cloud': 'cloud',
+    'cloudrain': 'cloud-rain', 'cloudsun': 'cloud-sun',
+    'wind': 'wind', 'thermometer': 'thermometer',
+    
+    // Security
+    'lock': 'lock', 'unlock': 'unlock', 'key': 'key',
+    'shield': 'shield', 'shieldcheck': 'shield-check',
+    
+    // Tech & Devices
+    'monitor': 'monitor', 'smartphone': 'smartphone',
+    'tablet': 'tablet', 'laptop': 'laptop',
+    'server': 'server', 'database': 'database',
+    'wifi': 'wifi', 'wifioff': 'wifi-off',
+    'bluetooth': 'bluetooth', 'cpu': 'cpu',
+    'harddrive': 'hard-drive', 'usb': 'usb',
+    
+    // Objects
+    'zap': 'zap', 'flame': 'flame', 'fire': 'flame',
+    'rocket': 'rocket', 'target': 'target',
+    'award': 'award', 'crown': 'crown', 'trophy': 'trophy',
+    'flag': 'flag', 'globe': 'globe', 'map': 'map',
+    'mappin': 'map-pin', 'navigation': 'navigation',
+    'compass': 'compass', 'anchor': 'anchor',
+    
+    // Shapes & Misc
+    'circle': 'circle', 'square': 'square',
+    'triangle': 'triangle', 'diamond': 'diamond',
+    'hexagon': 'hexagon', 'octagon': 'octagon',
+    'percent': 'percent', 'hash': 'hash', 'athsign': 'at-sign',
+    'link': 'link', 'link2': 'link-2', 'unlink': 'unlink',
+    'paperclip': 'paperclip', 'scissors': 'scissors',
+    'code': 'code', 'code2': 'code-2', 'terminal': 'terminal',
+    'braces': 'braces', 'brackets': 'brackets',
+    
+    // Arrows & Directions
+    'moveup': 'move-up', 'movedown': 'move-down',
+    'moveleft': 'move-left', 'moveright': 'move-right',
+    'cornerdownleft': 'corner-down-left', 'cornerdownright': 'corner-down-right',
+    'cornerupleft': 'corner-up-left', 'cornerupright': 'corner-up-right',
+    'rotateccw': 'rotate-ccw', 'rotatecw': 'rotate-cw',
+    'repeat': 'repeat', 'shuffle': 'shuffle',
+    
+    // Misc fallbacks
+    'dot': 'circle', 'dots': 'more-horizontal', 'ellipsis': 'more-horizontal',
+    'grip': 'grip-vertical', 'gripvertical': 'grip-vertical',
+    'griphorizontal': 'grip-horizontal',
   };
   
-  // Replace <Icon /> or <IconName /> or <IconNameIcon /> patterns
-  for (const [icon, emoji] of Object.entries(iconMap)) {
+  // Convert <IconName /> React components to Lucide <i data-lucide="...">
+  for (const [componentName, lucideName] of Object.entries(lucideIconMap)) {
     // Match: <Home />, <HomeIcon />, <Home className="..." />, etc.
-    const regex = new RegExp(`<${icon}(icon)?[^>]*\\/?>`, 'gi');
-    html = html.replace(regex, `<span class="text-xl">${emoji}</span>`);
+    const regex = new RegExp(`<${componentName}(icon)?\\s*([^>]*)\\s*\\/?>`, 'gi');
+    html = html.replace(regex, (match, iconSuffix, attrs) => {
+      // Extract className if present
+      const classMatch = attrs?.match(/className="([^"]+)"/i) || attrs?.match(/class="([^"]+)"/i);
+      const classes = classMatch ? classMatch[1] : 'w-5 h-5';
+      return `<i data-lucide="${lucideName}" class="${classes}"></i>`;
+    });
   }
   
-  // Replace remaining self-closing JSX components <Component /> with placeholder
-  html = html.replace(/<([A-Z][a-zA-Z]*)\s+[^>]*\/>/g, '<span class="text-xs text-zinc-500">[$1]</span>');
-  html = html.replace(/<([A-Z][a-zA-Z]*)\s*\/>/g, '<span class="text-xs text-zinc-500">[$1]</span>');
+  // Fallback: Convert any remaining <PascalCaseIcon /> to Lucide kebab-case
+  html = html.replace(/<([A-Z][a-zA-Z]+)(Icon)?\s*([^>]*)\s*\/?>/g, (match, name, iconSuffix, attrs) => {
+    // Skip known HTML elements
+    const htmlElements = ['Div', 'Span', 'Button', 'Input', 'Form', 'Section', 'Header', 'Footer', 'Nav', 'Main', 'Article', 'Aside'];
+    if (htmlElements.includes(name)) return match;
+    
+    // Convert PascalCase to kebab-case for Lucide
+    const kebabName = name.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+    const classMatch = attrs?.match(/className="([^"]+)"/i) || attrs?.match(/class="([^"]+)"/i);
+    const classes = classMatch ? classMatch[1] : 'w-5 h-5';
+    
+    // Return Lucide icon element
+    return `<i data-lucide="${kebabName}" class="${classes}"></i>`;
+  });
+  
+  // Remove any remaining self-closing JSX components silently (they're likely already converted)
+  html = html.replace(/<([A-Z][a-zA-Z]*)\s+[^>]*\/>/g, '');
+  html = html.replace(/<([A-Z][a-zA-Z]*)\s*\/>/g, '');
   
   // ═══════════════════════════════════════════════════════════════════════════
   // CONVERT JSX src/href EXPRESSIONS TO PLAIN STRINGS FIRST
@@ -1743,6 +1868,7 @@ const ShadowPreview = ({
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script>
     tailwind.config = {
@@ -1845,13 +1971,20 @@ const ShadowPreview = ({
 <body>
   <div class="preview-wrapper" id="preview-content">${cleanHtml}</div>
   <script>
+    // Initialize Lucide icons
+    if (typeof lucide !== 'undefined') {
+      lucide.createIcons();
+    }
     // Auto-resize iframe to content
     function sendHeight() {
       const height = document.getElementById('preview-content')?.scrollHeight || 200;
       window.parent.postMessage({ type: 'IFRAME_HEIGHT', height: Math.max(height + 32, 120) }, '*');
     }
     // Send on load and after Tailwind processes
-    window.addEventListener('load', () => setTimeout(sendHeight, 100));
+    window.addEventListener('load', () => {
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+      setTimeout(sendHeight, 100);
+    });
     setTimeout(sendHeight, 500);
     setTimeout(sendHeight, 1000);
   </script>
@@ -1958,6 +2091,7 @@ const InteractiveReactPreview = ({
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -2161,6 +2295,13 @@ const InteractiveReactPreview = ({
     // Render
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<${componentName} />);
+    
+    // Initialize Lucide icons after React render
+    setTimeout(() => {
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+    }, 100);
     
     // Size reporting
     const sendSize = () => {
@@ -2679,6 +2820,8 @@ function ReplayToolContent() {
   const [libraryCategoriesExpanded, setLibraryCategoriesExpanded] = useState<Record<string, boolean>>({});
   const [showLibraryOutline, setShowLibraryOutline] = useState(false);
   const [showLibraryCode, setShowLibraryCode] = useState(false);
+  const [showLibraryRuler, setShowLibraryRuler] = useState(false);
+  const [libraryVisionMode, setLibraryVisionMode] = useState<"none" | "blur" | "deuteranopia" | "protanopia" | "tritanopia" | "grayscale">("none");
   const [libraryViewport, setLibraryViewport] = useState<"desktop" | "mobile">("desktop");
   const [libraryPreviewSize, setLibraryPreviewSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const [isLibraryFullscreen, setIsLibraryFullscreen] = useState(false);
@@ -2702,6 +2845,12 @@ function ReplayToolContent() {
   const [blueprintsComponentPrompt, setBlueprintsComponentPrompt] = useState("");
   const [isGeneratingBlueprintsComponent, setIsGeneratingBlueprintsComponent] = useState(false);
   const [blueprintsBackground, setBlueprintsBackground] = useState<"dark" | "light">("dark");
+  const [showBlueprintsGrid, setShowBlueprintsGrid] = useState(false);
+  const [showBlueprintsOutline, setShowBlueprintsOutline] = useState(false);
+  const [showBlueprintsRuler, setShowBlueprintsRuler] = useState(false);
+  const [blueprintsVisionMode, setBlueprintsVisionMode] = useState<"none" | "blur" | "deuteranopia" | "protanopia" | "tritanopia" | "grayscale">("none");
+  const [blueprintsViewport, setBlueprintsViewport] = useState<"desktop" | "mobile">("desktop");
+  const [isBlueprintsFullscreen, setIsBlueprintsFullscreen] = useState(false);
   
   // Blueprints Analysis State (Single Source of Truth)
   const [blueprintsAnalysis, setBlueprintsAnalysis] = useState<any>(null);
@@ -2722,9 +2871,12 @@ function ReplayToolContent() {
   const blueprintsCanvasRef = useRef<HTMLDivElement>(null);
   // Draggable component positions on canvas
   const [blueprintPositions, setBlueprintPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const [blueprintSizes, setBlueprintSizes] = useState<Record<string, { width: number; height: number }>>({});
   const [draggingComponent, setDraggingComponent] = useState<string | null>(null);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [selectedBlueprintComponent, setSelectedBlueprintComponent] = useState<string | null>(null);
+  const [resizingComponent, setResizingComponent] = useState<{ id: string; handle: string } | null>(null);
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [editingComponentName, setEditingComponentName] = useState<string | null>(null); // For inline name editing
   const [editingNameValue, setEditingNameValue] = useState("");
   
@@ -10279,6 +10431,23 @@ ${publishCode}
       currentTab={viewMode}
     >
     <div className="h-screen flex flex-col bg-[#111111] overflow-hidden">
+      {/* SVG Filters for Vision Simulator */}
+      <svg className="absolute w-0 h-0 overflow-hidden" aria-hidden="true">
+        <defs>
+          {/* Deuteranopia (green-blind) */}
+          <filter id="deuteranopia">
+            <feColorMatrix type="matrix" values="0.625 0.375 0 0 0 0.7 0.3 0 0 0 0 0.3 0.7 0 0 0 0 0 1 0" />
+          </filter>
+          {/* Protanopia (red-blind) */}
+          <filter id="protanopia">
+            <feColorMatrix type="matrix" values="0.567 0.433 0 0 0 0.558 0.442 0 0 0 0 0.242 0.758 0 0 0 0 0 1 0" />
+          </filter>
+          {/* Tritanopia (blue-blind) */}
+          <filter id="tritanopia">
+            <feColorMatrix type="matrix" values="0.95 0.05 0 0 0 0 0.433 0.567 0 0 0 0.475 0.525 0 0 0 0 0 1 0" />
+          </filter>
+        </defs>
+      </svg>
 
       <AssetsModal
         isOpen={showAssetsModal}
@@ -11229,7 +11398,7 @@ ${publishCode}
                     <p className="text-xs text-zinc-500 mb-1">No library yet</p>
                     <p className="text-[10px] text-zinc-600 mb-4">Generate code to extract components</p>
                     {generatedCode && (
-                      <button
+                      <ShimmerButton
                         onClick={async () => {
                           setIsGeneratingLibrary(true);
                           try {
@@ -11250,15 +11419,23 @@ ${publishCode}
                           }
                         }}
                         disabled={isGeneratingLibrary}
-                        className="px-3 py-1.5 text-xs bg-[var(--accent-orange)] text-black rounded-md hover:opacity-90 disabled:opacity-50"
+                        shimmerColor="#ffffff"
+                        shimmerDuration="2s"
+                        background="linear-gradient(135deg, #f97316 0%, #ea580c 100%)"
+                        className="w-full px-3 py-2 text-xs font-semibold"
                       >
                         {isGeneratingLibrary ? (
-                          <span className="flex items-center gap-1.5">
+                          <span className="flex items-center justify-center gap-1.5 text-white">
                             <Loader2 className="w-3 h-3 animate-spin" />
                             Extracting...
                           </span>
-                        ) : "Extract Components"}
-                      </button>
+                        ) : (
+                          <span className="flex items-center justify-center gap-1.5 text-white">
+                            <Sparkles className="w-3.5 h-3.5" />
+                            Extract Components
+                          </span>
+                        )}
+                      </ShimmerButton>
                     )}
                   </div>
                 ) : (
@@ -11423,7 +11600,7 @@ ${publishCode}
               <div className="flex-1 overflow-y-auto p-3 space-y-4">
                 {/* TIER 1: OBSERVED (SOLID) - Seen on video ≥2s, 100% certain */}
                 <div>
-                  <div className="text-[9px] font-semibold uppercase tracking-wider text-emerald-500/80 mb-2 flex items-center gap-1.5">
+                  <div className="text-[9px] font-semibold uppercase tracking-wider text-zinc-400 mb-2 flex items-center gap-1.5">
                     <Check className="w-3 h-3" /> Observed Pages
                   </div>
                   {flowNodes.filter(n => n.status === "observed" || n.status === "added").length > 0 ? (
@@ -11438,17 +11615,17 @@ ${publishCode}
                           className={cn(
                             "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-all text-left",
                             selectedFlowNode === node.id 
-                              ? "bg-emerald-500/20 border border-emerald-500/40 text-emerald-300" 
-                              : "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/15"
+                              ? "bg-zinc-700/50 border border-zinc-500/50 text-zinc-200" 
+                              : "bg-zinc-800/50 border border-zinc-700/40 text-zinc-300 hover:bg-zinc-700/40"
                           )}
                         >
                           <FileText className="w-3.5 h-3.5 flex-shrink-0" />
                           <span className="truncate flex-1">{node.name}</span>
                           {node.videoEvidence?.duration && (
-                            <span className="text-[8px] text-emerald-500/60">{node.videoEvidence.duration.toFixed(1)}s</span>
+                            <span className="text-[8px] text-zinc-500">{node.videoEvidence.duration.toFixed(1)}s</span>
                           )}
                           {node.status === "added" && (
-                            <span className="text-[8px] px-1 py-0.5 rounded bg-zinc-700 text-zinc-400">AI</span>
+                            <span className="text-[8px] px-1 py-0.5 rounded bg-blue-500/20 text-blue-400">AI</span>
                           )}
                         </button>
                       ))}
@@ -11460,7 +11637,7 @@ ${publishCode}
                 
                 {/* TIER 2: DETECTED (DASHED) - Link/button visible but not clicked */}
                 <div>
-                  <div className="text-[9px] font-semibold uppercase tracking-wider text-amber-500/80 mb-2 flex items-center gap-1.5">
+                  <div className="text-[9px] font-semibold uppercase tracking-wider text-zinc-500 mb-2 flex items-center gap-1.5">
                     <AlertCircle className="w-3 h-3" /> Detected (Not Visited)
                   </div>
                   {flowNodes.filter(n => n.status === "detected").length > 0 ? (
@@ -11468,12 +11645,12 @@ ${publishCode}
                       {flowNodes.filter(n => n.status === "detected").map((node) => (
                         <div
                           key={node.id}
-                          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 border-dashed text-amber-400/80 text-xs group"
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800/30 border border-zinc-700/30 border-dashed text-zinc-400 text-xs group"
                         >
                           <FileText className="w-3.5 h-3.5 opacity-60 flex-shrink-0" />
                           <span className="truncate flex-1">{node.name}</span>
                           {node.videoEvidence?.hoverDetected && (
-                            <span className="text-[8px] text-amber-500/50">hover</span>
+                            <span className="text-[8px] text-zinc-500">hover</span>
                           )}
                           <button
                             onClick={() => {
@@ -11481,7 +11658,7 @@ ${publishCode}
                               setShowFloatingEdit(true);
                               setTimeout(() => editInputRef.current?.focus(), 100);
                             }}
-                            className="opacity-0 group-hover:opacity-100 px-2 py-0.5 text-[9px] bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 rounded transition-all"
+                            className="opacity-0 group-hover:opacity-100 px-2 py-0.5 text-[9px] bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded transition-all"
                           >
                             + Reconstruct
                           </button>
@@ -13773,18 +13950,18 @@ export default function GeneratedPage() {
                 ) : flowNodes.length > 0 || flowBuilding ? (
                   <>
                     {/* Zoom controls - bottom left */}
-                    <div className="absolute bottom-4 left-4 z-20 flex items-center gap-1 bg-zinc-900/90 backdrop-blur-sm rounded-lg p-1 border border-zinc-800">
+                    <div className="absolute bottom-4 left-4 z-20 flex items-center gap-1 bg-zinc-900/98 backdrop-blur-xl rounded-xl p-1.5 border border-zinc-700/50 shadow-2xl">
                       <button 
                         onClick={() => setArchZoom(z => Math.max(0.25, z - 0.1))} 
-                        className="p-1.5 rounded hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-zinc-200"
+                        className="p-1.5 rounded-lg hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-zinc-200"
                         title="Zoom out"
                       >
                         <ZoomOut className="w-4 h-4" />
                       </button>
-                      <span className="text-xs text-zinc-400 w-12 text-center font-mono">{Math.round(archZoom * 100)}%</span>
+                      <span className="text-xs text-zinc-300 w-12 text-center font-mono">{Math.round(archZoom * 100)}%</span>
                       <button 
                         onClick={() => setArchZoom(z => Math.min(2, z + 0.1))} 
-                        className="p-1.5 rounded hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-zinc-200"
+                        className="p-1.5 rounded-lg hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-zinc-200"
                         title="Zoom in"
                       >
                         <ZoomIn className="w-4 h-4" />
@@ -13792,7 +13969,7 @@ export default function GeneratedPage() {
                       <div className="w-px h-4 bg-zinc-700 mx-1" />
                       <button 
                         onClick={() => setArchZoom(1)} 
-                        className="px-2 py-1 rounded hover:bg-zinc-800 transition-colors text-[10px] text-zinc-400 hover:text-zinc-200"
+                        className="px-2 py-1.5 rounded-lg hover:bg-zinc-800 transition-colors text-[10px] text-zinc-400 hover:text-zinc-200"
                         title="Reset zoom"
                       >
                         Reset
@@ -13800,36 +13977,36 @@ export default function GeneratedPage() {
                       <div className="w-px h-4 bg-zinc-700 mx-1" />
                       <button 
                         onClick={autoLayoutFlowNodes}
-                        className="px-2 py-1 rounded hover:bg-zinc-800 transition-colors text-[10px] text-zinc-400 hover:text-zinc-200"
-                        title="Auto-arrange nodes"
+                        className="px-2 py-1.5 rounded-lg hover:bg-zinc-800 transition-colors text-[10px] text-zinc-400 hover:text-zinc-200"
+                        title="Auto-arrange"
                       >
                         Auto Layout
                       </button>
                     </div>
                     
                     {/* Toggle buttons - top right */}
-                    <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+                    <div className="absolute top-4 right-4 z-20 flex items-center gap-1 bg-zinc-900/98 backdrop-blur-xl rounded-xl p-1.5 border border-zinc-700/50 shadow-2xl">
                       {/* Possible paths toggle */}
                       <button 
                         onClick={() => setShowPossiblePaths(!showPossiblePaths)}
                         className={cn(
-                          "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-lg border",
+                          "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all",
                           showPossiblePaths 
-                            ? "bg-white text-zinc-900 border-white" 
-                            : "bg-zinc-900 border-zinc-700 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+                            ? "bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/30" 
+                            : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                         )}
                       >
                         <GitBranch className="w-3.5 h-3.5" />
-                        Possible
+                        Paths
                       </button>
                       {/* Structure toggle */}
                       <button 
                         onClick={() => setShowStructureInFlow(!showStructureInFlow)}
                         className={cn(
-                          "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-lg border",
+                          "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all",
                           showStructureInFlow 
-                            ? "bg-white text-zinc-900 border-white" 
-                            : "bg-zinc-900 border-zinc-700 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+                            ? "bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/30" 
+                            : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                         )}
                       >
                         <Layers className="w-3.5 h-3.5" />
@@ -13839,27 +14016,14 @@ export default function GeneratedPage() {
                       <button 
                         onClick={() => setShowPreviewsInFlow(!showPreviewsInFlow)}
                         className={cn(
-                          "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-lg border",
+                          "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all",
                           showPreviewsInFlow 
-                            ? "bg-white text-zinc-900 border-white" 
-                            : "bg-zinc-900 border-zinc-700 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+                            ? "bg-cyan-500/20 text-cyan-400 ring-1 ring-cyan-500/30" 
+                            : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                         )}
                       >
                         <Eye className="w-3.5 h-3.5" />
                         Preview
-                      </button>
-                      {/* Business Process Architecture toggle */}
-                      <button 
-                        onClick={() => setShowBusinessProcess(!showBusinessProcess)}
-                        className={cn(
-                          "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-lg border",
-                          showBusinessProcess 
-                            ? "bg-white text-zinc-900 border-white" 
-                            : "bg-zinc-900 border-zinc-700 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
-                        )}
-                      >
-                        <Network className="w-3.5 h-3.5" />
-                        Process
                       </button>
                     </div>
                     
@@ -14080,19 +14244,17 @@ export default function GeneratedPage() {
                                 width: nodeWidth,
                                 minHeight: totalHeight,
                                 opacity: isPossible ? 0.55 : isDetected ? 0.85 : 1,
-                                // 3-tier border styles
+                                // 3-tier border styles - muted colors
                                 background: 'rgba(15,15,17,0.95)',
                                 border: isObserved 
-                                  ? '2px solid rgba(16, 185, 129, 0.4)' // emerald solid
+                                  ? '2px solid rgba(113, 113, 122, 0.5)' // zinc solid
                                   : isAdded
                                   ? '2px solid rgba(59, 130, 246, 0.4)' // blue solid
                                   : isDetected
-                                  ? '2px dashed rgba(251, 191, 36, 0.3)' // amber dashed
+                                  ? '2px dashed rgba(113, 113, 122, 0.3)' // zinc dashed
                                   : '2px dotted rgba(255,255,255,0.1)', // gray dotted
                                 boxShadow: isDragging
                                   ? '0 20px 40px -12px rgba(0,0,0,0.5)'
-                                  : isObserved
-                                  ? '0 4px 20px -4px rgba(16, 185, 129, 0.15)'
                                   : '0 4px 20px -4px rgba(0,0,0,0.3)'
                               }}
                               onMouseDown={(e) => {
@@ -14137,9 +14299,9 @@ export default function GeneratedPage() {
                                   {/* Icon - perfectly centered */}
                                   <div className={cn(
                                     "w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0",
-                                    isObserved ? "bg-emerald-500/10 text-emerald-400" 
+                                    isObserved ? "bg-zinc-700/30 text-zinc-300" 
                                     : isAdded ? "bg-blue-500/10 text-blue-400"
-                                    : isDetected ? "bg-zinc-600/10 text-zinc-400"
+                                    : isDetected ? "bg-zinc-700/20 text-zinc-400"
                                     : "bg-zinc-800/50 text-zinc-500"
                                   )}>
                                     <Icon className="w-3.5 h-3.5" />
@@ -14151,17 +14313,17 @@ export default function GeneratedPage() {
                                       isPossible ? "text-zinc-500 italic" : "text-zinc-200"
                                     )} title={node.name}>{node.name}</span>
                                   </div>
-                                  {/* Status Badge - 3-tier visual system */}
+                                  {/* Status Badge - 3-tier visual system - muted */}
                                   <span className={cn(
                                     "text-[8px] px-1.5 py-0.5 rounded capitalize font-medium flex-shrink-0",
                                     isObserved 
-                                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" 
+                                      ? "bg-zinc-700/40 text-zinc-300 border border-zinc-600/40" 
                                       : isAdded
                                       ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
                                       : isDetected
-                                      ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 border-dashed"
+                                      ? "bg-zinc-700/30 text-zinc-400 border border-zinc-600/30 border-dashed"
                                       : isInferred
-                                      ? "bg-zinc-700/50 text-zinc-400 border border-zinc-600/30 border-dotted"
+                                      ? "bg-zinc-700/20 text-zinc-500 border border-zinc-600/20 border-dotted"
                                       : "bg-zinc-800 text-zinc-500 border border-zinc-700/30 border-dotted"
                                   )}>
                                     {isObserved ? "Observed" : isAdded ? "Generated" : isDetected ? "Detected" : isInferred ? "Inferred" : "Possible"}
@@ -15523,79 +15685,188 @@ export default function GeneratedPage() {
                   ) : null;
                 })()}
                 {/* Main Area - Canvas + Bottom Panel (middle panel removed - now in left sidebar) */}
-                <div className="flex-1 flex flex-col min-w-0">
-                  {/* Toolbar */}
-                  <div className="h-10 border-b border-zinc-800/50 bg-[#111111] flex items-center justify-between px-3">
-                    {/* Left: Canvas controls */}
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => setLibraryZoom(Math.max(50, libraryZoom - 25))} className="p-1.5 hover:bg-zinc-800 rounded-md" title="Zoom Out">
-                        <ZoomOut className="w-3.5 h-3.5 text-zinc-500" />
-                      </button>
-                      <span className="text-[10px] text-zinc-500 w-10 text-center">{libraryZoom}%</span>
-                      <button onClick={() => setLibraryZoom(Math.min(200, libraryZoom + 25))} className="p-1.5 hover:bg-zinc-800 rounded-md" title="Zoom In">
-                        <ZoomIn className="w-3.5 h-3.5 text-zinc-500" />
-                      </button>
-                      <button onClick={() => setLibraryZoom(100)} className="p-1.5 hover:bg-zinc-800 rounded-md" title="Reset Zoom">
-                        <RefreshCw className="w-3.5 h-3.5 text-zinc-500" />
-                      </button>
-                      <div className="w-px h-4 bg-zinc-800 mx-1" />
+                <div className="flex-1 flex flex-col min-w-0 relative">
+                  {/* Center Toolbar - Tool controls (floating over canvas) - responsive */}
+                  <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex flex-wrap items-center justify-center gap-1 bg-zinc-900/98 backdrop-blur-xl rounded-xl p-1.5 border border-zinc-700/50 shadow-2xl shadow-black/40 max-w-[calc(100%-2rem)] sm:max-w-none">
+                    {/* Grid toggle */}
+                    <button 
+                      onClick={() => setShowLibraryGrid(!showLibraryGrid)}
+                      className={cn(
+                        "p-2 rounded-lg transition-all duration-150 group relative",
+                        showLibraryGrid 
+                          ? "bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/30" 
+                          : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                      )}
+                    >
+                      <Grid3X3 className="w-4 h-4" />
+                      <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Grid</span>
+                    </button>
+                    
+                    {/* Background toggle */}
+                    <div className="relative group/bg">
                       <button 
-                        onClick={() => setShowLibraryGrid(!showLibraryGrid)} 
-                        className={cn("p-1.5 rounded-md", showLibraryGrid ? "bg-zinc-700 text-white" : "hover:bg-zinc-800 text-zinc-500")}
-                        title="Toggle Grid"
+                        className={cn(
+                          "p-2 rounded-lg transition-all duration-150 flex items-center gap-1",
+                          libraryBackground !== "dark" 
+                            ? "bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/30" 
+                            : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                        )}
                       >
-                        <Grid3X3 className="w-3.5 h-3.5" />
+                        {libraryBackground === "light" ? <Sun className="w-4 h-4" /> : libraryBackground === "transparent" ? <Grid2X2 className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                        <ChevronDown className="w-3 h-3" />
                       </button>
-                      <button 
-                        onClick={() => setShowLibraryOutline(!showLibraryOutline)}
-                        className={cn("p-1.5 rounded-md", showLibraryOutline ? "bg-zinc-700 text-white" : "hover:bg-zinc-800 text-zinc-500")}
-                        title="Toggle Outline"
-                      >
-                        <Ruler className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="absolute top-full left-0 mt-2 bg-zinc-900/98 backdrop-blur-xl border border-zinc-700/50 rounded-xl shadow-2xl opacity-0 group-hover/bg:opacity-100 pointer-events-none group-hover/bg:pointer-events-auto transition-opacity min-w-[120px] py-1 z-50">
+                        <span className="block px-3 py-1.5 text-[10px] text-zinc-500 uppercase tracking-wider">Background</span>
+                        {(["dark", "light", "transparent"] as const).map((bg) => (
+                          <button
+                            key={bg}
+                            onClick={() => setLibraryBackground(bg)}
+                            className={cn(
+                              "w-full px-3 py-1.5 text-xs text-left hover:bg-zinc-800 transition-colors flex items-center justify-between capitalize",
+                              libraryBackground === bg ? "text-white" : "text-zinc-400"
+                            )}
+                          >
+                            {bg}
+                            {libraryBackground === bg && <Check className="w-3 h-3" />}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                     
-                    {/* Center: Background selector */}
-                    <div className="flex items-center gap-1 bg-zinc-900 rounded-md p-0.5">
-                      {(["light", "dark", "transparent"] as const).map((bg) => (
-                        <button
-                          key={bg}
-                          onClick={() => setLibraryBackground(bg)}
-                          className={cn(
-                            "px-2 py-1 text-[10px] rounded transition-colors",
-                            libraryBackground === bg ? "bg-zinc-700 text-white" : "text-zinc-500 hover:text-zinc-300"
-                          )}
-                        >
-                          {bg.charAt(0).toUpperCase() + bg.slice(1)}
-                        </button>
-                      ))}
+                    {/* Ruler mode */}
+                    <button 
+                      onClick={() => setShowLibraryRuler(!showLibraryRuler)}
+                      className={cn(
+                        "p-2 rounded-lg transition-all duration-150 group relative",
+                        showLibraryRuler 
+                          ? "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30" 
+                          : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                      )}
+                    >
+                      <Ruler className="w-4 h-4" />
+                      <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Measure</span>
+                    </button>
+                    
+                    {/* Outline toggle */}
+                    <button 
+                      onClick={() => setShowLibraryOutline(!showLibraryOutline)}
+                      className={cn(
+                        "p-2 rounded-lg transition-all duration-150 group relative",
+                        showLibraryOutline 
+                          ? "bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/30" 
+                          : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                      )}
+                    >
+                      <Square className="w-4 h-4" />
+                      <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Outline</span>
+                    </button>
+                    
+                    <div className="w-px h-5 bg-zinc-700 mx-1" />
+                    
+                    {/* Vision Simulator dropdown */}
+                    <div className="relative group/vision">
+                      <button 
+                        className={cn(
+                          "p-2 rounded-lg transition-all duration-150 flex items-center gap-1",
+                          libraryVisionMode !== "none" 
+                            ? "bg-rose-500/20 text-rose-400 ring-1 ring-rose-500/30" 
+                            : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                        )}
+                      >
+                        <Eye className="w-4 h-4" />
+                        <ChevronDown className="w-3 h-3" />
+                      </button>
+                      <div className="absolute top-full right-0 mt-2 bg-zinc-900/98 backdrop-blur-xl border border-zinc-700/50 rounded-xl shadow-2xl opacity-0 group-hover/vision:opacity-100 pointer-events-none group-hover/vision:pointer-events-auto transition-opacity min-w-[160px] py-1 z-50">
+                        <span className="block px-3 py-1.5 text-[10px] text-zinc-500 uppercase tracking-wider">Vision Simulator</span>
+                        {[
+                          { id: "none", label: "Normal" },
+                          { id: "blur", label: "Blurred Vision" },
+                          { id: "deuteranopia", label: "Deuteranopia" },
+                          { id: "protanopia", label: "Protanopia" },
+                          { id: "tritanopia", label: "Tritanopia" },
+                          { id: "grayscale", label: "Grayscale" },
+                        ].map((mode) => (
+                          <button
+                            key={mode.id}
+                            onClick={() => setLibraryVisionMode(mode.id as any)}
+                            className={cn(
+                              "w-full px-3 py-1.5 text-xs text-left hover:bg-zinc-800 transition-colors flex items-center justify-between",
+                              libraryVisionMode === mode.id ? "text-white" : "text-zinc-400"
+                            )}
+                          >
+                            {mode.label}
+                            {libraryVisionMode === mode.id && <Check className="w-3 h-3" />}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                     
-                    {/* Right: Viewport & actions */}
-                    <div className="flex items-center gap-1">
-                      <button 
-                        onClick={() => setLibraryViewport("mobile")}
-                        className={cn("p-1.5 rounded-md transition-colors", libraryViewport === "mobile" ? "bg-zinc-700 text-white" : "hover:bg-zinc-800 text-zinc-500")} 
-                        title="Mobile view (375px)"
-                      >
-                        <Smartphone className="w-3.5 h-3.5" />
-                      </button>
-                      <button 
-                        onClick={() => setLibraryViewport("desktop")}
-                        className={cn("p-1.5 rounded-md transition-colors", libraryViewport === "desktop" ? "bg-zinc-700 text-white" : "hover:bg-zinc-800 text-zinc-500")} 
-                        title="Desktop view (full width)"
-                      >
-                        <Monitor className="w-3.5 h-3.5" />
-                      </button>
-                      <div className="w-px h-4 bg-zinc-800 mx-1" />
-                      <button 
-                        onClick={() => setIsLibraryFullscreen(!isLibraryFullscreen)}
-                        className={cn("p-1.5 rounded-md transition-colors", isLibraryFullscreen ? "bg-zinc-700 text-white" : "hover:bg-zinc-800 text-zinc-500")} 
-                        title={isLibraryFullscreen ? "Exit fullscreen" : "Fullscreen preview"}
-                      >
-                        <Maximize2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                    <div className="w-px h-5 bg-zinc-700 mx-1" />
+                    
+                    {/* Viewport toggles */}
+                    <button 
+                      onClick={() => setLibraryViewport("mobile")}
+                      className={cn(
+                        "p-2 rounded-lg transition-all duration-150 group relative",
+                        libraryViewport === "mobile" 
+                          ? "bg-cyan-500/20 text-cyan-400 ring-1 ring-cyan-500/30" 
+                          : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                      )}
+                    >
+                      <Smartphone className="w-4 h-4" />
+                      <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Mobile</span>
+                    </button>
+                    <button 
+                      onClick={() => setLibraryViewport("desktop")}
+                      className={cn(
+                        "p-2 rounded-lg transition-all duration-150 group relative",
+                        libraryViewport === "desktop" 
+                          ? "bg-cyan-500/20 text-cyan-400 ring-1 ring-cyan-500/30" 
+                          : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                      )}
+                    >
+                      <Monitor className="w-4 h-4" />
+                      <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Desktop</span>
+                    </button>
+                    <button 
+                      onClick={() => setIsLibraryFullscreen(!isLibraryFullscreen)}
+                      className={cn(
+                        "p-2 rounded-lg transition-all duration-150 group relative",
+                        isLibraryFullscreen 
+                          ? "bg-zinc-600/50 text-white ring-1 ring-zinc-500/30" 
+                          : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                      )}
+                    >
+                      <Maximize2 className="w-4 h-4" />
+                      <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Fullscreen</span>
+                    </button>
+                  </div>
+                  
+                  {/* Zoom controls - bottom left (like Flow) */}
+                  <div className="absolute bottom-4 left-4 z-30 flex items-center gap-1 bg-zinc-900/95 backdrop-blur-sm rounded-lg p-1 border border-zinc-800 shadow-xl">
+                    <button 
+                      onClick={() => setLibraryZoom(Math.max(50, libraryZoom - 25))}
+                      className="p-1.5 rounded hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-white"
+                      title="Zoom out"
+                    >
+                      <ZoomOut className="w-4 h-4" />
+                    </button>
+                    <span className="text-xs text-zinc-300 w-12 text-center font-mono">{libraryZoom}%</span>
+                    <button 
+                      onClick={() => setLibraryZoom(Math.min(200, libraryZoom + 25))}
+                      className="p-1.5 rounded hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-white"
+                      title="Zoom in"
+                    >
+                      <ZoomIn className="w-4 h-4" />
+                    </button>
+                    <div className="w-px h-4 bg-zinc-700 mx-1" />
+                    <button 
+                      onClick={() => setLibraryZoom(100)}
+                      className="px-2 py-1 rounded hover:bg-zinc-800 transition-colors text-[10px] text-zinc-400 hover:text-white"
+                      title="Reset zoom"
+                    >
+                      Reset
+                    </button>
                   </div>
                   
                   {/* Canvas - Component Preview - STORYBOOK STYLE */}
@@ -15610,13 +15881,23 @@ export default function GeneratedPage() {
                     
                     return (
                       <>
-                        <div className={cn(
-                          "flex-1 overflow-auto",
-                          libraryBackground === "dark" ? "bg-[#1a1a1c]" : 
-                          libraryBackground === "light" ? "bg-white" : 
-                          "bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHJlY3QgZmlsbD0iIzFhMWExYSIgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIi8+PHJlY3QgZmlsbD0iIzI1MjUyNSIgeD0iMTAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIvPjxyZWN0IGZpbGw9IiMyNTI1MjUiIHk9IjEwIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiLz48cmVjdCBmaWxsPSIjMWExYTFhIiB4PSIxMCIgeT0iMTAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3QgZmlsbD0idXJsKCNncmlkKSIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIvPjwvc3ZnPg==')]",
-                          showLibraryGrid && "bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:16px_16px]"
-                        )}>
+                        <div 
+                          className={cn(
+                            "flex-1 overflow-auto",
+                            libraryBackground === "dark" ? "bg-[#1a1a1c]" : 
+                            libraryBackground === "light" ? "bg-white" : 
+                            "bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHJlY3QgZmlsbD0iIzFhMWExYSIgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIi8+PHJlY3QgZmlsbD0iIzI1MjUyNSIgeD0iMTAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIvPjxyZWN0IGZpbGw9IiMyNTI1MjUiIHk9IjEwIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiLz48cmVjdCBmaWxsPSIjMWExYTFhIiB4PSIxMCIgeT0iMTAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3QgZmlsbD0idXJsKCNncmlkKSIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIvPjwvc3ZnPg==')]",
+                            showLibraryGrid && "bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:16px_16px]"
+                          )}
+                          style={{
+                            filter: libraryVisionMode === "blur" ? "blur(2px)" 
+                              : libraryVisionMode === "deuteranopia" ? "url(#deuteranopia)" 
+                              : libraryVisionMode === "protanopia" ? "url(#protanopia)"
+                              : libraryVisionMode === "tritanopia" ? "url(#tritanopia)"
+                              : libraryVisionMode === "grayscale" ? "grayscale(100%)" 
+                              : undefined
+                          }}
+                        >
                           {!selectedLibraryItem ? (
                             <div className="flex flex-col items-center justify-center h-full text-center p-8">
                               <BookOpen className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
@@ -16296,21 +16577,17 @@ export default function App() {
                                           {/* Storybook-like measurement overlay on hover */}
                                           {showLibraryOutline && (
                                             <>
-                                              {/* Top dimension line */}
-                                              <div className="absolute -top-6 left-0 right-0 flex items-center justify-center opacity-0 group-hover/measure:opacity-100 transition-opacity">
-                                                <div className="h-px bg-emerald-400 flex-1" />
-                                                <span className="px-2 text-[10px] font-mono text-emerald-400 bg-zinc-900/80 rounded">
-                                                  {libraryPreviewSize.width > 0 ? `${libraryPreviewSize.width}px` : 'auto'}
+                                              {/* Top dimension - Hug indicator */}
+                                              <div className="absolute -top-5 left-1/2 -translate-x-1/2 flex items-center gap-1 opacity-0 group-hover/measure:opacity-100 transition-opacity">
+                                                <span className="px-1.5 py-0.5 text-[9px] font-medium text-blue-400 bg-blue-500/20 rounded border border-blue-500/30">
+                                                  Hug
                                                 </span>
-                                                <div className="h-px bg-emerald-400 flex-1" />
                                               </div>
-                                              {/* Left dimension line */}
-                                              <div className="absolute -left-6 top-0 bottom-0 flex flex-col items-center justify-center opacity-0 group-hover/measure:opacity-100 transition-opacity">
-                                                <div className="w-px bg-emerald-400 flex-1" />
-                                                <span className="py-1 px-1 text-[10px] font-mono text-emerald-400 bg-zinc-900/80 rounded whitespace-nowrap" style={{writingMode: 'vertical-rl', transform: 'rotate(180deg)'}}>
-                                                  {libraryPreviewSize.height > 0 ? `${libraryPreviewSize.height}px` : 'auto'}
+                                              {/* Left dimension - Hug indicator */}
+                                              <div className="absolute -left-5 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover/measure:opacity-100 transition-opacity">
+                                                <span className="px-1.5 py-0.5 text-[9px] font-medium text-blue-400 bg-blue-500/20 rounded border border-blue-500/30" style={{writingMode: 'vertical-rl', transform: 'rotate(180deg)'}}>
+                                                  Hug
                                                 </span>
-                                                <div className="w-px bg-emerald-400 flex-1" />
                                               </div>
                                             </>
                                           )}
@@ -16896,138 +17173,6 @@ export default function App() {
                   </div>
                 ) : (
                   <>
-                    {/* Toolbar with controls */}
-                    <div className="flex-shrink-0 h-12 border-b border-zinc-800/50 bg-[#111111] flex items-center justify-between px-4">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-zinc-300 font-medium">Blueprints</span>
-                        <span className="text-xs text-zinc-600">•</span>
-                        <span className="text-xs text-zinc-500">
-                          {libraryData?.components?.length || 0} components
-                        </span>
-                        {selectedBlueprintComponent && (
-                          <>
-                            <span className="text-xs text-zinc-600">•</span>
-                            <span className="text-xs text-white">{selectedBlueprintComponent.replace('comp-', '').replace('page-', '')}</span>
-                          </>
-                        )}
-                      </div>
-                      
-                      {/* Center: Zoom controls */}
-                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800/70 rounded-lg">
-                        <button 
-                          onClick={() => setBlueprintsZoom(Math.max(25, blueprintsZoom - 25))}
-                          className="p-1.5 hover:bg-zinc-700 rounded text-zinc-400 hover:text-white transition-colors"
-                          title="Zoom out"
-                        >
-                          <ZoomOut className="w-4 h-4" />
-                        </button>
-                        <span className="text-xs text-zinc-300 w-12 text-center font-mono">{blueprintsZoom}%</span>
-                        <button 
-                          onClick={() => setBlueprintsZoom(Math.min(200, blueprintsZoom + 25))}
-                          className="p-1.5 hover:bg-zinc-700 rounded text-zinc-400 hover:text-white transition-colors"
-                          title="Zoom in"
-                        >
-                          <ZoomIn className="w-4 h-4" />
-                        </button>
-                        <div className="w-px h-4 bg-zinc-700 mx-1" />
-                        <button 
-                          onClick={() => { 
-                            setBlueprintsZoom(100); 
-                            setBlueprintsOffset({ x: 0, y: 0 }); 
-                          }}
-                          className="p-1.5 hover:bg-zinc-700 rounded text-zinc-400 hover:text-white transition-colors"
-                          title="Reset view"
-                        >
-                          <Maximize2 className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={autoLayoutBlueprints}
-                          className="p-1.5 hover:bg-zinc-700 rounded text-zinc-400 hover:text-white transition-colors"
-                          title="Auto-arrange components"
-                        >
-                          <Grid3X3 className="w-4 h-4" />
-                        </button>
-                        <div className="w-px h-4 bg-zinc-700 mx-1" />
-                        {/* Background toggle */}
-                        <div className="flex items-center bg-zinc-900 rounded-md p-0.5">
-                          {(['light', 'dark'] as const).map((bg) => (
-                            <button
-                              key={bg}
-                              onClick={() => setBlueprintsBackground(bg as any)}
-                              className={cn(
-                                "px-2.5 py-0.5 text-[10px] font-medium rounded transition-colors",
-                                blueprintsBackground === bg
-                                  ? "bg-zinc-700 text-white"
-                                  : "text-zinc-500 hover:text-zinc-300"
-                              )}
-                            >
-                              {bg === 'light' ? 'Light' : 'Dark'}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      {/* Right: Actions */}
-                      <div className="flex items-center gap-2">
-                        <button 
-                          className={cn(
-                            "flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg transition-all",
-                            isAnalyzingBlueprints 
-                              ? "bg-zinc-800 text-zinc-500 cursor-wait"
-                              : "bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800 hover:text-white"
-                          )}
-                          onClick={analyzeBlueprints}
-                          disabled={isAnalyzingBlueprints || !generatedCode}
-                        >
-                          {isAnalyzingBlueprints ? (
-                            <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Analyzing...</>
-                          ) : (
-                            <><Search className="w-3.5 h-3.5" /> Detect Duplicates</>
-                          )}
-                        </button>
-                        <button 
-                          className="flex items-center gap-2 px-3 py-1.5 text-xs bg-white text-zinc-900 rounded-lg hover:bg-zinc-100 transition-all font-medium"
-                          onClick={() => {
-                            // Create new component directly on canvas
-                            const newId = `new-${Date.now()}`;
-                            const newComp = {
-                              id: newId,
-                              name: `New Component`,
-                              category: 'custom',
-                              code: `<div className="p-6 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-xl border border-zinc-700 min-w-[200px]">
-  <div className="flex items-center gap-2 mb-3">
-    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-    <span className="text-xs text-zinc-400">AI Ready</span>
-  </div>
-  <p className="text-sm text-zinc-300">Describe what you want...</p>
-</div>`,
-                              props: [],
-                              variants: [],
-                              isNew: true // Flag for showing inline AI input
-                            };
-                            setLibraryData((prev: any) => ({
-                              ...prev,
-                              components: [...(prev?.components || []), newComp]
-                            }));
-                            // Position in center of visible canvas
-                            const canvasRect = blueprintsCanvasRef.current?.getBoundingClientRect();
-                            const centerX = canvasRect ? (canvasRect.width / 2 - blueprintsOffset.x) / blueprintsZoom - 150 : 300;
-                            const centerY = canvasRect ? (canvasRect.height / 2 - blueprintsOffset.y) / blueprintsZoom - 100 : 200;
-                            setBlueprintPositions(prev => ({
-                              ...prev,
-                              [`comp-${newId}`]: { x: centerX, y: centerY }
-                            }));
-                            setSelectedBlueprintComponent(`comp-${newId}`);
-                            // Clear any previous editing state
-                            setBlueprintEditedCode(null);
-                            setGeneratePromptInput("");
-                          }}
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          New Component
-                        </button>
-                      </div>
-                    </div>
                     
                     {/* Infinite Canvas - Pan & Zoom with Draggable Elements */}
                     <div 
@@ -17089,7 +17234,26 @@ export default function App() {
                         }
                       }}
                       onMouseMove={(e) => {
-                        if (draggingComponent) {
+                        if (resizingComponent) {
+                          // Resize component
+                          const scale = blueprintsZoom / 100;
+                          const deltaX = (e.clientX - resizeStart.x) / scale;
+                          const deltaY = (e.clientY - resizeStart.y) / scale;
+                          const handle = resizingComponent.handle;
+                          
+                          let newWidth = resizeStart.width;
+                          let newHeight = resizeStart.height;
+                          
+                          if (handle.includes('e')) newWidth = Math.max(60, resizeStart.width + deltaX);
+                          if (handle.includes('w')) newWidth = Math.max(60, resizeStart.width - deltaX);
+                          if (handle.includes('s')) newHeight = Math.max(40, resizeStart.height + deltaY);
+                          if (handle.includes('n')) newHeight = Math.max(40, resizeStart.height - deltaY);
+                          
+                          setBlueprintSizes(prev => ({
+                            ...prev,
+                            [resizingComponent.id]: { width: newWidth, height: newHeight }
+                          }));
+                        } else if (draggingComponent) {
                           // Move component
                           const rect = blueprintsCanvasRef.current?.getBoundingClientRect();
                           if (!rect) return;
@@ -17109,10 +17273,12 @@ export default function App() {
                       }}
                       onMouseUp={() => {
                         setDraggingComponent(null);
+                        setResizingComponent(null);
                         setIsBlueprintsPanning(false);
                       }}
                       onMouseLeave={() => {
                         setDraggingComponent(null);
+                        setResizingComponent(null);
                         setIsBlueprintsPanning(false);
                       }}
                       onWheel={(e) => {
@@ -17133,12 +17299,195 @@ export default function App() {
                         setBlueprintsOffset({ x: newOffsetX, y: newOffsetY });
                       }}
                     >
+                      {/* Center Toolbar - Tool controls - responsive */}
+                      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex flex-wrap items-center justify-center gap-1 bg-zinc-900/98 backdrop-blur-xl rounded-xl p-1.5 border border-zinc-700/50 shadow-2xl shadow-black/40 max-w-[calc(100%-2rem)] sm:max-w-none">
+                        {/* Grid toggle */}
+                        <button 
+                          onClick={() => setShowBlueprintsGrid(!showBlueprintsGrid)}
+                          className={cn(
+                            "p-2 rounded-lg transition-all duration-150 group relative",
+                            showBlueprintsGrid 
+                              ? "bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/30" 
+                              : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                          )}
+                        >
+                          <Grid3X3 className="w-4 h-4" />
+                          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Grid</span>
+                        </button>
+                        
+                        {/* Background toggle */}
+                        <button 
+                          onClick={() => setBlueprintsBackground(blueprintsBackground === "dark" ? "light" : "dark")}
+                          className={cn(
+                            "p-2 rounded-lg transition-all duration-150 group relative",
+                            blueprintsBackground === "light" 
+                              ? "bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/30" 
+                              : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                          )}
+                        >
+                          {blueprintsBackground === "light" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Background</span>
+                        </button>
+                        
+                        {/* Ruler mode */}
+                        <button 
+                          onClick={() => setShowBlueprintsRuler(!showBlueprintsRuler)}
+                          className={cn(
+                            "p-2 rounded-lg transition-all duration-150 group relative",
+                            showBlueprintsRuler 
+                              ? "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30" 
+                              : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                          )}
+                        >
+                          <Ruler className="w-4 h-4" />
+                          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Measure</span>
+                        </button>
+                        
+                        {/* Outline toggle */}
+                        <button 
+                          onClick={() => setShowBlueprintsOutline(!showBlueprintsOutline)}
+                          className={cn(
+                            "p-2 rounded-lg transition-all duration-150 group relative",
+                            showBlueprintsOutline 
+                              ? "bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/30" 
+                              : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                          )}
+                        >
+                          <Square className="w-4 h-4" />
+                          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Outline</span>
+                        </button>
+                        
+                        <div className="w-px h-5 bg-zinc-700 mx-1" />
+                        
+                        {/* Vision Simulator dropdown */}
+                        <div className="relative group/vision">
+                          <button 
+                            className={cn(
+                              "p-2 rounded-lg transition-all duration-150 flex items-center gap-1",
+                              blueprintsVisionMode !== "none" 
+                                ? "bg-rose-500/20 text-rose-400 ring-1 ring-rose-500/30" 
+                                : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                            )}
+                          >
+                            <Eye className="w-4 h-4" />
+                            <ChevronDown className="w-3 h-3" />
+                          </button>
+                          <div className="absolute top-full left-0 mt-2 bg-zinc-900/98 backdrop-blur-xl border border-zinc-700/50 rounded-xl shadow-2xl opacity-0 group-hover/vision:opacity-100 pointer-events-none group-hover/vision:pointer-events-auto transition-opacity min-w-[160px] py-1 z-50">
+                            <span className="block px-3 py-1.5 text-[10px] text-zinc-500 uppercase tracking-wider">Vision Simulator</span>
+                            {[
+                              { id: "none", label: "Normal" },
+                              { id: "blur", label: "Blurred Vision" },
+                              { id: "deuteranopia", label: "Deuteranopia" },
+                              { id: "protanopia", label: "Protanopia" },
+                              { id: "tritanopia", label: "Tritanopia" },
+                              { id: "grayscale", label: "Grayscale" },
+                            ].map((mode) => (
+                              <button
+                                key={mode.id}
+                                onClick={() => setBlueprintsVisionMode(mode.id as any)}
+                                className={cn(
+                                  "w-full px-3 py-1.5 text-xs text-left hover:bg-zinc-800 transition-colors flex items-center justify-between",
+                                  blueprintsVisionMode === mode.id ? "text-white" : "text-zinc-400"
+                                )}
+                              >
+                                {mode.label}
+                                {blueprintsVisionMode === mode.id && <Check className="w-3 h-3" />}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div className="w-px h-5 bg-zinc-700 mx-1" />
+                        
+                        {/* Viewport toggles */}
+                        <button 
+                          onClick={() => setBlueprintsViewport("mobile")}
+                          className={cn(
+                            "p-2 rounded-lg transition-all duration-150 group relative",
+                            blueprintsViewport === "mobile" 
+                              ? "bg-cyan-500/20 text-cyan-400 ring-1 ring-cyan-500/30" 
+                              : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                          )}
+                        >
+                          <Smartphone className="w-4 h-4" />
+                          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Mobile</span>
+                        </button>
+                        <button 
+                          onClick={() => setBlueprintsViewport("desktop")}
+                          className={cn(
+                            "p-2 rounded-lg transition-all duration-150 group relative",
+                            blueprintsViewport === "desktop" 
+                              ? "bg-cyan-500/20 text-cyan-400 ring-1 ring-cyan-500/30" 
+                              : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                          )}
+                        >
+                          <Monitor className="w-4 h-4" />
+                          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Desktop</span>
+                        </button>
+                        <button 
+                          onClick={() => setIsBlueprintsFullscreen(!isBlueprintsFullscreen)}
+                          className={cn(
+                            "p-2 rounded-lg transition-all duration-150 group relative",
+                            isBlueprintsFullscreen 
+                              ? "bg-zinc-600/50 text-white ring-1 ring-zinc-500/30" 
+                              : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                          )}
+                        >
+                          <Maximize2 className="w-4 h-4" />
+                          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Fullscreen</span>
+                        </button>
+                      </div>
+                      
+                      {/* Zoom controls - bottom left (like Flow) */}
+                      <div className="absolute bottom-4 left-4 z-30 flex items-center gap-1 bg-zinc-900/95 backdrop-blur-sm rounded-lg p-1 border border-zinc-800 shadow-xl">
+                        <button 
+                          onClick={() => setBlueprintsZoom(Math.max(25, blueprintsZoom - 25))}
+                          className="p-1.5 rounded hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-white"
+                          title="Zoom out"
+                        >
+                          <ZoomOut className="w-4 h-4" />
+                        </button>
+                        <span className="text-xs text-zinc-300 w-12 text-center font-mono">{blueprintsZoom}%</span>
+                        <button 
+                          onClick={() => setBlueprintsZoom(Math.min(200, blueprintsZoom + 25))}
+                          className="p-1.5 rounded hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-white"
+                          title="Zoom in"
+                        >
+                          <ZoomIn className="w-4 h-4" />
+                        </button>
+                        <div className="w-px h-4 bg-zinc-700 mx-1" />
+                        <button 
+                          onClick={() => { setBlueprintsZoom(100); setBlueprintsOffset({ x: 0, y: 0 }); }}
+                          className="px-2 py-1 rounded hover:bg-zinc-800 transition-colors text-[10px] text-zinc-400 hover:text-white"
+                          title="Reset view"
+                        >
+                          Reset
+                        </button>
+                        <div className="w-px h-4 bg-zinc-700 mx-1" />
+                        <button 
+                          onClick={autoLayoutBlueprints}
+                          className="px-2 py-1 rounded hover:bg-zinc-800 transition-colors text-[10px] text-zinc-400 hover:text-white"
+                          title="Auto-arrange"
+                        >
+                          Auto Layout
+                        </button>
+                      </div>
+                      
                       {/* Canvas content layer */}
                       <div 
-                        className="canvas-content absolute inset-0"
+                        className={cn(
+                          "canvas-content absolute inset-0",
+                          showBlueprintsGrid && "bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:20px_20px]"
+                        )}
                         style={{ 
                           transform: `translate(${blueprintsOffset.x}px, ${blueprintsOffset.y}px) scale(${blueprintsZoom / 100})`,
-                          transformOrigin: '0 0'
+                          transformOrigin: '0 0',
+                          filter: blueprintsVisionMode === "blur" ? "blur(2px)" 
+                            : blueprintsVisionMode === "deuteranopia" ? "url(#deuteranopia)" 
+                            : blueprintsVisionMode === "protanopia" ? "url(#protanopia)"
+                            : blueprintsVisionMode === "tritanopia" ? "url(#tritanopia)"
+                            : blueprintsVisionMode === "grayscale" ? "grayscale(100%)" 
+                            : undefined
                         }}
                       >
                         {/* Empty state */}
@@ -17199,19 +17548,24 @@ export default function App() {
                             {libraryData.components.map((comp: any) => {
                               const id = `comp-${comp.id}`;
                               const pos = blueprintPositions[id] || { x: 50, y: 100 };
+                              const size = blueprintSizes[id];
                               const isSelected = selectedBlueprintComponent === id;
                               const isDragging = draggingComponent === id;
+                              const isResizing = resizingComponent?.id === id;
                               
                               return (
                                 <div
                                   key={id}
-                                  className="absolute cursor-move select-none group"
+                                  className="absolute select-none group"
                                   style={{ 
                                     left: pos.x, 
                                     top: pos.y,
-                                    zIndex: isDragging ? 100 : isSelected ? 50 : 1
+                                    zIndex: isDragging || isResizing ? 100 : isSelected ? 50 : 1,
+                                    cursor: isDragging ? 'grabbing' : 'grab'
                                   }}
                                   onMouseDown={(e) => {
+                                    // Don't start drag if clicking on resize handle
+                                    if ((e.target as HTMLElement).dataset.resizeHandle) return;
                                     e.stopPropagation();
                                     setDraggingComponent(id);
                                     if (selectedBlueprintComponent !== id) {
@@ -17328,8 +17682,11 @@ export default function App() {
                                           key={`bp-iframe-${comp.id}-${isSelected && blueprintEditedCode ? blueprintEditedCode.slice(0, 50) : 'orig'}`}
                                           srcDoc={`<!DOCTYPE html>
 <html><head>
-<meta name="referrer" content="no-referrer-when-downgrade">
+<meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; img-src * data: blob: https:;">
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;scrollbar-width:none;-ms-overflow-style:none}
@@ -17339,6 +17696,8 @@ body{display:block;padding:0;width:fit-content;min-width:200px}
 *::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
 img{max-width:none;height:auto;display:block;object-fit:cover}
 img[src=""]{display:none}
+img:not([src]){display:none}
+video{max-width:100%;border-radius:inherit}
 </style>
 <script>
 function autoResize(){
@@ -17347,16 +17706,23 @@ function autoResize(){
   const h=body.scrollHeight;
   parent.postMessage({type:'resize',id:'${comp.id}',width:w,height:h},'*');
 }
-window.onload=()=>{autoResize();setTimeout(autoResize,100);setTimeout(autoResize,500)};
+window.onload=()=>{if(typeof lucide!=='undefined')lucide.createIcons();autoResize();setTimeout(autoResize,100);setTimeout(autoResize,500);setTimeout(autoResize,1000)};
 new ResizeObserver(autoResize).observe(document.body);
+// Force load images
+document.querySelectorAll('img').forEach(img=>{
+  if(!img.complete){img.onload=autoResize;img.onerror=()=>{img.style.display='none'}}
+});
 </script>
 </head><body>${jsxToHtml(stableCode)}</body></html>`}
                                           className="border-0 pointer-events-none"
                                           scrolling="no"
-                                          loading="lazy"
+                                          loading="eager"
                                           id={`iframe-${comp.id}`}
                                           onLoad={(e) => {
                                             const iframe = e.target as HTMLIFrameElement;
+                                            // Only auto-size if user hasn't set a custom size
+                                            const customSize = blueprintSizes[id];
+                                            if (customSize?.width || customSize?.height) return;
                                             try {
                                               const doc = iframe.contentDocument || iframe.contentWindow?.document;
                                               if (doc?.body) {
@@ -17368,14 +17734,15 @@ new ResizeObserver(autoResize).observe(document.body);
                                             } catch(err) {}
                                           }}
                                           style={{ 
-                                            width: 'fit-content',
-                                            height: 'fit-content',
+                                            width: size?.width ? `${size.width}px` : 'auto',
+                                            height: size?.height ? `${size.height}px` : 'auto',
                                             minWidth: '40px',
                                             minHeight: '24px',
                                             background: 'transparent',
                                             display: 'block'
                                           }}
                                           sandbox="allow-scripts allow-same-origin"
+                                          referrerPolicy="no-referrer"
                                         />
                                       </div>
                                       );
@@ -17383,6 +17750,102 @@ new ResizeObserver(autoResize).observe(document.body);
                                       <div className="px-4 py-2 bg-zinc-800/50 rounded text-xs text-zinc-500">
                                         {comp.name}
                                       </div>
+                                    )}
+                                    
+                                    {/* Resize handles - visible on select/hover */}
+                                    {isSelected && (
+                                      <>
+                                        {/* Right edge */}
+                                        <div
+                                          data-resize-handle="e"
+                                          className="absolute top-1/2 -right-1 w-2 h-8 -translate-y-1/2 cursor-ew-resize group/handle z-20"
+                                          onMouseDown={(e) => {
+                                            e.stopPropagation();
+                                            const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
+                                            setResizingComponent({ id, handle: 'e' });
+                                            setResizeStart({ 
+                                              x: e.clientX, 
+                                              y: e.clientY, 
+                                              width: iframe?.offsetWidth || 200, 
+                                              height: iframe?.offsetHeight || 100 
+                                            });
+                                          }}
+                                        >
+                                          <div className="w-1 h-full bg-blue-500 rounded-full opacity-0 group-hover/handle:opacity-100 transition-opacity" />
+                                        </div>
+                                        {/* Bottom edge */}
+                                        <div
+                                          data-resize-handle="s"
+                                          className="absolute -bottom-1 left-1/2 h-2 w-8 -translate-x-1/2 cursor-ns-resize group/handle z-20"
+                                          onMouseDown={(e) => {
+                                            e.stopPropagation();
+                                            const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
+                                            setResizingComponent({ id, handle: 's' });
+                                            setResizeStart({ 
+                                              x: e.clientX, 
+                                              y: e.clientY, 
+                                              width: iframe?.offsetWidth || 200, 
+                                              height: iframe?.offsetHeight || 100 
+                                            });
+                                          }}
+                                        >
+                                          <div className="h-1 w-full bg-blue-500 rounded-full opacity-0 group-hover/handle:opacity-100 transition-opacity" />
+                                        </div>
+                                        {/* Bottom-right corner */}
+                                        <div
+                                          data-resize-handle="se"
+                                          className="absolute -bottom-1.5 -right-1.5 w-3 h-3 cursor-nwse-resize z-20 group/handle"
+                                          onMouseDown={(e) => {
+                                            e.stopPropagation();
+                                            const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
+                                            setResizingComponent({ id, handle: 'se' });
+                                            setResizeStart({ 
+                                              x: e.clientX, 
+                                              y: e.clientY, 
+                                              width: iframe?.offsetWidth || 200, 
+                                              height: iframe?.offsetHeight || 100 
+                                            });
+                                          }}
+                                        >
+                                          <div className="w-full h-full bg-blue-500 rounded-sm opacity-60 group-hover/handle:opacity-100 transition-opacity" />
+                                        </div>
+                                        {/* Left edge */}
+                                        <div
+                                          data-resize-handle="w"
+                                          className="absolute top-1/2 -left-1 w-2 h-8 -translate-y-1/2 cursor-ew-resize group/handle z-20"
+                                          onMouseDown={(e) => {
+                                            e.stopPropagation();
+                                            const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
+                                            setResizingComponent({ id, handle: 'w' });
+                                            setResizeStart({ 
+                                              x: e.clientX, 
+                                              y: e.clientY, 
+                                              width: iframe?.offsetWidth || 200, 
+                                              height: iframe?.offsetHeight || 100 
+                                            });
+                                          }}
+                                        >
+                                          <div className="w-1 h-full bg-blue-500 rounded-full opacity-0 group-hover/handle:opacity-100 transition-opacity" />
+                                        </div>
+                                        {/* Top edge */}
+                                        <div
+                                          data-resize-handle="n"
+                                          className="absolute -top-1 left-1/2 h-2 w-8 -translate-x-1/2 cursor-ns-resize group/handle z-20"
+                                          onMouseDown={(e) => {
+                                            e.stopPropagation();
+                                            const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
+                                            setResizingComponent({ id, handle: 'n' });
+                                            setResizeStart({ 
+                                              x: e.clientX, 
+                                              y: e.clientY, 
+                                              width: iframe?.offsetWidth || 200, 
+                                              height: iframe?.offsetHeight || 100 
+                                            });
+                                          }}
+                                        >
+                                          <div className="h-1 w-full bg-blue-500 rounded-full opacity-0 group-hover/handle:opacity-100 transition-opacity" />
+                                        </div>
+                                      </>
                                     )}
                                   </div>
                                   
