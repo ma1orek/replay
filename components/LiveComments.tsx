@@ -69,9 +69,15 @@ export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef 
     setTimeout(() => inputRef.current?.focus(), 100);
   }, [isCommentMode, containerRef]);
 
-  // Dodaj nowy komentarz
+  // Dodaj nowy komentarz - allow guests too
   const handleAddComment = useCallback(() => {
-    if (!newCommentText.trim() || !newCommentPosition || !self) return;
+    if (!newCommentText.trim() || !newCommentPosition) return;
+    
+    // Allow commenting even without self (for guests)
+    const authorId = self?.id || `guest-${Date.now()}`;
+    const authorName = self?.info?.name || "Guest";
+    const authorColor = self?.info?.color || "#FF6E3C";
+    const authorAvatar = self?.info?.avatar;
     
     const newComment: Comment = {
       id: `comment-${Date.now()}`,
@@ -79,10 +85,10 @@ export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef 
       y: newCommentPosition.y,
       text: newCommentText.trim(),
       author: {
-        id: self.id,
-        name: self.info?.name || "User",
-        avatar: self.info?.avatar,
-        color: self.info?.color || "#FF6E3C",
+        id: authorId,
+        name: authorName,
+        avatar: authorAvatar,
+        color: authorColor,
       },
       timestamp: Date.now(),
       resolved: false,
@@ -98,9 +104,15 @@ export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef 
     // room.broadcastEvent({ type: "COMMENT_ADDED", comment: newComment });
   }, [newCommentText, newCommentPosition, self]);
 
-  // Dodaj odpowiedź
+  // Dodaj odpowiedź - allow guests too
   const handleAddReply = useCallback((commentId: string) => {
-    if (!replyText.trim() || !self) return;
+    if (!replyText.trim()) return;
+    
+    // Allow replies even without self (for guests)
+    const authorId = self?.id || `guest-${Date.now()}`;
+    const authorName = self?.info?.name || "Guest";
+    const authorColor = self?.info?.color || "#FF6E3C";
+    const authorAvatar = self?.info?.avatar;
     
     setComments(prev => prev.map(comment => {
       if (comment.id !== commentId) return comment;
@@ -111,10 +123,10 @@ export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef 
           id: `reply-${Date.now()}`,
           text: replyText.trim(),
           author: {
-            id: self.id,
-            name: self.info?.name || "User",
-            avatar: self.info?.avatar,
-            color: self.info?.color || "#FF6E3C",
+            id: authorId,
+            name: authorName,
+            avatar: authorAvatar,
+            color: authorColor,
           },
           timestamp: Date.now(),
         }],
@@ -303,10 +315,10 @@ export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef 
           style={{ left: newCommentPosition.x, top: newCommentPosition.y }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Pinezka nowego komentarza */}
+          {/* Pinezka nowego komentarza - works for guests too */}
           <div 
             className="w-8 h-8 rounded-full flex items-center justify-center text-white animate-pulse"
-            style={{ backgroundColor: self?.info?.color || "#FF6E3C" }}
+            style={{ backgroundColor: self?.info?.color || "#8B5CF6" }}
           >
             <MessageCircle size={16} />
           </div>
