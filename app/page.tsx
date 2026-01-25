@@ -10799,7 +10799,7 @@ Try these prompts in Cursor or v0:
             </div>
           ) : !sidebarCollapsed && sidebarView === "detail" && viewMode === "library" && generationComplete ? (
             /* LIBRARY VIEW SIDEBAR - Full Tree (1:1 with removed middle panel) */
-            <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[#111111]">
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[#141414]">
               {/* Search */}
               <div className="p-3 border-b border-zinc-800/50">
                 <div className="relative">
@@ -14933,7 +14933,7 @@ export default function GeneratedPage() {
 
             {/* Library - Storybook-like component library */}
             {viewMode === "library" && (
-              <div className="flex-1 overflow-hidden flex bg-[#111111]">
+              <div className="flex-1 overflow-hidden flex bg-[#141414]">
                 {/* Fullscreen Preview Overlay */}
                 {isLibraryFullscreen && (() => {
                   const selectedComponent = selectedLibraryItem?.startsWith("comp-") 
