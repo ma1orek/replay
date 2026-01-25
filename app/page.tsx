@@ -17167,6 +17167,7 @@ export default function App() {
                                           key={`bp-iframe-${comp.id}-${isSelected && blueprintEditedCode ? blueprintEditedCode.slice(0, 50) : 'orig'}`}
                                           srcDoc={`<!DOCTYPE html>
 <html><head>
+<meta name="referrer" content="no-referrer-when-downgrade">
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -17175,7 +17176,8 @@ html,body{font-family:Inter,system-ui,sans-serif;background:transparent;overflow
 body{display:block;padding:0;width:fit-content;min-width:200px}
 #root{display:block;width:fit-content;min-width:200px}
 *::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
-img{max-width:none;height:auto;display:block}
+img{max-width:none;height:auto;display:block;object-fit:cover}
+img[src=""]{display:none}
 </style>
 <script>
 function autoResize(){
@@ -17213,7 +17215,6 @@ new ResizeObserver(autoResize).observe(document.body);
                                             display: 'block'
                                           }}
                                           sandbox="allow-scripts allow-same-origin"
-                                          referrerPolicy="no-referrer"
                                         />
                                       </div>
                                       );
