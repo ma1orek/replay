@@ -20,56 +20,25 @@ function jsxToHtml(code: string): string {
   
   let html = code.trim();
   
-  // If code already starts with HTML tags, return as-is (it's already HTML)
-  if (html.startsWith('<!DOCTYPE') || 
-      html.startsWith('<html') || 
-      html.startsWith('<body') ||
-      html.startsWith('<div') ||
-      html.startsWith('<section') ||
-      html.startsWith('<main') ||
-      html.startsWith('<header') ||
-      html.startsWith('<nav')) {
+  // If code already starts with HTML tags (<!DOCTYPE, <html, <body, etc.), it's HTML
+  if (/^<!DOCTYPE|^<html|^<body|^<div|^<section|^<main|^<header|^<nav/i.test(html)) {
     // Just convert className to class and return
     html = html.replace(/className=/g, 'class=');
     return html;
   }
   
-  // If code is a React component, extract the JSX from return statement
+  // If code is a React component, find the first HTML tag and use everything from there
   if (html.includes('export default function') || html.includes('function HomePage') || html.includes('export default')) {
-    // Find "return (" and extract everything until matching closing paren
-    const returnIndex = html.indexOf('return');
-    if (returnIndex !== -1) {
-      const afterReturn = html.slice(returnIndex + 6).trim();
+    // Strategy: Find the first actual HTML tag (not JSX fragment)
+    // Look for <tagname (where tagname is lowercase letter followed by word chars)
+    const firstTagMatch = html.match(/(<(?:div|section|main|header|footer|nav|aside|article|body|html|span|p|h[1-6]|ul|ol|li|a|button|form|input|img|table|thead|tbody|tr|td|th|figure|figcaption|blockquote|pre|code|label|select|option|textarea)[^>]*>)/i);
+    
+    if (firstTagMatch && firstTagMatch.index !== undefined) {
+      // Take everything from the first HTML tag to the end
+      html = html.slice(firstTagMatch.index);
       
-      if (afterReturn.startsWith('(')) {
-        // Count parentheses to find matching close
-        let depth = 0;
-        let startIdx = -1;
-        let endIdx = -1;
-        
-        for (let i = 0; i < afterReturn.length; i++) {
-          if (afterReturn[i] === '(') {
-            if (depth === 0) startIdx = i + 1;
-            depth++;
-          } else if (afterReturn[i] === ')') {
-            depth--;
-            if (depth === 0) {
-              endIdx = i;
-              break;
-            }
-          }
-        }
-        
-        if (startIdx !== -1 && endIdx !== -1) {
-          html = afterReturn.slice(startIdx, endIdx).trim();
-        }
-      } else {
-        // return without parens - take until ; or }
-        const endMatch = afterReturn.match(/^([\s\S]+?)(?:;|\}\s*$)/);
-        if (endMatch) {
-          html = endMatch[1].trim();
-        }
-      }
+      // Remove trailing ); or } from React component
+      html = html.replace(/\s*\)\s*;?\s*\}?\s*$/, '');
     }
     
     // Remove React fragments
@@ -80,8 +49,14 @@ function jsxToHtml(code: string): string {
   // Convert className to class
   html = html.replace(/className=/g, 'class=');
   
-  // Convert JSX self-closing tags to proper HTML
-  html = html.replace(/<([a-z][a-zA-Z0-9]*)\s+([^>]*?)\s*\/>/gi, '<$1 $2></$1>');
+  // Convert JSX self-closing tags to proper HTML (but keep self-closing for void elements)
+  const voidElements = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'];
+  html = html.replace(/<([a-z][a-zA-Z0-9]*)\s+([^>]*?)\s*\/>/gi, (match, tag, attrs) => {
+    if (voidElements.includes(tag.toLowerCase())) {
+      return `<${tag} ${attrs}>`;
+    }
+    return `<${tag} ${attrs}></${tag}>`;
+  });
   
   // Remove JSX comments {/* ... */}
   html = html.replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
