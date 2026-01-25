@@ -361,8 +361,8 @@ export default function AuthModal({
                     <ArrowLeft className="w-5 h-5 text-white/40" />
                   </button>
                   
-                  <div className="w-16 h-16 rounded-full bg-[#FF6E3C]/20 flex items-center justify-center mx-auto mb-4">
-                    <Mail className="w-8 h-8 text-[#FF6E3C]" />
+                  <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+                    <Mail className="w-8 h-8 text-zinc-400" />
                   </div>
                   <h3 className="text-lg font-medium text-white mb-2">
                     {authMode === "otp-verify-register" ? "Verify your email" : "Enter verification code"}
@@ -384,7 +384,7 @@ export default function AuthModal({
                         onChange={(e) => handleOtpChange(index, e.target.value)}
                         onKeyDown={(e) => handleOtpKeyDown(index, e)}
                         disabled={isLoading}
-                        className="w-11 h-14 text-center text-2xl font-bold rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-[#FF6E3C] transition-colors disabled:opacity-50"
+                        className="w-11 h-14 text-center text-2xl font-bold rounded-xl bg-zinc-800/50 border border-zinc-700 text-white focus:outline-none focus:border-zinc-500 transition-colors disabled:opacity-50"
                       />
                     ))}
                   </div>
@@ -403,7 +403,7 @@ export default function AuthModal({
                   <button
                     onClick={authMode === "otp-verify-register" ? handleResendRegistrationCode : handleEmailSignIn}
                     disabled={isLoading}
-                    className="mt-4 text-sm text-[#FF6E3C] hover:text-[#FF8F5C] transition-colors disabled:opacity-50"
+                    className="mt-4 text-sm text-zinc-400 hover:text-white transition-colors disabled:opacity-50"
                   >
                     Resend code
                   </button>
@@ -432,7 +432,7 @@ export default function AuthModal({
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Email"
-                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
+                    className="w-full px-4 py-3 rounded-xl bg-zinc-800/50 border border-zinc-700 text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 transition-colors"
                     autoFocus
                   />
                   <div className="relative">
@@ -442,7 +442,7 @@ export default function AuthModal({
                       onChange={(e) => setPassword(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handlePasswordSignIn()}
                       placeholder="Password"
-                      className="w-full px-4 py-3 pr-12 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
+                      className="w-full px-4 py-3 pr-12 rounded-xl bg-zinc-800/50 border border-zinc-700 text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 transition-colors"
                     />
                     <button
                       type="button"
@@ -456,7 +456,7 @@ export default function AuthModal({
                   <button
                     onClick={handlePasswordSignIn}
                     disabled={isLoading || !email.trim() || !password.trim()}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#FF6E3C] text-white font-medium hover:bg-[#FF8F5C] transition-colors disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-zinc-700 text-white font-medium hover:bg-zinc-600 transition-colors disabled:opacity-50"
                   >
                     {loadingProvider === "password" ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
@@ -468,11 +468,11 @@ export default function AuthModal({
                     )}
                   </button>
 
-                  <p className="text-center text-sm text-white/40">
+                  <p className="text-center text-sm text-zinc-500">
                     Don't have an account?{" "}
                     <button 
                       onClick={() => { setAuthMode("register"); setError(null); setSuccessMessage(null); }}
-                      className="text-[#FF6E3C] hover:text-[#FF8F5C]"
+                      className="text-zinc-300 hover:text-white"
                     >
                       Create one
                     </button>
@@ -502,7 +502,7 @@ export default function AuthModal({
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Email"
-                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
+                    className="w-full px-4 py-3 rounded-xl bg-zinc-800/50 border border-zinc-700 text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 transition-colors"
                     autoFocus
                   />
                   <div className="relative">
@@ -512,12 +512,12 @@ export default function AuthModal({
                       onChange={(e) => setPassword(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleRegister()}
                       placeholder="Password (min 6 characters)"
-                      className="w-full px-4 py-3 pr-12 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
+                      className="w-full px-4 py-3 pr-12 rounded-xl bg-zinc-800/50 border border-zinc-700 text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 transition-colors"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-white/30 hover:text-white/50"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-zinc-500 hover:text-zinc-300"
                       aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -526,7 +526,7 @@ export default function AuthModal({
                   <button
                     onClick={handleRegister}
                     disabled={isLoading || !email.trim() || !password.trim()}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#FF6E3C] text-white font-medium hover:bg-[#FF8F5C] transition-colors disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-zinc-700 text-white font-medium hover:bg-zinc-600 transition-colors disabled:opacity-50"
                   >
                     {loadingProvider === "register" ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
@@ -535,11 +535,11 @@ export default function AuthModal({
                     )}
                   </button>
 
-                  <p className="text-center text-sm text-white/40">
+                  <p className="text-center text-sm text-zinc-500">
                     Already have an account?{" "}
                     <button 
                       onClick={() => { setAuthMode("email-password"); setError(null); }}
-                      className="text-[#FF6E3C] hover:text-[#FF8F5C]"
+                      className="text-zinc-300 hover:text-white"
                     >
                       Sign in
                     </button>
@@ -641,13 +641,13 @@ export default function AuthModal({
                     onChange={(e) => setEmail(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleEmailSignIn()}
                     placeholder="Enter your email"
-                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
+                    className="w-full px-4 py-3 rounded-xl bg-zinc-800/50 border border-zinc-700 text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 transition-colors"
                     autoFocus
                   />
                   <button
                     onClick={handleEmailSignIn}
                     disabled={isLoading || !email.trim()}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#FF6E3C] text-white font-medium hover:bg-[#FF8F5C] transition-colors disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-zinc-700 text-white font-medium hover:bg-zinc-600 transition-colors disabled:opacity-50"
                   >
                     {loadingProvider === "email" ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
