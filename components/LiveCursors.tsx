@@ -199,7 +199,7 @@ export function OnlineUsers() {
               onMouseLeave={() => setHoveredIdx(null)}
             >
               <div
-                className="w-full h-full rounded-full flex items-center justify-center text-[9px] font-bold text-white overflow-hidden"
+                className="w-full h-full rounded-full flex items-center justify-center text-[8px] font-medium text-white overflow-hidden"
                 style={{ backgroundColor: color }}
               >
                 {avatar ? (
