@@ -99,10 +99,10 @@ export async function POST(request: NextRequest) {
     }
 
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-3-pro-preview", // Pro for quality edits
+      model: "gemini-2.0-flash", // Flash for fast live edits
       generationConfig: {
-        temperature: 0.4,
-        maxOutputTokens: 8192,
+        temperature: 0.3,
+        maxOutputTokens: 4096,
       }
     });
 

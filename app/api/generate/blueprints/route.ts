@@ -80,7 +80,7 @@ Return ONLY valid JSON with this structure:
       ],
       "code": "<button class='px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors'>{{label}}</button>",
       "reactCode": "export const PrimaryButton = ({ label, variant, onClick }) => <button onClick={onClick}>{label}</button>;",
-      "previewImage": "For cards/heroes with images, code MUST include: <img src='https://picsum.photos/id/10/400/300' class='w-full h-48 object-cover rounded-t-lg' alt='Preview'/>"
+      "previewImage": "For cards/heroes with images, KEEP existing images from the original code - do NOT generate new ones"
     }
   ],
   "duplicates": [
@@ -142,11 +142,11 @@ ANALYSIS RULES
 5. **REACT CODE**: Generate proper React component code for each Blueprint
 
 🖼️ IMAGES - CRITICAL:
-- The "code" field MUST include real <img> tags with working URLs!
-- USE: src="https://picsum.photos/id/XX/400/300" (change XX for variety: 10, 20, 30, etc.)
-- FOR AVATARS: src="https://i.pravatar.cc/150?u=name"
-- NEVER use empty src="" or src={variable}
-- Cards, heroes, banners MUST have visible images!
+- PRESERVE existing images from the original code - do NOT create new image URLs!
+- If component already has an <img> tag, keep the same src URL
+- FOR NEW AVATARS ONLY: src="https://i.pravatar.cc/150?u=name"
+- NEVER use picsum.photos, placehold.co, or placeholder URLs
+- If you must add image, use: src="https://image.pollinations.ai/prompt/DESCRIPTION?width=400&height=300&nologo=true&model=flux&seed=123"
 
 Analyze this code and return the Blueprint Library JSON:
 `;
@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No code provided" }, { status: 400 });
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-3-pro-preview" }); // PRO for best quality blueprints
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" }); // Flash for faster analysis
 
     const result = await model.generateContent([
       { text: BLUEPRINTS_ANALYSIS_PROMPT },

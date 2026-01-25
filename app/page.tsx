@@ -2818,6 +2818,21 @@ function ReplayToolContent() {
     }
   }, [libraryData?.components?.length, libraryData?.components, autoLayoutBlueprints]);
   
+  // Handle resize messages from blueprint iframes for "hug contents" behavior
+  useEffect(() => {
+    const handleResize = (e: MessageEvent) => {
+      if (e.data?.type === 'resize' && e.data?.id && e.data?.width && e.data?.height) {
+        const iframe = document.getElementById(`iframe-${e.data.id}`) as HTMLIFrameElement;
+        if (iframe) {
+          iframe.style.width = `${e.data.width}px`;
+          iframe.style.height = `${e.data.height}px`;
+        }
+      }
+    };
+    window.addEventListener('message', handleResize);
+    return () => window.removeEventListener('message', handleResize);
+  }, []);
+  
   const [isGeneratingLibrary, setIsGeneratingLibrary] = useState(false);
   
   const [archZoom, setArchZoom] = useState(1);
@@ -17014,7 +17029,7 @@ export default function App() {
                                       setViewMode("preview");
                                     }
                                   }}
-                                  className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                                  className="px-4 py-2 text-sm bg-zinc-700 text-white rounded-lg hover:bg-zinc-600 transition-colors flex items-center gap-2"
                                 >
                                   <Sparkles className="w-4 h-4" />
                                   Generate
@@ -17088,7 +17103,7 @@ export default function App() {
                                   <div className="mb-2 flex items-center justify-between gap-2">
                                     <span className={cn(
                                       "text-[11px] font-medium",
-                                      isSelected ? "text-blue-400" : "text-zinc-500"
+                                      isSelected ? "text-white" : "text-zinc-500"
                                     )}>{comp.name}</span>
                                     {/* Quick actions on hover/select */}
                                     <div className={cn(
@@ -17146,7 +17161,7 @@ export default function App() {
                                   {/* Pure component - no box, no border, just the component */}
                                   <div className={cn(
                                     "transition-all",
-                                    isSelected && "ring-2 ring-blue-500/50 ring-offset-2 ring-offset-zinc-950 rounded-sm",
+                                    isSelected && "ring-2 ring-zinc-400/60 ring-offset-2 ring-offset-zinc-950 rounded-sm",
                                     isDragging && "opacity-80"
                                   )}>
                                     {comp.code ? (() => {
@@ -17178,23 +17193,46 @@ export default function App() {
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;scrollbar-width:none;-ms-overflow-style:none}
-html,body{font-family:Inter,system-ui,sans-serif;background:white;overflow:visible!important;width:max-content;height:max-content}
-body{display:block;padding:12px}
-#root{display:block}
+html,body{font-family:Inter,system-ui,sans-serif;background:transparent;overflow:visible!important}
+body{display:inline-block;padding:0}
+#root{display:inline-block}
 *::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
-img{max-width:100%;height:auto}
+img{max-width:none;height:auto;display:block}
 </style>
+<script>
+function autoResize(){
+  const body=document.body;
+  const w=body.scrollWidth;
+  const h=body.scrollHeight;
+  parent.postMessage({type:'resize',id:'${comp.id}',width:w,height:h},'*');
+}
+window.onload=()=>{autoResize();setTimeout(autoResize,100);setTimeout(autoResize,500)};
+new ResizeObserver(autoResize).observe(document.body);
+</script>
 </head><body>${jsxToHtml(stableCode)}</body></html>`}
-                                          className="border-0 pointer-events-none rounded-lg shadow-lg"
+                                          className="border-0 pointer-events-none"
                                           scrolling="no"
                                           loading="lazy"
+                                          id={`iframe-${comp.id}`}
+                                          onLoad={(e) => {
+                                            const iframe = e.target as HTMLIFrameElement;
+                                            try {
+                                              const doc = iframe.contentDocument || iframe.contentWindow?.document;
+                                              if (doc?.body) {
+                                                const w = doc.body.scrollWidth;
+                                                const h = doc.body.scrollHeight;
+                                                iframe.style.width = w + 'px';
+                                                iframe.style.height = h + 'px';
+                                              }
+                                            } catch(err) {}
+                                          }}
                                           style={{ 
-                                            width: 'auto',
-                                            minWidth: '120px',
-                                            maxWidth: '500px',
-                                            height: 'auto',
-                                            minHeight: '60px',
-                                            background: 'white'
+                                            width: 'fit-content',
+                                            height: 'fit-content',
+                                            minWidth: '40px',
+                                            minHeight: '24px',
+                                            background: 'transparent',
+                                            display: 'block'
                                           }}
                                           sandbox="allow-scripts allow-same-origin"
                                           referrerPolicy="no-referrer"
@@ -17232,7 +17270,7 @@ img{max-width:100%;height:auto}
                                 <div className="flex items-center gap-3">
                                   <div className={cn(
                                     "w-2 h-2 rounded-full",
-                                    blueprintEditedCode ? "bg-amber-500 animate-pulse" : "bg-blue-500"
+                                    blueprintEditedCode ? "bg-amber-500 animate-pulse" : "bg-emerald-500"
                                   )} />
                                   <span className="text-sm font-medium text-white">{selectedComp.name}</span>
                                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 uppercase">
@@ -17260,7 +17298,7 @@ img{max-width:100%;height:auto}
                               <div className="p-3">
                                 <div className="flex items-center gap-2">
                                   <div className="flex-1 relative">
-                                    <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-400" />
+                                    <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                                     <input
                                       type="text"
                                       value={blueprintChatInput}
@@ -17301,7 +17339,7 @@ img{max-width:100%;height:auto}
                                         }
                                       }}
                                       placeholder="Ask AI to change... (e.g., 'Make it red', 'Add icon')"
-                                      className="w-full pl-10 pr-4 py-3 text-sm bg-zinc-800/50 border border-zinc-700/50 rounded-xl text-white placeholder-zinc-500 focus:border-purple-500/50 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
+                                      className="w-full pl-10 pr-4 py-3 text-sm bg-zinc-800/50 border border-zinc-700/50 rounded-xl text-white placeholder-zinc-500 focus:border-zinc-500/50 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 transition-all"
                                       disabled={isEditingBlueprint}
                                       autoFocus
                                     />
@@ -17408,28 +17446,25 @@ img{max-width:100%;height:auto}
                                   </button>
                                   <button
                                     onClick={() => {
-                                      // Publish to Library: Add as approved component
+                                      // Publish to Library: Update existing component with edited code
                                       if (libraryData && blueprintEditedCode) {
-                                        const newComponent: any = {
-                                          id: `pub-${Date.now()}`,
-                                          name: selectedComp.name,
-                                          description: `Published from Blueprints`,
-                                          category: selectedComp.category || 'Other',
-                                          code: blueprintEditedCode,
-                                          props: selectedComp.props || [],
-                                          variants: [],
-                                        };
-                                        setLibraryData({
-                                          ...libraryData,
-                                          components: [...(libraryData.components || []), newComponent]
-                                        });
-                                        setBlueprintStatuses(prev => ({ ...prev, [`pub-${Date.now()}`]: 'approved' }));
+                                        // Update the existing component instead of creating new one
+                                        setLibraryData((prev: any) => ({
+                                          ...prev,
+                                          components: prev?.components?.map((c: any) => 
+                                            c.id === selectedComp.id 
+                                              ? { ...c, code: blueprintEditedCode }
+                                              : c
+                                          ) || []
+                                        }));
+                                        setBlueprintStatuses(prev => ({ ...prev, [selectedComp.id]: 'approved' }));
                                         setBlueprintEditedCode(null);
                                         setBlueprintChatHistory([]);
-                                        showToast("Published to Library!", "success");
+                                        setSelectedBlueprintComponent(null);
+                                        showToast(`${selectedComp.name} saved to Library!`, "success");
                                       }
                                     }}
-                                    className="py-2.5 px-4 text-sm bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-xl transition-colors flex items-center justify-center gap-2 font-medium shadow-lg shadow-purple-500/20"
+                                    className="py-2.5 px-4 text-sm bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-colors flex items-center justify-center gap-2 font-medium shadow-lg shadow-emerald-500/20"
                                   >
                                     <Upload className="w-4 h-4" />
                                     Publish
