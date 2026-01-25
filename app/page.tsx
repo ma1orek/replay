@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useRef, useEffect, Suspense, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Loader2, 
@@ -3640,6 +3641,135 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
       return () => clearTimeout(timer);
     }
   }, [searchParams, showHistoryMode]);
+
+  // Handle ?project=xxx URL param - load specific project for multiplayer collaboration
+  useEffect(() => {
+    const projectIdParam = searchParams.get('project');
+    if (!projectIdParam || hasLoadedFromStorage || activeGeneration?.id === projectIdParam) return;
+    const projectId = projectIdParam; // Now TypeScript knows it's string, not null
+    
+    console.log("[Project URL] Loading project from URL:", projectId);
+    
+    async function loadProjectFromUrl() {
+      try {
+        // First check localStorage (set by /project/[id] redirect)
+        const cachedProject = localStorage.getItem(`replay_project_${projectId}`);
+        if (cachedProject) {
+          const cached = JSON.parse(cachedProject);
+          // Only use cache if it's fresh (< 5 minutes old)
+          if (Date.now() - cached.loadedAt < 5 * 60 * 1000) {
+            console.log("[Project URL] Using cached project data");
+            localStorage.removeItem(`replay_project_${projectId}`);
+          }
+        }
+        
+        // Always fetch fresh data from Supabase
+        const supabase = createSupabaseClient();
+        const { data: gen, error } = await supabase
+          .from("generations")
+          .select("*")
+          .eq("id", projectId)
+          .single();
+        
+        if (error || !gen) {
+          console.log("[Project URL] Project not found, creating new session");
+          // Project doesn't exist - this is a new collaboration session
+          // Just set the project ID for Liveblocks room
+          setActiveGeneration({
+            id: projectId,
+            title: "Untitled Project",
+            autoTitle: true,
+            timestamp: Date.now(),
+            status: "complete",
+            code: "",
+            styleDirective: "",
+            refinements: "",
+            flowNodes: [],
+            flowEdges: [],
+            versions: [],
+            styleInfo: null,
+          });
+          return;
+        }
+        
+        console.log("[Project URL] Loaded from Supabase:", gen.title);
+        
+        // Load the project data
+        if (gen.code) {
+          setGeneratedCode(gen.code);
+          setDisplayedCode(gen.code);
+          setEditableCode(gen.code);
+          setGenerationComplete(true);
+          setSidebarMode("chat");
+        }
+        
+        setGenerationTitle(gen.title || "Untitled Project");
+        
+        // Load flow data
+        if (gen.flow_nodes?.length > 0) {
+          setFlowNodes(gen.flow_nodes);
+        }
+        if (gen.flow_edges?.length > 0) {
+          setFlowEdges(gen.flow_edges);
+        }
+        
+        // Load style info
+        if (gen.style_info) {
+          setStyleInfo(gen.style_info);
+        }
+        if (gen.style_directive) {
+          setStyleDirective(gen.style_directive);
+        }
+        if (gen.refinements) {
+          setRefinements(gen.refinements);
+        }
+        
+        // Load files if componentized
+        if (gen.files) {
+          try {
+            const files = typeof gen.files === 'string' ? JSON.parse(gen.files) : gen.files;
+            setGeneratedFiles(files);
+          } catch (e) {
+            console.error("[Project URL] Error parsing files:", e);
+          }
+        }
+        
+        // Set active generation for editing and Liveblocks room
+        const loadedGeneration: GenerationRecord = {
+          id: gen.id,
+          title: gen.title || "Untitled Project",
+          autoTitle: gen.auto_title ?? true,
+          timestamp: gen.created_at ? new Date(gen.created_at).getTime() : Date.now(),
+          status: "complete",
+          code: gen.code || "",
+          styleDirective: gen.style_directive || "",
+          refinements: gen.refinements || "",
+          flowNodes: gen.flow_nodes || [],
+          flowEdges: gen.flow_edges || [],
+          styleInfo: gen.style_info,
+          videoUrl: gen.video_url,
+          versions: gen.versions || [],
+          publishedSlug: gen.published_slug,
+          chatMessages: gen.chat_messages,
+        };
+        setActiveGeneration(loadedGeneration);
+        
+        // Load chat messages if any
+        if (gen.chat_messages?.length > 0) {
+          setChatMessages(gen.chat_messages);
+        }
+        
+        // Clear the localStorage redirect flag
+        localStorage.removeItem("replay_load_project");
+        
+      } catch (err) {
+        console.error("[Project URL] Error loading project:", err);
+        showToast("Failed to load project", "error");
+      }
+    }
+    
+    loadProjectFromUrl();
+  }, [searchParams, hasLoadedFromStorage, activeGeneration?.id, showToast]);
 
   // When new code arrives, either stream it or mark as pending
   useEffect(() => {
