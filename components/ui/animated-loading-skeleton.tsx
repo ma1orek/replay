@@ -43,8 +43,8 @@ const AnimatedLoadingSkeleton = () => {
                     left: 0;
                     right: 0;
                     bottom: 0;
-                    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
-                    animation: skeleton-shimmer 2s ease-in-out infinite;
+                    background: rgba(255,255,255,0.02);
+                    animation: skeleton-pulse 2s ease-in-out infinite;
                 }
             `}} />
             

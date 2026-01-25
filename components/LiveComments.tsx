@@ -172,7 +172,7 @@ export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef 
         <div 
           className="absolute inset-0 z-40 cursor-crosshair"
           onClick={handleCanvasClick}
-          style={{ background: "rgba(139, 92, 246, 0.03)" }}
+          style={{ background: "rgba(0, 0, 0, 0.15)" }}
         >
           {/* Hint - dark theme matching tool */}
           <div className="absolute top-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-zinc-800 text-white text-sm font-medium rounded-full shadow-lg flex items-center gap-2 border border-zinc-700">

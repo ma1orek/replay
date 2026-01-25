@@ -92,26 +92,10 @@ html, body {
 
 body {
   font-family: var(--font-sans);
-  background: linear-gradient(180deg, var(--bg-base) 0%, var(--bg-elevated) 100%);
+  background: var(--bg-base);
   color: var(--text-primary);
   min-height: 100vh;
   overflow-x: hidden;
-}
-
-/* Subtle radial gradient orbs in background */
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: 
-    radial-gradient(ellipse 80% 50% at 20% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(255, 110, 60, 0.06) 0%, transparent 50%),
-    radial-gradient(ellipse 40% 60% at 50% 50%, rgba(139, 92, 246, 0.04) 0%, transparent 50%);
-  pointer-events: none;
-  z-index: 0;
 }
 
 ::selection {
