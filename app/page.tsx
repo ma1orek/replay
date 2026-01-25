@@ -3054,8 +3054,40 @@ function ReplayToolContent() {
   // Create preview URL with asset click handlers and stabilized picsum URLs
   const createPreviewUrl = useCallback((code: string): string => {
     // First stabilize any picsum URLs to prevent images from randomly changing
-    const stabilizedCode = stabilizePicsumUrls(code);
-    const codeWithHandler = injectAssetClickHandler(stabilizedCode);
+    let processedCode = stabilizePicsumUrls(code);
+    
+    // Ensure Tailwind CSS is included (inject if missing)
+    if (!processedCode.includes('cdn.tailwindcss.com') && !processedCode.includes('tailwindcss')) {
+      const tailwindScript = '<script src="https://cdn.tailwindcss.com"></script>';
+      const gsapScript = '<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>';
+      const alpineScript = '<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>';
+      
+      if (processedCode.includes('</head>')) {
+        // Inject before </head>
+        processedCode = processedCode.replace('</head>', `${tailwindScript}\n${gsapScript}\n${alpineScript}\n</head>`);
+      } else if (processedCode.includes('<body')) {
+        // Inject before <body>
+        processedCode = processedCode.replace(/<body/, `<head>${tailwindScript}\n${gsapScript}\n${alpineScript}</head>\n<body`);
+      } else {
+        // Wrap in full HTML structure
+        processedCode = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  ${tailwindScript}
+  ${gsapScript}
+  ${alpineScript}
+  <style>* { margin: 0; padding: 0; box-sizing: border-box; }</style>
+</head>
+<body class="min-h-screen">
+${processedCode}
+</body>
+</html>`;
+      }
+    }
+    
+    const codeWithHandler = injectAssetClickHandler(processedCode);
     return URL.createObjectURL(new Blob([codeWithHandler], { type: "text/html" }));
   }, [injectAssetClickHandler]);
   
