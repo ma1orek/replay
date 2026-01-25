@@ -18,7 +18,21 @@ interface Project {
 function jsxToHtml(code: string): string {
   if (!code) return '';
   
-  let html = code;
+  let html = code.trim();
+  
+  // If code already starts with HTML tags, return as-is (it's already HTML)
+  if (html.startsWith('<!DOCTYPE') || 
+      html.startsWith('<html') || 
+      html.startsWith('<body') ||
+      html.startsWith('<div') ||
+      html.startsWith('<section') ||
+      html.startsWith('<main') ||
+      html.startsWith('<header') ||
+      html.startsWith('<nav')) {
+    // Just convert className to class and return
+    html = html.replace(/className=/g, 'class=');
+    return html;
+  }
   
   // If code is a React component, extract the JSX from return statement
   if (html.includes('export default function') || html.includes('function HomePage') || html.includes('export default')) {
