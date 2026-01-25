@@ -3642,6 +3642,25 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
     }
   }, [searchParams, showHistoryMode]);
 
+  // AUTO-UPDATE URL when project changes - enables shareable links for multiplayer
+  useEffect(() => {
+    if (!activeGeneration?.id) return;
+    
+    // Don't update if URL already has this project
+    const currentProjectId = searchParams.get('project');
+    if (currentProjectId === activeGeneration.id) return;
+    
+    // Don't update URL in demo mode
+    if (isDemoMode) return;
+    
+    // Update URL with project ID (without page reload)
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.set('project', activeGeneration.id);
+    window.history.replaceState({}, '', newUrl.toString());
+    
+    console.log("[Project URL] Updated to:", activeGeneration.id);
+  }, [activeGeneration?.id, searchParams, isDemoMode]);
+
   // Handle ?project=xxx URL param - load specific project for multiplayer collaboration
   useEffect(() => {
     const projectIdParam = searchParams.get('project');
