@@ -347,6 +347,7 @@ import Avatar from "@/components/Avatar";
 import { OnlineUsers } from "@/components/LiveCursors";
 import { CommentModeToggle } from "@/components/LiveComments";
 import { LiveCollaboration } from "@/components/LiveCollaboration";
+import { ShimmerButton } from "@/components/ui/shimmer-button";
 import AuthModal from "@/components/modals/AuthModal";
 import OutOfCreditsModal from "@/components/modals/OutOfCreditsModal";
 import FeedbackGateModal from "@/components/modals/FeedbackGateModal";
@@ -11993,14 +11994,18 @@ ${publishCode}
                   
                   {/* Generate Button */}
                   <div className="p-4 border-b border-white/[0.06]">
-                    <button 
+                    <ShimmerButton 
                       onClick={handleGenerate}
                       disabled={isProcessing || flows.length === 0}
-                      className="w-full py-3.5 rounded-xl bg-zinc-800 hover:from-[#52525b] hover:to-[var(--accent-orange)] text-[13px] font-semibold text-white flex items-center justify-center gap-2.5 transition-all disabled:opacity-50 shadow-[0_0_20px_rgba(82,82,91,0.2)] hover:shadow-[0_0_30px_rgba(82,82,91,0.2)] hover:-translate-y-0.5"
+                      shimmerColor="#FF6E3C"
+                      shimmerDuration="2.5s"
+                      background="#111111"
+                      borderRadius="12px"
+                      className="w-full py-3.5 text-[13px] font-semibold disabled:opacity-50"
                     >
-                      <LogoIcon className="w-4 h-4" color="white" />
-                      Reconstruct
-                    </button>
+                      <LogoIcon className="w-4 h-4 mr-2" color="#FF6E3C" />
+                      <span className="text-white font-semibold">Reconstruct</span>
+                    </ShimmerButton>
                   </div>
                   
                   {/* Database Section */}

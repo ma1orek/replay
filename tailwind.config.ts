@@ -184,6 +184,10 @@ const config: Config = {
         "aurora-slow": "aurora 90s linear infinite",
         "aurora-fast": "aurora 40s linear infinite reverse",
         grid: "grid 15s linear infinite",
+        
+        // Shimmer button
+        "shimmer-slide": "shimmer-slide var(--speed) ease-in-out infinite alternate",
+        "spin-around": "spin-around calc(var(--speed) * 2) infinite linear",
       },
       
       keyframes: {
@@ -250,6 +254,17 @@ const config: Config = {
         grid: {
           "0%": { transform: "translateY(-50%)" },
           "100%": { transform: "translateY(0)" },
+        },
+        
+        // Shimmer button
+        "spin-around": {
+          "0%": { transform: "translateZ(0) rotate(0)" },
+          "15%, 35%": { transform: "translateZ(0) rotate(90deg)" },
+          "65%, 85%": { transform: "translateZ(0) rotate(270deg)" },
+          "100%": { transform: "translateZ(0) rotate(360deg)" },
+        },
+        "shimmer-slide": {
+          to: { transform: "translate(calc(100cqw - 100%), 0)" },
         },
       },
       
