@@ -458,6 +458,79 @@ Add this comment at the END of your HTML (before </body>):
 }
 -->
 
+═══════════════════════════════════════════════════════════════════════════════
+🎬 ACTION-REACTION MAPPING (Video Intelligence)
+═══════════════════════════════════════════════════════════════════════════════
+
+CRITICAL: Watch for PHYSICAL INTERACTIONS in the video:
+
+1. CLICK → REACTION PAIRS:
+   - Button click → Modal slides in? Create MODAL state node
+   - Link click → Full page change? Create separate VIEW node
+   - Button click → Inline content change? Create SECTION node
+   
+2. HOVER DETECTION (Ghost Links):
+   - Cursor hovers over menu item but doesn't click? → DETECTED link
+   - Hover reveals dropdown? → Detect all dropdown items as POSSIBLE pages
+   
+3. LOADING STATES:
+   - See a spinner/skeleton after click? → Add LOADING state between nodes
+   - Content loads progressively? → Note loading sequence
+
+4. URL BAR CHANGES:
+   - URL changes = NEW PAGE (observed, high confidence)
+   - URL stays same but content changes = STATE CHANGE (modal/tab)
+
+5. ANIMATION TYPES:
+   - Instant change = likely client-side routing
+   - Slide from right = drawer/sidebar
+   - Fade + scale = modal
+   - Content swap = tab change
+
+EVIDENCE TRACKING - Add to REPLAY_METADATA:
+<!-- REPLAY_METADATA
+{
+  "flowNodes": [
+    {
+      "id": "home",
+      "name": "Home",
+      "status": "observed",
+      "videoTimestamp": 0,
+      "videoDuration": 5.2,
+      "urlChange": true
+    },
+    {
+      "id": "pricing",
+      "name": "Pricing", 
+      "status": "detected",
+      "source": "nav-link-hover",
+      "confidence": "high"
+    },
+    {
+      "id": "checkout",
+      "name": "Checkout",
+      "status": "inferred",
+      "reason": "e-commerce pattern suggests checkout flow",
+      "confidence": "medium"
+    }
+  ],
+  "flowEdges": [
+    {
+      "from": "home",
+      "to": "pricing",
+      "type": "hover",
+      "videoTimestamp": 3.5,
+      "note": "User hovered over Pricing link but did not click"
+    }
+  ],
+  "loadingStates": ["after-form-submit", "product-list-load"],
+  "possiblePages": ["About", "Services", "Pricing", "Contact", "Blog"],
+  "detectedNavLinks": ["Home", "About", "Services", "Pricing", "Contact"],
+  "implementedPages": ["Home"],
+  "suggestedNextPages": ["About", "Services"]
+}
+-->
+
 This helps users know what pages they can generate next!
 The Flow Map will show these as "Possible pages to generate".
 
