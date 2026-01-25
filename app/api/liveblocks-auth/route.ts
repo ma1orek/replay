@@ -55,7 +55,6 @@ export async function POST(request: NextRequest) {
       userName = profile?.full_name || user.email?.split("@")[0] || "User";
       // Truncate name if too long
       if (userName.length > 50) userName = userName.substring(0, 50);
-      userEmail = undefined; // Don't send email - not needed and adds size
       
       // Use small DiceBear avatar instead of potentially huge profile avatar
       // Profile avatars can be base64 encoded images which exceed Liveblocks limit
