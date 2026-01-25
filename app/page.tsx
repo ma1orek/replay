@@ -11002,8 +11002,71 @@ Try these prompts in Cursor or v0:
               </div>
             </div>
           ) : !sidebarCollapsed && sidebarView === "detail" && viewMode === "code" && generationComplete ? (
-            /* CODE VIEW SIDEBAR - Full File Tree (1:1 with removed middle panel) */
+            /* CODE VIEW SIDEBAR - Mode Toggle + Agent Mode + File Tree */
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[#111111]">
+              {/* Mode Toggle: Componentized / Single-file */}
+              <div className="p-2 border-b border-zinc-800">
+                <div className="flex items-center bg-zinc-900 rounded-lg p-0.5">
+                  <button
+                    onClick={() => generationComplete && setCodeMode("componentized")}
+                    disabled={!generationComplete}
+                    className={cn(
+                      "flex-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all",
+                      !generationComplete && "opacity-50 cursor-not-allowed",
+                      codeMode === "componentized" 
+                        ? "bg-white/10 text-white" 
+                        : "text-zinc-500 hover:text-zinc-400"
+                    )}
+                  >
+                    Componentized
+                  </button>
+                  <button
+                    onClick={() => setCodeMode("single-file")}
+                    className={cn(
+                      "flex-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all",
+                      codeMode === "single-file" 
+                        ? "bg-white/10 text-white" 
+                        : "text-zinc-500 hover:text-zinc-400"
+                    )}
+                  >
+                    Single-file
+                  </button>
+                </div>
+                
+                {/* Agent Mode Toggle */}
+                <div className="flex items-center justify-between mt-2 px-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className={cn(
+                      "text-[10px] font-medium",
+                      agentMode ? "text-white" : "text-zinc-500"
+                    )}>
+                      Agent Mode
+                    </span>
+                    <div className="relative group">
+                      <Info className="w-3 h-3 text-zinc-600 cursor-help" />
+                      <div className="absolute left-0 top-full mt-2 w-48 p-2 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                        <p className="text-[9px] text-zinc-400 leading-relaxed">
+                          Adds context for <span className="text-white font-medium">Cursor</span>, <span className="text-white font-medium">Windsurf</span>, <span className="text-white font-medium">Copilot</span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setAgentMode(!agentMode)}
+                    className={cn(
+                      "relative w-7 h-3.5 rounded-full transition-all",
+                      agentMode ? "bg-emerald-500" : "bg-zinc-700"
+                    )}
+                  >
+                    <span className={cn(
+                      "absolute top-0.5 w-2.5 h-2.5 rounded-full bg-white shadow transition-all",
+                      agentMode ? "left-[14px]" : "left-0.5"
+                    )} />
+                  </button>
+                </div>
+              </div>
+              
+              {/* FILES Header */}
               <div className="p-2 border-b border-zinc-800 sticky top-0 bg-[#111111] z-10">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-[9px] text-zinc-500 uppercase tracking-wider">
@@ -12647,91 +12710,17 @@ Try these prompts in Cursor or v0:
                   </div>
                 ) : (
                   <>
-                {/* Code Tab Header - Mode toggle, Agent Mode, actions */}
+                {/* Code Tab Header - Breadcrumbs + Actions in one line */}
                 {displayedCode && (
                   <div className="flex-shrink-0 border-b border-zinc-800 bg-[#111111] px-3 py-2">
                     <div className="flex items-center justify-between gap-3">
-                      {/* Left: Mode toggle - Single-file / Componentized + Agent Mode */}
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center bg-zinc-900 rounded-lg p-0.5">
-                          <button
-                            onClick={() => setCodeMode("single-file")}
-                            className={cn(
-                              "px-3 py-1 rounded-md text-[10px] font-medium transition-all",
-                              codeMode === "single-file" 
-                                ? "bg-white/10 text-white" 
-                                : "text-zinc-500 hover:text-zinc-400"
-                            )}
-                          >
-                            Single-file
-                          </button>
-                          <button
-                            onClick={() => generationComplete && setCodeMode("componentized")}
-                            disabled={!generationComplete}
-                            className={cn(
-                              "px-3 py-1 rounded-md text-[10px] font-medium transition-all",
-                              !generationComplete && "opacity-50 cursor-not-allowed",
-                              codeMode === "componentized" 
-                                ? "bg-white/10 text-white" 
-                                : "text-zinc-500 hover:text-zinc-400"
-                            )}
-                            title={!generationComplete ? "Complete generation first" : ""}
-                          >
-                            Componentized
-                          </button>
-                          <button
-                            onClick={() => generationComplete && setCodeMode("architecture")}
-                            disabled={!generationComplete}
-                            className={cn(
-                              "px-3 py-1 rounded-md text-[10px] font-medium transition-all",
-                              !generationComplete && "opacity-50 cursor-not-allowed",
-                              codeMode === "architecture" 
-                                ? "bg-white/10 text-white" 
-                                : "text-zinc-500 hover:text-zinc-400"
-                            )}
-                            title={!generationComplete ? "Complete generation first" : "Shows imports from Blueprints"}
-                          >
-                            Architecture
-                          </button>
-                        </div>
-                        
-                        {/* Agent Mode Toggle - Clean minimal design */}
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => setAgentMode(!agentMode)}
-                            className={cn(
-                              "relative w-8 h-4 rounded-full transition-all",
-                              agentMode 
-                                ? "bg-zinc-800" 
-                                : "bg-white/20"
-                            )}
-                            aria-label="Toggle Agent Mode"
-                          >
-                            <span className={cn(
-                              "absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-all",
-                              agentMode ? "left-[18px]" : "left-0.5"
-                            )} />
-                          </button>
-                          <span className={cn(
-                            "text-[10px] font-medium",
-                            agentMode ? "text-white" : "text-zinc-500"
-                          )}>
-                            Agent Mode
-                          </span>
-                          {/* Info tooltip - positioned below */}
-                          <div className="relative group">
-                            <Info className="w-3 h-3 text-zinc-600 cursor-help" />
-                            <div className="absolute left-0 top-full mt-2 w-64 p-2.5 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                              <div className="absolute left-2 -top-1 w-2 h-2 bg-zinc-900 border-l border-t border-zinc-700 rotate-45" />
-                              <p className="text-[10px] text-zinc-400 leading-relaxed">
-                                Adds hidden context markers to the code. Optimized for <span className="text-white font-medium">Cursor</span>, <span className="text-white font-medium">Windsurf</span>, and <span className="text-white font-medium">Copilot</span> to understand your UI intent instantly.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                      {/* Left: Breadcrumbs */}
+                      <div className="flex items-center gap-1.5 text-[11px]">
+                        <span className="text-zinc-500">{activeFilePath.split('/').slice(1, -1).join('/')}/</span>
+                        <span className="text-white font-medium">{activeFilePath.split('/').pop()}</span>
                       </div>
                       
-                      {/* Right: Actions - Edit, Copy for AI dropdown & Download */}
+                      {/* Right: Actions - Edit, Copy for AI, Download */}
                       <div className="flex items-center gap-1.5">
                         {/* Edit button */}
                         {editableCode && !isCodeEditable && (
@@ -12918,187 +12907,7 @@ Try these prompts in Cursor or v0:
                     
                     {/* Code content */}
                     <div ref={codeContainerRef} className="flex-1 overflow-auto">
-                      {/* Architecture Mode - Shows imports from Blueprints */}
-                      {codeMode === "architecture" && displayedCode ? (
-                        <div className="h-full bg-[#111111] p-6 overflow-auto">
-                          <div className="max-w-4xl mx-auto space-y-6">
-                            {/* Header */}
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <h2 className="text-lg font-semibold text-white">Project Architecture</h2>
-                                <p className="text-xs text-zinc-500 mt-1">
-                                  {libraryData?.components?.length 
-                                    ? `${libraryData.components.length} components from Blueprints • Ready to copy`
-                                    : "Generate Library first to see component architecture"}
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {!libraryData?.components?.length && (
-                                  <button 
-                                    onClick={() => setViewMode("library")}
-                                    className="flex items-center gap-2 px-3 py-2 text-xs bg-white text-zinc-900 rounded-lg hover:bg-zinc-100 font-medium"
-                                  >
-                                    <Box className="w-4 h-4" />
-                                    Go to Library
-                                  </button>
-                                )}
-                                <button 
-                                  onClick={() => {
-                                    const allCode = generatedFiles.map(f => `// ${f.path}\n${f.content}`).join('\n\n');
-                                    navigator.clipboard.writeText(allCode);
-                                    showToast("All files copied!", "success");
-                                  }}
-                                  className="flex items-center gap-2 px-3 py-2 text-xs bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 hover:text-white"
-                                >
-                                  <Download className="w-4 h-4" />
-                                  Export All
-                                </button>
-                              </div>
-                            </div>
-                            
-                            {/* Project Structure Overview */}
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="p-4 bg-zinc-900 rounded-xl border border-zinc-800">
-                                <div className="flex items-center gap-2 mb-3">
-                                  <FolderTree className="w-4 h-4 text-zinc-400" />
-                                  <span className="text-sm font-medium text-white">Structure</span>
-                                </div>
-                                <div className="space-y-1 text-[10px] font-mono text-zinc-400">
-                                  <div className="flex items-center gap-2"><Folder className="w-3 h-3 text-zinc-600" /> /app</div>
-                                  <div className="flex items-center gap-2 pl-4"><span className="text-emerald-400">page.tsx</span></div>
-                                  <div className="flex items-center gap-2 pl-4"><Folder className="w-3 h-3 text-zinc-600" /> /components</div>
-                                  {libraryData?.components?.slice(0, 5).map((c: any, i: number) => (
-                                    <div key={i} className="flex items-center gap-2 pl-8">
-                                      <span className="text-blue-400">{c.name}.tsx</span>
-                                    </div>
-                                  ))}
-                                  {(libraryData?.components?.length || 0) > 5 && (
-                                    <div className="pl-8 text-zinc-600">+{(libraryData?.components?.length || 0) - 5} more...</div>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              <div className="p-4 bg-zinc-900 rounded-xl border border-zinc-800">
-                                <div className="flex items-center gap-2 mb-3">
-                                  <Box className="w-4 h-4 text-zinc-400" />
-                                  <span className="text-sm font-medium text-white">Blueprints Used</span>
-                                </div>
-                                <div className="space-y-2">
-                                  {libraryData?.components?.slice(0, 4).map((c: any, i: number) => (
-                                    <div key={i} className="flex items-center justify-between text-xs">
-                                      <span className="text-zinc-300">{c.name}</span>
-                                      <span className={cn(
-                                        "px-1.5 py-0.5 rounded text-[9px]",
-                                        blueprintStatuses[c.id] === 'approved' ? "bg-emerald-900/30 text-emerald-400" : "bg-zinc-800 text-zinc-500"
-                                      )}>
-                                        {blueprintStatuses[c.id] || 'draft'}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {/* Main Page Code with Imports */}
-                            <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
-                              <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <FileText className="w-4 h-4 text-emerald-400" />
-                                  <span className="text-sm font-medium text-white">/app/page.tsx</span>
-                                </div>
-                                <button 
-                                  onClick={() => {
-                                    const imports = libraryData?.components?.map((c: any) => 
-                                      `import { ${c.name} } from '@/components/${c.name}';`
-                                    ).join('\n') || '';
-                                    const pageCode = `${imports}\n\nexport default function Page() {\n  return (\n    <main>\n      {/* Your page content using Blueprint components */}\n    </main>\n  );\n}`;
-                                    navigator.clipboard.writeText(pageCode);
-                                    showToast("Page template copied!", "success");
-                                  }}
-                                  className="text-xs text-zinc-500 hover:text-white flex items-center gap-1"
-                                >
-                                  <Copy className="w-3 h-3" />
-                                  Copy
-                                </button>
-                              </div>
-                              <Highlight 
-                                theme={themes.nightOwl} 
-                                code={`// Import components from Blueprints (Single Source of Truth)
-${libraryData?.components?.map((c: any) => `import { ${c.name} } from '@/components/${c.name}';`).join('\n') || '// No components yet'}
-
-export default function Page() {
-  return (
-    <main className="min-h-screen">
-      {/* Components are pre-built in Blueprints */}
-      {/* Modify props here, styles come from Blueprint definitions */}
-${libraryData?.components?.slice(0, 3).map((c: any) => `      <${c.name} />`).join('\n') || '      {/* Add components */}'}
-    </main>
-  );
-}`}
-                                language="tsx"
-                              >
-                                {({ style, tokens, getLineProps, getTokenProps }) => (
-                                  <pre className="p-4 text-xs overflow-x-auto" style={{ ...style, background: 'transparent', fontFamily: "'JetBrains Mono', monospace" }}>
-                                    {tokens.map((line, i) => (
-                                      <div key={i} {...getLineProps({ line })}>
-                                        <span className="inline-block w-6 pr-3 text-right text-white/15 select-none text-[10px]">{i + 1}</span>
-                                        {line.map((token, key) => <span key={key} {...getTokenProps({ token })} />)}
-                                      </div>
-                                    ))}
-                                  </pre>
-                                )}
-                              </Highlight>
-                            </div>
-                            
-                            {/* Component Files */}
-                            <div>
-                              <h3 className="text-sm font-medium text-white mb-3">Component Files (from Blueprints)</h3>
-                              <div className="space-y-3">
-                                {libraryData?.components?.slice(0, 3).map((comp: any, i: number) => (
-                                  <div key={i} className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
-                                    <div className="px-4 py-2 border-b border-zinc-800 flex items-center justify-between">
-                                      <div className="flex items-center gap-2">
-                                        <Box className="w-3 h-3 text-blue-400" />
-                                        <span className="text-xs font-medium text-zinc-300">/components/{comp.name}.tsx</span>
-                                      </div>
-                                      <button 
-                                        onClick={() => {
-                                          const code = `export const ${comp.name} = ({ ${comp.props?.map((p: any) => p.name).join(', ') || ''} }) => {\n  return (\n    ${comp.code?.substring(0, 150) || '<div>Component</div>'}...\n  );\n};`;
-                                          navigator.clipboard.writeText(code);
-                                          showToast(`${comp.name} copied!`, "success");
-                                        }}
-                                        className="text-[10px] text-zinc-500 hover:text-white flex items-center gap-1"
-                                      >
-                                        <Copy className="w-3 h-3" />
-                                      </button>
-                                    </div>
-                                    <pre className="p-3 text-[10px] text-zinc-400 font-mono overflow-x-auto" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-{`export const ${comp.name} = ({ ${comp.props?.map((p: any) => p.name).join(', ') || ''} }) => {
-  return (
-    // Component code from Blueprint
-  );
-};`}
-                                    </pre>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                            
-                            {/* Tip */}
-                            <div className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl">
-                              <div className="flex items-start gap-3">
-                                <Lightbulb className="w-5 h-5 text-zinc-500 mt-0.5" />
-                                <div>
-                                  <p className="text-xs text-zinc-400">
-                                    <span className="text-white font-medium">Tip:</span> Modify components in <span className="text-blue-400">Blueprints</span> tab. 
-                                    Changes apply everywhere they're used. This is your <span className="text-emerald-400">Single Source of Truth</span>.
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ) : isCodeEditable ? (
+                      {isCodeEditable ? (
                         <textarea 
                           value={editableCode} 
                           onChange={(e) => setEditableCode(e.target.value)} 

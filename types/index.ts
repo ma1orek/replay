@@ -148,7 +148,7 @@ export type StylePreset = {
 // Code Generation Types
 // ============================================
 
-export type CodeMode = "single-file" | "componentized" | "architecture";
+export type CodeMode = "single-file" | "componentized";
 
 export interface FileNode {
   path: string;
