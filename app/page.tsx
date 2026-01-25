@@ -3103,10 +3103,10 @@ function ReplayToolContent() {
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
   const dragStartPos = useRef({ x: 0, y: 0, nodeX: 0, nodeY: 0 });
   
-  // Code tab state - Single-file vs Componentized mode
-  const [codeMode, setCodeMode] = useState<CodeMode>("single-file");
+  // Code tab state - Componentized (default) vs Single-file mode
+  const [codeMode, setCodeMode] = useState<CodeMode>("componentized");
   const [generatedFiles, setGeneratedFiles] = useState<FileNode[]>([]);
-  const [activeFilePath, setActiveFilePath] = useState<string>("/pages/index.html");
+  const [activeFilePath, setActiveFilePath] = useState<string>("/pages/index.tsx");
   const [generatingFilePath, setGeneratingFilePath] = useState<string | null>(null); // Track which file is being generated
   const [codeReferenceMap, setCodeReferenceMap] = useState<CodeReferenceMap[]>([]);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(["/pages", "/components"]));
@@ -8362,9 +8362,9 @@ Try these prompts in Cursor or v0:
     setIsCodeEditable(false);
     setArchitecture([]);
     setStyleInfo(null);
-    // Reset to single-file mode for new generation
-    setCodeMode("single-file");
-    setActiveFilePath("/pages/index.html");
+    // Reset to componentized mode for new generation
+    setCodeMode("componentized");
+    setActiveFilePath("/pages/index.tsx");
     // Mark new generation session - hide old content until new content arrives
     const sessionId = `session_${Date.now()}`;
     setGenerationSessionId(sessionId);
@@ -12876,35 +12876,6 @@ Try these prompts in Cursor or v0:
                 <div className="flex-1 flex min-h-0 overflow-hidden">
                   {/* Code Editor Panel */}
                   <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                    {/* Breadcrumb bar */}
-                    {displayedCode && (
-                      <div className="flex-shrink-0 px-3 py-1.5 border-b border-zinc-800 bg-[#111111] flex items-center gap-2">
-                        <span className="text-[10px] text-zinc-600">
-                          {activeFilePath.split('/').filter(Boolean).map((part, i, arr) => (
-                            <span key={i}>
-                              <span className={i === arr.length - 1 ? "text-zinc-400" : ""}>{part}</span>
-                              {i < arr.length - 1 && <span className="mx-1 text-white/20">/</span>}
-                            </span>
-                          ))}
-                        </span>
-                        {generatedFiles.find(f => f.path === activeFilePath)?.isStub && (
-                          <span className="px-1.5 py-0.5 rounded text-[8px] bg-zinc-600/10 text-zinc-400 border border-zinc-600/20">
-                            STUB
-                          </span>
-                        )}
-                        {agentMode && (
-                          <span className="px-1.5 py-0.5 rounded text-[8px] bg-zinc-800/10 text-zinc-300 border border-zinc-700">
-                            AGENT
-                          </span>
-                        )}
-                        {generatedFiles.find(f => f.path === activeFilePath)?.lineCount && (
-                          <span className="ml-auto text-[9px] text-white/20">
-                            {agentMode ? "~" : ""}{generatedFiles.find(f => f.path === activeFilePath)?.lineCount}{agentMode ? "+ lines" : " lines"}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    
                     {/* Code content */}
                     <div ref={codeContainerRef} className="flex-1 overflow-auto">
                       {isCodeEditable ? (
