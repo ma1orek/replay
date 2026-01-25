@@ -21,16 +21,40 @@ function jsxToHtml(code: string): string {
   let html = code;
   
   // If code is a React component, extract the JSX from return statement
-  if (html.includes('export default function') || html.includes('function HomePage')) {
-    // Extract everything inside return ( ... )
-    const returnMatch = html.match(/return\s*\(\s*([\s\S]*?)\s*\)\s*;?\s*\}?\s*$/);
-    if (returnMatch) {
-      html = returnMatch[1].trim();
-    } else {
-      // Try to extract JSX from between return and closing
-      const simpleReturn = html.match(/return\s+([\s\S]+?)\s*;?\s*\}\s*$/);
-      if (simpleReturn) {
-        html = simpleReturn[1].trim();
+  if (html.includes('export default function') || html.includes('function HomePage') || html.includes('export default')) {
+    // Find "return (" and extract everything until matching closing paren
+    const returnIndex = html.indexOf('return');
+    if (returnIndex !== -1) {
+      const afterReturn = html.slice(returnIndex + 6).trim();
+      
+      if (afterReturn.startsWith('(')) {
+        // Count parentheses to find matching close
+        let depth = 0;
+        let startIdx = -1;
+        let endIdx = -1;
+        
+        for (let i = 0; i < afterReturn.length; i++) {
+          if (afterReturn[i] === '(') {
+            if (depth === 0) startIdx = i + 1;
+            depth++;
+          } else if (afterReturn[i] === ')') {
+            depth--;
+            if (depth === 0) {
+              endIdx = i;
+              break;
+            }
+          }
+        }
+        
+        if (startIdx !== -1 && endIdx !== -1) {
+          html = afterReturn.slice(startIdx, endIdx).trim();
+        }
+      } else {
+        // return without parens - take until ; or }
+        const endMatch = afterReturn.match(/^([\s\S]+?)(?:;|\}\s*$)/);
+        if (endMatch) {
+          html = endMatch[1].trim();
+        }
       }
     }
     
@@ -42,12 +66,15 @@ function jsxToHtml(code: string): string {
   // Convert className to class
   html = html.replace(/className=/g, 'class=');
   
-  // Convert JSX self-closing tags
+  // Convert JSX self-closing tags to proper HTML
   html = html.replace(/<([a-z][a-zA-Z0-9]*)\s+([^>]*?)\s*\/>/gi, '<$1 $2></$1>');
   
-  // Remove JSX expressions that can't be rendered as static HTML
-  html = html.replace(/\{\/\*[\s\S]*?\*\/\}/g, ''); // JSX comments
-  html = html.replace(/\{[^}]*\}/g, ''); // Simple JSX expressions (may need refinement)
+  // Remove JSX comments {/* ... */}
+  html = html.replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
+  
+  // Handle JSX expressions - remove simple ones but keep text
+  // Don't remove expressions inside attributes
+  html = html.replace(/>(\s*)\{[^}]*\}(\s*)</g, '>$1$2<');
   
   // Fix htmlFor -> for
   html = html.replace(/htmlFor=/g, 'for=');
@@ -56,13 +83,14 @@ function jsxToHtml(code: string): string {
   html = html.replace(/(\w+)=\{true\}/g, '$1');
   html = html.replace(/(\w+)=\{false\}/g, '');
   
-  // Convert style objects to strings (basic)
+  // Convert style objects to CSS strings
   html = html.replace(/style=\{\{([^}]+)\}\}/g, (_, styles) => {
     const cssStyles = styles
       .replace(/([A-Z])/g, '-$1')
       .toLowerCase()
       .replace(/:\s*['"]?([^'",}]+)['"]?/g, ': $1')
-      .replace(/,\s*/g, '; ');
+      .replace(/,\s*/g, '; ')
+      .trim();
     return `style="${cssStyles}"`;
   });
   
