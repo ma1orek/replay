@@ -20,6 +20,7 @@ export type StoredComment = {
   authorColor: string;
   timestamp: number;
   resolved: boolean;
+  tab: string; // Which tab this comment belongs to (preview, code, flow, etc.)
   replies: {
     id: string;
     text: string;

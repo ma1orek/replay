@@ -10,6 +10,7 @@ interface LiveCollaborationProps {
   projectId: string | null;
   isCommentMode: boolean;
   onToggleCommentMode: () => void;
+  currentTab: string; // preview, code, flow, etc.
   children: React.ReactNode;
 }
 
@@ -18,6 +19,7 @@ export function LiveCollaboration({
   projectId, 
   isCommentMode, 
   onToggleCommentMode,
+  currentTab,
   children 
 }: LiveCollaborationProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -51,6 +53,7 @@ export function LiveCollaboration({
           isCommentMode={isCommentMode}
           onToggleCommentMode={onToggleCommentMode}
           containerRef={containerRef as React.RefObject<HTMLElement>}
+          currentTab={currentTab}
         />
         
         {/* Main Content */}

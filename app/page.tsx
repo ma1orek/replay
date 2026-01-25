@@ -10252,6 +10252,7 @@ ${publishCode}
       projectId={activeGeneration?.id || null}
       isCommentMode={isCommentMode}
       onToggleCommentMode={() => setIsCommentMode(!isCommentMode)}
+      currentTab={viewMode}
     >
     <div className="h-screen flex flex-col bg-[#111111] overflow-hidden">
 

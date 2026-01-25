@@ -9,13 +9,15 @@ interface LiveCommentsProps {
   isCommentMode: boolean;
   onToggleCommentMode: () => void;
   containerRef: React.RefObject<HTMLElement>;
+  currentTab: string; // Which tab is currently active (preview, code, flow, etc.)
 }
 
-export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef }: LiveCommentsProps) {
+export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef, currentTab }: LiveCommentsProps) {
   const self = useSelf();
   
-  // Get comments from Liveblocks Storage
-  const comments = useStorage((root) => root.comments) || [];
+  // Get comments from Liveblocks Storage - filter by current tab
+  const allComments = useStorage((root) => root.comments) || [];
+  const comments = allComments.filter(c => c.tab === currentTab);
   
   const [activeComment, setActiveComment] = useState<string | null>(null);
   const [newCommentPosition, setNewCommentPosition] = useState<{ x: number; y: number } | null>(null);
@@ -99,6 +101,7 @@ export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef 
       authorColor,
       timestamp: Date.now(),
       resolved: false,
+      tab: currentTab, // Remember which tab this comment was added on
       replies: [],
     };
     
@@ -106,7 +109,7 @@ export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef 
     setNewCommentText("");
     setNewCommentPosition(null);
     setActiveComment(newComment.id);
-  }, [newCommentText, newCommentPosition, self, addComment]);
+  }, [newCommentText, newCommentPosition, self, addComment, currentTab]);
 
   // Add reply
   const handleAddReply = useCallback((commentId: string) => {
