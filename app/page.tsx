@@ -11067,7 +11067,7 @@ ${publishCode}
                             className={cn(
                               "w-full flex items-center gap-2 px-3 py-1.5 text-left transition-all text-[11px] group cursor-pointer",
                               selectedBlueprintComponent === `comp-${comp.id}` 
-                                ? "bg-emerald-500/20 text-emerald-400" 
+                                ? "bg-zinc-700/50 text-white" 
                                 : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
                             )}
                           >
@@ -16746,7 +16746,7 @@ export default function App() {
                         {selectedBlueprintComponent && (
                           <>
                             <span className="text-xs text-zinc-600">•</span>
-                            <span className="text-xs text-blue-400">{selectedBlueprintComponent.replace('comp-', '').replace('page-', '')}</span>
+                            <span className="text-xs text-white">{selectedBlueprintComponent.replace('comp-', '').replace('page-', '')}</span>
                           </>
                         )}
                       </div>
