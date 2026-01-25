@@ -253,52 +253,66 @@ ALSO add these CSS animations for hover effects:
 </style>
 
 ═══════════════════════════════════════════════════════════════════════════════
-🖼️ IMAGES - CACHED & STABLE (ANTI-RATE-LIMIT STRATEGY)
+🖼️ IMAGES - MANDATORY POLLINATIONS.AI (NO EXCEPTIONS!)
 ═══════════════════════════════════════════════════════════════════════════════
 
-You MUST use Pollinations.ai with a STATIC SEED to prevent "Rate Limit" errors.
+🚨 CRITICAL RULE: If the video shows an image, YOU MUST include a real image!
+NEVER leave empty placeholders. NEVER use broken sources. ALWAYS use Pollinations.ai.
 
-SYNTAX:
-https://image.pollinations.ai/prompt/{URL_ENCODED_DESCRIPTION}?width=W&height=H&nologo=true&model=flux&seed={stable_id}
+SYNTAX (MEMORIZE THIS!):
+https://image.pollinations.ai/prompt/{URL_ENCODED_DESCRIPTION}?width=W&height=H&nologo=true&model=flux&seed={number}
 
-RULES:
-1. **seed={stable_id}**: You MUST append a random integer (e.g. 42, 101, 999) but keep it STATIC for that specific component.
-   - Good: ...&seed=45
-   - Bad: ...&seed={Math.random()} (This kills the cache!)
-2. **model=flux**: Use the 'flux' model for photorealistic quality.
-3. **Contextual**: Keep descriptions detailed and relevant.
+MANDATORY PARAMETERS:
+- width & height: Match the aspect ratio from video
+- nologo=true: Always include
+- model=flux: Always include (better quality)
+- seed={number}: ALWAYS include a static number (101, 202, 303, etc.)
 
-EXAMPLES BY CONTEXT:
+EXAMPLES BY CATEGORY:
+
+PORTFOLIO/PROJECTS (like on screenshots - cards with project images):
+src="https://image.pollinations.ai/prompt/modern%20brand%20identity%20design%20mockup%20clean%20minimalist%20professional?width=800&height=600&nologo=true&model=flux&seed=101"
+src="https://image.pollinations.ai/prompt/creative%20packaging%20design%20product%20photography%20studio%20lighting?width=800&height=600&nologo=true&model=flux&seed=102"
+src="https://image.pollinations.ai/prompt/luxury%20fashion%20brand%20lookbook%20editorial%20photography?width=800&height=600&nologo=true&model=flux&seed=103"
+src="https://image.pollinations.ai/prompt/sustainable%20clothing%20brand%20minimalist%20aesthetic%20studio%20shot?width=800&height=600&nologo=true&model=flux&seed=104"
 
 HERO/HEADER (large, cinematic):
-src="https://image.pollinations.ai/prompt/modern%20tech%20startup%20office%20dark%20cinematic%20dramatic%20lighting%204k?width=1200&height=800&nologo=true&model=flux&seed=101"
+src="https://image.pollinations.ai/prompt/modern%20tech%20startup%20office%20dark%20cinematic%20dramatic%20lighting%204k?width=1200&height=800&nologo=true&model=flux&seed=201"
 
-TEAM/PEOPLE (use pravatar for consistency):
+LANDSCAPE/NATURE:
+src="https://image.pollinations.ai/prompt/beautiful%20mountain%20landscape%20lake%20reflection%20golden%20hour%20photography?width=1200&height=800&nologo=true&model=flux&seed=301"
+src="https://image.pollinations.ai/prompt/aerial%20view%20coastline%20turquoise%20water%20dramatic%20cliffs?width=1200&height=800&nologo=true&model=flux&seed=302"
+
+TEAM/PEOPLE (use pravatar for avatars):
 src="https://i.pravatar.cc/150?img=12"  (img=1 to 70 for variety)
 
 PRODUCT/FEATURE:
-src="https://image.pollinations.ai/prompt/sleek%20modern%20dashboard%20interface%20dark%20mode%20purple%20accents?width=800&height=600&nologo=true&model=flux&seed=202"
+src="https://image.pollinations.ai/prompt/sleek%20modern%20dashboard%20interface%20dark%20mode%20purple%20accents?width=800&height=600&nologo=true&model=flux&seed=401"
 
 ABSTRACT/BACKGROUND:
-src="https://image.pollinations.ai/prompt/abstract%20gradient%20mesh%20purple%20blue%20flowing%20shapes?width=1920&height=1080&nologo=true&model=flux&seed=303"
+src="https://image.pollinations.ai/prompt/abstract%20gradient%20mesh%20purple%20blue%20flowing%20shapes?width=1920&height=1080&nologo=true&model=flux&seed=501"
 
-REAL ESTATE:
-src="https://image.pollinations.ai/prompt/luxury%20modern%20apartment%20interior%20minimalist%20natural%20light?width=800&height=600&nologo=true&model=flux&seed=404"
+REAL ESTATE/INTERIOR:
+src="https://image.pollinations.ai/prompt/luxury%20modern%20apartment%20interior%20minimalist%20natural%20light?width=800&height=600&nologo=true&model=flux&seed=601"
 
 FOOD/RESTAURANT:
-src="https://image.pollinations.ai/prompt/gourmet%20dish%20fine%20dining%20dark%20moody%20photography?width=600&height=400&nologo=true&model=flux&seed=505"
+src="https://image.pollinations.ai/prompt/gourmet%20dish%20fine%20dining%20dark%20moody%20photography?width=600&height=400&nologo=true&model=flux&seed=701"
 
-WHY THIS WORKS:
-- Cache Hit: With seed=101, Pollinations generates the image ONCE
-- Free Forever: On refresh, same URL (same seed) = instant cached image (0.01s) without using your limit
-- Flux Model: Better photorealistic quality that matches Aura design style
+🚫🚫🚫 ABSOLUTELY FORBIDDEN (WILL BREAK THE PAGE):
+- picsum.photos - BANNED! NEVER USE! Creates empty gray boxes!
+- unsplash.com - BANNED! Auth required, will fail!
+- placeholder.com - BANNED!
+- placehold.co - BANNED!
+- dummyimage.com - BANNED!
+- empty src="" - BANNED! Never leave empty!
+- src={variable} - BANNED! Must be hardcoded URL!
+- Any URL without &seed= - BANNED! Causes rate limit!
 
-🚫 FORBIDDEN IMAGE SOURCES:
-- picsum.photos (BANNED - causes 404 errors)
-- unsplash.com (BANNED - auth required)
-- placeholder.com (BANNED - ugly)
-- empty src="" or src={variable} (BANNED)
-- URLs without &seed= parameter (BANNED - causes rate limit)
+✅ ONLY ALLOWED SOURCES:
+1. https://image.pollinations.ai/prompt/... (with &model=flux&seed=XXX)
+2. https://i.pravatar.cc/... (for avatars only)
+
+REMEMBER: Every <img> tag visible on the video MUST have a working Pollinations URL!
 
 ═══════════════════════════════════════════════════════════════════════════════
 🎨 VISUAL DESIGN SYSTEM

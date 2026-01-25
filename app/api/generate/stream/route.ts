@@ -106,14 +106,18 @@ function fixBrokenImageUrls(code: string, context?: string): string {
   
   let replacedCount = 0;
   
-  // Replace deprecated/broken image sources with Pollinations.ai
-  // DO NOT replace: pollinations.ai, placehold.co, pravatar.cc (these are allowed)
+  // Replace ALL broken/placeholder image sources with Pollinations.ai
+  // ONLY ALLOWED: pollinations.ai, pravatar.cc (for avatars)
   code = code.replace(/https?:\/\/[^"'\s)]*unsplash[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
   code = code.replace(/https?:\/\/[^"'\s)]*pexels[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
   code = code.replace(/https?:\/\/via\.placeholder\.com[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
   code = code.replace(/https?:\/\/placeholder\.com[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
+  code = code.replace(/https?:\/\/placehold\.co[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
   code = code.replace(/https?:\/\/dummyimage\.com[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
   code = code.replace(/https?:\/\/picsum\.photos[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
+  code = code.replace(/https?:\/\/loremflickr\.com[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
+  code = code.replace(/https?:\/\/placekitten\.com[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
+  code = code.replace(/https?:\/\/placeimg\.com[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
   
   console.log(`[fixBrokenImageUrls] Replaced ${replacedCount} image URLs with Pollinations.ai (category: ${primaryCategory})`);
   return code;
