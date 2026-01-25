@@ -9581,11 +9581,51 @@ Try these prompts in Cursor or v0:
       const existingSlug = activeGeneration?.publishedSlug;
       console.log('[handlePublish] existingSlug:', existingSlug, 'activeGeneration:', activeGeneration?.id);
       
+      // Prepare code for publishing - ensure it's a complete HTML document
+      let publishCode = editableCode;
+      
+      // If code doesn't have Tailwind CDN, wrap it in a full HTML document
+      if (!publishCode.includes('cdn.tailwindcss.com') && !publishCode.includes('<!DOCTYPE')) {
+        // Convert className to class for HTML
+        let htmlContent = publishCode.replace(/className=/g, 'class=');
+        
+        // If it's a React component, try to extract the JSX
+        if (htmlContent.includes('export default function') || htmlContent.includes('function HomePage')) {
+          // Find return statement and extract JSX
+          const returnMatch = htmlContent.match(/return\s*\(\s*([\s\S]*)\s*\)\s*;?\s*\}?\s*$/);
+          if (returnMatch) {
+            htmlContent = returnMatch[1].trim();
+          }
+          // Remove React fragments
+          htmlContent = htmlContent.replace(/<>\s*/g, '').replace(/\s*<\/>/g, '');
+        }
+        
+        publishCode = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${generationTitle || 'Untitled Project'}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { min-height: 100vh; }
+  </style>
+</head>
+<body class="min-h-screen bg-[#0a0a0a] text-white">
+${htmlContent}
+</body>
+</html>`;
+      }
+      
       const response = await fetch("/api/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          code: editableCode,
+          code: publishCode,
           title: generationTitle || "Untitled Project",
           thumbnailDataUrl: null,
           existingSlug,
