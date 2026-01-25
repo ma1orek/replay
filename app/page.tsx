@@ -2633,6 +2633,7 @@ function ReplayToolContent() {
   const [selectedLibraryItem, setSelectedLibraryItem] = useState<string | null>(null);
   const [libraryPanel, setLibraryPanel] = useState<LibraryPanel>("controls");
   const [libraryPropsOverride, setLibraryPropsOverride] = useState<Record<string, any>>({});
+  const [librarySearchQuery, setLibrarySearchQuery] = useState("");
   const [libraryZoom, setLibraryZoom] = useState(100);
   const [libraryBackground, setLibraryBackground] = useState<"light" | "dark" | "transparent">("dark");
   const [libraryNeedsRegeneration, setLibraryNeedsRegeneration] = useState(false);
@@ -2681,6 +2682,7 @@ function ReplayToolContent() {
   const [showJsonView, setShowJsonView] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [generatePromptInput, setGeneratePromptInput] = useState("");
+  const [blueprintSearchQuery, setBlueprintSearchQuery] = useState("");
   const blueprintsCanvasRef = useRef<HTMLDivElement>(null);
   // Draggable component positions on canvas
   const [blueprintPositions, setBlueprintPositions] = useState<Record<string, { x: number; y: number }>>({});
@@ -10713,6 +10715,8 @@ Try these prompts in Cursor or v0:
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600" />
                   <input
                     type="text"
+                    value={blueprintSearchQuery}
+                    onChange={(e) => setBlueprintSearchQuery(e.target.value)}
                     placeholder="Search components..."
                     className="w-full pl-8 pr-3 py-1.5 rounded-md bg-zinc-800/50 border border-zinc-700/50 text-xs text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600"
                   />
@@ -10723,7 +10727,13 @@ Try these prompts in Cursor or v0:
                   <div className="py-1">
                     {/* Group by category */}
                     {Object.entries(
-                      (libraryData?.components || []).reduce((acc: any, comp: any) => {
+                      (libraryData?.components || [])
+                        .filter((comp: any) => 
+                          !blueprintSearchQuery || 
+                          comp.name?.toLowerCase().includes(blueprintSearchQuery.toLowerCase()) ||
+                          comp.category?.toLowerCase().includes(blueprintSearchQuery.toLowerCase())
+                        )
+                        .reduce((acc: any, comp: any) => {
                         const cat = comp.category || 'other';
                         if (!acc[cat]) acc[cat] = [];
                         acc[cat].push(comp);
@@ -10752,7 +10762,7 @@ Try these prompts in Cursor or v0:
                             className={cn(
                               "w-full flex items-center gap-2 px-3 py-1.5 text-left transition-all text-[11px] group",
                               selectedBlueprintComponent === `comp-${comp.id}` 
-                                ? "bg-blue-500/20 text-blue-400" 
+                                ? "bg-emerald-500/20 text-emerald-400" 
                                 : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
                             )}
                           >
@@ -10796,10 +10806,19 @@ Try these prompts in Cursor or v0:
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600" />
                   <input
                     type="text"
+                    value={librarySearchQuery}
+                    onChange={(e) => setLibrarySearchQuery(e.target.value)}
                     placeholder="Find components..."
                     className="w-full pl-8 pr-3 py-1.5 text-xs bg-zinc-800/50 border border-zinc-700/50 rounded-md text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600"
                   />
-                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-zinc-600">⌘K</span>
+                  {librarySearchQuery && (
+                    <button 
+                      onClick={() => setLibrarySearchQuery("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
                 </div>
               </div>
               
@@ -10940,11 +10959,17 @@ Try these prompts in Cursor or v0:
                             };
                             
                             const categories: Record<string, { color: string; components: any[] }> = {};
-                            libraryData.components?.forEach((comp: any) => {
-                              const cat = comp.category?.toLowerCase() || "other";
-                              if (!categories[cat]) categories[cat] = { color: "text-zinc-400", components: [] };
-                              categories[cat].components.push(comp);
-                            });
+                            libraryData.components
+                              ?.filter((comp: any) => 
+                                !librarySearchQuery || 
+                                comp.name?.toLowerCase().includes(librarySearchQuery.toLowerCase()) ||
+                                comp.category?.toLowerCase().includes(librarySearchQuery.toLowerCase())
+                              )
+                              ?.forEach((comp: any) => {
+                                const cat = comp.category?.toLowerCase() || "other";
+                                if (!categories[cat]) categories[cat] = { color: "text-zinc-400", components: [] };
+                                categories[cat].components.push(comp);
+                              });
                             
                             return Object.entries(categories).map(([catName, cat]) => {
                               const isExpanded = libraryCategoriesExpanded[catName] !== false;
@@ -16441,9 +16466,9 @@ export default function App() {
                           {/* Header */}
                           <div className="p-4 border-b border-zinc-800 flex items-center justify-between flex-shrink-0">
                             <div className="flex items-center gap-3">
-                              <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
-                              <span className="text-sm font-medium bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                                Live Component Creator
+                              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                              <span className="text-sm font-medium text-white">
+                                New Component
                               </span>
                             </div>
                             <button 
@@ -16497,7 +16522,7 @@ html,body{font-family:Inter,system-ui,sans-serif;background:#18181b;color:white}
                                       "px-3 py-1.5 rounded-lg text-xs",
                                       msg.role === 'user' 
                                         ? "bg-zinc-800 text-zinc-300" 
-                                        : "bg-purple-900/30 text-purple-300"
+                                        : "bg-emerald-900/30 text-emerald-300"
                                     )}
                                   >
                                     <span className="text-[9px] uppercase text-zinc-500 mr-2">
@@ -16570,7 +16595,7 @@ html,body{font-family:Inter,system-ui,sans-serif;background:#18181b;color:white}
                                   }
                                 }}
                                 placeholder={blueprintEditedCode ? "Describe changes..." : "Describe component to create..."}
-                                className="flex-1 px-3 py-2.5 text-sm bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:border-purple-500 focus:outline-none"
+                                className="flex-1 px-3 py-2.5 text-sm bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
                                 disabled={isEditingBlueprint}
                                 autoFocus
                               />
@@ -16605,7 +16630,7 @@ html,body{font-family:Inter,system-ui,sans-serif;background:#18181b;color:white}
                                 className={cn(
                                   "px-4 py-2.5 rounded-lg transition-all flex items-center gap-2",
                                   generatePromptInput.trim() && !isEditingBlueprint
-                                    ? "bg-purple-600 hover:bg-purple-500 text-white"
+                                    ? "bg-emerald-600 hover:bg-emerald-500 text-white"
                                     : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
                                 )}
                               >
@@ -17136,7 +17161,7 @@ new ResizeObserver(autoResize).observe(document.body);
                                       isEditingBlueprint 
                                         ? "bg-zinc-700 text-zinc-400 cursor-wait" 
                                         : blueprintChatInput.trim()
-                                          ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white shadow-lg shadow-purple-500/20"
+                                          ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
                                           : "bg-zinc-800 text-zinc-500"
                                     )}
                                   >
