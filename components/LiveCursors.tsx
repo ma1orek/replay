@@ -135,28 +135,48 @@ export function useOnlineUsers() {
   return others.length;
 }
 
-// Online users indicator - just colored dots, no count text
+// Online users indicator - normal avatars with initials
 export function OnlineUsers() {
   const others = useOthers();
 
   if (others.length === 0) return null;
 
   return (
-    <div className="flex items-center -space-x-1">
-      {others.slice(0, 5).map(({ connectionId, info }) => {
+    <div className="flex items-center -space-x-2">
+      {others.slice(0, 4).map(({ connectionId, info }) => {
         const color = info?.color || getCursorColor(String(connectionId));
+        const name = info?.name || `User ${connectionId}`;
+        const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+        const avatar = info?.avatar;
+        
         return (
           <div
             key={connectionId}
-            className="w-3 h-3 rounded-full border-2 border-[#141414]"
-            style={{ backgroundColor: color }}
-            title={info?.name || `User ${connectionId}`}
-          />
+            className="relative group"
+          >
+            <div
+              className="w-7 h-7 rounded-full border-2 border-[#141414] flex items-center justify-center text-[10px] font-bold text-white overflow-hidden"
+              style={{ backgroundColor: color }}
+              title={name}
+            >
+              {avatar ? (
+                <img src={avatar} alt={name} className="w-full h-full object-cover" />
+              ) : (
+                initials
+              )}
+            </div>
+            {/* Online indicator dot */}
+            <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-[#141414]" />
+            {/* Tooltip on hover */}
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-900 rounded text-[10px] text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-zinc-700">
+              {name}
+            </div>
+          </div>
         );
       })}
-      {others.length > 5 && (
-        <div className="w-3 h-3 rounded-full border-2 border-[#141414] bg-zinc-600 flex items-center justify-center">
-          <span className="text-[6px] text-white font-bold">+</span>
+      {others.length > 4 && (
+        <div className="w-7 h-7 rounded-full border-2 border-[#141414] bg-zinc-700 flex items-center justify-center text-[10px] font-medium text-zinc-300">
+          +{others.length - 4}
         </div>
       )}
     </div>
