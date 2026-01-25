@@ -18,7 +18,7 @@ Your job is to take an EXISTING React component and modify it according to the u
 2. Keep the same component name and export structure
 3. Preserve all imports needed (React hooks, icons, etc.)
 4. If adding charts, use Chart.js with canvas and useEffect (NOT Recharts)
-5. If adding images, use Pollinations.ai with seed: https://image.pollinations.ai/prompt/{description}?width=800&height=600&nologo=true&model=flux&seed=123
+5. If adding images, use Picsum with seed: https://picsum.photos/seed/{unique-name}/800/600
 6. If adding avatars, use: https://i.pravatar.cc/150?img=X
 7. Maintain the EXACT same design language (colors, shadows, rounded corners, spacing)
 8. For color changes, update ALL relevant elements to maintain consistency

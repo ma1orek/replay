@@ -97,29 +97,30 @@ function fixBrokenImageUrls(code: string, context?: string): string {
   const prompts = categoryPrompts[primaryCategory];
   let imageCounter = 0;
   
-  const getPollinationsUrl = (width = 800, height = 600) => {
-    const prompt = prompts[imageCounter % prompts.length];
-    const seed = 100 + imageCounter; // Static seed per image for caching
+  // Generate Picsum URL with seed for consistency
+  const getPicsumUrl = (width = 800, height = 600) => {
+    const seedName = prompts[imageCounter % prompts.length].replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
     imageCounter++;
-    return `https://image.pollinations.ai/prompt/${prompt}?width=${width}&height=${height}&nologo=true&model=flux&seed=${seed}`;
+    return `https://picsum.photos/seed/${seedName}/${width}/${height}`;
   };
   
   let replacedCount = 0;
   
-  // Replace ALL broken/placeholder image sources with Pollinations.ai
-  // ONLY ALLOWED: pollinations.ai, pravatar.cc (for avatars)
-  code = code.replace(/https?:\/\/[^"'\s)]*unsplash[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
-  code = code.replace(/https?:\/\/[^"'\s)]*pexels[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
-  code = code.replace(/https?:\/\/via\.placeholder\.com[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
-  code = code.replace(/https?:\/\/placeholder\.com[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
-  code = code.replace(/https?:\/\/placehold\.co[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
-  code = code.replace(/https?:\/\/dummyimage\.com[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
-  code = code.replace(/https?:\/\/picsum\.photos[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
-  code = code.replace(/https?:\/\/loremflickr\.com[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
-  code = code.replace(/https?:\/\/placekitten\.com[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
-  code = code.replace(/https?:\/\/placeimg\.com[^"'\s)]*/gi, () => { replacedCount++; return getPollinationsUrl(); });
+  // Replace broken/unusable image sources with Picsum (stable, no rate limits)
+  // ALLOWED: picsum.photos, pravatar.cc, dicebear.com
+  code = code.replace(/https?:\/\/[^"'\s)]*unsplash[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
+  code = code.replace(/https?:\/\/[^"'\s)]*pexels[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
+  code = code.replace(/https?:\/\/via\.placeholder\.com[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
+  code = code.replace(/https?:\/\/placeholder\.com[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
+  code = code.replace(/https?:\/\/placehold\.co[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
+  code = code.replace(/https?:\/\/dummyimage\.com[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
+  code = code.replace(/https?:\/\/loremflickr\.com[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
+  code = code.replace(/https?:\/\/placekitten\.com[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
+  code = code.replace(/https?:\/\/placeimg\.com[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
+  // Replace Pollinations (has rate limits) with Picsum
+  code = code.replace(/https?:\/\/image\.pollinations\.ai[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
   
-  console.log(`[fixBrokenImageUrls] Replaced ${replacedCount} image URLs with Pollinations.ai (category: ${primaryCategory})`);
+  console.log(`[fixBrokenImageUrls] Replaced ${replacedCount} image URLs with Picsum (category: ${primaryCategory})`);
   return code;
 }
 

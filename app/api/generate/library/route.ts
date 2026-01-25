@@ -37,15 +37,15 @@ STRICT RULES FOR "code" FIELD:
 6. NEVER use curly braces {} anywhere in the code field
 7. MINIMUM 100 characters for each component's code field
 
-🖼️ IMAGES - CRITICAL REQUIREMENT (WITH SEED TO PREVENT RATE LIMIT):
+🖼️ IMAGES - USE PICSUM (NO RATE LIMITS, ALWAYS WORKS!):
 - EVERY component with visual content (cards, heroes, banners, profiles) MUST include real <img> tags
-- USE POLLINATIONS.AI WITH SEED: <img src="https://image.pollinations.ai/prompt/DESCRIPTION?width=400&height=300&nologo=true&model=flux&seed=123" class="w-full h-48 object-cover" alt="..."/>
-  - Replace DESCRIPTION with context-relevant text (e.g., "modern office workspace", "team meeting", "product showcase")
-  - IMPORTANT: Use a static seed number (e.g., seed=101, seed=202) to enable caching and prevent rate limits
-- FOR AVATARS: <img src="https://i.pravatar.cc/150?u=uniquename" class="w-10 h-10 rounded-full" alt="..."/>
-- NEVER use picsum.photos - ALWAYS use pollinations.ai with &model=flux&seed=XXX
+- USE PICSUM WITH SEED: <img src="https://picsum.photos/seed/unique-name/400/300" class="w-full h-48 object-cover" alt="..."/>
+  - Replace "unique-name" with context-relevant text (e.g., "project-office", "team-photo", "product-hero")
+  - The seed ensures SAME image every time (cacheable, stable)
+- FOR AVATARS: <img src="https://i.pravatar.cc/150?img=12" class="w-10 h-10 rounded-full" alt="..."/>
+- OR ILLUSTRATED: <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Name" class="w-10 h-10 rounded-full" />
+- NEVER use pollinations.ai - HAS RATE LIMITS!
 - NEVER use empty src="" or src={variable} - ALWAYS real URLs
-- NEVER skip images - if original has image placeholder, add a pollinations.ai URL
 
 ICON CONVERSION (MANDATORY - NO EMOJI, USE SVG OR UNICODE):
 - <Home /> → <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>

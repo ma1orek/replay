@@ -141,12 +141,11 @@ ANALYSIS RULES
 4. **NORMALIZE**: Create the "ideal" version, not the messy original
 5. **REACT CODE**: Generate proper React component code for each Blueprint
 
-🖼️ IMAGES - CRITICAL:
-- PRESERVE existing images from the original code - do NOT create new image URLs!
-- If component already has an <img> tag, keep the same src URL
-- FOR NEW AVATARS ONLY: src="https://i.pravatar.cc/150?u=name"
-- NEVER use picsum.photos, placehold.co, or placeholder URLs
-- If you must add image, use: src="https://image.pollinations.ai/prompt/DESCRIPTION?width=400&height=300&nologo=true&model=flux&seed=123"
+🖼️ IMAGES - USE PICSUM (no rate limits!):
+- PRESERVE existing images from the original code when possible
+- FOR NEW IMAGES: src="https://picsum.photos/seed/UNIQUE-NAME/800/600"
+- FOR AVATARS: src="https://i.pravatar.cc/150?img=X" or src="https://api.dicebear.com/7.x/avataaars/svg?seed=Name"
+- NEVER use pollinations.ai (has rate limits!)
 
 Analyze this code and return the Blueprint Library JSON:
 `;

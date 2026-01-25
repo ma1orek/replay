@@ -135,12 +135,12 @@ const Icon = ({ name, className = "w-5 h-5" }) => {
 };
 \`\`\`
 
-3. **IMAGES** - MANDATORY Pollinations.ai (NEVER use picsum, placehold, etc!):
+3. **IMAGES** - Use Picsum with seed (NO RATE LIMITS, always works!):
 \`\`\`html
-<img src="https://image.pollinations.ai/prompt/DESCRIPTION?width=800&height=600&nologo=true&model=flux&seed=123" />
+<img src="https://picsum.photos/seed/project-name/800/600" class="w-full h-full object-cover" />
 \`\`\`
-🚫 BANNED: picsum.photos, placehold.co, placeholder.com, unsplash.com, empty src=""
-✅ ONLY USE: image.pollinations.ai (with &model=flux&seed=XXX) or i.pravatar.cc (avatars)
+🚫 BANNED: pollinations.ai (rate limits!), placehold.co, placeholder.com, unsplash.com, empty src=""
+✅ ALLOWED: picsum.photos/seed/NAME/W/H, i.pravatar.cc, api.dicebear.com
 
 **CARD TEMPLATE (PREMIUM):**
 \`\`\`jsx

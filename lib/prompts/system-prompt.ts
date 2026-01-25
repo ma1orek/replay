@@ -288,84 +288,102 @@ ALSO add these CSS animations for hover effects:
 </style>
 
 ═══════════════════════════════════════════════════════════════════════════════
-🖼️ IMAGES - MANDATORY POLLINATIONS.AI (NO EXCEPTIONS!)
+🖼️ IMAGES - PICSUM + DICEBEAR (NO RATE LIMITS, ALWAYS WORKS!)
 ═══════════════════════════════════════════════════════════════════════════════
 
-🚨 CRITICAL RULE: If the video shows an image, YOU MUST include a real image!
-NEVER leave empty placeholders. NEVER use broken sources. ALWAYS use Pollinations.ai.
+🚨 CRITICAL: If video shows an image, YOU MUST use a real <img> tag!
+NEVER use text placeholders like "[Image: ...]" - these are NOT images!
 
-SYNTAX (MEMORIZE THIS!):
-https://image.pollinations.ai/prompt/{URL_ENCODED_DESCRIPTION}?width=W&height=H&nologo=true&model=flux&seed={number}
+═══════════════════════════════════════════════════════════════════════════════
+📷 PICSUM.PHOTOS - For ALL photos (no rate limits, free forever)
+═══════════════════════════════════════════════════════════════════════════════
 
-MANDATORY PARAMETERS:
-- width & height: Match the aspect ratio from video
-- nologo=true: Always include
-- model=flux: Always include (better quality)
-- seed={number}: ALWAYS include a static number (101, 202, 303, etc.)
+SYNTAX: https://picsum.photos/seed/{UNIQUE_NAME}/{WIDTH}/{HEIGHT}
+
+The "seed" ensures SAME image every time. Use descriptive names.
 
 EXAMPLES BY CATEGORY:
 
-PORTFOLIO/PROJECTS (like on screenshots - cards with project images):
-src="https://image.pollinations.ai/prompt/modern%20brand%20identity%20design%20mockup%20clean%20minimalist%20professional?width=800&height=600&nologo=true&model=flux&seed=101"
-src="https://image.pollinations.ai/prompt/creative%20packaging%20design%20product%20photography%20studio%20lighting?width=800&height=600&nologo=true&model=flux&seed=102"
-src="https://image.pollinations.ai/prompt/luxury%20fashion%20brand%20lookbook%20editorial%20photography?width=800&height=600&nologo=true&model=flux&seed=103"
-src="https://image.pollinations.ai/prompt/sustainable%20clothing%20brand%20minimalist%20aesthetic%20studio%20shot?width=800&height=600&nologo=true&model=flux&seed=104"
+HERO/HEADER:
+src="https://picsum.photos/seed/hero-main/1200/800"
+src="https://picsum.photos/seed/hero-dark/1400/600"
 
-HERO/HEADER (large, cinematic):
-src="https://image.pollinations.ai/prompt/modern%20tech%20startup%20office%20dark%20cinematic%20dramatic%20lighting%204k?width=1200&height=800&nologo=true&model=flux&seed=201"
+PORTFOLIO/PROJECTS:
+src="https://picsum.photos/seed/project-kyoto/800/600"
+src="https://picsum.photos/seed/project-tokyo/800/600"
+src="https://picsum.photos/seed/project-modern/800/600"
+src="https://picsum.photos/seed/brand-identity/800/600"
 
-LANDSCAPE/NATURE:
-src="https://image.pollinations.ai/prompt/beautiful%20mountain%20landscape%20lake%20reflection%20golden%20hour%20photography?width=1200&height=800&nologo=true&model=flux&seed=301"
-src="https://image.pollinations.ai/prompt/aerial%20view%20coastline%20turquoise%20water%20dramatic%20cliffs?width=1200&height=800&nologo=true&model=flux&seed=302"
+ARCHITECTURE/INTERIORS:
+src="https://picsum.photos/seed/house-modern/800/600"
+src="https://picsum.photos/seed/interior-luxury/800/600"
+src="https://picsum.photos/seed/residence-stone/800/600"
+src="https://picsum.photos/seed/penthouse-view/800/600"
 
-TEAM/PEOPLE (use pravatar for avatars):
-src="https://i.pravatar.cc/150?img=12"  (img=1 to 70 for variety)
+PRODUCTS/FURNITURE:
+src="https://picsum.photos/seed/sofa-modern/800/600"
+src="https://picsum.photos/seed/chair-designer/600/600"
+src="https://picsum.photos/seed/furniture-oak/800/500"
+src="https://picsum.photos/seed/product-luxury/800/600"
 
-PRODUCT/FEATURE:
-src="https://image.pollinations.ai/prompt/sleek%20modern%20dashboard%20interface%20dark%20mode%20purple%20accents?width=800&height=600&nologo=true&model=flux&seed=401"
+NATURE/LANDSCAPE:
+src="https://picsum.photos/seed/mountain-lake/1200/800"
+src="https://picsum.photos/seed/ocean-sunset/1200/600"
+src="https://picsum.photos/seed/forest-mist/800/600"
 
-ABSTRACT/BACKGROUND:
-src="https://image.pollinations.ai/prompt/abstract%20gradient%20mesh%20purple%20blue%20flowing%20shapes?width=1920&height=1080&nologo=true&model=flux&seed=501"
+ABSTRACT/BACKGROUNDS:
+src="https://picsum.photos/seed/abstract-dark/1920/1080"
+src="https://picsum.photos/seed/texture-concrete/800/800"
 
-REAL ESTATE/INTERIOR:
-src="https://image.pollinations.ai/prompt/luxury%20modern%20apartment%20interior%20minimalist%20natural%20light?width=800&height=600&nologo=true&model=flux&seed=601"
+FOOD:
+src="https://picsum.photos/seed/food-gourmet/600/400"
+src="https://picsum.photos/seed/dish-fine/800/600"
 
-ARCHITECTURE/RESIDENCE (for luxury projects like Maison Aurum):
-src="https://image.pollinations.ai/prompt/luxury%20stone%20house%20residence%20japanese%20architecture%20raw%20concrete%20warm%20oak%20natural%20light?width=800&height=600&nologo=true&model=flux&seed=701"
-src="https://image.pollinations.ai/prompt/modern%20minimalist%20architecture%20house%20exterior%20golden%20hour%20dramatic%20shadows?width=800&height=600&nologo=true&model=flux&seed=702"
-src="https://image.pollinations.ai/prompt/luxury%20penthouse%20living%20room%20floor%20to%20ceiling%20windows%20city%20view%20night?width=800&height=600&nologo=true&model=flux&seed=703"
+CURATED BY ID (specific beautiful photos):
+src="https://picsum.photos/id/1015/800/600"  (river)
+src="https://picsum.photos/id/1018/800/600"  (mountains)
+src="https://picsum.photos/id/1043/800/600"  (city)
+src="https://picsum.photos/id/1067/800/600"  (architecture)
+src="https://picsum.photos/id/1076/800/600"  (nature)
 
-FURNITURE/LUXURY PRODUCTS:
-src="https://image.pollinations.ai/prompt/luxury%20modular%20sofa%20minimalist%20design%20natural%20fabric%20studio%20lighting?width=800&height=600&nologo=true&model=flux&seed=801"
-src="https://image.pollinations.ai/prompt/designer%20furniture%20chair%20sculptural%20form%20high%20end%20craftsmanship?width=800&height=600&nologo=true&model=flux&seed=802"
+═══════════════════════════════════════════════════════════════════════════════
+👤 AVATARS - DiceBear + Pravatar
+═══════════════════════════════════════════════════════════════════════════════
 
-FOOD/RESTAURANT:
-src="https://image.pollinations.ai/prompt/gourmet%20dish%20fine%20dining%20dark%20moody%20photography?width=600&height=400&nologo=true&model=flux&seed=701"
+REALISTIC FACES (Pravatar):
+src="https://i.pravatar.cc/150?img=1"
+src="https://i.pravatar.cc/150?img=12"
+src="https://i.pravatar.cc/150?img=32"
+(use img=1 to img=70 for variety)
 
-🚫🚫🚫 ABSOLUTELY FORBIDDEN (WILL BREAK THE PAGE):
-- TEXT PLACEHOLDERS like "[Image: ...]" or "[Project Image: ...]" - BANNED! Use real <img> tags!
-- Div with text describing image - BANNED! Always use <img src="...">!
-- picsum.photos - BANNED! NEVER USE! Creates empty gray boxes!
-- unsplash.com - BANNED! Auth required, will fail!
+ILLUSTRATED AVATARS (DiceBear - various styles):
+src="https://api.dicebear.com/7.x/avataaars/svg?seed=John"
+src="https://api.dicebear.com/7.x/lorelei/svg?seed=Sarah"
+src="https://api.dicebear.com/7.x/notionists/svg?seed=Mike"
+src="https://api.dicebear.com/7.x/personas/svg?seed=Emma"
+src="https://api.dicebear.com/7.x/bottts/svg?seed=Robot1"
+
+═══════════════════════════════════════════════════════════════════════════════
+🚫 FORBIDDEN
+═══════════════════════════════════════════════════════════════════════════════
+
+- TEXT PLACEHOLDERS "[Image: ...]" or "[Project Image: ...]" - BANNED!
+- Div with text describing image - BANNED! Use <img>!
+- empty src="" - BANNED!
+- src={variable} - BANNED!
+- pollinations.ai - HAS RATE LIMITS!
+- unsplash.com - Auth required!
 - placeholder.com - BANNED!
-- placehold.co - BANNED!
-- dummyimage.com - BANNED!
-- empty src="" - BANNED! Never leave empty!
-- src={variable} - BANNED! Must be hardcoded URL!
-- Any URL without &seed= - BANNED! Causes rate limit!
 
-✅ ONLY ALLOWED FOR IMAGES:
-1. <img src="https://image.pollinations.ai/prompt/DESCRIPTION?width=800&height=600&nologo=true&model=flux&seed=XXX" />
-2. <img src="https://i.pravatar.cc/150?img=XX" /> (for avatars only)
+═══════════════════════════════════════════════════════════════════════════════
+✅ CORRECT USAGE
+═══════════════════════════════════════════════════════════════════════════════
 
-⚠️ CRITICAL: If the video shows an image area, you MUST use a real <img> tag with Pollinations URL!
-NEVER use text like "[Project Image]" or "[Masterpiece: ...]" - these are NOT images!
+WRONG:
+<div class="bg-gray-200">[Project Image: KYOTO]</div>
 
-EXAMPLE - WRONG:
-<div class="bg-gray-200">[Project Image: KYOTO, JAPAN]</div>
-
-EXAMPLE - CORRECT:
-<img src="https://image.pollinations.ai/prompt/luxury%20stone%20house%20residence%20kyoto%20japan%20modern%20architecture%20natural%20light?width=800&height=600&nologo=true&model=flux&seed=101" class="w-full h-full object-cover" alt="Project" />
+CORRECT:
+<img src="https://picsum.photos/seed/project-kyoto/800/600" class="w-full h-full object-cover" alt="Project" />
 
 ═══════════════════════════════════════════════════════════════════════════════
 🎨 VISUAL DESIGN SYSTEM
