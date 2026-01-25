@@ -12387,16 +12387,21 @@ ${publishCode}
                   const isUpdateMode = hasProject && (hasContextChange || hasStyleChange) && refinements.trim();
                   
                   return (
-                    <button onClick={handleGenerate} disabled={isProcessing || isEditing || flows.length === 0} className={cn("w-full flex items-center justify-center gap-2.5 py-3 rounded-xl font-medium text-sm transition-all bg-black hover:bg-zinc-900 text-white border border-zinc-800", (isProcessing || isEditing) && "opacity-70")}>
-                      
-                      <span className="relative z-10 flex items-center gap-2.5">
-                        {isProcessing || isEditing ? (
-                          <><Loader2 className="w-4 h-4 animate-spin" /><span className="generating-text">{isEditing ? "Updating..." : "Reconstructing..."}</span></>
-                        ) : (
-                          <><LogoIcon className="btn-logo-icon" color="var(--accent-orange)" /><span>Reconstruct</span><ChevronRight className="w-4 h-4" /></>
-                        )}
-                      </span>
-                    </button>
+                    <ShimmerButton 
+                      onClick={handleGenerate}
+                      disabled={isProcessing || isEditing || flows.length === 0}
+                      shimmerColor="#ffffff"
+                      shimmerDuration="2s"
+                      background="#111111"
+                      borderRadius="9999px"
+                      className="w-full py-3.5 text-[13px] font-semibold disabled:opacity-50"
+                    >
+                      {isProcessing || isEditing ? (
+                        <><Loader2 className="w-4 h-4 animate-spin mr-2" /><span className="text-white">{isEditing ? "Updating..." : "Reconstructing..."}</span></>
+                      ) : (
+                        <><LogoIcon className="w-4 h-4 mr-2" color="white" /><span className="text-white font-semibold">Reconstruct</span></>
+                      )}
+                    </ShimmerButton>
                   );
                 })()}
               </div>
@@ -18587,21 +18592,21 @@ new ResizeObserver(autoResize).observe(document.body);
                   const isUpdateMode = hasProject && (hasContextChange || hasStyleChange) && refinements.trim();
                   
                   return (
-                    <button 
+                    <ShimmerButton 
                       onClick={handleGenerate}
                       disabled={isProcessing || isEditing || flows.length === 0}
-                      className={cn(
-                        "w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl font-semibold text-sm transition-all",
-                        (isProcessing || isEditing) ? "bg-zinc-800/80" : "bg-zinc-800",
-                        "text-white shadow-lg shadow-[var(--accent-orange)]/30 disabled:opacity-50"
-                      )}
+                      shimmerColor="#ffffff"
+                      shimmerDuration="2s"
+                      background="#111111"
+                      borderRadius="9999px"
+                      className="w-full py-3.5 text-[13px] font-semibold disabled:opacity-50"
                     >
                       {isProcessing || isEditing ? (
-                        <><Loader2 className="w-4 h-4 animate-spin" /><span>{isEditing ? "Updating..." : "Reconstructing..."}</span></>
+                        <><Loader2 className="w-4 h-4 animate-spin mr-2" /><span className="text-white">{isEditing ? "Updating..." : "Reconstructing..."}</span></>
                       ) : (
-                        <><LogoIcon className="w-5 h-5" color="white" /><span>Reconstruct</span><ChevronRight className="w-4 h-4" /></>
+                        <><LogoIcon className="w-4 h-4 mr-2" color="white" /><span className="text-white font-semibold">Reconstruct</span></>
                       )}
-                    </button>
+                    </ShimmerButton>
                   );
                 })()}
               </div>
