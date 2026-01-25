@@ -903,69 +903,28 @@ const applyPropsToCode = (code: string, props: any[], propsOverride: Record<stri
     const defaultValue = prop?.defaultValue || '';
     const propNameLower = propName.toLowerCase();
     
-    // Color properties - TARGETED replacement based on prop name AND default value
+    // Color properties - SAFE replacement: only replace the SPECIFIC default value
     if (propNameLower.includes('color') || propNameLower.includes('colour')) {
       const hexMatch = String(overrideValue).match(/^#[0-9A-Fa-f]{3,8}$/);
       const escapedDefault = defaultValue ? String(defaultValue).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
       const defaultStr = String(defaultValue || '');
       
-      // Detect if default is a background class (bg-*)
-      const defaultIsBgClass = defaultStr.startsWith('bg-');
-      const defaultIsTextClass = defaultStr.startsWith('text-');
-      const defaultIsBorderClass = defaultStr.startsWith('border-');
-      
-      // Handle HEX colors
-      if (hexMatch) {
-        // First: Replace any existing hex color that matches default
-        if (escapedDefault && String(defaultValue).match(/^#[0-9A-Fa-f]{3,8}$/)) {
-          modifiedCode = modifiedCode.replace(new RegExp(escapedDefault, 'gi'), overrideValue);
-        }
-        
-        // If default is a bg-* class, this is a background color prop!
-        if (defaultIsBgClass) {
-          styleOverrides.push(`background-color: ${overrideValue}`);
-          // Replace the specific default class
+      // ONLY replace the EXACT default value, nothing else!
+      if (escapedDefault && escapedDefault.length > 1) {
+        // If default is a Tailwind class (bg-blue-500), replace with arbitrary value
+        if (defaultStr.startsWith('bg-') && hexMatch) {
           modifiedCode = modifiedCode.replace(new RegExp(escapedDefault, 'g'), `bg-[${overrideValue}]`);
-          // Also replace any bg-[] arbitrary values
-          modifiedCode = modifiedCode.replace(/bg-\[(#[0-9A-Fa-f]{3,8})\]/g, `bg-[${overrideValue}]`);
-        }
-        // If default is a text-* class, this is a text color prop!
-        else if (defaultIsTextClass) {
-          styleOverrides.push(`color: ${overrideValue}`);
+        } else if (defaultStr.startsWith('text-') && hexMatch) {
           modifiedCode = modifiedCode.replace(new RegExp(escapedDefault, 'g'), `text-[${overrideValue}]`);
-          modifiedCode = modifiedCode.replace(/text-\[(#[0-9A-Fa-f]{3,8})\]/g, `text-[${overrideValue}]`);
-        }
-        // If default is a border-* class
-        else if (defaultIsBorderClass) {
-          styleOverrides.push(`border-color: ${overrideValue}`);
+        } else if (defaultStr.startsWith('border-') && hexMatch) {
           modifiedCode = modifiedCode.replace(new RegExp(escapedDefault, 'g'), `border-[${overrideValue}]`);
-        }
-        // Fallback to name-based detection
-        else if (propNameLower.includes('background') || propNameLower.includes('bg') || propNameLower.includes('active')) {
-          styleOverrides.push(`background-color: ${overrideValue}`);
-          modifiedCode = modifiedCode.replace(/bg-\[(#[0-9A-Fa-f]{3,8})\]/g, `bg-[${overrideValue}]`);
-          modifiedCode = modifiedCode.replace(/bg-(yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|red|orange|amber)-\d{2,3}/g, `bg-[${overrideValue}]`);
-        } else if (propNameLower.includes('border')) {
-          styleOverrides.push(`border-color: ${overrideValue}`);
-          modifiedCode = modifiedCode.replace(/border-\[(#[0-9A-Fa-f]{3,8})\]/g, `border-[${overrideValue}]`);
-        } else if (propNameLower.includes('text') || propNameLower.includes('font')) {
-          styleOverrides.push(`color: ${overrideValue}`);
-          modifiedCode = modifiedCode.replace(/text-\[(#[0-9A-Fa-f]{3,8})\]/g, `text-[${overrideValue}]`);
-        } else if (propNameLower.includes('hover')) {
-          styleOverrides.push(`--hover-color: ${overrideValue}`);
+        } else if (defaultStr.match(/^#[0-9A-Fa-f]{3,8}$/) && hexMatch) {
+          // Replace hex with hex
+          modifiedCode = modifiedCode.replace(new RegExp(escapedDefault, 'gi'), overrideValue);
         } else {
-          // Generic "color" prop - assume background if name is just "color"
-          if (propNameLower === 'color') {
-            styleOverrides.push(`background-color: ${overrideValue}`);
-            modifiedCode = modifiedCode.replace(/bg-\[(#[0-9A-Fa-f]{3,8})\]/g, `bg-[${overrideValue}]`);
-            modifiedCode = modifiedCode.replace(/bg-(yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|red|orange|amber)-\d{2,3}/g, `bg-[${overrideValue}]`);
-          } else {
-            styleOverrides.push(`--${propName}: ${overrideValue}`);
-          }
+          // Generic replacement
+          modifiedCode = modifiedCode.replace(new RegExp(escapedDefault, 'g'), String(overrideValue));
         }
-      } else if (escapedDefault) {
-        // Non-hex value (Tailwind class) - replace default with new value
-        modifiedCode = modifiedCode.replace(new RegExp(escapedDefault, 'g'), String(overrideValue));
       }
     }
     
@@ -1025,26 +984,7 @@ const applyPropsToCode = (code: string, props: any[], propsOverride: Record<stri
       );
     }
     
-    // For background colors - also inject into any element with bg-* class
-    const bgColorMatch = styleOverrides.find(s => s.includes('background-color:'));
-    if (bgColorMatch) {
-      const bgColor = bgColorMatch.split(':')[1].trim();
-      // Add inline style to elements with bg-* classes
-      modifiedCode = modifiedCode.replace(
-        /class="([^"]*bg-[^"]*)"/g,
-        (match, classes) => `class="${classes}" style="background-color: ${bgColor} !important"`
-      );
-    }
-    
-    // For text colors - inject into elements with text-* classes
-    const textColorMatch = styleOverrides.find(s => s.startsWith('color:'));
-    if (textColorMatch) {
-      const textColor = textColorMatch.split(':')[1].trim();
-      modifiedCode = modifiedCode.replace(
-        /class="([^"]*text-\[#[^\]]+\][^"]*)"/g,
-        (match, classes) => `class="${classes}" style="color: ${textColor} !important"`
-      );
-    }
+    // Don't inject global styles - it breaks components with multiple colors
   }
   
   return modifiedCode;
@@ -1998,12 +1938,11 @@ const InteractiveReactPreview = ({
       background: transparent; 
       color: ${textColor}; 
       font-family: system-ui, -apple-system, sans-serif;
-      width: fit-content;
-      min-width: 100%;
+      width: auto;
+      min-width: auto;
     }
     #root { 
-      width: fit-content;
-      min-width: 100%;
+      width: auto;
       display: inline-block;
     }
     .error-display {
@@ -2191,35 +2130,43 @@ const InteractiveReactPreview = ({
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<${componentName} />);
     
-    // Height reporting
-    const sendHeight = () => {
-      const height = Math.max(
-        document.body.scrollHeight,
-        document.body.offsetHeight,
-        document.documentElement.scrollHeight,
-        100
-      );
-      window.parent.postMessage({ type: 'IFRAME_HEIGHT', height }, '*');
+    // Size reporting
+    const sendSize = () => {
+      const root = document.getElementById('root');
+      const height = Math.max(root?.scrollHeight || 100, root?.offsetHeight || 100, 100);
+      const width = Math.max(root?.scrollWidth || 120, root?.offsetWidth || 120, 120);
+      window.parent.postMessage({ type: 'IFRAME_SIZE', height, width }, '*');
     };
     
     // Initial + resize + mutation observer
-    setTimeout(sendHeight, 100);
-    setTimeout(sendHeight, 500);
-    setTimeout(sendHeight, 1500);
-    window.addEventListener('resize', sendHeight);
+    setTimeout(sendSize, 100);
+    setTimeout(sendSize, 500);
+    setTimeout(sendSize, 1500);
+    window.addEventListener('resize', sendSize);
     
-    const observer = new MutationObserver(sendHeight);
+    const observer = new MutationObserver(sendSize);
     observer.observe(document.body, { childList: true, subtree: true, attributes: true });
   </script>
 </body>
 </html>`;
   }, [code, background]);
 
-  // Listen for height messages
+  const [iframeWidth, setIframeWidth] = useState<number | null>(null);
+  
+  // Listen for size messages
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'IFRAME_SIZE') {
+        if (typeof event.data.height === 'number') {
+          setIframeHeight(Math.min(event.data.height + 20, 800)); // Cap at 800px
+        }
+        if (typeof event.data.width === 'number') {
+          setIframeWidth(event.data.width + 20);
+        }
+      }
+      // Backwards compatibility
       if (event.data?.type === 'IFRAME_HEIGHT' && typeof event.data.height === 'number') {
-        setIframeHeight(Math.min(event.data.height + 20, 800)); // Cap at 800px
+        setIframeHeight(Math.min(event.data.height + 20, 800));
       }
     };
     window.addEventListener('message', handleMessage);
@@ -2227,7 +2174,7 @@ const InteractiveReactPreview = ({
   }, []);
 
   return (
-    <div className={cn("w-full relative inline-block", className)}>
+    <div className={cn("relative inline-block", className)}>
       {error && (
         <div className="absolute top-2 left-2 right-2 z-10 bg-red-500/90 text-white text-xs p-2 rounded">
           {error}
@@ -2238,8 +2185,9 @@ const InteractiveReactPreview = ({
         srcDoc={iframeDoc}
         className="border-0"
         style={{ 
-          width: 'fit-content',
-          minWidth: '100%',
+          width: iframeWidth ? `${iframeWidth}px` : 'auto',
+          minWidth: '120px',
+          maxWidth: '100%',
           height: `${iframeHeight}px`, 
           background: 'transparent',
         }}
@@ -15855,25 +15803,6 @@ export default function App() {
                                     {selectedComponent.description || "No description available"}
                                   </p>
                                 </div>
-                                {/* Copy Implementation button */}
-                                <button
-                                  onClick={() => {
-                                    const jsxCode = `<${selectedComponent.name}\n  ${(selectedComponent.props || []).map((p: any) => 
-                                      `${p.name}="${libraryPropsOverride[p.name] ?? p.defaultValue ?? ''}"`
-                                    ).join('\n  ')}\n/>`;
-                                    navigator.clipboard.writeText(jsxCode);
-                                    showToast("JSX copied to clipboard!", "success");
-                                  }}
-                                  className={cn(
-                                    "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all",
-                                    libraryBackground === "light"
-                                      ? "bg-zinc-900 text-white hover:bg-zinc-800"
-                                      : "bg-white text-zinc-900 hover:bg-zinc-100"
-                                  )}
-                                >
-                                  <Copy className="w-4 h-4" />
-                                  Copy JSX
-                                </button>
                               </div>
                               
                               {/* Preview Box with Show Code button */}
@@ -16009,7 +15938,7 @@ export default function App() {
                                   
                                   return (
                                     <div className={cn(
-                                      "border-t",
+                                      "border-t max-w-full overflow-hidden",
                                       libraryBackground === "light" ? "border-zinc-200 bg-[#1e1e1e]" : "border-zinc-800 bg-[#0d0d0d]"
                                     )}>
                                       {/* Usage Code */}
