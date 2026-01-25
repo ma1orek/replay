@@ -41,8 +41,7 @@ export async function POST(request: NextRequest) {
     // 3. Przygotuj dane usera (zalogowany lub gość)
     let userId: string;
     let userName: string;
-    let userEmail: string | undefined;
-    let userAvatar: string | undefined;
+    let userAvatar: string;
 
     if (user) {
       // Zalogowany user - pobierz profil
@@ -54,8 +53,13 @@ export async function POST(request: NextRequest) {
 
       userId = user.id;
       userName = profile?.full_name || user.email?.split("@")[0] || "User";
-      userEmail = user.email;
-      userAvatar = profile?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${userName}`;
+      // Truncate name if too long
+      if (userName.length > 50) userName = userName.substring(0, 50);
+      userEmail = undefined; // Don't send email - not needed and adds size
+      
+      // Use small DiceBear avatar instead of potentially huge profile avatar
+      // Profile avatars can be base64 encoded images which exceed Liveblocks limit
+      userAvatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(userName.substring(0, 20))}`;
     } else {
       // Gość - generuj tymczasowe ID
       const guestId = `guest-${Math.random().toString(36).substring(7)}`;
@@ -83,11 +87,10 @@ export async function POST(request: NextRequest) {
     //   return NextResponse.json({ error: "Access denied" }, { status: 403 });
     // }
 
-    // 6. Stwórz sesję Liveblocks
+    // 6. Stwórz sesję Liveblocks (keep userInfo small - max 2048 bytes)
     const session = getLiveblocks().prepareSession(userId, {
       userInfo: {
         name: userName,
-        email: userEmail,
         avatar: userAvatar,
         color: userColor,
       },
