@@ -16613,10 +16613,18 @@ export default function App() {
                           {/* Live Preview */}
                           <div className="flex-1 min-h-[250px] bg-zinc-950/50 p-6 overflow-auto">
                             {blueprintEditedCode ? (
-                              <InteractiveReactPreview 
-                                code={blueprintEditedCode}
-                                background="dark"
-                                className="min-h-[200px]"
+                              <iframe
+                                srcDoc={`<!DOCTYPE html>
+<html><head>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{font-family:Inter,system-ui,sans-serif;background:#18181b;color:white}
+</style>
+</head><body class="p-4">${jsxToHtml(blueprintEditedCode)}</body></html>`}
+                                className="w-full min-h-[200px] border-0 rounded-lg"
+                                style={{ height: '100%' }}
                               />
                             ) : (
                               <div className="h-full flex items-center justify-center min-h-[200px]">

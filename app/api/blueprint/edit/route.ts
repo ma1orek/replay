@@ -4,87 +4,64 @@ import { NextRequest, NextResponse } from "next/server";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 const BLUEPRINT_EDIT_PROMPT = `
-**ROLE: REACT COMPONENT EDITOR**
+**ROLE: JSX COMPONENT MODIFIER**
 
-You are a React/Tailwind expert who modifies existing UI components based on user requests.
-Your job is to take an EXISTING React component and modify it according to the user's request while PRESERVING:
-- The original component's structure and style conventions
-- Tailwind CSS patterns used in the original
-- The same level of quality and polish
-- Working functionality (useState, handlers, etc.)
+You modify UI components (raw JSX/HTML) based on user requests. The components are rendered in iframes with Tailwind CSS.
+
+**CRITICAL: OUTPUT FORMAT**
+Return ONLY the JSX markup - NO function wrapper, NO imports, NO export. Just the raw JSX that would go inside a return().
+
+**EXAMPLE INPUT:**
+<div className="p-6 bg-zinc-800 rounded-xl">
+  <h3 className="text-lg font-semibold text-white">Metric</h3>
+  <span className="text-3xl font-bold text-white">5,000+</span>
+</div>
+
+**EXAMPLE OUTPUT after "Make it red":**
+<div className="p-6 bg-red-900 rounded-xl">
+  <h3 className="text-lg font-semibold text-red-100">Metric</h3>
+  <span className="text-3xl font-bold text-red-400">5,000+</span>
+</div>
 
 **RULES:**
-1. Return ONLY the modified React component code - NO explanations, NO markdown, NO code blocks
-2. Keep the same component name and export structure
-3. Preserve all imports needed (React hooks, icons, etc.)
-4. If adding charts, use Chart.js with canvas and useEffect (NOT Recharts)
-5. If adding images, use Picsum with seed: https://picsum.photos/seed/{unique-name}/800/600
-6. If adding avatars, use: https://i.pravatar.cc/150?img=X
-7. Maintain the EXACT same design language (colors, shadows, rounded corners, spacing)
-8. For color changes, update ALL relevant elements to maintain consistency
-9. For structural changes, maintain responsive design (use md:, lg: breakpoints)
+1. Return ONLY JSX/HTML - no function, no imports, no markdown
+2. Keep all Tailwind classes but modify as needed
+3. For images: https://picsum.photos/seed/{name}/W/H
+4. For avatars: https://i.pravatar.cc/150?img=X
+5. For charts: Add a static SVG chart (no JS required in output)
 
-**CHART.JS PATTERN (when adding charts):**
-\`\`\`jsx
-const chartRef = useRef(null);
-const chartInstance = useRef(null);
-
-useEffect(() => {
-  if (!chartRef.current) return;
-  
-  // Destroy previous chart
-  if (chartInstance.current) {
-    chartInstance.current.destroy();
-  }
-  
-  chartInstance.current = new window.Chart(chartRef.current, {
-    type: 'line', // or 'bar', 'doughnut', 'pie'
-    data: {
-      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-      datasets: [{
-        label: 'Data',
-        data: [12, 19, 3, 5, 2, 3],
-        borderColor: '#6366f1',
-        backgroundColor: 'rgba(99, 102, 241, 0.1)',
-        tension: 0.4,
-        fill: true
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' } },
-        x: { grid: { display: false } }
-      }
-    }
-  });
-  
-  return () => {
-    if (chartInstance.current) {
-      chartInstance.current.destroy();
-    }
-  };
-}, []);
-
-// In JSX:
-<div style={{ height: '200px' }}>
-  <canvas ref={chartRef} />
+**ADDING A LINE CHART - Use SVG:**
+<div className="mt-4 h-32 relative">
+  <svg viewBox="0 0 200 80" className="w-full h-full">
+    <polyline fill="none" stroke="#6366f1" strokeWidth="2" points="0,60 30,45 60,50 90,30 120,35 150,20 180,25 200,15"/>
+    <polyline fill="url(#gradient)" stroke="none" points="0,60 30,45 60,50 90,30 120,35 150,20 180,25 200,15 200,80 0,80"/>
+    <defs>
+      <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="rgba(99,102,241,0.3)"/>
+        <stop offset="100%" stopColor="rgba(99,102,241,0)"/>
+      </linearGradient>
+    </defs>
+  </svg>
 </div>
-\`\`\`
+
+**ADDING A BAR CHART - Use SVG:**
+<div className="mt-4 flex items-end gap-1 h-24">
+  <div className="flex-1 bg-indigo-500 rounded-t" style={{height:'60%'}}></div>
+  <div className="flex-1 bg-indigo-500 rounded-t" style={{height:'80%'}}></div>
+  <div className="flex-1 bg-indigo-500 rounded-t" style={{height:'45%'}}></div>
+  <div className="flex-1 bg-indigo-500 rounded-t" style={{height:'90%'}}></div>
+  <div className="flex-1 bg-indigo-500 rounded-t" style={{height:'70%'}}></div>
+</div>
 
 **WHAT USER WANTS:**
-- "Make it red" = Change primary colors to red shades (bg-red-500, text-red-500, etc.)
-- "Add button" = Add a styled button matching the component's design
-- "Add chart/graph" = Add a Chart.js chart matching the theme
-- "Make bigger" = Increase sizes, padding, font sizes
-- "Add icon" = Add relevant Lucide icon (import and use)
-- "Change text to X" = Update text content
+- "Make it red" = Change colors to red (bg-red-*, text-red-*)
+- "Add button" = Add <button className="...">
+- "Add line chart" = Add SVG line chart
+- "Add icon" = Add emoji or SVG icon
+- "Make bigger" = Increase padding, text sizes
 
 **OUTPUT:**
-Return the COMPLETE modified component code. Start directly with any imports or the function definition.
-Do NOT wrap in \`\`\`jsx or any markdown. Just pure code.
+Return ONLY the modified JSX. Start with < and end with >. NO markdown, NO code blocks.
 `;
 
 export async function POST(request: NextRequest) {
@@ -135,26 +112,33 @@ function ${componentName || 'NewComponent'}() {
     
     // Clean up response - remove any markdown code blocks
     code = code
-      .replace(/^```(?:jsx|javascript|tsx|ts)?\s*\n?/gim, '')
+      .replace(/^```(?:jsx|javascript|tsx|ts|html)?\s*\n?/gim, '')
       .replace(/```\s*$/gim, '')
       .trim();
     
-    // Ensure code starts with import or function/const
-    if (!code.match(/^(import|function|const|export)/)) {
-      // Try to find where real code starts
-      const codeStart = code.search(/(import|function|const|export)/);
-      if (codeStart > 0) {
-        code = code.slice(codeStart);
+    // Remove any function wrapper if AI added one - we want just JSX
+    const jsxMatch = code.match(/return\s*\(\s*([\s\S]*?)\s*\)\s*;?\s*\}?\s*$/);
+    if (jsxMatch) {
+      code = jsxMatch[1].trim();
+    }
+    
+    // Also handle if AI returned function directly
+    const functionBodyMatch = code.match(/function\s+\w+\s*\([^)]*\)\s*\{[\s\S]*?return\s*\(\s*([\s\S]*?)\s*\)\s*;?\s*\}/);
+    if (functionBodyMatch) {
+      code = functionBodyMatch[1].trim();
+    }
+    
+    // Ensure code starts with < (is JSX)
+    if (!code.startsWith('<')) {
+      // Find first JSX element
+      const jsxStart = code.indexOf('<');
+      if (jsxStart > 0) {
+        code = code.slice(jsxStart);
       }
     }
-
-    // Add default export if missing
-    if (!code.includes('export default') && !code.includes('export function')) {
-      const functionMatch = code.match(/function\s+(\w+)/);
-      if (functionMatch) {
-        code = code + `\n\nexport default ${functionMatch[1]};`;
-      }
-    }
+    
+    // Remove trailing export statements
+    code = code.replace(/\n*export\s+default\s+\w+;?\s*$/g, '').trim();
 
     return NextResponse.json({ 
       success: true, 
