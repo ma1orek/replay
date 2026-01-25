@@ -17140,10 +17140,13 @@ export default function App() {
                                     isDragging && "opacity-80"
                                   )}>
                                     {comp.code ? (() => {
+                                      // Use edited code for live preview if available
+                                      const codeToUse = isSelected && blueprintEditedCode ? blueprintEditedCode : comp.code;
+                                      
                                       // Apply live props override for selected component
                                       const liveCode = isSelected && Object.keys(blueprintPropsOverride).length > 0
-                                        ? applyPropsToCode(comp.code, comp.props || [], blueprintPropsOverride)
-                                        : comp.code;
+                                        ? applyPropsToCode(codeToUse, comp.props || [], blueprintPropsOverride)
+                                        : codeToUse;
                                       
                                       // Stabilize image URLs by adding seed based on component id
                                       const stableCode = liveCode
@@ -17153,15 +17156,15 @@ export default function App() {
                                       
                                       return (
                                       <div className="relative">
-                                        {/* Live indicator */}
-                                        {isSelected && Object.keys(blueprintPropsOverride).length > 0 && (
-                                          <div className="absolute -top-2 -right-2 z-10 flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/90 rounded text-[8px] text-white font-medium shadow-lg">
+                                        {/* Live indicator - show when editing or props override active */}
+                                        {isSelected && (blueprintEditedCode || Object.keys(blueprintPropsOverride).length > 0) && (
+                                          <div className="absolute -top-2 -right-2 z-10 flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/90 rounded text-[8px] text-white font-medium shadow-lg">
                                             <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                                            LIVE
+                                            EDITING
                                           </div>
                                         )}
                                         <iframe
-                                          key={`bp-iframe-${comp.id}`}
+                                          key={`bp-iframe-${comp.id}-${isSelected && blueprintEditedCode ? blueprintEditedCode.slice(0, 50) : 'orig'}`}
                                           srcDoc={`<!DOCTYPE html>
 <html><head>
 <script src="https://cdn.tailwindcss.com"></script>
