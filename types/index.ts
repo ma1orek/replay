@@ -2,9 +2,6 @@
 // App Types
 // ============================================
 
-// Re-export enterprise types
-export * from "./enterprise-output";
-
 export interface Flow {
   id: string;
   name: string;
