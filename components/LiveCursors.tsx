@@ -168,8 +168,8 @@ export function OnlineUsers() {
   if (others.length === 0) return null;
   
   const maxVisible = 4;
-  const size = 36;
-  const overlap = 12;
+  const size = 28;
+  const overlap = 10;
   const visibleUsers = others.slice(0, maxVisible);
   const extraCount = others.length - maxVisible;
 
@@ -186,7 +186,7 @@ export function OnlineUsers() {
           return (
             <div
               key={connectionId}
-              className="relative rounded-full bg-[#141414] border-[3px] border-[#141414]"
+              className="relative rounded-full bg-[#141414] border-2 border-[#141414]"
               style={{
                 width: size,
                 height: size,
@@ -199,7 +199,7 @@ export function OnlineUsers() {
               onMouseLeave={() => setHoveredIdx(null)}
             >
               <div
-                className="w-full h-full rounded-full flex items-center justify-center text-[11px] font-bold text-white overflow-hidden"
+                className="w-full h-full rounded-full flex items-center justify-center text-[9px] font-bold text-white overflow-hidden"
                 style={{ backgroundColor: color }}
               >
                 {avatar ? (
@@ -210,9 +210,9 @@ export function OnlineUsers() {
               </div>
               {/* Animated tooltip on hover */}
               <div
-                className="absolute left-1/2 px-2.5 py-1 bg-zinc-800 text-white text-[11px] font-medium rounded-md whitespace-nowrap pointer-events-none border border-zinc-700"
+                className="absolute left-1/2 px-2 py-0.5 bg-zinc-800 text-white text-[10px] font-medium rounded whitespace-nowrap pointer-events-none border border-zinc-700"
                 style={{
-                  top: -32,
+                  top: -26,
                   transform: `translateX(-50%) scale(${isHovered ? 1 : 0.8})`,
                   opacity: isHovered ? 1 : 0,
                   transition: "all 0.2s cubic-bezier(0.4,0,0.2,1)",
@@ -225,7 +225,7 @@ export function OnlineUsers() {
         })}
         {extraCount > 0 && (
           <div
-            className="flex items-center justify-center bg-zinc-700 text-zinc-300 font-semibold border-[3px] border-[#141414] rounded-full"
+            className="flex items-center justify-center bg-zinc-700 text-zinc-300 font-semibold border-2 border-[#141414] rounded-full"
             style={{
               width: size,
               height: size,
