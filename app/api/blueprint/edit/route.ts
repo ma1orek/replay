@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
@@ -64,26 +64,58 @@ Return ONLY the JSX markup - NO function wrapper, NO imports, NO export. Just th
 Return ONLY the modified JSX. Start with < and end with >. NO markdown, NO code blocks.
 `;
 
+// Helper to clean JSX from AI response
+function cleanJsxCode(code: string): string {
+  // Remove markdown code blocks
+  code = code
+    .replace(/^```(?:jsx|javascript|tsx|ts|html)?\s*\n?/gim, '')
+    .replace(/```\s*$/gim, '')
+    .trim();
+  
+  // Remove function wrapper if present
+  const jsxMatch = code.match(/return\s*\(\s*([\s\S]*?)\s*\)\s*;?\s*\}?\s*$/);
+  if (jsxMatch) {
+    code = jsxMatch[1].trim();
+  }
+  
+  const functionBodyMatch = code.match(/function\s+\w+\s*\([^)]*\)\s*\{[\s\S]*?return\s*\(\s*([\s\S]*?)\s*\)\s*;?\s*\}/);
+  if (functionBodyMatch) {
+    code = functionBodyMatch[1].trim();
+  }
+  
+  // Ensure starts with <
+  if (!code.startsWith('<')) {
+    const jsxStart = code.indexOf('<');
+    if (jsxStart > 0) {
+      code = code.slice(jsxStart);
+    }
+  }
+  
+  // Remove trailing export
+  code = code.replace(/\n*export\s+default\s+\w+;?\s*$/g, '').trim();
+  
+  return code;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { componentCode, componentName, userRequest, componentStyle } = await request.json();
     
     if (!userRequest) {
-      return NextResponse.json(
-        { error: "Missing userRequest" },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: "Missing userRequest" }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-3-flash-preview", // Gemini 3 Flash for fast live edits
+      model: "gemini-3-flash-preview",
       generationConfig: {
         temperature: 0.3,
         maxOutputTokens: 4096,
       }
     });
 
-    // Build context from existing component or create new
     const hasExistingCode = componentCode && componentCode.trim().length > 50;
     
     const prompt = `${BLUEPRINT_EDIT_PROMPT}
@@ -106,51 +138,71 @@ function ${componentName || 'NewComponent'}() {
 
 **MODIFIED COMPONENT CODE:**`;
 
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    let code = response.text();
+    // Use streaming for live updates
+    const result = await model.generateContentStream(prompt);
     
-    // Clean up response - remove any markdown code blocks
-    code = code
-      .replace(/^```(?:jsx|javascript|tsx|ts|html)?\s*\n?/gim, '')
-      .replace(/```\s*$/gim, '')
-      .trim();
-    
-    // Remove any function wrapper if AI added one - we want just JSX
-    const jsxMatch = code.match(/return\s*\(\s*([\s\S]*?)\s*\)\s*;?\s*\}?\s*$/);
-    if (jsxMatch) {
-      code = jsxMatch[1].trim();
-    }
-    
-    // Also handle if AI returned function directly
-    const functionBodyMatch = code.match(/function\s+\w+\s*\([^)]*\)\s*\{[\s\S]*?return\s*\(\s*([\s\S]*?)\s*\)\s*;?\s*\}/);
-    if (functionBodyMatch) {
-      code = functionBodyMatch[1].trim();
-    }
-    
-    // Ensure code starts with < (is JSX)
-    if (!code.startsWith('<')) {
-      // Find first JSX element
-      const jsxStart = code.indexOf('<');
-      if (jsxStart > 0) {
-        code = code.slice(jsxStart);
+    // Create readable stream for SSE
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        let fullCode = '';
+        
+        try {
+          for await (const chunk of result.stream) {
+            const text = chunk.text();
+            if (text) {
+              fullCode += text;
+              
+              // Send partial code for live preview
+              // Clean it progressively
+              const partialClean = cleanJsxCode(fullCode);
+              
+              // Only send if we have valid JSX start
+              if (partialClean.startsWith('<')) {
+                const data = JSON.stringify({ 
+                  type: 'partial', 
+                  code: partialClean 
+                });
+                controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+              }
+            }
+          }
+          
+          // Send final complete code
+          const finalCode = cleanJsxCode(fullCode);
+          const doneData = JSON.stringify({ 
+            type: 'done', 
+            success: true,
+            code: finalCode,
+            componentName: componentName || 'EditedComponent'
+          });
+          controller.enqueue(encoder.encode(`data: ${doneData}\n\n`));
+          
+        } catch (error: any) {
+          const errorData = JSON.stringify({ 
+            type: 'error', 
+            error: error.message 
+          });
+          controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
+        }
+        
+        controller.close();
       }
-    }
-    
-    // Remove trailing export statements
-    code = code.replace(/\n*export\s+default\s+\w+;?\s*$/g, '').trim();
+    });
 
-    return NextResponse.json({ 
-      success: true, 
-      code: code,
-      componentName: componentName || 'EditedComponent'
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      }
     });
 
   } catch (error: any) {
     console.error("Blueprint edit error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to edit blueprint" },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: error.message || "Failed to edit blueprint" }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }

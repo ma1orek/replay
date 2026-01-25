@@ -9380,6 +9380,75 @@ Try these prompts in Cursor or v0:
     }
   };
 
+  // Stream Blueprint edit with live updates
+  const streamBlueprintEdit = async (
+    componentCode: string,
+    componentName: string,
+    userRequest: string,
+    onPartial: (code: string) => void,
+    onComplete: (code: string) => void,
+    onError: (error: string) => void
+  ) => {
+    try {
+      const response = await fetch('/api/blueprint/edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          componentCode,
+          componentName,
+          userRequest,
+          componentStyle: 'Dark theme with zinc backgrounds, rounded corners, subtle shadows'
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        onError(errorData.error || 'Request failed');
+        return;
+      }
+      
+      const reader = response.body?.getReader();
+      if (!reader) {
+        onError('No response stream');
+        return;
+      }
+      
+      const decoder = new TextDecoder();
+      let buffer = '';
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        buffer += decoder.decode(value, { stream: true });
+        
+        // Process SSE events
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || '';
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              if (data.type === 'partial' && data.code) {
+                onPartial(data.code);
+              } else if (data.type === 'done' && data.success && data.code) {
+                onComplete(data.code);
+              } else if (data.type === 'error') {
+                onError(data.error || 'Unknown error');
+              }
+            } catch {
+              // Ignore parse errors for incomplete JSON
+            }
+          }
+        }
+      }
+    } catch (error: any) {
+      onError(error.message || 'Network error');
+    }
+  };
+
   const applyCodeChanges = () => {
     if (editableCode) {
       // Update the source HTML
@@ -16480,32 +16549,24 @@ html,body{font-family:Inter,system-ui,sans-serif;background:#18181b;color:white}
                                     setBlueprintChatHistory(prev => [...prev, { role: 'user', content: userMessage }]);
                                     setIsEditingBlueprint(true);
                                     
-                                    try {
-                                      const currentCode = blueprintEditedCode || '<div className="p-4 bg-zinc-800 rounded-lg text-white">New Component</div>';
-                                      
-                                      const response = await fetch('/api/blueprint/edit', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({
-                                          componentCode: currentCode,
-                                          componentName: 'NewComponent',
-                                          userRequest: blueprintEditedCode ? userMessage : `Create: ${userMessage}`,
-                                          componentStyle: 'Dark theme with zinc backgrounds, rounded corners, subtle shadows, modern design'
-                                        })
-                                      });
-                                      
-                                      const data = await response.json();
-                                      if (data.success && data.code) {
-                                        setBlueprintEditedCode(data.code);
-                                        setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: blueprintEditedCode ? 'Applied changes ✓' : 'Created ✓' }]);
-                                      } else {
-                                        setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: `Error: ${data.error || 'Failed'}` }]);
+                                    const currentCode = blueprintEditedCode || '<div className="p-4 bg-zinc-800 rounded-lg text-white">New Component</div>';
+                                    const request = blueprintEditedCode ? userMessage : `Create: ${userMessage}`;
+                                    const wasEditing = !!blueprintEditedCode;
+                                    await streamBlueprintEdit(
+                                      currentCode,
+                                      'NewComponent',
+                                      request,
+                                      (partialCode) => setBlueprintEditedCode(partialCode),
+                                      (finalCode) => {
+                                        setBlueprintEditedCode(finalCode);
+                                        setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: wasEditing ? 'Applied changes ✓' : 'Created ✓' }]);
+                                        setIsEditingBlueprint(false);
+                                      },
+                                      (error) => {
+                                        setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: `Error: ${error}` }]);
+                                        setIsEditingBlueprint(false);
                                       }
-                                    } catch (error: any) {
-                                      setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: `Error: ${error.message}` }]);
-                                    } finally {
-                                      setIsEditingBlueprint(false);
-                                    }
+                                    );
                                   }
                                 }}
                                 placeholder={blueprintEditedCode ? "Describe changes..." : "Describe component to create..."}
@@ -16521,32 +16582,24 @@ html,body{font-family:Inter,system-ui,sans-serif;background:#18181b;color:white}
                                   setBlueprintChatHistory(prev => [...prev, { role: 'user', content: userMessage }]);
                                   setIsEditingBlueprint(true);
                                   
-                                  try {
-                                    const currentCode = blueprintEditedCode || '<div className="p-4 bg-zinc-800 rounded-lg text-white">New Component</div>';
-                                    
-                                    const response = await fetch('/api/blueprint/edit', {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({
-                                        componentCode: currentCode,
-                                        componentName: 'NewComponent',
-                                        userRequest: blueprintEditedCode ? userMessage : `Create: ${userMessage}`,
-                                        componentStyle: 'Dark theme with zinc backgrounds, rounded corners, subtle shadows, modern design'
-                                      })
-                                    });
-                                    
-                                    const data = await response.json();
-                                    if (data.success && data.code) {
-                                      setBlueprintEditedCode(data.code);
-                                      setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: blueprintEditedCode ? 'Applied changes ✓' : 'Created ✓' }]);
-                                    } else {
-                                      setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: `Error: ${data.error || 'Failed'}` }]);
+                                  const currentCode = blueprintEditedCode || '<div className="p-4 bg-zinc-800 rounded-lg text-white">New Component</div>';
+                                  const request = blueprintEditedCode ? userMessage : `Create: ${userMessage}`;
+                                  const wasEditing = !!blueprintEditedCode;
+                                  await streamBlueprintEdit(
+                                    currentCode,
+                                    'NewComponent',
+                                    request,
+                                    (partialCode) => setBlueprintEditedCode(partialCode),
+                                    (finalCode) => {
+                                      setBlueprintEditedCode(finalCode);
+                                      setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: wasEditing ? 'Applied changes ✓' : 'Created ✓' }]);
+                                      setIsEditingBlueprint(false);
+                                    },
+                                    (error) => {
+                                      setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: `Error: ${error}` }]);
+                                      setIsEditingBlueprint(false);
                                     }
-                                  } catch (error: any) {
-                                    setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: `Error: ${error.message}` }]);
-                                  } finally {
-                                    setIsEditingBlueprint(false);
-                                  }
+                                  );
                                 }}
                                 disabled={!generatePromptInput.trim() || isEditingBlueprint}
                                 className={cn(
@@ -16911,8 +16964,8 @@ html,body{font-family:Inter,system-ui,sans-serif;background:#18181b;color:white}
 <style>
 *{margin:0;padding:0;box-sizing:border-box;scrollbar-width:none;-ms-overflow-style:none}
 html,body{font-family:Inter,system-ui,sans-serif;background:transparent;overflow:visible!important}
-body{display:inline-block;padding:0}
-#root{display:inline-block}
+body{display:block;padding:0;width:fit-content;min-width:200px}
+#root{display:block;width:fit-content;min-width:200px}
 *::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
 img{max-width:none;height:auto;display:block}
 </style>
@@ -17028,31 +17081,22 @@ new ResizeObserver(autoResize).observe(document.body);
                                           setBlueprintChatHistory(prev => [...prev, { role: 'user', content: userMessage }]);
                                           setIsEditingBlueprint(true);
                                           
-                                          try {
-                                            const currentCode = blueprintEditedCode || selectedComp.code || '';
-                                            const response = await fetch('/api/blueprint/edit', {
-                                              method: 'POST',
-                                              headers: { 'Content-Type': 'application/json' },
-                                              body: JSON.stringify({
-                                                componentCode: currentCode,
-                                                componentName: selectedComp.name,
-                                                userRequest: userMessage,
-                                                componentStyle: 'Dark theme with zinc backgrounds, rounded corners, subtle shadows'
-                                              })
-                                            });
-                                            
-                                            const data = await response.json();
-                                            if (data.success && data.code) {
-                                              setBlueprintEditedCode(data.code);
-                                              setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: 'Applied ✓' }]);
-                                            } else {
-                                              setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: `Error: ${data.error || 'Failed'}` }]);
-                                            }
-                                          } catch (error: any) {
-                                            setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: `Error: ${error.message}` }]);
-                                          } finally {
-                                            setIsEditingBlueprint(false);
-                                          }
+                                          const currentCode = blueprintEditedCode || selectedComp.code || '';
+                                            await streamBlueprintEdit(
+                                              currentCode,
+                                              selectedComp.name,
+                                              userMessage,
+                                              (partialCode) => setBlueprintEditedCode(partialCode),
+                                              (finalCode) => {
+                                                setBlueprintEditedCode(finalCode);
+                                                setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: 'Applied ✓' }]);
+                                                setIsEditingBlueprint(false);
+                                              },
+                                              (error) => {
+                                                setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: `Error: ${error}` }]);
+                                                setIsEditingBlueprint(false);
+                                              }
+                                            );
                                         }
                                       }}
                                       placeholder="Ask AI to change... (e.g., 'Make it red', 'Add icon')"
@@ -17069,31 +17113,22 @@ new ResizeObserver(autoResize).observe(document.body);
                                       setBlueprintChatHistory(prev => [...prev, { role: 'user', content: userMessage }]);
                                       setIsEditingBlueprint(true);
                                       
-                                      try {
-                                        const currentCode = blueprintEditedCode || selectedComp.code || '';
-                                        const response = await fetch('/api/blueprint/edit', {
-                                          method: 'POST',
-                                          headers: { 'Content-Type': 'application/json' },
-                                          body: JSON.stringify({
-                                            componentCode: currentCode,
-                                            componentName: selectedComp.name,
-                                            userRequest: userMessage,
-                                            componentStyle: 'Dark theme with zinc backgrounds, rounded corners, subtle shadows'
-                                          })
-                                        });
-                                        
-                                        const data = await response.json();
-                                        if (data.success && data.code) {
-                                          setBlueprintEditedCode(data.code);
+                                      const currentCode = blueprintEditedCode || selectedComp.code || '';
+                                      await streamBlueprintEdit(
+                                        currentCode,
+                                        selectedComp.name,
+                                        userMessage,
+                                        (partialCode) => setBlueprintEditedCode(partialCode),
+                                        (finalCode) => {
+                                          setBlueprintEditedCode(finalCode);
                                           setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: 'Applied ✓' }]);
-                                        } else {
-                                          setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: `Error: ${data.error || 'Failed'}` }]);
+                                          setIsEditingBlueprint(false);
+                                        },
+                                        (error) => {
+                                          setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: `Error: ${error}` }]);
+                                          setIsEditingBlueprint(false);
                                         }
-                                      } catch (error: any) {
-                                        setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: `Error: ${error.message}` }]);
-                                      } finally {
-                                        setIsEditingBlueprint(false);
-                                      }
+                                      );
                                     }}
                                     disabled={isEditingBlueprint || !blueprintChatInput.trim()}
                                     className={cn(
