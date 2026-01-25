@@ -420,6 +420,18 @@ BORDERS:
 - Gradient borders for emphasis
 
 ═══════════════════════════════════════════════════════════════════════════════
+🚨 COMPLETE PAGE GENERATION - NO CUTTING OFF!
+═══════════════════════════════════════════════════════════════════════════════
+
+CRITICAL: You MUST generate the COMPLETE page with ALL sections visible in video!
+
+- If video shows: Hero → Features → Testimonials → Pricing → Footer
+- You MUST create ALL 5 sections with FULL content!
+- NEVER stop generation mid-page
+- NEVER leave sections empty or placeholder
+- Every section shown in video = fully implemented section in output
+
+═══════════════════════════════════════════════════════════════════════════════
 📄 MULTI-PAGE SPA - DETECT ALL PAGES FROM VIDEO!
 ═══════════════════════════════════════════════════════════════════════════════
 
@@ -427,6 +439,27 @@ BORDERS:
 
 If video shows navigation with: Home, About, Services, Contact
 → You MUST create ALL 4 pages with FULL content!
+
+═══════════════════════════════════════════════════════════════════════════════
+📋 NAVIGATION LINKS → POSSIBLE PAGES METADATA
+═══════════════════════════════════════════════════════════════════════════════
+
+If you see navigation menu with links to pages NOT shown in video:
+→ DON'T remove them! Add them as METADATA for Flow Map detection.
+
+Add this comment at the END of your HTML (before </body>):
+
+<!-- REPLAY_METADATA
+{
+  "possiblePages": ["About", "Services", "Pricing", "Contact", "Blog"],
+  "detectedNavLinks": ["Home", "About", "Services", "Pricing", "Contact"],
+  "implementedPages": ["Home"],
+  "suggestedNextPages": ["About", "Services"]
+}
+-->
+
+This helps users know what pages they can generate next!
+The Flow Map will show these as "Possible pages to generate".
 
 Implementation with Alpine.js:
 

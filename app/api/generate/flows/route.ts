@@ -41,6 +41,13 @@ This is NOT a sitemap. This is a BUSINESS PROCESS ARCHITECTURE diagram that show
 - Data Flow (where data moves between components and APIs)
 - State Transitions (loading, success, error states)
 - Business Rules (validation, conditional logic)
+- POSSIBLE PAGES TO GENERATE (from navigation links not yet implemented)
+
+IMPORTANT: Look for REPLAY_METADATA comment in the code to find:
+- possiblePages: Navigation links that could become new pages
+- detectedNavLinks: All links found in navigation
+- implementedPages: Pages that are already built
+- suggestedNextPages: Recommended pages to generate next
 
 Generate JSON for an ENTERPRISE PROCESS MAP:
 {
@@ -136,7 +143,22 @@ Generate JSON for an ENTERPRISE PROCESS MAP:
       "status": "TODO: CONNECT",
       "suggestedImplementation": "Code snippet or description"
     }
-  ]
+  ],
+  "possiblePagesToGenerate": {
+    "title": "Pages Available for Generation",
+    "description": "Navigation links detected that can be generated as new pages",
+    "pages": [
+      {
+        "name": "Page Name (e.g., About, Services)",
+        "source": "Where detected (e.g., nav link, footer link, button)",
+        "priority": "high|medium|low",
+        "estimatedComplexity": "simple|moderate|complex",
+        "suggestedContent": "Brief description of what the page should contain based on context"
+      }
+    ],
+    "implementedPages": ["List of pages already built"],
+    "generationOrder": ["Recommended order to generate remaining pages"]
+  }
 }
 
 CRITICAL RULES:
