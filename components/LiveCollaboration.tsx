@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef } from "react";
+import { LiveList } from "@liveblocks/client";
 import { RoomProvider } from "@/liveblocks.config";
 import { LiveCursors } from "./LiveCursors";
 import { LiveComments } from "./LiveComments";
@@ -36,6 +37,9 @@ export function LiveCollaboration({
         cursor: null, 
         selectedElement: null,
         isCommenting: false 
+      }}
+      initialStorage={{
+        comments: new LiveList([])
       }}
     >
       <div ref={containerRef} className="relative w-full h-full">
@@ -77,6 +81,9 @@ export function LiveCursorsOnly({
         cursor: null, 
         selectedElement: null,
         isCommenting: false 
+      }}
+      initialStorage={{
+        comments: new LiveList([])
       }}
     >
       <LiveCursors />

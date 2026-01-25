@@ -3014,6 +3014,19 @@ function ReplayToolContent() {
     
     console.log('[Assets] Handler initialized');
     window.parent.postMessage({ type: 'ASSET_HANDLER_READY' }, '*');
+    
+    // Track mouse position for live cursors
+    document.addEventListener('mousemove', function(e) {
+      window.parent.postMessage({ 
+        type: 'IFRAME_MOUSE_MOVE', 
+        x: e.clientX, 
+        y: e.clientY 
+      }, '*');
+    });
+    
+    document.addEventListener('mouseleave', function() {
+      window.parent.postMessage({ type: 'IFRAME_MOUSE_LEAVE' }, '*');
+    });
   }
   
   if (document.readyState === 'loading') {

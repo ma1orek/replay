@@ -105,6 +105,31 @@ export function LiveCursors() {
       window.removeEventListener("pointerleave", handlePointerLeave);
     };
   }, [handlePointerMove, handlePointerLeave]);
+  
+  // Listen for mouse events from iframe (preview)
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'IFRAME_MOUSE_MOVE') {
+        // Find the preview iframe - it's the main one with srcDoc
+        const iframes = document.querySelectorAll('iframe[title="Preview"]');
+        const iframe = iframes[0] as HTMLIFrameElement | null;
+        
+        if (iframe) {
+          const rect = iframe.getBoundingClientRect();
+          // Add iframe offset to get position relative to window
+          updateMyPresence({
+            cursor: { 
+              x: Math.round(rect.left + event.data.x), 
+              y: Math.round(rect.top + event.data.y) 
+            },
+          });
+        }
+      }
+    };
+    
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [updateMyPresence]);
 
   // Render other users' cursors
   return (

@@ -1,4 +1,4 @@
-import { createClient } from "@liveblocks/client";
+import { createClient, LiveList } from "@liveblocks/client";
 import { createRoomContext, createLiveblocksContext } from "@liveblocks/react";
 
 // Presence - co każdy user "ma przy sobie" (kursor, zaznaczenie)
@@ -8,9 +8,32 @@ type Presence = {
   isCommenting: boolean;
 };
 
-// Storage - współdzielony stan (na przyszłość - live editing)
+// Comment type for storage
+export type StoredComment = {
+  id: string;
+  x: number;
+  y: number;
+  text: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar?: string;
+  authorColor: string;
+  timestamp: number;
+  resolved: boolean;
+  replies: {
+    id: string;
+    text: string;
+    authorId: string;
+    authorName: string;
+    authorAvatar?: string;
+    authorColor: string;
+    timestamp: number;
+  }[];
+};
+
+// Storage - współdzielony stan (komentarze, live editing w przyszłości)
 type Storage = {
-  // Na razie puste - dodamy jak będziemy robić live editing
+  comments: LiveList<StoredComment>;
 };
 
 // UserMeta - info o userze widoczne dla innych
