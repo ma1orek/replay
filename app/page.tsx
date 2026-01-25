@@ -11977,12 +11977,11 @@ ${publishCode}
                   
                   {/* Design System Section - Creative Only */}
                   <div className="p-4 border-b border-white/[0.06]">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between mb-1.5">
                       <span className="sidebar-label text-[11px] font-semibold text-white/40 uppercase tracking-wider flex items-center gap-2">
                         <Palette className="w-3.5 h-3.5" /> STYLE
                       </span>
                     </div>
-                    
                     <StyleInjector 
                       value={styleDirective} 
                       onChange={setStyleDirective} 

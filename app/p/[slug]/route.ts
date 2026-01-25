@@ -20,31 +20,45 @@ function jsxToHtml(code: string): string {
   
   let html = code.trim();
   
-  // If code already starts with HTML tags (<!DOCTYPE, <html, <body, etc.), it's HTML
-  if (/^<!DOCTYPE|^<html|^<body|^<div|^<section|^<main|^<header|^<nav/i.test(html)) {
-    // Just convert className to class and return
+  // If code already starts with proper HTML tags, it's HTML
+  if (/^<!DOCTYPE|^<html|^<body/i.test(html)) {
     html = html.replace(/className=/g, 'class=');
     return html;
   }
   
-  // If code is a React component, find the first HTML tag and use everything from there
-  if (html.includes('export default function') || html.includes('function HomePage') || html.includes('export default')) {
-    // Strategy: Find the first actual HTML tag (not JSX fragment)
-    // Look for <tagname (where tagname is lowercase letter followed by word chars)
-    const firstTagMatch = html.match(/(<(?:div|section|main|header|footer|nav|aside|article|body|html|span|p|h[1-6]|ul|ol|li|a|button|form|input|img|table|thead|tbody|tr|td|th|figure|figcaption|blockquote|pre|code|label|select|option|textarea)[^>]*>)/i);
+  // CRITICAL FIX: Find the first COMPLETE HTML opening tag
+  // Must start with < followed by valid tag name (not in middle of attribute)
+  // Pattern: < at start of line or after whitespace, followed by tag name
+  const validTags = 'div|section|main|header|footer|nav|aside|article|body|html|span|p|h[1-6]|ul|ol|li|a|button|form|input|img|table|thead|tbody|tr|td|th|figure|figcaption|blockquote|pre|code|label|select|option|textarea';
+  
+  // Look for opening tag that's NOT inside an attribute value
+  // The tag must be preceded by start of string, newline, or whitespace (not letters/dots)
+  const tagPattern = new RegExp(`(?:^|[\\s\\n>])(<(?:${validTags})(?:\\s|>|$))`, 'i');
+  const match = html.match(tagPattern);
+  
+  if (match && match.index !== undefined) {
+    // Find actual position of the < character
+    const fullMatch = match[0];
+    const tagStart = match[1];
+    const offset = fullMatch.indexOf(tagStart);
+    const startIndex = match.index + offset;
     
-    if (firstTagMatch && firstTagMatch.index !== undefined) {
-      // Take everything from the first HTML tag to the end
-      html = html.slice(firstTagMatch.index);
-      
-      // Remove trailing ); or } from React component
-      html = html.replace(/\s*\)\s*;?\s*\}?\s*$/, '');
+    // Take everything from this tag onwards
+    html = html.slice(startIndex);
+  } else {
+    // Fallback: just find first < followed by valid tag
+    const fallbackMatch = html.match(new RegExp(`<(${validTags})[\\s>]`, 'i'));
+    if (fallbackMatch && fallbackMatch.index !== undefined) {
+      html = html.slice(fallbackMatch.index);
     }
-    
-    // Remove React fragments
-    html = html.replace(/<>\s*/g, '').replace(/\s*<\/>/g, '');
-    html = html.replace(/<React\.Fragment>\s*/g, '').replace(/\s*<\/React\.Fragment>/g, '');
   }
+  
+  // Remove trailing ); or } from React component
+  html = html.replace(/\s*\)\s*;?\s*\}?\s*$/, '');
+  
+  // Remove React fragments
+  html = html.replace(/<>\s*/g, '').replace(/\s*<\/>/g, '');
+  html = html.replace(/<React\.Fragment>\s*/g, '').replace(/\s*<\/React\.Fragment>/g, '');
   
   // Convert className to class
   html = html.replace(/className=/g, 'class=');
@@ -62,7 +76,6 @@ function jsxToHtml(code: string): string {
   html = html.replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
   
   // Handle JSX expressions - remove simple ones but keep text
-  // Don't remove expressions inside attributes
   html = html.replace(/>(\s*)\{[^}]*\}(\s*)</g, '>$1$2<');
   
   // Fix htmlFor -> for
@@ -82,6 +95,18 @@ function jsxToHtml(code: string): string {
       .trim();
     return `style="${cssStyles}"`;
   });
+  
+  // FINAL CLEANUP: Remove any garbage text before first < tag
+  // This catches cases where broken attributes leak through
+  const firstRealTag = html.indexOf('<');
+  if (firstRealTag > 0) {
+    // Check if text before < is just whitespace or garbage
+    const beforeTag = html.slice(0, firstRealTag);
+    if (!/^\s*$/.test(beforeTag)) {
+      // There's non-whitespace garbage before the tag - remove it
+      html = html.slice(firstRealTag);
+    }
+  }
   
   return html;
 }
