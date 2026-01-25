@@ -16451,7 +16451,41 @@ export default function App() {
                         </button>
                         <button 
                           className="flex items-center gap-2 px-3 py-1.5 text-xs bg-white text-zinc-900 rounded-lg hover:bg-zinc-100 transition-all font-medium"
-                          onClick={() => setShowGenerateModal(true)}
+                          onClick={() => {
+                            // Create new component directly on canvas
+                            const newId = `new-${Date.now()}`;
+                            const newComp = {
+                              id: newId,
+                              name: `New Component`,
+                              category: 'custom',
+                              code: `<div className="p-6 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-xl border border-zinc-700 min-w-[200px]">
+  <div className="flex items-center gap-2 mb-3">
+    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+    <span className="text-xs text-zinc-400">AI Ready</span>
+  </div>
+  <p className="text-sm text-zinc-300">Describe what you want...</p>
+</div>`,
+                              props: [],
+                              variants: [],
+                              isNew: true // Flag for showing inline AI input
+                            };
+                            setLibraryData((prev: any) => ({
+                              ...prev,
+                              components: [...(prev?.components || []), newComp]
+                            }));
+                            // Position in center of visible canvas
+                            const canvasRect = blueprintsCanvasRef.current?.getBoundingClientRect();
+                            const centerX = canvasRect ? (canvasRect.width / 2 - blueprintsOffset.x) / blueprintsZoom - 150 : 300;
+                            const centerY = canvasRect ? (canvasRect.height / 2 - blueprintsOffset.y) / blueprintsZoom - 100 : 200;
+                            setBlueprintPositions(prev => ({
+                              ...prev,
+                              [`comp-${newId}`]: { x: centerX, y: centerY }
+                            }));
+                            setSelectedBlueprintComponent(`comp-${newId}`);
+                            // Clear any previous editing state
+                            setBlueprintEditedCode(null);
+                            setGeneratePromptInput("");
+                          }}
                         >
                           <Plus className="w-3.5 h-3.5" />
                           New Component
@@ -16459,236 +16493,6 @@ export default function App() {
                       </div>
                     </div>
                     
-                    {/* Live Component Creator Modal - On Canvas */}
-                    {showGenerateModal && (
-                      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-8">
-                        <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-[600px] max-h-[80vh] overflow-hidden shadow-2xl flex flex-col">
-                          {/* Header */}
-                          <div className="p-4 border-b border-zinc-800 flex items-center justify-between flex-shrink-0">
-                            <div className="flex items-center gap-3">
-                              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                              <span className="text-sm font-medium text-white">
-                                New Component
-                              </span>
-                            </div>
-                            <button 
-                              onClick={() => {
-                                setShowGenerateModal(false);
-                                setBlueprintEditedCode(null);
-                                setBlueprintChatHistory([]);
-                                setGeneratePromptInput("");
-                              }}
-                              className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-500 hover:text-white"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                          
-                          {/* Live Preview */}
-                          <div className="flex-1 min-h-[250px] bg-zinc-950/50 p-6 overflow-auto">
-                            {blueprintEditedCode ? (
-                              <iframe
-                                srcDoc={`<!DOCTYPE html>
-<html><head>
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{font-family:Inter,system-ui,sans-serif;background:#18181b;color:white}
-</style>
-</head><body class="p-4">${jsxToHtml(blueprintEditedCode)}</body></html>`}
-                                className="w-full min-h-[200px] border-0 rounded-lg"
-                                style={{ height: '100%' }}
-                              />
-                            ) : (
-                              <div className="h-full flex items-center justify-center min-h-[200px]">
-                                <div className="text-center">
-                                  <Sparkles className="w-12 h-12 text-zinc-700 mx-auto mb-3" />
-                                  <p className="text-sm text-zinc-400 mb-2">Describe your component</p>
-                                  <p className="text-xs text-zinc-600">e.g., "Create a pricing card with gradient border"</p>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                          
-                          {/* Chat History */}
-                          {blueprintChatHistory.length > 0 && (
-                            <div className="px-4 py-2 border-t border-zinc-800 max-h-24 overflow-y-auto">
-                              <div className="space-y-1.5">
-                                {blueprintChatHistory.slice(-3).map((msg, i) => (
-                                  <div 
-                                    key={i} 
-                                    className={cn(
-                                      "px-3 py-1.5 rounded-lg text-xs",
-                                      msg.role === 'user' 
-                                        ? "bg-zinc-800 text-zinc-300" 
-                                        : "bg-emerald-900/30 text-emerald-300"
-                                    )}
-                                  >
-                                    <span className="text-[9px] uppercase text-zinc-500 mr-2">
-                                      {msg.role === 'user' ? 'You' : 'AI'}
-                                    </span>
-                                    {msg.content}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Quick Suggestions */}
-                          {!blueprintEditedCode && (
-                            <div className="px-4 py-3 border-t border-zinc-800 flex-shrink-0">
-                              <div className="flex flex-wrap gap-1.5">
-                                {[
-                                  "Pricing card",
-                                  "Stats widget",
-                                  "User avatar",
-                                  "Progress bar",
-                                  "Notification",
-                                  "Search input"
-                                ].map(suggestion => (
-                                  <button
-                                    key={suggestion}
-                                    onClick={() => setGeneratePromptInput(suggestion)}
-                                    className="px-2.5 py-1 text-[11px] bg-zinc-800 text-zinc-400 rounded-md hover:bg-zinc-700 hover:text-white transition-colors"
-                                  >
-                                    {suggestion}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Input + Actions */}
-                          <div className="p-4 border-t border-zinc-800 flex-shrink-0">
-                            <div className="flex gap-2">
-                              <input
-                                type="text"
-                                value={generatePromptInput}
-                                onChange={(e) => setGeneratePromptInput(e.target.value)}
-                                onKeyDown={async (e) => {
-                                  if (e.key === 'Enter' && generatePromptInput.trim() && !isEditingBlueprint) {
-                                    e.preventDefault();
-                                    const userMessage = generatePromptInput.trim();
-                                    setGeneratePromptInput("");
-                                    setBlueprintChatHistory(prev => [...prev, { role: 'user', content: userMessage }]);
-                                    setIsEditingBlueprint(true);
-                                    
-                                    const currentCode = blueprintEditedCode || '<div className="p-4 bg-zinc-800 rounded-lg text-white">New Component</div>';
-                                    const request = blueprintEditedCode ? userMessage : `Create: ${userMessage}`;
-                                    const wasEditing = !!blueprintEditedCode;
-                                    await streamBlueprintEdit(
-                                      currentCode,
-                                      'NewComponent',
-                                      request,
-                                      (partialCode) => setBlueprintEditedCode(partialCode),
-                                      (finalCode) => {
-                                        setBlueprintEditedCode(finalCode);
-                                        setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: wasEditing ? 'Applied changes ✓' : 'Created ✓' }]);
-                                        setIsEditingBlueprint(false);
-                                      },
-                                      (error) => {
-                                        setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: `Error: ${error}` }]);
-                                        setIsEditingBlueprint(false);
-                                      }
-                                    );
-                                  }
-                                }}
-                                placeholder={blueprintEditedCode ? "Describe changes..." : "Describe component to create..."}
-                                className="flex-1 px-3 py-2.5 text-sm bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
-                                disabled={isEditingBlueprint}
-                                autoFocus
-                              />
-                              <button
-                                onClick={async () => {
-                                  if (!generatePromptInput.trim() || isEditingBlueprint) return;
-                                  const userMessage = generatePromptInput.trim();
-                                  setGeneratePromptInput("");
-                                  setBlueprintChatHistory(prev => [...prev, { role: 'user', content: userMessage }]);
-                                  setIsEditingBlueprint(true);
-                                  
-                                  const currentCode = blueprintEditedCode || '<div className="p-4 bg-zinc-800 rounded-lg text-white">New Component</div>';
-                                  const request = blueprintEditedCode ? userMessage : `Create: ${userMessage}`;
-                                  const wasEditing = !!blueprintEditedCode;
-                                  await streamBlueprintEdit(
-                                    currentCode,
-                                    'NewComponent',
-                                    request,
-                                    (partialCode) => setBlueprintEditedCode(partialCode),
-                                    (finalCode) => {
-                                      setBlueprintEditedCode(finalCode);
-                                      setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: wasEditing ? 'Applied changes ✓' : 'Created ✓' }]);
-                                      setIsEditingBlueprint(false);
-                                    },
-                                    (error) => {
-                                      setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: `Error: ${error}` }]);
-                                      setIsEditingBlueprint(false);
-                                    }
-                                  );
-                                }}
-                                disabled={!generatePromptInput.trim() || isEditingBlueprint}
-                                className={cn(
-                                  "px-4 py-2.5 rounded-lg transition-all flex items-center gap-2",
-                                  generatePromptInput.trim() && !isEditingBlueprint
-                                    ? "bg-emerald-600 hover:bg-emerald-500 text-white"
-                                    : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
-                                )}
-                              >
-                                {isEditingBlueprint ? (
-                                  <RefreshCw className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <Send className="w-4 h-4" />
-                                )}
-                              </button>
-                            </div>
-                            
-                            {/* Add to Canvas button */}
-                            {blueprintEditedCode && (
-                              <div className="mt-3 flex gap-2">
-                                <button
-                                  onClick={() => {
-                                    // Add component to canvas
-                                    const newId = `canvas-${Date.now()}`;
-                                    const newComp = {
-                                      id: newId,
-                                      name: `Component ${(libraryData?.components?.length || 0) + 1}`,
-                                      category: 'custom',
-                                      code: blueprintEditedCode,
-                                      props: [],
-                                      variants: []
-                                    };
-                                    setLibraryData((prev: any) => ({
-                                      ...prev,
-                                      components: [...(prev?.components || []), newComp]
-                                    }));
-                                    setSelectedBlueprintComponent(`comp-${newId}`);
-                                    setShowGenerateModal(false);
-                                    setBlueprintEditedCode(null);
-                                    setBlueprintChatHistory([]);
-                                    setGeneratePromptInput("");
-                                    showToast("Component added to canvas!", "success");
-                                  }}
-                                  className="flex-1 px-4 py-2.5 text-sm bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors flex items-center justify-center gap-2 font-medium"
-                                >
-                                  <Plus className="w-4 h-4" />
-                                  Add to Canvas
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setBlueprintEditedCode(null);
-                                    setBlueprintChatHistory([]);
-                                  }}
-                                  className="px-4 py-2.5 text-sm bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg transition-colors"
-                                >
-                                  Reset
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
                     {/* Infinite Canvas - Pan & Zoom with Draggable Elements */}
                     <div 
                       ref={blueprintsCanvasRef}
@@ -17040,6 +16844,132 @@ new ResizeObserver(autoResize).observe(document.body);
                                       </div>
                                     )}
                                   </div>
+                                  
+                                  {/* Inline AI Input for new components */}
+                                  {comp.isNew && isSelected && (
+                                    <div className="mt-3 bg-zinc-900/95 border border-zinc-700 rounded-xl p-3 shadow-xl min-w-[300px]">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                        <span className="text-[10px] text-zinc-400">Describe your component</span>
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <input
+                                          type="text"
+                                          value={generatePromptInput}
+                                          onChange={(e) => setGeneratePromptInput(e.target.value)}
+                                          onKeyDown={async (e) => {
+                                            if (e.key === 'Enter' && generatePromptInput.trim() && !isEditingBlueprint) {
+                                              e.preventDefault();
+                                              const userMessage = generatePromptInput.trim();
+                                              setGeneratePromptInput("");
+                                              setIsEditingBlueprint(true);
+                                              
+                                              await streamBlueprintEdit(
+                                                '<div className="p-4 bg-zinc-800 rounded-lg text-white">New Component</div>',
+                                                comp.name,
+                                                `Create: ${userMessage}`,
+                                                (partialCode) => {
+                                                  // Update component code in real-time
+                                                  setLibraryData((prev: any) => ({
+                                                    ...prev,
+                                                    components: prev?.components?.map((c: any) => 
+                                                      c.id === comp.id ? { ...c, code: partialCode } : c
+                                                    ) || []
+                                                  }));
+                                                },
+                                                (finalCode) => {
+                                                  // Remove isNew flag, set final code
+                                                  setLibraryData((prev: any) => ({
+                                                    ...prev,
+                                                    components: prev?.components?.map((c: any) => 
+                                                      c.id === comp.id ? { ...c, code: finalCode, isNew: false, name: userMessage.slice(0, 30) || comp.name } : c
+                                                    ) || []
+                                                  }));
+                                                  setIsEditingBlueprint(false);
+                                                  showToast("Component created!", "success");
+                                                },
+                                                (error) => {
+                                                  setIsEditingBlueprint(false);
+                                                  showToast(`Error: ${error}`, "error");
+                                                }
+                                              );
+                                            }
+                                          }}
+                                          placeholder="e.g. Pricing card with gradient border..."
+                                          className="flex-1 px-3 py-2 text-xs bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
+                                          disabled={isEditingBlueprint}
+                                          autoFocus
+                                          onClick={(e) => e.stopPropagation()}
+                                          onMouseDown={(e) => e.stopPropagation()}
+                                        />
+                                        <button
+                                          onClick={async (e) => {
+                                            e.stopPropagation();
+                                            if (!generatePromptInput.trim() || isEditingBlueprint) return;
+                                            const userMessage = generatePromptInput.trim();
+                                            setGeneratePromptInput("");
+                                            setIsEditingBlueprint(true);
+                                            
+                                            await streamBlueprintEdit(
+                                              '<div className="p-4 bg-zinc-800 rounded-lg text-white">New Component</div>',
+                                              comp.name,
+                                              `Create: ${userMessage}`,
+                                              (partialCode) => {
+                                                setLibraryData((prev: any) => ({
+                                                  ...prev,
+                                                  components: prev?.components?.map((c: any) => 
+                                                    c.id === comp.id ? { ...c, code: partialCode } : c
+                                                  ) || []
+                                                }));
+                                              },
+                                              (finalCode) => {
+                                                setLibraryData((prev: any) => ({
+                                                  ...prev,
+                                                  components: prev?.components?.map((c: any) => 
+                                                    c.id === comp.id ? { ...c, code: finalCode, isNew: false, name: userMessage.slice(0, 30) || comp.name } : c
+                                                  ) || []
+                                                }));
+                                                setIsEditingBlueprint(false);
+                                                showToast("Component created!", "success");
+                                              },
+                                              (error) => {
+                                                setIsEditingBlueprint(false);
+                                                showToast(`Error: ${error}`, "error");
+                                              }
+                                            );
+                                          }}
+                                          disabled={!generatePromptInput.trim() || isEditingBlueprint}
+                                          className={cn(
+                                            "px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 text-xs",
+                                            generatePromptInput.trim() && !isEditingBlueprint
+                                              ? "bg-emerald-600 hover:bg-emerald-500 text-white"
+                                              : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                                          )}
+                                          onMouseDown={(e) => e.stopPropagation()}
+                                        >
+                                          {isEditingBlueprint ? (
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                          ) : (
+                                            <Sparkles className="w-3.5 h-3.5" />
+                                          )}
+                                          Create
+                                        </button>
+                                      </div>
+                                      {/* Quick suggestions */}
+                                      <div className="flex flex-wrap gap-1 mt-2">
+                                        {["Button", "Card", "Avatar", "Badge", "Input"].map(s => (
+                                          <button
+                                            key={s}
+                                            onClick={(e) => { e.stopPropagation(); setGeneratePromptInput(s); }}
+                                            onMouseDown={(e) => e.stopPropagation()}
+                                            className="px-2 py-0.5 text-[9px] bg-zinc-800 text-zinc-500 rounded hover:bg-zinc-700 hover:text-white"
+                                          >
+                                            {s}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}
