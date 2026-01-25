@@ -17,8 +17,8 @@ const ShimmerButton = React.forwardRef<HTMLButtonElement, ShimmerButtonProps>(
   (
     {
       shimmerColor = "#FF6E3C",
-      shimmerSize = "0.05em",
-      shimmerDuration = "3s",
+      shimmerSize = "0.1em",
+      shimmerDuration = "2s",
       borderRadius = "12px",
       background = "#111111",
       className,
@@ -31,7 +31,7 @@ const ShimmerButton = React.forwardRef<HTMLButtonElement, ShimmerButtonProps>(
       <button
         style={
           {
-            "--spread": "90deg",
+            "--spread": "120deg",
             "--shimmer-color": shimmerColor,
             "--radius": borderRadius,
             "--speed": shimmerDuration,
@@ -40,36 +40,37 @@ const ShimmerButton = React.forwardRef<HTMLButtonElement, ShimmerButtonProps>(
           } as CSSProperties
         }
         className={cn(
-          "group relative z-0 flex cursor-pointer items-center justify-center overflow-hidden whitespace-nowrap border border-white/10 px-6 py-3 text-white [background:var(--bg)] [border-radius:var(--radius)]",
-          "transform-gpu transition-transform duration-300 ease-in-out active:translate-y-px",
+          "group relative z-0 flex cursor-pointer items-center justify-center overflow-hidden whitespace-nowrap border border-[#FF6E3C]/30 px-6 py-3 text-white [background:var(--bg)] [border-radius:var(--radius)]",
+          "transform-gpu transition-transform duration-300 ease-in-out active:translate-y-px hover:border-[#FF6E3C]/50",
+          "shadow-[0_0_20px_rgba(255,110,60,0.15)] hover:shadow-[0_0_30px_rgba(255,110,60,0.25)]",
           className,
         )}
         ref={ref}
         {...props}
       >
-        {/* spark container */}
+        {/* spark container - more visible */}
         <div
           className={cn(
-            "-z-30 blur-[2px]",
+            "-z-30 blur-[3px]",
             "absolute inset-0 overflow-visible [container-type:size]",
           )}
         >
           {/* spark */}
           <div className="absolute inset-0 h-[100cqh] animate-shimmer-slide [aspect-ratio:1] [border-radius:0] [mask:none]">
-            {/* spark before */}
+            {/* spark before - brighter */}
             <div className="animate-spin-around absolute -inset-full w-auto rotate-0 [background:conic-gradient(from_calc(270deg-(var(--spread)*0.5)),transparent_0,var(--shimmer-color)_var(--spread),transparent_var(--spread))] [translate:0_0]" />
           </div>
         </div>
         {children}
 
-        {/* Highlight */}
+        {/* Highlight - orange tinted */}
         <div
           className={cn(
             "insert-0 absolute size-full",
-            "rounded-xl px-4 py-1.5 text-sm font-medium shadow-[inset_0_-8px_10px_#ffffff1f]",
+            "rounded-xl px-4 py-1.5 text-sm font-medium shadow-[inset_0_-8px_10px_rgba(255,110,60,0.1)]",
             "transform-gpu transition-all duration-300 ease-in-out",
-            "group-hover:shadow-[inset_0_-6px_10px_#ffffff3f]",
-            "group-active:shadow-[inset_0_-10px_10px_#ffffff3f]",
+            "group-hover:shadow-[inset_0_-6px_10px_rgba(255,110,60,0.2)]",
+            "group-active:shadow-[inset_0_-10px_10px_rgba(255,110,60,0.25)]",
           )}
         />
 
