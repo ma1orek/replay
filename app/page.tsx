@@ -10789,7 +10789,7 @@ ${publishCode}
       isCommentMode={isCommentMode}
       onToggleCommentMode={() => setIsCommentMode(!isCommentMode)}
       currentTab={viewMode}
-      isOwner={!activeGeneration?.user_id || activeGeneration?.user_id === user?.id}
+      isOwner={!!user?.id && (!activeGeneration?.user_id || activeGeneration?.user_id === user?.id)}
       // Receive changes from other users
       onBlueprintPositionChange={(id, x, y) => {
         setBlueprintPositions(prev => ({ ...prev, [id]: { x, y } }));
