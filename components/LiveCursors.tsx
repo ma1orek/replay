@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useCallback, memo, useState } from "react";
-import { useOthers, useUpdateMyPresence } from "@/liveblocks.config";
+import { useOthers, useUpdateMyPresence, useSelf } from "@/liveblocks.config";
 
 // Cursor colors - MUST match liveblocks-auth/route.ts
 const CURSOR_COLORS = [
@@ -13,6 +13,15 @@ function getCursorColor(id: string): string {
   const hash = id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return CURSOR_COLORS[hash % CURSOR_COLORS.length];
 }
+
+// Tab label mapping for display
+const TAB_LABELS: Record<string, string> = {
+  preview: "Preview",
+  code: "Code",
+  flow: "Flow",
+  blueprints: "Blueprints",
+  library: "Library",
+};
 
 // Custom cursor shape from kursor.svg - rounded triangle pointer
 const CursorIcon = memo(({ color }: { color: string }) => (
@@ -70,10 +79,18 @@ const Cursor = memo(({
 ));
 Cursor.displayName = "Cursor";
 
-// Main component - renders other users' cursors
-export function LiveCursors() {
+// Main component - renders other users' cursors (filtered by current tab)
+export function LiveCursors({ currentTab }: { currentTab?: string }) {
   const others = useOthers();
   const updateMyPresence = useUpdateMyPresence();
+  const self = useSelf();
+
+  // Update my current tab in presence
+  useEffect(() => {
+    if (currentTab) {
+      updateMyPresence({ currentTab });
+    }
+  }, [currentTab, updateMyPresence]);
 
   // Track mouse movement
   const handlePointerMove = useCallback(
@@ -125,10 +142,18 @@ export function LiveCursors() {
     return () => window.removeEventListener('message', handleMessage);
   }, [updateMyPresence]);
 
-  // Render other users' cursors
+  // Filter others to only show users on the SAME tab
+  const othersOnSameTab = others.filter(({ presence }) => {
+    // If no currentTab specified, show all
+    if (!currentTab) return true;
+    // Show only users on the same tab
+    return presence?.currentTab === currentTab;
+  });
+
+  // Render other users' cursors (only those on same tab)
   return (
     <>
-      {others.map(({ connectionId, presence, info }) => {
+      {othersOnSameTab.map(({ connectionId, presence, info }) => {
         if (!presence?.cursor) return null;
 
         const color = info?.color || getCursorColor(String(connectionId));
@@ -155,6 +180,7 @@ export function useOnlineUsers() {
 }
 
 // Online users indicator - AvatarGroup style with hover animation
+// Shows which tab each user is on
 export function OnlineUsers() {
   const others = useOthers();
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
@@ -170,12 +196,14 @@ export function OnlineUsers() {
   return (
     <div className="flex items-center">
       <div className="flex">
-        {visibleUsers.map(({ connectionId, info }, idx) => {
+        {visibleUsers.map(({ connectionId, info, presence }, idx) => {
           const color = info?.color || getCursorColor(String(connectionId));
           const name = info?.name || `User ${connectionId}`;
           const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
           const avatar = info?.avatar;
           const isHovered = hoveredIdx === idx;
+          const userTab = presence?.currentTab;
+          const tabLabel = userTab ? TAB_LABELS[userTab] || userTab : null;
           
           return (
             <div
@@ -202,9 +230,9 @@ export function OnlineUsers() {
                   initials
                 )}
               </div>
-              {/* Animated tooltip on hover - below avatar */}
+              {/* Animated tooltip on hover - below avatar - shows name AND current tab */}
               <div
-                className="absolute left-1/2 px-2 py-1 bg-zinc-800 text-zinc-300 text-[10px] font-medium rounded-md whitespace-nowrap pointer-events-none border border-zinc-700/50"
+                className="absolute left-1/2 px-2 py-1 bg-zinc-800 text-zinc-300 text-[10px] font-medium rounded-md whitespace-nowrap pointer-events-none border border-zinc-700/50 flex flex-col items-center"
                 style={{
                   top: 32,
                   transform: `translateX(-50%) scale(${isHovered ? 1 : 0.8})`,
@@ -212,7 +240,10 @@ export function OnlineUsers() {
                   transition: "all 0.2s cubic-bezier(0.4,0,0.2,1)",
                 }}
               >
-                {name}
+                <span>{name}</span>
+                {tabLabel && (
+                  <span className="text-[9px] text-zinc-500">in {tabLabel}</span>
+                )}
               </div>
             </div>
           );

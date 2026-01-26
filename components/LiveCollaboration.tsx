@@ -281,8 +281,8 @@ function LiveCollaborationInner({
   return (
     <LiveSyncContext.Provider value={syncValue}>
       <div ref={containerRef} className="relative w-full h-full">
-        {/* Multiplayer Cursors */}
-        <LiveCursors />
+        {/* Multiplayer Cursors - filtered by current tab */}
+        <LiveCursors currentTab={currentTab} />
         
         {/* Comments Layer */}
         <LiveComments 
@@ -302,10 +302,12 @@ function LiveCollaborationInner({
 // Simple wrapper when you just want cursors without comments
 export function LiveCursorsOnly({ 
   projectId, 
-  children 
+  children,
+  currentTab 
 }: { 
   projectId: string | null; 
   children: React.ReactNode;
+  currentTab?: string;
 }) {
   // Provide a no-op context when not connected
   const noopSync: LiveSyncContextType = {
@@ -347,7 +349,7 @@ export function LiveCursorsOnly({
       }}
     >
       <LiveSyncContext.Provider value={noopSync}>
-        <LiveCursors />
+        <LiveCursors currentTab={currentTab} />
         {children}
       </LiveSyncContext.Provider>
     </RoomProvider>
