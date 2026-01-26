@@ -4324,29 +4324,27 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
           const showcaseWelcome = {
             id: "showcase-welcome",
             role: "assistant" as const,
-            content: `# 🎬 Welcome to Replay Demo!
+            content: `Welcome to the Replay Demo!
 
-This is a **fully functional showcase** demonstrating what Replay can do.
+This is a fully functional showcase demonstrating Replay's capabilities.
 
-## What you're seeing:
-This entire dashboard was **automatically generated from a screen recording** of an existing application. Replay analyzed the video and produced:
+What you're seeing:
+This entire dashboard was automatically generated from a screen recording. Replay analyzed the video and produced complete production-ready output.
 
-✅ **Complete UI Code** — React + Tailwind components  
-✅ **Flow Map** — Visual navigation structure  
-✅ **Library** — Reusable component inventory  
-✅ **Design System** — Colors, typography, spacing tokens
+What was generated:
+• Complete UI Code (React + Tailwind)
+• Flow Map with navigation structure
+• Component Library inventory  
+• Design System tokens (colors, typography, spacing)
 
-## Try it yourself:
-- 🔍 **Preview tab** — See the live rendered UI
-- 📂 **Code tab** — Explore the generated source
-- 🗺️ **Flow tab** — Navigate the screen map  
-- 📚 **Design tab** — View extracted design tokens
-- 🧩 **Blueprints** — Component library
+Explore the tabs above:
+• Preview - Live rendered UI
+• Code - Generated source code
+• Flow - Screen navigation map
+• Design - Extracted design tokens
+• Blueprints - Component library
 
----
-
-**Ready to generate from your own videos?**  
-👉 [Upgrade to Pro](/pricing) to start creating!`,
+Ready to generate from your own videos? Upgrade to Pro to start creating your own projects!`,
             timestamp: Date.now()
           };
           setChatMessages([showcaseWelcome]);
