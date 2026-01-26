@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useCallback, memo, useState } from "react";
-import { useOthers, useUpdateMyPresence, useSelf } from "@/liveblocks.config";
+import { useOthers, useUpdateMyPresence, useSelf, useBroadcastEvent, useEventListener } from "@/liveblocks.config";
+import { Eye, Edit3, Shield, ShieldCheck, ShieldX } from "lucide-react";
 
 // Cursor colors - MUST match liveblocks-auth/route.ts
 const CURSOR_COLORS = [
@@ -22,6 +23,18 @@ const TAB_LABELS: Record<string, string> = {
   blueprints: "Blueprints",
   library: "Library",
 };
+
+// Hook to check if current user can edit
+export function useCanEdit() {
+  const self = useSelf();
+  return self?.presence?.canEdit === true || self?.presence?.isOwner === true;
+}
+
+// Hook to check if current user is owner
+export function useIsOwner() {
+  const self = useSelf();
+  return self?.presence?.isOwner === true;
+}
 
 // Custom cursor shape from kursor.svg - rounded triangle pointer
 const CursorIcon = memo(({ color }: { color: string }) => (
@@ -180,10 +193,31 @@ export function useOnlineUsers() {
 }
 
 // Online users indicator - AvatarGroup style with hover animation
-// Shows which tab each user is on
+// Shows which tab each user is on, and allows owner to grant/revoke edit access
 export function OnlineUsers() {
   const others = useOthers();
+  const self = useSelf();
+  const broadcast = useBroadcastEvent();
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [menuOpenIdx, setMenuOpenIdx] = useState<number | null>(null);
+  
+  const isOwner = self?.presence?.isOwner === true;
+  
+  // Listen for access change events
+  useEventListener(({ event }) => {
+    const e = event as any;
+    if (e.type === "GRANT_EDIT_ACCESS" || e.type === "REVOKE_EDIT_ACCESS") {
+      // Access changes are handled via presence updates
+    }
+  });
+  
+  const handleToggleAccess = (userId: string, currentCanEdit: boolean) => {
+    if (!isOwner) return;
+    
+    const eventType = currentCanEdit ? "REVOKE_EDIT_ACCESS" : "GRANT_EDIT_ACCESS";
+    broadcast({ type: eventType, targetUserId: userId } as any);
+    setMenuOpenIdx(null);
+  };
   
   if (others.length === 0) return null;
   
@@ -196,14 +230,17 @@ export function OnlineUsers() {
   return (
     <div className="flex items-center">
       <div className="flex">
-        {visibleUsers.map(({ connectionId, info, presence }, idx) => {
+        {visibleUsers.map(({ connectionId, info, presence, id }, idx) => {
           const color = info?.color || getCursorColor(String(connectionId));
           const name = info?.name || `User ${connectionId}`;
           const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
           const avatar = info?.avatar;
           const isHovered = hoveredIdx === idx;
+          const isMenuOpen = menuOpenIdx === idx;
           const userTab = presence?.currentTab;
           const tabLabel = userTab ? TAB_LABELS[userTab] || userTab : null;
+          const canEdit = presence?.canEdit === true;
+          const userIsOwner = presence?.isOwner === true;
           
           return (
             <div
@@ -212,16 +249,17 @@ export function OnlineUsers() {
               style={{
                 width: size,
                 height: size,
-                zIndex: isHovered ? 100 : visibleUsers.length - idx,
+                zIndex: isHovered || isMenuOpen ? 100 : visibleUsers.length - idx,
                 marginLeft: idx === 0 ? 0 : -overlap,
                 transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1), z-index 0s",
-                transform: isHovered ? "translateY(-6px)" : "translateY(0)",
+                transform: isHovered || isMenuOpen ? "translateY(-6px)" : "translateY(0)",
               }}
               onMouseEnter={() => setHoveredIdx(idx)}
-              onMouseLeave={() => setHoveredIdx(null)}
+              onMouseLeave={() => { setHoveredIdx(null); if (!isMenuOpen) setMenuOpenIdx(null); }}
+              onClick={() => isOwner && !userIsOwner && setMenuOpenIdx(isMenuOpen ? null : idx)}
             >
               <div
-                className="w-full h-full rounded-full flex items-center justify-center text-[7px] font-medium text-white overflow-hidden"
+                className={`w-full h-full rounded-full flex items-center justify-center text-[7px] font-medium text-white overflow-hidden ${isOwner && !userIsOwner ? 'cursor-pointer' : ''}`}
                 style={{ backgroundColor: color }}
               >
                 {avatar ? (
@@ -230,21 +268,75 @@ export function OnlineUsers() {
                   initials
                 )}
               </div>
-              {/* Animated tooltip on hover - below avatar - shows name AND current tab */}
+              
+              {/* Access indicator badge */}
+              <div 
+                className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] border border-[#141414] ${
+                  userIsOwner ? 'bg-amber-500' : canEdit ? 'bg-emerald-500' : 'bg-zinc-600'
+                }`}
+                title={userIsOwner ? 'Owner' : canEdit ? 'Can edit' : 'View only'}
+              >
+                {userIsOwner ? (
+                  <Shield size={8} className="text-white" />
+                ) : canEdit ? (
+                  <Edit3 size={8} className="text-white" />
+                ) : (
+                  <Eye size={8} className="text-white" />
+                )}
+              </div>
+              
+              {/* Tooltip on hover */}
               <div
                 className="absolute left-1/2 px-2 py-1 bg-zinc-800 text-zinc-300 text-[10px] font-medium rounded-md whitespace-nowrap pointer-events-none border border-zinc-700/50 flex flex-col items-center"
                 style={{
-                  top: 32,
-                  transform: `translateX(-50%) scale(${isHovered ? 1 : 0.8})`,
-                  opacity: isHovered ? 1 : 0,
+                  top: 36,
+                  transform: `translateX(-50%) scale(${isHovered && !isMenuOpen ? 1 : 0.8})`,
+                  opacity: isHovered && !isMenuOpen ? 1 : 0,
                   transition: "all 0.2s cubic-bezier(0.4,0,0.2,1)",
                 }}
               >
                 <span>{name}</span>
-                {tabLabel && (
-                  <span className="text-[9px] text-zinc-500">in {tabLabel}</span>
-                )}
+                <span className="text-[9px] text-zinc-500">
+                  {userIsOwner ? 'Owner' : canEdit ? 'Can edit' : 'View only'}
+                  {tabLabel && ` • in ${tabLabel}`}
+                </span>
               </div>
+              
+              {/* Access menu for owner - click to toggle */}
+              {isOwner && !userIsOwner && isMenuOpen && (
+                <div
+                  className="absolute left-1/2 -translate-x-1/2 bg-zinc-900 rounded-lg shadow-xl border border-zinc-700/50 overflow-hidden"
+                  style={{ top: 36, minWidth: 140 }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="px-3 py-2 border-b border-zinc-700/50">
+                    <div className="text-[11px] font-medium text-white truncate">{name}</div>
+                    <div className="text-[9px] text-zinc-500">
+                      {canEdit ? 'Can edit' : 'View only'}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleToggleAccess(id, canEdit)}
+                    className={`w-full px-3 py-2 text-[11px] font-medium flex items-center gap-2 transition-colors ${
+                      canEdit 
+                        ? 'text-red-400 hover:bg-red-500/10' 
+                        : 'text-emerald-400 hover:bg-emerald-500/10'
+                    }`}
+                  >
+                    {canEdit ? (
+                      <>
+                        <ShieldX size={12} />
+                        Revoke edit access
+                      </>
+                    ) : (
+                      <>
+                        <ShieldCheck size={12} />
+                        Grant edit access
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}

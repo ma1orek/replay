@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, createContext, useContext, useCallback } from "react";
 import { LiveList, LiveMap, LiveObject } from "@liveblocks/client";
-import { RoomProvider, useStorage, useMutation, useBroadcastEvent, useEventListener, useRoom } from "@/liveblocks.config";
+import { RoomProvider, useStorage, useMutation, useBroadcastEvent, useEventListener, useRoom, useUpdateMyPresence, useSelf } from "@/liveblocks.config";
 import { LiveCursors } from "./LiveCursors";
 import { LiveComments } from "./LiveComments";
 import type { BlueprintNodeData, LibraryComponentData } from "@/liveblocks.config";
@@ -30,6 +30,8 @@ interface LiveCollaborationProps {
   onToggleCommentMode: () => void;
   currentTab: string; // preview, code, flow, etc.
   children: React.ReactNode;
+  // Access control
+  isOwner?: boolean; // Is current user the owner of this project?
   // Sync handlers for receiving changes from other users
   onBlueprintPositionChange?: (id: string, x: number, y: number) => void;
   onBlueprintSizeChange?: (id: string, width: number, height: number) => void;
@@ -46,6 +48,7 @@ export function LiveCollaboration({
   onToggleCommentMode,
   currentTab,
   children,
+  isOwner = false,
   onBlueprintPositionChange,
   onBlueprintSizeChange,
   onBlueprintCodeChange,
@@ -86,6 +89,9 @@ export function LiveCollaboration({
         isCommenting: false,
         currentTab: currentTab,
         editingComponentId: null,
+        // Access control - owner can always edit, others start as view-only
+        canEdit: isOwner,
+        isOwner: isOwner,
       }}
       initialStorage={{
         comments: new LiveList([]),
@@ -100,6 +106,7 @@ export function LiveCollaboration({
         isCommentMode={isCommentMode}
         onToggleCommentMode={onToggleCommentMode}
         currentTab={currentTab}
+        isOwner={isOwner}
         onBlueprintPositionChange={onBlueprintPositionChange}
         onBlueprintSizeChange={onBlueprintSizeChange}
         onBlueprintCodeChange={onBlueprintCodeChange}
@@ -120,6 +127,7 @@ function LiveCollaborationInner({
   onToggleCommentMode,
   currentTab,
   children,
+  isOwner,
   onBlueprintPositionChange,
   onBlueprintSizeChange,
   onBlueprintCodeChange,
@@ -132,6 +140,7 @@ function LiveCollaborationInner({
   onToggleCommentMode: () => void;
   currentTab: string;
   children: React.ReactNode;
+  isOwner?: boolean;
   onBlueprintPositionChange?: (id: string, x: number, y: number) => void;
   onBlueprintSizeChange?: (id: string, width: number, height: number) => void;
   onBlueprintCodeChange?: (id: string, code: string) => void;
@@ -140,6 +149,8 @@ function LiveCollaborationInner({
   onLibraryComponentAdd?: (component: any) => void;
 }) {
   const broadcast = useBroadcastEvent();
+  const updateMyPresence = useUpdateMyPresence();
+  const self = useSelf();
   const lastBroadcastRef = useRef<Record<string, number>>({});
   const THROTTLE_MS = 50;
 
@@ -233,6 +244,15 @@ function LiveCollaborationInner({
     
     if (e.type === "LIBRARY_COMPONENT_ADDED" && onLibraryComponentAdd) {
       onLibraryComponentAdd(e.data);
+    }
+    
+    // Handle access control events - update own presence if targeted
+    if (e.type === "GRANT_EDIT_ACCESS" && e.targetUserId === self?.id) {
+      updateMyPresence({ canEdit: true });
+    }
+    
+    if (e.type === "REVOKE_EDIT_ACCESS" && e.targetUserId === self?.id) {
+      updateMyPresence({ canEdit: false });
     }
   });
 

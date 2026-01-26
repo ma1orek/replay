@@ -9,6 +9,9 @@ type Presence = {
   // What user is currently doing
   currentTab?: string;
   editingComponentId?: string | null;
+  // Access control
+  canEdit?: boolean; // false = view only, true = can edit
+  isOwner?: boolean; // Owner of the project
 };
 
 // Comment type for storage
@@ -95,7 +98,9 @@ type RoomEvent = {
     | "COMMENT_ADDED"
     | "COMMENT_DELETED"
     | "COMMENT_RESOLVED"
-    | "COMMENT_REPLY_ADDED";
+    | "COMMENT_REPLY_ADDED"
+    | "GRANT_EDIT_ACCESS"
+    | "REVOKE_EDIT_ACCESS";
   x?: number;
   y?: number;
   elementId?: string;
@@ -104,6 +109,7 @@ type RoomEvent = {
   data?: any;
   comment?: StoredComment;
   reply?: any;
+  targetUserId?: string; // For grant/revoke access
 };
 
 // Thread metadata - gdzie jest przypięty komentarz

@@ -554,6 +554,8 @@ interface GenerationRecord {
   costCredits?: number;
   // Component library data (persisted per project)
   libraryData?: LibraryData | null;
+  // Owner info for access control
+  user_id?: string;
 }
 
 // Chat message for Agentic Sidebar
@@ -10756,6 +10758,7 @@ ${publishCode}
       isCommentMode={isCommentMode}
       onToggleCommentMode={() => setIsCommentMode(!isCommentMode)}
       currentTab={viewMode}
+      isOwner={!activeGeneration?.user_id || activeGeneration?.user_id === user?.id}
       // Receive changes from other users
       onBlueprintPositionChange={(id, x, y) => {
         setBlueprintPositions(prev => ({ ...prev, [id]: { x, y } }));
