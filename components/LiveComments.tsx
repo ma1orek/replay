@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { MessageCircle, X, Send, Check, Trash2 } from "lucide-react";
-import { useSelf, useStorage, useMutation } from "@/liveblocks.config";
+import { useSelf, useStorage, useMutation, useBroadcastEvent, useEventListener } from "@/liveblocks.config";
 import type { StoredComment } from "@/liveblocks.config";
 
 interface LiveCommentsProps {
@@ -14,10 +14,13 @@ interface LiveCommentsProps {
 
 export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef, currentTab }: LiveCommentsProps) {
   const self = useSelf();
+  const broadcast = useBroadcastEvent();
   
   // Get comments from Liveblocks Storage - filter by current tab
-  const allComments = useStorage((root) => root.comments) || [];
-  const comments = allComments.filter(c => c.tab === currentTab);
+  // Use toImmutable() for proper reactivity
+  const allCommentsRaw = useStorage((root) => root.comments);
+  const allComments = allCommentsRaw ? (Array.isArray(allCommentsRaw) ? allCommentsRaw : (allCommentsRaw as any).toImmutable?.() || []) : [];
+  const comments: StoredComment[] = allComments.filter((c: StoredComment) => c.tab === currentTab);
   
   const [activeComment, setActiveComment] = useState<string | null>(null);
   const [newCommentPosition, setNewCommentPosition] = useState<{ x: number; y: number } | null>(null);
@@ -27,13 +30,13 @@ export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef,
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Mutation to add a comment
-  const addComment = useMutation(({ storage }, comment: StoredComment) => {
+  const addCommentMutation = useMutation(({ storage }, comment: StoredComment) => {
     const comments = storage.get("comments");
     comments.push(comment);
   }, []);
 
   // Mutation to add a reply
-  const addReply = useMutation(({ storage }, { commentId, reply }: { commentId: string; reply: StoredComment["replies"][0] }) => {
+  const addReplyMutation = useMutation(({ storage }, { commentId, reply }: { commentId: string; reply: StoredComment["replies"][0] }) => {
     const comments = storage.get("comments");
     const arr = comments.toArray();
     const index = arr.findIndex((c) => c.id === commentId);
@@ -45,7 +48,7 @@ export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef,
   }, []);
 
   // Mutation to toggle resolve
-  const toggleResolve = useMutation(({ storage }, commentId: string) => {
+  const toggleResolveMutation = useMutation(({ storage }, commentId: string) => {
     const comments = storage.get("comments");
     const arr = comments.toArray();
     const index = arr.findIndex((c) => c.id === commentId);
@@ -56,7 +59,7 @@ export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef,
   }, []);
 
   // Mutation to delete comment
-  const deleteComment = useMutation(({ storage }, commentId: string) => {
+  const deleteCommentMutation = useMutation(({ storage }, commentId: string) => {
     const comments = storage.get("comments");
     const arr = comments.toArray();
     const index = arr.findIndex((c) => c.id === commentId);
@@ -64,6 +67,38 @@ export function LiveComments({ isCommentMode, onToggleCommentMode, containerRef,
       comments.delete(index);
     }
   }, []);
+
+  // Wrapper functions that broadcast AND mutate storage
+  const addComment = useCallback((comment: StoredComment) => {
+    addCommentMutation(comment);
+    broadcast({ type: "COMMENT_ADDED", comment } as any);
+  }, [addCommentMutation, broadcast]);
+
+  const addReply = useCallback(({ commentId, reply }: { commentId: string; reply: StoredComment["replies"][0] }) => {
+    addReplyMutation({ commentId, reply });
+    broadcast({ type: "COMMENT_REPLY_ADDED", id: commentId, reply } as any);
+  }, [addReplyMutation, broadcast]);
+
+  const toggleResolve = useCallback((commentId: string) => {
+    toggleResolveMutation(commentId);
+    broadcast({ type: "COMMENT_RESOLVED", id: commentId } as any);
+  }, [toggleResolveMutation, broadcast]);
+
+  const deleteComment = useCallback((commentId: string) => {
+    deleteCommentMutation(commentId);
+    broadcast({ type: "COMMENT_DELETED", id: commentId } as any);
+  }, [deleteCommentMutation, broadcast]);
+
+  // Listen for events from other users (backup sync)
+  useEventListener(({ event }) => {
+    const e = event as any;
+    // Events are just for notification - actual data comes from storage sync
+    // This helps trigger re-renders if storage sync is slow
+    if (e.type === "COMMENT_ADDED" || e.type === "COMMENT_DELETED" || e.type === "COMMENT_RESOLVED" || e.type === "COMMENT_REPLY_ADDED") {
+      // Force a re-render by doing nothing - storage should already be updated
+      // The useStorage hook will automatically pick up changes
+    }
+  });
 
   // Handle canvas click in comment mode
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {

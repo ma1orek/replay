@@ -91,13 +91,19 @@ type RoomEvent = {
     | "BLUEPRINT_POSITION_UPDATED"
     | "BLUEPRINT_SIZE_UPDATED"
     | "LIBRARY_COMPONENT_DELETED"
-    | "LIBRARY_COMPONENT_ADDED";
+    | "LIBRARY_COMPONENT_ADDED"
+    | "COMMENT_ADDED"
+    | "COMMENT_DELETED"
+    | "COMMENT_RESOLVED"
+    | "COMMENT_REPLY_ADDED";
   x?: number;
   y?: number;
   elementId?: string;
   id?: string;
   code?: string;
   data?: any;
+  comment?: StoredComment;
+  reply?: any;
 };
 
 // Thread metadata - gdzie jest przypięty komentarz
