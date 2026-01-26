@@ -12606,8 +12606,8 @@ ${publishCode}
                   {/* Input Area - Minimal */}
                   <div className="flex-shrink-0 p-2 border-t border-zinc-800">
                     <div className="rounded-xl bg-zinc-800/50 border border-white/[0.05] relative">
-                      {/* Auth overlay for non-logged users only */}
-                      {!user && (
+                      {/* Auth overlay for non-logged users only - BUT NOT in demo mode (let them see everything) */}
+                      {!user && !DEMO_PROJECT_IDS.has(activeGeneration?.id || '') && (
                         <div 
                           onClick={() => {
                             setShowAuthModal(true);
@@ -12624,11 +12624,16 @@ ${publishCode}
                       <textarea
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
-                        disabled={!user}
+                        disabled={!user && !DEMO_PROJECT_IDS.has(activeGeneration?.id || '')}
                         onPaste={handlePasteImage}
                         onKeyDown={async (e) => {
                           if (e.key === "Enter" && !e.shiftKey && chatInput.trim() && editableCode) {
                             e.preventDefault();
+                            // Demo mode: show message that this is read-only
+                            if (DEMO_PROJECT_IDS.has(activeGeneration?.id || '')) {
+                              showToast("This is a read-only demo. Sign up to create your own projects!", "info");
+                              return;
+                            }
                             // Auth check - only block non-logged users
                             if (!user) {
                               setShowAuthModal(true);

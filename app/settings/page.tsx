@@ -645,20 +645,20 @@ function SettingsContent() {
 
               {/* Pricing Cards */}
               <div className="grid md:grid-cols-3 gap-4">
-                {/* Free */}
+                {/* Sandbox */}
                 <div className={cn(
                   "bg-[#141414]/80 backdrop-blur border rounded-2xl p-6",
                   currentPlan === "free" ? "border-emerald-500" : "border-zinc-800/50"
                 )}>
                   <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-zinc-200">Free</h3>
-                    <p className="text-sm text-zinc-500">For testing</p>
+                    <h3 className="text-lg font-semibold text-zinc-200">Sandbox</h3>
+                    <p className="text-sm text-zinc-500">Explore the demo</p>
                   </div>
                   <div className="mb-4">
                     <span className="text-3xl font-bold text-zinc-100">$0</span>
                   </div>
                   <ul className="space-y-2 mb-6">
-                    {["100 credits/month", "~1 generation", "Preview only"].map((f) => (
+                    {["0 credits", "Demo project (read-only)", "Preview only"].map((f) => (
                       <li key={f} className="flex items-center gap-2 text-sm text-zinc-400">
                         <Check className="w-4 h-4 text-zinc-600" />
                         {f}
@@ -667,7 +667,7 @@ function SettingsContent() {
                   </ul>
                   {currentPlan === "free" ? (
                     <div className="w-full py-2.5 rounded-xl text-sm text-center bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                      Current plan
+                      Included
                     </div>
                   ) : (
                     <div className="w-full py-2.5 rounded-xl text-sm text-center bg-zinc-800 text-zinc-500">
