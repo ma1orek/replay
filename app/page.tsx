@@ -1915,6 +1915,20 @@ const ShadowPreview = ({
     }
     /* Force responsive */
     img, video, iframe, svg { max-width: 100%; height: auto; }
+    /* Image error state - placeholder */
+    img[data-error="true"] {
+      background: linear-gradient(135deg, #27272a 0%, #18181b 100%);
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      min-height: 120px;
+      border-radius: 8px;
+    }
+    img[data-error="true"]::after {
+      content: "Image";
+      color: #52525b;
+      font-size: 12px;
+    }
     div, section, aside, nav, header, footer, main, article { max-width: 100%; overflow-x: hidden; }
     /* Marquee animation */
     @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
@@ -2046,6 +2060,73 @@ const ShadowPreview = ({
     setTimeout(() => { forceVisible(); sendHeight(); }, 100);
     setTimeout(() => { forceVisible(); sendHeight(); }, 500);
     setTimeout(() => { forceVisible(); sendHeight(); }, 1000);
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // FIX BROKEN IMAGES - Replace failed images with Unsplash placeholders
+    // ═══════════════════════════════════════════════════════════════════════════
+    function fixBrokenImages() {
+      document.querySelectorAll('img').forEach((img, index) => {
+        // Skip if already processed or loading
+        if (img.dataset.fixed) return;
+        
+        // Fix relative URLs and broken sources
+        const src = img.getAttribute('src') || '';
+        
+        // Check for obviously broken sources
+        const isBroken = !src || 
+          src === '' || 
+          src.startsWith('/') || 
+          src.startsWith('./') || 
+          src.startsWith('../') ||
+          src.includes('placeholder') ||
+          src.includes('example.com') ||
+          src.includes('undefined') ||
+          src.includes('null');
+        
+        if (isBroken) {
+          // Replace with Unsplash placeholder based on context
+          const alt = (img.getAttribute('alt') || '').toLowerCase();
+          const className = (img.className || '').toLowerCase();
+          const parentText = (img.parentElement?.textContent || '').toLowerCase();
+          
+          // Determine image type from context
+          let unsplashQuery = 'abstract';
+          if (alt.includes('avatar') || alt.includes('profile') || alt.includes('user') || className.includes('avatar') || className.includes('rounded-full')) {
+            unsplashQuery = 'portrait,face';
+          } else if (alt.includes('blog') || alt.includes('cover') || alt.includes('hero') || alt.includes('banner')) {
+            unsplashQuery = 'technology,minimal';
+          } else if (alt.includes('product') || alt.includes('item')) {
+            unsplashQuery = 'product,minimal';
+          } else if (alt.includes('team') || alt.includes('company')) {
+            unsplashQuery = 'team,office';
+          } else if (alt.includes('logo') || alt.includes('icon')) {
+            unsplashQuery = 'abstract,geometric';
+          }
+          
+          // Get dimensions from styles or defaults
+          const width = img.offsetWidth || 400;
+          const height = img.offsetHeight || 300;
+          
+          img.src = 'https://images.unsplash.com/photo-' + ['1618005182384-a83a8bd57fbe', '1557683316-973673baf926', '1579546929518-9e396f3cc809', '1558591710-4b4a1ae0f04d', '1557804506-669a67965ba0'][index % 5] + '?w=' + width + '&h=' + height + '&fit=crop&auto=format';
+          img.dataset.fixed = 'true';
+        }
+        
+        // Add error handler for images that fail to load later
+        img.onerror = function() {
+          if (!this.dataset.errorFixed) {
+            const w = this.offsetWidth || 400;
+            const h = this.offsetHeight || 300;
+            this.src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=' + w + '&h=' + h + '&fit=crop&auto=format';
+            this.dataset.errorFixed = 'true';
+          }
+        };
+      });
+    }
+    
+    // Run image fix on load and after delays
+    window.addEventListener('load', fixBrokenImages);
+    setTimeout(fixBrokenImages, 200);
+    setTimeout(fixBrokenImages, 600);
   </script>
 </body>
 </html>`, [cleanHtml, background]);
@@ -2410,13 +2491,53 @@ const InteractiveReactPreview = ({
       window.parent.postMessage({ type: 'IFRAME_SIZE', height, width }, '*');
     };
     
+    // ═══════════════════════════════════════════════════════════════════════════
+    // FIX BROKEN IMAGES - Replace failed images with Unsplash placeholders
+    // ═══════════════════════════════════════════════════════════════════════════
+    const fixBrokenImages = () => {
+      document.querySelectorAll('img').forEach((img, index) => {
+        if (img.dataset.fixed) return;
+        
+        const src = img.getAttribute('src') || '';
+        const isBroken = !src || src === '' || 
+          src.startsWith('/') || src.startsWith('./') || src.startsWith('../') ||
+          src.includes('placeholder') || src.includes('example.com') ||
+          src.includes('undefined') || src.includes('null');
+        
+        if (isBroken) {
+          const alt = (img.getAttribute('alt') || '').toLowerCase();
+          const className = (img.className || '').toLowerCase();
+          
+          let query = 'abstract';
+          if (alt.includes('avatar') || alt.includes('profile') || className.includes('avatar') || className.includes('rounded-full')) {
+            query = 'portrait,face';
+          } else if (alt.includes('blog') || alt.includes('cover') || alt.includes('hero')) {
+            query = 'technology,minimal';
+          } else if (alt.includes('product')) {
+            query = 'product,minimal';
+          }
+          
+          const photos = ['1618005182384-a83a8bd57fbe', '1557683316-973673baf926', '1579546929518-9e396f3cc809', '1558591710-4b4a1ae0f04d', '1557804506-669a67965ba0'];
+          img.src = 'https://images.unsplash.com/photo-' + photos[index % 5] + '?w=400&h=300&fit=crop&auto=format';
+          img.dataset.fixed = 'true';
+        }
+        
+        img.onerror = function() {
+          if (!this.dataset.errorFixed) {
+            this.src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=300&fit=crop&auto=format';
+            this.dataset.errorFixed = 'true';
+          }
+        };
+      });
+    };
+    
     // Initial + resize + mutation observer
-    setTimeout(() => { forceVisible(); sendSize(); }, 100);
-    setTimeout(() => { forceVisible(); sendSize(); }, 500);
-    setTimeout(() => { forceVisible(); sendSize(); }, 1500);
+    setTimeout(() => { forceVisible(); fixBrokenImages(); sendSize(); }, 100);
+    setTimeout(() => { forceVisible(); fixBrokenImages(); sendSize(); }, 500);
+    setTimeout(() => { forceVisible(); fixBrokenImages(); sendSize(); }, 1500);
     window.addEventListener('resize', sendSize);
     
-    const observer = new MutationObserver(() => { forceVisible(); sendSize(); });
+    const observer = new MutationObserver(() => { forceVisible(); fixBrokenImages(); sendSize(); });
     observer.observe(document.body, { childList: true, subtree: true, attributes: true });
   </script>
 </body>
