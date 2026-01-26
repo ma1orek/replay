@@ -3137,6 +3137,10 @@ function ReplayToolContent() {
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [deleteTargetTitle, setDeleteTargetTitle] = useState<string>("");
   
+  // Delete component modal (for Blueprints)
+  const [showDeleteComponentModal, setShowDeleteComponentModal] = useState(false);
+  const [deleteComponentTarget, setDeleteComponentTarget] = useState<{ id: string; name: string } | null>(null);
+  
   // Direct text editing mode (like Framer)
   const [isDirectEditMode, setIsDirectEditMode] = useState(false);
   const [pendingTextEdits, setPendingTextEdits] = useState<{ originalText: string; newText: string; elementPath: string }[]>([]);
@@ -11431,10 +11435,10 @@ ${publishCode}
                       setEditingComponentName(newId);
                       setEditingNameValue(defaultName);
                     }}
-                    className="p-1 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white"
-                    title="Add new component"
+                    className="p-1 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white group relative"
                   >
                     <Plus className="w-3.5 h-3.5" />
+                    <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 border border-zinc-700/50">Add component</span>
                   </button>
                 </div>
               </div>
@@ -18189,21 +18193,13 @@ document.querySelectorAll('img').forEach(img=>{
                                 <div className="flex items-center gap-1">
                                   <button 
                                     onClick={() => {
-                                      if (libraryData && confirm(`Delete "${selectedComp.name}"?`)) {
-                                        const updated = {
-                                          ...libraryData,
-                                          components: libraryData.components.filter((c: any) => c.id !== selectedComp.id)
-                                        };
-                                        setLibraryData(updated);
-                                        setSelectedBlueprintComponent(null);
-                                        setBlueprintEditedCode(null);
-                                        setBlueprintChatHistory([]);
-                                      }
+                                      setDeleteComponentTarget({ id: selectedComp.id, name: selectedComp.name });
+                                      setShowDeleteComponentModal(true);
                                     }}
-                                    className="p-1.5 hover:bg-red-500/20 rounded-lg text-zinc-500 hover:text-red-400 transition-colors"
-                                    title="Delete component"
+                                    className="p-1.5 hover:bg-red-500/20 rounded-lg text-zinc-500 hover:text-red-400 transition-colors group relative"
                                   >
                                     <Trash2 className="w-4 h-4" />
+                                    <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 border border-zinc-700/50">Delete</span>
                                   </button>
                                   <button 
                                     onClick={() => {
@@ -18211,9 +18207,10 @@ document.querySelectorAll('img').forEach(img=>{
                                       setBlueprintEditedCode(null);
                                       setBlueprintChatHistory([]);
                                     }}
-                                    className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-500 hover:text-white transition-colors"
+                                    className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-500 hover:text-white transition-colors group relative"
                                   >
                                     <X className="w-4 h-4" />
+                                    <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 border border-zinc-700/50">Close</span>
                                   </button>
                                 </div>
                               </div>
@@ -20622,6 +20619,76 @@ document.querySelectorAll('img').forEach(img=>{
             </div>
             )}
           </div>
+      )}
+      
+      {/* Delete Component Modal - Custom styled (not system confirm) */}
+      {showDeleteComponentModal && deleteComponentTarget && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setShowDeleteComponentModal(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            className="bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-5 py-4 border-b border-zinc-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center">
+                  <Trash2 className="w-5 h-5 text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-white">Delete Component</h3>
+                  <p className="text-xs text-zinc-500">This action cannot be undone</p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Content */}
+            <div className="px-5 py-4">
+              <p className="text-sm text-zinc-400">
+                Are you sure you want to delete <span className="text-white font-medium">"{deleteComponentTarget.name}"</span>?
+              </p>
+            </div>
+            
+            {/* Actions */}
+            <div className="px-5 py-4 bg-zinc-900/50 border-t border-zinc-800 flex items-center justify-end gap-3">
+              <button
+                onClick={() => setShowDeleteComponentModal(false)}
+                className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (libraryData && deleteComponentTarget) {
+                    const updated = {
+                      ...libraryData,
+                      components: libraryData.components.filter((c: any) => c.id !== deleteComponentTarget.id)
+                    };
+                    setLibraryData(updated);
+                    setSelectedBlueprintComponent(null);
+                    setBlueprintEditedCode(null);
+                    setBlueprintChatHistory([]);
+                    // Broadcast deletion to other users
+                    broadcastLibraryComponentDelete(deleteComponentTarget.id);
+                  }
+                  setShowDeleteComponentModal(false);
+                  setDeleteComponentTarget(null);
+                }}
+                className="px-4 py-2 text-sm font-medium bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
       )}
     </div>
     </LiveCollaboration>
