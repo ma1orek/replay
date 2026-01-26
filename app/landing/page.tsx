@@ -343,21 +343,6 @@ function HeroSection() {
               </Button>
             </div>
 
-            {/* Trust Badges */}
-            <div className="mt-16 flex flex-wrap justify-center gap-4 text-sm text-zinc-500">
-              <span className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-100/80 backdrop-blur-sm">
-                <Shield className="w-4 h-4" />
-                SOC2 in progress
-              </span>
-              <span className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-100/80 backdrop-blur-sm">
-                <Server className="w-4 h-4" />
-                On-Premise Available
-              </span>
-              <span className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-100/80 backdrop-blur-sm">
-                <Eye className="w-4 h-4" />
-                Configurable Data Retention
-              </span>
-            </div>
           </AnimatedGroup>
         </div>
       </div>
@@ -668,98 +653,23 @@ function ProblemSection() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SOLUTION SECTION (3-Step Process)
+// SOLUTION SECTION (3-Step Process) - Technical Minimalist
 // ═══════════════════════════════════════════════════════════════
 
 function SolutionSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
-  const steps = [
-    {
-      number: "1",
-      title: "Record the Workflow",
-      body: "Your users already know how it works. A few minutes of screen recording replaces extensive documentation efforts.",
-      icon: Play,
-      visual: (
-        <div className="relative w-full h-32 bg-zinc-100 rounded-xl overflow-hidden">
-          <div className="absolute inset-2 bg-white rounded-lg shadow-sm border border-zinc-200 flex items-center justify-center">
-            <div className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
-              <div className="w-3 h-3 rounded-full bg-white" />
-            </div>
-          </div>
-          <div className="absolute bottom-2 right-2 px-2 py-1 bg-red-500 text-white text-xs rounded font-mono">REC 00:05:32</div>
-        </div>
-      )
-    },
-    {
-      number: "2",
-      title: "Extraction Engine Maps",
-      body: "Replay maps screens, components, and interactions from real usage — including validations and data relationships.",
-      icon: Layers,
-      visual: (
-        <div className="relative w-full h-32 bg-zinc-100 rounded-xl p-3">
-          <div className="absolute inset-3 flex gap-2">
-            <motion.div 
-              className="flex-1 h-full bg-orange-200 rounded-lg"
-              animate={{ opacity: [0.5, 1, 0.5] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            />
-            <div className="flex-1 flex flex-col gap-2">
-              <motion.div 
-                className="flex-1 bg-blue-200 rounded-lg"
-                animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 2, repeat: Infinity, delay: 0.3 }}
-              />
-              <motion.div 
-                className="flex-1 bg-green-200 rounded-lg"
-                animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 2, repeat: Infinity, delay: 0.6 }}
-              />
-            </div>
-          </div>
-          <div className="absolute top-1 right-1 flex gap-1">
-            {["Navigation", "Form", "Table"].map((label, i) => (
-              <motion.span 
-                key={label}
-                className="px-1.5 py-0.5 bg-zinc-800 text-white text-[10px] rounded"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={isInView ? { opacity: 1, scale: 1 } : {}}
-                transition={{ delay: 1 + i * 0.2 }}
-              >
-                {label}
-              </motion.span>
-            ))}
-          </div>
-        </div>
-      )
-    },
-    {
-      number: "3",
-      title: "Export Documented Code",
-      body: "Clean React + Tailwind components. Your engineers review the output and connect to existing APIs.",
-      icon: Code,
-      visual: (
-        <div className="relative w-full h-32 bg-zinc-900 rounded-xl p-3 font-mono text-xs overflow-hidden">
-          <div className="flex items-center gap-1.5 mb-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
-            <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
-            <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
-          </div>
-          <div className="space-y-1 text-[10px]">
-            <div><span className="text-purple-400">export</span> <span className="text-blue-400">function</span> <span className="text-yellow-300">UserForm</span><span className="text-zinc-400">()</span> <span className="text-zinc-400">{"{"}</span></div>
-            <div className="pl-3"><span className="text-purple-400">return</span> <span className="text-zinc-400">(</span></div>
-            <div className="pl-6"><span className="text-green-400">{"<div"}</span> <span className="text-orange-400">className</span><span className="text-zinc-400">=</span><span className="text-amber-200">"..."</span><span className="text-green-400">{">"}</span></div>
-            <div className="pl-6 text-zinc-500">{"// Generated component"}</div>
-          </div>
-        </div>
-      )
-    }
-  ];
-
   return (
-    <section id="solution" className="py-20 lg:py-32 bg-zinc-50" ref={ref}>
-      <div className="landing-container">
+    <section id="solution" className="relative py-20 lg:py-32 bg-zinc-50 overflow-hidden" ref={ref}>
+      {/* Grain overlay for light section */}
+      <div className="absolute inset-0 opacity-[0.03]" 
+        style={{ 
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")` 
+        }} 
+      />
+      
+      <div className="landing-container relative z-10">
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -769,69 +679,194 @@ function SolutionSection() {
         >
           <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-zinc-900 mb-6">
             From black box to{" "}
-            <span className="italic text-orange-600">documented codebase</span>
+            <span className="italic text-zinc-500">documented codebase</span>
           </h2>
-          <p className="text-lg text-zinc-600 max-w-2xl mx-auto">
+          <p className="text-lg text-zinc-500 max-w-2xl mx-auto">
             Three steps. No guessing. No archaeology.
           </p>
         </motion.div>
 
-        {/* Steps with visual cards */}
-        <div className="grid md:grid-cols-3 gap-6 lg:gap-8 relative">
-          {/* Connecting line - animated */}
-          <motion.div 
-            className="hidden md:block absolute top-24 left-[20%] right-[20%] h-0.5 bg-zinc-200 overflow-hidden"
-            initial={{ scaleX: 0 }}
-            animate={isInView ? { scaleX: 1 } : {}}
-            transition={{ duration: 1, delay: 0.5 }}
-            style={{ transformOrigin: "left" }}
+        {/* Steps with technical animations */}
+        <div className="grid md:grid-cols-3 gap-4 lg:gap-6">
+          {/* Step 1 - Record */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5 }}
+            className="group relative"
           >
-            <motion.div 
-              className="h-full bg-gradient-to-r from-orange-500 to-orange-400"
-              initial={{ x: "-100%" }}
-              animate={isInView ? { x: "0%" } : {}}
-              transition={{ duration: 1.5, delay: 0.8 }}
-            />
-          </motion.div>
-          
-          {steps.map((step, i) => (
-            <motion.div
-              key={step.number}
-              initial={{ opacity: 0, y: 30 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: i * 0.2 }}
-              className="relative bg-white rounded-2xl border border-zinc-200 p-6 hover:shadow-xl hover:shadow-zinc-200/50 transition-all duration-300 hover:-translate-y-1 group"
-            >
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-zinc-200/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative p-6 rounded-xl bg-white border border-zinc-200 hover:border-zinc-300 transition-all duration-500 h-full">
+              {/* Corner accent */}
+              <svg className="absolute top-3 right-3 w-6 h-6 text-zinc-200 group-hover:text-zinc-400 transition-colors" viewBox="0 0 24 24">
+                <path d="M18 24V18H24" stroke="currentColor" fill="none" strokeWidth="1"/>
+              </svg>
+              
               {/* Step Number */}
-              <div className="relative z-10 w-12 h-12 mb-4 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform">
-                <span className="font-serif text-xl text-white">{step.number}</span>
+              <div className="w-8 h-8 mb-4 rounded-lg bg-zinc-900 flex items-center justify-center">
+                <span className="font-mono text-sm text-white">01</span>
               </div>
               
-              <h3 className="text-xl font-semibold text-zinc-900 mb-2">{step.title}</h3>
-              <p className="text-zinc-600 text-sm leading-relaxed mb-4">{step.body}</p>
+              <h3 className="text-lg font-medium text-zinc-900 mb-2">Record the Workflow</h3>
+              <p className="text-zinc-500 text-sm leading-relaxed mb-6">Your users already know how it works. A few minutes of screen recording replaces extensive documentation efforts.</p>
               
-              {/* Visual */}
-              {step.visual}
-            </motion.div>
-          ))}
+              {/* Technical Visual */}
+              <div className="relative w-full h-28 bg-zinc-950 rounded-lg overflow-hidden">
+                <div className="absolute inset-0 opacity-10"
+                  style={{
+                    backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+                    backgroundSize: '20px 20px'
+                  }}
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <motion.div 
+                    className="w-12 h-12 rounded-full border-2 border-white/20 flex items-center justify-center"
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <motion.div 
+                      className="w-4 h-4 rounded-full bg-white"
+                      animate={{ opacity: [1, 0.5, 1] }}
+                      transition={{ duration: 1, repeat: Infinity }}
+                    />
+                  </motion.div>
+                </div>
+                <div className="absolute bottom-2 right-2 px-2 py-1 bg-white/10 backdrop-blur text-white text-[10px] rounded font-mono flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                  REC 00:05:32
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Step 2 - Extract */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: 0.15 }}
+            className="group relative"
+          >
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-zinc-200/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative p-6 rounded-xl bg-white border border-zinc-200 hover:border-zinc-300 transition-all duration-500 h-full">
+              <svg className="absolute top-3 right-3 w-6 h-6 text-zinc-200 group-hover:text-zinc-400 transition-colors" viewBox="0 0 24 24">
+                <path d="M18 24V18H24" stroke="currentColor" fill="none" strokeWidth="1"/>
+              </svg>
+              
+              <div className="w-8 h-8 mb-4 rounded-lg bg-zinc-900 flex items-center justify-center">
+                <span className="font-mono text-sm text-white">02</span>
+              </div>
+              
+              <h3 className="text-lg font-medium text-zinc-900 mb-2">Extraction Engine Maps</h3>
+              <p className="text-zinc-500 text-sm leading-relaxed mb-6">Replay maps screens, components, and interactions from real usage — including validations and data relationships.</p>
+              
+              {/* Technical Visual - Component mapping */}
+              <div className="relative w-full h-28 bg-zinc-950 rounded-lg overflow-hidden p-3">
+                <div className="absolute inset-0 opacity-10"
+                  style={{
+                    backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+                    backgroundSize: '20px 20px'
+                  }}
+                />
+                <div className="relative flex gap-2 h-full">
+                  <motion.div 
+                    className="flex-1 rounded border border-white/20 bg-white/5"
+                    animate={{ borderColor: ['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.4)', 'rgba(255,255,255,0.2)'] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
+                  <div className="flex-1 flex flex-col gap-2">
+                    <motion.div 
+                      className="flex-1 rounded border border-white/20 bg-white/5"
+                      animate={{ borderColor: ['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.4)', 'rgba(255,255,255,0.2)'] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: 0.3 }}
+                    />
+                    <motion.div 
+                      className="flex-1 rounded border border-white/20 bg-white/5"
+                      animate={{ borderColor: ['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.4)', 'rgba(255,255,255,0.2)'] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: 0.6 }}
+                    />
+                  </div>
+                </div>
+                <div className="absolute top-1 right-1 flex gap-1">
+                  {["Nav", "Form", "Table"].map((label, i) => (
+                    <motion.span 
+                      key={label}
+                      className="px-1.5 py-0.5 bg-white/10 text-white/60 text-[9px] rounded font-mono"
+                      initial={{ opacity: 0 }}
+                      animate={isInView ? { opacity: 1 } : {}}
+                      transition={{ delay: 1 + i * 0.15 }}
+                    >
+                      {label}
+                    </motion.span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Step 3 - Export */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="group relative"
+          >
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-zinc-200/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative p-6 rounded-xl bg-white border border-zinc-200 hover:border-zinc-300 transition-all duration-500 h-full">
+              <svg className="absolute top-3 right-3 w-6 h-6 text-zinc-200 group-hover:text-zinc-400 transition-colors" viewBox="0 0 24 24">
+                <path d="M18 24V18H24" stroke="currentColor" fill="none" strokeWidth="1"/>
+              </svg>
+              
+              <div className="w-8 h-8 mb-4 rounded-lg bg-zinc-900 flex items-center justify-center">
+                <span className="font-mono text-sm text-white">03</span>
+              </div>
+              
+              <h3 className="text-lg font-medium text-zinc-900 mb-2">Export Documented Code</h3>
+              <p className="text-zinc-500 text-sm leading-relaxed mb-6">Clean React + Tailwind components. Your engineers review the output and connect to existing APIs.</p>
+              
+              {/* Code preview */}
+              <div className="relative w-full h-28 bg-zinc-950 rounded-lg p-3 font-mono text-[10px] overflow-hidden">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <div className="w-2 h-2 rounded-full bg-white/20" />
+                  <div className="w-2 h-2 rounded-full bg-white/20" />
+                  <div className="w-2 h-2 rounded-full bg-white/20" />
+                </div>
+                <motion.div 
+                  className="space-y-1 text-white/70"
+                  initial={{ opacity: 0 }}
+                  animate={isInView ? { opacity: 1 } : {}}
+                  transition={{ delay: 0.8 }}
+                >
+                  <div><span className="text-white/40">export</span> <span className="text-white/60">function</span> <span className="text-white">UserForm</span><span className="text-white/40">()</span> <span className="text-white/40">{"{"}</span></div>
+                  <div className="pl-3"><span className="text-white/40">return</span> <span className="text-white/40">(</span></div>
+                  <div className="pl-6 text-white/30">{"// Generated component"}</div>
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
         </div>
 
-        {/* Demo CTA */}
+        {/* CTAs */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.8 }}
-          className="mt-16 text-center"
+          className="mt-16 flex flex-col sm:flex-row gap-4 justify-center"
         >
-          <Button variant="orange" size="lg" asChild className="group">
-            <Link href="/tool">
-              Try it with your own workflow
+          <Button size="lg" asChild className="group bg-zinc-900 text-white hover:bg-zinc-800">
+            <Link href="/pricing">
+              Check Pricing
               <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </Button>
+          <Button size="lg" asChild className="bg-white text-zinc-900 border border-zinc-300 hover:bg-zinc-50">
+            <Link href="https://www.replay.build/tool?project=flow_1769444036799_r8hrcxyx2">
+              Explore Demo Workflow
+              <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
           </Button>
         </motion.div>
       </div>
-      </section>
+    </section>
   );
 }
 
@@ -974,14 +1009,6 @@ function AnimatedGridBackground() {
         }}
       />
       
-      {/* Animated scan line */}
-      <motion.div
-        className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"
-        initial={{ top: '-10%' }}
-        animate={{ top: '110%' }}
-        transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-      />
-      
       {/* Floating particles */}
       {[...Array(20)].map((_, i) => (
         <motion.div
@@ -1065,15 +1092,6 @@ function SecuritySection() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <motion.div 
-            className="inline-flex items-center gap-2 px-3 py-1 mb-6 rounded-full border border-white/10 bg-white/5 text-xs text-zinc-400 font-mono"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={isInView ? { opacity: 1, scale: 1 } : {}}
-            transition={{ delay: 0.2 }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            SECURITY_MODULE.ACTIVE
-          </motion.div>
           <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-white mb-6">
             Built for{" "}
             <span className="italic text-zinc-400">regulated environments</span>
@@ -1165,7 +1183,7 @@ function SecuritySection() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// FAQ SECTION
+// FAQ SECTION - Technical Dark Theme
 // ═══════════════════════════════════════════════════════════════
 
 function FAQSection() {
@@ -1201,8 +1219,45 @@ function FAQSection() {
   ];
 
   return (
-    <section className="py-20 lg:py-32 bg-zinc-900" ref={ref}>
-      <div className="landing-container max-w-3xl">
+    <section className="relative py-20 lg:py-32 bg-zinc-950 overflow-hidden" ref={ref}>
+      {/* Background */}
+      <div className="absolute inset-0">
+        {/* Grid pattern */}
+        <div className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+            backgroundSize: '60px 60px'
+          }}
+        />
+        {/* Floating particles */}
+        {[...Array(12)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-1 h-1 bg-white/15 rounded-full"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+            }}
+            animate={{
+              y: [0, -20, 0],
+              opacity: [0.15, 0.3, 0.15],
+            }}
+            transition={{
+              duration: 4 + Math.random() * 2,
+              repeat: Infinity,
+              delay: Math.random() * 2,
+            }}
+          />
+        ))}
+        {/* Grain */}
+        <div className="absolute inset-0 opacity-[0.02]" 
+          style={{ 
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")` 
+          }} 
+        />
+      </div>
+      
+      <div className="landing-container max-w-3xl relative z-10">
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -1212,52 +1267,63 @@ function FAQSection() {
         >
           <h2 className="font-serif text-4xl md:text-5xl text-white mb-6">
             Questions your team{" "}
-            <span className="italic text-orange-400">will ask</span>
+            <span className="italic text-zinc-400">will ask</span>
           </h2>
-          <p className="text-lg text-zinc-400">
+          <p className="text-lg text-zinc-500">
             Clear answers for technical evaluation.
           </p>
         </motion.div>
 
-        {/* FAQ Accordion */}
-        <div className="space-y-0">
+        {/* FAQ Grid */}
+        <div className="grid gap-3">
           {faqs.map((faq, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 20 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.4, delay: i * 0.1 }}
-              className={cn(
-                "border-b border-zinc-800 py-6",
-                openIndex === i && "border-l-2 border-l-orange-500 pl-4 -ml-4"
-              )}
+              transition={{ duration: 0.4, delay: i * 0.08 }}
+              className="group"
             >
-              <button
+              <div className={cn(
+                "relative p-5 rounded-xl border transition-all duration-300 cursor-pointer",
+                openIndex === i 
+                  ? "bg-white/[0.03] border-white/10" 
+                  : "bg-white/[0.01] border-white/[0.05] hover:bg-white/[0.02] hover:border-white/[0.08]"
+              )}
                 onClick={() => setOpenIndex(openIndex === i ? null : i)}
-                className="w-full flex items-center justify-between text-left group"
               >
-                <span className={cn(
-                  "font-medium text-lg transition-colors",
-                  openIndex === i ? "text-orange-400" : "text-white group-hover:text-orange-400"
-                )}>{faq.q}</span>
-                <ChevronDown className={cn(
-                  "w-5 h-5 transition-transform",
-                  openIndex === i ? "rotate-180 text-orange-400" : "text-zinc-500"
-                )} />
-              </button>
-              <AnimatePresence>
-                {openIndex === i && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden"
-                  >
-                    <p className="mt-4 text-zinc-400 leading-relaxed">{faq.a}</p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                {/* Corner accent */}
+                <svg className={cn(
+                  "absolute top-3 right-3 w-4 h-4 transition-colors",
+                  openIndex === i ? "text-white/20" : "text-white/5"
+                )} viewBox="0 0 16 16">
+                  <path d="M12 16V12H16" stroke="currentColor" fill="none" strokeWidth="1"/>
+                </svg>
+                
+                <button className="w-full flex items-center justify-between text-left">
+                  <span className={cn(
+                    "font-medium text-sm transition-colors pr-8",
+                    openIndex === i ? "text-white" : "text-zinc-300 group-hover:text-white"
+                  )}>{faq.q}</span>
+                  <ChevronDown className={cn(
+                    "w-4 h-4 transition-transform flex-shrink-0",
+                    openIndex === i ? "rotate-180 text-zinc-400" : "text-zinc-600"
+                  )} />
+                </button>
+                <AnimatePresence>
+                  {openIndex === i && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <p className="mt-4 text-sm text-zinc-500 leading-relaxed">{faq.a}</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </motion.div>
           ))}
         </div>
