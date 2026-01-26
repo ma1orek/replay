@@ -18194,10 +18194,9 @@ export default function App() {
                                     </div>
                                   </div>
                                   
-                                  {/* Pure component - no box, no border, just the component */}
+                                  {/* Pure component - clean minimal style like Library */}
                                   <div className={cn(
-                                    "transition-all",
-                                    isSelected && "ring-2 ring-zinc-400/60 ring-offset-2 ring-offset-zinc-950 rounded-sm",
+                                    "transition-all rounded overflow-hidden",
                                     isDragging && "opacity-80"
                                   )}>
                                     {comp.code ? (() => {
@@ -18335,44 +18334,16 @@ document.querySelectorAll('img').forEach(img=>{
                                           sandbox="allow-scripts allow-same-origin"
                                           referrerPolicy="no-referrer"
                                         />
-                                        {/* Resize handles - INSIDE relative div for correct positioning on iframe only */}
+                                        {/* Selection indicator - minimal, clean like Library */}
                                         {isSelected && (
                                           <>
-                                            {/* Selection border - subtle white */}
-                                            <div className="absolute inset-0 border border-white/40 rounded-lg pointer-events-none z-10" />
+                                            {/* Simple selection border */}
+                                            <div className="absolute inset-0 border-2 border-zinc-500 rounded pointer-events-none" />
                                             
-                                            {/* Right edge handle */}
-                                            <div
-                                              data-resize-handle="e"
-                                              className="absolute top-1/2 -right-1 -translate-y-1/2 cursor-ew-resize z-20"
-                                              onMouseDown={(e) => {
-                                                e.stopPropagation();
-                                                const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
-                                                setResizingComponent({ id, handle: 'e' });
-                                                setResizeStart({ x: e.clientX, y: e.clientY, width: iframe?.offsetWidth || 200, height: iframe?.offsetHeight || 100 });
-                                              }}
-                                            >
-                                              <div className="w-1.5 h-6 rounded-full bg-white/60 hover:bg-white/90 transition-colors" />
-                                            </div>
-                                            
-                                            {/* Bottom edge handle */}
-                                            <div
-                                              data-resize-handle="s"
-                                              className="absolute -bottom-1 left-1/2 -translate-x-1/2 cursor-ns-resize z-20"
-                                              onMouseDown={(e) => {
-                                                e.stopPropagation();
-                                                const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
-                                                setResizingComponent({ id, handle: 's' });
-                                                setResizeStart({ x: e.clientX, y: e.clientY, width: iframe?.offsetWidth || 200, height: iframe?.offsetHeight || 100 });
-                                              }}
-                                            >
-                                              <div className="w-6 h-1.5 rounded-full bg-white/60 hover:bg-white/90 transition-colors" />
-                                            </div>
-                                            
-                                            {/* Bottom-right corner handle */}
+                                            {/* Single resize handle - bottom right corner only */}
                                             <div
                                               data-resize-handle="se"
-                                              className="absolute -bottom-1 -right-1 cursor-nwse-resize z-20"
+                                              className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize z-20 flex items-center justify-center"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
@@ -18380,46 +18351,7 @@ document.querySelectorAll('img').forEach(img=>{
                                                 setResizeStart({ x: e.clientX, y: e.clientY, width: iframe?.offsetWidth || 200, height: iframe?.offsetHeight || 100 });
                                               }}
                                             >
-                                              <div className="w-2.5 h-2.5 rounded-full bg-white/70 hover:bg-white transition-colors" />
-                                            </div>
-                                            
-                                            {/* Left edge handle */}
-                                            <div
-                                              data-resize-handle="w"
-                                              className="absolute top-1/2 -left-1 -translate-y-1/2 cursor-ew-resize z-20"
-                                              onMouseDown={(e) => {
-                                                e.stopPropagation();
-                                                const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
-                                                setResizingComponent({ id, handle: 'w' });
-                                                setResizeStart({ x: e.clientX, y: e.clientY, width: iframe?.offsetWidth || 200, height: iframe?.offsetHeight || 100 });
-                                              }}
-                                            >
-                                              <div className="w-1.5 h-6 rounded-full bg-white/60 hover:bg-white/90 transition-colors" />
-                                            </div>
-                                            
-                                            {/* Top edge handle */}
-                                            <div
-                                              data-resize-handle="n"
-                                              className="absolute -top-1 left-1/2 -translate-x-1/2 cursor-ns-resize z-20"
-                                              onMouseDown={(e) => {
-                                                e.stopPropagation();
-                                                const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
-                                                setResizingComponent({ id, handle: 'n' });
-                                                setResizeStart({ x: e.clientX, y: e.clientY, width: iframe?.offsetWidth || 200, height: iframe?.offsetHeight || 100 });
-                                              }}
-                                            >
-                                              <div className="w-6 h-1.5 rounded-full bg-white/60 hover:bg-white/90 transition-colors" />
-                                            </div>
-                                            
-                                            {/* Corner handles */}
-                                            <div data-resize-handle="nw" className="absolute -top-1 -left-1 cursor-nwse-resize z-20" onMouseDown={(e) => { e.stopPropagation(); const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement; setResizingComponent({ id, handle: 'nw' }); setResizeStart({ x: e.clientX, y: e.clientY, width: iframe?.offsetWidth || 200, height: iframe?.offsetHeight || 100 }); }}>
-                                              <div className="w-2.5 h-2.5 rounded-full bg-white/70 hover:bg-white transition-colors" />
-                                            </div>
-                                            <div data-resize-handle="ne" className="absolute -top-1 -right-1 cursor-nesw-resize z-20" onMouseDown={(e) => { e.stopPropagation(); const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement; setResizingComponent({ id, handle: 'ne' }); setResizeStart({ x: e.clientX, y: e.clientY, width: iframe?.offsetWidth || 200, height: iframe?.offsetHeight || 100 }); }}>
-                                              <div className="w-2.5 h-2.5 rounded-full bg-white/70 hover:bg-white transition-colors" />
-                                            </div>
-                                            <div data-resize-handle="sw" className="absolute -bottom-1 -left-1 cursor-nesw-resize z-20" onMouseDown={(e) => { e.stopPropagation(); const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement; setResizingComponent({ id, handle: 'sw' }); setResizeStart({ x: e.clientX, y: e.clientY, width: iframe?.offsetWidth || 200, height: iframe?.offsetHeight || 100 }); }}>
-                                              <div className="w-2.5 h-2.5 rounded-full bg-white/70 hover:bg-white transition-colors" />
+                                              <div className="w-2 h-2 bg-zinc-400 rounded-sm" />
                                             </div>
                                           </>
                                         )}
