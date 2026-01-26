@@ -730,7 +730,7 @@ function fixChartReference(code: string): string {
 export async function transmuteVideoToCode(options: TransmuteOptions): Promise<TransmuteResult> {
   const { videoUrl, styleDirective, databaseContext, styleReferenceImage } = options;
   
-  console.log("[transmute] MULTI-PASS PIPELINE v2.0 - Starting...");
+  console.log("[transmute] MULTI-PASS PIPELINE v2.1 - Starting...");
   console.log("[transmute] Video URL:", videoUrl?.substring(0, 100));
   
   const apiKey = getApiKey();
@@ -749,10 +749,10 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
   };
   
   try {
-    // Fetch video from URL (with 30s timeout)
+    // Fetch video from URL (with 45s timeout for larger files)
     const videoData = await withTimeout(
       fetchVideoAsBase64(videoUrl),
-      30000,
+      45000,
       "Video fetch"
     );
     if (!videoData) {
@@ -762,61 +762,42 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
     const genAI = new GoogleGenerativeAI(apiKey);
     const startTime = Date.now();
     
+    // Calculate video size for logging
+    const videoSizeMB = (videoData.base64.length * 0.75) / (1024 * 1024); // base64 is ~33% larger
+    console.log("[transmute] Video size:", videoSizeMB.toFixed(2), "MB");
+    
     // ════════════════════════════════════════════════════════════════
     // PHASE 1: UNIFIED SCAN - Extract everything from video
-    // Max 120s to leave room for Phase 2 within Vercel's 300s limit
+    // Always use Pro model, 200s timeout for large videos up to 20MB
     // ════════════════════════════════════════════════════════════════
-    console.log("[transmute] Phase 1: Starting unified scan...");
+    console.log("[transmute] Phase 1: Starting unified scan with Pro model...");
     
-    // Try Pro first, fallback to Flash if quota exceeded
+    // 200s timeout for Phase 1 to handle large videos (up to 20MB)
+    const phase1Timeout = 200000;
+    console.log("[transmute] Phase 1 timeout:", phase1Timeout / 1000, "s");
+    
     let scanResult;
     let usedModel = "gemini-3-pro-preview";
     
-    try {
-      const scannerModel = genAI.getGenerativeModel({
-        model: "gemini-3-pro-preview",
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 16384,
-          // @ts-ignore
-          thinkingConfig: { thinkingBudget: 8192 },
-        },
-      });
-      
-      scanResult = await withTimeout(
-        scannerModel.generateContent([
-          { text: UNIFIED_SCAN_PROMPT },
-          { inlineData: { mimeType: videoData.mimeType, data: videoData.base64 } },
-        ]),
-        120000, // 120s timeout for Phase 1
-        "Phase 1 Unified Scan"
-      );
-    } catch (proError: any) {
-      // If Pro quota exceeded, fallback to Flash
-      if (proError?.message?.includes("429") || proError?.message?.includes("quota")) {
-        console.log("[transmute] Pro quota exceeded, falling back to Flash...");
-        usedModel = "gemini-3-flash-preview";
-        
-        const fallbackModel = genAI.getGenerativeModel({
-          model: "gemini-3-flash-preview",
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 16384,
-          },
-        });
-        
-        scanResult = await withTimeout(
-          fallbackModel.generateContent([
-            { text: UNIFIED_SCAN_PROMPT },
-            { inlineData: { mimeType: videoData.mimeType, data: videoData.base64 } },
-          ]),
-          120000, // 120s timeout
-          "Phase 1 Unified Scan (Flash fallback)"
-        );
-      } else {
-        throw proError;
-      }
-    }
+    // Always use Pro model
+    const scannerModel = genAI.getGenerativeModel({
+      model: "gemini-3-pro-preview",
+      generationConfig: {
+        temperature: 0.1,
+        maxOutputTokens: 16384,
+        // @ts-ignore
+        thinkingConfig: { thinkingBudget: 8192 },
+      },
+    });
+    
+    scanResult = await withTimeout(
+      scannerModel.generateContent([
+        { text: UNIFIED_SCAN_PROMPT },
+        { inlineData: { mimeType: videoData.mimeType, data: videoData.base64 } },
+      ]),
+      phase1Timeout,
+      "Phase 1 Unified Scan"
+    );
     
     console.log("[transmute] Phase 1 used model:", usedModel);
     
@@ -877,59 +858,33 @@ ${JSON.stringify(scanData, null, 2)}
 
 Generate the complete HTML file now:`;
     
-    // Try Pro first, fallback to Flash if quota exceeded
-    let assemblyResult;
-    let assemblerUsedModel = "gemini-3-pro-preview";
-    
-    // Calculate remaining time for Phase 2 (max 140s to stay within 300s Vercel limit)
+    // Calculate remaining time for Phase 2 (leave buffer for Vercel 300s limit)
     const elapsedMs = Date.now() - startTime;
-    const phase2Timeout = Math.min(140000, 280000 - elapsedMs); // Max 140s, but respect total 280s limit
+    const phase2Timeout = Math.max(60000, 280000 - elapsedMs); // At least 60s, up to remaining time
     console.log("[transmute] Phase 2 timeout:", Math.round(phase2Timeout / 1000), "s");
     
-    try {
-      const assemblerModel = genAI.getGenerativeModel({
-        model: "gemini-3-pro-preview",
-        generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 100000,
-          // @ts-ignore
-          thinkingConfig: { thinkingBudget: 16384 },
-        },
-      });
-      
-      // CRITICAL: Only send TEXT to assembler - no video!
-      assemblyResult = await withTimeout(
-        assemblerModel.generateContent([
-          { text: assemblerPrompt }
-        ]),
-        phase2Timeout,
-        "Phase 2 Code Assembly"
-      );
-    } catch (proError: any) {
-      // If Pro quota exceeded or timeout, fallback to Flash
-      if (proError?.message?.includes("429") || proError?.message?.includes("quota") || proError?.message?.includes("timed out")) {
-        console.log("[transmute] Pro quota exceeded or timeout for assembler, falling back to Flash...");
-        assemblerUsedModel = "gemini-3-flash-preview";
-        
-        const fallbackModel = genAI.getGenerativeModel({
-          model: "gemini-3-flash-preview",
-          generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 65536,
-          },
-        });
-        
-        assemblyResult = await withTimeout(
-          fallbackModel.generateContent([
-            { text: assemblerPrompt }
-          ]),
-          phase2Timeout,
-          "Phase 2 Code Assembly (Flash fallback)"
-        );
-      } else {
-        throw proError;
-      }
-    }
+    let assemblyResult;
+    const assemblerUsedModel = "gemini-3-pro-preview";
+    
+    // Always use Pro model for best quality
+    const assemblerModel = genAI.getGenerativeModel({
+      model: "gemini-3-pro-preview",
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 100000,
+        // @ts-ignore
+        thinkingConfig: { thinkingBudget: 16384 },
+      },
+    });
+    
+    // CRITICAL: Only send TEXT to assembler - no video!
+    assemblyResult = await withTimeout(
+      assemblerModel.generateContent([
+        { text: assemblerPrompt }
+      ]),
+      phase2Timeout,
+      "Phase 2 Code Assembly"
+    );
     
     console.log("[transmute] Phase 2 used model:", assemblerUsedModel);
     
