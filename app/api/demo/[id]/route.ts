@@ -18,6 +18,7 @@ const ALLOWED_IDS = new Set([
   'flow_1768474261072_uclbwqzdc',
   'flow_1768470467213_35dvc8tap',
   'flow_1767812494307_4c540djzy',
+  'flow_1769444036799_r8hrcxyx2', // Enterprise Dashboard - Showcase Demo
 ]);
 
 // GET - Fetch demo generation (no auth required)
