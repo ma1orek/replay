@@ -13986,15 +13986,15 @@ export default function GeneratedPage() {
                       </button>
                     </div>
                     
-                    {/* Toggle buttons - top right */}
-                    <div className="absolute top-4 right-4 z-20 flex items-center gap-1 bg-zinc-900/98 backdrop-blur-xl rounded-xl p-1.5 border border-zinc-700/50 shadow-2xl">
+                    {/* Toggle buttons - top right - neutral colors */}
+                    <div className="absolute top-4 right-4 z-20 flex items-center gap-1 bg-zinc-900/95 backdrop-blur-sm rounded-lg p-1 border border-zinc-800 shadow-xl">
                       {/* Possible paths toggle */}
                       <button 
                         onClick={() => setShowPossiblePaths(!showPossiblePaths)}
                         className={cn(
                           "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all",
                           showPossiblePaths 
-                            ? "bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/30" 
+                            ? "bg-zinc-700 text-white" 
                             : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                         )}
                       >
@@ -14007,7 +14007,7 @@ export default function GeneratedPage() {
                         className={cn(
                           "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all",
                           showStructureInFlow 
-                            ? "bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/30" 
+                            ? "bg-zinc-700 text-white" 
                             : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                         )}
                       >
@@ -14020,7 +14020,7 @@ export default function GeneratedPage() {
                         className={cn(
                           "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all",
                           showPreviewsInFlow 
-                            ? "bg-cyan-500/20 text-cyan-400 ring-1 ring-cyan-500/30" 
+                            ? "bg-zinc-700 text-white" 
                             : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                         )}
                       >
