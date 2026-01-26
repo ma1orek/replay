@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient, createAdminClient } from "@/lib/supabase/server";
-import { getStripe, PLAN_CREDITS } from "@/lib/stripe";
+import { getStripe, getPlanFromPriceId } from "@/lib/stripe";
 
 // Endpoint to manually sync subscription status from Stripe
 export async function POST(request: NextRequest) {
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Check ALL customers for subscriptions (user might have multiple customer IDs)
+    // Check ALL customers for subscriptions
     let activeSub: any = null;
     let activeCustomerId: string | null = null;
     const allSubscriptionsInfo: any[] = [];
@@ -69,7 +69,6 @@ export async function POST(request: NextRequest) {
           currentPeriodEnd: subData.current_period_end ? new Date(subData.current_period_end * 1000).toISOString() : null,
         });
 
-        // Found an active subscription!
         if ((sub.status === "active" || sub.status === "trialing") && !activeSub) {
           activeSub = sub;
           activeCustomerId = customer.id;
@@ -82,12 +81,15 @@ export async function POST(request: NextRequest) {
 
     if (activeSub && activeCustomerId) {
       const subData = activeSub as any;
+      
+      // Determine plan from price ID
+      const priceId = activeSub.items.data[0]?.price?.id;
+      const plan = priceId ? getPlanFromPriceId(priceId) : "pro";
 
-      // Update membership to Pro with the correct customer ID (use admin client to bypass RLS)
       const { error: membershipError } = await adminSupabase
         .from("memberships")
         .update({
-          plan: "pro",
+          plan,
           status: "active",
           stripe_customer_id: activeCustomerId,
           stripe_subscription_id: activeSub.id,
@@ -105,38 +107,10 @@ export async function POST(request: NextRequest) {
         }, { status: 500 });
       }
 
-      // Check if user already has a credit wallet with Pro credits
-      // Only update credits if this is the FIRST time syncing (wallet has free-tier credits)
-      const { data: currentWallet } = await adminSupabase
-        .from("credit_wallets")
-        .select("monthly_credits")
-        .eq("user_id", user.id)
-        .single();
-      
-      // Only upgrade credits if currently at free tier level (100 or less)
-      // This prevents abuse where users click Sync to reset their credits
-      if (currentWallet && currentWallet.monthly_credits <= 100) {
-        const { error: creditsError } = await adminSupabase
-          .from("credit_wallets")
-          .update({
-            monthly_credits: PLAN_CREDITS.pro,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("user_id", user.id);
-        
-        if (creditsError) {
-          debugInfo.creditsUpdateError = creditsError;
-        }
-        debugInfo.creditsUpgraded = true;
-      } else {
-        debugInfo.creditsUpgraded = false;
-        debugInfo.reason = "Credits already at Pro level or above";
-      }
-
       return NextResponse.json({ 
         success: true, 
-        message: "Subscription synced! You now have Pro access.",
-        plan: "pro",
+        message: `Subscription synced! You now have ${plan.charAt(0).toUpperCase() + plan.slice(1)} access.`,
+        plan,
         debug: debugInfo,
       });
     }
