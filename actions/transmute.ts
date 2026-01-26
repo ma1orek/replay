@@ -307,6 +307,18 @@ The difference between "generic Bootstrap" and "AWWWARDS nominee" is:
 5. TYPOGRAPHY HIERARCHY - bold choices, gradient text, varied weights
 
 ═══════════════════════════════════════════════════════════════════════════════
+🚫 FRAMEWORK: USE REACT ONLY! NO ALPINE.JS!
+═══════════════════════════════════════════════════════════════════════════════
+
+BANNED FRAMEWORKS/ATTRIBUTES:
+- Alpine.js (x-data, x-init, x-show, x-for, x-model, x-bind, x-on)
+- Vue.js (v-if, v-for, v-model, v-bind)
+- Angular (ng-if, ng-for, *ngIf, *ngFor)
+
+REQUIRED: Use React with useState, useEffect, onClick, onChange
+All data MUST be defined in React components using useState!
+
+═══════════════════════════════════════════════════════════════════════════════
 🚫 DO NOT INVENT APP NAMES
 ═══════════════════════════════════════════════════════════════════════════════
 
