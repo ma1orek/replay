@@ -10,11 +10,9 @@ interface MobilePreviewWithCommentsProps {
   processingProgress: number;
   processingMessage: string;
   projectName: string;
-  projectId?: string | null;
   onPublish: () => Promise<string | null>;
   publishedUrl: string | null;
   isPublishing: boolean;
-  showApproval?: boolean;
 }
 
 /**

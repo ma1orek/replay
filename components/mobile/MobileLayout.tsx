@@ -4,12 +4,9 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import MobileHeader from "./MobileHeader";
 import MobileConfigureView from "./MobileConfigureView";
-import MobilePreviewView from "./MobilePreviewView";
-import FloatingIsland from "./FloatingIsland";
 import MobileBottomNav, { MobileTab } from "./MobileBottomNav";
 import MobileProjectFeed from "./MobileProjectFeed";
 import MobileFlowTimeline from "./MobileFlowTimeline";
-import VoiceDirector from "./VoiceDirector";
 import { useAsyncGeneration } from "./useAsyncGeneration";
 import { useMobileVideoProcessor } from "./useMobileVideoProcessor";
 import { MobileLiveCollaboration } from "./MobileLiveCollaboration";
@@ -603,11 +600,9 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
                   processingProgress={processingProgress}
                   processingMessage={processingMessage}
                   projectName={projectName}
-                  projectId={loadedProjectId}
                   onPublish={handlePublish}
                   publishedUrl={publishedUrl}
                   isPublishing={isPublishing}
-                  showApproval={!!loadedProjectId && hasGenerated}
                 />
               </MobileLiveCollaboration>
             )}
@@ -623,36 +618,15 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
               processingProgress={100}
               processingMessage=""
               projectName={projectName}
-              projectId={loadedProjectId}
               onPublish={handlePublish}
               publishedUrl={publishedUrl}
               isPublishing={isPublishing}
-              showApproval={true}
             />
           </MobileLiveCollaboration>
         )}
       </div>
       
-      {/* Legacy Floating Island for configure/preview toggle within capture tab */}
-      {mainTab === "capture" && hasGenerated && !isProcessing && (
-        <div className="absolute bottom-24 left-0 right-0 flex justify-center pointer-events-none z-30">
-          <FloatingIsland
-            activeTab={activeTab}
-            onChange={setActiveTab}
-            disabled={isProcessing}
-          />
-        </div>
-      )}
-      
-      {/* Voice Director FAB - only show when viewing a project */}
-      {(mainTab === "capture" || mainTab === "mirror") && hasGenerated && !isProcessing && (
-        <VoiceDirector
-          projectId={loadedProjectId}
-          disabled={isProcessing}
-        />
-      )}
-      
-      {/* Bottom Navigation */}
+      {/* Bottom Navigation - clean, no overlapping elements */}
       <MobileBottomNav
         activeTab={mainTab}
         onChange={handleMainTabChange}

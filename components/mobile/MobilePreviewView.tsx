@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Share2, Check, ExternalLink, Smartphone, Monitor, ArrowRight, X, Code, Sparkles, Map, Palette, Rocket, Maximize2 } from "lucide-react";
+import { Share2, Check, ExternalLink, Maximize2 } from "lucide-react";
 import MobileMirrorMode from "./MobileMirrorMode";
-import ApprovalButton from "./ApprovalButton";
 
 // Loading messages - same as desktop
 const STREAMING_MESSAGES = [
@@ -26,7 +25,7 @@ const GENERATION_TIPS = [
 
 interface MobilePreviewViewProps {
   previewUrl: string | null;
-  previewCode?: string | null; // Raw HTML code for srcdoc
+  previewCode?: string | null;
   isProcessing: boolean;
   processingProgress: number;
   processingMessage: string;
@@ -48,7 +47,6 @@ interface MobilePreviewViewProps {
   }>;
   userName?: string;
   userAvatar?: string;
-  showApproval?: boolean;
 }
 
 export default function MobilePreviewView({
@@ -59,7 +57,6 @@ export default function MobilePreviewView({
   processingMessage,
   onShare,
   projectName,
-  projectId,
   onPublish,
   publishedUrl,
   isPublishing = false,
@@ -67,7 +64,6 @@ export default function MobilePreviewView({
   comments = [],
   userName = "You",
   userAvatar,
-  showApproval = false,
 }: MobilePreviewViewProps) {
   const [showShareModal, setShowShareModal] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -78,49 +74,6 @@ export default function MobilePreviewView({
   const [hasShownInitialModal, setHasShownInitialModal] = useState(false);
   const [showShareHint, setShowShareHint] = useState(false);
   const [showMirrorMode, setShowMirrorMode] = useState(false);
-  const [approvalStatus, setApprovalStatus] = useState<"pending" | "approved" | "changes_requested">("pending");
-
-  // Handle project approval
-  const handleApprove = async (comment?: string) => {
-    if (!projectId) return;
-    
-    const response = await fetch("/api/projects/approve", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        projectId,
-        action: "approve",
-        comment,
-      }),
-    });
-    
-    if (response.ok) {
-      setApprovalStatus("approved");
-    } else {
-      throw new Error("Failed to approve");
-    }
-  };
-
-  // Handle request changes
-  const handleRequestChanges = async (comment: string) => {
-    if (!projectId) return;
-    
-    const response = await fetch("/api/projects/approve", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        projectId,
-        action: "request_changes",
-        comment,
-      }),
-    });
-    
-    if (response.ok) {
-      setApprovalStatus("changes_requested");
-    } else {
-      throw new Error("Failed to request changes");
-    }
-  };
   
   // Auto-show modal after generation completes (first time only)
   useEffect(() => {
@@ -302,170 +255,100 @@ export default function MobilePreviewView({
     );
   }
 
-  // Preview state - fullscreen iframe
-  // Use blob URL (src) like desktop - works better on mobile Safari than srcdoc
+  // Preview state - clean fullscreen iframe with minimal UI
   return (
-    <div className="flex-1 relative bg-white w-full h-full min-h-0">
-      {/* Fullscreen iframe - use src with blob URL (same as desktop) */}
-      {previewUrl ? (
-        <iframe
-          key={previewUrl}
-          src={previewUrl}
-          className="absolute inset-0 w-full h-full border-0 bg-white"
-          style={{ backgroundColor: 'white' }}
-          title="Preview"
-          sandbox="allow-scripts allow-same-origin"
-        />
-      ) : previewCode ? (
-        <iframe
-          key={`code-${previewCode.length}`}
-          srcDoc={previewCode}
-          className="absolute inset-0 w-full h-full border-0 bg-white"
-          style={{ backgroundColor: 'white' }}
-          title="Preview"
-          sandbox="allow-scripts allow-same-origin"
-        />
-      ) : null}
+    <div className="flex-1 relative bg-[#111] w-full h-full min-h-0 flex flex-col">
+      {/* Preview iframe */}
+      <div className="flex-1 relative overflow-hidden rounded-t-xl m-2 mb-0 bg-white">
+        {previewUrl ? (
+          <iframe
+            key={previewUrl}
+            src={previewUrl}
+            className="absolute inset-0 w-full h-full border-0"
+            title="Preview"
+            sandbox="allow-scripts allow-same-origin"
+          />
+        ) : previewCode ? (
+          <iframe
+            key={`code-${previewCode.length}`}
+            srcDoc={previewCode}
+            className="absolute inset-0 w-full h-full border-0"
+            title="Preview"
+            sandbox="allow-scripts allow-same-origin"
+          />
+        ) : null}
+      </div>
       
-      {/* Floating action buttons */}
-      <div className="absolute top-4 right-4 flex flex-col gap-3 z-10">
-        {/* Mirror Mode button */}
+      {/* Bottom action bar - clean dark style like desktop */}
+      <div className="bg-[#111] border-t border-zinc-800 px-4 py-3 flex items-center justify-between">
+        {/* Left: Mirror mode */}
         <button
           onClick={() => setShowMirrorMode(true)}
-          className="w-14 h-14 rounded-full bg-black/80 backdrop-blur-xl flex items-center justify-center shadow-xl border border-white/10"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors"
         >
-          <Maximize2 className="w-6 h-6 text-white" />
+          <Maximize2 className="w-4 h-4 text-zinc-400" />
+          <span className="text-sm text-zinc-300">Fullscreen</span>
         </button>
         
-        {/* Share button */}
+        {/* Right: Share */}
         <button
           onClick={handleShare}
-          className="w-14 h-14 rounded-full bg-gradient-to-br from-[#FF6E3C] to-[#FF8F5C] flex items-center justify-center shadow-xl animate-pulse-slow"
-          style={{ animationDuration: '2s' }}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#FF6E3C] hover:bg-[#FF8F5C] transition-colors"
         >
-          <Share2 className="w-6 h-6 text-white" />
+          <Share2 className="w-4 h-4 text-white" />
+          <span className="text-sm font-medium text-white">Share</span>
         </button>
       </div>
       
-      {/* Tooltip hint - shows for 5 seconds after modal closes */}
-      {showShareHint && !showShareModal && (
-        <div className="absolute top-20 right-4 bg-black/90 backdrop-blur-xl rounded-xl px-3 py-2 text-xs text-white/80 z-10 shadow-lg border border-white/10 animate-bounce-subtle">
-          <div className="absolute -top-2 right-5 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[8px] border-b-black/90" />
-          Tap to share ✨
-        </div>
-      )}
-      
-      {/* Share Modal */}
+      {/* Share Modal - simplified dark design */}
       {showShareModal && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/80"
           onClick={() => setShowShareModal(false)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-md bg-[#0a0a0a] rounded-t-3xl border-t border-white/10 p-6 pb-10"
+            className="w-full bg-[#1a1a1a] rounded-t-2xl border-t border-zinc-800 p-5 pb-8"
           >
+            <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mb-5" />
+            
+            <h3 className="text-lg font-semibold text-white mb-2 text-center">
+              Share Project
+            </h3>
+            <p className="text-zinc-500 text-sm mb-5 text-center">
+              Open on desktop for full editing capabilities
+            </p>
+            
             <button
-              onClick={() => setShowShareModal(false)}
-              className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 transition-colors"
+              onClick={handleCopyLink}
+              disabled={isPublishing}
+              className="w-full py-3.5 bg-[#FF6E3C] hover:bg-[#FF8F5C] rounded-xl text-white font-medium flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
             >
-              <X className="w-5 h-5 text-white/60" />
+              {isPublishing ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Publishing...
+                </>
+              ) : copied ? (
+                <>
+                  <Check className="w-4 h-4" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <ExternalLink className="w-4 h-4" />
+                  {publishedUrl ? "Copy Link" : "Publish & Copy"}
+                </>
+              )}
             </button>
             
-            {/* Icon */}
-            <div className="flex items-center justify-center gap-4 mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center">
-                <Smartphone className="w-7 h-7 text-[#FF6E3C]" />
-              </div>
-              <ArrowRight className="w-6 h-6 text-white/30" />
-              <div className="w-14 h-14 rounded-2xl bg-[#FF6E3C]/20 flex items-center justify-center">
-                <Monitor className="w-7 h-7 text-[#FF6E3C]" />
-              </div>
-            </div>
-            
-            <div className="mb-6">
-              <h3 className="text-xl font-bold text-white mb-4 text-center flex items-center justify-center gap-2">
-                Project Synced! <Rocket className="w-5 h-5 text-[#FF6E3C]" />
-              </h3>
-              <p className="text-white/60 text-sm mb-4 text-center">
-                Unlock Full Power on Desktop:
-              </p>
-              <div className="space-y-2.5 text-sm">
-                <div className="flex items-center gap-3 text-white/80">
-                  <div className="w-6 h-6 rounded-lg bg-[#FF6E3C]/20 flex items-center justify-center flex-shrink-0">
-                    <Code className="w-3.5 h-3.5 text-[#FF6E3C]" />
-                  </div>
-                  <span>Full production-ready code</span>
-                </div>
-                <div className="flex items-center gap-3 text-white/80">
-                  <div className="w-6 h-6 rounded-lg bg-[#FF6E3C]/20 flex items-center justify-center flex-shrink-0">
-                    <Sparkles className="w-3.5 h-3.5 text-[#FF6E3C]" />
-                  </div>
-                  <span>Edit with AI (Chat & Refine)</span>
-                </div>
-                <div className="flex items-center gap-3 text-white/80">
-                  <div className="w-6 h-6 rounded-lg bg-[#FF6E3C]/20 flex items-center justify-center flex-shrink-0">
-                    <Map className="w-3.5 h-3.5 text-[#FF6E3C]" />
-                  </div>
-                  <span>Visual Flow Map</span>
-                </div>
-                <div className="flex items-center gap-3 text-white/80">
-                  <div className="w-6 h-6 rounded-lg bg-[#FF6E3C]/20 flex items-center justify-center flex-shrink-0">
-                    <Palette className="w-3.5 h-3.5 text-[#FF6E3C]" />
-                  </div>
-                  <span>Design System & Export</span>
-                </div>
-              </div>
-              <p className="text-white/40 text-xs mt-4 text-center">
-                Everything is synced & ready on <span className="text-[#FF6E3C]">replay.build</span>
-              </p>
-            </div>
-            
-            {/* Actions */}
-            <div className="space-y-3">
-              <button
-                onClick={handleCopyLink}
-                disabled={isPublishing}
-                className="w-full py-4 bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] rounded-xl text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {isPublishing ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Publishing...
-                  </>
-                ) : copied ? (
-                  <>
-                    <Check className="w-5 h-5" />
-                    Link Copied!
-                  </>
-                ) : (
-                  <>
-                    <ExternalLink className="w-5 h-5" />
-                    {publishedUrl ? "Copy Share Link" : "Publish & Copy Link"}
-                  </>
-                )}
-              </button>
-              
-              <button
-                onClick={() => setShowShareModal(false)}
-                className="w-full py-3 text-white/50 text-sm"
-              >
-                Continue on Mobile
-              </button>
-            </div>
+            <button
+              onClick={() => setShowShareModal(false)}
+              className="w-full py-3 text-zinc-500 text-sm mt-2"
+            >
+              Cancel
+            </button>
           </div>
-        </div>
-      )}
-
-      {/* Approval button - fixed at bottom */}
-      {showApproval && projectId && !isProcessing && (
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/70 to-transparent pt-16 z-10">
-          <ApprovalButton
-            projectId={projectId}
-            currentStatus={approvalStatus}
-            onApprove={handleApprove}
-            onRequestChanges={handleRequestChanges}
-          />
         </div>
       )}
     </div>
