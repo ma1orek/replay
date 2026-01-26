@@ -3168,23 +3168,46 @@ function ReplayToolContent() {
     setBlueprintsOffset({ x: 0, y: 0 });
   }, [libraryData?.components]);
 
-  // Initialize positions when library data changes - always auto-layout on new components
+  // Track if blueprint positions have been loaded from localStorage
+  const [blueprintLayoutLoaded, setBlueprintLayoutLoaded] = useState(false);
+  
+  // Initialize positions when library data changes - only auto-layout for genuinely new components
   useEffect(() => {
     if (libraryData?.components && libraryData.components.length > 0) {
-      // Get component IDs from library
-      const componentIds = libraryData.components.map((c: any) => `comp-${c.id}`);
-      const existingPositionIds = Object.keys(blueprintPositions);
+      // Wait for positions to potentially load from localStorage first
+      const timeoutId = setTimeout(() => {
+        // Get component IDs from library
+        const componentIds = libraryData.components.map((c: any) => `comp-${c.id}`);
+        const existingPositionIds = Object.keys(blueprintPositions);
+        
+        // Only auto-layout for NEW components that don't have positions
+        const newComponentsWithoutPositions = componentIds.filter((id: string) => !existingPositionIds.includes(id));
+        
+        if (newComponentsWithoutPositions.length > 0 && existingPositionIds.length === 0) {
+          // No saved positions at all - do full auto-layout
+          autoLayoutBlueprints();
+        } else if (newComponentsWithoutPositions.length > 0) {
+          // Some components have positions, only position new ones
+          const lastPos = existingPositionIds.reduce((max, id) => {
+            const pos = blueprintPositions[id];
+            return pos && pos.y > max.y ? pos : max;
+          }, { x: 50, y: 0 });
+          
+          let offsetY = lastPos.y + 300; // Place below existing components
+          newComponentsWithoutPositions.forEach((id: string) => {
+            setBlueprintPositions(prev => ({
+              ...prev,
+              [id]: { x: 50, y: offsetY }
+            }));
+            offsetY += 300;
+          });
+        }
+        setBlueprintLayoutLoaded(true);
+      }, 200); // Wait for localStorage load
       
-      // Auto-layout if: no positions yet, OR new components were added
-      const hasNewComponents = componentIds.some((id: string) => !existingPositionIds.includes(id));
-      const positionsExist = existingPositionIds.length > 0;
-      
-      if (!positionsExist || hasNewComponents) {
-        // Small delay to ensure state is ready
-        setTimeout(() => autoLayoutBlueprints(), 50);
-      }
+      return () => clearTimeout(timeoutId);
     }
-  }, [libraryData?.components?.length, libraryData?.components, autoLayoutBlueprints]);
+  }, [libraryData?.components?.length, libraryData?.components, autoLayoutBlueprints, blueprintPositions]);
   
   // Handle resize messages from blueprint iframes for "hug contents" behavior
   useEffect(() => {
@@ -4609,6 +4632,60 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
       console.error("Error saving style info:", e);
     }
   }, [styleInfo, hasLoadedFromStorage]);
+  
+  // Save blueprint positions to localStorage (per-project)
+  useEffect(() => {
+    if (!hasLoadedFromStorage || !activeGeneration?.id) return;
+    if (Object.keys(blueprintPositions).length === 0) return;
+    try {
+      const key = `replay_blueprint_positions_${activeGeneration.id}`;
+      localStorage.setItem(key, JSON.stringify(blueprintPositions));
+    } catch (e) {
+      console.error("Error saving blueprint positions:", e);
+    }
+  }, [blueprintPositions, hasLoadedFromStorage, activeGeneration?.id]);
+  
+  // Save blueprint sizes to localStorage (per-project)
+  useEffect(() => {
+    if (!hasLoadedFromStorage || !activeGeneration?.id) return;
+    if (Object.keys(blueprintSizes).length === 0) return;
+    try {
+      const key = `replay_blueprint_sizes_${activeGeneration.id}`;
+      localStorage.setItem(key, JSON.stringify(blueprintSizes));
+    } catch (e) {
+      console.error("Error saving blueprint sizes:", e);
+    }
+  }, [blueprintSizes, hasLoadedFromStorage, activeGeneration?.id]);
+  
+  // Load blueprint positions and sizes when project changes
+  useEffect(() => {
+    if (!activeGeneration?.id) return;
+    try {
+      const posKey = `replay_blueprint_positions_${activeGeneration.id}`;
+      const sizeKey = `replay_blueprint_sizes_${activeGeneration.id}`;
+      
+      const savedPositions = localStorage.getItem(posKey);
+      const savedSizes = localStorage.getItem(sizeKey);
+      
+      if (savedPositions) {
+        const parsed = JSON.parse(savedPositions);
+        if (Object.keys(parsed).length > 0) {
+          console.log("[Blueprint] Loaded positions for project:", activeGeneration.id);
+          setBlueprintPositions(parsed);
+        }
+      }
+      
+      if (savedSizes) {
+        const parsed = JSON.parse(savedSizes);
+        if (Object.keys(parsed).length > 0) {
+          console.log("[Blueprint] Loaded sizes for project:", activeGeneration.id);
+          setBlueprintSizes(parsed);
+        }
+      }
+    } catch (e) {
+      console.error("Error loading blueprint layout:", e);
+    }
+  }, [activeGeneration?.id]);
   
   // Save generation history - PRIMARY: Supabase, SECONDARY: minimal localStorage cache
   const lastSavedGenerationsRef = useRef<string>("");
