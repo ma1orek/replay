@@ -959,8 +959,67 @@ function ROICalculatorSection() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SECURITY SECTION
+// SECURITY SECTION - Technical Animated Version
 // ═══════════════════════════════════════════════════════════════
+
+// Animated Grid Background
+function AnimatedGridBackground() {
+  return (
+    <div className="absolute inset-0 overflow-hidden">
+      {/* Grid pattern */}
+      <div className="absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+          backgroundSize: '60px 60px'
+        }}
+      />
+      
+      {/* Animated scan line */}
+      <motion.div
+        className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"
+        initial={{ top: '-10%' }}
+        animate={{ top: '110%' }}
+        transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+      />
+      
+      {/* Floating particles */}
+      {[...Array(20)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-1 h-1 bg-white/20 rounded-full"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+          }}
+          animate={{
+            y: [0, -30, 0],
+            opacity: [0.2, 0.5, 0.2],
+          }}
+          transition={{
+            duration: 3 + Math.random() * 2,
+            repeat: Infinity,
+            delay: Math.random() * 2,
+          }}
+        />
+      ))}
+      
+      {/* Corner brackets */}
+      <svg className="absolute top-8 left-8 w-16 h-16 text-white/10" viewBox="0 0 64 64">
+        <path d="M0 20V0h20M44 0h20v20" stroke="currentColor" fill="none" strokeWidth="1"/>
+      </svg>
+      <svg className="absolute bottom-8 right-8 w-16 h-16 text-white/10" viewBox="0 0 64 64">
+        <path d="M0 44v20h20M44 64h20V44" stroke="currentColor" fill="none" strokeWidth="1"/>
+      </svg>
+      
+      {/* Grain overlay */}
+      <div className="absolute inset-0 opacity-[0.015]" 
+        style={{ 
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")` 
+        }} 
+      />
+    </div>
+  );
+}
 
 function SecuritySection() {
   const ref = useRef(null);
@@ -994,8 +1053,11 @@ function SecuritySection() {
   ];
 
   return (
-    <section id="security" className="py-20 lg:py-32 bg-zinc-900 text-white" ref={ref}>
-      <div className="landing-container">
+    <section id="security" className="relative py-20 lg:py-32 bg-zinc-950 text-white overflow-hidden" ref={ref}>
+      {/* Animated Background */}
+      <AnimatedGridBackground />
+      
+      <div className="landing-container relative z-10">
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -1003,42 +1065,74 @@ function SecuritySection() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
+          <motion.div 
+            className="inline-flex items-center gap-2 px-3 py-1 mb-6 rounded-full border border-white/10 bg-white/5 text-xs text-zinc-400 font-mono"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={isInView ? { opacity: 1, scale: 1 } : {}}
+            transition={{ delay: 0.2 }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            SECURITY_MODULE.ACTIVE
+          </motion.div>
           <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-white mb-6">
             Built for{" "}
-            <span className="italic text-orange-400">regulated environments</span>
+            <span className="italic text-zinc-400">regulated environments</span>
           </h2>
-          <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
+          <p className="text-lg text-zinc-500 max-w-2xl mx-auto">
             Your recordings, your control.
           </p>
         </motion.div>
 
         {/* Features Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
           {features.map((feature, i) => (
             <motion.div
               key={feature.title}
               initial={{ opacity: 0, y: 30 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/[0.07] transition-colors"
+              className="group relative"
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center">
-                  <feature.icon className="w-6 h-6 text-orange-400" />
+              {/* Animated border */}
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              
+              <div className="relative p-6 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-white/10 transition-all duration-500 hover:bg-white/[0.04] h-full">
+                {/* Scan line on hover */}
+                <motion.div
+                  className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 group-hover:opacity-100"
+                  initial={{ scaleX: 0 }}
+                  whileHover={{ scaleX: 1 }}
+                  transition={{ duration: 0.5 }}
+                />
+                
+                <div className="flex items-start justify-between mb-4">
+                  <motion.div 
+                    className="w-10 h-10 rounded-lg bg-white/[0.03] border border-white/[0.08] flex items-center justify-center"
+                    whileHover={{ scale: 1.05, borderColor: 'rgba(255,255,255,0.2)' }}
+                  >
+                    <feature.icon className="w-5 h-5 text-zinc-400 group-hover:text-white transition-colors duration-300" />
+                  </motion.div>
+                  {feature.badge && (
+                    <span className={cn(
+                      "px-2 py-0.5 text-[10px] font-mono tracking-wider rounded border",
+                      feature.badge === "BETA" && "border-zinc-700 text-zinc-500",
+                      feature.badge === "ENTERPRISE" && "border-zinc-700 text-zinc-500",
+                      feature.badge === "IN PROGRESS" && "border-zinc-700 text-zinc-500"
+                    )}>
+                      {feature.badge}
+                    </span>
+                  )}
                 </div>
-                {feature.badge && (
-                  <span className={cn(
-                    "px-2 py-1 text-xs font-medium rounded-full",
-                    feature.badge === "BETA" && "bg-blue-500/20 text-blue-400",
-                    feature.badge === "ENTERPRISE" && "bg-purple-500/20 text-purple-400",
-                    feature.badge === "IN PROGRESS" && "bg-orange-500/20 text-orange-400"
-                  )}>
-                    {feature.badge}
-                  </span>
-                )}
+                <h3 className="text-sm font-medium text-white mb-2 group-hover:text-white transition-colors">{feature.title}</h3>
+                <p className="text-xs text-zinc-500 leading-relaxed group-hover:text-zinc-400 transition-colors">{feature.body}</p>
+                
+                {/* Corner accent */}
+                <div className="absolute bottom-2 right-2 w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <svg viewBox="0 0 16 16" className="w-full h-full text-white/10">
+                    <path d="M12 16V12H16" stroke="currentColor" fill="none" strokeWidth="1"/>
+                  </svg>
+                </div>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">{feature.title}</h3>
-              <p className="text-sm text-zinc-400 leading-relaxed">{feature.body}</p>
             </motion.div>
           ))}
         </div>
@@ -1050,9 +1144,20 @@ function SecuritySection() {
           transition={{ delay: 0.6 }}
           className="mt-12 text-center"
         >
-          <p className="text-sm text-zinc-500">
-            SOC 2 Type II certification in progress • GDPR compliant practices • HIPAA-ready deployment available
-          </p>
+          <div className="inline-flex items-center gap-6 text-xs text-zinc-600 font-mono">
+            <span className="flex items-center gap-2">
+              <span className="w-1 h-1 rounded-full bg-zinc-600" />
+              SOC 2 Type II
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="w-1 h-1 rounded-full bg-zinc-600" />
+              GDPR
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="w-1 h-1 rounded-full bg-zinc-600" />
+              HIPAA-ready
+            </span>
+          </div>
         </motion.div>
       </div>
     </section>
@@ -1167,9 +1272,26 @@ function FAQSection() {
 
 function FooterSection() {
   return (
-    <section className="bg-zinc-900">
+    <section className="relative bg-zinc-950 overflow-hidden">
+      {/* Animated Background for dark sections */}
+      <div className="absolute inset-0">
+        {/* Grid pattern */}
+        <div className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+            backgroundSize: '80px 80px'
+          }}
+        />
+        {/* Grain */}
+        <div className="absolute inset-0 opacity-[0.02]" 
+          style={{ 
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")` 
+          }} 
+        />
+      </div>
+      
       {/* CTA */}
-      <div className="py-24 lg:py-32 border-t border-zinc-800">
+      <div className="relative z-10 py-24 lg:py-32 border-t border-zinc-800/50">
         <div className="landing-container text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -1179,9 +1301,9 @@ function FooterSection() {
           >
             <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-white mb-6">
               See Replay extract from{" "}
-              <span className="italic text-orange-400">your legacy screen</span>
+              <span className="italic text-zinc-400">your legacy screen</span>
             </h2>
-            <p className="text-lg text-zinc-400 max-w-2xl mx-auto mb-10">
+            <p className="text-lg text-zinc-500 max-w-2xl mx-auto mb-10">
               One recording. One call. Real output to evaluate.
             </p>
             
@@ -1241,7 +1363,14 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="landing-page min-h-screen">
+    <div className="landing-page min-h-screen relative">
+      {/* Global grain overlay */}
+      <div 
+        className="fixed inset-0 pointer-events-none z-[100] opacity-[0.02]" 
+        style={{ 
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")` 
+        }} 
+      />
       <Header />
       <main>
         <HeroSection />
