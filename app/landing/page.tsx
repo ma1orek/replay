@@ -177,7 +177,7 @@ function Header() {
                 <Button variant="ghost" size="sm" asChild>
                   <Link href="/login">Sign in</Link>
                 </Button>
-                <Button variant="orange" size="sm" asChild>
+                <Button size="sm" asChild className="bg-zinc-900 text-white hover:bg-zinc-800">
                   <Link href="/contact">Book a Demo</Link>
                 </Button>
               </>
@@ -234,7 +234,7 @@ function Header() {
                       <Button variant="dark-outline" asChild className="w-full">
                         <Link href="/login">Sign in</Link>
                       </Button>
-                      <Button variant="orange" asChild className="w-full">
+                      <Button asChild className="w-full bg-zinc-900 text-white hover:bg-zinc-800">
                         <Link href="/contact">Book a Demo</Link>
                       </Button>
                     </>
@@ -329,13 +329,13 @@ function HeroSection() {
 
             {/* CTAs */}
             <div className="mt-12 flex flex-col sm:flex-row gap-4">
-              <Button variant="orange" size="xl" asChild className="group">
+              <Button size="xl" asChild className="group bg-zinc-900 text-white border border-zinc-900 hover:bg-zinc-800 shadow-sm">
                 <Link href="/contact">
                   Book a pilot
                   <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </Button>
-              <Button size="xl" asChild className="bg-zinc-900 text-white border border-zinc-900 hover:bg-zinc-800 shadow-sm">
+              <Button size="xl" asChild className="bg-white text-zinc-900 border border-zinc-300 hover:bg-zinc-50 shadow-sm">
                 <Link href="https://www.replay.build/tool?project=flow_1769444036799_r8hrcxyx2">
                   Explore Live Sandbox
                   <ArrowRight className="ml-2 w-5 h-5" />
@@ -1186,7 +1186,7 @@ function FooterSection() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="orange" size="xl" asChild className="group">
+              <Button size="xl" asChild className="group bg-white text-zinc-900 border border-zinc-700 hover:bg-zinc-100">
                 <Link href="/contact">
                   Book a Demo
                   <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
