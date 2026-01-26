@@ -64,12 +64,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create credit wallet with 100 free credits
+    // Create credit wallet with 0 credits (Sandbox tier - must upgrade to Pro for credits)
     const { data: newWallet, error: walletError } = await adminClient
       .from("credit_wallets")
       .insert({
         user_id: user.id,
-        monthly_credits: 100,
+        monthly_credits: 0,
         rollover_credits: 0,
         topup_credits: 0
       })
@@ -84,25 +84,25 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    // Add ledger entry
+    // Add ledger entry for wallet initialization (0 credits - Sandbox tier)
     await adminClient
       .from("credit_ledger")
       .insert({
         user_id: user.id,
         type: "credit",
         bucket: "monthly",
-        amount: 100,
-        reason: "signup_bonus",
+        amount: 0,
+        reason: "sandbox_signup",
         reference_id: "initial_grant_manual"
       });
 
-    console.log(`Created wallet with 100 credits for user ${user.email}`);
+    console.log(`Created wallet with 0 credits (Sandbox) for user ${user.email}`);
 
     return NextResponse.json({ 
       success: true, 
-      message: "Wallet created with 100 free credits",
+      message: "Wallet created (Sandbox - 0 credits). Upgrade to Pro for credits.",
       wallet: newWallet,
-      totalCredits: 100
+      totalCredits: 0
     });
 
   } catch (error: any) {

@@ -151,6 +151,57 @@ function Header() {
 
 export default function PricingPage() {
   const DEMO_PROJECT_URL = "https://www.replay.build/tool?project=flow_1769444036799_r8hrcxyx2";
+  const { user } = useAuth();
+  const [loadingPlan, setLoadingPlan] = React.useState<string | null>(null);
+  
+  const handlePlanClick = async (plan: string, href: string) => {
+    // Sandbox goes directly to demo
+    if (plan === "Sandbox") {
+      window.location.href = href;
+      return;
+    }
+    
+    // Enterprise goes to contact
+    if (plan === "Enterprise") {
+      window.location.href = href;
+      return;
+    }
+    
+    // Pro/Agency - check if logged in
+    if (!user) {
+      // Not logged in, go to login with plan param
+      window.location.href = href;
+      return;
+    }
+    
+    // Logged in - go directly to Stripe checkout
+    setLoadingPlan(plan);
+    try {
+      const response = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          type: "subscription", 
+          plan: plan.toLowerCase(), 
+          interval: "monthly" 
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        console.error("Checkout error:", data.error);
+        alert("Error creating checkout session. Please try again.");
+      }
+    } catch (error) {
+      console.error("Checkout error:", error);
+      alert("Error creating checkout session. Please try again.");
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
   
   const plans = [
     {
@@ -341,13 +392,24 @@ export default function PricingPage() {
                     plan.popular && "bg-orange-500 hover:bg-orange-600 text-white"
                   )}
                   size="lg"
-                  asChild
+                  onClick={() => handlePlanClick(plan.name, plan.href)}
+                  disabled={loadingPlan === plan.name}
                 >
-                  <Link href={plan.href}>
-                    {plan.cta}
-                    {plan.name !== "Enterprise" && plan.name !== "Sandbox" && <ArrowRight className="ml-2 w-4 h-4" />}
-                    {plan.name === "Enterprise" && <PhoneCall className="ml-2 w-4 h-4" />}
-                  </Link>
+                  {loadingPlan === plan.name ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Processing...
+                    </span>
+                  ) : (
+                    <>
+                      {plan.cta}
+                      {plan.name !== "Enterprise" && plan.name !== "Sandbox" && <ArrowRight className="ml-2 w-4 h-4" />}
+                      {plan.name === "Enterprise" && <PhoneCall className="ml-2 w-4 h-4" />}
+                    </>
+                  )}
                 </Button>
               </motion.div>
             ))}

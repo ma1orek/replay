@@ -1,19 +1,21 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import { motion } from "framer-motion";
 import { Mail, Loader2, ArrowLeft, Eye, EyeOff, Lock } from "lucide-react";
 import { DitheringShader } from "@/components/ui/dithering-shader";
 import { useAuth } from "@/lib/auth/context";
 import Logo from "@/components/Logo";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type AuthMode = "select" | "email-otp" | "email-password" | "otp-verify" | "otp-verify-register" | "register";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
-  const { signInWithGoogle, signInWithGitHub, signInWithEmail, signInWithPassword, signUpWithPassword, verifyOtp } = useAuth();
+  const searchParams = useSearchParams();
+  const planFromUrl = searchParams.get("plan"); // pro, agency
+  const { user, signInWithGoogle, signInWithGitHub, signInWithEmail, signInWithPassword, signUpWithPassword, verifyOtp } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -38,8 +40,61 @@ export default function LoginPage() {
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
 
-  const handleAuthSuccess = () => {
-    router.push("/tool");
+  // If user is already logged in and there's a plan in URL, redirect to checkout
+  useEffect(() => {
+    if (user && planFromUrl) {
+      // User is logged in, redirect to checkout
+      redirectToCheckout(planFromUrl);
+    } else if (user && !planFromUrl) {
+      // User is logged in but no plan, just go to tool
+      router.push("/tool");
+    }
+  }, [user, planFromUrl, router]);
+
+  // Store plan in localStorage for after login redirect
+  useEffect(() => {
+    if (planFromUrl) {
+      localStorage.setItem("replay_pending_plan", planFromUrl);
+    }
+  }, [planFromUrl]);
+
+  const redirectToCheckout = async (plan: string) => {
+    try {
+      const response = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          type: "subscription", 
+          plan: plan, 
+          interval: "monthly" 
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.url) {
+        localStorage.removeItem("replay_pending_plan");
+        window.location.href = data.url;
+      } else {
+        console.error("Checkout error:", data.error);
+        router.push("/tool");
+      }
+    } catch (error) {
+      console.error("Checkout error:", error);
+      router.push("/tool");
+    }
+  };
+
+  const handleAuthSuccess = async () => {
+    // Check if there's a pending plan to checkout
+    const pendingPlan = localStorage.getItem("replay_pending_plan") || planFromUrl;
+    
+    if (pendingPlan && (pendingPlan === "pro" || pendingPlan === "agency")) {
+      // Redirect to Stripe checkout
+      await redirectToCheckout(pendingPlan);
+    } else {
+      router.push("/tool");
+    }
   };
 
   const handleGoogleSignIn = async () => {
@@ -627,5 +682,17 @@ export default function LoginPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#111111] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-zinc-500" />
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }
