@@ -5576,7 +5576,19 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
     
     const addNode = async (node: ProductFlowNode) => {
       await new Promise(r => setTimeout(r, 30));
-      setFlowNodes(prev => [...prev, node]);
+      // Prevent duplicates - check by id AND name (normalized)
+      setFlowNodes(prev => {
+        const normalizedName = node.name.toLowerCase().trim();
+        const isDuplicate = prev.some(n => 
+          n.id === node.id || 
+          n.name.toLowerCase().trim() === normalizedName
+        );
+        if (isDuplicate) {
+          console.log('[addNode] Skipping duplicate:', node.name);
+          return prev;
+        }
+        return [...prev, node];
+      });
     };
     
     const addEdge = async (edge: ProductFlowEdge) => {
@@ -5612,14 +5624,14 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
         });
       }
       
-      // Add POSSIBLE nodes (not seen but in navigation)
+      // Add DETECTED nodes (not seen but in navigation) - shown in "Detected (Not Visited)" section
       for (let i = 0; i < possiblePages.length; i++) {
         const page = possiblePages[i];
         await addNode({
           id: page.id || `possible-${i}`,
           name: page.title || page.name || page.id,
           type: 'view',
-          status: 'possible',
+          status: 'detected', // Changed from 'possible' to 'detected' to show in proper section
           description: page.description || `Present in navigation, not shown in video`,
           x: 100 + (i % 3) * 300,
           y: 400 + Math.floor(i / 3) * 220,
@@ -5641,13 +5653,47 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
               id: itemId,
               name: item.label || item.name,
               type: 'view',
-              status: 'possible',
+              status: 'detected',
               description: `Navigation item - not visited in video`,
               x: 100 + (extraIndex % 3) * 300,
               y: 400 + Math.floor(extraIndex / 3) * 220,
               confidence: 'low'
             });
             extraIndex++;
+          }
+        }
+      }
+      
+      // Also add HEADER navigation items (About, Companies, Startup Jobs, etc.)
+      if (scanData?.ui?.navigation?.header?.items) {
+        const headerItems = scanData.ui.navigation.header.items;
+        const existingPageIds = new Set(scanData.pages.map((p: any) => (p.id || '').toLowerCase()));
+        // Also include sidebar items we already added
+        if (scanData?.ui?.navigation?.sidebar?.items) {
+          scanData.ui.navigation.sidebar.items.forEach((item: any) => {
+            const id = (item.label || item.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            existingPageIds.add(id);
+          });
+        }
+        
+        let headerIndex = possiblePages.length + (scanData?.ui?.navigation?.sidebar?.items?.length || 0);
+        for (const item of headerItems) {
+          const itemId = (item.label || item.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+          // Skip common buttons
+          const skipWords = ['login', 'signup', 'sign-up', 'apply', 'search', 'menu', 'get-started'];
+          if (itemId && itemId.length > 2 && !existingPageIds.has(itemId) && !skipWords.includes(itemId)) {
+            existingPageIds.add(itemId);
+            await addNode({
+              id: itemId,
+              name: item.label || item.name,
+              type: 'view',
+              status: 'detected',
+              description: `Header link - not visited in video`,
+              x: 100 + (headerIndex % 4) * 280,
+              y: 500 + Math.floor(headerIndex / 4) * 200,
+              confidence: 'medium'
+            });
+            headerIndex++;
           }
         }
       }
@@ -14762,7 +14808,7 @@ export default function GeneratedPage() {
                                         return;
                                       }
                                       if (isEditing) return;
-                                      setEditInput(`@${node.name} Generate this flow continuation with consistent style and navigation`);
+                                      setEditInput(`@${node.name} Create this page with full content. Keep the same design system, colors, navigation header, and footer from existing pages. Include realistic text, proper sections, and interactive elements. Make it production-ready.`);
                                       setShowFloatingEdit(true);
                                     }}
                                     disabled={isEditing}
