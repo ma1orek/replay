@@ -14134,18 +14134,18 @@ export default function GeneratedPage() {
                             const midX = (x1 + x2) / 2;
                             const midY = (y1 + y2) / 2;
                             
-                            // Edge styles: 3-tier system
+                            // Edge styles: 3-tier system - neutral colors
                             // SOLID = navigation, action, scroll (confirmed from video)
                             // DASHED = gated, hover (detected but not confirmed)
                             // DOTTED = possible (AI inferred)
                             const edgeStyles: Record<string, { stroke: string; width: number; dash?: string; marker: string; labelBg: string }> = {
                               // SOLID lines - observed in video
-                              navigation: { stroke: "rgba(16, 185, 129, 0.5)", width: 2, marker: "url(#flow-arrow-thick)", labelBg: "rgba(10, 10, 10, 0.9)" },
+                              navigation: { stroke: "rgba(255, 255, 255, 0.45)", width: 2, marker: "url(#flow-arrow-thick)", labelBg: "rgba(10, 10, 10, 0.9)" },
                               action: { stroke: "rgba(255, 255, 255, 0.35)", width: 1.5, marker: "url(#flow-arrow)", labelBg: "rgba(10, 10, 10, 0.9)" },
                               scroll: { stroke: "rgba(255, 255, 255, 0.25)", width: 1.5, marker: "url(#flow-arrow)", labelBg: "rgba(10, 10, 10, 0.9)" },
                               // DASHED lines - detected but not visited
-                              gated: { stroke: "rgba(251, 191, 36, 0.4)", width: 1.5, dash: "5 3", marker: "url(#flow-arrow-gated)", labelBg: "rgba(10, 10, 10, 0.9)" },
-                              hover: { stroke: "rgba(251, 191, 36, 0.3)", width: 1.5, dash: "6 4", marker: "url(#flow-arrow-gated)", labelBg: "rgba(20, 20, 20, 0.9)" },
+                              gated: { stroke: "rgba(255, 255, 255, 0.3)", width: 1.5, dash: "5 3", marker: "url(#flow-arrow-gated)", labelBg: "rgba(10, 10, 10, 0.9)" },
+                              hover: { stroke: "rgba(255, 255, 255, 0.25)", width: 1.5, dash: "6 4", marker: "url(#flow-arrow-gated)", labelBg: "rgba(20, 20, 20, 0.9)" },
                               // DOTTED lines - AI inferred
                               possible: { stroke: "rgba(255, 255, 255, 0.12)", width: 1, dash: "3 3", marker: "url(#flow-arrow-gated)", labelBg: "rgba(20, 20, 20, 0.8)" }
                             };
