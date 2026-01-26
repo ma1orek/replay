@@ -6,7 +6,6 @@ import MobileHeader from "./MobileHeader";
 import MobileConfigureView from "./MobileConfigureView";
 import MobileBottomNav, { MobileTab } from "./MobileBottomNav";
 import MobileProjectFeed from "./MobileProjectFeed";
-import MobileFlowTimeline from "./MobileFlowTimeline";
 import { useAsyncGeneration } from "./useAsyncGeneration";
 import { useMobileVideoProcessor } from "./useMobileVideoProcessor";
 import { MobileLiveCollaboration } from "./MobileLiveCollaboration";
@@ -25,12 +24,9 @@ interface MobileLayoutProps {
   onOpenHistory?: () => void;
 }
 
-// Keys for localStorage
-const STORAGE_KEY_VIDEO = "replay_mobile_pending_video";
 const STORAGE_KEY_NAME = "replay_mobile_pending_name";
 const STORAGE_KEY_LOAD_PROJECT = "replay_mobile_load_project";
 
-// IndexedDB helper for storing large video blobs
 const openVideoDB = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open("replay_videos", 1);
@@ -49,13 +45,8 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
   const searchParams = useSearchParams();
   const autoStartCamera = searchParams?.get("camera") === "true";
   
-  // New 4-tab navigation system
+  // Simple 2-tab navigation: feed | capture (when no preview) or feed | preview (when has preview)
   const [mainTab, setMainTab] = useState<MobileTab>("capture");
-  // Legacy tab for configure/preview within capture flow
-  const [activeTab, setActiveTab] = useState<"configure" | "preview">("configure");
-  // Flow data for timeline view
-  const [flowNodes, setFlowNodes] = useState<any[]>([]);
-  const [flowEdges, setFlowEdges] = useState<any[]>([]);
   const [projectName, setProjectName] = useState("New Project");
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -75,19 +66,13 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
   // Check for project to load from history
   useEffect(() => {
     const loadProjectData = localStorage.getItem(STORAGE_KEY_LOAD_PROJECT);
-    console.log("[MobileLayout] Checking for project to load, found:", !!loadProjectData);
     if (loadProjectData) {
       try {
         const project = JSON.parse(loadProjectData);
-        console.log("[MobileLayout] Loading project from history:", project.title, "videoUrl:", project.videoUrl);
-        
-        // Set project data
         setProjectName(project.title || "Loaded Project");
         setLoadedProjectId(project.id);
         
-        // Always set videoUrl if it exists (even if no code)
         if (project.videoUrl) {
-          console.log("[MobileLayout] Setting videoUrl:", project.videoUrl);
           setVideoUrl(project.videoUrl);
         }
         
@@ -96,24 +81,21 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
           const blob = new Blob([project.code], { type: "text/html" });
           setPreviewUrl(URL.createObjectURL(blob));
           setHasGenerated(true);
-          setActiveTab("preview");
+          setMainTab("preview");
         }
         
         if (project.publishedSlug) {
           setPublishedUrl(`https://www.replay.build/p/${project.publishedSlug}`);
         }
         
-        // Clear the storage
         localStorage.removeItem(STORAGE_KEY_LOAD_PROJECT);
       } catch (e) {
-        console.error("[MobileLayout] Failed to load project:", e);
         localStorage.removeItem(STORAGE_KEY_LOAD_PROJECT);
       }
     }
   }, []);
 
-  // Wake Lock implementation to prevent screen from turning off during processing
-  // This is critical for keeping the compression/upload process alive
+  // Wake Lock during processing
   useEffect(() => {
     let wakeLock: any = null;
 
@@ -121,11 +103,8 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
       try {
         if ('wakeLock' in navigator) {
           wakeLock = await (navigator as any).wakeLock.request('screen');
-          console.log('Wake Lock is active');
         }
-      } catch (err: any) {
-        console.error(`${err.name}, ${err.message}`);
-      }
+      } catch (err) {}
     };
 
     if (isProcessing) {
@@ -140,67 +119,42 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
     return () => {
       if (wakeLock) {
         wakeLock.release();
-        wakeLock = null;
       }
     };
   }, [isProcessing]);
 
-  // Video Processor (FFmpeg + Direct Upload)
   const { processAndUpload, status: uploadStatus, reset: resetUpload } = useMobileVideoProcessor();
 
-  // Handle generation completion
   const handleGenerationComplete = useCallback((code: string, title?: string, videoUrl?: string) => {
-    console.log("[MobileLayout] Generation complete!", { codeLength: code.length, title, videoUrl });
-    
-    // Store the code
     setGeneratedCode(code);
-    
-    // Create blob URL for iframe (same approach as desktop - this works better on mobile Safari)
     const blob = new Blob([code], { type: "text/html" });
-    const blobUrl = URL.createObjectURL(blob);
-    console.log("[MobileLayout] Created blob URL:", blobUrl);
-    setPreviewUrl(blobUrl);
-    
+    setPreviewUrl(URL.createObjectURL(blob));
     setHasGenerated(true);
     setIsProcessing(false);
+    setMainTab("preview");
     
-    // Switch to preview tab after state updates
-    setActiveTab("preview");
-    
-    // Update project name from AI
-    const finalTitle = (title && title !== "Untitled Project") ? title : projectName;
     if (title && title !== "Untitled Project") {
       setProjectName(title);
     }
     
-    // NOTE: Don't call onSaveGeneration here!
-    // The /api/generate/async endpoint already saves the generation to DB.
-    // Calling onSaveGeneration would create a duplicate "Untitled Project".
-    
-    // Refresh credits
     if (onCreditsRefresh) onCreditsRefresh();
-  }, [onCreditsRefresh, onSaveGeneration, projectName]);
+  }, [onCreditsRefresh]);
 
-  // Handle generation error
   const handleGenerationError = useCallback((error: string) => {
-    console.error("[MobileLayout] Generation error:", error);
     setGenerationError(error);
     setIsProcessing(false);
-    setActiveTab("configure");
+    setMainTab("capture");
     alert(`Generation failed: ${error}`);
   }, []);
 
-  // Async generation hook - uses server-side processing with polling
-  const { startGeneration, jobStatus, isPolling, resetJob, checkForPendingJob } = useAsyncGeneration(
+  const { startGeneration, jobStatus, isPolling, checkForPendingJob } = useAsyncGeneration(
     handleGenerationComplete,
     handleGenerationError
   );
 
-  // Listen for page visibility changes to recover pending jobs
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        console.log("[MobileLayout] Page became visible, checking for pending jobs...");
         checkForPendingJob();
       }
     };
@@ -214,7 +168,6 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
     if (user && !videoBlob) {
       const restoreVideo = async () => {
         try {
-          // Try IndexedDB first (for large videos)
           const db = await openVideoDB();
           const tx = db.transaction("videos", "readonly");
           const store = tx.objectStore("videos");
@@ -226,75 +179,56 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
               setVideoBlob(blob);
               if (name) setProjectName(name);
               
-              // Clear from IndexedDB
               const deleteTx = db.transaction("videos", "readwrite");
               deleteTx.objectStore("videos").delete("pending_video");
-              
-              console.log("Restored video from IndexedDB after login");
             }
           };
-        } catch (err) {
-          console.error("Failed to restore video:", err);
-        }
+        } catch (err) {}
         
-        // Also check localStorage for project name only
         try {
           const savedName = localStorage.getItem(STORAGE_KEY_NAME);
           if (savedName) {
             setProjectName(savedName);
             localStorage.removeItem(STORAGE_KEY_NAME);
           }
-          // Clean up old video key if it exists (it would be corrupted anyway)
-          localStorage.removeItem(STORAGE_KEY_VIDEO);
-        } catch (e) {
-          // Ignore localStorage errors
-        }
+        } catch (e) {}
       };
       restoreVideo();
     }
   }, [user, videoBlob]);
   
-  // Create video URL when blob changes
-  // Create blob URL for video recording
-  // NOTE: Don't reset videoUrl to null when videoBlob is null - it might be loaded from a project
   useEffect(() => {
     if (videoBlob) {
       const url = URL.createObjectURL(videoBlob);
       setVideoUrl(url);
       return () => URL.revokeObjectURL(url);
     }
-    // Don't set videoUrl to null here - it could be from a loaded project (Cloudinary URL)
   }, [videoBlob]);
   
-  // Handle video capture
   const handleVideoCapture = useCallback((blob: Blob, name: string) => {
     setVideoBlob(blob);
     setProjectName(name || "New Project");
   }, []);
   
-  // Handle video upload
   const handleVideoUpload = useCallback((file: File) => {
     setVideoBlob(file);
     const cleanName = file.name.replace(/\.[^.]+$/, "");
     setProjectName(cleanName || "New Project");
   }, []);
   
-  // Remove video
   const handleRemoveVideo = useCallback(() => {
     setVideoBlob(null);
     setVideoUrl(null);
     setPreviewUrl(null);
     setProjectName("New Project");
     setHasGenerated(false);
-    setActiveTab("configure");
+    setLoadedProjectId(null);
   }, []);
   
-  // Save video to IndexedDB before login redirect (localStorage is too small for videos)
   const saveVideoForLogin = useCallback(async () => {
     if (!videoBlob) return;
     
     try {
-      // Use IndexedDB for large video blobs (localStorage has ~5MB limit)
       const db = await openVideoDB();
       const tx = db.transaction("videos", "readwrite");
       const store = tx.objectStore("videos");
@@ -305,26 +239,15 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
         request.onerror = () => reject(request.error);
       });
       
-      // Also save name to localStorage as backup
       try {
         localStorage.setItem(STORAGE_KEY_NAME, projectName);
-      } catch (e) {
-        // Ignore localStorage errors
-      }
-      
-      console.log("Saved video to IndexedDB before login");
-    } catch (err) {
-      console.error("Failed to save video:", err);
-      // Don't block login even if storage fails
-    }
+      } catch (e) {}
+    } catch (err) {}
   }, [videoBlob, projectName]);
   
-  // Reconstruct - the main action (uses async server-side processing)
   const handleReconstruct = useCallback(async () => {
-    // Need either a videoBlob (new recording) or videoUrl (loaded project)
     if (!videoBlob && !videoUrl) return;
     
-    // Check if user is logged in
     if (!user) {
       if (videoBlob) {
         pendingLoginRef.current = true;
@@ -334,47 +257,30 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
       return;
     }
     
-    // Wait for credits to load
-    if (creditsLoading) {
-      console.log("[MOBILE] Waiting for credits to load...");
-      return;
-    }
+    if (creditsLoading) return;
     
-    // Clear any previous error
     setGenerationError(null);
     setIsProcessing(true);
-    setActiveTab("preview");
     
     try {
       let finalVideoUrl: string;
       
       if (videoBlob) {
-        // NEW RECORDING: Compress & Upload
-        console.log("[MobileLayout] Starting pipeline with blob:", videoBlob.size, videoBlob.type);
-        
-        // Convert Blob to File if needed
         const videoFile = videoBlob instanceof File 
           ? videoBlob 
           : new File([videoBlob], "recording.mp4", { type: "video/mp4" });
           
-        console.log("[MobileLayout] Step 1: Compressing & Uploading...");
         finalVideoUrl = await processAndUpload(videoFile);
         
         if (!finalVideoUrl) {
-          throw new Error("Upload failed - no URL returned");
+          throw new Error("Upload failed");
         }
-        
-        console.log("[MobileLayout] Step 1 Complete. URL:", finalVideoUrl);
       } else if (videoUrl) {
-        // LOADED PROJECT: Use existing URL
-        console.log("[MobileLayout] Using existing video URL:", videoUrl);
         finalVideoUrl = videoUrl;
       } else {
         throw new Error("No video available");
       }
 
-      // Build style directive from user inputs
-      // Empty style = Auto-Detect (AI analyzes video and matches its visual style)
       let styleDirective = style || "";
       if (context.trim()) {
         styleDirective = styleDirective 
@@ -382,42 +288,34 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
           : `Additional context: ${context.trim()}`;
       }
 
-      // 2. GENERATE (AI)
-      // Send ONLY the URL to the API
-      console.log("[MobileLayout] Step 2: Starting AI Generation...");
       const result = await startGeneration(finalVideoUrl, styleDirective);
       
       if (!result) {
-        // Error already handled by hook
         setIsProcessing(false);
-        setActiveTab("configure");
+        setMainTab("capture");
       }
       
     } catch (error: any) {
-      console.error("[MobileLayout] Pipeline Error:", error);
       setGenerationError(error.message || "Processing failed");
       setIsProcessing(false);
-      setActiveTab("configure");
+      setMainTab("capture");
       alert(`Error: ${error.message || "Processing failed"}`);
     }
     
   }, [videoBlob, videoUrl, user, onLogin, saveVideoForLogin, creditsLoading, style, context, processAndUpload, startGeneration]);
   
-  // Handle back - goes back in flow or to landing page
   const handleBack = useCallback(() => {
-    if (activeTab === "preview" && !isProcessing) {
-      setActiveTab("configure");
-    } else if (activeTab === "configure") {
-      // If there's a video, clear it first, then go home
+    if (mainTab === "preview") {
+      // Go back to new project
+      handleRemoveVideo();
+      setMainTab("capture");
+    } else if (mainTab === "capture") {
       if (videoBlob) {
         handleRemoveVideo();
       }
-      // Navigate to landing page
-      window.location.href = "/";
     }
-  }, [activeTab, isProcessing, videoBlob, handleRemoveVideo]);
+  }, [mainTab, videoBlob, handleRemoveVideo]);
   
-  // Handle publish - calls the same API as desktop
   const handlePublish = useCallback(async (): Promise<string | null> => {
     if (!generatedCode) return null;
     
@@ -431,7 +329,7 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
           code: generatedCode,
           title: projectName || "Untitled Project",
           thumbnailDataUrl: null,
-          existingSlug: null, // Always create new for mobile
+          existingSlug: null,
         }),
       });
       
@@ -441,44 +339,32 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
         setPublishedUrl(data.url);
         return data.url;
       } else {
-        console.error("[MobileLayout] Publish failed:", data.error);
-        alert("Failed to publish: " + (data.error || "Unknown error"));
         return null;
       }
     } catch (error: any) {
-      console.error("[MobileLayout] Publish error:", error);
-      alert("Failed to publish: " + error.message);
       return null;
     } finally {
       setIsPublishing(false);
     }
   }, [generatedCode, projectName]);
 
-  // Calculate progress combining both hooks
   let processingProgress = 0;
   let processingMessage = "Starting...";
 
   if (uploadStatus.stage === "uploading") {
-    // Phase 1: Upload (0-30% of total perceived progress)
     processingProgress = Math.round(uploadStatus.progress * 0.3); 
     processingMessage = uploadStatus.message;
   } else if (jobStatus) {
-    // Phase 2: Generation (30-100% of total perceived progress)
-    // Map 0-100 from jobStatus to 30-100 total
     processingProgress = 30 + Math.round(jobStatus.progress * 0.7);
     processingMessage = jobStatus.message;
   } else if (isProcessing) {
-    // Fallback
     processingMessage = "Initializing...";
   }
 
-  // Handle project selection from feed
   const handleSelectProject = useCallback(async (project: any) => {
-    // Load project into state
     setProjectName(project.title || "Loaded Project");
     setLoadedProjectId(project.id);
     
-    // Fetch full project data
     try {
       const response = await fetch(`/api/generations?id=${project.id}`);
       if (response.ok) {
@@ -497,53 +383,31 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
             setVideoUrl(gen.videoUrl);
           }
           
-          if (gen.flowNodes) {
-            setFlowNodes(gen.flowNodes);
-          }
-          
-          if (gen.flowEdges) {
-            setFlowEdges(gen.flowEdges);
-          }
-          
           if (gen.publishedSlug) {
             setPublishedUrl(`https://www.replay.build/p/${gen.publishedSlug}`);
           }
         }
       }
-    } catch (error) {
-      console.error("Error loading project:", error);
-    }
+    } catch (error) {}
     
-    // Switch to capture tab to show the loaded project
-    setMainTab("capture");
-    setActiveTab("preview");
+    setMainTab("preview");
   }, []);
 
-  // Handle flow node selection
-  const handleFlowNodeSelect = useCallback((node: any) => {
-    console.log("Flow node selected:", node);
-    // Could navigate to that screen in preview
-    setMainTab("mirror");
-  }, []);
-
-  // Handle main tab change
   const handleMainTabChange = useCallback((tab: MobileTab) => {
     setMainTab(tab);
-    
-    // If switching to capture and we have a generated preview, show it
-    if (tab === "capture" && hasGenerated) {
-      setActiveTab("preview");
-    } else if (tab === "capture") {
-      setActiveTab("configure");
-    }
-  }, [hasGenerated]);
+  }, []);
+
+  // Determine which content to show
+  const showHeader = mainTab === "feed" || (mainTab === "capture" && !isProcessing);
+  const showConfigure = mainTab === "capture" && !hasGenerated && !isProcessing;
+  const showPreview = mainTab === "preview" || (mainTab === "capture" && (hasGenerated || isProcessing));
 
   return (
-    <div className="fixed inset-0 bg-black flex flex-col overflow-hidden">
-      {/* Header - context-aware based on main tab */}
-      {mainTab !== "mirror" && (activeTab === "configure" || mainTab !== "capture" || isProcessing) && (
+    <div className="fixed inset-0 bg-[#050505] flex flex-col overflow-hidden">
+      {/* Header */}
+      {showHeader && (
         <MobileHeader
-          projectName={mainTab === "feed" ? "Projects" : mainTab === "flow" ? "User Journey" : projectName}
+          projectName={mainTab === "feed" ? "Projects" : projectName}
           onProjectNameChange={mainTab === "capture" ? setProjectName : () => {}}
           user={user}
           isPro={isPro}
@@ -556,68 +420,40 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
         />
       )}
       
-      {/* Main content - based on main tab */}
-      <div className="flex-1 overflow-hidden flex flex-col pb-20">
+      {/* Main content */}
+      <div className="flex-1 overflow-hidden flex flex-col">
         {mainTab === "feed" && (
-          <MobileProjectFeed
-            onSelectProject={handleSelectProject}
+          <MobileProjectFeed onSelectProject={handleSelectProject} />
+        )}
+        
+        {showConfigure && (
+          <MobileConfigureView
+            videoBlob={videoBlob}
+            videoUrl={videoUrl}
+            onVideoCapture={handleVideoCapture}
+            onVideoUpload={handleVideoUpload}
+            onRemoveVideo={handleRemoveVideo}
+            context={context}
+            onContextChange={setContext}
+            style={style}
+            onStyleChange={setStyle}
+            onReconstruct={handleReconstruct}
+            isProcessing={isProcessing}
+            autoStartCamera={autoStartCamera}
+            isLoadedProject={!!loadedProjectId}
           />
         )}
         
-        {mainTab === "flow" && (
-          <MobileFlowTimeline
-            nodes={flowNodes}
-            edges={flowEdges}
-            onNodeSelect={handleFlowNodeSelect}
-            isLoading={isProcessing}
-          />
-        )}
-        
-        {mainTab === "capture" && (
-          <>
-            {activeTab === "configure" ? (
-              <MobileConfigureView
-                videoBlob={videoBlob}
-                videoUrl={videoUrl}
-                onVideoCapture={handleVideoCapture}
-                onVideoUpload={handleVideoUpload}
-                onRemoveVideo={handleRemoveVideo}
-                context={context}
-                onContextChange={setContext}
-                style={style}
-                onStyleChange={setStyle}
-                onReconstruct={handleReconstruct}
-                isProcessing={isProcessing}
-                autoStartCamera={autoStartCamera}
-                isLoadedProject={!!loadedProjectId}
-              />
-            ) : (
-              <MobileLiveCollaboration projectId={loadedProjectId}>
-                <MobilePreviewWithComments
-                  previewUrl={previewUrl}
-                  previewCode={generatedCode}
-                  isProcessing={isProcessing || isPolling}
-                  processingProgress={processingProgress}
-                  processingMessage={processingMessage}
-                  projectName={projectName}
-                  onPublish={handlePublish}
-                  publishedUrl={publishedUrl}
-                  isPublishing={isPublishing}
-                />
-              </MobileLiveCollaboration>
-            )}
-          </>
-        )}
-        
-        {mainTab === "mirror" && hasGenerated && (
+        {showPreview && (
           <MobileLiveCollaboration projectId={loadedProjectId}>
             <MobilePreviewWithComments
               previewUrl={previewUrl}
               previewCode={generatedCode}
-              isProcessing={false}
-              processingProgress={100}
-              processingMessage=""
+              isProcessing={isProcessing || isPolling}
+              processingProgress={processingProgress}
+              processingMessage={processingMessage}
               projectName={projectName}
+              projectId={loadedProjectId}
               onPublish={handlePublish}
               publishedUrl={publishedUrl}
               isPublishing={isPublishing}
@@ -626,13 +462,15 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
         )}
       </div>
       
-      {/* Bottom Navigation - clean, no overlapping elements */}
-      <MobileBottomNav
-        activeTab={mainTab}
-        onChange={handleMainTabChange}
-        disabled={isProcessing}
-        showMirror={hasGenerated}
-      />
+      {/* Bottom Navigation - only when not in fullscreen preview */}
+      {!showPreview && (
+        <MobileBottomNav
+          activeTab={mainTab}
+          onChange={handleMainTabChange}
+          disabled={isProcessing}
+          hasPreview={hasGenerated}
+        />
+      )}
     </div>
   );
 }

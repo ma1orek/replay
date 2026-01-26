@@ -1,26 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Share2, Check, ExternalLink, Maximize2 } from "lucide-react";
 import MobileMirrorMode from "./MobileMirrorMode";
 
-// Loading messages - same as desktop
+// Loading messages
 const STREAMING_MESSAGES = [
-  "Keep app open during upload...",
   "Analyzing content...",
   "Reconstructing UI...",
   "Generating code...",
   "Applying styles...",
   "Finalizing...",
-];
-
-const GENERATION_TIPS = [
-  "Please keep the app open while we process your video.",
-  "Click, don't just watch. Interacting helps the engine differentiate functional elements from static containers.",
-  "Hover states matter. Move your cursor over buttons and links to capture their hover effects.",
-  "Scroll to the bottom. Hidden sections and lazy-loaded content need to be visible in the recording.",
-  "Show all states. Toggle dropdowns, modals, and accordions during recording.",
-  "Record at 1x speed. Faster playback can miss subtle transitions and animations.",
 ];
 
 interface MobilePreviewViewProps {
@@ -29,12 +18,8 @@ interface MobilePreviewViewProps {
   isProcessing: boolean;
   processingProgress: number;
   processingMessage: string;
-  onShare?: () => void;
   projectName: string;
   projectId?: string | null;
-  onPublish?: () => Promise<string | null>;
-  publishedUrl?: string | null;
-  isPublishing?: boolean;
   onAddComment?: (comment: { x: number; y: number; text: string }) => void;
   comments?: Array<{
     id: string;
@@ -55,48 +40,17 @@ export default function MobilePreviewView({
   isProcessing,
   processingProgress,
   processingMessage,
-  onShare,
   projectName,
-  onPublish,
-  publishedUrl,
-  isPublishing = false,
+  projectId,
   onAddComment,
   comments = [],
   userName = "You",
   userAvatar,
 }: MobilePreviewViewProps) {
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [currentMessage, setCurrentMessage] = useState(STREAMING_MESSAGES[0]);
-  const [currentTipIndex, setCurrentTipIndex] = useState(0);
   const [isMessageTransitioning, setIsMessageTransitioning] = useState(false);
-  const [isTipTransitioning, setIsTipTransitioning] = useState(false);
-  const [hasShownInitialModal, setHasShownInitialModal] = useState(false);
-  const [showShareHint, setShowShareHint] = useState(false);
-  const [showMirrorMode, setShowMirrorMode] = useState(false);
   
-  // Auto-show modal after generation completes (first time only)
-  useEffect(() => {
-    if (!isProcessing && (previewUrl || previewCode) && !hasShownInitialModal) {
-      // Small delay to let user see the preview first
-      const timer = setTimeout(() => {
-        setShowShareModal(true);
-        setHasShownInitialModal(true);
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [isProcessing, previewUrl, previewCode, hasShownInitialModal]);
-  
-  // Show share hint for 5 seconds after modal closes
-  useEffect(() => {
-    if (!showShareModal && hasShownInitialModal) {
-      setShowShareHint(true);
-      const timer = setTimeout(() => setShowShareHint(false), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [showShareModal, hasShownInitialModal]);
-  
-  // Rotate messages - same as desktop
+  // Rotate messages during processing
   useEffect(() => {
     if (!isProcessing) return;
     
@@ -114,243 +68,67 @@ export default function MobilePreviewView({
     return () => clearInterval(interval);
   }, [isProcessing]);
   
-  // Rotate tips - same as desktop
-  useEffect(() => {
-    if (!isProcessing) return;
-    
-    const interval = setInterval(() => {
-      setIsTipTransitioning(true);
-      setTimeout(() => {
-        setCurrentTipIndex(prev => (prev + 1) % GENERATION_TIPS.length);
-        setIsTipTransitioning(false);
-      }, 300);
-    }, 5000);
-    
-    return () => clearInterval(interval);
-  }, [isProcessing]);
-  
-  const handleShare = () => {
-    if (onShare) {
-      onShare();
-    } else {
-      setShowShareModal(true);
-    }
-  };
-  
-  const handleCopyLink = async () => {
-    let linkToCopy = publishedUrl;
-    
-    // If not published yet, publish first
-    if (!linkToCopy && onPublish) {
-      linkToCopy = await onPublish();
-    }
-    
-    if (linkToCopy) {
-      try {
-        await navigator.clipboard.writeText(linkToCopy);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      } catch {}
-    }
-  };
-  
-  // Processing state - SAME skeleton as desktop
+  // Processing state - loading skeleton
   if (isProcessing || (!previewUrl && !previewCode)) {
     return (
-      <div className="w-full h-full flex flex-col bg-[#050505] overflow-hidden">
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col items-center justify-center p-4">
-          
-          {/* Skeleton UI with Logo in Center - SAME AS DESKTOP */}
-          <div className="w-full max-w-md relative">
-            {/* Centered Logo with Gradient Sweep */}
-            <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-              <div className="relative">
-                {/* Animated Glow */}
-                <div 
-                  className="absolute inset-0 blur-2xl bg-[#FF6E3C]/30 scale-[2]" 
-                  style={{ animation: "glow-pulse 2s ease-in-out infinite" }} 
-                />
-                {/* Logo with gradient sweep */}
-                <div className="logo-loader-container relative">
-                  <svg className="logo-loader-svg" viewBox="0 0 82 109" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M68.099 37.2285C78.1678 43.042 78.168 57.5753 68.099 63.3887L29.5092 85.668C15.6602 93.6633 0.510418 77.4704 9.40857 64.1836L17.4017 52.248C18.1877 51.0745 18.1876 49.5427 17.4017 48.3691L9.40857 36.4336C0.509989 23.1467 15.6602 6.95306 29.5092 14.9482L68.099 37.2285Z" />
-                    <rect x="34.054" y="98.6841" width="48.6555" height="11.6182" rx="5.80909" transform="rotate(-30 34.054 98.6841)" />
-                  </svg>
-                  <div className="logo-loader-gradient" />
-                </div>
-              </div>
-            </div>
-            
-            {/* Skeleton Frame */}
-            <div className="rounded-xl border border-white/[0.08] overflow-hidden bg-black/40 opacity-50">
-              {/* Skeleton Header */}
-              <div className="flex items-center gap-3 px-3 py-2.5 border-b border-white/[0.06]">
-                <div className="w-5 h-5 rounded bg-white/5" style={{ animation: "skeleton-pulse 2s ease-in-out infinite" }} />
-                <div className="w-20 h-2.5 rounded bg-white/5" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.1s" }} />
-                <div className="flex-1" />
-                <div className="flex gap-2">
-                  <div className="w-12 h-5 rounded bg-white/5" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.2s" }} />
-                  <div className="w-12 h-5 rounded bg-white/5" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.3s" }} />
-                </div>
-              </div>
-              
-              {/* Skeleton Body */}
-              <div className="flex min-h-[180px]">
-                {/* Sidebar - hidden on very small screens */}
-                <div className="w-28 border-r border-white/[0.06] p-2 space-y-1.5 hidden xs:block">
-                  <div className="w-full h-6 rounded bg-white/5" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.1s" }} />
-                  <div className="w-3/4 h-6 rounded bg-white/[0.03]" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.2s" }} />
-                  <div className="w-5/6 h-6 rounded bg-white/[0.03]" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.3s" }} />
-                </div>
-                
-                {/* Main Content */}
-                <div className="flex-1 p-3">
-                  <div className="w-2/3 h-4 rounded bg-white/5 mb-2" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.1s" }} />
-                  <div className="w-1/2 h-2.5 rounded bg-white/[0.03] mb-4" style={{ animation: "skeleton-pulse 2s ease-in-out infinite 0.2s" }} />
-                  
-                  <div className="grid grid-cols-3 gap-2">
-                    {[...Array(6)].map((_, i) => (
-                      <div key={i} className="rounded-lg border border-white/[0.04] p-2 bg-white/[0.02]">
-                        <div className="w-6 h-6 rounded bg-white/5 mb-1.5" style={{ animation: `skeleton-pulse 2s ease-in-out infinite ${0.1 * i}s` }} />
-                        <div className="w-full h-2 rounded bg-white/5 mb-1" style={{ animation: `skeleton-pulse 2s ease-in-out infinite ${0.1 * i + 0.1}s` }} />
-                        <div className="w-2/3 h-1.5 rounded bg-white/[0.03]" style={{ animation: `skeleton-pulse 2s ease-in-out infinite ${0.1 * i + 0.2}s` }} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
+      <div className="flex-1 flex flex-col bg-[#050505] items-center justify-center p-6">
+        {/* Loading indicator */}
+        <div className="relative mb-6">
+          <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+            <svg className="w-8 h-8 text-white animate-pulse" viewBox="0 0 82 109" fill="currentColor">
+              <path d="M68.099 37.2285C78.1678 43.042 78.168 57.5753 68.099 63.3887L29.5092 85.668C15.6602 93.6633 0.510418 77.4704 9.40857 64.1836L17.4017 52.248C18.1877 51.0745 18.1876 49.5427 17.4017 48.3691L9.40857 36.4336C0.509989 23.1467 15.6602 6.95306 29.5092 14.9482L68.099 37.2285Z" />
+              <rect x="34.054" y="98.6841" width="48.6555" height="11.6182" rx="5.80909" transform="rotate(-30 34.054 98.6841)" />
+            </svg>
           </div>
-          
-          {/* Status Message */}
-          <p className={`text-sm text-white/50 mt-5 text-center transition-all duration-300 ease-out ${isMessageTransitioning ? 'opacity-0 translate-y-2 blur-sm' : 'opacity-100 translate-y-0 blur-0'}`}>
-            {processingMessage || currentMessage}
-          </p>
-          
-          {/* Tip Banner */}
-          <div className="w-full max-w-sm mt-3 px-2">
-            <p className={`font-mono text-[10px] text-white/35 leading-relaxed text-center transition-all duration-300 ease-out ${isTipTransitioning ? 'opacity-0 -translate-y-1 blur-sm' : 'opacity-100 translate-y-0 blur-0'}`}>
-              {GENERATION_TIPS[currentTipIndex]}
-            </p>
-          </div>
+          {/* Progress ring */}
+          <svg className="absolute inset-0 w-16 h-16 -rotate-90">
+            <circle
+              cx="32"
+              cy="32"
+              r="30"
+              fill="none"
+              stroke="#27272a"
+              strokeWidth="2"
+            />
+            <circle
+              cx="32"
+              cy="32"
+              r="30"
+              fill="none"
+              stroke="#fff"
+              strokeWidth="2"
+              strokeDasharray={`${(processingProgress / 100) * 188} 188`}
+              strokeLinecap="round"
+            />
+          </svg>
         </div>
+        
+        {/* Status message */}
+        <p className={`text-sm text-zinc-400 text-center transition-all duration-300 ${
+          isMessageTransitioning ? 'opacity-0' : 'opacity-100'
+        }`}>
+          {processingMessage || currentMessage}
+        </p>
+        
+        <p className="text-xs text-zinc-600 mt-2">
+          Keep app open
+        </p>
       </div>
     );
   }
   
-  // Mirror Mode - fullscreen without UI
-  if (showMirrorMode) {
-    return (
-      <MobileMirrorMode
-        previewUrl={previewUrl}
-        previewCode={previewCode || null}
-        projectName={projectName}
-        onClose={() => setShowMirrorMode(false)}
-        onAddComment={onAddComment}
-        comments={comments}
-        userName={userName}
-        userAvatar={userAvatar}
-      />
-    );
-  }
-
-  // Preview state - clean fullscreen iframe with minimal UI
+  // Preview ready - show fullscreen mirror mode directly
   return (
-    <div className="flex-1 relative bg-[#111] w-full h-full min-h-0 flex flex-col">
-      {/* Preview iframe */}
-      <div className="flex-1 relative overflow-hidden rounded-t-xl m-2 mb-0 bg-white">
-        {previewUrl ? (
-          <iframe
-            key={previewUrl}
-            src={previewUrl}
-            className="absolute inset-0 w-full h-full border-0"
-            title="Preview"
-            sandbox="allow-scripts allow-same-origin"
-          />
-        ) : previewCode ? (
-          <iframe
-            key={`code-${previewCode.length}`}
-            srcDoc={previewCode}
-            className="absolute inset-0 w-full h-full border-0"
-            title="Preview"
-            sandbox="allow-scripts allow-same-origin"
-          />
-        ) : null}
-      </div>
-      
-      {/* Bottom action bar - clean dark style like desktop */}
-      <div className="bg-[#111] border-t border-zinc-800 px-4 py-3 flex items-center justify-between">
-        {/* Left: Mirror mode */}
-        <button
-          onClick={() => setShowMirrorMode(true)}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors"
-        >
-          <Maximize2 className="w-4 h-4 text-zinc-400" />
-          <span className="text-sm text-zinc-300">Fullscreen</span>
-        </button>
-        
-        {/* Right: Share */}
-        <button
-          onClick={handleShare}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#FF6E3C] hover:bg-[#FF8F5C] transition-colors"
-        >
-          <Share2 className="w-4 h-4 text-white" />
-          <span className="text-sm font-medium text-white">Share</span>
-        </button>
-      </div>
-      
-      {/* Share Modal - simplified dark design */}
-      {showShareModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/80"
-          onClick={() => setShowShareModal(false)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full bg-[#1a1a1a] rounded-t-2xl border-t border-zinc-800 p-5 pb-8"
-          >
-            <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mb-5" />
-            
-            <h3 className="text-lg font-semibold text-white mb-2 text-center">
-              Share Project
-            </h3>
-            <p className="text-zinc-500 text-sm mb-5 text-center">
-              Open on desktop for full editing capabilities
-            </p>
-            
-            <button
-              onClick={handleCopyLink}
-              disabled={isPublishing}
-              className="w-full py-3.5 bg-[#FF6E3C] hover:bg-[#FF8F5C] rounded-xl text-white font-medium flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
-            >
-              {isPublishing ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Publishing...
-                </>
-              ) : copied ? (
-                <>
-                  <Check className="w-4 h-4" />
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <ExternalLink className="w-4 h-4" />
-                  {publishedUrl ? "Copy Link" : "Publish & Copy"}
-                </>
-              )}
-            </button>
-            
-            <button
-              onClick={() => setShowShareModal(false)}
-              className="w-full py-3 text-zinc-500 text-sm mt-2"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+    <MobileMirrorMode
+      previewUrl={previewUrl}
+      previewCode={previewCode || null}
+      projectName={projectName}
+      projectId={projectId}
+      onClose={() => {}} // No-op, handled by bottom nav
+      onAddComment={onAddComment}
+      comments={comments}
+      userName={userName}
+      userAvatar={userAvatar}
+    />
   );
 }

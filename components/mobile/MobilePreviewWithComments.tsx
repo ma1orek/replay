@@ -10,15 +10,12 @@ interface MobilePreviewWithCommentsProps {
   processingProgress: number;
   processingMessage: string;
   projectName: string;
+  projectId?: string | null;
   onPublish: () => Promise<string | null>;
   publishedUrl: string | null;
   isPublishing: boolean;
 }
 
-/**
- * Wrapper component that integrates MobilePreviewView with Liveblocks comments.
- * Must be rendered inside a MobileLiveCollaboration (RoomProvider) context.
- */
 export default function MobilePreviewWithComments(props: MobilePreviewWithCommentsProps) {
   const { comments, addComment, userInfo, isConnected } = useMobileComments();
 

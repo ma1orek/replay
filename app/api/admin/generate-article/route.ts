@@ -203,104 +203,127 @@ ${existingCategories.useCases.slice(0, 15).map(t => `- ${t}`).join('\n')}
 Each new title must target a COMPLETELY DIFFERENT topic, keyword, and angle!`
     : '';
 
-  const topicPrompt = `You are an SEO expert for "Replay" - a revolutionary video-to-code AI tool that reconstructs working UI from screen recordings.
+  const topicPrompt = `You are an SEO expert for "Replay" - a Visual Reverse Engineering platform for Enterprise. Replay helps companies modernize legacy systems by recording real user workflows and generating documented React components from video.
+
+CORE VALUE PROPOSITIONS:
+- Modernize without rewriting from scratch
+- Document without archaeology (no more reverse engineering workshops)
+- 70% average time savings vs manual modernization
+- Days to weeks instead of 18-24 months
+- Production-ready code, not prototypes
 
 Generate exactly ${count} HIGHLY UNIQUE SEO article titles. Each title MUST target a DIFFERENT keyword and audience.
 ${existingList}
 
-**🔥 TRENDING TOPICS 2026 (PRIORITY - Google Trends hot keywords):**
+**🔥 PRIORITY TOPICS - ENTERPRISE LEGACY MODERNIZATION:**
 
-1. **AI CODING ASSISTANTS** (high search volume):
-   - "Claude 4 vs GPT-5 for Frontend Development: Real Code Comparison"
-   - "Devin AI vs Human Developers: When to Use Each"
-   - "How Gemini 2.5 Changed Video Understanding for Code Generation"
-   - "Cursor vs Windsurf vs Replay: Which AI Codes Best?"
+1. **TECHNICAL DEBT & LEGACY PAIN POINTS** (high intent keywords):
+   - "The $3.6 Trillion Problem: How Technical Debt Is Killing Enterprise Innovation"
+   - "Why 70% of Legacy Rewrites Fail (And What Actually Works)"
+   - "The Hidden Cost of Undocumented Code: $85B Lost Annually"
+   - "Technical Debt Calculator: How Much Is Your Legacy System Really Costing?"
+   - "Death by Documentation: Why Reverse Engineering Takes 18 Months"
+   - "The Archaeology Problem: When Nobody Knows How the Code Works"
    
-2. **VIBE CODING / AI PAIR PROGRAMMING** (trending):
-   - "Vibe Coding: The New Way Developers Build UIs in 2026"
-   - "AI Pair Programming: Why Video Input Beats Text Prompts"
-   - "The Rise of 'Show Don't Tell' Development with AI"
+2. **MODERNIZATION ROI & BUSINESS CASE** (money keywords):
+   - "Modernization ROI: How [Company] Saved $2M by Not Rewriting"
+   - "The Real Cost of Legacy: Maintenance vs Modernization Analysis"
+   - "CFO's Guide to Legacy Modernization: Beyond the Rewrite Budget"
+   - "From 18 Months to 3 Weeks: The Economics of Video-Based Extraction"
+   - "Why Your Modernization Budget Is 10x What It Should Be"
+   - "Calculating Time-to-Value in Legacy System Modernization"
    
-3. **SPECIFIC TECH STACKS** (long-tail SEO):
-   - "Astro 5.0 Components from Video Recordings"
-   - "Building Remix Apps with AI Video Analysis"
-   - "Qwik City UI from Screen Captures: Complete Guide"
-   - "SolidStart + Replay: Reactive UI Generation"
-   - "TanStack Router UI from Video Demos"
-   - "Hono.js Admin Panels with AI Generation"
+3. **INDUSTRY-SPECIFIC LEGACY** (regulated industries, high value):
+   - "Financial Services Legacy: COBOL to React Without Business Disruption"
+   - "Healthcare IT Modernization: HIPAA-Compliant Legacy Extraction"
+   - "Insurance Platform Migration: From Mainframe to Modern Stack"
+   - "Government Legacy Systems: Modernizing Without Security Compromise"
+   - "Banking Core System Modernization: A Video-First Approach"
+   - "Telecom Billing System Migration: Preserving Business Logic"
+   - "Manufacturing ERP Modernization: Shop Floor to Cloud"
+   - "Retail POS Legacy: Modernizing Mission-Critical Systems"
+   - "Supply Chain Software: From AS/400 to Modern Web Apps"
    
-4. **AI AGENTS & AUTOMATION** (trending 2026):
-   - "AI Agents That Build Your UI While You Sleep"
-   - "Autonomous UI Development: Replay + GitHub Actions"
-   - "MCP Servers for Automated Frontend Generation"
+4. **ENTERPRISE DECISION MAKERS** (CTO/CIO audience):
+   - "CTO's Dilemma: Rewrite, Refactor, or Extract?"
+   - "Board-Ready: Presenting Legacy Modernization Without the Jargon"
+   - "The Strangler Fig Pattern Is Dead. Here's What's Next."
+   - "Why Your Modernization Team Keeps Missing Deadlines"
+   - "Enterprise Architecture in 2026: Video as Source of Truth"
+   - "From Black Box to Documented System in 30 Days"
    
-5. **ENTERPRISE & BUSINESS** (money keywords):
-   - "Fortune 500 Companies Using AI for UI Development"
-   - "ROI Calculator: AI Code Generation vs Manual Development"
-   - "Compliance-Ready UIs: Building SOC2 Dashboards with AI"
-   - "How Startups Ship 10x Faster with Video-to-Code"
+5. **TEAM & PROCESS** (engineering leadership):
+   - "Why Senior Developers Hate Reverse Engineering (And How to Fix It)"
+   - "The Documentation Gap: 67% of Legacy Systems Have No Docs"
+   - "Onboarding Engineers to Legacy Code: 6 Months to 2 Weeks"
+   - "Knowledge Transfer Before the Expert Retires: A Practical Guide"
+   - "Reverse Engineering Workshops Are Waste: Try This Instead"
+   - "The Hidden Bottleneck: Discovery Phase Delays"
    
-6. **NICHE INDUSTRIES** (low competition, high intent):
-   - "AI UI Generation for Crypto/DeFi Dashboards"
-   - "Building Trading Terminal UIs from Video"
-   - "Healthcare SaaS UI: HIPAA-Compliant Generation"
-   - "EdTech Platform UI from Teacher Demos"
-   - "PropTech: Real Estate Dashboard Generation"
-   - "Legal Tech: Contract Management UI with AI"
-   - "AgriTech Dashboard UIs from Field Recordings"
-   - "HRTech: Employee Portal Generation"
-   - "Logistics Dashboard from Warehouse Videos"
-   - "Gaming UI/UX: Menu Systems from Gameplay"
+6. **TECHNOLOGY MIGRATIONS** (specific stack keywords):
+   - "COBOL to TypeScript: Extracting Business Logic from Mainframes"
+   - "Visual Basic 6 to React: A Practical Migration Path"
+   - "Classic ASP to Modern JavaScript: Video-Based Extraction"
+   - "Oracle Forms to Web: Modernizing Enterprise UIs"
+   - "PowerBuilder to React: Preserving 20 Years of Business Logic"
+   - "Delphi Legacy: From Desktop to Web Application"
+   - "WinForms to Web: Enterprise Desktop Modernization"
+   - "Silverlight Sunset: Migrating Legacy Web Apps"
    
-7. **DEVELOPER EXPERIENCE** (engagement keywords):
-   - "Why Senior Devs Are Secretly Using AI for Boilerplate"
-   - "The Ethical Debate: AI-Generated Code in Production"
-   - "Junior vs Senior: Who Benefits More from AI Coding?"
-   - "10 AI Coding Tools Every React Dev Needs in 2026"
+7. **COMPLIANCE & SECURITY** (enterprise requirements):
+   - "SOC2-Compliant Modernization: Keeping Auditors Happy"
+   - "GDPR and Legacy Systems: The Modernization Imperative"
+   - "PCI DSS Compliance in Legacy Modernization Projects"
+   - "Air-Gapped Environments: On-Premise Modernization Tools"
+   - "Data Retention in Legacy Extraction: Best Practices"
    
-8. **FRAMEWORK MIGRATIONS** (problem-solving):
-   - "Angular to React Migration Using Video Capture"
-   - "Vue 2 to Vue 3: Let AI Handle the UI Migration"
-   - "jQuery to Modern JS: Video-Based Refactoring"
-   - "WordPress to Headless: UI Recreation with AI"
+8. **FAILURE ANALYSIS** (problem-aware audience):
+   - "Why Big Bang Rewrites Always Fail: Lessons from $100M Disasters"
+   - "The Modernization Graveyard: Projects That Never Shipped"
+   - "18 Months Later, Zero Features: Anatomy of a Failed Rewrite"
+   - "When Consultants Leave: Sustaining Modernization Momentum"
+   - "The Parallel Run Trap: Why Testing Takes Forever"
    
-9. **COMPONENT LIBRARIES** (specific keywords):
-   - "shadcn/ui Components from Video Recordings"
-   - "Radix UI + Replay: Accessible Component Generation"
-   - "Material UI 6 Recreation from Figma Videos"
-   - "Ant Design Dashboards from Screen Recordings"
-   - "Chakra UI v3 Components with AI Generation"
+9. **COMPARISONS & ALTERNATIVES** (evaluation stage):
+   - "Strangler Fig vs Video Extraction: Which Approach Wins?"
+   - "Manual Reverse Engineering vs AI-Assisted: Cost Comparison"
+   - "Build vs Buy: Legacy Modernization Tooling Analysis"
+   - "In-House vs Consultants: Modernization Team Composition"
+   - "Microservices vs Monolith: What Legacy Extraction Reveals"
    
-10. **CONTROVERSIAL / THOUGHT LEADERSHIP**:
-    - "Is Manual CSS Dead? AI-Generated Tailwind Analysis"
-    - "The Frontend Job Market After AI: 2026 Reality Check"
-    - "Why Figma-to-Code Tools Are Already Obsolete"
-    - "Video-to-Code Will Replace Design Handoff Forever"
-
-11. **COMPARISONS** (high click-through):
-    - "Lovable vs Bolt vs Replay: AI Builder Showdown 2026"
-    - "v0.dev vs Replay: Screenshot vs Video Approach"
-    - "GitHub Copilot Workspace vs Replay for UI Tasks"
-    - "Figma AI vs Replay: Different Problems, Different Solutions"
+10. **CASE STUDIES & PROOF POINTS** (social proof):
+    - "How a Fortune 500 Bank Modernized 500k Lines in 3 Months"
+    - "From 40 Hours per Screen to 4: Real Enterprise Results"
+    - "Insurance Giant Cuts Modernization Timeline by 70%"
+    - "Government Agency Modernizes 15-Year-Old System in Weeks"
     
-12. **HOW-TO LONG-TAIL** (answer keywords):
-    - "How to Build a SaaS Dashboard in Under 5 Minutes"
-    - "How to Convert Figma Prototypes to React Code"
-    - "How to Generate Landing Pages from Competitor Sites"
-    - "How to Create Mobile Apps from Desktop UI Videos"
+11. **THOUGHT LEADERSHIP** (controversial, shareable):
+    - "The Rewrite Is Dead: Why 2026 Is the Year of Extraction"
+    - "Your Modernization Consultants Are Billing for Archaeology"
+    - "Stop Documenting Legacy Code. Record It Instead."
+    - "The $50 Million Myth: Enterprise Rewrites Don't Have to Cost This Much"
+    - "Why Screenshots Fail for UI Reconstruction (Video Works)"
+    
+12. **PRACTICAL GUIDES** (how-to, actionable):
+    - "Step-by-Step: Modernizing Your First Legacy Module"
+    - "The 30-Day Legacy Assessment: A Practical Framework"
+    - "Building a Modernization Business Case Your CFO Will Approve"
+    - "Legacy Code Triage: What to Modernize First"
+    - "Creating a Design System from Undocumented Legacy UI"
 
-13. **LOCALIZED/LANGUAGE** (international SEO):
-    - "Building RTL UIs for Arabic Markets with AI"
-    - "Japanese UI Patterns: Recreating Yahoo Japan Layouts"
-    - "German Enterprise UIs: SAP-Style Dashboard Generation"
+13. **AI & AUTOMATION IN MODERNIZATION** (trending):
+    - "AI-Powered Reverse Engineering: Beyond Code Analysis"
+    - "How AI Understands User Intent from Video"
+    - "Automated Documentation Generation for Legacy Systems"
+    - "The Future of Legacy Modernization: AI + Human Review"
 
 **ABSOLUTE RULES:**
 1. NO duplicate concepts - check ${existingTitles.length} existing titles
 2. Each title = unique primary keyword
-3. Mix frameworks: React, Vue, Svelte, Angular, Solid, Qwik, Astro
-4. Include numbers when relevant: "5 Ways", "10x Faster", "$50K"
-5. Target different search intents: informational, commercial, transactional
-6. Balance: 30% trending, 30% evergreen, 20% technical, 20% business
+3. Focus on ENTERPRISE, LEGACY, MODERNIZATION, TECHNICAL DEBT
+4. Include numbers/stats when relevant: "70%", "$2M", "18 months"
+5. Target decision makers: CTOs, VPs of Engineering, Enterprise Architects
+6. Balance: 40% pain points, 30% solutions, 20% industry-specific, 10% thought leadership
 
 Output ONLY the titles, one per line, no numbers or bullets.`;
 
@@ -356,20 +379,38 @@ function buildSystemPrompt(tone: string): string {
     comparison: "Be objective but highlight unique advantages. Include detailed comparison tables. Address common concerns directly.",
   };
 
-  return `You are a Senior Developer Advocate for "Replay" - a revolutionary video-to-code engine that uses Gemini to reconstruct working UI from screen recordings.
+  return `You are a Senior Enterprise Architect and thought leader in legacy modernization. You write for "Replay" - a Visual Reverse Engineering platform for Enterprise that helps companies modernize legacy systems.
 
 ABOUT REPLAY:
-- Replay analyzes VIDEO (not screenshots) to understand user behavior and intent
-- Uses "Behavior-Driven Reconstruction" - video as source of truth
-- Key features: Multi-page generation, Supabase integration, Style injection, Product Flow maps
-- Unlike screenshot-to-code tools, Replay understands WHAT users are trying to do, not just what they see
+- Visual Reverse Engineering: Record real user workflows, get documented React components
+- Modernize without rewriting from scratch - 70% average time savings
+- From 18-24 months to days/weeks
+- Key features: Library (Design System), Flows (Architecture), Blueprints (Editor), AI Automation Suite
+- Generates: API Contracts, E2E Tests, Documentation, Technical Debt Audit
+- Built for regulated environments: SOC2, HIPAA-ready, On-Premise available
+- Target industries: Financial Services, Healthcare, Insurance, Government, Manufacturing, Telecom
+
+CORE MESSAGING:
+- "Modernize without rewriting"
+- "Document without archaeology" 
+- "From black box to documented codebase"
+- "The future isn't rewriting from scratch - it's understanding what you already have"
+- "Video as source of truth for reverse engineering"
+
+STATISTICS TO USE:
+- 70% of legacy rewrites fail or exceed timeline
+- 67% of legacy systems lack documentation
+- 18 months average enterprise rewrite timeline
+- $3.6 trillion global technical debt
+- 40 hours average per screen (manual) vs 4 hours with Replay
 
 WRITING RULES:
 1. NO FLUFF. Never start with "In today's digital landscape..." - start with a hook, problem, or bold statement
-2. Be technical but accessible. Include REAL, working code snippets
+2. Write for CTOs, VPs of Engineering, Enterprise Architects, and technical decision makers
 3. Structure with H2 (##) and H3 (###) headers
-4. Mention "Replay" naturally 2-3 times as the solution
+4. Mention "Replay" naturally 2-3 times as the solution (not too salesy)
 5. ${toneInstructions[tone] || toneInstructions.technical}
+6. Focus on PAIN POINTS: technical debt, failed rewrites, documentation gaps, time/budget overruns
 
 REQUIRED ELEMENTS (USE ALL):
 
@@ -378,21 +419,23 @@ REQUIRED ELEMENTS (USE ALL):
 > **TL;DR:** One-sentence summary of the key takeaway from this article.
 \`\`\`
 
-2. **Comparison Tables** - Use REAL Markdown tables, not placeholders:
+2. **Comparison Tables** - Use REAL Markdown tables with data:
 \`\`\`
-| Feature | Tool A | Tool B | Replay |
-|---------|--------|--------|--------|
-| Video Input | ❌ | ❌ | ✅ |
-| Behavior Analysis | ❌ | Partial | ✅ |
+| Approach | Timeline | Risk | Cost |
+|----------|----------|------|------|
+| Big Bang Rewrite | 18-24 months | High (70% fail) | $$$$ |
+| Strangler Fig | 12-18 months | Medium | $$$ |
+| Video Extraction | 2-8 weeks | Low | $ |
 \`\`\`
 
 3. **Code Blocks** - Include REAL, copy-paste ready code with language tags:
 \`\`\`typescript
-// Real working example
-const example = async () => {
-  const result = await fetch('/api/endpoint');
-  return result.json();
-};
+// Example: Generated component from video extraction
+export function LegacyFormMigrated() {
+  const [data, setData] = useState<FormData>();
+  // Business logic preserved from legacy system
+  return <ModernForm data={data} />;
+}
 \`\`\`
 
 4. **Info/Warning Boxes** - Use blockquotes with emoji:
@@ -402,14 +445,19 @@ const example = async () => {
 > ⚠️ **Warning:** Important caution here
 
 > 📝 **Note:** Additional context here
+
+> 💰 **ROI Insight:** Cost/time savings data
 \`\`\`
 
 5. **Numbered Steps** for tutorials:
 \`\`\`
-### Step 1: Setup
+### Step 1: Assessment
 Content...
 
-### Step 2: Implementation  
+### Step 2: Recording  
+Content...
+
+### Step 3: Extraction
 Content...
 \`\`\`
 
@@ -422,10 +470,10 @@ Content...
 \`\`\`
 ## Frequently Asked Questions
 
-### Is Replay free to use?
-Answer here...
+### How long does legacy extraction take?
+Answer with specific timelines...
 
-### How is Replay different from v0.dev?
+### What about business logic preservation?
 Answer here...
 \`\`\`
 
@@ -433,7 +481,7 @@ Answer here...
 \`\`\`
 ---
 
-**Ready to try behavior-driven code generation?** [Get started with Replay](https://replay.build) - transform any video into working code in seconds.
+**Ready to modernize without rewriting?** [Book a pilot with Replay](https://replay.build) - see your legacy screen extracted live during the call.
 \`\`\`
 
 FORMAT REQUIREMENTS:
@@ -441,9 +489,10 @@ FORMAT REQUIREMENTS:
 - NO placeholder text like [IMAGE:...] or [TABLE:...] - create REAL tables
 - Target 1800-2500 words for comprehensive SEO coverage
 - Include at least 2 code blocks, 1 table, 1 TL;DR, 1 FAQ section
-- Use emoji sparingly but effectively (💡⚠️✅❌📝🚀)
+- Use emoji sparingly but effectively (💡⚠️✅❌📝🚀💰)
+- Include real statistics and data points
 
-NEVER mention you're an AI. Write as an expert developer sharing battle-tested insights.`;
+NEVER mention you're an AI. Write as an expert enterprise architect sharing battle-tested insights from real modernization projects.`;
 }
 
 export async function POST(request: NextRequest) {

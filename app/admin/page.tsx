@@ -1475,7 +1475,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold text-white">Replay Content Engine</h2>
-                  <p className="text-xs text-white/50">Generate SEO-optimized articles using Gemini 2.5</p>
+                  <p className="text-xs text-white/50">Generate SEO articles about legacy modernization, technical debt & enterprise rewrites</p>
                 </div>
               </div>
 
@@ -1516,8 +1516,8 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                       <div className="flex items-center gap-3 mb-4">
                         <Zap className="w-5 h-5 text-[#FF6E3C]" />
                         <div>
-                          <p className="text-sm font-medium text-white">AI picks the best SEO topics</p>
-                          <p className="text-xs text-white/50">Just enter how many articles you want</p>
+                          <p className="text-sm font-medium text-white">AI picks enterprise modernization topics</p>
+                          <p className="text-xs text-white/50">Technical debt, legacy rewrites, ROI, industry-specific</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
@@ -1532,7 +1532,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                         <label className="text-sm text-white/70">articles</label>
                       </div>
                       <p className="text-xs text-white/40 mt-3">
-                        AI will generate {autoCount} unique SEO-optimized topics: comparisons, tutorials, how-tos
+                        AI will generate {autoCount} unique topics: legacy modernization, technical debt, enterprise ROI, industry cases
                       </p>
                     </div>
                   ) : (
@@ -1544,7 +1544,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                       <textarea
                         value={generateTitles}
                         onChange={(e) => setGenerateTitles(e.target.value)}
-                        placeholder="Replay vs v0.dev - which handles complex state better?&#10;How to build a SaaS dashboard with Supabase using Video&#10;Stop renaming props manually: The problem with Image-to-Code AI"
+                        placeholder="Why 70% of Legacy Rewrites Fail (And What Actually Works)&#10;The Hidden Cost of Technical Debt: $3.6 Trillion Problem&#10;COBOL to React: Modernizing Financial Services Legacy Systems"
                         rows={6}
                         className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50 resize-none"
                       />
@@ -1562,7 +1562,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                       type="text"
                       value={generateKeyword}
                       onChange={(e) => setGenerateKeyword(e.target.value)}
-                      placeholder="video to code ai"
+                      placeholder="legacy modernization, technical debt, enterprise rewrite"
                       className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50"
                     />
                   </div>
@@ -1605,7 +1605,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                     <textarea
                       value={generateTakeaways}
                       onChange={(e) => setGenerateTakeaways(e.target.value)}
-                      placeholder="Mention Supabase integration&#10;Include code examples&#10;Compare with competitors"
+                      placeholder="Include ROI statistics (70% time savings)&#10;Mention regulated industries (HIPAA, SOC2)&#10;Compare with traditional rewrites"
                       rows={3}
                       className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50 resize-none"
                     />
