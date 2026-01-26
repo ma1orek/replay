@@ -352,6 +352,8 @@ import { OnlineUsers } from "@/components/LiveCursors";
 import { CommentModeToggle } from "@/components/LiveComments";
 import { LiveCollaboration } from "@/components/LiveCollaboration";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
+import { ColorPicker } from "@/components/ui/color-picker";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import AuthModal from "@/components/modals/AuthModal";
 import OutOfCreditsModal from "@/components/modals/OutOfCreditsModal";
 import FeedbackGateModal from "@/components/modals/FeedbackGateModal";
@@ -13746,8 +13748,6 @@ ${publishCode}
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ColorPicker } from '@/components/ui/color-picker';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 export default function GeneratedPage() {
   const [isLoading, setIsLoading] = useState(true);
