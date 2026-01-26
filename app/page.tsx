@@ -3513,37 +3513,65 @@ function ReplayToolContent() {
 <style id="invisible-fix">
   /* Force all elements visible - fix AI generated fade/slide animations */
   [style*="opacity: 0"], [style*="opacity:0"] { opacity: 1 !important; }
-  [style*="translate"] { opacity: 1 !important; transform: none !important; }
+  [style*="visibility: hidden"], [style*="visibility:hidden"] { visibility: visible !important; }
+  [style*="translate"] { opacity: 1 !important; }
   .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .animate-fade,
-  [class*="fade-"], [class*="slide-"], [class*="stagger-"] {
-    opacity: 1 !important;
-    transform: none !important;
-  }
-  [data-state="hidden"], [data-visible="false"] {
+  [class*="fade-"], [class*="slide-"], [class*="stagger-"], [class*="animate-"] {
     opacity: 1 !important;
     visibility: visible !important;
   }
+  [data-state="hidden"], [data-visible="false"], [data-aos] {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+  }
+  /* Fix Lucide icons - make invisible instead of hidden to preserve layout */
+  i[data-lucide]:empty { opacity: 0; width: 1em; height: 1em; display: inline-block; }
+  i[data-lucide]:not(:has(svg)) { opacity: 0; width: 1em; height: 1em; display: inline-block; }
+  i[data-lucide]:has(svg) { opacity: 1 !important; }
+  /* Fix sections with no content showing */
+  section:empty { min-height: 0 !important; }
+  /* Ensure grid/flex children are visible */
+  .grid > *, .flex > * { opacity: 1 !important; visibility: visible !important; }
 </style>
 <script>
 // Force all elements visible after load
-window.addEventListener('load', function() {
+function forceVisible() {
   document.querySelectorAll('*').forEach(function(el) {
-    var style = el.getAttribute('style') || '';
-    if (style.includes('opacity') && (style.includes('opacity: 0') || style.includes('opacity:0'))) {
+    var style = window.getComputedStyle(el);
+    var inlineStyle = el.getAttribute('style') || '';
+    
+    // Fix opacity:0
+    if (style.opacity === '0' || inlineStyle.includes('opacity:0') || inlineStyle.includes('opacity: 0')) {
       el.style.opacity = '1';
     }
-    if (style.includes('translate') && style.includes('opacity')) {
-      el.style.opacity = '1';
-      el.style.transform = 'none';
+    
+    // Fix visibility:hidden
+    if (style.visibility === 'hidden') {
+      el.style.visibility = 'visible';
+    }
+    
+    // Fix elements positioned off-screen
+    if (el.getBoundingClientRect && el.offsetParent !== null) {
+      var rect = el.getBoundingClientRect();
+      if (rect.top < -1000 || rect.left < -1000) {
+        el.style.transform = 'none';
+        el.style.top = 'auto';
+        el.style.left = 'auto';
+      }
     }
   });
+}
+window.addEventListener('load', forceVisible);
+setTimeout(forceVisible, 100);
+setTimeout(forceVisible, 500);
+setTimeout(forceVisible, 1000);
+// Initialize Lucide icons if available
+window.addEventListener('load', function() {
+  if (typeof lucide !== 'undefined') {
+    try { lucide.createIcons(); } catch(e) {}
+  }
 });
-// Also run after a delay for dynamically rendered content
-setTimeout(function() {
-  document.querySelectorAll('[style*="opacity"]').forEach(function(el) {
-    el.style.opacity = '1';
-  });
-}, 500);
 </script>`;
     
     // Ensure Tailwind CSS is included (inject if missing)
@@ -18192,15 +18220,14 @@ video{max-width:100%;border-radius:inherit}
 p,h1,h2,h3,h4,h5,h6,span,a{word-wrap:break-word;overflow-wrap:break-word}
 /* Padding responsive */
 @media(max-width:400px){.px-6,.px-8,.px-10,.px-12{padding-left:1rem!important;padding-right:1rem!important}.py-16,.py-20,.py-24{padding-top:2rem!important;padding-bottom:2rem!important}}
-/* FIX: Hide ALL uninitialized Lucide icons (black circles/squares) */
-i[data-lucide]:empty{display:none!important;visibility:hidden!important}
-i[data-lucide]:not(:has(svg)){display:none!important;visibility:hidden!important}
-[data-lucide]:empty{display:none!important;visibility:hidden!important}
-[data-lucide]:not(:has(svg)){display:none!important;visibility:hidden!important}
-/* Hide icon placeholders before init */
-.lucide:empty,.lucide-icon:empty{display:none!important}
-/* Style initialized Lucide icons */
+/* FIX: Make uninitialized Lucide icons invisible (not display:none to preserve layout) */
+i[data-lucide]:empty{opacity:0!important;width:1em;height:1em}
+i[data-lucide]:not(:has(svg)){opacity:0!important;width:1em;height:1em}
+/* Style initialized Lucide icons - make visible */
+i[data-lucide]:has(svg){opacity:1!important}
 i[data-lucide] svg{width:inherit;height:inherit;stroke:currentColor;fill:none}
+/* Only hide icon wrappers that are truly broken (not whole sections) */
+.lucide:empty,.lucide-icon:empty{opacity:0;width:1em;height:1em}
 </style>
 <script>
 function autoResize(){
