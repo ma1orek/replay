@@ -717,6 +717,118 @@ Implementation with Alpine.js:
 </html>
 
 ═══════════════════════════════════════════════════════════════════════════════
+🏗️ PRODUCTION-QUALITY CODE ARCHITECTURE
+═══════════════════════════════════════════════════════════════════════════════
+
+🚨 CRITICAL: Generate code that is BOTH visually stunning AND architecturally sound!
+
+1. CSS VARIABLES (Design Tokens) - Use these instead of hardcoded colors:
+
+<style>
+:root {
+  /* Primary colors */
+  --color-primary: #6366f1;
+  --color-primary-light: #818cf8;
+  --color-primary-dark: #4f46e5;
+  
+  /* Accent colors */
+  --color-accent: #f59e0b;
+  --color-accent-light: #fbbf24;
+  
+  /* Neutral colors */
+  --color-bg: #0a0a0a;
+  --color-surface: rgba(255, 255, 255, 0.05);
+  --color-border: rgba(255, 255, 255, 0.1);
+  
+  /* Text colors */
+  --color-text: #ffffff;
+  --color-text-muted: rgba(255, 255, 255, 0.7);
+  --color-text-subtle: rgba(255, 255, 255, 0.5);
+  
+  /* Spacing */
+  --spacing-section: 5rem;
+  --spacing-card: 1.5rem;
+  
+  /* Radius */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+}
+</style>
+
+USAGE:
+✅ CORRECT: style="background: var(--color-primary);"
+✅ CORRECT: class="bg-[var(--color-primary)]"
+❌ WRONG:   class="bg-[#6366f1]"  (hardcoded)
+
+2. REUSABLE COMPONENT PATTERNS - Structure code for easy extraction:
+
+<!-- Card Component Pattern -->
+<article class="card group" data-component="FeatureCard">
+  <div class="card-icon">
+    <i data-lucide="rocket" class="w-6 h-6"></i>
+  </div>
+  <h3 class="card-title">Feature Name</h3>
+  <p class="card-description">Feature description here.</p>
+</article>
+
+<!-- Button Component Pattern -->
+<button class="btn btn-primary" data-component="Button" data-variant="primary" data-size="lg">
+  <i data-lucide="arrow-right" class="w-5 h-5"></i>
+  <span>Get Started</span>
+</button>
+
+3. SEMANTIC CLASS NAMES - Use descriptive, reusable classes:
+
+<!-- Component-scoped classes -->
+.card { ... }
+.card-icon { ... }
+.card-title { ... }
+.card-description { ... }
+
+.btn { ... }
+.btn-primary { ... }
+.btn-secondary { ... }
+.btn-lg { ... }
+.btn-sm { ... }
+
+.section { ... }
+.section-header { ... }
+.section-title { ... }
+.section-subtitle { ... }
+
+4. DATA ATTRIBUTES FOR VARIANTS:
+
+<button data-variant="primary" data-size="lg">Primary Large</button>
+<button data-variant="secondary" data-size="sm">Secondary Small</button>
+<div data-theme="dark" data-glass="true">Glass Card</div>
+
+5. ICONS - ALWAYS USE LUCIDE (not inline SVG):
+
+✅ CORRECT:
+<i data-lucide="users" class="w-6 h-6 text-[var(--color-primary)]"></i>
+<i data-lucide="check-circle" class="w-5 h-5 text-green-400"></i>
+<i data-lucide="arrow-right" class="w-4 h-4"></i>
+
+❌ WRONG (inline SVG):
+<svg class="w-6 h-6" viewBox="0 0 24 24"><path d="..."></path></svg>
+
+6. COMPONENT BOUNDARIES - Mark for extraction:
+
+<!-- COMPONENT: HeroSection -->
+<section class="hero" data-component="HeroSection">
+  ...
+</section>
+<!-- /COMPONENT: HeroSection -->
+
+<!-- COMPONENT: FeatureCard -->
+<article class="card" data-component="FeatureCard" data-props="icon,title,description">
+  ...
+</article>
+<!-- /COMPONENT: FeatureCard -->
+
+═══════════════════════════════════════════════════════════════════════════════
 ✅ FINAL CHECKLIST - VERIFY BEFORE OUTPUT
 ═══════════════════════════════════════════════════════════════════════════════
 

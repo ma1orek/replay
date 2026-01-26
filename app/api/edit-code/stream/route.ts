@@ -140,12 +140,24 @@ RULES:
 
 ${languageInstructions}
 
+ICONS - MANDATORY:
+- Use ONLY Lucide icons: <i data-lucide="icon-name" class="w-5 h-5"></i>
+- NEVER use inline SVG for icons
+- Common icons: home, menu, x, check, arrow-right, user, settings, heart, star, search
+
+DESIGN QUALITY:
+- Use CSS variables where possible: var(--color-primary)
+- Add hover states on all buttons/cards
+- Use glassmorphism: backdrop-blur + bg-white/5 + border-white/10
+- Use semantic class names: .card, .btn, .section
+
 FORBIDDEN:
 - Using emojis in responses (NO emoji!)
 - Mixing languages (pick one based on user input)
 - Returning identical code
 - Using external image services (imgur, etc.)
 - Verbose explanations
+- Inline SVG icons (use Lucide instead!)
 
 RESPONSE FORMAT:
 1. Brief confirmation (1 line, no emoji)
