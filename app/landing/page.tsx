@@ -1220,6 +1220,11 @@ function FAQSection() {
 
   return (
     <section className="relative py-20 lg:py-32 bg-zinc-950 overflow-hidden" ref={ref}>
+      {/* Top separator line */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl px-8">
+        <div className="h-px bg-gradient-to-r from-transparent via-zinc-700 to-transparent" />
+      </div>
+      
       {/* Background */}
       <div className="absolute inset-0">
         {/* Grid pattern */}
