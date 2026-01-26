@@ -18112,13 +18112,16 @@ document.querySelectorAll('img').forEach(img=>{
                                       </div>
                                     )}
                                     
-                                    {/* Resize handles - visible on select/hover */}
+                                    {/* Resize handles - VISIBLE on select */}
                                     {isSelected && (
                                       <>
-                                        {/* Right edge - invisible but functional */}
+                                        {/* Selection border */}
+                                        <div className="absolute inset-0 border-2 border-[#FF6E3C] rounded-lg pointer-events-none z-10" />
+                                        
+                                        {/* Right edge handle */}
                                         <div
                                           data-resize-handle="e"
-                                          className="absolute top-1/2 -right-1 w-3 h-full -translate-y-1/2 cursor-ew-resize z-20"
+                                          className="absolute top-1/2 -right-2 -translate-y-1/2 cursor-ew-resize z-20 group"
                                           onMouseDown={(e) => {
                                             e.stopPropagation();
                                             const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
@@ -18130,11 +18133,14 @@ document.querySelectorAll('img').forEach(img=>{
                                               height: iframe?.offsetHeight || 100 
                                             });
                                           }}
-                                        />
-                                        {/* Bottom edge - invisible but functional */}
+                                        >
+                                          <div className="w-3 h-8 rounded-full bg-[#FF6E3C] border-2 border-zinc-900 shadow-lg hover:bg-[#FF8555] transition-colors" />
+                                        </div>
+                                        
+                                        {/* Bottom edge handle */}
                                         <div
                                           data-resize-handle="s"
-                                          className="absolute -bottom-1 left-0 h-3 w-full cursor-ns-resize z-20"
+                                          className="absolute -bottom-2 left-1/2 -translate-x-1/2 cursor-ns-resize z-20 group"
                                           onMouseDown={(e) => {
                                             e.stopPropagation();
                                             const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
@@ -18146,11 +18152,14 @@ document.querySelectorAll('img').forEach(img=>{
                                               height: iframe?.offsetHeight || 100 
                                             });
                                           }}
-                                        />
-                                        {/* Bottom-right corner - invisible but functional */}
+                                        >
+                                          <div className="w-8 h-3 rounded-full bg-[#FF6E3C] border-2 border-zinc-900 shadow-lg hover:bg-[#FF8555] transition-colors" />
+                                        </div>
+                                        
+                                        {/* Bottom-right corner handle */}
                                         <div
                                           data-resize-handle="se"
-                                          className="absolute -bottom-1 -right-1 w-4 h-4 cursor-nwse-resize z-20"
+                                          className="absolute -bottom-2 -right-2 cursor-nwse-resize z-20 group"
                                           onMouseDown={(e) => {
                                             e.stopPropagation();
                                             const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
@@ -18162,11 +18171,13 @@ document.querySelectorAll('img').forEach(img=>{
                                               height: iframe?.offsetHeight || 100 
                                             });
                                           }}
-                                        />
-                                        {/* Left edge - invisible but functional */}
+                                        >
+                                          <div className="w-4 h-4 rounded-full bg-[#FF6E3C] border-2 border-zinc-900 shadow-lg hover:bg-[#FF8555] transition-colors" />
+                                        </div>
+                                        {/* Left edge handle */}
                                         <div
                                           data-resize-handle="w"
-                                          className="absolute top-1/2 -left-1 w-3 h-full -translate-y-1/2 cursor-ew-resize z-20"
+                                          className="absolute top-1/2 -left-2 -translate-y-1/2 cursor-ew-resize z-20 group"
                                           onMouseDown={(e) => {
                                             e.stopPropagation();
                                             const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
@@ -18178,11 +18189,14 @@ document.querySelectorAll('img').forEach(img=>{
                                               height: iframe?.offsetHeight || 100 
                                             });
                                           }}
-                                        />
-                                        {/* Top edge - invisible but functional */}
+                                        >
+                                          <div className="w-3 h-8 rounded-full bg-[#FF6E3C] border-2 border-zinc-900 shadow-lg hover:bg-[#FF8555] transition-colors" />
+                                        </div>
+                                        
+                                        {/* Top edge handle */}
                                         <div
                                           data-resize-handle="n"
-                                          className="absolute -top-1 left-0 h-3 w-full cursor-ns-resize z-20"
+                                          className="absolute -top-2 left-1/2 -translate-x-1/2 cursor-ns-resize z-20 group"
                                           onMouseDown={(e) => {
                                             e.stopPropagation();
                                             const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
@@ -18194,7 +18208,66 @@ document.querySelectorAll('img').forEach(img=>{
                                               height: iframe?.offsetHeight || 100 
                                             });
                                           }}
-                                        />
+                                        >
+                                          <div className="w-8 h-3 rounded-full bg-[#FF6E3C] border-2 border-zinc-900 shadow-lg hover:bg-[#FF8555] transition-colors" />
+                                        </div>
+                                        
+                                        {/* Top-left corner handle */}
+                                        <div
+                                          data-resize-handle="nw"
+                                          className="absolute -top-2 -left-2 cursor-nwse-resize z-20 group"
+                                          onMouseDown={(e) => {
+                                            e.stopPropagation();
+                                            const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
+                                            setResizingComponent({ id, handle: 'nw' });
+                                            setResizeStart({ 
+                                              x: e.clientX, 
+                                              y: e.clientY, 
+                                              width: iframe?.offsetWidth || 200, 
+                                              height: iframe?.offsetHeight || 100 
+                                            });
+                                          }}
+                                        >
+                                          <div className="w-4 h-4 rounded-full bg-[#FF6E3C] border-2 border-zinc-900 shadow-lg hover:bg-[#FF8555] transition-colors" />
+                                        </div>
+                                        
+                                        {/* Top-right corner handle */}
+                                        <div
+                                          data-resize-handle="ne"
+                                          className="absolute -top-2 -right-2 cursor-nesw-resize z-20 group"
+                                          onMouseDown={(e) => {
+                                            e.stopPropagation();
+                                            const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
+                                            setResizingComponent({ id, handle: 'ne' });
+                                            setResizeStart({ 
+                                              x: e.clientX, 
+                                              y: e.clientY, 
+                                              width: iframe?.offsetWidth || 200, 
+                                              height: iframe?.offsetHeight || 100 
+                                            });
+                                          }}
+                                        >
+                                          <div className="w-4 h-4 rounded-full bg-[#FF6E3C] border-2 border-zinc-900 shadow-lg hover:bg-[#FF8555] transition-colors" />
+                                        </div>
+                                        
+                                        {/* Bottom-left corner handle */}
+                                        <div
+                                          data-resize-handle="sw"
+                                          className="absolute -bottom-2 -left-2 cursor-nesw-resize z-20 group"
+                                          onMouseDown={(e) => {
+                                            e.stopPropagation();
+                                            const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
+                                            setResizingComponent({ id, handle: 'sw' });
+                                            setResizeStart({ 
+                                              x: e.clientX, 
+                                              y: e.clientY, 
+                                              width: iframe?.offsetWidth || 200, 
+                                              height: iframe?.offsetHeight || 100 
+                                            });
+                                          }}
+                                        >
+                                          <div className="w-4 h-4 rounded-full bg-[#FF6E3C] border-2 border-zinc-900 shadow-lg hover:bg-[#FF8555] transition-colors" />
+                                        </div>
                                       </>
                                     )}
                                   </div>
