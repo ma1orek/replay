@@ -16,9 +16,13 @@ import {
   Briefcase,
   ChevronDown,
   Home,
+  Calendar,
+  ArrowRight,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { cn } from "@/lib/utils";
+
+const CALENDLY_URL = "https://calendly.com/bartosz-replay/30min";
 
 const TOPICS = [
   { id: "enterprise", label: "Enterprise Inquiry", icon: Building2 },
@@ -208,11 +212,40 @@ export default function ContactPage() {
                 transition={{ duration: 0.3 }}
               >
                 {/* Title */}
-                <div className="text-center mb-12">
-                  <h1 className="text-4xl md:text-5xl font-bold mb-4 text-zinc-900">Contact Us</h1>
+                <div className="text-center mb-10">
+                  <h1 className="text-4xl md:text-5xl font-bold mb-4 text-zinc-900">Book a Demo</h1>
                   <p className="text-zinc-500 text-lg">
-                    Have a question or want to learn more about Enterprise?
+                    See how Replay can modernize your legacy systems
                   </p>
+                </div>
+
+                {/* Calendly CTA - Primary */}
+                <div className="mb-10">
+                  <a
+                    href={CALENDLY_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex items-center justify-center gap-3 w-full px-8 py-5 rounded-2xl bg-orange-500 text-white font-semibold text-lg shadow-lg shadow-orange-500/25 hover:bg-orange-600 hover:shadow-orange-500/30 transition-all"
+                  >
+                    <Calendar className="w-6 h-6" />
+                    Schedule a Call with Founder
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </a>
+                  <p className="text-center text-sm text-zinc-400 mt-3">
+                    30 min call • No commitment
+                  </p>
+                </div>
+
+                {/* Divider */}
+                <div className="relative mb-10">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-zinc-200" />
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-4 bg-[#fafafa] text-zinc-400">
+                      Or send us a message
+                    </span>
+                  </div>
                 </div>
 
                 {/* Direct Email Option */}

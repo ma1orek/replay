@@ -18,32 +18,32 @@ export default function PricingPage() {
           <h1 className="text-4xl font-bold text-white">Pricing & Credits</h1>
         </div>
         <p className="text-xl text-zinc-400">
-          Start for free. Upgrade as you go. Pay only for what you generate.
+          Explore the demo free. Pay when you're ready to build.
         </p>
       </div>
 
-      {/* How credits work */}
+      {/* How it works */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-white">How Credits Work</h2>
+        <h2 className="text-2xl font-semibold text-white">How Active Projects Work</h2>
         <p className="text-zinc-400 leading-relaxed">
-          Credits are consumed per reconstruction — not per prompt. One generation includes 
-          flow + structure + code + design system.
+          Each plan has a limit on <strong className="text-white">active projects</strong>. You can iterate 
+          unlimited times within each project. When you finish a project, archive it to free up a slot for a new one.
         </p>
         <div className="grid md:grid-cols-3 gap-4">
           <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700 text-center">
-            <div className="text-3xl font-bold text-white mb-1">75</div>
-            <p className="text-sm text-zinc-400">Video to UI Generation</p>
-            <p className="text-xs text-zinc-500 mt-1">Full UI reconstruction</p>
-          </div>
-          <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700 text-center">
-            <div className="text-3xl font-bold text-white mb-1">3</div>
-            <p className="text-sm text-zinc-400">Edit with AI</p>
-            <p className="text-xs text-zinc-500 mt-1">Refine, add, modify</p>
+            <div className="text-3xl font-bold text-white mb-1">1</div>
+            <p className="text-sm text-zinc-400">Pro Plan</p>
+            <p className="text-xs text-zinc-500 mt-1">1 active project</p>
           </div>
           <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700 text-center">
             <div className="text-3xl font-bold text-white mb-1">10</div>
-            <p className="text-sm text-zinc-400">Library Extraction</p>
-            <p className="text-xs text-zinc-500 mt-1">Extract components</p>
+            <p className="text-sm text-zinc-400">Agency Plan</p>
+            <p className="text-xs text-zinc-500 mt-1">10 active projects</p>
+          </div>
+          <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700 text-center">
+            <div className="text-3xl font-bold text-white mb-1">∞</div>
+            <p className="text-sm text-zinc-400">Enterprise</p>
+            <p className="text-xs text-zinc-500 mt-1">Unlimited projects</p>
           </div>
         </div>
       </div>
@@ -52,118 +52,117 @@ export default function PricingPage() {
       <div className="space-y-4">
         <h2 className="text-2xl font-semibold text-white">Plans</h2>
         <div className="grid md:grid-cols-4 gap-6">
-          {/* Free */}
+          {/* Sandbox */}
           <div className="p-6 rounded-xl bg-zinc-800/50 border border-zinc-700">
             <div className="mb-4">
-              <h3 className="text-lg font-semibold text-white">Free</h3>
-              <p className="text-sm text-zinc-500">For getting started</p>
+              <h3 className="text-lg font-semibold text-white">Sandbox</h3>
+              <p className="text-sm text-zinc-500">Explore the demo</p>
             </div>
             <div className="mb-4">
               <span className="text-4xl font-bold text-white">$0</span>
-              <span className="text-zinc-500">/mo</span>
             </div>
-            <p className="text-xs text-zinc-500 mb-4">~1 generation</p>
+            <p className="text-xs text-zinc-500 mb-4">Interactive demo only</p>
             <ul className="space-y-2 text-sm text-zinc-400 mb-6">
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-zinc-500" />
-                <span>100 credits / month</span>
+                <span>Demo project (read-only)</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-zinc-500" />
-                <span>Preview only</span>
+                <span>Flow Map & Library preview</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-zinc-500" />
-                <span>Public projects only</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-zinc-500" />
-                <span>Community support</span>
+                <span>Code preview</span>
               </li>
             </ul>
-            <button className="w-full py-2 rounded-lg bg-zinc-700 text-white text-sm hover:bg-zinc-600 transition-colors">
-              Get Started
-            </button>
-          </div>
-
-          {/* Maker */}
-          <div className="p-6 rounded-xl bg-zinc-800/50 border border-zinc-700">
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-white">Maker</h3>
-              <p className="text-sm text-zinc-500">One-time purchase</p>
-            </div>
-            <div className="mb-4">
-              <span className="text-4xl font-bold text-white">$9</span>
-              <span className="text-zinc-500"> one-time</span>
-            </div>
-            <p className="text-xs text-zinc-500 mb-4">~4 generations • Perfect for testing</p>
-            <ul className="space-y-2 text-sm text-zinc-400 mb-6">
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-zinc-500" />
-                <span>300 credits (~4 gens)</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-zinc-500" />
-                <span>Full Access & Export</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-zinc-500" />
-                <span>Publish to web</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-zinc-500" />
-                <span>Credits never expire</span>
-              </li>
-            </ul>
-            <button className="w-full py-2 rounded-lg bg-zinc-700 text-white text-sm hover:bg-zinc-600 transition-colors">
-              Buy Maker
-            </button>
+            <Link href="#demo" className="block w-full py-2 rounded-lg bg-zinc-700 text-white text-sm text-center hover:bg-zinc-600 transition-colors">
+              Explore Demo
+            </Link>
           </div>
 
           {/* Pro */}
-          <div className="p-6 rounded-xl bg-zinc-800 border border-zinc-600 relative">
+          <div className="p-6 rounded-xl bg-zinc-800 border border-orange-500/50 relative">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-              <span className="px-3 py-1 bg-zinc-600 text-white text-xs font-medium rounded-full flex items-center gap-1">
-                <Star className="w-3 h-3" /> Best Value
+              <span className="px-3 py-1 bg-orange-500 text-white text-xs font-medium rounded-full flex items-center gap-1">
+                <Star className="w-3 h-3" /> Popular
               </span>
             </div>
             <div className="mb-4">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                <Zap className="w-4 h-4 text-zinc-400" />
+                <Zap className="w-4 h-4 text-orange-400" />
                 Pro
               </h3>
-              <p className="text-sm text-zinc-500">For creators</p>
+              <p className="text-sm text-zinc-500">For solo freelancers</p>
             </div>
             <div className="mb-4">
-              <span className="text-4xl font-bold text-white">$25</span>
+              <span className="text-4xl font-bold text-white">$149</span>
               <span className="text-zinc-500">/mo</span>
             </div>
-            <p className="text-xs text-zinc-500 mb-4">~20 generations / month</p>
+            <p className="text-xs text-zinc-500 mb-4">1 active project</p>
             <ul className="space-y-2 text-sm text-zinc-400 mb-6">
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-500" />
-                <span className="text-white">Everything in Maker, plus:</span>
+                <Check className="w-4 h-4 text-orange-500" />
+                <span>1 active project</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-500" />
-                <span>1,500 credits / month</span>
+                <Check className="w-4 h-4 text-orange-500" />
+                <span>Unlimited iterations</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-500" />
-                <span>Private projects</span>
+                <Check className="w-4 h-4 text-orange-500" />
+                <span>React + Tailwind export</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-500" />
-                <span>Credits roll over</span>
+                <Check className="w-4 h-4 text-orange-500" />
+                <span>Design System generation</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-500" />
+                <Check className="w-4 h-4 text-orange-500" />
+                <span>Email support</span>
+              </li>
+            </ul>
+            <Link href="/login?plan=pro" className="block w-full py-2 rounded-lg bg-orange-500 text-white text-sm font-medium text-center hover:bg-orange-600 transition-colors">
+              Get Started
+            </Link>
+          </div>
+
+          {/* Agency */}
+          <div className="p-6 rounded-xl bg-zinc-800/50 border border-zinc-700">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-white">Agency</h3>
+              <p className="text-sm text-zinc-500">For software houses</p>
+            </div>
+            <div className="mb-4">
+              <span className="text-4xl font-bold text-white">$499</span>
+              <span className="text-zinc-500">/mo</span>
+            </div>
+            <p className="text-xs text-zinc-500 mb-4">10 active projects</p>
+            <ul className="space-y-2 text-sm text-zinc-400 mb-6">
+              <li className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-zinc-500" />
+                <span>10 active projects</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-zinc-500" />
+                <span>5 team members</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-zinc-500" />
+                <span>Shared Design System</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-zinc-500" />
+                <span>Priority GPU queue</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-zinc-500" />
                 <span>Priority support</span>
               </li>
             </ul>
-            <button className="w-full py-2 rounded-lg bg-zinc-600 text-white text-sm font-medium hover:bg-zinc-500 transition-colors">
-              Subscribe
-            </button>
+            <Link href="/login?plan=agency" className="block w-full py-2 rounded-lg bg-zinc-700 text-white text-sm text-center hover:bg-zinc-600 transition-colors">
+              Get Started
+            </Link>
           </div>
 
           {/* Enterprise */}
@@ -173,58 +172,37 @@ export default function PricingPage() {
                 <Building className="w-4 h-4 text-zinc-500" />
                 Enterprise
               </h3>
-              <p className="text-sm text-zinc-500">For teams & orgs</p>
+              <p className="text-sm text-zinc-500">For banks & enterprise</p>
             </div>
             <div className="mb-4">
               <span className="text-4xl font-bold text-white">Custom</span>
             </div>
-            <p className="text-xs text-zinc-500 mb-4">Unlimited potential</p>
+            <p className="text-xs text-zinc-500 mb-4">Unlimited projects</p>
             <ul className="space-y-2 text-sm text-zinc-400 mb-6">
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-zinc-500" />
-                <span>Everything in Pro, plus:</span>
+                <span>Unlimited projects</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-zinc-500" />
-                <span>Custom credit allocation</span>
+                <span>On-premise / Private Cloud</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-zinc-500" />
-                <span>Team seats & SSO</span>
+                <span>SSO / SAML integration</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-zinc-500" />
-                <span>Dedicated support & SLA</span>
+                <span>SLA & Security audit</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-zinc-500" />
+                <span>Dedicated account manager</span>
               </li>
             </ul>
-            <button className="w-full py-2 rounded-lg bg-zinc-700 text-white text-sm hover:bg-zinc-600 transition-colors">
-              Contact Sales
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Top-ups */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-white">Buy Credits Anytime</h2>
-        <p className="text-zinc-400 leading-relaxed">
-          Need more credits? Purchase additional packs. Top-up credits never expire.
-        </p>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700 text-center">
-            <div className="text-2xl font-bold text-white mb-1">2,000</div>
-            <p className="text-sm text-zinc-500 mb-2">credits</p>
-            <p className="text-zinc-300 font-medium">$20</p>
-          </div>
-          <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700 text-center">
-            <div className="text-2xl font-bold text-white mb-1">5,500</div>
-            <p className="text-sm text-zinc-500 mb-2">credits</p>
-            <p className="text-zinc-300 font-medium">$50</p>
-          </div>
-          <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700 text-center">
-            <div className="text-2xl font-bold text-white mb-1">12,000</div>
-            <p className="text-sm text-zinc-500 mb-2">credits</p>
-            <p className="text-zinc-300 font-medium">$100</p>
+            <Link href="/contact" className="block w-full py-2 rounded-lg bg-zinc-700 text-white text-sm text-center hover:bg-zinc-600 transition-colors">
+              Book a Demo
+            </Link>
           </div>
         </div>
       </div>
@@ -234,8 +212,8 @@ export default function PricingPage() {
         <h2 className="text-2xl font-semibold text-white">Common Questions</h2>
         <div className="space-y-3">
           <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
-            <h4 className="font-medium text-white mb-1">Do credits expire?</h4>
-            <p className="text-sm text-zinc-400">Monthly subscription credits reset each billing cycle. Unused monthly credits can roll over up to 600 on Pro. Top-up credits never expire.</p>
+            <h4 className="font-medium text-white mb-1">What happens when I reach my project limit?</h4>
+            <p className="text-sm text-zinc-400">Archive a completed project to free up a slot for a new one. Archived projects remain accessible but don't count towards your limit.</p>
           </div>
           <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
             <h4 className="font-medium text-white mb-1">Can I cancel anytime?</h4>
@@ -243,11 +221,15 @@ export default function PricingPage() {
           </div>
           <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
             <h4 className="font-medium text-white mb-1">What's the difference between plans?</h4>
-            <p className="text-sm text-zinc-400">Free: 100 credits/month (~1 gen), preview only. Maker: $9 one-time, 300 credits (~4 gens), full access, never expire. Pro: $25/mo, 1,500 credits (~20 gens), private projects, credits roll over, priority support.</p>
+            <p className="text-sm text-zinc-400">Sandbox: Demo only, no upload. Pro ($149/mo): 1 active project, unlimited iterations. Agency ($499/mo): 10 projects, 5 team members. Enterprise: Custom pricing, unlimited projects, on-premise option.</p>
           </div>
           <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
             <h4 className="font-medium text-white mb-1">What payment methods do you accept?</h4>
             <p className="text-sm text-zinc-400">We accept all major credit cards via Stripe.</p>
+          </div>
+          <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
+            <h4 className="font-medium text-white mb-1">Do I need Enterprise for my team?</h4>
+            <p className="text-sm text-zinc-400">Agency plan supports up to 5 team members. Enterprise is for organizations that need on-premise deployment, SSO/SAML, or dedicated support with SLA.</p>
           </div>
         </div>
       </div>

@@ -81,7 +81,7 @@ function Header() {
                   <Link href="/login">Login</Link>
                 </Button>
                 <Button variant="orange" size="sm" asChild>
-                  <Link href="/contact">Request a Demo</Link>
+                  <Link href="/contact">Book a Demo</Link>
                 </Button>
               </>
             )}
@@ -132,7 +132,7 @@ function Header() {
                       <Link href="/login">Login</Link>
                     </Button>
                     <Button variant="orange" asChild className="w-full">
-                      <Link href="/contact">Request a Demo</Link>
+                      <Link href="/contact">Book a Demo</Link>
                     </Button>
                   </>
                 )}
@@ -149,62 +149,80 @@ function Header() {
 // PRICING PAGE
 // ═══════════════════════════════════════════════════════════════
 
+// Placeholder - user will provide the actual demo project URL
+const DEMO_PROJECT_URL = "#demo";
+
 export default function PricingPage() {
   const plans = [
     {
-      name: "Pro",
-      subtitle: "For individual developers & freelancers",
-      price: "$49",
-      period: "/month",
-      description: "Test Replay on one workflow. Perfect for senior devs exploring modernization for their org.",
+      name: "Sandbox",
+      subtitle: "Explore the demo",
+      price: "$0",
+      period: "",
+      description: "See how Replay works with our interactive demo project. No signup required.",
       features: [
-        { name: "Unlimited rebuilds", included: true },
-        { name: "Private projects", included: true },
-        { name: "React + Tailwind export", included: true },
-        { name: "Community support", included: true },
-        { name: "Shared workspace", included: false },
-        { name: "Priority processing", included: false },
-        { name: "On-premise deployment", included: false },
+        { name: "Interactive demo (read-only)", included: true },
+        { name: "Flow Map & Library preview", included: true },
+        { name: "Code preview", included: true },
+        { name: "Upload your own video", included: false },
+        { name: "Export code", included: false },
       ],
-      cta: "Subscribe",
+      cta: "Explore Demo",
+      href: DEMO_PROJECT_URL,
       variant: "outline" as const,
       popular: false
     },
     {
-      name: "Team",
-      subtitle: "For agile teams & software houses",
-      price: "$299",
+      name: "Pro",
+      subtitle: "For solo freelancers",
+      price: "$149",
       period: "/month",
-      description: "5 seats included. Fits on a company card — no board approval needed.",
+      description: "1 active project. Unlimited iterations. Perfect for individual modernization projects.",
       features: [
-        { name: "Everything in Pro", included: true },
-        { name: "5 team members", included: true },
-        { name: "Shared workspace", included: true },
-        { name: "Centralized billing (VAT invoice)", included: true },
-        { name: "Priority GPU processing", included: true },
-        { name: "Design system export", included: true },
-        { name: "On-premise deployment", included: false },
+        { name: "1 active project", included: true },
+        { name: "Unlimited iterations", included: true },
+        { name: "React + Tailwind export", included: true },
+        { name: "Design System generation", included: true },
+        { name: "Email support", included: true },
       ],
-      cta: "Subscribe",
+      cta: "Get Started",
+      href: "/login?plan=pro",
       variant: "orange" as const,
       popular: true
     },
     {
+      name: "Agency",
+      subtitle: "For software houses",
+      price: "$499",
+      period: "/month",
+      description: "10 active projects. 5 team members. Built for agencies handling multiple clients.",
+      features: [
+        { name: "10 active projects", included: true },
+        { name: "5 team members", included: true },
+        { name: "Shared Design System", included: true },
+        { name: "Priority GPU queue", included: true },
+        { name: "Priority support", included: true },
+      ],
+      cta: "Get Started",
+      href: "/login?plan=agency",
+      variant: "outline" as const,
+      popular: false
+    },
+    {
       name: "Enterprise",
-      subtitle: "For organizations modernizing legacy systems",
+      subtitle: "For banks & enterprise",
       price: "Custom",
       period: "",
-      description: "Pilot starts at $5,000. Full compliance, security audits, and dedicated support.",
+      description: "Unlimited projects. On-premise deployment. Full security compliance.",
       features: [
-        { name: "Everything in Team", included: true },
-        { name: "Unlimited team members", included: true },
-        { name: "On-premise / private cloud", included: true },
-        { name: "SLA & security audit", included: true },
-        { name: "Legacy refactor assistance", included: true },
-        { name: "Custom contracts & NDA", included: true },
-        { name: "Dedicated success manager", included: true },
+        { name: "Unlimited projects", included: true },
+        { name: "On-premise / Private Cloud", included: true },
+        { name: "SSO / SAML integration", included: true },
+        { name: "SLA & Security audit", included: true },
+        { name: "Dedicated account manager", included: true },
       ],
-      cta: "Contact Sales",
+      cta: "Book a Demo",
+      href: "/contact",
       variant: "dark-outline" as const,
       popular: false
     }
@@ -212,17 +230,16 @@ export default function PricingPage() {
 
   // Comparison table data
   const comparisonFeatures = [
-    { name: "Workflow Recordings", pro: "Unlimited", team: "Unlimited", enterprise: "Unlimited" },
-    { name: "Team Members", pro: "1", team: "5", enterprise: "Unlimited" },
-    { name: "Code Export", pro: "React + Tailwind", team: "React + Tailwind", enterprise: "Custom frameworks" },
-    { name: "Support", pro: "Community", team: "Priority email", enterprise: "Dedicated + SLA" },
-    { name: "Shared Workspace", pro: false, team: true, enterprise: true },
-    { name: "Priority Processing", pro: false, team: true, enterprise: true },
-    { name: "Design System Export", pro: false, team: true, enterprise: true },
-    { name: "On-premise Deployment", pro: false, team: false, enterprise: true },
-    { name: "SSO / SAML", pro: false, team: false, enterprise: true },
-    { name: "Security Audit", pro: false, team: false, enterprise: true },
-    { name: "Custom Contracts", pro: false, team: false, enterprise: true },
+    { name: "Active Projects", sandbox: "Demo only", pro: "1", agency: "10", enterprise: "Unlimited" },
+    { name: "Team Members", sandbox: "1", pro: "1", agency: "5", enterprise: "Unlimited" },
+    { name: "Iterations", sandbox: "-", pro: "Unlimited", agency: "Unlimited", enterprise: "Unlimited" },
+    { name: "Code Export", sandbox: false, pro: true, agency: true, enterprise: true },
+    { name: "Design System", sandbox: "Preview", pro: true, agency: "Shared", enterprise: "Custom" },
+    { name: "Support", sandbox: "-", pro: "Email", agency: "Priority", enterprise: "Dedicated + SLA" },
+    { name: "Priority GPU", sandbox: false, pro: false, agency: true, enterprise: true },
+    { name: "On-premise Deployment", sandbox: false, pro: false, agency: false, enterprise: true },
+    { name: "SSO / SAML", sandbox: false, pro: false, agency: false, enterprise: true },
+    { name: "Security Audit", sandbox: false, pro: false, agency: false, enterprise: true },
   ];
 
   return (
@@ -243,12 +260,12 @@ export default function PricingPage() {
               <span className="italic text-orange-600">pricing</span>
             </h1>
             <p className="text-lg text-zinc-600 max-w-2xl mx-auto">
-              Start free. Scale as you modernize. No hidden fees.
+              Explore the demo free. Pay when you're ready to build.
             </p>
           </motion.div>
 
           {/* Pricing Cards */}
-          <div className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto mb-24">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto mb-24">
             {plans.map((plan, i) => (
               <motion.div
                 key={plan.name}
@@ -326,9 +343,9 @@ export default function PricingPage() {
                   size="lg"
                   asChild
                 >
-                  <Link href={plan.name === "Enterprise" ? "/contact" : "/tool"}>
+                  <Link href={plan.href}>
                     {plan.cta}
-                    {plan.name !== "Enterprise" && <ArrowRight className="ml-2 w-4 h-4" />}
+                    {plan.name !== "Enterprise" && plan.name !== "Sandbox" && <ArrowRight className="ml-2 w-4 h-4" />}
                     {plan.name === "Enterprise" && <PhoneCall className="ml-2 w-4 h-4" />}
                   </Link>
                 </Button>
@@ -349,20 +366,32 @@ export default function PricingPage() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b border-zinc-200">
-                    <th className="text-left py-5 px-6 font-medium text-zinc-500 text-sm">Features</th>
-                    <th className="text-center py-5 px-6 font-semibold text-zinc-900">Pro</th>
-                    <th className="text-center py-5 px-6 font-semibold text-orange-600 bg-orange-50">Team</th>
-                    <th className="text-center py-5 px-6 font-semibold text-zinc-900">Enterprise</th>
+                    <th className="text-left py-5 px-4 font-medium text-zinc-500 text-sm">Features</th>
+                    <th className="text-center py-5 px-4 font-semibold text-zinc-600">Sandbox</th>
+                    <th className="text-center py-5 px-4 font-semibold text-orange-600 bg-orange-50">Pro</th>
+                    <th className="text-center py-5 px-4 font-semibold text-zinc-900">Agency</th>
+                    <th className="text-center py-5 px-4 font-semibold text-zinc-900">Enterprise</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {comparisonFeatures.map((feature, i) => (
+                  {comparisonFeatures.map((feature) => (
                     <tr key={feature.name} className="border-b border-zinc-100 hover:bg-zinc-50 transition-colors">
-                      <td className="py-4 px-6 text-sm text-zinc-700">{feature.name}</td>
-                      <td className="py-4 px-6 text-center">
+                      <td className="py-4 px-4 text-sm text-zinc-700">{feature.name}</td>
+                      <td className="py-4 px-4 text-center">
+                        {typeof feature.sandbox === "boolean" ? (
+                          feature.sandbox ? (
+                            <Check className="w-5 h-5 text-green-500 mx-auto" />
+                          ) : (
+                            <Minus className="w-5 h-5 text-zinc-300 mx-auto" />
+                          )
+                        ) : (
+                          <span className="text-sm text-zinc-500">{feature.sandbox}</span>
+                        )}
+                      </td>
+                      <td className="py-4 px-4 text-center bg-orange-50/50">
                         {typeof feature.pro === "boolean" ? (
                           feature.pro ? (
-                            <Check className="w-5 h-5 text-green-500 mx-auto" />
+                            <Check className="w-5 h-5 text-orange-500 mx-auto" />
                           ) : (
                             <Minus className="w-5 h-5 text-zinc-300 mx-auto" />
                           )
@@ -370,18 +399,18 @@ export default function PricingPage() {
                           <span className="text-sm text-zinc-600">{feature.pro}</span>
                         )}
                       </td>
-                      <td className="py-4 px-6 text-center bg-orange-50/50">
-                        {typeof feature.team === "boolean" ? (
-                          feature.team ? (
-                            <Check className="w-5 h-5 text-orange-500 mx-auto" />
+                      <td className="py-4 px-4 text-center">
+                        {typeof feature.agency === "boolean" ? (
+                          feature.agency ? (
+                            <Check className="w-5 h-5 text-green-500 mx-auto" />
                           ) : (
                             <Minus className="w-5 h-5 text-zinc-300 mx-auto" />
                           )
                         ) : (
-                          <span className="text-sm text-zinc-600">{feature.team}</span>
+                          <span className="text-sm text-zinc-600">{feature.agency}</span>
                         )}
                       </td>
-                      <td className="py-4 px-6 text-center">
+                      <td className="py-4 px-4 text-center">
                         {typeof feature.enterprise === "boolean" ? (
                           feature.enterprise ? (
                             <Check className="w-5 h-5 text-green-500 mx-auto" />

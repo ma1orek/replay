@@ -1,4 +1,83 @@
-import { Check } from "lucide-react";
+import { Check, X, Sparkles } from "lucide-react";
+import Link from "next/link";
+
+// Placeholder - user will provide the actual demo project URL
+const DEMO_PROJECT_URL = "#demo";
+
+const tiers = [
+  {
+    name: "Sandbox",
+    id: "sandbox",
+    price: "$0",
+    period: "",
+    description: "Explore the demo project",
+    features: [
+      { text: "Interactive demo (read-only)", included: true },
+      { text: "Flow Map & Library preview", included: true },
+      { text: "Code preview", included: true },
+      { text: "Upload your own video", included: false },
+      { text: "Export code", included: false },
+    ],
+    cta: "Explore Demo",
+    href: DEMO_PROJECT_URL,
+    highlighted: false,
+    badge: null,
+  },
+  {
+    name: "Pro",
+    id: "pro",
+    price: "$149",
+    period: "/mo",
+    description: "For solo freelancers",
+    features: [
+      { text: "1 active project", included: true },
+      { text: "Unlimited iterations", included: true },
+      { text: "React + Tailwind export", included: true },
+      { text: "Design System generation", included: true },
+      { text: "Email support", included: true },
+    ],
+    cta: "Get Started",
+    href: "/login?plan=pro",
+    highlighted: true,
+    badge: "Popular",
+  },
+  {
+    name: "Agency",
+    id: "agency",
+    price: "$499",
+    period: "/mo",
+    description: "For software houses",
+    features: [
+      { text: "10 active projects", included: true },
+      { text: "5 team members", included: true },
+      { text: "Shared Design System", included: true },
+      { text: "Priority GPU queue", included: true },
+      { text: "Priority support", included: true },
+    ],
+    cta: "Get Started",
+    href: "/login?plan=agency",
+    highlighted: false,
+    badge: null,
+  },
+  {
+    name: "Enterprise",
+    id: "enterprise",
+    price: "Custom",
+    period: "",
+    description: "For banks & enterprise",
+    features: [
+      { text: "Unlimited projects", included: true },
+      { text: "On-premise / Private Cloud", included: true },
+      { text: "SSO / SAML integration", included: true },
+      { text: "SLA & Security audit", included: true },
+      { text: "Dedicated account manager", included: true },
+    ],
+    cta: "Book a Demo",
+    href: "/contact",
+    highlighted: false,
+    badge: null,
+  },
+];
 
 export function Pricing() {
   return (
@@ -9,95 +88,87 @@ export function Pricing() {
             Simple, transparent pricing
           </h2>
           <p className="mt-4 text-lg text-gray-600">
-            Start for free, upgrade when you need to ship.
+            Explore the demo free. Pay when you're ready to build.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-          {/* Free */}
-          <div className="rounded-3xl p-8 ring-1 ring-gray-200 xl:p-10">
-            <h3 className="text-lg font-semibold leading-8 text-gray-900">Free</h3>
-            <p className="mt-4 text-sm leading-6 text-gray-600">Preview the magic.</p>
-            <p className="mt-6 flex items-baseline gap-x-1">
-              <span className="text-4xl font-bold tracking-tight text-gray-900">$0</span>
-            </p>
-            <a
-              href="#"
-              className="mt-6 block rounded-lg py-2.5 px-3 text-center text-sm font-semibold leading-6 text-indigo-600 ring-1 ring-inset ring-indigo-200 hover:ring-indigo-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+          {tiers.map((tier) => (
+            <div
+              key={tier.id}
+              className={`relative rounded-3xl p-8 xl:p-10 ${
+                tier.highlighted
+                  ? "ring-2 ring-orange-500 bg-orange-50/50"
+                  : "ring-1 ring-gray-200"
+              }`}
             >
-              Try for free
-            </a>
-            <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-gray-600">
-              <li className="flex gap-x-3">
-                <Check className="h-6 w-5 flex-none text-indigo-600" aria-hidden="true" />
-                1 generation
-              </li>
-              <li className="flex gap-x-3">
-                <Check className="h-6 w-5 flex-none text-indigo-600" aria-hidden="true" />
-                Public projects only
-              </li>
-            </ul>
-          </div>
+              {/* Badge */}
+              {tier.badge && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-orange-500 px-3 py-1 text-xs font-semibold text-white">
+                    <Sparkles className="h-3 w-3" />
+                    {tier.badge}
+                  </span>
+                </div>
+              )}
 
-          {/* Maker */}
-          <div className="rounded-3xl p-8 ring-1 ring-gray-200 bg-gray-50 xl:p-10">
-            <h3 className="text-lg font-semibold leading-8 text-gray-900">Maker</h3>
-            <p className="mt-4 text-sm leading-6 text-gray-600">One-off export.</p>
-            <p className="mt-6 flex items-baseline gap-x-1">
-              <span className="text-4xl font-bold tracking-tight text-gray-900">$9</span>
-              <span className="text-sm font-semibold leading-6 text-gray-600">/project</span>
-            </p>
-            <a
-              href="#"
-              className="mt-6 block rounded-lg bg-indigo-600 py-2.5 px-3 text-center text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-            >
-              Get started
-            </a>
-            <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-gray-600">
-              <li className="flex gap-x-3">
-                <Check className="h-6 w-5 flex-none text-indigo-600" aria-hidden="true" />
-                Full code export
-              </li>
-              <li className="flex gap-x-3">
-                <Check className="h-6 w-5 flex-none text-indigo-600" aria-hidden="true" />
-                1 Project
-              </li>
-              <li className="flex gap-x-3 text-gray-400">
-                <Check className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
-                No iteration (One-shot)
-              </li>
-            </ul>
-          </div>
+              <h3
+                className={`text-lg font-semibold leading-8 ${
+                  tier.highlighted ? "text-orange-600" : "text-gray-900"
+                }`}
+              >
+                {tier.name}
+              </h3>
+              <p className="mt-4 text-sm leading-6 text-gray-600">
+                {tier.description}
+              </p>
+              <p className="mt-6 flex items-baseline gap-x-1">
+                <span className="text-4xl font-bold tracking-tight text-gray-900">
+                  {tier.price}
+                </span>
+                {tier.period && (
+                  <span className="text-sm font-semibold leading-6 text-gray-600">
+                    {tier.period}
+                  </span>
+                )}
+              </p>
 
-          {/* Pro */}
-          <div className="rounded-3xl p-8 ring-1 ring-indigo-600 xl:p-10 bg-indigo-50/50">
-            <h3 className="text-lg font-semibold leading-8 text-indigo-600">Pro</h3>
-            <p className="mt-4 text-sm leading-6 text-gray-600">Iterative workflow.</p>
-            <p className="mt-6 flex items-baseline gap-x-1">
-              <span className="text-4xl font-bold tracking-tight text-gray-900">$25</span>
-              <span className="text-sm font-semibold leading-6 text-gray-600">/mo</span>
-            </p>
-            <a
-              href="#"
-              className="mt-6 block rounded-lg bg-indigo-600 py-2.5 px-3 text-center text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-            >
-              Subscribe
-            </a>
-            <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-gray-600">
-              <li className="flex gap-x-3">
-                <Check className="h-6 w-5 flex-none text-indigo-600" aria-hidden="true" />
-                Unlimited rebuilds
-              </li>
-              <li className="flex gap-x-3">
-                <Check className="h-6 w-5 flex-none text-indigo-600" aria-hidden="true" />
-                Private projects
-              </li>
-              <li className="flex gap-x-3">
-                <Check className="h-6 w-5 flex-none text-indigo-600" aria-hidden="true" />
-                Priority Support
-              </li>
-            </ul>
-          </div>
+              <Link
+                href={tier.href}
+                className={`mt-6 block rounded-lg py-2.5 px-3 text-center text-sm font-semibold leading-6 transition-colors ${
+                  tier.highlighted
+                    ? "bg-orange-500 text-white shadow-sm hover:bg-orange-600"
+                    : tier.id === "sandbox"
+                    ? "text-gray-700 ring-1 ring-inset ring-gray-300 hover:ring-gray-400 hover:bg-gray-50"
+                    : tier.id === "enterprise"
+                    ? "text-gray-700 ring-1 ring-inset ring-gray-300 hover:ring-gray-400 hover:bg-gray-50"
+                    : "bg-gray-900 text-white shadow-sm hover:bg-gray-800"
+                }`}
+              >
+                {tier.cta}
+              </Link>
+
+              <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-gray-600">
+                {tier.features.map((feature, idx) => (
+                  <li key={idx} className="flex gap-x-3">
+                    {feature.included ? (
+                      <Check
+                        className={`h-6 w-5 flex-none ${
+                          tier.highlighted ? "text-orange-500" : "text-gray-900"
+                        }`}
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <X className="h-6 w-5 flex-none text-gray-300" aria-hidden="true" />
+                    )}
+                    <span className={feature.included ? "" : "text-gray-400"}>
+                      {feature.text}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
       </div>
     </section>

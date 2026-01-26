@@ -178,7 +178,7 @@ function Header() {
                   <Link href="/login">Login</Link>
                 </Button>
                 <Button variant="orange" size="sm" asChild>
-                  <Link href="/contact">Request a Demo</Link>
+                  <Link href="/contact">Book a Demo</Link>
                 </Button>
               </>
             )}
@@ -235,7 +235,7 @@ function Header() {
                         <Link href="/login">Login</Link>
                       </Button>
                       <Button variant="orange" asChild className="w-full">
-                        <Link href="/contact">Request a Demo</Link>
+                        <Link href="/contact">Book a Demo</Link>
                       </Button>
                     </>
                   )}
@@ -1188,7 +1188,7 @@ function FooterSection() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button variant="orange" size="xl" asChild className="group">
                 <Link href="/contact">
-                  Request a Demo
+                  Book a Demo
                   <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </Button>

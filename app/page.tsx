@@ -18069,8 +18069,11 @@ export default function App() {
                                         ? applyPropsToCode(codeToUse, comp.props || [], blueprintPropsOverride)
                                         : codeToUse;
                                       
-                                      // Stabilize image URLs by adding seed based on component id
-                                      const stableCode = liveCode
+                                      // Stabilize ALL image URLs (picsum, pravatar, pollinations) based on component id
+                                      // First apply picsum stabilization
+                                      let stableCode = stabilizePicsumUrls(liveCode);
+                                      // Then stabilize pravatar and pollinations
+                                      stableCode = stableCode
                                         .replace(/pravatar\.cc\/(\d+)\?(?!img=)/g, `pravatar.cc/$1?img=${Math.abs(comp.id?.charCodeAt(0) || 1) % 70 + 1}&`)
                                         .replace(/pravatar\.cc\/(\d+)(?:\?img=\d+)?$/g, `pravatar.cc/$1?img=${Math.abs(comp.id?.charCodeAt(0) || 1) % 70 + 1}`)
                                         .replace(/pollinations\.ai\/prompt\/([^?]+)\?/g, `pollinations.ai/prompt/$1?seed=${comp.id || 'stable'}&`);
@@ -18200,13 +18203,13 @@ document.querySelectorAll('img').forEach(img=>{
                                     {/* Resize handles - VISIBLE on select */}
                                     {isSelected && (
                                       <>
-                                        {/* Selection border */}
-                                        <div className="absolute inset-0 border-2 border-[#FF6E3C] rounded-lg pointer-events-none z-10" />
+                                        {/* Selection border - subtle white */}
+                                        <div className="absolute inset-0 border border-white/40 rounded-lg pointer-events-none z-10" />
                                         
                                         {/* Right edge handle */}
                                         <div
                                           data-resize-handle="e"
-                                          className="absolute top-1/2 -right-2 -translate-y-1/2 cursor-ew-resize z-20 group"
+                                          className="absolute top-1/2 -right-1 -translate-y-1/2 cursor-ew-resize z-20 group"
                                           onMouseDown={(e) => {
                                             e.stopPropagation();
                                             const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
@@ -18219,13 +18222,13 @@ document.querySelectorAll('img').forEach(img=>{
                                             });
                                           }}
                                         >
-                                          <div className="w-3 h-8 rounded-full bg-[#FF6E3C] border-2 border-zinc-900 shadow-lg hover:bg-[#FF8555] transition-colors" />
+                                          <div className="w-1.5 h-6 rounded-full bg-white/60 hover:bg-white/90 transition-colors" />
                                         </div>
                                         
                                         {/* Bottom edge handle */}
                                         <div
                                           data-resize-handle="s"
-                                          className="absolute -bottom-2 left-1/2 -translate-x-1/2 cursor-ns-resize z-20 group"
+                                          className="absolute -bottom-1 left-1/2 -translate-x-1/2 cursor-ns-resize z-20 group"
                                           onMouseDown={(e) => {
                                             e.stopPropagation();
                                             const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
@@ -18238,13 +18241,13 @@ document.querySelectorAll('img').forEach(img=>{
                                             });
                                           }}
                                         >
-                                          <div className="w-8 h-3 rounded-full bg-[#FF6E3C] border-2 border-zinc-900 shadow-lg hover:bg-[#FF8555] transition-colors" />
+                                          <div className="w-6 h-1.5 rounded-full bg-white/60 hover:bg-white/90 transition-colors" />
                                         </div>
                                         
                                         {/* Bottom-right corner handle */}
                                         <div
                                           data-resize-handle="se"
-                                          className="absolute -bottom-2 -right-2 cursor-nwse-resize z-20 group"
+                                          className="absolute -bottom-1 -right-1 cursor-nwse-resize z-20 group"
                                           onMouseDown={(e) => {
                                             e.stopPropagation();
                                             const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
@@ -18257,12 +18260,12 @@ document.querySelectorAll('img').forEach(img=>{
                                             });
                                           }}
                                         >
-                                          <div className="w-4 h-4 rounded-full bg-[#FF6E3C] border-2 border-zinc-900 shadow-lg hover:bg-[#FF8555] transition-colors" />
+                                          <div className="w-2.5 h-2.5 rounded-full bg-white/70 hover:bg-white transition-colors" />
                                         </div>
                                         {/* Left edge handle */}
                                         <div
                                           data-resize-handle="w"
-                                          className="absolute top-1/2 -left-2 -translate-y-1/2 cursor-ew-resize z-20 group"
+                                          className="absolute top-1/2 -left-1 -translate-y-1/2 cursor-ew-resize z-20 group"
                                           onMouseDown={(e) => {
                                             e.stopPropagation();
                                             const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
@@ -18275,13 +18278,13 @@ document.querySelectorAll('img').forEach(img=>{
                                             });
                                           }}
                                         >
-                                          <div className="w-3 h-8 rounded-full bg-[#FF6E3C] border-2 border-zinc-900 shadow-lg hover:bg-[#FF8555] transition-colors" />
+                                          <div className="w-1.5 h-6 rounded-full bg-white/60 hover:bg-white/90 transition-colors" />
                                         </div>
                                         
                                         {/* Top edge handle */}
                                         <div
                                           data-resize-handle="n"
-                                          className="absolute -top-2 left-1/2 -translate-x-1/2 cursor-ns-resize z-20 group"
+                                          className="absolute -top-1 left-1/2 -translate-x-1/2 cursor-ns-resize z-20 group"
                                           onMouseDown={(e) => {
                                             e.stopPropagation();
                                             const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
@@ -18294,13 +18297,13 @@ document.querySelectorAll('img').forEach(img=>{
                                             });
                                           }}
                                         >
-                                          <div className="w-8 h-3 rounded-full bg-[#FF6E3C] border-2 border-zinc-900 shadow-lg hover:bg-[#FF8555] transition-colors" />
+                                          <div className="w-6 h-1.5 rounded-full bg-white/60 hover:bg-white/90 transition-colors" />
                                         </div>
                                         
                                         {/* Top-left corner handle */}
                                         <div
                                           data-resize-handle="nw"
-                                          className="absolute -top-2 -left-2 cursor-nwse-resize z-20 group"
+                                          className="absolute -top-1 -left-1 cursor-nwse-resize z-20 group"
                                           onMouseDown={(e) => {
                                             e.stopPropagation();
                                             const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
@@ -18313,13 +18316,13 @@ document.querySelectorAll('img').forEach(img=>{
                                             });
                                           }}
                                         >
-                                          <div className="w-4 h-4 rounded-full bg-[#FF6E3C] border-2 border-zinc-900 shadow-lg hover:bg-[#FF8555] transition-colors" />
+                                          <div className="w-2.5 h-2.5 rounded-full bg-white/70 hover:bg-white transition-colors" />
                                         </div>
                                         
                                         {/* Top-right corner handle */}
                                         <div
                                           data-resize-handle="ne"
-                                          className="absolute -top-2 -right-2 cursor-nesw-resize z-20 group"
+                                          className="absolute -top-1 -right-1 cursor-nesw-resize z-20 group"
                                           onMouseDown={(e) => {
                                             e.stopPropagation();
                                             const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
@@ -18332,13 +18335,13 @@ document.querySelectorAll('img').forEach(img=>{
                                             });
                                           }}
                                         >
-                                          <div className="w-4 h-4 rounded-full bg-[#FF6E3C] border-2 border-zinc-900 shadow-lg hover:bg-[#FF8555] transition-colors" />
+                                          <div className="w-2.5 h-2.5 rounded-full bg-white/70 hover:bg-white transition-colors" />
                                         </div>
                                         
                                         {/* Bottom-left corner handle */}
                                         <div
                                           data-resize-handle="sw"
-                                          className="absolute -bottom-2 -left-2 cursor-nesw-resize z-20 group"
+                                          className="absolute -bottom-1 -left-1 cursor-nesw-resize z-20 group"
                                           onMouseDown={(e) => {
                                             e.stopPropagation();
                                             const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
@@ -18351,7 +18354,7 @@ document.querySelectorAll('img').forEach(img=>{
                                             });
                                           }}
                                         >
-                                          <div className="w-4 h-4 rounded-full bg-[#FF6E3C] border-2 border-zinc-900 shadow-lg hover:bg-[#FF8555] transition-colors" />
+                                          <div className="w-2.5 h-2.5 rounded-full bg-white/70 hover:bg-white transition-colors" />
                                         </div>
                                       </>
                                     )}
