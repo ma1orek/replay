@@ -110,6 +110,7 @@ import { stabilizePicsumUrls } from "@/lib/assets";
 import { transmuteVideoToCode } from "@/actions/transmute";
 import { getDatabaseContext, formatDatabaseContextForPrompt } from "@/lib/supabase/schema";
 import { useIsMobile } from "@/lib/useIsMobile";
+import MobileLayout from "@/components/mobile/MobileLayout";
 // Enterprise presets REMOVED - using only system-prompt.ts for premium styling
 // Demo is now loaded from /api/demo/[id] endpoint
 
@@ -10725,31 +10726,40 @@ ${publishCode}
     !showHistoryMode && 
     !hasActiveProject;
   
-  // Mobile users see "Desktop only" message
+  // Mobile users see Replay Companion App
   if (shouldShowMobileLayout) {
+    // Wrapper to convert simple save data to GenerationRecord format
+    const handleMobileSave = async (data: { title: string; code: string; videoUrl?: string }) => {
+      const genRecord: GenerationRecord = {
+        id: generateId(),
+        title: data.title,
+        autoTitle: false,
+        timestamp: Date.now(),
+        status: "complete",
+        code: data.code,
+        styleDirective: "",
+        refinements: "",
+        flowNodes: [],
+        flowEdges: [],
+        styleInfo: null,
+        videoUrl: data.videoUrl,
+      };
+      await saveGenerationToSupabase(genRecord);
+    };
+
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-6">
-        <div className="text-center max-w-md">
-          <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-zinc-800 flex items-center justify-center">
-            <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold text-white mb-3">Desktop Only</h1>
-          <p className="text-zinc-400 mb-6">
-            Replay.build is designed for desktop browsers. Please open this page on your computer for the best experience.
-          </p>
-          <a 
-            href="https://replay.build" 
-            className="inline-flex items-center gap-2 text-orange-400 hover:text-orange-300 transition-colors"
-          >
-            <span>Visit homepage</span>
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-            </svg>
-          </a>
-        </div>
-      </div>
+      <MobileLayout
+        user={user}
+        isPro={isPaidPlan}
+        plan={membership?.plan || "free"}
+        credits={userTotalCredits}
+        creditsLoading={creditsLoading}
+        onLogin={() => setShowAuthModal(true)}
+        onOpenCreditsModal={() => setShowOutOfCreditsModal(true)}
+        onCreditsRefresh={refreshCredits}
+        onSaveGeneration={handleMobileSave}
+        onOpenHistory={() => setShowHistoryMode(true)}
+      />
     );
   }
 
