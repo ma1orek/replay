@@ -75,44 +75,18 @@ function fixBrokenImageUrls(code: string): string {
 // REPLAY AI SYSTEM PROMPT - Inspired by Lovable/Bolt architecture
 // =============================================================================
 function buildSystemPrompt(chatHistory?: any[]): string {
-  // Extract recent context and detect language
+  // Extract recent conversation context
   let conversationContext = '';
-  let userLanguage = 'en';
   
   if (chatHistory && chatHistory.length > 0) {
     const recent = chatHistory.slice(-4).map(m => 
       `${m.role === 'user' ? 'USER' : 'AI'}: ${(m.content || '').substring(0, 200)}`
     ).join('\n');
     conversationContext = `\n\nRECENT CONVERSATION:\n${recent}`;
-    
-    // Detect if user writes in Polish
-    const lastUserMsg = chatHistory.filter(m => m.role === 'user').pop()?.content || '';
-    if (/[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]|zmień|dodaj|usuń|popraw|zrób/i.test(lastUserMsg)) {
-      userLanguage = 'pl';
-    }
   }
 
-  const languageInstructions = userLanguage === 'pl' 
-    ? `LANGUAGE: Respond in Polish. Be descriptive but concise.
-Examples of GOOD summaries:
-- "Zmieniłem kolor głównego przycisku z niebieskiego na zielony i dodałem efekt hover."
-- "Dodałem nową sekcję kontaktową z polami: imię, email i wiadomość."
-- "Przetłumaczyłem wszystkie teksty na polski, włącznie z nawigacją i stopką."
-- "Naprawiłem układ sidebara - teraz używa flexbox i jest w pełni responsywny."
-
-Examples of BAD summaries (DO NOT USE):
-- "Gotowe!" (za mało informacji)
-- "Zmiany zastosowane." (nic nie mówi)`
-    : `LANGUAGE: Respond in English. Be descriptive but concise.
-Examples of GOOD summaries:
-- "Changed the main button color from blue to green and added a hover effect."
-- "Added a new contact form section with name, email, and message fields."
-- "Translated all visible text to Polish, including navigation and footer."
-- "Fixed the sidebar layout - now uses flexbox and is fully responsive."
-
-Examples of BAD summaries (DO NOT USE):
-- "Done!" (too vague)
-- "Changes applied." (meaningless)`;
+  // Always respond in English
+  const languageInstructions = `LANGUAGE: Always respond in English.`;
 
   return `REPLAY AI - Code Editor
 
@@ -179,32 +153,46 @@ ENTERPRISE-READY CODE:
 
 FORBIDDEN:
 - Using emojis in responses (NO emoji!)
-- Mixing languages (pick one based on user input)
 - Returning identical code
 - Using external image services (imgur, etc.)
-- Verbose explanations
+- Single-word responses like "Done!" or "Fixed!"
 - Inline SVG icons (use Lucide instead!)
 
 RESPONSE FORMAT:
-1. Short summary (1-2 sentences) describing WHAT you changed - be specific!
+1. Detailed summary explaining WHAT you changed (use bullet points for multiple changes)
 2. Complete HTML code in code block
 3. Nothing else
 
-SUMMARY MUST include:
-- WHAT was changed (button, header, sidebar, colors, layout, etc.)
-- HOW it was changed (added, removed, resized, recolored, translated, etc.)
+SUMMARY REQUIREMENTS:
+- Be specific and detailed - explain exactly what was modified
+- Use bullet points when making multiple changes
+- Include technical details (CSS properties, component names, layout changes)
+- Mention any improvements to responsiveness, accessibility, or UX
 
 Example GOOD summaries:
-- "Changed the main button color from blue to green and added a hover effect."
-- "Added a new contact form section with name, email, and message fields."
-- "Translated all visible text to Polish, including navigation and footer."
-- "Fixed the sidebar layout - now uses flexbox and is fully responsive."
-- "Added 3 new team member cards with avatars and social links."
 
-Example BAD summaries (DO NOT USE):
-- "Done!" (too vague)
-- "Changes applied." (doesn't say what)
-- "Updated the code." (meaningless)
+"Updated the dashboard layout with the following changes:
+- Converted sidebar from fixed to responsive flex layout
+- Added mobile hamburger menu that toggles sidebar visibility
+- Increased card padding from 16px to 24px for better readability
+- Applied hover effects with scale transform on all interactive elements"
+
+"Implemented the contact form section:
+- Added form with name, email, subject, and message fields
+- Styled inputs with glassmorphism effect (backdrop-blur + white/10 bg)
+- Included validation states with red/green border colors
+- Submit button has gradient background with hover animation"
+
+"Fixed chart rendering issues:
+- Set explicit height (300px) on chart containers
+- Added maintainAspectRatio: false to Chart.js config
+- Charts now fill their parent containers properly"
+
+Example BAD summaries (NEVER USE):
+- "Done!" (says nothing)
+- "Changes applied." (meaningless)
+- "Updated the code." (no details)
+- "Fixed it." (what was fixed?)
 
 \`\`\`html
 <!DOCTYPE html>
