@@ -17,16 +17,16 @@ import {
   Globe,
   Database,
   Settings,
-  BarChart3,
   CreditCard,
   HelpCircle,
-  FileText,
   ChevronRight,
   ChevronDown,
   Menu,
   X,
   Sparkles,
   Clock,
+  BookOpen,
+  LayoutGrid,
 } from "lucide-react";
 
 // Navigation structure
@@ -42,8 +42,10 @@ const navigation = [
     title: "Features",
     items: [
       { title: "Video to UI", href: "/docs/features/video-to-ui", icon: Video },
-      { title: "Edit with AI", href: "/docs/features/edit-with-ai", icon: Edit3 },
+      { title: "Component Library", href: "/docs/features/library", icon: BookOpen },
+      { title: "Blueprints Editor", href: "/docs/features/blueprints", icon: LayoutGrid },
       { title: "Flow Map", href: "/docs/features/flow-map", icon: GitBranch },
+      { title: "Edit with AI", href: "/docs/features/edit-with-ai", icon: Edit3 },
       { title: "Design System", href: "/docs/features/design-system", icon: Palette },
       { title: "Code View", href: "/docs/features/code-view", icon: Code },
       { title: "Publish", href: "/docs/features/publish", icon: Globe },
@@ -103,24 +105,24 @@ function SearchModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh]">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: -20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: -20 }}
-        className="relative w-full max-w-xl mx-4 bg-[#1a1a1a] border border-zinc-200 rounded-2xl shadow-2xl overflow-hidden"
+        className="relative w-full max-w-xl mx-4 bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl overflow-hidden"
       >
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-200">
-          <Search className="w-5 h-5 text-zinc-900/40" />
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-700">
+          <Search className="w-5 h-5 text-zinc-400" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search documentation..."
-            className="flex-1 bg-transparent text-zinc-900 placeholder:text-zinc-900/40 focus:outline-none"
+            className="flex-1 bg-transparent text-white placeholder:text-zinc-500 focus:outline-none"
             autoFocus
           />
-          <kbd className="px-2 py-1 text-xs text-zinc-900/40 bg-white/5 rounded border border-zinc-200">ESC</kbd>
+          <kbd className="px-2 py-1 text-xs text-zinc-400 bg-zinc-800 rounded border border-zinc-700">ESC</kbd>
         </div>
         <div className="max-h-[300px] overflow-y-auto p-2">
           {filtered.length > 0 ? (
@@ -129,14 +131,14 @@ function SearchModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
                 key={item.href}
                 href={item.href}
                 onClick={onClose}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors"
+                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-zinc-800 transition-colors"
               >
-                <item.icon className="w-4 h-4 text-zinc-900/40" />
-                <span className="text-sm text-zinc-900">{item.title}</span>
+                <item.icon className="w-4 h-4 text-zinc-400" />
+                <span className="text-sm text-white">{item.title}</span>
               </Link>
             ))
           ) : (
-            <div className="px-3 py-8 text-center text-zinc-900/40 text-sm">
+            <div className="px-3 py-8 text-center text-zinc-500 text-sm">
               No results found for "{query}"
             </div>
           )}
@@ -163,7 +165,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
         <div key={section.title} className="mb-6">
           <button
             onClick={() => setExpanded(prev => ({ ...prev, [section.title]: !prev[section.title] }))}
-            className="flex items-center gap-2 w-full text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2 hover:text-zinc-600 transition-colors"
+            className="flex items-center gap-2 w-full text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2 hover:text-zinc-400 transition-colors"
           >
             {expanded[section.title] ? (
               <ChevronDown className="w-3 h-3" />
@@ -183,8 +185,8 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
                     onClick={onClose}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                       isActive
-                        ? "bg-[#FF6E3C]/10 text-[#FF6E3C] font-medium"
-                        : "text-zinc-600 hover:text-zinc-900 hover:bg-white/5"
+                        ? "bg-zinc-800 text-white font-medium"
+                        : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
                     }`}
                   >
                     <item.icon className="w-4 h-4" />
@@ -217,37 +219,42 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
   }, []);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#0a0a0b]">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-zinc-800 bg-[#0a0a0b]/95 backdrop-blur-xl">
         <div className="flex items-center justify-between px-4 lg:px-6 h-16">
           {/* Logo */}
           <div className="flex items-center gap-6">
             <Link href="/landing" className="flex items-center gap-2">
-              <Logo dark />
+              <Logo />
             </Link>
-            <span className="text-zinc-900/30">|</span>
-            <Link href="/docs" className="text-zinc-600 font-medium hover:text-zinc-900 transition-colors">Docs</Link>
+            <span className="text-zinc-700">|</span>
+            <Link href="/docs" className="text-zinc-400 font-medium hover:text-white transition-colors">Docs</Link>
           </div>
 
           {/* Search */}
           <button
             onClick={() => setSearchOpen(true)}
-            className="hidden md:flex items-center gap-3 px-4 py-2 rounded-lg bg-white/5 border border-zinc-200 hover:border-white/20 transition-colors w-64"
+            className="hidden md:flex items-center gap-3 px-4 py-2 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-colors w-64"
           >
-            <Search className="w-4 h-4 text-zinc-900/40" />
-            <span className="text-sm text-zinc-900/40 flex-1 text-left">Search...</span>
-            <kbd className="px-2 py-0.5 text-xs text-zinc-900/40 bg-white/5 rounded border border-zinc-200">⌘K</kbd>
+            <Search className="w-4 h-4 text-zinc-500" />
+            <span className="text-sm text-zinc-500 flex-1 text-left">Search...</span>
+            <kbd className="px-2 py-0.5 text-xs text-zinc-500 bg-zinc-800 rounded border border-zinc-700">⌘K</kbd>
           </button>
 
           {/* Right side */}
           <div className="flex items-center gap-4">
-{/* Back to app link removed */}
+            <Link 
+              href="/"
+              className="hidden md:flex px-4 py-2 text-sm font-medium text-zinc-400 hover:text-white transition-colors"
+            >
+              Open App →
+            </Link>
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="md:hidden p-2 rounded-lg hover:bg-white/5"
+              className="md:hidden p-2 rounded-lg hover:bg-zinc-800"
             >
-              <Menu className="w-5 h-5 text-zinc-900" />
+              <Menu className="w-5 h-5 text-zinc-400" />
             </button>
           </div>
         </div>
@@ -255,24 +262,23 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
 
       <div className="flex">
         {/* Desktop Sidebar */}
-        <aside className="hidden md:block w-64 border-r border-zinc-200 sticky top-16 h-[calc(100vh-4rem)] overflow-hidden">
+        <aside className="hidden md:block w-64 border-r border-zinc-800 sticky top-16 h-[calc(100vh-4rem)] overflow-hidden bg-[#0a0a0b]">
           <Sidebar />
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 min-w-0">
+        <main className="flex-1 min-w-0 bg-[#0a0a0b]">
           <div className="max-w-4xl mx-auto px-6 py-12">
             {children}
           </div>
         </main>
 
-        {/* Table of contents - optional right sidebar */}
-        <aside className="hidden xl:block w-64 border-l border-zinc-200 sticky top-16 h-[calc(100vh-4rem)]">
+        {/* Table of contents - right sidebar */}
+        <aside className="hidden xl:block w-64 border-l border-zinc-800 sticky top-16 h-[calc(100vh-4rem)] bg-[#0a0a0b]">
           <div className="p-6">
             <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">
               On this page
             </h4>
-            {/* TOC will be generated per page */}
           </div>
         </aside>
       </div>
@@ -285,7 +291,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-black/60 md:hidden"
+              className="fixed inset-0 z-50 bg-black/80 md:hidden"
               onClick={() => setMobileMenuOpen(false)}
             />
             <motion.div
@@ -293,15 +299,15 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-zinc-200 md:hidden"
+              className="fixed inset-y-0 left-0 z-50 w-72 bg-[#0a0a0b] border-r border-zinc-800 md:hidden"
             >
-              <div className="flex items-center justify-between p-4 border-b border-zinc-200">
-                <span className="font-semibold text-zinc-900">Navigation</span>
+              <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+                <span className="font-semibold text-white">Navigation</span>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
-                  className="p-2 rounded-lg hover:bg-white/5"
+                  className="p-2 rounded-lg hover:bg-zinc-800"
                 >
-                  <X className="w-5 h-5 text-zinc-900" />
+                  <X className="w-5 h-5 text-zinc-400" />
                 </button>
               </div>
               <Sidebar onClose={() => setMobileMenuOpen(false)} />
@@ -317,4 +323,3 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
     </div>
   );
 }
-

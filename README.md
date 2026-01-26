@@ -4,10 +4,9 @@
 
 ![Replay Logo](public/og-image.png)
 
-### **Rebuild UI from Video. Instantly.**
+### **Video to Design System. Instantly.**
 
-Turn any screen recording into production-ready UI code.  
-Code, structure, interactions, and style — rebuilt from what actually happens on screen.
+Turn any screen recording into a complete design system with components, documentation, and interactive blueprints.
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-replay.build-FF6E3C?style=for-the-badge)](https://replay.build)
 [![Documentation](https://img.shields.io/badge/Docs-replay.build%2Fdocs-blue?style=for-the-badge)](https://replay.build/docs)
@@ -18,76 +17,51 @@ Code, structure, interactions, and style — rebuilt from what actually happens 
 
 ---
 
-## ✨ The Problem
+## ✨ What is Replay?
 
-Designers create beautiful prototypes. Developers spend **hours** recreating them in code.  
-Reference videos exist. But translating them to actual UI is manual, slow, and error-prone.
+Replay is an AI-powered design system generator. Upload a screen recording of any app or website, and Replay will:
 
-**What if you could just show the AI what you want?**
-
-## 🚀 The Solution
-
-**Replay watches your video and writes the code.**
-
-1. **Record or upload** any UI video — product demos, competitor apps, Figma prototypes
-2. **AI analyzes** the visual timeline: layouts, interactions, hover states, navigation
-3. **Get clean code** — HTML/CSS/JS with proper structure, responsive design, and animations
-4. **Edit with AI** — refine the output naturally: "make the header sticky" or "add dark mode"
-5. **Deploy instantly** — one-click publish to the web
+1. **Extract Components** — Detect UI patterns and generate a component library
+2. **Create Documentation** — Auto-generate Storybook-style docs with props, variants, and usage examples
+3. **Build Blueprints** — Visual canvas to arrange and edit components with AI
+4. **Generate Flow Maps** — Visualize page navigation and user flows
+5. **One-Click Publish** — Deploy your design system to the web instantly
 
 ---
 
-## 🎯 Key Features
+## 🎯 Core Features
 
-### 🎥 Video to UI Generation
-Drop any screen recording and get a complete, working UI. Replay understands:
-- **Layout structure** — headers, sidebars, grids, cards
-- **Interactions** — hover states, clicks, modals, dropdowns
-- **Navigation flows** — multi-page apps with proper routing
-- **Visual design** — colors, typography, spacing, shadows
+### 📚 Component Library
+A Storybook-like interface for your extracted components:
+- **Controls** — Edit props in real-time (colors, text, sizes)
+- **Actions** — See interactive behaviors  
+- **Visual Tests** — Compare component states
+- **Accessibility** — WCAG compliance checks
+- **Usage** — Copy-paste code snippets
 
-### ✨ Edit with AI
-Natural language editing that actually works:
-```
-"Add a contact form to the About page"
-"Make this mobile responsive"  
-"Change the color scheme to dark mode"
-"Connect this to my Supabase database"
-"@Pricing Create a pricing page with 3 tiers"
-```
-
-After each edit, AI explains what changes it made in the chat — no need to diff code manually.
-
-### 🎨 30+ Style Presets
-Transform any UI into different aesthetics instantly:
-- **Spatial Glass** — Apple Vision Pro inspired
-- **Kinetic Brutalism** — Bold, aggressive typography
-- **Neo-Retro OS** — Windows 95 meets cyberpunk
-- **Dark Cosmos** — Premium glassmorphism
-- Or upload a **reference image** — "Make it look like this"
+### 🎨 Blueprints
+Visual canvas for component composition:
+- Drag & drop components on canvas
+- Resize and position freely
+- AI-powered editing: "Make it red", "Add icon", "Add shadow"
+- Real-time preview in iframe
+- Save to library when satisfied
 
 ### 🗺️ Flow Map
-Visual map of all pages and navigation paths. Click any node to:
-- Preview that page
-- View/edit the code
-- Generate new connected pages
+Interactive visualization of app structure:
+- Detected pages and navigation paths
+- Click nodes to preview pages
+- See relationships between screens
+- Export as documentation
 
-### 🔗 Supabase Integration
-Connect your database and AI generates **real data-fetching code**:
-1. Add your Supabase credentials in Project Settings
-2. AI sees your table schemas
-3. Generated code uses actual table/column names
-4. No mock data — real queries from the start
-
-### 📊 Analytics Dashboard
-Track your usage per project:
-- Generations count
-- AI edits made
-- Code exports
-- Token consumption
+### 🔗 Database Integration
+Connect Supabase and generate real data-fetching code:
+- AI reads your table schemas
+- Generates actual queries (not mock data)
+- Supports authentication patterns
 
 ### 🚀 One-Click Publish
-Deploy your UI to the web instantly. Share the link with anyone.
+Deploy instantly to `replay.build/p/your-project`
 
 ---
 
@@ -97,12 +71,13 @@ Deploy your UI to the web instantly. Share the link with anyone.
 |-------|------------|
 | **Framework** | Next.js 14 (App Router) |
 | **Styling** | Tailwind CSS |
-| **AI** | Google Gemini 3 Pro Preview |
+| **AI** | Google Gemini 2.0 Flash |
 | **Database** | Supabase (PostgreSQL) |
 | **Auth** | Supabase Auth (Google OAuth) |
-| **Payments** | Stripe (Subscriptions + One-time) |
+| **Payments** | Stripe |
 | **Hosting** | Vercel |
-| **Animations** | Framer Motion |
+| **Icons** | Lucide React |
+| **Color Picker** | @uiw/react-color |
 
 ---
 
@@ -110,18 +85,14 @@ Deploy your UI to the web instantly. Share the link with anyone.
 
 | Plan | Price | Credits/Month | Best For |
 |------|-------|---------------|----------|
-| **Free** | $0 | 75 (one-time) | Try it out - 1 free generation |
-| **Pro** | $25/mo | 1,500 | Creators & indie hackers |
+| **Free** | $0 | 75 (one-time) | Try it out |
+| **Pro** | $25/mo | 1,500 | Creators & designers |
 | **Enterprise** | Custom | Unlimited | Teams & agencies |
 
 **Credit Costs:**
 - 🎬 Video generation: **75 credits**
-- ✨ AI edit/refine: **3 credits**
-
-**Top-ups available:**
-- $20 → 2,000 credits
-- $50 → 5,500 credits *(Best value)*
-- $100 → 12,000 credits
+- ✨ AI component edit: **3 credits**
+- 📚 Library extraction: **10 credits**
 
 ---
 
@@ -165,9 +136,6 @@ STRIPE_SECRET_KEY=sk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 STRIPE_PRO_PRICE_ID_MONTHLY=price_...
 STRIPE_PRO_PRICE_ID_YEARLY=price_...
-STRIPE_TOPUP_20_PRICE_ID=price_...
-STRIPE_TOPUP_50_PRICE_ID=price_...
-STRIPE_TOPUP_100_PRICE_ID=price_...
 
 # Gemini AI
 GEMINI_API_KEY=your_gemini_api_key
@@ -200,37 +168,29 @@ Open [http://localhost:3000](http://localhost:3000)
 ```
 replay/
 ├── app/
-│   ├── api/              # API routes
-│   │   ├── credits/      # Credit management
-│   │   ├── publish/      # Deployment endpoint
-│   │   ├── stripe/       # Payment webhooks
-│   │   └── transmute/    # AI generation
-│   ├── auth/             # Auth callbacks
-│   ├── docs/             # Documentation pages
-│   ├── landing/          # Marketing page
-│   ├── settings/         # User settings
-│   ├── terms/            # Legal pages
-│   ├── page.tsx          # Main tool (6000+ lines)
-│   └── layout.tsx        # Root layout
-├── actions/
-│   └── transmute.ts      # Core AI logic (Gemini prompts)
+│   ├── api/
+│   │   ├── generate/        # AI generation endpoints
+│   │   │   ├── library/     # Component extraction
+│   │   │   ├── blueprints/  # Blueprint AI editing
+│   │   │   └── stream/      # Streaming generation
+│   │   ├── credits/         # Credit management
+│   │   ├── publish/         # Deployment endpoint
+│   │   └── stripe/          # Payment webhooks
+│   ├── docs/                # Documentation pages
+│   ├── page.tsx             # Main tool interface
+│   └── layout.tsx           # Root layout
 ├── components/
-│   ├── modals/           # Auth, credits modals
-│   ├── Avatar.tsx
-│   ├── Logo.tsx
-│   ├── ProjectSettingsModal.tsx
-│   └── StyleInjector.tsx # 30+ style presets
+│   ├── ui/                  # Shadcn-style UI components
+│   │   ├── color-picker.tsx # Advanced color picker
+│   │   ├── popover.tsx
+│   │   └── ...
+│   └── modals/              # Auth, credits modals
 ├── lib/
-│   ├── auth/             # Auth context
-│   ├── credits/          # Credits context  
-│   ├── profile/          # Profile context
-│   ├── supabase/         # Supabase clients + schema fetching
-│   └── utils.ts          # Helpers
-├── public/
-│   ├── og-image.png      # Social preview
-│   └── ShowcaseReplay.mp4
-└── supabase/
-    └── migrations/       # Database schema
+│   ├── supabase/            # Database clients
+│   ├── prompts/             # AI system prompts
+│   └── utils.ts             # Helpers
+└── public/
+    └── og-image.png         # Social preview
 ```
 
 ---
@@ -241,53 +201,44 @@ replay/
 - ✅ Server-side credit transactions (atomic)
 - ✅ Stripe webhook signature verification
 - ✅ Service role keys only on server
-- ✅ Supabase credentials stored per-project in localStorage
+- ✅ Sandboxed iframe previews
 
 ---
 
 ## 🗺️ Roadmap
 
 - [x] Video to UI generation
-- [x] 30+ style presets
-- [x] Edit with AI
+- [x] Component Library with Controls
+- [x] Blueprints visual editor
 - [x] Flow Map visualization
-- [x] Supabase integration
+- [x] AI editing with chat interface
+- [x] Color picker with contrast ratio
 - [x] One-click publish
-- [x] Project settings & analytics
-- [x] Version history with restore
-- [x] AI chat interface with image support
-- [x] Style reference mode (copy from image)
-- [x] Delete confirmation modals
-- [x] Extended history (500 projects)
-- [x] Full keyboard navigation (WCAG)
-- [x] Focus trap for modals
-- [x] Redesigned project dropdown
-- [x] Quick rename from project list
-- [ ] Figma plugin
-- [ ] Component library export
+- [x] Supabase integration
+- [x] Version history
+- [ ] Figma plugin export
 - [ ] Team collaboration
 - [ ] API access
-- [ ] Mobile app recording
+- [ ] Component marketplace
 
 ---
 
 ## 📖 Documentation
 
-Full documentation available at **[replay.build/docs](https://replay.build/docs)**
+Full documentation at **[replay.build/docs](https://replay.build/docs)**
 
 - [Quickstart Guide](https://replay.build/docs/quickstart)
-- [Video to UI](https://replay.build/docs/features/video-to-ui)
-- [Edit with AI](https://replay.build/docs/features/edit-with-ai)
-- [Style Injection](https://replay.build/docs/guides/style-injection)
-- [Supabase Integration](https://replay.build/docs/integrations/supabase)
-- [Pricing & Credits](https://replay.build/docs/pricing)
-- [Changelog](https://replay.build/docs/changelog)
+- [Component Library](https://replay.build/docs/features/library)
+- [Blueprints Editor](https://replay.build/docs/features/blueprints)
+- [Flow Map](https://replay.build/docs/features/flow-map)
+- [AI Editing](https://replay.build/docs/features/edit-with-ai)
+- [Publishing](https://replay.build/docs/features/publish)
 
 ---
 
 ## 🤝 Contributing
 
-Contributions welcome! Please read our contributing guidelines first.
+Contributions welcome!
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing`)
@@ -305,20 +256,18 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## 🙏 Acknowledgments
 
-- [Next.js](https://nextjs.org) — The React framework
-- [Supabase](https://supabase.com) — Open source Firebase alternative
-- [Stripe](https://stripe.com) — Payment infrastructure
-- [Google Gemini](https://ai.google.dev) — AI that powers generation
-- [Vercel](https://vercel.com) — Deployment platform
-- [Tailwind CSS](https://tailwindcss.com) — Utility-first CSS
-- [Framer Motion](https://www.framer.com/motion/) — Animation library
-- [Lucide](https://lucide.dev) — Beautiful icons
+- [Next.js](https://nextjs.org) — React framework
+- [Supabase](https://supabase.com) — Database & Auth
+- [Google Gemini](https://ai.google.dev) — AI generation
+- [Tailwind CSS](https://tailwindcss.com) — Styling
+- [Lucide](https://lucide.dev) — Icons
+- [Vercel](https://vercel.com) — Hosting
 
 ---
 
 <div align="center">
 
-**Built with ❤️ for the AI Hackathon**
+**Built with ❤️ by Replay Team**
 
 [Live Demo](https://replay.build) · [Documentation](https://replay.build/docs) · [Report Bug](https://github.com/ma1orek/replay/issues)
 
