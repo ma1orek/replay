@@ -61,7 +61,7 @@ function Header() {
               <>
                 <Link 
                   href="/tool" 
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-medium transition-colors"
                 >
                   Go to App
                   <ArrowRight className="w-4 h-4" />
@@ -122,7 +122,7 @@ function Header() {
                       />
                       <span className="text-sm font-medium text-zinc-700">{displayName}</span>
                     </div>
-                    <Button variant="orange" asChild className="w-full">
+                    <Button variant="default" asChild className="w-full bg-zinc-900 hover:bg-zinc-800">
                       <Link href="/tool">Go to App</Link>
                     </Button>
                   </>
@@ -150,21 +150,23 @@ function Header() {
 // ═══════════════════════════════════════════════════════════════
 
 export default function PricingPage() {
+  const DEMO_PROJECT_URL = "https://www.replay.build/tool?project=flow_1769444036799_r8hrcxyx2";
+  
   const plans = [
     {
-      name: "Free",
-      subtitle: "Try it out",
+      name: "Sandbox",
+      subtitle: "Explore the demo",
       price: "$0",
       period: "",
-      description: "100 credits to start. Buy more anytime. Perfect to see if Replay fits your workflow.",
+      description: "Full access to a demo project. Explore Flow Map, Library & Design System. No credits, no generations.",
       features: [
-        { name: "100 credits to start", included: true },
-        { name: "1 project", included: true },
-        { name: "Basic export", included: true },
-        { name: "Buy credits anytime", included: true },
+        { name: "Full access to demo project", included: true },
+        { name: "Explore Flow Map & Library", included: true },
+        { name: "Read-only (no generations)", included: true },
+        { name: "Upgrade to Pro anytime", included: true },
       ],
-      cta: "Get Started",
-      href: "/login",
+      cta: "Explore Demo",
+      href: DEMO_PROJECT_URL,
       variant: "outline" as const,
       popular: false
     },
@@ -226,18 +228,18 @@ export default function PricingPage() {
 
   // Comparison table data
   const comparisonFeatures = [
-    { name: "Monthly Credits", free: "100", pro: "3,000", agency: "15,000", enterprise: "Custom" },
-    { name: "Video Generation", free: "~150 credits", pro: "~150 credits", agency: "~150 credits", enterprise: "~150 credits" },
-    { name: "AI Edit", free: "~10 credits", pro: "~10 credits", agency: "~10 credits", enterprise: "~10 credits" },
-    { name: "Projects", free: "1", pro: "Unlimited", agency: "Unlimited", enterprise: "Unlimited" },
-    { name: "Team Members", free: "1", pro: "1", agency: "5", enterprise: "Unlimited" },
-    { name: "Code Export", free: true, pro: true, agency: true, enterprise: true },
-    { name: "Design System", free: "Basic", pro: true, agency: "Shared", enterprise: "Custom" },
-    { name: "Support", free: "Community", pro: "Email", agency: "Priority", enterprise: "Dedicated + SLA" },
-    { name: "Priority GPU", free: false, pro: false, agency: true, enterprise: true },
-    { name: "API Access", free: false, pro: false, agency: true, enterprise: true },
-    { name: "On-premise", free: false, pro: false, agency: false, enterprise: true },
-    { name: "SSO / SAML", free: false, pro: false, agency: false, enterprise: true },
+    { name: "Monthly Credits", sandbox: "0 (read-only)", pro: "3,000", agency: "15,000", enterprise: "Custom" },
+    { name: "Video Generation", sandbox: "—", pro: "~150 credits", agency: "~150 credits", enterprise: "~150 credits" },
+    { name: "AI Edit", sandbox: "—", pro: "~10 credits", agency: "~10 credits", enterprise: "~10 credits" },
+    { name: "Projects", sandbox: "Demo only", pro: "Unlimited", agency: "Unlimited", enterprise: "Unlimited" },
+    { name: "Team Members", sandbox: "1", pro: "1", agency: "5", enterprise: "Unlimited" },
+    { name: "Code Export", sandbox: false, pro: true, agency: true, enterprise: true },
+    { name: "Design System", sandbox: "View only", pro: true, agency: "Shared", enterprise: "Custom" },
+    { name: "Support", sandbox: "—", pro: "Email", agency: "Priority", enterprise: "Dedicated + SLA" },
+    { name: "Priority GPU", sandbox: false, pro: false, agency: true, enterprise: true },
+    { name: "API Access", sandbox: false, pro: false, agency: true, enterprise: true },
+    { name: "On-premise", sandbox: false, pro: false, agency: false, enterprise: true },
+    { name: "SSO / SAML", sandbox: false, pro: false, agency: false, enterprise: true },
   ];
 
   return (
@@ -365,7 +367,7 @@ export default function PricingPage() {
                 <thead>
                   <tr className="border-b border-zinc-200">
                     <th className="text-left py-5 px-4 font-medium text-zinc-500 text-sm">Features</th>
-                    <th className="text-center py-5 px-4 font-semibold text-zinc-600">Free</th>
+                    <th className="text-center py-5 px-4 font-semibold text-zinc-600">Sandbox</th>
                     <th className="text-center py-5 px-4 font-semibold text-orange-600 bg-orange-50">Pro</th>
                     <th className="text-center py-5 px-4 font-semibold text-zinc-900">Agency</th>
                     <th className="text-center py-5 px-4 font-semibold text-zinc-900">Enterprise</th>
@@ -376,14 +378,14 @@ export default function PricingPage() {
                     <tr key={feature.name} className="border-b border-zinc-100 hover:bg-zinc-50 transition-colors">
                       <td className="py-4 px-4 text-sm text-zinc-700">{feature.name}</td>
                       <td className="py-4 px-4 text-center">
-                        {typeof feature.free === "boolean" ? (
-                          feature.free ? (
+                        {typeof feature.sandbox === "boolean" ? (
+                          feature.sandbox ? (
                             <Check className="w-5 h-5 text-green-500 mx-auto" />
                           ) : (
                             <Minus className="w-5 h-5 text-zinc-300 mx-auto" />
                           )
                         ) : (
-                          <span className="text-sm text-zinc-500">{feature.free}</span>
+                          <span className="text-sm text-zinc-500">{feature.sandbox}</span>
                         )}
                       </td>
                       <td className="py-4 px-4 text-center bg-orange-50/50">

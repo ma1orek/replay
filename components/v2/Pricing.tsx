@@ -1,24 +1,23 @@
 import { Check, X, Sparkles } from "lucide-react";
 import Link from "next/link";
 
-// Placeholder - user will provide the actual demo project URL
-const DEMO_PROJECT_URL = "#demo";
+const DEMO_PROJECT_URL = "https://www.replay.build/tool?project=flow_1769444036799_r8hrcxyx2";
 
 const tiers = [
   {
-    name: "Free",
-    id: "free",
+    name: "Sandbox",
+    id: "sandbox",
     price: "$0",
     period: "",
-    description: "Try it out",
+    description: "Explore the demo",
     features: [
-      { text: "100 credits to start", included: true },
-      { text: "1 project", included: true },
-      { text: "Basic export", included: true },
-      { text: "Buy more credits anytime", included: true },
+      { text: "Full access to demo project", included: true },
+      { text: "Explore Flow Map & Library", included: true },
+      { text: "Read-only (no generations)", included: true },
+      { text: "Upgrade anytime", included: true },
     ],
-    cta: "Get Started",
-    href: "/login",
+    cta: "Explore Demo",
+    href: DEMO_PROJECT_URL,
     highlighted: false,
     badge: null,
   },

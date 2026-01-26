@@ -158,7 +158,7 @@ function Header() {
               <>
                 <Link 
                   href="/tool" 
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-medium transition-colors"
                 >
                   Go to App
                   <ArrowRight className="w-4 h-4" />
@@ -225,7 +225,7 @@ function Header() {
                         />
                         <span className="text-sm font-medium text-zinc-700">{displayName}</span>
                       </div>
-                      <Button variant="orange" asChild className="w-full">
+                      <Button variant="default" asChild className="w-full bg-zinc-900 hover:bg-zinc-800">
                         <Link href="/tool">Go to App</Link>
                       </Button>
                     </>
@@ -335,10 +335,10 @@ function HeroSection() {
                   <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </Button>
-              <Button size="xl" asChild className="bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-50 shadow-sm">
-                <Link href="#solution" onClick={(e) => { e.preventDefault(); smoothScrollTo('solution'); }}>
-                  See how it works
-                  <ChevronDown className="ml-2 w-5 h-5" />
+              <Button size="xl" asChild className="bg-zinc-900 text-white border border-zinc-900 hover:bg-zinc-800 shadow-sm">
+                <Link href="https://www.replay.build/tool?project=flow_1769444036799_r8hrcxyx2">
+                  Explore Live Sandbox
+                  <ArrowRight className="ml-2 w-5 h-5" />
                 </Link>
               </Button>
             </div>
