@@ -9524,6 +9524,7 @@ Try these prompts in Cursor or v0:
           versions: [initialVersion], // Include initial version
           tokenUsage: result.tokenUsage, // Store Gemini API token usage
           costCredits: CREDIT_COSTS.VIDEO_GENERATE, // 75 credits per generation
+          user_id: user?.id, // Owner of this project for access control
         };
         setGenerations(prev => [...prev, newGeneration]);
         setActiveGeneration(newGeneration);
@@ -10688,6 +10689,7 @@ ${publishCode}
       videoUrl: data.videoUrl,
       versions: [initialVersion],
       costCredits: CREDIT_COSTS.VIDEO_GENERATE,
+      user_id: user?.id, // Owner of this project for access control
     };
     
     // Add to local state

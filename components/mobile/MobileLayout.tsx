@@ -6,8 +6,14 @@ import MobileHeader from "./MobileHeader";
 import MobileConfigureView from "./MobileConfigureView";
 import MobilePreviewView from "./MobilePreviewView";
 import FloatingIsland from "./FloatingIsland";
+import MobileBottomNav, { MobileTab } from "./MobileBottomNav";
+import MobileProjectFeed from "./MobileProjectFeed";
+import MobileFlowTimeline from "./MobileFlowTimeline";
+import VoiceDirector from "./VoiceDirector";
 import { useAsyncGeneration } from "./useAsyncGeneration";
 import { useMobileVideoProcessor } from "./useMobileVideoProcessor";
+import { MobileLiveCollaboration } from "./MobileLiveCollaboration";
+import MobilePreviewWithComments from "./MobilePreviewWithComments";
 
 interface MobileLayoutProps {
   user: any;
@@ -46,7 +52,13 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
   const searchParams = useSearchParams();
   const autoStartCamera = searchParams?.get("camera") === "true";
   
+  // New 4-tab navigation system
+  const [mainTab, setMainTab] = useState<MobileTab>("capture");
+  // Legacy tab for configure/preview within capture flow
   const [activeTab, setActiveTab] = useState<"configure" | "preview">("configure");
+  // Flow data for timeline view
+  const [flowNodes, setFlowNodes] = useState<any[]>([]);
+  const [flowEdges, setFlowEdges] = useState<any[]>([]);
   const [projectName, setProjectName] = useState("New Project");
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -463,13 +475,79 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
     processingMessage = "Initializing...";
   }
 
+  // Handle project selection from feed
+  const handleSelectProject = useCallback(async (project: any) => {
+    // Load project into state
+    setProjectName(project.title || "Loaded Project");
+    setLoadedProjectId(project.id);
+    
+    // Fetch full project data
+    try {
+      const response = await fetch(`/api/generations?id=${project.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.generation) {
+          const gen = data.generation;
+          
+          if (gen.code) {
+            setGeneratedCode(gen.code);
+            const blob = new Blob([gen.code], { type: "text/html" });
+            setPreviewUrl(URL.createObjectURL(blob));
+            setHasGenerated(true);
+          }
+          
+          if (gen.videoUrl) {
+            setVideoUrl(gen.videoUrl);
+          }
+          
+          if (gen.flowNodes) {
+            setFlowNodes(gen.flowNodes);
+          }
+          
+          if (gen.flowEdges) {
+            setFlowEdges(gen.flowEdges);
+          }
+          
+          if (gen.publishedSlug) {
+            setPublishedUrl(`https://www.replay.build/p/${gen.publishedSlug}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error loading project:", error);
+    }
+    
+    // Switch to capture tab to show the loaded project
+    setMainTab("capture");
+    setActiveTab("preview");
+  }, []);
+
+  // Handle flow node selection
+  const handleFlowNodeSelect = useCallback((node: any) => {
+    console.log("Flow node selected:", node);
+    // Could navigate to that screen in preview
+    setMainTab("mirror");
+  }, []);
+
+  // Handle main tab change
+  const handleMainTabChange = useCallback((tab: MobileTab) => {
+    setMainTab(tab);
+    
+    // If switching to capture and we have a generated preview, show it
+    if (tab === "capture" && hasGenerated) {
+      setActiveTab("preview");
+    } else if (tab === "capture") {
+      setActiveTab("configure");
+    }
+  }, [hasGenerated]);
+
   return (
     <div className="fixed inset-0 bg-black flex flex-col overflow-hidden">
-      {/* Header - always visible in configure, hidden in preview when not processing */}
-      {(activeTab === "configure" || isProcessing) && (
+      {/* Header - context-aware based on main tab */}
+      {mainTab !== "mirror" && (activeTab === "configure" || mainTab !== "capture" || isProcessing) && (
         <MobileHeader
-          projectName={projectName}
-          onProjectNameChange={setProjectName}
+          projectName={mainTab === "feed" ? "Projects" : mainTab === "flow" ? "User Journey" : projectName}
+          onProjectNameChange={mainTab === "capture" ? setProjectName : undefined}
           user={user}
           isPro={isPro}
           plan={plan}
@@ -481,42 +559,83 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
         />
       )}
       
-      {/* Main content */}
-      <div className="flex-1 overflow-hidden flex flex-col">
-        {activeTab === "configure" ? (
-          <MobileConfigureView
-            videoBlob={videoBlob}
-            videoUrl={videoUrl}
-            onVideoCapture={handleVideoCapture}
-            onVideoUpload={handleVideoUpload}
-            onRemoveVideo={handleRemoveVideo}
-            context={context}
-            onContextChange={setContext}
-            style={style}
-            onStyleChange={setStyle}
-            onReconstruct={handleReconstruct}
-            isProcessing={isProcessing}
-            autoStartCamera={autoStartCamera}
-            isLoadedProject={!!loadedProjectId}
+      {/* Main content - based on main tab */}
+      <div className="flex-1 overflow-hidden flex flex-col pb-20">
+        {mainTab === "feed" && (
+          <MobileProjectFeed
+            onSelectProject={handleSelectProject}
           />
-        ) : (
-          <MobilePreviewView
-            previewUrl={previewUrl}
-            previewCode={generatedCode}
-            isProcessing={isProcessing || isPolling}
-            processingProgress={processingProgress}
-            processingMessage={processingMessage}
-            projectName={projectName}
-            onPublish={handlePublish}
-            publishedUrl={publishedUrl}
-            isPublishing={isPublishing}
+        )}
+        
+        {mainTab === "flow" && (
+          <MobileFlowTimeline
+            nodes={flowNodes}
+            edges={flowEdges}
+            onNodeSelect={handleFlowNodeSelect}
+            isLoading={isProcessing}
           />
+        )}
+        
+        {mainTab === "capture" && (
+          <>
+            {activeTab === "configure" ? (
+              <MobileConfigureView
+                videoBlob={videoBlob}
+                videoUrl={videoUrl}
+                onVideoCapture={handleVideoCapture}
+                onVideoUpload={handleVideoUpload}
+                onRemoveVideo={handleRemoveVideo}
+                context={context}
+                onContextChange={setContext}
+                style={style}
+                onStyleChange={setStyle}
+                onReconstruct={handleReconstruct}
+                isProcessing={isProcessing}
+                autoStartCamera={autoStartCamera}
+                isLoadedProject={!!loadedProjectId}
+              />
+            ) : (
+              <MobileLiveCollaboration projectId={loadedProjectId}>
+                <MobilePreviewWithComments
+                  previewUrl={previewUrl}
+                  previewCode={generatedCode}
+                  isProcessing={isProcessing || isPolling}
+                  processingProgress={processingProgress}
+                  processingMessage={processingMessage}
+                  projectName={projectName}
+                  projectId={loadedProjectId}
+                  onPublish={handlePublish}
+                  publishedUrl={publishedUrl}
+                  isPublishing={isPublishing}
+                  showApproval={!!loadedProjectId && hasGenerated}
+                />
+              </MobileLiveCollaboration>
+            )}
+          </>
+        )}
+        
+        {mainTab === "mirror" && hasGenerated && (
+          <MobileLiveCollaboration projectId={loadedProjectId}>
+            <MobilePreviewWithComments
+              previewUrl={previewUrl}
+              previewCode={generatedCode}
+              isProcessing={false}
+              processingProgress={100}
+              processingMessage=""
+              projectName={projectName}
+              projectId={loadedProjectId}
+              onPublish={handlePublish}
+              publishedUrl={publishedUrl}
+              isPublishing={isPublishing}
+              showApproval={true}
+            />
+          </MobileLiveCollaboration>
         )}
       </div>
       
-      {/* Floating Island - ONLY after generation is complete */}
-      {hasGenerated && !isProcessing && (
-        <div className="absolute bottom-8 left-0 right-0 flex justify-center pointer-events-none z-50">
+      {/* Legacy Floating Island for configure/preview toggle within capture tab */}
+      {mainTab === "capture" && hasGenerated && !isProcessing && (
+        <div className="absolute bottom-24 left-0 right-0 flex justify-center pointer-events-none z-30">
           <FloatingIsland
             activeTab={activeTab}
             onChange={setActiveTab}
@@ -524,6 +643,22 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
           />
         </div>
       )}
+      
+      {/* Voice Director FAB - only show when viewing a project */}
+      {(mainTab === "capture" || mainTab === "mirror") && hasGenerated && !isProcessing && (
+        <VoiceDirector
+          projectId={loadedProjectId}
+          disabled={isProcessing}
+        />
+      )}
+      
+      {/* Bottom Navigation */}
+      <MobileBottomNav
+        activeTab={mainTab}
+        onChange={handleMainTabChange}
+        disabled={isProcessing}
+        showMirror={hasGenerated}
+      />
     </div>
   );
 }

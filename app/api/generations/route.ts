@@ -60,15 +60,16 @@ export async function GET(request: NextRequest) {
         versions: gen.versions || [],
         publishedSlug: gen.published_slug || null,
         libraryData: gen.library_data || null,
+        user_id: gen.user_id, // For access control
       };
 
       return NextResponse.json({ success: true, generation: record });
     }
 
     // For history list, fetch only essential fields (much faster)
-    // Include versions for version count display
+    // Include versions for version count display, user_id for access control
     const selectFields = minimal
-      ? "id, title, input_context, created_at, status, input_video_url, published_slug, versions, input_style"
+      ? "id, title, input_context, created_at, status, input_video_url, published_slug, versions, input_style, user_id"
       : "*";
 
     const { data: generations, error, count } = await adminSupabase
@@ -97,6 +98,7 @@ export async function GET(request: NextRequest) {
           publishedSlug: gen.published_slug || null,
           versions: gen.versions || [],
           styleDirective: gen.input_style || '',
+          user_id: gen.user_id, // For access control
         };
       }
       // Full response
@@ -116,6 +118,7 @@ export async function GET(request: NextRequest) {
         versions: gen.versions || [],
         publishedSlug: gen.published_slug || null,
         libraryData: gen.library_data || null,
+        user_id: gen.user_id, // For access control
       };
     });
 

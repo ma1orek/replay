@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Share2, Check, ExternalLink, Smartphone, Monitor, ArrowRight, X, Code, Sparkles, Map, Palette, Rocket } from "lucide-react";
+import { Share2, Check, ExternalLink, Smartphone, Monitor, ArrowRight, X, Code, Sparkles, Map, Palette, Rocket, Maximize2 } from "lucide-react";
+import MobileMirrorMode from "./MobileMirrorMode";
+import ApprovalButton from "./ApprovalButton";
 
 // Loading messages - same as desktop
 const STREAMING_MESSAGES = [
@@ -30,9 +32,23 @@ interface MobilePreviewViewProps {
   processingMessage: string;
   onShare?: () => void;
   projectName: string;
+  projectId?: string | null;
   onPublish?: () => Promise<string | null>;
   publishedUrl?: string | null;
   isPublishing?: boolean;
+  onAddComment?: (comment: { x: number; y: number; text: string }) => void;
+  comments?: Array<{
+    id: string;
+    x: number;
+    y: number;
+    text: string;
+    authorName: string;
+    authorAvatar?: string;
+    timestamp: number;
+  }>;
+  userName?: string;
+  userAvatar?: string;
+  showApproval?: boolean;
 }
 
 export default function MobilePreviewView({
@@ -43,9 +59,15 @@ export default function MobilePreviewView({
   processingMessage,
   onShare,
   projectName,
+  projectId,
   onPublish,
   publishedUrl,
   isPublishing = false,
+  onAddComment,
+  comments = [],
+  userName = "You",
+  userAvatar,
+  showApproval = false,
 }: MobilePreviewViewProps) {
   const [showShareModal, setShowShareModal] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -55,6 +77,50 @@ export default function MobilePreviewView({
   const [isTipTransitioning, setIsTipTransitioning] = useState(false);
   const [hasShownInitialModal, setHasShownInitialModal] = useState(false);
   const [showShareHint, setShowShareHint] = useState(false);
+  const [showMirrorMode, setShowMirrorMode] = useState(false);
+  const [approvalStatus, setApprovalStatus] = useState<"pending" | "approved" | "changes_requested">("pending");
+
+  // Handle project approval
+  const handleApprove = async (comment?: string) => {
+    if (!projectId) return;
+    
+    const response = await fetch("/api/projects/approve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        projectId,
+        action: "approve",
+        comment,
+      }),
+    });
+    
+    if (response.ok) {
+      setApprovalStatus("approved");
+    } else {
+      throw new Error("Failed to approve");
+    }
+  };
+
+  // Handle request changes
+  const handleRequestChanges = async (comment: string) => {
+    if (!projectId) return;
+    
+    const response = await fetch("/api/projects/approve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        projectId,
+        action: "request_changes",
+        comment,
+      }),
+    });
+    
+    if (response.ok) {
+      setApprovalStatus("changes_requested");
+    } else {
+      throw new Error("Failed to request changes");
+    }
+  };
   
   // Auto-show modal after generation completes (first time only)
   useEffect(() => {
@@ -220,6 +286,22 @@ export default function MobilePreviewView({
     );
   }
   
+  // Mirror Mode - fullscreen without UI
+  if (showMirrorMode) {
+    return (
+      <MobileMirrorMode
+        previewUrl={previewUrl}
+        previewCode={previewCode || null}
+        projectName={projectName}
+        onClose={() => setShowMirrorMode(false)}
+        onAddComment={onAddComment}
+        comments={comments}
+        userName={userName}
+        userAvatar={userAvatar}
+      />
+    );
+  }
+
   // Preview state - fullscreen iframe
   // Use blob URL (src) like desktop - works better on mobile Safari than srcdoc
   return (
@@ -245,14 +327,25 @@ export default function MobilePreviewView({
         />
       ) : null}
       
-      {/* Floating share button - more visible with orange accent */}
-      <button
-        onClick={handleShare}
-        className="absolute top-4 right-4 w-14 h-14 rounded-full bg-gradient-to-br from-[#FF6E3C] to-[#FF8F5C] flex items-center justify-center shadow-xl z-10 animate-pulse-slow"
-        style={{ animationDuration: '2s' }}
-      >
-        <Share2 className="w-6 h-6 text-white" />
-      </button>
+      {/* Floating action buttons */}
+      <div className="absolute top-4 right-4 flex flex-col gap-3 z-10">
+        {/* Mirror Mode button */}
+        <button
+          onClick={() => setShowMirrorMode(true)}
+          className="w-14 h-14 rounded-full bg-black/80 backdrop-blur-xl flex items-center justify-center shadow-xl border border-white/10"
+        >
+          <Maximize2 className="w-6 h-6 text-white" />
+        </button>
+        
+        {/* Share button */}
+        <button
+          onClick={handleShare}
+          className="w-14 h-14 rounded-full bg-gradient-to-br from-[#FF6E3C] to-[#FF8F5C] flex items-center justify-center shadow-xl animate-pulse-slow"
+          style={{ animationDuration: '2s' }}
+        >
+          <Share2 className="w-6 h-6 text-white" />
+        </button>
+      </div>
       
       {/* Tooltip hint - shows for 5 seconds after modal closes */}
       {showShareHint && !showShareModal && (
@@ -361,6 +454,18 @@ export default function MobilePreviewView({
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Approval button - fixed at bottom */}
+      {showApproval && projectId && !isProcessing && (
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/70 to-transparent pt-16 z-10">
+          <ApprovalButton
+            projectId={projectId}
+            currentStatus={approvalStatus}
+            onApprove={handleApprove}
+            onRequestChanges={handleRequestChanges}
+          />
         </div>
       )}
     </div>

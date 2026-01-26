@@ -1,13 +1,22 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import "./globals.css";
 import { Providers } from "./providers";
 import CookieConsent from "@/components/CookieConsent";
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#000000",
+};
+
 export const metadata: Metadata = {
   title: "Turn Video into Production-Ready Code | Replay.build",
   description: "Stop guessing with prompts. Replay treats video as the source of truth to reconstruct UI behavior into production-ready React code. Instantly.",
   keywords: ["video to code", "ui rebuild", "screen recording to code", "ai code generation", "tailwind css", "react", "frontend automation", "reverse engineering", "visual development"],
+  manifest: "/manifest.json",
   icons: {
     icon: "/favicon-32x32.png",
     shortcut: "/favicon-32x32.png",
@@ -32,6 +41,14 @@ export const metadata: Metadata = {
     title: "Visual Reverse Engineering is here.",
     description: "We built the first engine that understands UI behavior over time. Drag a video, get a production-ready web app. No prompts required.",
     images: ["https://www.replay.build/og-image.png"],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Replay Companion",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
   },
 };
 
