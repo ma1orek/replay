@@ -13885,9 +13885,9 @@ ${publishCode}
                 {/* Publish Dropdown/Popover */}
                 {showPublishModal && (
                   <>
-                    {/* Backdrop to close on outside click */}
+                    {/* Backdrop to close on outside click - only covers main area, not sidebar */}
                     <div 
-                      className="fixed inset-0 z-[99]" 
+                      className="fixed inset-0 z-[5]" 
                       onClick={() => setShowPublishModal(false)}
                     />
                     <div className="absolute right-0 top-full mt-2 w-80 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl z-[100] overflow-hidden">
@@ -14114,7 +14114,7 @@ ${publishCode}
                           {showCopyDropdown && user && (isPaidPlan || userTotalCredits > 0) && (
                             <>
                               <div 
-                                className="fixed inset-0 z-40" 
+                                className="fixed inset-0 z-[5]" 
                                 onClick={() => setShowCopyDropdown(false)}
                               />
                               <div className="absolute right-0 top-full mt-1 w-56 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 overflow-hidden">
