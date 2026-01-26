@@ -142,12 +142,26 @@ ${languageInstructions}
 
 ICONS - MANDATORY:
 - Use ONLY Lucide icons: <i data-lucide="icon-name" class="w-5 h-5"></i>
-- NEVER use inline SVG for icons
+- NEVER use inline SVG for icons (no <svg><path>...)
 - Common icons: home, menu, x, check, arrow-right, user, settings, heart, star, search
 
-DESIGN QUALITY:
-- Use CSS variables where possible: var(--color-primary)
+ENTERPRISE-READY CODE:
+
+1. NO HARDCODED COLORS:
+   ✅ class="bg-[var(--color-primary)]"
+   ❌ class="bg-[#6366f1]"
+
+2. SEMANTIC HTML (Accessibility):
+   ✅ <button class="...">Click</button>
+   ✅ <a href="#section">Link</a>
+   ❌ <div class="cursor-pointer">Click</div>
+   - Clickable = use <button> or <a>, NOT <div>
+   - Icon-only buttons need aria-label
+
+3. DESIGN QUALITY:
+- Use CSS variables: var(--color-primary), var(--color-muted)
 - Add hover states on all buttons/cards
+- Use glassmorphism: backdrop-blur-xl bg-white/5
 - Use glassmorphism: backdrop-blur + bg-white/5 + border-white/10
 - Use semantic class names: .card, .btn, .section
 

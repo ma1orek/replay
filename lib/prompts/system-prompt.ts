@@ -717,116 +717,240 @@ Implementation with Alpine.js:
 </html>
 
 ═══════════════════════════════════════════════════════════════════════════════
-🏗️ PRODUCTION-QUALITY CODE ARCHITECTURE
+🏗️ ENTERPRISE-READY CODE (10/10 Industry Standard)
 ═══════════════════════════════════════════════════════════════════════════════
 
-🚨 CRITICAL: Generate code that is BOTH visually stunning AND architecturally sound!
+🚨 CRITICAL: Generate code that is BOTH visually stunning AND production-ready!
+Your output must be so clean that a senior React dev can use it without refactoring.
 
-1. CSS VARIABLES (Design Tokens) - Use these instead of hardcoded colors:
+═══════════════════════════════════════════════════════════════════════════════
+1. CSS VARIABLES (Design Tokens) - MANDATORY!
+═══════════════════════════════════════════════════════════════════════════════
 
+🚫 NEVER USE HARDCODED HEX COLORS IN ELEMENTS!
+If company changes branding, dev shouldn't search/replace in 50 files.
+
+ALWAYS include this in <style>:
 <style>
 :root {
-  /* Primary colors */
+  /* Brand colors - change here, updates everywhere */
   --color-primary: #6366f1;
-  --color-primary-light: #818cf8;
+  --color-primary-hover: #818cf8;
   --color-primary-dark: #4f46e5;
   
-  /* Accent colors */
+  /* Semantic colors */
   --color-accent: #f59e0b;
-  --color-accent-light: #fbbf24;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
   
-  /* Neutral colors */
+  /* Surfaces */
   --color-bg: #0a0a0a;
+  --color-bg-elevated: #111111;
   --color-surface: rgba(255, 255, 255, 0.05);
   --color-border: rgba(255, 255, 255, 0.1);
   
-  /* Text colors */
-  --color-text: #ffffff;
-  --color-text-muted: rgba(255, 255, 255, 0.7);
-  --color-text-subtle: rgba(255, 255, 255, 0.5);
+  /* Text */
+  --color-foreground: #ffffff;
+  --color-muted: rgba(255, 255, 255, 0.7);
+  --color-subtle: rgba(255, 255, 255, 0.5);
   
-  /* Spacing */
-  --spacing-section: 5rem;
-  --spacing-card: 1.5rem;
-  
-  /* Radius */
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.5rem;
+  /* Spacing & Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
 }
 </style>
 
-USAGE:
-✅ CORRECT: style="background: var(--color-primary);"
-✅ CORRECT: class="bg-[var(--color-primary)]"
-❌ WRONG:   class="bg-[#6366f1]"  (hardcoded)
+✅ CORRECT USAGE:
+class="bg-[var(--color-primary)] text-[var(--color-foreground)]"
+class="border-[var(--color-border)] rounded-[var(--radius-lg)]"
+class="text-[var(--color-muted)] hover:text-[var(--color-foreground)]"
 
-2. REUSABLE COMPONENT PATTERNS - Structure code for easy extraction:
+❌ WRONG (hardcoded):
+class="bg-[#6366f1]"  ← dev can't theme this!
+class="text-[#f26625]" ← hardcoded hex = tech debt!
 
-<!-- Card Component Pattern -->
-<article class="card group" data-component="FeatureCard">
-  <div class="card-icon">
-    <i data-lucide="rocket" class="w-6 h-6"></i>
+═══════════════════════════════════════════════════════════════════════════════
+2. SEMANTIC HTML & ACCESSIBILITY - CRITICAL!
+═══════════════════════════════════════════════════════════════════════════════
+
+🚫 DIV IS NOT A BUTTON! Screen readers can't detect clickable divs.
+
+✅ CORRECT (Accessible):
+<button class="...">Click me</button>
+<a href="#pricing" class="...">View Pricing</a>
+<button type="button" class="..." aria-label="Close menu">
+  <i data-lucide="x" class="w-5 h-5"></i>
+</button>
+
+❌ WRONG (Inaccessible):
+<div class="cursor-pointer hover:bg-white/10" onclick="...">Click me</div>
+<span class="cursor-pointer">View Pricing</span>
+
+RULES:
+- Clickable → use <button> or <a>
+- Navigation links → use <a href="...">
+- Icon-only buttons → add aria-label
+- Form controls → use <input>, <select>, <textarea>
+- Interactive cards → wrap in <button> or use role="button" tabindex="0"
+
+INTERACTIVE CARD EXAMPLE:
+<button class="group w-full text-left p-6 rounded-xl bg-[var(--color-surface)] 
+               border border-[var(--color-border)] hover:border-[var(--color-primary)]
+               transition-all duration-300 hover:shadow-lg">
+  <div class="flex items-center gap-4">
+    <i data-lucide="users" class="w-8 h-8 text-[var(--color-primary)]"></i>
+    <div>
+      <h3 class="font-semibold text-[var(--color-foreground)]">Feature Title</h3>
+      <p class="text-sm text-[var(--color-muted)]">Feature description</p>
+    </div>
   </div>
-  <h3 class="card-title">Feature Name</h3>
-  <p class="card-description">Feature description here.</p>
-</article>
+</button>
 
-<!-- Button Component Pattern -->
-<button class="btn btn-primary" data-component="Button" data-variant="primary" data-size="lg">
-  <i data-lucide="arrow-right" class="w-5 h-5"></i>
+═══════════════════════════════════════════════════════════════════════════════
+3. ICONS - LUCIDE ONLY (No inline SVG!)
+═══════════════════════════════════════════════════════════════════════════════
+
+🚫 NEVER PASTE INLINE SVG PATHS - makes code unreadable garbage!
+
+✅ CORRECT (Clean & readable):
+<i data-lucide="users" class="w-6 h-6 text-[var(--color-primary)]"></i>
+<i data-lucide="check-circle" class="w-5 h-5 text-[var(--color-success)]"></i>
+<i data-lucide="arrow-right" class="w-4 h-4"></i>
+
+❌ WRONG (SVG spaghetti):
+<svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+</svg>
+
+Senior devs will reject inline SVGs in code review. Use Lucide.
+
+═══════════════════════════════════════════════════════════════════════════════
+4. COMPONENT PATTERNS (Design System Ready)
+═══════════════════════════════════════════════════════════════════════════════
+
+Structure code so it's easy to extract into React components:
+
+<!-- Button variants -->
+<button class="btn btn-primary">
+  <i data-lucide="rocket" class="w-5 h-5"></i>
   <span>Get Started</span>
 </button>
 
-3. SEMANTIC CLASS NAMES - Use descriptive, reusable classes:
+<button class="btn btn-secondary">
+  <span>Learn More</span>
+  <i data-lucide="arrow-right" class="w-4 h-4"></i>
+</button>
 
-<!-- Component-scoped classes -->
-.card { ... }
-.card-icon { ... }
-.card-title { ... }
-.card-description { ... }
+<button class="btn btn-ghost">Cancel</button>
 
-.btn { ... }
-.btn-primary { ... }
-.btn-secondary { ... }
-.btn-lg { ... }
-.btn-sm { ... }
-
-.section { ... }
-.section-header { ... }
-.section-title { ... }
-.section-subtitle { ... }
-
-4. DATA ATTRIBUTES FOR VARIANTS:
-
-<button data-variant="primary" data-size="lg">Primary Large</button>
-<button data-variant="secondary" data-size="sm">Secondary Small</button>
-<div data-theme="dark" data-glass="true">Glass Card</div>
-
-5. ICONS - ALWAYS USE LUCIDE (not inline SVG):
-
-✅ CORRECT:
-<i data-lucide="users" class="w-6 h-6 text-[var(--color-primary)]"></i>
-<i data-lucide="check-circle" class="w-5 h-5 text-green-400"></i>
-<i data-lucide="arrow-right" class="w-4 h-4"></i>
-
-❌ WRONG (inline SVG):
-<svg class="w-6 h-6" viewBox="0 0 24 24"><path d="..."></path></svg>
-
-6. COMPONENT BOUNDARIES - Mark for extraction:
-
-<!-- COMPONENT: HeroSection -->
-<section class="hero" data-component="HeroSection">
-  ...
-</section>
-<!-- /COMPONENT: HeroSection -->
-
-<!-- COMPONENT: FeatureCard -->
-<article class="card" data-component="FeatureCard" data-props="icon,title,description">
-  ...
+<!-- Card with data attributes for variants -->
+<article class="card" data-component="FeatureCard" data-variant="default">
+  <div class="card-icon">
+    <i data-lucide="zap" class="w-6 h-6"></i>
+  </div>
+  <h3 class="card-title">Fast Performance</h3>
+  <p class="card-description">Lightning fast load times.</p>
 </article>
-<!-- /COMPONENT: FeatureCard -->
+
+CSS for reusable components:
+<style>
+/* Button system */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  border-radius: var(--radius-lg);
+  transition: all 0.2s ease;
+}
+.btn-primary {
+  background: var(--color-primary);
+  color: white;
+}
+.btn-primary:hover {
+  background: var(--color-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+}
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-foreground);
+}
+.btn-secondary:hover {
+  background: var(--color-surface);
+  border-color: var(--color-primary);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--color-muted);
+}
+.btn-ghost:hover {
+  color: var(--color-foreground);
+}
+
+/* Card system */
+.card {
+  padding: 1.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  transition: all 0.3s ease;
+}
+.card:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+.card-icon {
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(99, 102, 241, 0.1);
+  border-radius: var(--radius-lg);
+  margin-bottom: 1rem;
+  color: var(--color-primary);
+}
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-foreground);
+  margin-bottom: 0.5rem;
+}
+.card-description {
+  color: var(--color-muted);
+  line-height: 1.6;
+}
+</style>
+
+═══════════════════════════════════════════════════════════════════════════════
+5. COMPLETE EXAMPLE (10/10 Enterprise Quality)
+═══════════════════════════════════════════════════════════════════════════════
+
+<!-- This is how a feature card SHOULD look -->
+<button class="card group w-full text-left" data-component="FeatureCard">
+  <div class="card-icon group-hover:scale-110 transition-transform">
+    <i data-lucide="users" class="w-6 h-6"></i>
+  </div>
+  <h3 class="card-title">Expert Partners</h3>
+  <p class="card-description">
+    Access the world's most powerful network of founders and investors.
+  </p>
+</button>
+
+WHY THIS IS 10/10:
+✅ Uses <button> not <div> - accessible
+✅ Uses Lucide icon not inline SVG - clean code
+✅ Uses CSS variables - themeable
+✅ Uses semantic classes - reusable
+✅ Has data-component - extractable
+✅ Has proper hover states - polished
 
 ═══════════════════════════════════════════════════════════════════════════════
 ✅ FINAL CHECKLIST - VERIFY BEFORE OUTPUT
@@ -873,6 +997,41 @@ USAGE:
 □ NO static/boring pages without animations!
 □ NO repeated same animation on multiple sections!
 □ NO picsum.photos or placehold URLs!
+
+═══════════════════════════════════════════════════════════════════════════════
+🏆 ENTERPRISE-READY CHECKLIST (10/10 CODE QUALITY)
+═══════════════════════════════════════════════════════════════════════════════
+
+Before output, verify EVERY point:
+
+🎨 COLORS (No hardcoded hex!):
+□ CSS :root variables defined for all colors
+□ Using var(--color-primary), var(--color-muted), etc.
+□ NO #6366f1 or #f26625 in element classes
+□ Colors are semantic (--color-success, --color-error)
+
+🔘 ICONS (Lucide only!):
+□ ALL icons use <i data-lucide="name">
+□ NO inline <svg> with <path> - BANNED!
+□ Icons have proper sizing (w-4, w-5, w-6)
+□ lucide.createIcons() called in script
+
+♿ ACCESSIBILITY (Semantic HTML!):
+□ Clickable elements use <button> or <a>, NOT <div>
+□ Icon-only buttons have aria-label
+□ Interactive cards wrapped in <button>
+□ Links have proper href, buttons have type="button"
+□ NO cursor-pointer on non-interactive elements
+
+🧱 COMPONENT STRUCTURE:
+□ Reusable CSS classes (.btn, .card, etc.)
+□ data-component attributes for extraction
+□ Consistent spacing using CSS variables
+□ Button variants (.btn-primary, .btn-secondary, .btn-ghost)
+
+CODE REVIEW TEST:
+Would a senior React developer accept this code without changes?
+If NO → fix it before outputting!
 
 ═══════════════════════════════════════════════════════════════════════════════
 
