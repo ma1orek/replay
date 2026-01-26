@@ -3962,6 +3962,12 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
           }
         }
         
+        // Load library data (component library)
+        if (gen.library_data) {
+          console.log("[Project URL] Loading library data");
+          setLibraryData(gen.library_data);
+        }
+        
         // Set active generation for editing and Liveblocks room
         const loadedGeneration: GenerationRecord = {
           id: gen.id,
@@ -16882,8 +16888,9 @@ export default function App() {
                                                       {/* Advanced color picker with contrast ratio */}
                                                       {(() => {
                                                         const currentVal = (libraryPropsOverride[prop.name] ?? prop.defaultValue ?? '').toString();
-                                                        const isHex = currentVal.match(/^#[0-9A-Fa-f]{3,8}$/);
-                                                        const displayColor = isHex ? currentVal : '#6366f1';
+                                                        // Extract hex color from value - handles both "#fff" and "text-[#f26522]" formats
+                                                        const hexMatch = currentVal.match(/#[0-9A-Fa-f]{3,8}/);
+                                                        const displayColor = hexMatch ? hexMatch[0] : '#6366f1';
                                                         return (
                                                           <Popover>
                                                             <PopoverTrigger asChild>
