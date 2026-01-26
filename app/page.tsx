@@ -17621,6 +17621,11 @@ export default function App() {
                             ...prev,
                             [resizingComponent.id]: { width: newWidth, height: newHeight }
                           }));
+                          // Notify iframe about resize for responsive content
+                          const iframeEl = document.getElementById(`iframe-${resizingComponent.id.replace('comp-', '')}`) as HTMLIFrameElement;
+                          if (iframeEl?.contentWindow) {
+                            iframeEl.contentWindow.postMessage({ type: 'PARENT_RESIZE', width: newWidth, height: newHeight }, '*');
+                          }
                           // Broadcast to other users
                           broadcastBlueprintSize(resizingComponent.id, newWidth, newHeight);
                         } else if (draggingComponent) {
@@ -18050,28 +18055,58 @@ export default function App() {
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;scrollbar-width:none;-ms-overflow-style:none}
-html,body{font-family:Inter,system-ui,sans-serif;background:transparent;overflow:visible!important}
-body{display:block;padding:0}
-#root{display:block}
-/* Full-width sections - inherit container width */
-header,footer,nav,section,article,main,.container,.wrapper,.hero,.footer,.header,.section,.pricing,.cta,.banner{min-width:100%}
-/* Flex containers should also be full width */
-body>div,body>section,body>header,body>footer,body>nav,body>main,body>article{width:100%}
+html,body{font-family:Inter,system-ui,sans-serif;background:transparent;overflow:hidden!important;width:100%!important;height:100%!important}
+body{display:flex;flex-direction:column;padding:0;width:100%!important}
+#root{display:flex;flex-direction:column;width:100%}
+/* RESPONSIVE: All containers stretch to fill iframe width */
+body>*,#root>*{width:100%!important;max-width:100%!important;flex-shrink:0}
+/* Full-width sections */
+header,footer,nav,section,article,main,.container,.wrapper,.hero,.footer,.header,.section,.pricing,.cta,.banner{width:100%!important;max-width:100%!important}
+/* Flex containers */
+.flex{flex-wrap:wrap}
+/* Grid responsive */
+.grid{width:100%}
+@media(max-width:640px){.grid{grid-template-columns:1fr!important}.md\\:grid-cols-2,.md\\:grid-cols-3,.md\\:grid-cols-4,.lg\\:grid-cols-2,.lg\\:grid-cols-3,.lg\\:grid-cols-4{grid-template-columns:1fr!important}}
+/* Hide scrollbars */
 *::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
-img{max-width:none;height:auto;display:block;object-fit:cover}
+/* Images responsive */
+img{max-width:100%!important;height:auto!important;display:block;object-fit:cover}
 img[src=""]{display:none}
 img:not([src]){display:none}
 video{max-width:100%;border-radius:inherit}
+/* Text wrap */
+p,h1,h2,h3,h4,h5,h6,span,a{word-wrap:break-word;overflow-wrap:break-word}
+/* Padding responsive */
+@media(max-width:400px){.px-6,.px-8,.px-10,.px-12{padding-left:1rem!important;padding-right:1rem!important}.py-16,.py-20,.py-24{padding-top:2rem!important;padding-bottom:2rem!important}}
 </style>
 <script>
 function autoResize(){
   const body=document.body;
-  const w=body.scrollWidth;
-  const h=body.scrollHeight;
+  // Report natural content size
+  const w=Math.max(body.scrollWidth,body.offsetWidth,200);
+  const h=Math.max(body.scrollHeight,body.offsetHeight,50);
   parent.postMessage({type:'resize',id:'${comp.id}',width:w,height:h},'*');
 }
-window.onload=()=>{if(typeof lucide!=='undefined')lucide.createIcons();autoResize();setTimeout(autoResize,100);setTimeout(autoResize,500);setTimeout(autoResize,1000)};
-new ResizeObserver(autoResize).observe(document.body);
+// Handle parent iframe resize - content should adapt
+function handleParentResize(){
+  // Force reflow for responsive CSS
+  document.body.style.width='100%';
+  document.body.offsetHeight; // Force reflow
+  setTimeout(autoResize,50);
+}
+// Listen for resize from parent
+window.addEventListener('message',e=>{
+  if(e.data?.type==='PARENT_RESIZE'){handleParentResize()}
+});
+window.onload=()=>{
+  if(typeof lucide!=='undefined')lucide.createIcons();
+  autoResize();
+  setTimeout(autoResize,100);
+  setTimeout(autoResize,500);
+  setTimeout(autoResize,1000);
+};
+// Observe body for changes
+new ResizeObserver(()=>{setTimeout(autoResize,10)}).observe(document.body);
 // Force load images
 document.querySelectorAll('img').forEach(img=>{
   if(!img.complete){img.onload=autoResize;img.onerror=()=>{img.style.display='none'}}
