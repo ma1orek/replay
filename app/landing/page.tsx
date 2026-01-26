@@ -871,6 +871,546 @@ function SolutionSection() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// BENTO FEATURES SECTION - Awwwards Level
+// ═══════════════════════════════════════════════════════════════
+
+function BentoFeaturesSection() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+
+  // Bento Card Component with mouse tracking
+  const BentoCard = ({ 
+    id, 
+    className, 
+    children, 
+    delay = 0 
+  }: { 
+    id: string; 
+    className?: string; 
+    children: React.ReactNode; 
+    delay?: number;
+  }) => {
+    const cardRef = useRef<HTMLDivElement>(null);
+    const [localMouse, setLocalMouse] = useState({ x: 0, y: 0 });
+    
+    const handleMouseMove = (e: React.MouseEvent) => {
+      if (!cardRef.current) return;
+      const rect = cardRef.current.getBoundingClientRect();
+      setLocalMouse({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      });
+    };
+
+    return (
+      <motion.div
+        ref={cardRef}
+        initial={{ opacity: 0, y: 40, scale: 0.95 }}
+        animate={isInView ? { opacity: 1, y: 0, scale: 1 } : {}}
+        transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
+        onMouseMove={handleMouseMove}
+        onMouseEnter={() => setHoveredCard(id)}
+        onMouseLeave={() => setHoveredCard(null)}
+        className={cn(
+          "relative group rounded-2xl bg-zinc-900/80 border border-zinc-800/50 overflow-hidden backdrop-blur-sm",
+          "transition-all duration-500",
+          hoveredCard === id && "border-zinc-700/80 shadow-2xl shadow-white/5",
+          className
+        )}
+        style={{
+          // CSS custom properties for gradient position
+          ['--mouse-x' as any]: `${localMouse.x}px`,
+          ['--mouse-y' as any]: `${localMouse.y}px`,
+        }}
+      >
+        {/* Mouse-following gradient */}
+        <div 
+          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+          style={{
+            background: `radial-gradient(600px circle at var(--mouse-x) var(--mouse-y), rgba(255,255,255,0.06), transparent 40%)`
+          }}
+        />
+        {/* Border glow effect */}
+        <div 
+          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl"
+          style={{
+            background: `radial-gradient(400px circle at var(--mouse-x) var(--mouse-y), rgba(255,255,255,0.1), transparent 40%)`,
+            mask: 'linear-gradient(black, black) content-box, linear-gradient(black, black)',
+            maskComposite: 'xor',
+            WebkitMaskComposite: 'xor',
+            padding: '1px'
+          }}
+        />
+        {/* Content */}
+        <div className="relative z-10 h-full">
+          {children}
+        </div>
+      </motion.div>
+    );
+  };
+
+  return (
+    <section className="relative py-24 lg:py-40 bg-zinc-950 overflow-hidden" ref={ref}>
+      {/* Background Effects */}
+      <div className="absolute inset-0">
+        {/* Animated grid */}
+        <div className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)`,
+            backgroundSize: '80px 80px'
+          }}
+        />
+        {/* Radial gradient */}
+        <div className="absolute inset-0 bg-gradient-to-b from-zinc-950 via-transparent to-zinc-950" />
+        {/* Floating orbs */}
+        <motion.div
+          className="absolute top-1/4 left-1/4 w-96 h-96 bg-white/[0.02] rounded-full blur-3xl"
+          animate={{ 
+            scale: [1, 1.2, 1],
+            opacity: [0.02, 0.04, 0.02]
+          }}
+          transition={{ duration: 8, repeat: Infinity }}
+        />
+        <motion.div
+          className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-zinc-500/[0.03] rounded-full blur-3xl"
+          animate={{ 
+            scale: [1.2, 1, 1.2],
+            opacity: [0.03, 0.05, 0.03]
+          }}
+          transition={{ duration: 10, repeat: Infinity }}
+        />
+        {/* Grain */}
+        <div className="absolute inset-0 opacity-[0.015]" 
+          style={{ 
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")` 
+          }} 
+        />
+      </div>
+
+      <div className="landing-container relative z-10">
+        {/* Section Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.8 }}
+          className="text-center mb-20"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={isInView ? { opacity: 1, scale: 1 } : {}}
+            transition={{ duration: 0.5 }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8"
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-sm text-zinc-400 font-medium">The Complete System</span>
+          </motion.div>
+          <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-white mb-6">
+            Everything you need to{" "}
+            <span className="italic text-zinc-400">modernize</span>
+          </h2>
+          <p className="text-lg text-zinc-500 max-w-2xl mx-auto">
+            From video to deployed architecture. One unified system.
+          </p>
+        </motion.div>
+
+        {/* Bento Grid */}
+        <div className="grid grid-cols-12 gap-4 lg:gap-6 auto-rows-[minmax(180px,auto)]">
+          
+          {/* FLOWS - Large Horizontal */}
+          <BentoCard id="flows" className="col-span-12 lg:col-span-8 row-span-2" delay={0.1}>
+            <div className="p-6 lg:p-8 h-full flex flex-col">
+              <div className="flex items-start justify-between mb-6">
+                <div>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/20 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-semibold text-white">Flow Map</h3>
+                  </div>
+                  <p className="text-zinc-400 text-sm max-w-md">
+                    Visual architecture mapping. We detect user journeys directly from video, identifying both visited pages and potential logic gaps.
+                  </p>
+                </div>
+                <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                  <span className="text-xs text-blue-400 font-medium">CORE</span>
+                </div>
+              </div>
+              
+              {/* Flow Visualization */}
+              <div className="flex-1 relative bg-zinc-950/50 rounded-xl border border-zinc-800/50 overflow-hidden">
+                <div className="absolute inset-0 opacity-[0.03]"
+                  style={{
+                    backgroundImage: `linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)`,
+                    backgroundSize: '30px 30px'
+                  }}
+                />
+                {/* Animated Nodes */}
+                <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid meet">
+                  {/* Connection Lines */}
+                  <motion.path
+                    d="M 80 80 Q 160 80 180 120 Q 200 160 280 160"
+                    stroke="url(#flowGradient1)"
+                    strokeWidth="2"
+                    fill="none"
+                    initial={{ pathLength: 0, opacity: 0 }}
+                    animate={isInView ? { pathLength: 1, opacity: 1 } : {}}
+                    transition={{ duration: 1.5, delay: 0.5 }}
+                  />
+                  <motion.path
+                    d="M 280 160 Q 360 160 400 120 Q 440 80 520 80"
+                    stroke="url(#flowGradient2)"
+                    strokeWidth="2"
+                    fill="none"
+                    initial={{ pathLength: 0, opacity: 0 }}
+                    animate={isInView ? { pathLength: 1, opacity: 1 } : {}}
+                    transition={{ duration: 1.5, delay: 0.8 }}
+                  />
+                  <motion.path
+                    d="M 280 160 L 280 220"
+                    stroke="rgba(255,255,255,0.1)"
+                    strokeWidth="2"
+                    strokeDasharray="4 4"
+                    fill="none"
+                    initial={{ pathLength: 0 }}
+                    animate={isInView ? { pathLength: 1 } : {}}
+                    transition={{ duration: 1, delay: 1.2 }}
+                  />
+                  <defs>
+                    <linearGradient id="flowGradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="rgba(59,130,246,0.5)" />
+                      <stop offset="100%" stopColor="rgba(34,211,238,0.5)" />
+                    </linearGradient>
+                    <linearGradient id="flowGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="rgba(34,211,238,0.5)" />
+                      <stop offset="100%" stopColor="rgba(16,185,129,0.5)" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                
+                {/* Nodes */}
+                <motion.div
+                  className="absolute top-12 left-12 w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/30 flex items-center justify-center"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={isInView ? { scale: 1, opacity: 1 } : {}}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                >
+                  <span className="text-blue-400 text-xs font-mono">LOGIN</span>
+                </motion.div>
+                <motion.div
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30 flex items-center justify-center"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={isInView ? { scale: 1, opacity: 1 } : {}}
+                  transition={{ duration: 0.5, delay: 0.6 }}
+                >
+                  <span className="text-cyan-400 text-xs font-mono">DASH</span>
+                </motion.div>
+                <motion.div
+                  className="absolute top-12 right-12 w-16 h-16 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border border-emerald-500/30 flex items-center justify-center"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={isInView ? { scale: 1, opacity: 1 } : {}}
+                  transition={{ duration: 0.5, delay: 0.9 }}
+                >
+                  <span className="text-emerald-400 text-xs font-mono">USERS</span>
+                </motion.div>
+                <motion.div
+                  className="absolute bottom-8 left-1/2 -translate-x-1/2 w-14 h-14 rounded-xl bg-zinc-800/50 border border-dashed border-zinc-600 flex items-center justify-center"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={isInView ? { scale: 1, opacity: 0.6 } : {}}
+                  transition={{ duration: 0.5, delay: 1.2 }}
+                >
+                  <span className="text-zinc-500 text-[10px] font-mono">?</span>
+                </motion.div>
+                
+                {/* Labels */}
+                <div className="absolute bottom-3 left-3 flex items-center gap-4">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-blue-500" />
+                    <span className="text-[10px] text-zinc-500">Observed</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full border border-dashed border-zinc-500" />
+                    <span className="text-[10px] text-zinc-500">Detected</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </BentoCard>
+
+          {/* LIBRARY - Tall Vertical */}
+          <BentoCard id="library" className="col-span-12 sm:col-span-6 lg:col-span-4 row-span-2" delay={0.2}>
+            <div className="p-6 h-full flex flex-col">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/20 flex items-center justify-center">
+                  <Layers className="w-5 h-5 text-purple-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-white">Library</h3>
+              </div>
+              <p className="text-zinc-400 text-sm mb-6">
+                Auto-generated Design System. Every button, color, and input cataloged as reusable tokens.
+              </p>
+              
+              {/* Component Grid Preview */}
+              <div className="flex-1 grid grid-cols-2 gap-2">
+                {[
+                  { name: "Button", color: "bg-white" },
+                  { name: "Input", color: "bg-zinc-800" },
+                  { name: "Card", color: "bg-zinc-800" },
+                  { name: "Badge", color: "bg-purple-500/20" },
+                  { name: "Avatar", color: "bg-gradient-to-br from-blue-500 to-purple-500" },
+                  { name: "Toggle", color: "bg-emerald-500/20" },
+                ].map((comp, i) => (
+                  <motion.div
+                    key={comp.name}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={isInView ? { opacity: 1, y: 0 } : {}}
+                    transition={{ duration: 0.4, delay: 0.4 + i * 0.1 }}
+                    className="p-3 rounded-lg bg-zinc-900/50 border border-zinc-800/50 hover:border-zinc-700 transition-colors"
+                  >
+                    <div className={cn("w-full h-8 rounded mb-2", comp.color)} />
+                    <span className="text-[10px] text-zinc-500 font-mono">{comp.name}</span>
+                  </motion.div>
+                ))}
+              </div>
+              
+              {/* Features */}
+              <div className="mt-4 pt-4 border-t border-zinc-800/50 flex flex-wrap gap-2">
+                {["WCAG", "Visual Tests", "Controls"].map((tag) => (
+                  <span key={tag} className="px-2 py-1 rounded bg-zinc-800/50 text-[10px] text-zinc-500">{tag}</span>
+                ))}
+              </div>
+            </div>
+          </BentoCard>
+
+          {/* BLUEPRINTS - Medium */}
+          <BentoCard id="blueprints" className="col-span-12 sm:col-span-6 lg:col-span-4" delay={0.3}>
+            <div className="p-6 h-full flex flex-col">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/20 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-white">Blueprints</h3>
+              </div>
+              <p className="text-zinc-400 text-sm mb-4">
+                Edit components with AI. Changes propagate globally.
+              </p>
+              
+              {/* AI Editor Preview */}
+              <div className="flex-1 relative bg-zinc-950/50 rounded-lg border border-zinc-800/50 p-3">
+                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-zinc-800/50">
+                  <div className="w-6 h-6 rounded bg-amber-500/20 flex items-center justify-center">
+                    <Zap className="w-3 h-3 text-amber-400" />
+                  </div>
+                  <span className="text-xs text-zinc-400">AI Editing</span>
+                </div>
+                <motion.div
+                  className="text-[11px] text-zinc-500 font-mono"
+                  initial={{ opacity: 0 }}
+                  animate={isInView ? { opacity: 1 } : {}}
+                  transition={{ duration: 0.5, delay: 0.6 }}
+                >
+                  <span className="text-emerald-400">&gt;</span> "Make it rounded"
+                </motion.div>
+                <motion.div
+                  className="mt-2 w-full h-8 rounded-full bg-white/10"
+                  initial={{ borderRadius: "4px" }}
+                  animate={isInView ? { borderRadius: "9999px" } : {}}
+                  transition={{ duration: 0.8, delay: 1 }}
+                />
+              </div>
+            </div>
+          </BentoCard>
+
+          {/* MULTIPLAYER - Small */}
+          <BentoCard id="multiplayer" className="col-span-6 lg:col-span-4" delay={0.4}>
+            <div className="p-6 h-full flex flex-col">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/20 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-white">Multiplayer</h3>
+              </div>
+              <p className="text-zinc-400 text-sm mb-4">
+                Real-time collaboration. Live cursors and instant sync.
+              </p>
+              
+              {/* Cursors Animation */}
+              <div className="flex-1 relative">
+                <motion.div
+                  className="absolute flex items-center gap-1"
+                  initial={{ left: "20%", top: "30%" }}
+                  animate={isInView ? { left: ["20%", "60%", "40%"], top: ["30%", "50%", "40%"] } : {}}
+                  transition={{ duration: 4, repeat: Infinity, repeatType: "reverse" }}
+                >
+                  <svg className="w-4 h-4 text-blue-400" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M5.5 3.5L19.5 12L12 13L9 20.5L5.5 3.5Z" />
+                  </svg>
+                  <span className="px-1.5 py-0.5 rounded bg-blue-500 text-[9px] text-white">Alex</span>
+                </motion.div>
+                <motion.div
+                  className="absolute flex items-center gap-1"
+                  initial={{ left: "60%", top: "60%" }}
+                  animate={isInView ? { left: ["60%", "30%", "50%"], top: ["60%", "40%", "70%"] } : {}}
+                  transition={{ duration: 5, repeat: Infinity, repeatType: "reverse", delay: 0.5 }}
+                >
+                  <svg className="w-4 h-4 text-purple-400" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M5.5 3.5L19.5 12L12 13L9 20.5L5.5 3.5Z" />
+                  </svg>
+                  <span className="px-1.5 py-0.5 rounded bg-purple-500 text-[9px] text-white">Sam</span>
+                </motion.div>
+              </div>
+            </div>
+          </BentoCard>
+
+          {/* AI AUTOMATION - Small */}
+          <BentoCard id="ai" className="col-span-6 lg:col-span-4" delay={0.5}>
+            <div className="p-6 h-full flex flex-col">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500/20 to-red-500/20 border border-rose-500/20 flex items-center justify-center">
+                  <Zap className="w-5 h-5 text-rose-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">AI Automation</h3>
+              </div>
+              <p className="text-zinc-400 text-sm mb-4">
+                Beyond UI. API Contracts, E2E Tests, Tech Debt Audits.
+              </p>
+              
+              {/* Automation Items */}
+              <div className="flex-1 space-y-2">
+                {[
+                  { name: "API Contracts", status: "done" },
+                  { name: "E2E Tests", status: "done" },
+                  { name: "Documentation", status: "running" },
+                ].map((item, i) => (
+                  <motion.div
+                    key={item.name}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={isInView ? { opacity: 1, x: 0 } : {}}
+                    transition={{ duration: 0.4, delay: 0.7 + i * 0.1 }}
+                    className="flex items-center justify-between py-2 px-3 rounded-lg bg-zinc-900/50"
+                  >
+                    <span className="text-xs text-zinc-400">{item.name}</span>
+                    {item.status === "done" ? (
+                      <Check className="w-3 h-3 text-emerald-400" />
+                    ) : (
+                      <motion.div
+                        className="w-3 h-3 border-2 border-rose-400 border-t-transparent rounded-full"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      />
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </BentoCard>
+
+          {/* PREVIEW - Wide */}
+          <BentoCard id="preview" className="col-span-12 lg:col-span-8" delay={0.6}>
+            <div className="p-6 lg:p-8 h-full flex flex-col lg:flex-row gap-6">
+              <div className="lg:w-1/3">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500/20 to-violet-500/20 border border-indigo-500/20 flex items-center justify-center">
+                    <Eye className="w-5 h-5 text-indigo-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-white">Live Preview</h3>
+                </div>
+                <p className="text-zinc-400 text-sm mb-4">
+                  Point & click editing. See changes in real-time with instant feedback.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {["Mobile", "Desktop", "Fullscreen"].map((mode) => (
+                    <span key={mode} className="px-2 py-1 rounded bg-zinc-800/50 text-[10px] text-zinc-500">{mode}</span>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Preview Window */}
+              <div className="lg:flex-1 relative bg-zinc-950/50 rounded-xl border border-zinc-800/50 overflow-hidden min-h-[160px]">
+                {/* Browser Chrome */}
+                <div className="flex items-center gap-2 px-3 py-2 border-b border-zinc-800/50">
+                  <div className="flex gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
+                  </div>
+                  <div className="flex-1 h-5 rounded bg-zinc-800/50 mx-8" />
+                </div>
+                {/* Content */}
+                <div className="p-4">
+                  <motion.div
+                    className="w-2/3 h-4 rounded bg-white/10 mb-3"
+                    animate={isInView ? { opacity: [0.5, 1, 0.5] } : {}}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
+                  <motion.div
+                    className="w-1/2 h-3 rounded bg-white/5 mb-4"
+                    animate={isInView ? { opacity: [0.3, 0.6, 0.3] } : {}}
+                    transition={{ duration: 2, repeat: Infinity, delay: 0.2 }}
+                  />
+                  <div className="flex gap-2">
+                    <motion.div
+                      className="px-4 py-2 rounded bg-indigo-500/30 border border-indigo-500/30"
+                      whileHover={{ scale: 1.05 }}
+                    >
+                      <span className="text-[10px] text-indigo-300">Click to edit</span>
+                    </motion.div>
+                  </div>
+                </div>
+                {/* Cursor */}
+                <motion.div
+                  className="absolute"
+                  initial={{ left: "70%", top: "60%" }}
+                  animate={isInView ? { left: ["70%", "30%"], top: ["60%", "70%"] } : {}}
+                  transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", delay: 1 }}
+                >
+                  <svg className="w-5 h-5 text-white drop-shadow-lg" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M5.5 3.5L19.5 12L12 13L9 20.5L5.5 3.5Z" />
+                  </svg>
+                </motion.div>
+              </div>
+            </div>
+          </BentoCard>
+
+          {/* CODE EXPORT - Small */}
+          <BentoCard id="export" className="col-span-12 lg:col-span-4" delay={0.7}>
+            <div className="p-6 h-full flex flex-col">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-500/20 to-zinc-600/20 border border-zinc-500/20 flex items-center justify-center">
+                  <Code className="w-5 h-5 text-zinc-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">Export Code</h3>
+              </div>
+              <p className="text-zinc-400 text-sm mb-4">
+                Clean React + Tailwind. Ready for your engineers.
+              </p>
+              
+              {/* Code Preview */}
+              <div className="flex-1 bg-zinc-950/50 rounded-lg border border-zinc-800/50 p-3 font-mono text-[10px] overflow-hidden">
+                <div className="text-purple-400">export function</div>
+                <div><span className="text-blue-400">UserForm</span><span className="text-zinc-500">()</span> <span className="text-zinc-500">{'{'}</span></div>
+                <div className="pl-2"><span className="text-purple-400">return</span> <span className="text-zinc-500">(</span></div>
+                <div className="pl-4"><span className="text-emerald-400">&lt;div</span> <span className="text-orange-400">className</span><span className="text-zinc-500">=</span><span className="text-amber-300">"..."</span><span className="text-emerald-400">&gt;</span></div>
+                <div className="pl-6 text-zinc-600">// Generated component</div>
+              </div>
+            </div>
+          </BentoCard>
+
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // ROI CALCULATOR SECTION
 // ═══════════════════════════════════════════════════════════════
 
@@ -1448,6 +1988,7 @@ export default function LandingPage() {
         <SocialProofSection />
         <ProblemSection />
         <SolutionSection />
+        <BentoFeaturesSection />
         <ROICalculatorSection />
         <SecuritySection />
         <FAQSection />
