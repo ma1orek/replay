@@ -93,16 +93,26 @@ function buildSystemPrompt(chatHistory?: any[]): string {
   }
 
   const languageInstructions = userLanguage === 'pl' 
-    ? `LANGUAGE: Respond in Polish. Be concise and professional.
-Examples of good responses:
-- "Gotowe! Zmieniłem kolor przycisku na zielony."
-- "Gotowe! Dodałem nową sekcję."
-- "Gotowe! Przetłumaczyłem teksty na turecki."`
-    : `LANGUAGE: Respond in English. Be concise and professional.
-Examples of good responses:
-- "Done! Changed button color to green."
-- "Done! Added new section."
-- "Done! Translated all text to Turkish."`;
+    ? `LANGUAGE: Respond in Polish. Be descriptive but concise.
+Examples of GOOD summaries:
+- "Zmieniłem kolor głównego przycisku z niebieskiego na zielony i dodałem efekt hover."
+- "Dodałem nową sekcję kontaktową z polami: imię, email i wiadomość."
+- "Przetłumaczyłem wszystkie teksty na polski, włącznie z nawigacją i stopką."
+- "Naprawiłem układ sidebara - teraz używa flexbox i jest w pełni responsywny."
+
+Examples of BAD summaries (DO NOT USE):
+- "Gotowe!" (za mało informacji)
+- "Zmiany zastosowane." (nic nie mówi)`
+    : `LANGUAGE: Respond in English. Be descriptive but concise.
+Examples of GOOD summaries:
+- "Changed the main button color from blue to green and added a hover effect."
+- "Added a new contact form section with name, email, and message fields."
+- "Translated all visible text to Polish, including navigation and footer."
+- "Fixed the sidebar layout - now uses flexbox and is fully responsive."
+
+Examples of BAD summaries (DO NOT USE):
+- "Done!" (too vague)
+- "Changes applied." (meaningless)`;
 
   return `REPLAY AI - Code Editor
 
@@ -176,12 +186,25 @@ FORBIDDEN:
 - Inline SVG icons (use Lucide instead!)
 
 RESPONSE FORMAT:
-1. Brief confirmation (1 line, no emoji)
+1. Short summary (1-2 sentences) describing WHAT you changed - be specific!
 2. Complete HTML code in code block
 3. Nothing else
 
-Example good response:
-"Done! Changed the button color.
+SUMMARY MUST include:
+- WHAT was changed (button, header, sidebar, colors, layout, etc.)
+- HOW it was changed (added, removed, resized, recolored, translated, etc.)
+
+Example GOOD summaries:
+- "Changed the main button color from blue to green and added a hover effect."
+- "Added a new contact form section with name, email, and message fields."
+- "Translated all visible text to Polish, including navigation and footer."
+- "Fixed the sidebar layout - now uses flexbox and is fully responsive."
+- "Added 3 new team member cards with avatars and social links."
+
+Example BAD summaries (DO NOT USE):
+- "Done!" (too vague)
+- "Changes applied." (doesn't say what)
+- "Updated the code." (meaningless)
 
 \`\`\`html
 <!DOCTYPE html>
@@ -528,7 +551,7 @@ CRITICAL RULES:
                 return;
               }
               
-              const summary = isAssetReplacement ? "Logo replaced" : generateChangeSummary(currentCode, extractedCode, editRequest);
+              const summary = isAssetReplacement ? "Logo replaced" : generateChangeSummary(currentCode, extractedCode, editRequest, fullCode);
               send("complete", { 
                 code: extractedCode, 
                 summary,
@@ -613,7 +636,7 @@ CRITICAL RULES:
                   needsClarification: true
                 });
               } else {
-                const summary = generateChangeSummary(currentCode, extractedCode, editRequest);
+                const summary = generateChangeSummary(currentCode, extractedCode, editRequest, fullCode);
                 send("complete", { 
                   code: extractedCode, 
                   summary,
@@ -766,7 +789,26 @@ function tryFallbackExtraction(response: string): string | null {
   return null;
 }
 
-function generateChangeSummary(oldCode: string, newCode: string, request: string): string {
+function generateChangeSummary(oldCode: string, newCode: string, request: string, fullResponse?: string): string {
+  // First, try to extract summary from AI response (text before code block)
+  if (fullResponse) {
+    const codeBlockStart = fullResponse.indexOf('```');
+    if (codeBlockStart > 0) {
+      const aiSummary = fullResponse.substring(0, codeBlockStart).trim();
+      // Clean up the summary - remove "Done!" prefix if followed by actual description
+      const cleanSummary = aiSummary
+        .replace(/^(Done!|Gotowe!)\s*/i, '')
+        .replace(/\*\*/g, '') // Remove markdown bold
+        .trim();
+      
+      // If AI gave a meaningful summary (more than just "Done"), use it
+      if (cleanSummary.length > 10 && !cleanSummary.match(/^(done|gotowe|ok|changes applied|zmiany zastosowane)\.?$/i)) {
+        return cleanSummary;
+      }
+    }
+  }
+  
+  // Fallback: generate summary based on code analysis
   const oldLines = oldCode.split('\n').length;
   const newLines = newCode.split('\n').length;
   const lineDiff = newLines - oldLines;
@@ -792,7 +834,8 @@ function generateChangeSummary(oldCode: string, newCode: string, request: string
   }
   
   if (summaryParts.length === 0) {
-    summaryParts.push("Done!");
+    // Return a summary based on the user request
+    return `Updated based on: "${request.slice(0, 50)}${request.length > 50 ? '...' : ''}"`;
   }
   
   return summaryParts.join(" • ");
