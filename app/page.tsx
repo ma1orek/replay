@@ -15901,6 +15901,8 @@ export default function GeneratedPage() {
                 {/* Main Area - Canvas + Bottom Panel (middle panel removed - now in left sidebar) */}
                 <div className="flex-1 flex flex-col min-w-0 relative">
                   {/* Center Toolbar - Tool controls (floating over canvas) - neutral colors */}
+                  {/* Only show toolbar for components, hide for docs */}
+                  {selectedLibraryItem?.startsWith("comp-") && (
                   <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex flex-wrap items-center justify-center gap-1 bg-zinc-900/98 backdrop-blur-xl rounded-xl p-1.5 border border-zinc-700/50 shadow-2xl shadow-black/40 max-w-[calc(100%-2rem)] sm:max-w-none">
                     {/* Grid toggle */}
                     <button 
@@ -16059,7 +16061,7 @@ export default function GeneratedPage() {
                       <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Fullscreen</span>
                     </button>
                   </div>
-                  
+                  )}
                   
                   {/* Canvas - Component Preview - STORYBOOK STYLE */}
                   {(() => {
