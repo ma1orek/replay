@@ -175,7 +175,7 @@ function Header() {
             ) : (
               <>
                 <Button variant="ghost" size="sm" asChild>
-                  <Link href="/login">Login</Link>
+                  <Link href="/login">Sign in</Link>
                 </Button>
                 <Button variant="orange" size="sm" asChild>
                   <Link href="/contact">Book a Demo</Link>
@@ -232,7 +232,7 @@ function Header() {
                   ) : (
                     <>
                       <Button variant="dark-outline" asChild className="w-full">
-                        <Link href="/login">Login</Link>
+                        <Link href="/login">Sign in</Link>
                       </Button>
                       <Button variant="orange" asChild className="w-full">
                         <Link href="/contact">Book a Demo</Link>
