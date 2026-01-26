@@ -1977,6 +1977,30 @@ const ShadowPreview = ({
     .font-medium { font-weight: 500 !important; }
     .font-semibold { font-weight: 600 !important; }
     .font-bold { font-weight: 700 !important; }
+    
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* FIX INVISIBLE ELEMENTS - AI often generates opacity:0 for animations       */
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* Force all elements visible */
+    [style*="opacity: 0"], [style*="opacity:0"] {
+      opacity: 1 !important;
+    }
+    /* Fix elements with transform animations that start hidden */
+    [style*="translate"] {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+    /* Common animation classes that hide elements initially */
+    .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .animate-fade,
+    [class*="fade-"], [class*="slide-"], [class*="stagger-"] {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+    /* Framer Motion / GSAP style hidden states */
+    [data-state="hidden"], [data-visible="false"] {
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
   </style>
 </head>
 <body>
@@ -1986,18 +2010,42 @@ const ShadowPreview = ({
     if (typeof lucide !== 'undefined') {
       lucide.createIcons();
     }
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // FIX INVISIBLE ELEMENTS - Force all elements to be visible
+    // ═══════════════════════════════════════════════════════════════════════════
+    function forceVisible() {
+      // Find all elements with inline opacity:0 and fix them
+      document.querySelectorAll('*').forEach(el => {
+        const style = el.getAttribute('style') || '';
+        if (style.includes('opacity') && (style.includes('opacity: 0') || style.includes('opacity:0'))) {
+          el.style.opacity = '1';
+        }
+        // Also fix transform with translateY for fade-up animations
+        if (style.includes('translate') && style.includes('opacity')) {
+          el.style.opacity = '1';
+          el.style.transform = 'none';
+        }
+      });
+    }
+    
     // Auto-resize iframe to content
     function sendHeight() {
       const height = document.getElementById('preview-content')?.scrollHeight || 200;
       window.parent.postMessage({ type: 'IFRAME_HEIGHT', height: Math.max(height + 32, 120) }, '*');
     }
+    
     // Send on load and after Tailwind processes
     window.addEventListener('load', () => {
       if (typeof lucide !== 'undefined') lucide.createIcons();
+      forceVisible();
       setTimeout(sendHeight, 100);
     });
-    setTimeout(sendHeight, 500);
-    setTimeout(sendHeight, 1000);
+    
+    // Run multiple times to catch dynamically rendered content
+    setTimeout(() => { forceVisible(); sendHeight(); }, 100);
+    setTimeout(() => { forceVisible(); sendHeight(); }, 500);
+    setTimeout(() => { forceVisible(); sendHeight(); }, 1000);
   </script>
 </body>
 </html>`, [cleanHtml, background]);
@@ -2139,6 +2187,30 @@ const InteractiveReactPreview = ({
       justify-content: center;
       width: 1em; 
       height: 1em; 
+    }
+    
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* FIX INVISIBLE ELEMENTS - AI often generates opacity:0 for animations       */
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* Force all elements visible */
+    [style*="opacity: 0"], [style*="opacity:0"] {
+      opacity: 1 !important;
+    }
+    /* Fix elements with transform animations that start hidden */
+    [style*="translate"] {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+    /* Common animation classes that hide elements initially */
+    .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .animate-fade,
+    [class*="fade-"], [class*="slide-"], [class*="stagger-"] {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+    /* Framer Motion / GSAP style hidden states */
+    [data-state="hidden"], [data-visible="false"] {
+      opacity: 1 !important;
+      visibility: visible !important;
     }
   </style>
   <script>
@@ -2314,6 +2386,22 @@ const InteractiveReactPreview = ({
       }
     }, 100);
     
+    // ═══════════════════════════════════════════════════════════════════════════
+    // FIX INVISIBLE ELEMENTS - Force all elements to be visible
+    // ═══════════════════════════════════════════════════════════════════════════
+    const forceVisible = () => {
+      document.querySelectorAll('*').forEach(el => {
+        const style = el.getAttribute('style') || '';
+        if (style.includes('opacity') && (style.includes('opacity: 0') || style.includes('opacity:0'))) {
+          el.style.opacity = '1';
+        }
+        if (style.includes('translate') && style.includes('opacity')) {
+          el.style.opacity = '1';
+          el.style.transform = 'none';
+        }
+      });
+    };
+    
     // Size reporting
     const sendSize = () => {
       const root = document.getElementById('root');
@@ -2323,12 +2411,12 @@ const InteractiveReactPreview = ({
     };
     
     // Initial + resize + mutation observer
-    setTimeout(sendSize, 100);
-    setTimeout(sendSize, 500);
-    setTimeout(sendSize, 1500);
+    setTimeout(() => { forceVisible(); sendSize(); }, 100);
+    setTimeout(() => { forceVisible(); sendSize(); }, 500);
+    setTimeout(() => { forceVisible(); sendSize(); }, 1500);
     window.addEventListener('resize', sendSize);
     
-    const observer = new MutationObserver(sendSize);
+    const observer = new MutationObserver(() => { forceVisible(); sendSize(); });
     observer.observe(document.body, { childList: true, subtree: true, attributes: true });
   </script>
 </body>
@@ -3269,6 +3357,44 @@ function ReplayToolContent() {
     // First stabilize any picsum URLs to prevent images from randomly changing
     let processedCode = stabilizePicsumUrls(code);
     
+    // FIX INVISIBLE ELEMENTS - CSS to force visibility (AI generates opacity:0 for animations)
+    const invisibleFixStyles = `
+<style id="invisible-fix">
+  /* Force all elements visible - fix AI generated fade/slide animations */
+  [style*="opacity: 0"], [style*="opacity:0"] { opacity: 1 !important; }
+  [style*="translate"] { opacity: 1 !important; transform: none !important; }
+  .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .animate-fade,
+  [class*="fade-"], [class*="slide-"], [class*="stagger-"] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  [data-state="hidden"], [data-visible="false"] {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+</style>
+<script>
+// Force all elements visible after load
+window.addEventListener('load', function() {
+  document.querySelectorAll('*').forEach(function(el) {
+    var style = el.getAttribute('style') || '';
+    if (style.includes('opacity') && (style.includes('opacity: 0') || style.includes('opacity:0'))) {
+      el.style.opacity = '1';
+    }
+    if (style.includes('translate') && style.includes('opacity')) {
+      el.style.opacity = '1';
+      el.style.transform = 'none';
+    }
+  });
+});
+// Also run after a delay for dynamically rendered content
+setTimeout(function() {
+  document.querySelectorAll('[style*="opacity"]').forEach(function(el) {
+    el.style.opacity = '1';
+  });
+}, 500);
+</script>`;
+    
     // Ensure Tailwind CSS is included (inject if missing)
     if (!processedCode.includes('cdn.tailwindcss.com') && !processedCode.includes('tailwindcss')) {
       const tailwindScript = '<script src="https://cdn.tailwindcss.com"></script>';
@@ -3277,10 +3403,10 @@ function ReplayToolContent() {
       
       if (processedCode.includes('</head>')) {
         // Inject before </head>
-        processedCode = processedCode.replace('</head>', `${tailwindScript}\n${gsapScript}\n${alpineScript}\n</head>`);
+        processedCode = processedCode.replace('</head>', `${tailwindScript}\n${gsapScript}\n${alpineScript}\n${invisibleFixStyles}\n</head>`);
       } else if (processedCode.includes('<body')) {
         // Inject before <body>
-        processedCode = processedCode.replace(/<body/, `<head>${tailwindScript}\n${gsapScript}\n${alpineScript}</head>\n<body`);
+        processedCode = processedCode.replace(/<body/, `<head>${tailwindScript}\n${gsapScript}\n${alpineScript}${invisibleFixStyles}</head>\n<body`);
       } else {
         // Wrap in full HTML structure
         processedCode = `<!DOCTYPE html>
@@ -3291,12 +3417,20 @@ function ReplayToolContent() {
   ${tailwindScript}
   ${gsapScript}
   ${alpineScript}
+  ${invisibleFixStyles}
   <style>* { margin: 0; padding: 0; box-sizing: border-box; }</style>
 </head>
 <body class="min-h-screen">
 ${processedCode}
 </body>
 </html>`;
+      }
+    } else {
+      // Tailwind already present, just add the fix
+      if (processedCode.includes('</head>')) {
+        processedCode = processedCode.replace('</head>', `${invisibleFixStyles}\n</head>`);
+      } else if (processedCode.includes('</body>')) {
+        processedCode = processedCode.replace('</body>', `${invisibleFixStyles}\n</body>`);
       }
     }
     
