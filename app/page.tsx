@@ -11565,20 +11565,39 @@ ${publishCode}
                                   {isExpanded && (
                                     <div className="ml-5 space-y-0.5">
                                       {cat.components.map((comp: any) => (
-                                        <button
+                                        <div
                                           key={comp.id}
+                                          className={cn(
+                                            "w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md transition-colors group/comp cursor-pointer",
+                                            selectedLibraryItem === `comp-${comp.id}` ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300"
+                                          )}
                                           onClick={() => {
                                             setSelectedLibraryItem(`comp-${comp.id}`);
                                             setLibraryPropsOverride({});
                                           }}
-                                          className={cn(
-                                            "w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md transition-colors",
-                                            selectedLibraryItem === `comp-${comp.id}` ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300"
-                                          )}
                                         >
                                           <Box className="w-3 h-3 flex-shrink-0" />
                                           <span className="truncate flex-1 text-left">{comp.name}</span>
-                                        </button>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              if (libraryData) {
+                                                const updated = {
+                                                  ...libraryData,
+                                                  components: libraryData.components.filter((c: any) => c.id !== comp.id)
+                                                };
+                                                setLibraryData(updated);
+                                                if (selectedLibraryItem === `comp-${comp.id}`) {
+                                                  setSelectedLibraryItem(null);
+                                                }
+                                              }
+                                            }}
+                                            className="opacity-0 group-hover/comp:opacity-100 p-0.5 hover:bg-zinc-700 rounded transition-opacity"
+                                            title="Delete component"
+                                          >
+                                            <X className="w-3 h-3" />
+                                          </button>
+                                        </div>
                                       ))}
                                     </div>
                                   )}
@@ -15733,7 +15752,7 @@ export default function GeneratedPage() {
                               }}
                               className={cn(
                                 "w-full px-3 py-1.5 text-xs text-left hover:bg-zinc-800 transition-colors flex items-center justify-between capitalize",
-                                libraryBackground === bg ? "text-white" : "text-zinc-400"
+                                libraryBackground === bg ? "bg-zinc-700 text-white" : "text-zinc-400"
                               )}
                             >
                               {bg}
@@ -15810,7 +15829,7 @@ export default function GeneratedPage() {
                               }}
                               className={cn(
                                 "w-full px-3 py-1.5 text-xs text-left hover:bg-zinc-800 transition-colors flex items-center justify-between",
-                                libraryVisionMode === mode.id ? "text-white" : "text-zinc-400"
+                                libraryVisionMode === mode.id ? "bg-zinc-700 text-white" : "text-zinc-400"
                               )}
                             >
                               {mode.label}
@@ -16551,22 +16570,22 @@ export default function App() {
                                         <div 
                                           className={cn(
                                             "transition-all duration-300 relative group/measure inline-block",
-                                            showLibraryOutline && "outline outline-2 outline-dashed outline-blue-400/50"
+                                            showLibraryOutline && "outline outline-1 outline-dashed outline-zinc-500/50"
                                           )}
                                         >
-                                          {/* Storybook-like measurement overlay on hover */}
-                                          {showLibraryOutline && (
+                                          {/* Storybook-like measurement overlay */}
+                                          {(showLibraryOutline || showLibraryRuler) && (
                                             <>
-                                              {/* Top dimension - Hug indicator */}
-                                              <div className="absolute -top-5 left-1/2 -translate-x-1/2 flex items-center gap-1 opacity-0 group-hover/measure:opacity-100 transition-opacity">
-                                                <span className="px-1.5 py-0.5 text-[9px] font-medium text-blue-400 bg-blue-500/20 rounded border border-blue-500/30">
-                                                  Hug
+                                              {/* Top dimension - width */}
+                                              <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex items-center gap-1 transition-opacity">
+                                                <span className="px-1.5 py-0.5 text-[9px] font-mono font-medium text-zinc-400 bg-zinc-800 rounded border border-zinc-700">
+                                                  {libraryPreviewSize.width > 0 ? `${libraryPreviewSize.width}px` : 'Hug'}
                                                 </span>
                                               </div>
-                                              {/* Left dimension - Hug indicator */}
-                                              <div className="absolute -left-5 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover/measure:opacity-100 transition-opacity">
-                                                <span className="px-1.5 py-0.5 text-[9px] font-medium text-blue-400 bg-blue-500/20 rounded border border-blue-500/30" style={{writingMode: 'vertical-rl', transform: 'rotate(180deg)'}}>
-                                                  Hug
+                                              {/* Left dimension - height */}
+                                              <div className="absolute -left-6 top-1/2 -translate-y-1/2 flex items-center gap-1 transition-opacity">
+                                                <span className="px-1.5 py-0.5 text-[9px] font-mono font-medium text-zinc-400 bg-zinc-800 rounded border border-zinc-700" style={{writingMode: 'vertical-rl', transform: 'rotate(180deg)'}}>
+                                                  {libraryPreviewSize.height > 0 ? `${libraryPreviewSize.height}px` : 'Hug'}
                                                 </span>
                                               </div>
                                             </>
@@ -17324,7 +17343,7 @@ export default function App() {
                                   }}
                                   className={cn(
                                     "w-full px-3 py-1.5 text-xs text-left hover:bg-zinc-800 transition-colors flex items-center justify-between capitalize",
-                                    blueprintsBackground === bg ? "text-white" : "text-zinc-400"
+                                    blueprintsBackground === bg ? "bg-zinc-700 text-white" : "text-zinc-400"
                                   )}
                                 >
                                   {bg}
@@ -17401,7 +17420,7 @@ export default function App() {
                                   }}
                                   className={cn(
                                     "w-full px-3 py-1.5 text-xs text-left hover:bg-zinc-800 transition-colors flex items-center justify-between",
-                                    blueprintsVisionMode === mode.id ? "text-white" : "text-zinc-400"
+                                    blueprintsVisionMode === mode.id ? "bg-zinc-700 text-white" : "text-zinc-400"
                                   )}
                                 >
                                   {mode.label}
@@ -17965,16 +17984,36 @@ document.querySelectorAll('img').forEach(img=>{
                                     </span>
                                   )}
                                 </div>
-                                <button 
-                                  onClick={() => {
-                                    setSelectedBlueprintComponent(null);
-                                    setBlueprintEditedCode(null);
-                                    setBlueprintChatHistory([]);
-                                  }}
-                                  className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-500 hover:text-white transition-colors"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
+                                <div className="flex items-center gap-1">
+                                  <button 
+                                    onClick={() => {
+                                      if (libraryData && confirm(`Delete "${selectedComp.name}"?`)) {
+                                        const updated = {
+                                          ...libraryData,
+                                          components: libraryData.components.filter((c: any) => c.id !== selectedComp.id)
+                                        };
+                                        setLibraryData(updated);
+                                        setSelectedBlueprintComponent(null);
+                                        setBlueprintEditedCode(null);
+                                        setBlueprintChatHistory([]);
+                                      }
+                                    }}
+                                    className="p-1.5 hover:bg-red-500/20 rounded-lg text-zinc-500 hover:text-red-400 transition-colors"
+                                    title="Delete component"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                  <button 
+                                    onClick={() => {
+                                      setSelectedBlueprintComponent(null);
+                                      setBlueprintEditedCode(null);
+                                      setBlueprintChatHistory([]);
+                                    }}
+                                    className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-500 hover:text-white transition-colors"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
                               </div>
                               
                               {/* AI Input - Main Action Area */}

@@ -108,8 +108,8 @@ body {
 /* ═══════════════════════════════════════════════════════════════ */
 
 *::-webkit-scrollbar {
-  width: 6px !important;
-  height: 6px !important;
+  width: 4px !important;
+  height: 4px !important;
 }
 
 *::-webkit-scrollbar-track {
@@ -117,12 +117,20 @@ body {
 }
 
 *::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border-radius: 3px !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-radius: 2px !important;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Hide scrollbars in iframes and preview areas */
+iframe::-webkit-scrollbar,
+.preview-container::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
 }
 
 .scrollbar-none {
