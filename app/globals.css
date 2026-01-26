@@ -1430,6 +1430,43 @@ select:focus:not(:focus-visible) {
   box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
 }
 
+/* ROI Calculator slider - Dark version */
+.roi-slider-dark {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: #27272a;
+  border-radius: 2px;
+  outline: none;
+}
+
+.roi-slider-dark::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s ease;
+}
+
+.roi-slider-dark::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.roi-slider-dark::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
 /* Footer CTA gradient */
 .footer-cta-gradient {
   background: linear-gradient(180deg, #0f0f14 0%, #1a1a1f 50%, #0f0f14 100%);
