@@ -11530,8 +11530,8 @@ ${publishCode}
             </div>
           ) : !sidebarCollapsed && sidebarView === "detail" && viewMode === "blueprints" && generationComplete ? (
             /* BLUEPRINTS VIEW SIDEBAR - Figma-style Component List */
-            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-              <div className="flex-shrink-0 px-3 py-2 border-b border-zinc-800">
+            <div className="flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-visible">
+              <div className="flex-shrink-0 px-3 py-2 border-b border-zinc-800 relative z-50 overflow-visible">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Layers</span>
                   <button 
@@ -11559,7 +11559,7 @@ ${publishCode}
                     className="p-1 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white group relative"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 border border-zinc-700/50">Add component</span>
+                    <span className="absolute -top-9 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[9999] border border-zinc-700/50 shadow-lg">Add component</span>
                   </button>
                 </div>
               </div>
