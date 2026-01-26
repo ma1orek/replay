@@ -350,7 +350,16 @@ import Image from "next/image";
 import Avatar from "@/components/Avatar";
 import { OnlineUsers } from "@/components/LiveCursors";
 import { CommentModeToggle } from "@/components/LiveComments";
-import { LiveCollaboration } from "@/components/LiveCollaboration";
+import { 
+  LiveCollaboration, 
+  useLiveSync,
+  broadcastBlueprintPosition,
+  broadcastBlueprintSize,
+  broadcastBlueprintCode,
+  broadcastLibraryComponentChange,
+  broadcastLibraryComponentDelete,
+  broadcastLibraryComponentAdd,
+} from "@/components/LiveCollaboration";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -10442,6 +10451,48 @@ ${publishCode}
       isCommentMode={isCommentMode}
       onToggleCommentMode={() => setIsCommentMode(!isCommentMode)}
       currentTab={viewMode}
+      // Receive changes from other users
+      onBlueprintPositionChange={(id, x, y) => {
+        setBlueprintPositions(prev => ({ ...prev, [id]: { x, y } }));
+      }}
+      onBlueprintSizeChange={(id, width, height) => {
+        setBlueprintSizes(prev => ({ ...prev, [id]: { width, height } }));
+      }}
+      onBlueprintCodeChange={(id, code) => {
+        // Update component code in library data
+        setLibraryData((prev: any) => ({
+          ...prev,
+          components: prev?.components?.map((c: any) =>
+            `comp-${c.id}` === id ? { ...c, jsxCode: code } : c
+          ),
+        }));
+      }}
+      onLibraryComponentChange={(id, data) => {
+        setLibraryData((prev: any) => ({
+          ...prev,
+          components: prev?.components?.map((c: any) =>
+            c.id === id ? { ...c, ...data } : c
+          ),
+        }));
+      }}
+      onLibraryComponentDelete={(id) => {
+        setLibraryData((prev: any) => ({
+          ...prev,
+          components: prev?.components?.filter((c: any) => c.id !== id),
+        }));
+        // Also remove from blueprint positions
+        setBlueprintPositions(prev => {
+          const newPositions = { ...prev };
+          delete newPositions[`comp-${id}`];
+          return newPositions;
+        });
+      }}
+      onLibraryComponentAdd={(component) => {
+        setLibraryData((prev: any) => ({
+          ...prev,
+          components: [...(prev?.components || []), component],
+        }));
+      }}
     >
     <div className="h-screen flex flex-col bg-[#111111] overflow-hidden">
       {/* SVG Filters for Vision Simulator */}
@@ -17234,6 +17285,9 @@ export default function App() {
                             ...prev,
                             [`comp-${newId}`]: { x: clickX, y: clickY }
                           }));
+                          // Broadcast to other users
+                          broadcastLibraryComponentAdd(newComp);
+                          broadcastBlueprintPosition(`comp-${newId}`, clickX, clickY);
                           setSelectedBlueprintComponent(`comp-${newId}`);
                           // Start inline editing for new component name
                           setEditingComponentName(newId);
@@ -17260,6 +17314,8 @@ export default function App() {
                             ...prev,
                             [resizingComponent.id]: { width: newWidth, height: newHeight }
                           }));
+                          // Broadcast to other users
+                          broadcastBlueprintSize(resizingComponent.id, newWidth, newHeight);
                         } else if (draggingComponent) {
                           // Move component
                           const rect = blueprintsCanvasRef.current?.getBoundingClientRect();
@@ -17271,6 +17327,8 @@ export default function App() {
                             ...prev,
                             [draggingComponent]: { x: newX, y: newY }
                           }));
+                          // Broadcast to other users
+                          broadcastBlueprintPosition(draggingComponent, newX, newY);
                         } else if (isBlueprintsPanning) {
                           setBlueprintsOffset({
                             x: e.clientX - blueprintsPanStart.x,
@@ -18169,6 +18227,8 @@ document.querySelectorAll('img').forEach(img=>{
                                               : c
                                           ) || []
                                         }));
+                                        // Broadcast code change to other users
+                                        broadcastLibraryComponentChange(selectedComp.id, { code: blueprintEditedCode });
                                         setBlueprintStatuses(prev => ({ ...prev, [selectedComp.id]: 'approved' }));
                                         setBlueprintEditedCode(null);
                                         setBlueprintChatHistory([]);
