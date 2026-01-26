@@ -18271,9 +18271,9 @@ i[data-lucide] svg{width:inherit;height:inherit;stroke:currentColor;fill:none}
 <script>
 function autoResize(){
   const body=document.body;
-  // Report natural content size
-  const w=Math.max(body.scrollWidth,body.offsetWidth,200);
-  const h=Math.max(body.scrollHeight,body.offsetHeight,50);
+  // Report natural content size - hug to actual content
+  const w=Math.max(body.scrollWidth,body.offsetWidth,100);
+  const h=body.scrollHeight||body.offsetHeight||24;
   parent.postMessage({type:'resize',id:'${comp.id}',width:w,height:h},'*');
 }
 // Handle parent iframe resize - content should adapt
@@ -18327,12 +18327,11 @@ document.querySelectorAll('img').forEach(img=>{
                                             } catch(err) {}
                                           }}
                                           style={{ 
-                                            width: size?.width ? `${size.width}px` : 'auto',
-                                            height: size?.height ? `${size.height}px` : 'auto',
+                                            width: size?.width ? `${size.width}px` : undefined,
+                                            height: size?.height ? `${size.height}px` : undefined,
                                             // Smart min-width based on component type
                                             minWidth: /section|footer|header|hero|nav|layout|container|wrapper/i.test(comp.name) ? '600px' : 
                                                      /card|feature|testimonial|stat|metric|job|blog|item/i.test(comp.name) ? '280px' : '200px',
-                                            minHeight: '24px',
                                             background: 'transparent',
                                             display: 'block'
                                           }}
