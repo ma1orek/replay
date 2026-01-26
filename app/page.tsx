@@ -2844,13 +2844,18 @@ function ReplayToolContent() {
   const [blueprintsPanStart, setBlueprintsPanStart] = useState({ x: 0, y: 0 });
   const [blueprintsComponentPrompt, setBlueprintsComponentPrompt] = useState("");
   const [isGeneratingBlueprintsComponent, setIsGeneratingBlueprintsComponent] = useState(false);
-  const [blueprintsBackground, setBlueprintsBackground] = useState<"dark" | "light">("dark");
+  const [blueprintsBackground, setBlueprintsBackground] = useState<"dark" | "light" | "transparent">("dark");
   const [showBlueprintsGrid, setShowBlueprintsGrid] = useState(false);
   const [showBlueprintsOutline, setShowBlueprintsOutline] = useState(false);
   const [showBlueprintsRuler, setShowBlueprintsRuler] = useState(false);
   const [blueprintsVisionMode, setBlueprintsVisionMode] = useState<"none" | "blur" | "deuteranopia" | "protanopia" | "tritanopia" | "grayscale">("none");
   const [blueprintsViewport, setBlueprintsViewport] = useState<"desktop" | "mobile">("desktop");
   const [isBlueprintsFullscreen, setIsBlueprintsFullscreen] = useState(false);
+  // Dropdown open states
+  const [showLibraryBgDropdown, setShowLibraryBgDropdown] = useState(false);
+  const [showLibraryVisionDropdown, setShowLibraryVisionDropdown] = useState(false);
+  const [showBlueprintsBgDropdown, setShowBlueprintsBgDropdown] = useState(false);
+  const [showBlueprintsVisionDropdown, setShowBlueprintsVisionDropdown] = useState(false);
   
   // Blueprints Analysis State (Single Source of Truth)
   const [blueprintsAnalysis, setBlueprintsAnalysis] = useState<any>(null);
@@ -15699,9 +15704,13 @@ export default function GeneratedPage() {
                       <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Grid</span>
                     </button>
                     
-                    {/* Background toggle */}
-                    <div className="relative group/bg">
+                    {/* Background toggle - click dropdown */}
+                    <div className="relative">
                       <button 
+                        onClick={() => {
+                          setShowLibraryBgDropdown(!showLibraryBgDropdown);
+                          setShowLibraryVisionDropdown(false);
+                        }}
                         className={cn(
                           "p-2 rounded-lg transition-all duration-150 flex items-center gap-1",
                           libraryBackground !== "dark" 
@@ -15712,22 +15721,27 @@ export default function GeneratedPage() {
                         {libraryBackground === "light" ? <Sun className="w-4 h-4" /> : libraryBackground === "transparent" ? <Grid2X2 className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                         <ChevronDown className="w-3 h-3" />
                       </button>
-                      <div className="absolute top-full left-0 mt-2 bg-zinc-900/98 backdrop-blur-xl border border-zinc-700/50 rounded-xl shadow-2xl opacity-0 group-hover/bg:opacity-100 pointer-events-none group-hover/bg:pointer-events-auto transition-opacity min-w-[120px] py-1 z-50">
-                        <span className="block px-3 py-1.5 text-[10px] text-zinc-500 uppercase tracking-wider">Background</span>
-                        {(["dark", "light", "transparent"] as const).map((bg) => (
-                          <button
-                            key={bg}
-                            onClick={() => setLibraryBackground(bg)}
-                            className={cn(
-                              "w-full px-3 py-1.5 text-xs text-left hover:bg-zinc-800 transition-colors flex items-center justify-between capitalize",
-                              libraryBackground === bg ? "text-white" : "text-zinc-400"
-                            )}
-                          >
-                            {bg}
-                            {libraryBackground === bg && <Check className="w-3 h-3" />}
-                          </button>
-                        ))}
-                      </div>
+                      {showLibraryBgDropdown && (
+                        <div className="absolute top-full left-0 mt-2 bg-zinc-900/98 backdrop-blur-xl border border-zinc-700/50 rounded-xl shadow-2xl min-w-[120px] py-1 z-50">
+                          <span className="block px-3 py-1.5 text-[10px] text-zinc-500 uppercase tracking-wider">Background</span>
+                          {(["dark", "light", "transparent"] as const).map((bg) => (
+                            <button
+                              key={bg}
+                              onClick={() => {
+                                setLibraryBackground(bg);
+                                setShowLibraryBgDropdown(false);
+                              }}
+                              className={cn(
+                                "w-full px-3 py-1.5 text-xs text-left hover:bg-zinc-800 transition-colors flex items-center justify-between capitalize",
+                                libraryBackground === bg ? "text-white" : "text-zinc-400"
+                              )}
+                            >
+                              {bg}
+                              {libraryBackground === bg && <Check className="w-3 h-3" />}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     
                     {/* Ruler mode */}
@@ -15760,9 +15774,13 @@ export default function GeneratedPage() {
                     
                     <div className="w-px h-5 bg-zinc-700 mx-1" />
                     
-                    {/* Vision Simulator dropdown */}
-                    <div className="relative group/vision">
+                    {/* Vision Simulator dropdown - click */}
+                    <div className="relative">
                       <button 
+                        onClick={() => {
+                          setShowLibraryVisionDropdown(!showLibraryVisionDropdown);
+                          setShowLibraryBgDropdown(false);
+                        }}
                         className={cn(
                           "p-2 rounded-lg transition-all duration-150 flex items-center gap-1",
                           libraryVisionMode !== "none" 
@@ -15773,30 +15791,61 @@ export default function GeneratedPage() {
                         <Eye className="w-4 h-4" />
                         <ChevronDown className="w-3 h-3" />
                       </button>
-                      <div className="absolute top-full right-0 mt-2 bg-zinc-900/98 backdrop-blur-xl border border-zinc-700/50 rounded-xl shadow-2xl opacity-0 group-hover/vision:opacity-100 pointer-events-none group-hover/vision:pointer-events-auto transition-opacity min-w-[160px] py-1 z-50">
-                        <span className="block px-3 py-1.5 text-[10px] text-zinc-500 uppercase tracking-wider">Vision Simulator</span>
-                        {[
-                          { id: "none", label: "Normal" },
-                          { id: "blur", label: "Blurred Vision" },
-                          { id: "deuteranopia", label: "Deuteranopia" },
-                          { id: "protanopia", label: "Protanopia" },
-                          { id: "tritanopia", label: "Tritanopia" },
-                          { id: "grayscale", label: "Grayscale" },
-                        ].map((mode) => (
-                          <button
-                            key={mode.id}
-                            onClick={() => setLibraryVisionMode(mode.id as any)}
-                            className={cn(
-                              "w-full px-3 py-1.5 text-xs text-left hover:bg-zinc-800 transition-colors flex items-center justify-between",
-                              libraryVisionMode === mode.id ? "text-white" : "text-zinc-400"
-                            )}
-                          >
-                            {mode.label}
-                            {libraryVisionMode === mode.id && <Check className="w-3 h-3" />}
-                          </button>
-                        ))}
-                      </div>
+                      {showLibraryVisionDropdown && (
+                        <div className="absolute top-full right-0 mt-2 bg-zinc-900/98 backdrop-blur-xl border border-zinc-700/50 rounded-xl shadow-2xl min-w-[160px] py-1 z-50">
+                          <span className="block px-3 py-1.5 text-[10px] text-zinc-500 uppercase tracking-wider">Vision Simulator</span>
+                          {[
+                            { id: "none", label: "Normal" },
+                            { id: "blur", label: "Blurred Vision" },
+                            { id: "deuteranopia", label: "Deuteranopia" },
+                            { id: "protanopia", label: "Protanopia" },
+                            { id: "tritanopia", label: "Tritanopia" },
+                            { id: "grayscale", label: "Grayscale" },
+                          ].map((mode) => (
+                            <button
+                              key={mode.id}
+                              onClick={() => {
+                                setLibraryVisionMode(mode.id as any);
+                                setShowLibraryVisionDropdown(false);
+                              }}
+                              className={cn(
+                                "w-full px-3 py-1.5 text-xs text-left hover:bg-zinc-800 transition-colors flex items-center justify-between",
+                                libraryVisionMode === mode.id ? "text-white" : "text-zinc-400"
+                              )}
+                            >
+                              {mode.label}
+                              {libraryVisionMode === mode.id && <Check className="w-3 h-3" />}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
+                    
+                    <div className="w-px h-5 bg-zinc-700 mx-1" />
+                    
+                    {/* Viewport toggles */}
+                    <button 
+                      onClick={() => setLibraryViewport(libraryViewport === "desktop" ? "mobile" : "desktop")}
+                      className={cn(
+                        "p-2 rounded-lg transition-all duration-150 group relative",
+                        "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                      )}
+                    >
+                      {libraryViewport === "mobile" ? <Smartphone className="w-4 h-4" /> : <Monitor className="w-4 h-4" />}
+                      <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">{libraryViewport === "mobile" ? "Mobile" : "Desktop"}</span>
+                    </button>
+                    <button 
+                      onClick={() => setIsLibraryFullscreen(!isLibraryFullscreen)}
+                      className={cn(
+                        "p-2 rounded-lg transition-all duration-150 group relative",
+                        isLibraryFullscreen 
+                          ? "bg-zinc-700 text-white" 
+                          : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                      )}
+                    >
+                      <Maximize2 className="w-4 h-4" />
+                      <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Fullscreen</span>
+                    </button>
                   </div>
                   
                   
@@ -17246,19 +17295,45 @@ export default function App() {
                           <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Grid</span>
                         </button>
                         
-                        {/* Background toggle */}
-                        <button 
-                          onClick={() => setBlueprintsBackground(blueprintsBackground === "dark" ? "light" : "dark")}
-                          className={cn(
-                            "p-2 rounded-lg transition-all duration-150 group relative",
-                            blueprintsBackground === "light" 
-                              ? "bg-zinc-700 text-white" 
-                              : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                        {/* Background toggle - click dropdown */}
+                        <div className="relative">
+                          <button 
+                            onClick={() => {
+                              setShowBlueprintsBgDropdown(!showBlueprintsBgDropdown);
+                              setShowBlueprintsVisionDropdown(false);
+                            }}
+                            className={cn(
+                              "p-2 rounded-lg transition-all duration-150 flex items-center gap-1",
+                              blueprintsBackground !== "dark" 
+                                ? "bg-zinc-700 text-white" 
+                                : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                            )}
+                          >
+                            {blueprintsBackground === "light" ? <Sun className="w-4 h-4" /> : blueprintsBackground === "transparent" ? <Grid2X2 className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                            <ChevronDown className="w-3 h-3" />
+                          </button>
+                          {showBlueprintsBgDropdown && (
+                            <div className="absolute top-full left-0 mt-2 bg-zinc-900/98 backdrop-blur-xl border border-zinc-700/50 rounded-xl shadow-2xl min-w-[120px] py-1 z-50">
+                              <span className="block px-3 py-1.5 text-[10px] text-zinc-500 uppercase tracking-wider">Background</span>
+                              {(["dark", "light", "transparent"] as const).map((bg) => (
+                                <button
+                                  key={bg}
+                                  onClick={() => {
+                                    setBlueprintsBackground(bg);
+                                    setShowBlueprintsBgDropdown(false);
+                                  }}
+                                  className={cn(
+                                    "w-full px-3 py-1.5 text-xs text-left hover:bg-zinc-800 transition-colors flex items-center justify-between capitalize",
+                                    blueprintsBackground === bg ? "text-white" : "text-zinc-400"
+                                  )}
+                                >
+                                  {bg}
+                                  {blueprintsBackground === bg && <Check className="w-3 h-3" />}
+                                </button>
+                              ))}
+                            </div>
                           )}
-                        >
-                          {blueprintsBackground === "light" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Background</span>
-                        </button>
+                        </div>
                         
                         {/* Ruler mode */}
                         <button 
@@ -17290,9 +17365,13 @@ export default function App() {
                         
                         <div className="w-px h-5 bg-zinc-700 mx-1" />
                         
-                        {/* Vision Simulator dropdown */}
-                        <div className="relative group/vision">
+                        {/* Vision Simulator dropdown - click */}
+                        <div className="relative">
                           <button 
+                            onClick={() => {
+                              setShowBlueprintsVisionDropdown(!showBlueprintsVisionDropdown);
+                              setShowBlueprintsBgDropdown(false);
+                            }}
                             className={cn(
                               "p-2 rounded-lg transition-all duration-150 flex items-center gap-1",
                               blueprintsVisionMode !== "none" 
@@ -17303,29 +17382,34 @@ export default function App() {
                             <Eye className="w-4 h-4" />
                             <ChevronDown className="w-3 h-3" />
                           </button>
-                          <div className="absolute top-full left-0 mt-2 bg-zinc-900/98 backdrop-blur-xl border border-zinc-700/50 rounded-xl shadow-2xl opacity-0 group-hover/vision:opacity-100 pointer-events-none group-hover/vision:pointer-events-auto transition-opacity min-w-[160px] py-1 z-50">
-                            <span className="block px-3 py-1.5 text-[10px] text-zinc-500 uppercase tracking-wider">Vision Simulator</span>
-                            {[
-                              { id: "none", label: "Normal" },
-                              { id: "blur", label: "Blurred Vision" },
-                              { id: "deuteranopia", label: "Deuteranopia" },
-                              { id: "protanopia", label: "Protanopia" },
-                              { id: "tritanopia", label: "Tritanopia" },
-                              { id: "grayscale", label: "Grayscale" },
-                            ].map((mode) => (
-                              <button
-                                key={mode.id}
-                                onClick={() => setBlueprintsVisionMode(mode.id as any)}
-                                className={cn(
-                                  "w-full px-3 py-1.5 text-xs text-left hover:bg-zinc-800 transition-colors flex items-center justify-between",
-                                  blueprintsVisionMode === mode.id ? "text-white" : "text-zinc-400"
-                                )}
-                              >
-                                {mode.label}
-                                {blueprintsVisionMode === mode.id && <Check className="w-3 h-3" />}
-                              </button>
-                            ))}
-                          </div>
+                          {showBlueprintsVisionDropdown && (
+                            <div className="absolute top-full left-0 mt-2 bg-zinc-900/98 backdrop-blur-xl border border-zinc-700/50 rounded-xl shadow-2xl min-w-[160px] py-1 z-50">
+                              <span className="block px-3 py-1.5 text-[10px] text-zinc-500 uppercase tracking-wider">Vision Simulator</span>
+                              {[
+                                { id: "none", label: "Normal" },
+                                { id: "blur", label: "Blurred Vision" },
+                                { id: "deuteranopia", label: "Deuteranopia" },
+                                { id: "protanopia", label: "Protanopia" },
+                                { id: "tritanopia", label: "Tritanopia" },
+                                { id: "grayscale", label: "Grayscale" },
+                              ].map((mode) => (
+                                <button
+                                  key={mode.id}
+                                  onClick={() => {
+                                    setBlueprintsVisionMode(mode.id as any);
+                                    setShowBlueprintsVisionDropdown(false);
+                                  }}
+                                  className={cn(
+                                    "w-full px-3 py-1.5 text-xs text-left hover:bg-zinc-800 transition-colors flex items-center justify-between",
+                                    blueprintsVisionMode === mode.id ? "text-white" : "text-zinc-400"
+                                  )}
+                                >
+                                  {mode.label}
+                                  {blueprintsVisionMode === mode.id && <Check className="w-3 h-3" />}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                       
@@ -17562,13 +17646,6 @@ export default function App() {
                                       
                                       return (
                                       <div className="relative">
-                                        {/* Live indicator - show when editing or props override active */}
-                                        {isSelected && (blueprintEditedCode || Object.keys(blueprintPropsOverride).length > 0) && (
-                                          <div className="absolute -top-2 -right-2 z-10 flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/90 rounded text-[8px] text-white font-medium shadow-lg">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                                            EDITING
-                                          </div>
-                                        )}
                                         <iframe
                                           key={`bp-iframe-${comp.id}-${isSelected && blueprintEditedCode ? blueprintEditedCode.slice(0, 50) : 'orig'}`}
                                           srcDoc={`<!DOCTYPE html>
@@ -17646,10 +17723,10 @@ document.querySelectorAll('img').forEach(img=>{
                                     {/* Resize handles - visible on select/hover */}
                                     {isSelected && (
                                       <>
-                                        {/* Right edge */}
+                                        {/* Right edge - invisible but functional */}
                                         <div
                                           data-resize-handle="e"
-                                          className="absolute top-1/2 -right-1 w-2 h-8 -translate-y-1/2 cursor-ew-resize group/handle z-20"
+                                          className="absolute top-1/2 -right-1 w-3 h-full -translate-y-1/2 cursor-ew-resize z-20"
                                           onMouseDown={(e) => {
                                             e.stopPropagation();
                                             const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
@@ -17661,13 +17738,11 @@ document.querySelectorAll('img').forEach(img=>{
                                               height: iframe?.offsetHeight || 100 
                                             });
                                           }}
-                                        >
-                                          <div className="w-1 h-full bg-zinc-500 rounded-full opacity-0 group-hover/handle:opacity-100 transition-opacity" />
-                                        </div>
-                                        {/* Bottom edge */}
+                                        />
+                                        {/* Bottom edge - invisible but functional */}
                                         <div
                                           data-resize-handle="s"
-                                          className="absolute -bottom-1 left-1/2 h-2 w-8 -translate-x-1/2 cursor-ns-resize group/handle z-20"
+                                          className="absolute -bottom-1 left-0 h-3 w-full cursor-ns-resize z-20"
                                           onMouseDown={(e) => {
                                             e.stopPropagation();
                                             const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
@@ -17679,13 +17754,11 @@ document.querySelectorAll('img').forEach(img=>{
                                               height: iframe?.offsetHeight || 100 
                                             });
                                           }}
-                                        >
-                                          <div className="h-1 w-full bg-zinc-500 rounded-full opacity-0 group-hover/handle:opacity-100 transition-opacity" />
-                                        </div>
-                                        {/* Bottom-right corner */}
+                                        />
+                                        {/* Bottom-right corner - invisible but functional */}
                                         <div
                                           data-resize-handle="se"
-                                          className="absolute -bottom-1.5 -right-1.5 w-3 h-3 cursor-nwse-resize z-20 group/handle"
+                                          className="absolute -bottom-1 -right-1 w-4 h-4 cursor-nwse-resize z-20"
                                           onMouseDown={(e) => {
                                             e.stopPropagation();
                                             const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
@@ -17697,13 +17770,11 @@ document.querySelectorAll('img').forEach(img=>{
                                               height: iframe?.offsetHeight || 100 
                                             });
                                           }}
-                                        >
-                                          <div className="w-full h-full bg-zinc-500 rounded-sm opacity-60 group-hover/handle:opacity-100 transition-opacity" />
-                                        </div>
-                                        {/* Left edge */}
+                                        />
+                                        {/* Left edge - invisible but functional */}
                                         <div
                                           data-resize-handle="w"
-                                          className="absolute top-1/2 -left-1 w-2 h-8 -translate-y-1/2 cursor-ew-resize group/handle z-20"
+                                          className="absolute top-1/2 -left-1 w-3 h-full -translate-y-1/2 cursor-ew-resize z-20"
                                           onMouseDown={(e) => {
                                             e.stopPropagation();
                                             const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
@@ -17715,13 +17786,11 @@ document.querySelectorAll('img').forEach(img=>{
                                               height: iframe?.offsetHeight || 100 
                                             });
                                           }}
-                                        >
-                                          <div className="w-1 h-full bg-zinc-500 rounded-full opacity-0 group-hover/handle:opacity-100 transition-opacity" />
-                                        </div>
-                                        {/* Top edge */}
+                                        />
+                                        {/* Top edge - invisible but functional */}
                                         <div
                                           data-resize-handle="n"
-                                          className="absolute -top-1 left-1/2 h-2 w-8 -translate-x-1/2 cursor-ns-resize group/handle z-20"
+                                          className="absolute -top-1 left-0 h-3 w-full cursor-ns-resize z-20"
                                           onMouseDown={(e) => {
                                             e.stopPropagation();
                                             const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
@@ -17733,9 +17802,7 @@ document.querySelectorAll('img').forEach(img=>{
                                               height: iframe?.offsetHeight || 100 
                                             });
                                           }}
-                                        >
-                                          <div className="h-1 w-full bg-zinc-500 rounded-full opacity-0 group-hover/handle:opacity-100 transition-opacity" />
-                                        </div>
+                                        />
                                       </>
                                     )}
                                   </div>
@@ -17888,10 +17955,6 @@ document.querySelectorAll('img').forEach(img=>{
                               {/* Selected Component Header */}
                               <div className="px-4 py-2.5 border-b border-zinc-800/50 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                  <div className={cn(
-                                    "w-2 h-2 rounded-full",
-                                    blueprintEditedCode ? "bg-amber-500 animate-pulse" : "bg-emerald-500"
-                                  )} />
                                   <span className="text-sm font-medium text-white">{selectedComp.name}</span>
                                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 uppercase">
                                     {blueprintStatuses[compId] || 'draft'}
