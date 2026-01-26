@@ -18078,6 +18078,11 @@ video{max-width:100%;border-radius:inherit}
 p,h1,h2,h3,h4,h5,h6,span,a{word-wrap:break-word;overflow-wrap:break-word}
 /* Padding responsive */
 @media(max-width:400px){.px-6,.px-8,.px-10,.px-12{padding-left:1rem!important;padding-right:1rem!important}.py-16,.py-20,.py-24{padding-top:2rem!important;padding-bottom:2rem!important}}
+/* FIX: Hide empty/uninitialized Lucide icons (the black squares) */
+i[data-lucide]:empty{display:none!important}
+i[data-lucide]:not(:has(svg)){display:none!important}
+/* Style initialized Lucide icons */
+i[data-lucide] svg{width:inherit;height:inherit;stroke:currentColor;fill:none}
 </style>
 <script>
 function autoResize(){
@@ -18098,12 +18103,17 @@ function handleParentResize(){
 window.addEventListener('message',e=>{
   if(e.data?.type==='PARENT_RESIZE'){handleParentResize()}
 });
+function initIcons(){
+  if(typeof lucide!=='undefined'){
+    try{lucide.createIcons()}catch(e){}
+  }
+}
 window.onload=()=>{
-  if(typeof lucide!=='undefined')lucide.createIcons();
+  initIcons();
   autoResize();
-  setTimeout(autoResize,100);
-  setTimeout(autoResize,500);
-  setTimeout(autoResize,1000);
+  setTimeout(()=>{initIcons();autoResize()},100);
+  setTimeout(()=>{initIcons();autoResize()},500);
+  setTimeout(()=>{initIcons();autoResize()},1000);
 };
 // Observe body for changes
 new ResizeObserver(()=>{setTimeout(autoResize,10)}).observe(document.body);
