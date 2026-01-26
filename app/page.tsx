@@ -16918,11 +16918,11 @@ export default function App() {
                                   );
                                   
                                   return (
-                                    <div className="overflow-auto w-full h-full flex justify-center">
+                                    <div className="w-full flex justify-center">
                                       {/* Viewport container - changes width based on mobile/desktop */}
                                       <div 
                                         className={cn(
-                                          "transition-all duration-300 overflow-hidden",
+                                          "transition-all duration-300",
                                           libraryViewport === "mobile" 
                                             ? "w-[375px] border-x border-zinc-700/50 shadow-lg" 
                                             : "w-full"
