@@ -491,15 +491,19 @@ CORRECT - Full section:
             return <canvas ref={canvasRef} />;
         };
 
-        // Icon helper
+        // Icon helper - uses data-lucide attribute + createIcons()
         const Icon = ({ name, className = "w-5 h-5" }) => {
             const ref = useRef(null);
             useEffect(() => {
-                if (ref.current && lucide.icons[name]) {
+                if (ref.current && window.lucide) {
+                    // Clear and create fresh icon element
                     ref.current.innerHTML = '';
-                    const svg = lucide.createElement(lucide.icons[name]);
-                    svg.setAttribute('class', className);
-                    ref.current.appendChild(svg);
+                    const iconEl = document.createElement('i');
+                    iconEl.setAttribute('data-lucide', name);
+                    iconEl.className = className;
+                    ref.current.appendChild(iconEl);
+                    // Render the icon
+                    window.lucide.createIcons({ root: ref.current });
                 }
             }, [name, className]);
             return <span ref={ref} className="inline-flex items-center justify-center" />;

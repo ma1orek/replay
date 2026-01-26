@@ -4408,6 +4408,17 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
           }
         }
         
+        // Load saved code from localStorage (restore after refresh)
+        const savedCode = localStorage.getItem("replay_generated_code");
+        if (savedCode && savedCode.length > 100) {
+          console.log("[Load] Restoring code from localStorage:", savedCode.length, "chars");
+          setGeneratedCode(savedCode);
+          setDisplayedCode(savedCode);
+          setEditableCode(savedCode);
+          setGenerationComplete(true);
+          setSidebarMode("chat");
+        }
+        
         setHasLoadedFromStorage(true);
       } catch (e) {
         console.error("Error loading initial data:", e);
@@ -4459,6 +4470,14 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
       console.error("Error saving code:", e);
     }
   }, [generatedCode, hasLoadedFromStorage]);
+
+  // Restore previewUrl when code is loaded but previewUrl is missing (after refresh)
+  useEffect(() => {
+    if (editableCode && editableCode.length > 100 && !previewUrl) {
+      console.log("[Preview] Restoring preview URL from loaded code");
+      setPreviewUrl(createPreviewUrl(editableCode));
+    }
+  }, [editableCode, previewUrl, createPreviewUrl]);
 
   // Save style to localStorage
   useEffect(() => {
