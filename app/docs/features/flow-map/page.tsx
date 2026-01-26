@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { GitBranch, Eye, Plus, MousePointer, Layers, ArrowRight } from "lucide-react";
+import { GitBranch, Eye, Plus, MousePointer, Layers } from "lucide-react";
 
 export default function FlowMapPage() {
   return (
@@ -7,27 +7,27 @@ export default function FlowMapPage() {
       {/* Header */}
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-sm text-zinc-500">
-          <Link href="/docs" className="hover:text-zinc-900 transition-colors">Docs</Link>
+          <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
           <span>/</span>
           <span>Features</span>
           <span>/</span>
-          <span className="text-zinc-900">Flow Map</span>
+          <span className="text-white">Flow Map</span>
         </div>
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-[#FF6E3C]/20">
-            <GitBranch className="w-6 h-6 text-[#FF6E3C]" />
+          <div className="p-2 rounded-xl bg-zinc-800">
+            <GitBranch className="w-6 h-6 text-zinc-400" />
           </div>
-          <h1 className="text-4xl font-bold text-zinc-900">Flow Map</h1>
+          <h1 className="text-4xl font-bold text-white">Flow Map</h1>
         </div>
-        <p className="text-xl text-zinc-500">
+        <p className="text-xl text-zinc-400">
           Visual representation of your app's page structure and navigation paths.
         </p>
       </div>
 
       {/* Overview */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-zinc-900">Overview</h2>
-        <p className="text-zinc-600 leading-relaxed">
+        <h2 className="text-2xl font-semibold text-white">Overview</h2>
+        <p className="text-zinc-400 leading-relaxed">
           The Flow Map provides a bird's-eye view of your generated application. It shows all pages 
           detected from your video, their relationships, and navigation paths. Think of it as a 
           sitemap that updates in real-time as you add or modify pages.
@@ -36,37 +36,37 @@ export default function FlowMapPage() {
 
       {/* Node types */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-zinc-900">Node Types</h2>
+        <h2 className="text-2xl font-semibold text-white">Node Types</h2>
         <div className="grid gap-4">
           {[
             {
               icon: Eye,
               title: "Observed",
-              color: "text-green-400",
-              bg: "bg-green-500/10",
+              color: "text-emerald-400",
+              bg: "bg-emerald-500/10 border-emerald-500/20",
               description: "Pages that were actually shown in your video recording. These have full content generated."
             },
             {
               icon: Plus,
               title: "Generated",
               color: "text-blue-400",
-              bg: "bg-blue-500/10",
+              bg: "bg-blue-500/10 border-blue-500/20",
               description: "Pages created via Edit with AI using @PageName syntax. Added after initial generation."
             },
             {
               icon: Layers,
               title: "Possible",
               color: "text-zinc-400",
-              bg: "bg-zinc-100",
+              bg: "bg-zinc-800/50 border-zinc-700",
               description: "Navigation items detected but not visited in the video. Click to generate these pages."
             },
           ].map((node) => (
-            <div key={node.title} className={`p-4 rounded-xl ${node.bg} border border-zinc-200`}>
+            <div key={node.title} className={`p-4 rounded-xl ${node.bg} border`}>
               <div className="flex items-center gap-3 mb-2">
                 <node.icon className={`w-5 h-5 ${node.color}`} />
-                <h3 className="font-medium text-zinc-900">{node.title}</h3>
+                <h3 className="font-medium text-white">{node.title}</h3>
               </div>
-              <p className="text-sm text-zinc-500">{node.description}</p>
+              <p className="text-sm text-zinc-400">{node.description}</p>
             </div>
           ))}
         </div>
@@ -74,23 +74,23 @@ export default function FlowMapPage() {
 
       {/* Features */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-zinc-900">Features</h2>
+        <h2 className="text-2xl font-semibold text-white">Features</h2>
         <div className="space-y-3">
-          <div className="p-4 rounded-xl bg-zinc-100 border border-zinc-200">
-            <h4 className="font-medium text-zinc-900 mb-2">View Code</h4>
-            <p className="text-sm text-zinc-500">
+          <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
+            <h4 className="font-medium text-white mb-2">View Code</h4>
+            <p className="text-sm text-zinc-400">
               Click on any observed or generated node to view its HTML code in the Code View panel.
             </p>
           </div>
-          <div className="p-4 rounded-xl bg-zinc-100 border border-zinc-200">
-            <h4 className="font-medium text-zinc-900 mb-2">Generate New Pages</h4>
-            <p className="text-sm text-zinc-500">
+          <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
+            <h4 className="font-medium text-white mb-2">Generate New Pages</h4>
+            <p className="text-sm text-zinc-400">
               Click "+ Generate" on possible nodes to create new pages. The AI will match your existing design system.
             </p>
           </div>
-          <div className="p-4 rounded-xl bg-zinc-100 border border-zinc-200">
-            <h4 className="font-medium text-zinc-900 mb-2">Navigation Paths</h4>
-            <p className="text-sm text-zinc-500">
+          <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
+            <h4 className="font-medium text-white mb-2">Navigation Paths</h4>
+            <p className="text-sm text-zinc-400">
               Lines between nodes show how pages are connected via navigation links.
             </p>
           </div>
@@ -99,28 +99,28 @@ export default function FlowMapPage() {
 
       {/* How to access */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-zinc-900">How to Access</h2>
-        <p className="text-zinc-600 leading-relaxed">
-          Click the <strong className="text-zinc-900">"Flow"</strong> tab in the top toolbar after generating your UI.
+        <h2 className="text-2xl font-semibold text-white">How to Access</h2>
+        <p className="text-zinc-400 leading-relaxed">
+          Click the <strong className="text-white">"Flow"</strong> tab in the top toolbar after generating your UI.
           The Flow Map appears in the left sidebar.
         </p>
       </div>
 
       {/* Tips */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-zinc-900">Tips</h2>
-        <div className="p-4 rounded-xl bg-zinc-100 border border-zinc-200">
-          <ul className="space-y-2 text-sm text-zinc-600">
+        <h2 className="text-2xl font-semibold text-white">Tips</h2>
+        <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
+          <ul className="space-y-2 text-sm text-zinc-400">
             <li className="flex items-start gap-2">
-              <MousePointer className="w-4 h-4 text-[#FF6E3C] mt-0.5" />
+              <MousePointer className="w-4 h-4 text-zinc-500 mt-0.5" />
               <span>Hover over nodes to see page details</span>
             </li>
             <li className="flex items-start gap-2">
-              <MousePointer className="w-4 h-4 text-[#FF6E3C] mt-0.5" />
+              <MousePointer className="w-4 h-4 text-zinc-500 mt-0.5" />
               <span>Click a node to navigate to that page in preview</span>
             </li>
             <li className="flex items-start gap-2">
-              <MousePointer className="w-4 h-4 text-[#FF6E3C] mt-0.5" />
+              <MousePointer className="w-4 h-4 text-zinc-500 mt-0.5" />
               <span>Use Flow Map to identify missing pages in your app</span>
             </li>
           </ul>
@@ -129,4 +129,3 @@ export default function FlowMapPage() {
     </div>
   );
 }
-

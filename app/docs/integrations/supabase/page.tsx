@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Database, Key, Shield, AlertTriangle, CheckCircle, Code, Settings } from "lucide-react";
+import { Database, Key, Shield, AlertTriangle, CheckCircle, Settings } from "lucide-react";
 
 export default function SupabasePage() {
   return (
@@ -7,59 +7,59 @@ export default function SupabasePage() {
       {/* Header */}
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-sm text-zinc-500">
-          <Link href="/docs" className="hover:text-zinc-900 transition-colors">Docs</Link>
+          <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
           <span>/</span>
           <span>Integrations</span>
           <span>/</span>
-          <span className="text-zinc-900">Supabase</span>
+          <span className="text-white">Supabase</span>
         </div>
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-green-500/20">
-            <Database className="w-6 h-6 text-green-400" />
+          <div className="p-2 rounded-xl bg-emerald-500/20">
+            <Database className="w-6 h-6 text-emerald-400" />
           </div>
-          <h1 className="text-4xl font-bold text-zinc-900">Supabase Integration</h1>
+          <h1 className="text-4xl font-bold text-white">Supabase Integration</h1>
         </div>
-        <p className="text-xl text-zinc-500">
+        <p className="text-xl text-zinc-400">
           Connect your Supabase database to generate code that works with your real data.
         </p>
       </div>
 
       {/* Overview */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-zinc-900">Overview</h2>
-        <p className="text-zinc-600 leading-relaxed">
+        <h2 className="text-2xl font-semibold text-white">Overview</h2>
+        <p className="text-zinc-400 leading-relaxed">
           When you connect Supabase, Replay AI can see your database schema (table names, columns, types) 
           and generate frontend code that fetches real data. Instead of mock data, you get 
-          actual <code className="px-1 py-0.5 rounded bg-zinc-200 text-[#FF6E3C]">supabase.from().select()</code> calls.
+          actual <code className="px-1 py-0.5 rounded bg-zinc-800 text-zinc-300">supabase.from().select()</code> calls.
         </p>
       </div>
 
       {/* Setup steps */}
       <div className="space-y-6">
-        <h2 className="text-2xl font-semibold text-zinc-900">Setup</h2>
+        <h2 className="text-2xl font-semibold text-white">Setup</h2>
         
         {/* Step 1 */}
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-[#FF6E3C] text-zinc-900 font-bold flex items-center justify-center text-sm">1</div>
-            <h3 className="text-lg font-medium text-zinc-900">Get your Supabase credentials</h3>
+            <div className="w-8 h-8 rounded-full bg-zinc-700 text-white font-bold flex items-center justify-center text-sm">1</div>
+            <h3 className="text-lg font-medium text-white">Get your Supabase credentials</h3>
           </div>
           <div className="ml-11">
-            <p className="text-zinc-600 mb-3">
-              Go to your <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-[#FF6E3C] hover:underline">Supabase Dashboard</a> → 
+            <p className="text-zinc-400 mb-3">
+              Go to your <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-white hover:underline">Supabase Dashboard</a> → 
               Project Settings → API
             </p>
-            <div className="p-4 rounded-xl bg-zinc-100 border border-zinc-200">
+            <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <Key className="w-4 h-4 text-zinc-400" />
-                  <span className="text-sm text-zinc-900">Project URL</span>
-                  <code className="ml-auto text-xs text-zinc-500 font-mono">https://xxxxx.supabase.co</code>
+                  <Key className="w-4 h-4 text-zinc-500" />
+                  <span className="text-sm text-white">Project URL</span>
+                  <code className="ml-auto text-xs text-zinc-400 font-mono">https://xxxxx.supabase.co</code>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Key className="w-4 h-4 text-zinc-400" />
-                  <span className="text-sm text-zinc-900">anon public key</span>
-                  <code className="ml-auto text-xs text-zinc-500 font-mono">eyJhbGciOiJIUzI1NiIs...</code>
+                  <Key className="w-4 h-4 text-zinc-500" />
+                  <span className="text-sm text-white">anon public key</span>
+                  <code className="ml-auto text-xs text-zinc-400 font-mono">eyJhbGciOiJIUzI1NiIs...</code>
                 </div>
               </div>
             </div>
@@ -69,17 +69,17 @@ export default function SupabasePage() {
         {/* Step 2 */}
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-[#FF6E3C] text-zinc-900 font-bold flex items-center justify-center text-sm">2</div>
-            <h3 className="text-lg font-medium text-zinc-900">Add credentials to Replay</h3>
+            <div className="w-8 h-8 rounded-full bg-zinc-700 text-white font-bold flex items-center justify-center text-sm">2</div>
+            <h3 className="text-lg font-medium text-white">Add credentials to Replay</h3>
           </div>
           <div className="ml-11">
-            <p className="text-zinc-600 mb-3 flex items-center gap-1 flex-wrap">
+            <p className="text-zinc-400 mb-3 flex items-center gap-1 flex-wrap">
               Open Project Settings (<Settings className="w-4 h-4 inline" /> icon) → Secrets tab
             </p>
-            <ul className="list-disc list-inside space-y-1 text-zinc-500 text-sm">
-              <li>Paste your <strong>SUPABASE_URL</strong></li>
-              <li>Paste your <strong>SUPABASE_ANON_KEY</strong></li>
-              <li>Click <strong>Save Secrets</strong></li>
+            <ul className="list-disc list-inside space-y-1 text-zinc-400 text-sm">
+              <li>Paste your <strong className="text-white">SUPABASE_URL</strong></li>
+              <li>Paste your <strong className="text-white">SUPABASE_ANON_KEY</strong></li>
+              <li>Click <strong className="text-white">Save Secrets</strong></li>
             </ul>
           </div>
         </div>
@@ -87,27 +87,27 @@ export default function SupabasePage() {
         {/* Step 3 */}
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-[#FF6E3C] text-zinc-900 font-bold flex items-center justify-center text-sm">3</div>
-            <h3 className="text-lg font-medium text-zinc-900">Configure Row Level Security</h3>
+            <div className="w-8 h-8 rounded-full bg-zinc-700 text-white font-bold flex items-center justify-center text-sm">3</div>
+            <h3 className="text-lg font-medium text-white">Configure Row Level Security</h3>
           </div>
           <div className="ml-11">
-            <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20 mb-4">
+            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 mb-4">
               <div className="flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-yellow-400 mt-0.5" />
+                <AlertTriangle className="w-5 h-5 text-amber-400 mt-0.5" />
                 <div>
-                  <p className="font-medium text-yellow-400">Important: RLS blocks access by default</p>
-                  <p className="text-sm text-zinc-500 mt-1">
+                  <p className="font-medium text-amber-400">Important: RLS blocks access by default</p>
+                  <p className="text-sm text-zinc-400 mt-1">
                     If your tables show 0 rows, you need to add RLS policies.
                   </p>
                 </div>
               </div>
             </div>
             
-            <p className="text-zinc-600 mb-3">
+            <p className="text-zinc-400 mb-3">
               Run this SQL in Supabase Dashboard → SQL Editor:
             </p>
-            <div className="p-4 rounded-xl bg-[#1a1a1a] border border-zinc-200 font-mono text-sm overflow-x-auto">
-              <pre className="text-green-400">
+            <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-700 font-mono text-sm overflow-x-auto">
+              <pre className="text-emerald-400">
 {`-- Allow public read access to your tables
 CREATE POLICY "Allow public read"
 ON profiles FOR SELECT
@@ -125,19 +125,19 @@ USING (true);`}
         {/* Step 4 */}
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-[#FF6E3C] text-zinc-900 font-bold flex items-center justify-center text-sm">4</div>
-            <h3 className="text-lg font-medium text-zinc-900">Verify connection</h3>
+            <div className="w-8 h-8 rounded-full bg-zinc-700 text-white font-bold flex items-center justify-center text-sm">4</div>
+            <h3 className="text-lg font-medium text-white">Verify connection</h3>
           </div>
           <div className="ml-11">
-            <p className="text-zinc-600 mb-3">
+            <p className="text-zinc-400 mb-3">
               Go to Project Settings → Database tab. You should see:
             </p>
-            <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20">
+            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
               <div className="flex items-center gap-3">
-                <CheckCircle className="w-5 h-5 text-green-400" />
-                <span className="text-green-400">Connected to Supabase</span>
+                <CheckCircle className="w-5 h-5 text-emerald-400" />
+                <span className="text-emerald-400">Connected to Supabase</span>
               </div>
-              <p className="text-sm text-zinc-500 mt-2">
+              <p className="text-sm text-zinc-400 mt-2">
                 Your tables will be listed with row counts.
               </p>
             </div>
@@ -147,24 +147,24 @@ USING (true);`}
 
       {/* Usage */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-zinc-900">Using Database in AI Prompts</h2>
-        <p className="text-zinc-600 leading-relaxed">
+        <h2 className="text-2xl font-semibold text-white">Using Database in AI Prompts</h2>
+        <p className="text-zinc-400 leading-relaxed">
           Once connected, mention your tables in Edit with AI prompts:
         </p>
         <div className="space-y-3">
-          <div className="p-4 rounded-xl bg-zinc-100 border border-zinc-200">
-            <p className="text-sm text-zinc-600 font-mono mb-2">
+          <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
+            <p className="text-sm text-zinc-300 font-mono mb-2">
               "Show all users from my profiles table"
             </p>
-            <p className="text-xs text-green-400">
+            <p className="text-xs text-emerald-400">
               → AI generates: supabase.from('profiles').select('*')
             </p>
           </div>
-          <div className="p-4 rounded-xl bg-zinc-100 border border-zinc-200">
-            <p className="text-sm text-zinc-600 font-mono mb-2">
+          <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
+            <p className="text-sm text-zinc-300 font-mono mb-2">
               "Create a product grid using data from products table"
             </p>
-            <p className="text-xs text-green-400">
+            <p className="text-xs text-emerald-400">
               → AI generates fetch code with your actual column names
             </p>
           </div>
@@ -173,9 +173,9 @@ USING (true);`}
 
       {/* Generated code example */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-zinc-900">Generated Code Example</h2>
-        <div className="p-4 rounded-xl bg-[#1a1a1a] border border-zinc-200 font-mono text-sm overflow-x-auto">
-          <pre className="text-zinc-600">
+        <h2 className="text-2xl font-semibold text-white">Generated Code Example</h2>
+        <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-700 font-mono text-sm overflow-x-auto">
+          <pre className="text-zinc-400">
 {`<div x-data="{
   users: [],
   loading: true,
@@ -203,21 +203,21 @@ USING (true);`}
 
       {/* Security note */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-zinc-900">Security Notes</h2>
-        <div className="p-4 rounded-xl bg-zinc-100 border border-zinc-200">
+        <h2 className="text-2xl font-semibold text-white">Security Notes</h2>
+        <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
           <div className="flex items-start gap-3">
-            <Shield className="w-5 h-5 text-zinc-400 mt-0.5" />
-            <div className="space-y-2 text-sm text-zinc-500">
+            <Shield className="w-5 h-5 text-zinc-500 mt-0.5" />
+            <div className="space-y-2 text-sm text-zinc-400">
               <p>
-                <strong className="text-zinc-900">Keys are stored locally.</strong> Your Supabase credentials 
+                <strong className="text-white">Keys are stored locally.</strong> Your Supabase credentials 
                 are saved in your browser's localStorage, not on our servers.
               </p>
               <p>
-                <strong className="text-zinc-900">Use anon key only.</strong> Never use your service_role key 
+                <strong className="text-white">Use anon key only.</strong> Never use your service_role key 
                 in frontend code. The anon key is safe for client-side use.
               </p>
               <p>
-                <strong className="text-zinc-900">RLS protects your data.</strong> Row Level Security ensures 
+                <strong className="text-white">RLS protects your data.</strong> Row Level Security ensures 
                 users can only access data they're allowed to see.
               </p>
             </div>
@@ -227,4 +227,3 @@ USING (true);`}
     </div>
   );
 }
-

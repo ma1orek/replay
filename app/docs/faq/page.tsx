@@ -74,7 +74,7 @@ const faqs = [
     questions: [
       {
         q: "What costs credits?",
-        a: "Video to UI generation costs 75 credits for full reconstruction. Edit with AI costs 25 credits per edit. Creating new pages with @PageName also costs 25 credits."
+        a: "Video to UI generation costs 75 credits. Edit with AI costs 3 credits per edit. Library extraction costs 10 credits."
       },
       {
         q: "Do my credits roll over?",
@@ -142,17 +142,17 @@ export default function FAQPage() {
       {/* Header */}
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-sm text-zinc-500">
-          <Link href="/docs" className="hover:text-zinc-900 transition-colors">Docs</Link>
+          <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
           <span>/</span>
-          <span className="text-zinc-900">FAQ</span>
+          <span className="text-white">FAQ</span>
         </div>
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-[#FF6E3C]/20">
-            <HelpCircle className="w-6 h-6 text-[#FF6E3C]" />
+          <div className="p-2 rounded-xl bg-zinc-800">
+            <HelpCircle className="w-6 h-6 text-zinc-400" />
           </div>
-          <h1 className="text-4xl font-bold text-zinc-900">Frequently Asked Questions</h1>
+          <h1 className="text-4xl font-bold text-white">Frequently Asked Questions</h1>
         </div>
-        <p className="text-xl text-zinc-500">
+        <p className="text-xl text-zinc-400">
           Find answers to common questions about Replay.
         </p>
       </div>
@@ -163,7 +163,7 @@ export default function FAQPage() {
           <a
             key={section.category}
             href={`#${section.category.toLowerCase().replace(/\s+/g, '-')}`}
-            className="px-3 py-1.5 rounded-lg bg-zinc-100 border border-zinc-200 text-sm text-zinc-600 hover:text-zinc-900 hover:border-zinc-300 transition-colors"
+            className="px-3 py-1.5 rounded-lg bg-zinc-800/50 border border-zinc-700 text-sm text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors"
           >
             {section.category}
           </a>
@@ -175,17 +175,17 @@ export default function FAQPage() {
         {faqs.map((section) => (
           <div key={section.category} id={section.category.toLowerCase().replace(/\s+/g, '-')}>
             <div className="flex items-center gap-2 mb-4">
-              <section.icon className="w-5 h-5 text-[#FF6E3C]" />
-              <h2 className="text-xl font-semibold text-zinc-900">{section.category}</h2>
+              <section.icon className="w-5 h-5 text-zinc-400" />
+              <h2 className="text-xl font-semibold text-white">{section.category}</h2>
             </div>
             <div className="space-y-3">
               {section.questions.map((faq, i) => (
                 <details key={i} className="group">
-                  <summary className="flex items-center justify-between p-4 rounded-xl bg-zinc-100 border border-zinc-200 cursor-pointer hover:border-zinc-300 transition-colors list-none">
-                    <span className="font-medium text-zinc-900 pr-4">{faq.q}</span>
-                    <ChevronRight className="w-4 h-4 text-zinc-400 group-open:rotate-90 transition-transform" />
+                  <summary className="flex items-center justify-between p-4 rounded-xl bg-zinc-800/50 border border-zinc-700 cursor-pointer hover:border-zinc-600 transition-colors list-none">
+                    <span className="font-medium text-white pr-4">{faq.q}</span>
+                    <ChevronRight className="w-4 h-4 text-zinc-500 group-open:rotate-90 transition-transform" />
                   </summary>
-                  <div className="px-4 py-3 text-sm text-zinc-600">
+                  <div className="px-4 py-3 text-sm text-zinc-400">
                     {faq.a}
                   </div>
                 </details>
@@ -196,12 +196,12 @@ export default function FAQPage() {
       </div>
 
       {/* Still need help */}
-      <div className="p-6 rounded-xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF3C6E]/20 border border-[#FF6E3C]/30 text-center">
-        <h3 className="text-lg font-semibold text-zinc-900 mb-2">Still have questions?</h3>
-        <p className="text-zinc-500 mb-4">We're here to help. Reach out to our support team.</p>
+      <div className="p-6 rounded-xl bg-zinc-800/50 border border-zinc-700 text-center">
+        <h3 className="text-lg font-semibold text-white mb-2">Still have questions?</h3>
+        <p className="text-zinc-400 mb-4">We're here to help. Reach out to our support team.</p>
         <a
           href="mailto:support@replay.build"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-[#FF6E3C] text-zinc-900 text-sm font-medium rounded-lg hover:bg-[#FF6E3C]/90 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-700 text-white text-sm font-medium rounded-lg hover:bg-zinc-600 transition-colors"
         >
           Contact Support
           <ChevronRight className="w-4 h-4" />
@@ -210,4 +210,3 @@ export default function FAQPage() {
     </div>
   );
 }
-
