@@ -2717,7 +2717,11 @@ function ReplayToolContent() {
     "flow_1767827812458_823lpezg8", // dashboard - UBOLD Premium Admin
     "flow_1767826711350_55giwb69y", // yc - Y Combinator
     "flow_1767812494307_4c540djzy", // landing - Flooks
+    "flow_1769444036799_r8hrcxyx2", // showcase - Enterprise Dashboard
   ]), []);
+  
+  // Demo showcase project (the main one for landing page)
+  const SHOWCASE_PROJECT_ID = "flow_1769444036799_r8hrcxyx2";
   
   const [flows, setFlows] = useState<FlowItem[]>([]);
   const hasRestoredFlowsRef = useRef(false);
@@ -4313,6 +4317,39 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
         // Load chat messages if any
         if (gen.chat_messages?.length > 0) {
           setChatMessages(gen.chat_messages);
+        }
+        
+        // For showcase demo project, add welcome message explaining what this is
+        if (projectId === "flow_1769444036799_r8hrcxyx2") {
+          const showcaseWelcome = {
+            id: "showcase-welcome",
+            role: "assistant" as const,
+            content: `# 🎬 Welcome to Replay Demo!
+
+This is a **fully functional showcase** demonstrating what Replay can do.
+
+## What you're seeing:
+This entire dashboard was **automatically generated from a screen recording** of an existing application. Replay analyzed the video and produced:
+
+✅ **Complete UI Code** — React + Tailwind components  
+✅ **Flow Map** — Visual navigation structure  
+✅ **Library** — Reusable component inventory  
+✅ **Design System** — Colors, typography, spacing tokens
+
+## Try it yourself:
+- 🔍 **Preview tab** — See the live rendered UI
+- 📂 **Code tab** — Explore the generated source
+- 🗺️ **Flow tab** — Navigate the screen map  
+- 📚 **Design tab** — View extracted design tokens
+- 🧩 **Blueprints** — Component library
+
+---
+
+**Ready to generate from your own videos?**  
+👉 [Upgrade to Pro](/pricing) to start creating!`,
+            timestamp: Date.now()
+          };
+          setChatMessages([showcaseWelcome]);
         }
         
         // Clear the localStorage redirect flag
