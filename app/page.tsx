@@ -13746,6 +13746,8 @@ ${publishCode}
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { ColorPicker } from '@/components/ui/color-picker';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 export default function GeneratedPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -16877,40 +16879,39 @@ export default function App() {
                                                     />
                                                   ) : prop.name.toLowerCase().includes('color') ? (
                                                     <div className="flex items-center gap-2">
-                                                      {/* Simple color picker - one circle + hex input */}
+                                                      {/* Advanced color picker with contrast ratio */}
                                                       {(() => {
                                                         const currentVal = (libraryPropsOverride[prop.name] ?? prop.defaultValue ?? '').toString();
                                                         const isHex = currentVal.match(/^#[0-9A-Fa-f]{3,8}$/);
+                                                        const displayColor = isHex ? currentVal : '#6366f1';
                                                         return (
-                                                          <>
-                                                            <label className="relative cursor-pointer group shrink-0">
-                                                              <div 
-                                                                className={cn(
-                                                                  "w-7 h-7 rounded-full border-2 shadow-md transition-all group-hover:scale-110",
-                                                                  libraryBackground === "light" ? "border-zinc-300" : "border-zinc-600"
-                                                                )}
-                                                                style={{ backgroundColor: isHex ? currentVal : '#6366f1' }}
+                                                          <Popover>
+                                                            <PopoverTrigger asChild>
+                                                              <button className="flex items-center gap-2 group">
+                                                                <div 
+                                                                  className={cn(
+                                                                    "w-7 h-7 rounded-md border-2 shadow-md transition-all group-hover:scale-110 cursor-pointer",
+                                                                    libraryBackground === "light" ? "border-zinc-300" : "border-zinc-600"
+                                                                  )}
+                                                                  style={{ backgroundColor: displayColor }}
+                                                                />
+                                                                <span className={cn(
+                                                                  "text-xs font-mono",
+                                                                  libraryBackground === "light" ? "text-zinc-700" : "text-zinc-400"
+                                                                )}>
+                                                                  {displayColor}
+                                                                </span>
+                                                              </button>
+                                                            </PopoverTrigger>
+                                                            <PopoverContent className="w-auto p-0" align="start">
+                                                              <ColorPicker
+                                                                value={displayColor}
+                                                                onValueChange={(val) => {
+                                                                  setLibraryPropsOverride(prev => ({ ...prev, [prop.name]: val.hex }));
+                                                                }}
                                                               />
-                                                              <input 
-                                                                type="color"
-                                                                value={isHex ? currentVal : '#6366f1'} 
-                                                                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-                                                                onChange={(e) => setLibraryPropsOverride(prev => ({ ...prev, [prop.name]: e.target.value }))}
-                                                              />
-                                                            </label>
-                                                            <input 
-                                                              type="text"
-                                                              value={libraryPropsOverride[prop.name] ?? prop.defaultValue ?? ''} 
-                                                              placeholder="#FFFFFF"
-                                                              className={cn(
-                                                                "rounded-lg px-2 py-1 text-xs border font-mono w-20",
-                                                                libraryBackground === "light" 
-                                                                  ? "bg-white border-zinc-300 text-zinc-900" 
-                                                                  : "bg-zinc-800 border-zinc-700 text-zinc-200"
-                                                              )}
-                                                              onChange={(e) => setLibraryPropsOverride(prev => ({ ...prev, [prop.name]: e.target.value }))}
-                                                            />
-                                                          </>
+                                                            </PopoverContent>
+                                                          </Popover>
                                                         );
                                                       })()}
                                                     </div>
