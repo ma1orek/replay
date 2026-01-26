@@ -395,6 +395,18 @@ Lucide is already included via CDN. Use the data-lucide attribute.
 HOW TO USE LUCIDE ICONS:
 <i data-lucide="icon-name" class="w-5 h-5"></i>
 
+🚫🚫🚫 FORBIDDEN ICON STYLING - NEVER DO THIS:
+❌ <i data-lucide="users" class="w-14 h-14 bg-orange-500 rounded-xl"></i>
+❌ <div class="w-12 h-12 bg-primary rounded-lg"><i data-lucide="..."></i></div>
+❌ Any background color on icon container!
+
+✅✅✅ CORRECT ICON STYLING:
+✅ <i data-lucide="users" class="w-8 h-8 text-orange-500"></i>
+✅ <div class="w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center"><i data-lucide="users" class="w-6 h-6 text-orange-500"></i></div>
+
+Icons should be TEXT COLOR (text-*), not backgrounds!
+If you want icon in colored box: use LOW OPACITY background (bg-orange-500/10) + text color.
+
 COMMON ICONS (use these exact names):
 - Navigation: home, menu, x, chevron-right, chevron-left, chevron-down, chevron-up
 - Actions: search, plus, minus, check, trash-2, edit, copy, download, upload, share-2
@@ -409,34 +421,31 @@ COMMON ICONS (use these exact names):
 - Time: clock, calendar, timer, history
 - Files: file, file-text, folder, folder-open, archive
 - Weather: sun, moon, cloud, cloud-rain, wind, thermometer
-- Other: zap, flame, rocket, target, award, crown, shield, lock, unlock
+- Business: briefcase, building, building-2, landmark, globe, network, handshake, award
+- Other: zap, flame, rocket, target, crown, shield, lock, unlock, sparkles
 
-EXAMPLE USAGE:
-<button class="flex items-center gap-2 px-4 py-2 bg-indigo-600 rounded-lg">
-  <i data-lucide="rocket" class="w-5 h-5"></i>
-  Launch
-</button>
-
-<div class="flex items-center gap-2 text-white/70">
-  <i data-lucide="check-circle" class="w-4 h-4 text-green-400"></i>
-  <span>Verified</span>
+EXAMPLE - FEATURE CARDS WITH ICONS:
+<div class="p-6 rounded-xl bg-white/5 border border-white/10">
+  <div class="w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center mb-4">
+    <i data-lucide="users" class="w-6 h-6 text-orange-500"></i>
+  </div>
+  <h3 class="text-xl font-bold text-white mb-2">Expert Network</h3>
+  <p class="text-white/60">Access to experienced partners.</p>
 </div>
 
-<nav class="flex gap-4">
-  <a href="#" class="flex items-center gap-2">
-    <i data-lucide="home" class="w-4 h-4"></i> Home
-  </a>
-  <a href="#" class="flex items-center gap-2">
-    <i data-lucide="settings" class="w-4 h-4"></i> Settings
-  </a>
-</nav>
-
-🚨 MANDATORY: Call lucide.createIcons() after DOM loads!
+🚨 MANDATORY: Call lucide.createIcons() MULTIPLE TIMES!
 Add this before </body>:
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    lucide.createIcons();
-  });
+  // Initialize icons immediately and with delays for dynamic content
+  function initIcons() {
+    if (typeof lucide !== 'undefined') {
+      lucide.createIcons();
+    }
+  }
+  document.addEventListener('DOMContentLoaded', initIcons);
+  setTimeout(initIcons, 100);
+  setTimeout(initIcons, 500);
+  setTimeout(initIcons, 1000);
 </script>
 
 🚫 FORBIDDEN:
@@ -444,6 +453,7 @@ Add this before </body>:
 - FontAwesome icons - NOT INCLUDED!
 - Hero Icons - NOT INCLUDED!
 - Custom SVG icon components - WON'T RENDER!
+- Solid background colors on icons (bg-orange-500 on <i> tag) - icons won't show!
 
 EXCEPTION (Only for company logos):
 If you need company logos (Twitter, GitHub, etc.), use Simple Icons CDN:

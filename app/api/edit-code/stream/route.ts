@@ -141,9 +141,11 @@ RULES:
 ${languageInstructions}
 
 ICONS - MANDATORY:
-- Use ONLY Lucide icons: <i data-lucide="icon-name" class="w-5 h-5"></i>
+- Use ONLY Lucide icons: <i data-lucide="icon-name" class="w-5 h-5 text-white"></i>
 - NEVER use inline SVG for icons (no <svg><path>...)
-- Common icons: home, menu, x, check, arrow-right, user, settings, heart, star, search
+- NEVER add solid background to icon: ❌ bg-orange-500 on <i> tag
+- For icon in colored box: <div class="bg-orange-500/10"><i class="text-orange-500"></i></div>
+- Common icons: home, menu, x, check, arrow-right, user, settings, heart, star, search, users, briefcase, globe, zap, rocket, shield
 
 ENTERPRISE-READY CODE:
 
