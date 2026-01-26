@@ -547,7 +547,7 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
       {mainTab !== "mirror" && (activeTab === "configure" || mainTab !== "capture" || isProcessing) && (
         <MobileHeader
           projectName={mainTab === "feed" ? "Projects" : mainTab === "flow" ? "User Journey" : projectName}
-          onProjectNameChange={mainTab === "capture" ? setProjectName : undefined}
+          onProjectNameChange={mainTab === "capture" ? setProjectName : () => {}}
           user={user}
           isPro={isPro}
           plan={plan}
