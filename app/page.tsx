@@ -13951,11 +13951,11 @@ export default function GeneratedPage() {
                   </div>
                 ) : flowNodes.length > 0 || flowBuilding ? (
                   <>
-                    {/* Zoom controls - bottom left */}
-                    <div className="absolute bottom-4 left-4 z-20 flex items-center gap-1 bg-zinc-900/98 backdrop-blur-xl rounded-xl p-1.5 border border-zinc-700/50 shadow-2xl">
+                    {/* Zoom controls - bottom left (same style as Blueprints) */}
+                    <div className="absolute bottom-4 left-4 z-20 flex items-center gap-1 bg-zinc-900/95 backdrop-blur-sm rounded-lg p-1 border border-zinc-800 shadow-xl">
                       <button 
                         onClick={() => setArchZoom(z => Math.max(0.25, z - 0.1))} 
-                        className="p-1.5 rounded-lg hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-zinc-200"
+                        className="p-1.5 rounded hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-white"
                         title="Zoom out"
                       >
                         <ZoomOut className="w-4 h-4" />
@@ -13963,7 +13963,7 @@ export default function GeneratedPage() {
                       <span className="text-xs text-zinc-300 w-12 text-center font-mono">{Math.round(archZoom * 100)}%</span>
                       <button 
                         onClick={() => setArchZoom(z => Math.min(2, z + 0.1))} 
-                        className="p-1.5 rounded-lg hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-zinc-200"
+                        className="p-1.5 rounded hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-white"
                         title="Zoom in"
                       >
                         <ZoomIn className="w-4 h-4" />
@@ -13971,7 +13971,7 @@ export default function GeneratedPage() {
                       <div className="w-px h-4 bg-zinc-700 mx-1" />
                       <button 
                         onClick={() => setArchZoom(1)} 
-                        className="px-2 py-1.5 rounded-lg hover:bg-zinc-800 transition-colors text-[10px] text-zinc-400 hover:text-zinc-200"
+                        className="px-2 py-1 rounded hover:bg-zinc-800 transition-colors text-[10px] text-zinc-400 hover:text-white"
                         title="Reset zoom"
                       >
                         Reset
@@ -13979,7 +13979,7 @@ export default function GeneratedPage() {
                       <div className="w-px h-4 bg-zinc-700 mx-1" />
                       <button 
                         onClick={autoLayoutFlowNodes}
-                        className="px-2 py-1.5 rounded-lg hover:bg-zinc-800 transition-colors text-[10px] text-zinc-400 hover:text-zinc-200"
+                        className="px-2 py-1 rounded hover:bg-zinc-800 transition-colors text-[10px] text-zinc-400 hover:text-white"
                         title="Auto-arrange"
                       >
                         Auto Layout
