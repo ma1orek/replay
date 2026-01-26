@@ -14230,8 +14230,8 @@ ${publishCode}
                         </div>
                       ) : displayedCode ? (
                         <div className="overflow-x-auto relative h-full">
-                          {/* For PRO users: show real code (with Agent Mode enhancements if enabled) */}
-                          {isPaidPlan ? (
+                          {/* For PRO users OR Demo projects: show real code (with Agent Mode enhancements if enabled) */}
+                          {(isPaidPlan || DEMO_PROJECT_IDS.has(activeGeneration?.id || '')) ? (
                             <Highlight 
                               theme={themes.nightOwl} 
                               code={agentMode ? getAgentPackCode(getActiveFileContent()) : getActiveFileContent()} 
