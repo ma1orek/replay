@@ -18051,8 +18051,12 @@ export default function App() {
 <style>
 *{margin:0;padding:0;box-sizing:border-box;scrollbar-width:none;-ms-overflow-style:none}
 html,body{font-family:Inter,system-ui,sans-serif;background:transparent;overflow:visible!important}
-body{display:block;padding:0;width:fit-content;min-width:200px}
-#root{display:block;width:fit-content;min-width:200px}
+body{display:block;padding:0}
+#root{display:block}
+/* Full-width sections - inherit container width */
+header,footer,nav,section,article,main,.container,.wrapper,.hero,.footer,.header,.section,.pricing,.cta,.banner{min-width:100%}
+/* Flex containers should also be full width */
+body>div,body>section,body>header,body>footer,body>nav,body>main,body>article{width:100%}
 *::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
 img{max-width:none;height:auto;display:block;object-fit:cover}
 img[src=""]{display:none}
@@ -18096,7 +18100,9 @@ document.querySelectorAll('img').forEach(img=>{
                                           style={{ 
                                             width: size?.width ? `${size.width}px` : 'auto',
                                             height: size?.height ? `${size.height}px` : 'auto',
-                                            minWidth: '40px',
+                                            // Smart min-width based on component type
+                                            minWidth: /section|footer|header|hero|nav|layout|container|wrapper/i.test(comp.name) ? '600px' : 
+                                                     /card|feature|testimonial|stat|metric|job|blog|item/i.test(comp.name) ? '280px' : '200px',
                                             minHeight: '24px',
                                             background: 'transparent',
                                             display: 'block'
