@@ -71,8 +71,9 @@ HOW TO GET THE REAL NAME:
 3. EXACT NUMBERS: "$1,234.56" not "$1234". "+12.5%" not "12%". "PLN" not "$".
 4. ACCURATE COLORS: Sample hex values from actual pixels.
 5. FULL TABLES: Capture all visible rows and columns - not just first 3!
-6. CHART DATA: Estimate data points from axis scales.
+6. CHART DATA: Estimate data points from axis scales. Charts MUST fill their containers!
 7. LOGO TEXT: Read the EXACT logo text - letter by letter. DO NOT invent.
+8. SIDEBAR TYPE: Identify if sidebar contains MENU ITEMS (icons+labels) or USER LIST (avatars+names).
 
 **OUTPUT UNIFIED JSON:**
 {
@@ -89,10 +90,19 @@ HOW TO GET THE REAL NAME:
         "position": "left",
         "width": "256px",
         "backgroundColor": "#0f172a",
+        "sidebarType": "navigation OR userList OR itemList",
         "logo": {
           "text": "EXACT logo text",
           "hasIcon": true
         },
+        "userList": [
+          {
+            "name": "Full Name",
+            "avatar": "initials or URL",
+            "status": "online/offline",
+            "subtitle": "Role or status"
+          }
+        ],
         "items": [
           {
             "order": 1,
@@ -316,6 +326,22 @@ EXAMPLES:
 <img src="https://i.pravatar.cc/150?img=12" class="w-10 h-10 rounded-full" />
 
 🚫 NEVER use: pollinations.ai, unsplash.com, placeholder.com, empty src=""
+
+═══════════════════════════════════════════════════════════════════════════════
+👥 SIDEBAR TYPES - CHECK scanData.ui.navigation.sidebar.sidebarType!
+═══════════════════════════════════════════════════════════════════════════════
+
+IF sidebarType is "userList":
+- Build sidebar with USER AVATARS (use pravatar.cc), names, status dots
+- Each user is a clickable row with hover:bg-zinc-800
+- Show online status with colored dot (green=online, gray=offline)
+- This is NOT a navigation menu - it's a contact/team list!
+
+IF sidebarType is "navigation":
+- Build standard menu with icons and text labels
+- Use Icon component for Lucide icons
+
+Charts MUST have explicit height (h-64, h-80) and use maintainAspectRatio: false!
 
 ═══════════════════════════════════════════════════════════════════════════════
 🎬 GSAP ANIMATIONS - MANDATORY ON EVERY SECTION!
