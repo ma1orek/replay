@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getStripe, getPlanFromPriceId } from "@/lib/stripe";
+import { getStripe, getPlanFromPriceId, PLAN_CREDITS, TOPUP_CREDITS } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/server";
 import Stripe from "stripe";
 
@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           const subData = subscription as any;
 
+          // Update membership
           const { error: membershipError } = await supabase
             .from("memberships")
             .update({
@@ -79,7 +80,49 @@ export async function POST(request: NextRequest) {
             console.error("Error updating membership:", membershipError);
           }
 
-          console.log("Updated membership for user:", userId, "Plan:", plan);
+          // Grant monthly credits
+          const credits = PLAN_CREDITS[plan] || PLAN_CREDITS.pro;
+          await supabase
+            .from("credit_wallets")
+            .update({
+              monthly_credits: credits,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("user_id", userId);
+
+          console.log("Updated membership for user:", userId, "Plan:", plan, "Credits:", credits);
+
+        } else if (session.mode === "payment") {
+          // Top-up payment completed
+          let credits = parseInt(session.metadata?.credits_amount || "0");
+          
+          if (credits === 0) {
+            const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+            const priceId = lineItems.data[0]?.price?.id;
+            if (priceId && TOPUP_CREDITS[priceId]) {
+              credits = TOPUP_CREDITS[priceId];
+            }
+          }
+
+          if (credits > 0) {
+            const { data: wallet } = await supabase
+              .from("credit_wallets")
+              .select("topup_credits")
+              .eq("user_id", userId)
+              .single();
+
+            const currentTopup = wallet?.topup_credits || 0;
+
+            await supabase
+              .from("credit_wallets")
+              .update({
+                topup_credits: currentTopup + credits,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("user_id", userId);
+
+            console.log("Added", credits, "topup credits for user:", userId);
+          }
         }
         break;
       }
@@ -89,7 +132,6 @@ export async function POST(request: NextRequest) {
         const customerId = subscription.customer as string;
         const subData = subscription as any;
         
-        // Determine plan from price ID
         const priceId = subscription.items.data[0]?.price?.id;
         const plan = priceId ? getPlanFromPriceId(priceId) : "pro";
 
@@ -112,7 +154,17 @@ export async function POST(request: NextRequest) {
             })
             .eq("user_id", membership.user_id);
 
-          console.log("Subscription created for user:", membership.user_id, "Plan:", plan);
+          // Grant credits
+          const credits = PLAN_CREDITS[plan] || PLAN_CREDITS.pro;
+          await supabase
+            .from("credit_wallets")
+            .update({
+              monthly_credits: credits,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("user_id", membership.user_id);
+
+          console.log("Subscription created for user:", membership.user_id, "Plan:", plan, "Credits:", credits);
         }
         break;
       }
@@ -122,7 +174,6 @@ export async function POST(request: NextRequest) {
         const customerId = subscription.customer as string;
         const subData = subscription as any;
         
-        // Determine plan from price ID (in case of upgrade/downgrade)
         const priceId = subscription.items.data[0]?.price?.id;
         const plan = priceId ? getPlanFromPriceId(priceId) : undefined;
 
@@ -142,9 +193,14 @@ export async function POST(request: NextRequest) {
             updated_at: new Date().toISOString(),
           };
           
-          // Update plan if changed
           if (plan && plan !== "free") {
             updateData.plan = plan;
+            // Update credits on plan change
+            const credits = PLAN_CREDITS[plan] || PLAN_CREDITS.pro;
+            await supabase
+              .from("credit_wallets")
+              .update({ monthly_credits: credits, updated_at: new Date().toISOString() })
+              .eq("user_id", membership.user_id);
           }
 
           await supabase
@@ -180,7 +236,49 @@ export async function POST(request: NextRequest) {
             })
             .eq("user_id", membership.user_id);
 
+          // Reset to free credits
+          await supabase
+            .from("credit_wallets")
+            .update({
+              monthly_credits: PLAN_CREDITS.free,
+              rollover_credits: 0,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("user_id", membership.user_id);
+
           console.log("Downgraded user to free:", membership.user_id);
+        }
+        break;
+      }
+
+      case "invoice.paid": {
+        const invoice = event.data.object as Stripe.Invoice;
+        const invoiceData = invoice as any;
+        const subscriptionId = invoiceData.subscription as string;
+        const customerId = invoiceData.customer as string;
+
+        // Monthly refill on subscription renewal
+        if (subscriptionId && invoiceData.billing_reason === "subscription_cycle") {
+          const { data: membership } = await supabase
+            .from("memberships")
+            .select("user_id, plan")
+            .eq("stripe_customer_id", customerId)
+            .single();
+
+          if (membership) {
+            const plan = membership.plan as string;
+            const credits = PLAN_CREDITS[plan] || PLAN_CREDITS.pro;
+
+            await supabase
+              .from("credit_wallets")
+              .update({
+                monthly_credits: credits,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("user_id", membership.user_id);
+
+            console.log("Monthly refill for user:", membership.user_id, "Credits:", credits);
+          }
         }
         break;
       }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient, createAdminClient } from "@/lib/supabase/server";
-import { getStripe, getPlanFromPriceId } from "@/lib/stripe";
+import { getStripe, getPlanFromPriceId, PLAN_CREDITS } from "@/lib/stripe";
 
 // Endpoint to manually sync subscription status from Stripe
 export async function POST(request: NextRequest) {
@@ -107,10 +107,32 @@ export async function POST(request: NextRequest) {
         }, { status: 500 });
       }
 
+      // Update credits to match plan
+      const credits = PLAN_CREDITS[plan] || PLAN_CREDITS.pro;
+      const { data: currentWallet } = await adminSupabase
+        .from("credit_wallets")
+        .select("monthly_credits")
+        .eq("user_id", user.id)
+        .single();
+      
+      // Only upgrade credits if currently at free tier level
+      if (currentWallet && currentWallet.monthly_credits < credits) {
+        await adminSupabase
+          .from("credit_wallets")
+          .update({
+            monthly_credits: credits,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("user_id", user.id);
+        debugInfo.creditsUpgraded = true;
+        debugInfo.newCredits = credits;
+      }
+
       return NextResponse.json({ 
         success: true, 
-        message: `Subscription synced! You now have ${plan.charAt(0).toUpperCase() + plan.slice(1)} access.`,
+        message: `Subscription synced! You now have ${plan.charAt(0).toUpperCase() + plan.slice(1)} access with ${credits.toLocaleString()} credits/month.`,
         plan,
+        credits,
         debug: debugInfo,
       });
     }

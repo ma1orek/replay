@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { type, plan, interval } = body;
+    const { type, plan, interval, topupAmount } = body;
 
     const origin = request.headers.get("origin") || process.env.NEXT_PUBLIC_APP_URL;
 
@@ -61,6 +61,39 @@ export async function POST(request: NextRequest) {
         metadata: { user_id: user.id, plan },
         subscription_data: {
           metadata: { supabase_user_id: user.id, plan },
+        },
+      });
+
+      return NextResponse.json({ url: session.url });
+    } else if (type === "topup") {
+      // Top-up checkout (one-time purchase)
+      let priceId: string;
+      let credits: number;
+      
+      if (topupAmount === 20) {
+        priceId = STRIPE_PRICES.CREDITS_2000;
+        credits = 2000;
+      } else if (topupAmount === 50) {
+        priceId = STRIPE_PRICES.CREDITS_5500;
+        credits = 5500;
+      } else if (topupAmount === 100) {
+        priceId = STRIPE_PRICES.CREDITS_12000;
+        credits = 12000;
+      } else {
+        return NextResponse.json({ error: "Invalid top-up amount" }, { status: 400 });
+      }
+
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        mode: "payment",
+        line_items: [{ price: priceId, quantity: 1 }],
+        success_url: `${origin}/settings?tab=credits&success=true`,
+        cancel_url: `${origin}/settings?tab=credits&canceled=true`,
+        metadata: { 
+          user_id: user.id, 
+          supabase_user_id: user.id, 
+          type: "topup", 
+          credits_amount: credits.toString(),
         },
       });
 

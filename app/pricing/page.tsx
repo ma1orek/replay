@@ -149,41 +149,37 @@ function Header() {
 // PRICING PAGE
 // ═══════════════════════════════════════════════════════════════
 
-// Placeholder - user will provide the actual demo project URL
-const DEMO_PROJECT_URL = "#demo";
-
 export default function PricingPage() {
   const plans = [
     {
-      name: "Sandbox",
-      subtitle: "Explore the demo",
+      name: "Free",
+      subtitle: "Try it out",
       price: "$0",
       period: "",
-      description: "See how Replay works with our interactive demo project. No signup required.",
+      description: "100 credits to start. Buy more anytime. Perfect to see if Replay fits your workflow.",
       features: [
-        { name: "Interactive demo (read-only)", included: true },
-        { name: "Flow Map & Library preview", included: true },
-        { name: "Code preview", included: true },
-        { name: "Upload your own video", included: false },
-        { name: "Export code", included: false },
+        { name: "100 credits to start", included: true },
+        { name: "1 project", included: true },
+        { name: "Basic export", included: true },
+        { name: "Buy credits anytime", included: true },
       ],
-      cta: "Explore Demo",
-      href: DEMO_PROJECT_URL,
+      cta: "Get Started",
+      href: "/login",
       variant: "outline" as const,
       popular: false
     },
     {
       name: "Pro",
-      subtitle: "For solo freelancers",
+      subtitle: "For freelancers",
       price: "$149",
       period: "/month",
-      description: "1 active project. Unlimited iterations. Perfect for individual modernization projects.",
+      description: "3,000 credits/month. Unlimited projects. ~20 video generations or 300 AI edits.",
       features: [
-        { name: "1 active project", included: true },
-        { name: "Unlimited iterations", included: true },
+        { name: "3,000 credits/month", included: true },
+        { name: "Unlimited projects", included: true },
         { name: "React + Tailwind export", included: true },
-        { name: "Design System generation", included: true },
-        { name: "Email support", included: true },
+        { name: "Flow Map & Design System", included: true },
+        { name: "AI editing (~10 credits)", included: true },
       ],
       cta: "Get Started",
       href: "/login?plan=pro",
@@ -192,16 +188,16 @@ export default function PricingPage() {
     },
     {
       name: "Agency",
-      subtitle: "For software houses",
+      subtitle: "For teams",
       price: "$499",
       period: "/month",
-      description: "10 active projects. 5 team members. Built for agencies handling multiple clients.",
+      description: "15,000 credits/month. 5 team members. Built for agencies handling multiple clients.",
       features: [
-        { name: "10 active projects", included: true },
+        { name: "15,000 credits/month", included: true },
+        { name: "Unlimited projects", included: true },
         { name: "5 team members", included: true },
         { name: "Shared Design System", included: true },
-        { name: "Priority GPU queue", included: true },
-        { name: "Priority support", included: true },
+        { name: "Priority GPU + API", included: true },
       ],
       cta: "Get Started",
       href: "/login?plan=agency",
@@ -213,13 +209,13 @@ export default function PricingPage() {
       subtitle: "For banks & enterprise",
       price: "Custom",
       period: "",
-      description: "Unlimited projects. On-premise deployment. Full security compliance.",
+      description: "Custom credits. On-premise deployment. Full security compliance.",
       features: [
-        { name: "Unlimited projects", included: true },
+        { name: "Custom credits", included: true },
         { name: "On-premise / Private Cloud", included: true },
         { name: "SSO / SAML integration", included: true },
         { name: "SLA & Security audit", included: true },
-        { name: "Dedicated account manager", included: true },
+        { name: "Dedicated support", included: true },
       ],
       cta: "Book a Demo",
       href: "/contact",
@@ -230,16 +226,18 @@ export default function PricingPage() {
 
   // Comparison table data
   const comparisonFeatures = [
-    { name: "Active Projects", sandbox: "Demo only", pro: "1", agency: "10", enterprise: "Unlimited" },
-    { name: "Team Members", sandbox: "1", pro: "1", agency: "5", enterprise: "Unlimited" },
-    { name: "Iterations", sandbox: "-", pro: "Unlimited", agency: "Unlimited", enterprise: "Unlimited" },
-    { name: "Code Export", sandbox: false, pro: true, agency: true, enterprise: true },
-    { name: "Design System", sandbox: "Preview", pro: true, agency: "Shared", enterprise: "Custom" },
-    { name: "Support", sandbox: "-", pro: "Email", agency: "Priority", enterprise: "Dedicated + SLA" },
-    { name: "Priority GPU", sandbox: false, pro: false, agency: true, enterprise: true },
-    { name: "On-premise Deployment", sandbox: false, pro: false, agency: false, enterprise: true },
-    { name: "SSO / SAML", sandbox: false, pro: false, agency: false, enterprise: true },
-    { name: "Security Audit", sandbox: false, pro: false, agency: false, enterprise: true },
+    { name: "Monthly Credits", free: "100", pro: "3,000", agency: "15,000", enterprise: "Custom" },
+    { name: "Video Generation", free: "~150 credits", pro: "~150 credits", agency: "~150 credits", enterprise: "~150 credits" },
+    { name: "AI Edit", free: "~10 credits", pro: "~10 credits", agency: "~10 credits", enterprise: "~10 credits" },
+    { name: "Projects", free: "1", pro: "Unlimited", agency: "Unlimited", enterprise: "Unlimited" },
+    { name: "Team Members", free: "1", pro: "1", agency: "5", enterprise: "Unlimited" },
+    { name: "Code Export", free: true, pro: true, agency: true, enterprise: true },
+    { name: "Design System", free: "Basic", pro: true, agency: "Shared", enterprise: "Custom" },
+    { name: "Support", free: "Community", pro: "Email", agency: "Priority", enterprise: "Dedicated + SLA" },
+    { name: "Priority GPU", free: false, pro: false, agency: true, enterprise: true },
+    { name: "API Access", free: false, pro: false, agency: true, enterprise: true },
+    { name: "On-premise", free: false, pro: false, agency: false, enterprise: true },
+    { name: "SSO / SAML", free: false, pro: false, agency: false, enterprise: true },
   ];
 
   return (
@@ -367,7 +365,7 @@ export default function PricingPage() {
                 <thead>
                   <tr className="border-b border-zinc-200">
                     <th className="text-left py-5 px-4 font-medium text-zinc-500 text-sm">Features</th>
-                    <th className="text-center py-5 px-4 font-semibold text-zinc-600">Sandbox</th>
+                    <th className="text-center py-5 px-4 font-semibold text-zinc-600">Free</th>
                     <th className="text-center py-5 px-4 font-semibold text-orange-600 bg-orange-50">Pro</th>
                     <th className="text-center py-5 px-4 font-semibold text-zinc-900">Agency</th>
                     <th className="text-center py-5 px-4 font-semibold text-zinc-900">Enterprise</th>
@@ -378,14 +376,14 @@ export default function PricingPage() {
                     <tr key={feature.name} className="border-b border-zinc-100 hover:bg-zinc-50 transition-colors">
                       <td className="py-4 px-4 text-sm text-zinc-700">{feature.name}</td>
                       <td className="py-4 px-4 text-center">
-                        {typeof feature.sandbox === "boolean" ? (
-                          feature.sandbox ? (
+                        {typeof feature.free === "boolean" ? (
+                          feature.free ? (
                             <Check className="w-5 h-5 text-green-500 mx-auto" />
                           ) : (
                             <Minus className="w-5 h-5 text-zinc-300 mx-auto" />
                           )
                         ) : (
-                          <span className="text-sm text-zinc-500">{feature.sandbox}</span>
+                          <span className="text-sm text-zinc-500">{feature.free}</span>
                         )}
                       </td>
                       <td className="py-4 px-4 text-center bg-orange-50/50">
