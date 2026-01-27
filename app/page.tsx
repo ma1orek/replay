@@ -2692,17 +2692,15 @@ const analyzeCodeChanges = (oldCode: string, newCode: string, userRequest: strin
   
   // If no specific insights, provide a generic but still human response
   if (insights.length === 0) {
-    insights.push("Gotowe! Sprawdź preview 👀");
+    insights.push("Zastosowałem zmiany zgodnie z Twoją prośbą");
   }
   
-  // Always add "Preview updated"
-  insights.push("Preview updated - take a look!");
-  
-  // Build the response
-  let response = `**Done!** \n\n`;
+  // Build a descriptive response
+  let response = `**Zmiany wprowadzone:**\n\n`;
   insights.forEach(insight => {
     response += `• ${insight}\n`;
   });
+  response += `\n**Preview zaktualizowany** - sprawdź rezultat!`;
   
   return response;
 };
@@ -4632,6 +4630,23 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
         // Load chat messages if any
         if (gen.chat_messages?.length > 0) {
           setChatMessages(gen.chat_messages);
+        }
+        
+        // IMPORTANT: Load video into flows if present
+        if (gen.input_video_url && gen.input_video_url.length > 0) {
+          console.log("[Project URL] Loading video into flows:", gen.input_video_url);
+          const videoFlow: FlowItem = {
+            id: generateId(),
+            name: gen.title || "Project Video",
+            videoBlob: new Blob(), // Empty blob as placeholder
+            videoUrl: gen.input_video_url,
+            duration: 0,
+            thumbnail: gen.input_thumbnail_url || "",
+            trimStart: 0,
+            trimEnd: 0,
+          };
+          setFlows([videoFlow]);
+          setSelectedFlowId(videoFlow.id);
         }
         
         // For showcase demo project, add welcome message explaining what this is
@@ -13172,7 +13187,7 @@ ${publishCode}
                                       
                                       // Use summary from streaming if available, otherwise analyze
                                       const responseMsg = result.summary 
-                                        ? `✅ Done! ${result.summary}`
+                                        ? `**Zmiany wprowadzone:**\n\n${result.summary}\n\n**Preview zaktualizowany** - sprawdź rezultat!`
                                         : analyzeCodeChanges(editableCode, result.code, currentInput);
                                       
                                       setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: responseMsg, timestamp: Date.now() }]);
