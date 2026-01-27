@@ -261,41 +261,115 @@ export async function GET(
   // Visibility fix CSS - forces all elements visible (AI generates opacity:0 for GSAP animations)
   const visibilityFixCss = `
 <style id="visibility-fix">
-  /* Force all elements visible - fix AI generated fade/slide animations */
-  [style*="opacity: 0"], [style*="opacity:0"] { opacity: 1 !important; }
+  /* AGGRESSIVE VISIBILITY FIX - Force ALL elements visible */
+  /* This overrides GSAP ScrollTrigger initial states */
+  
+  /* Target any element with inline opacity */
+  [style*="opacity: 0"], [style*="opacity:0"], [style*="opacity: 0."] { opacity: 1 !important; }
   [style*="visibility: hidden"], [style*="visibility:hidden"] { visibility: visible !important; }
   [style*="translate"] { opacity: 1 !important; }
+  
+  /* Target animation classes */
   .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .slide-left, .slide-right,
   .scale-up, .rotate-in, .blur-fade, .animate-fade,
-  [class*="fade-"], [class*="slide-"], [class*="stagger-"], [class*="animate-"] {
-    opacity: 1 !important;
-    visibility: visible !important;
-  }
-  .stagger-cards > * {
-    opacity: 1 !important;
-    visibility: visible !important;
-  }
-  [data-state="hidden"], [data-visible="false"], [data-aos] {
+  [class*="fade-"], [class*="slide-"], [class*="stagger-"], [class*="animate-"],
+  [class*="gsap"], [class*="scroll"] {
     opacity: 1 !important;
     visibility: visible !important;
     transform: none !important;
   }
-  /* Ensure grid/flex children are visible */
-  .grid > *, .flex > * { opacity: 1 !important; visibility: visible !important; }
-  /* Fix any transform hiding */
-  [style*="translateY(-100"], [style*="translateX(-100"] { transform: none !important; opacity: 1 !important; }
+  
+  /* Target stagger containers and their children */
+  .stagger-cards, .stagger-cards > *,
+  [class*="stagger"] > * {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  
+  /* Target data attributes used by animation libs */
+  [data-state="hidden"], [data-visible="false"], [data-aos],
+  [data-scroll], [data-gsap], [data-animate] {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+  }
+  
+  /* Ensure ALL grid/flex children are visible */
+  .grid > *, .flex > *,
+  [class*="grid"] > *, [class*="flex"] > *,
+  section > div, section > * {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  
+  /* Target common card containers */
+  [class*="card"], [class*="Card"],
+  [class*="step"], [class*="Step"],
+  [class*="feature"], [class*="Feature"],
+  [class*="item"], [class*="Item"] {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  
+  /* Fix transform-based hiding */
+  [style*="translateY(-"], [style*="translateX(-"],
+  [style*="translateY(100"], [style*="translateX(100"],
+  [style*="scale(0"] {
+    transform: none !important;
+    opacity: 1 !important;
+  }
 </style>
 <script>
-// Force visibility after page load
-window.addEventListener('load', function() {
-  setTimeout(function() {
+// AGGRESSIVE visibility fix - runs multiple times to catch GSAP animations
+(function() {
+  function forceAllVisible() {
     document.querySelectorAll('*').forEach(function(el) {
       var style = window.getComputedStyle(el);
-      if (style.opacity === '0') el.style.opacity = '1';
-      if (style.visibility === 'hidden') el.style.visibility = 'visible';
+      // Fix opacity
+      if (parseFloat(style.opacity) < 0.1) {
+        el.style.setProperty('opacity', '1', 'important');
+      }
+      // Fix visibility
+      if (style.visibility === 'hidden') {
+        el.style.setProperty('visibility', 'visible', 'important');
+      }
+      // Fix display
+      if (style.display === 'none' && !el.classList.contains('hidden') && el.tagName !== 'SCRIPT' && el.tagName !== 'STYLE') {
+        el.style.setProperty('display', 'block', 'important');
+      }
     });
+  }
+  
+  // Run immediately
+  if (document.readyState === 'complete') {
+    forceAllVisible();
+  }
+  
+  // Run on DOM ready
+  document.addEventListener('DOMContentLoaded', function() {
+    forceAllVisible();
+    setTimeout(forceAllVisible, 50);
+    setTimeout(forceAllVisible, 150);
+    setTimeout(forceAllVisible, 300);
+  });
+  
+  // Run on load
+  window.addEventListener('load', function() {
+    forceAllVisible();
+    setTimeout(forceAllVisible, 100);
+    setTimeout(forceAllVisible, 300);
+    setTimeout(forceAllVisible, 500);
+    setTimeout(forceAllVisible, 1000);
+  });
+  
+  // Run periodically for first 2 seconds to catch late animations
+  var runCount = 0;
+  var interval = setInterval(function() {
+    forceAllVisible();
+    runCount++;
+    if (runCount > 20) clearInterval(interval);
   }, 100);
-});
+})();
 </script>
 `;
 
@@ -491,17 +565,18 @@ window.addEventListener('load', function() {
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { min-height: 100vh; font-family: 'Inter', sans-serif; }
-    /* Force all elements visible - fix AI generated fade/slide animations */
+    /* AGGRESSIVE VISIBILITY FIX */
     [style*="opacity: 0"], [style*="opacity:0"] { opacity: 1 !important; }
-    [style*="visibility: hidden"], [style*="visibility:hidden"] { visibility: visible !important; }
+    [style*="visibility: hidden"] { visibility: visible !important; }
     .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .slide-left, .slide-right,
     .scale-up, .rotate-in, .blur-fade, .animate-fade,
-    [class*="fade-"], [class*="slide-"], [class*="stagger-"], [class*="animate-"] {
+    [class*="fade-"], [class*="slide-"], [class*="stagger-"], [class*="animate-"],
+    [class*="card"], [class*="Card"], [class*="step"], [class*="Step"] {
       opacity: 1 !important;
       visibility: visible !important;
     }
-    .stagger-cards > * { opacity: 1 !important; visibility: visible !important; }
-    .grid > *, .flex > * { opacity: 1 !important; visibility: visible !important; }
+    .stagger-cards > *, [class*="stagger"] > * { opacity: 1 !important; visibility: visible !important; }
+    .grid > *, .flex > *, section > div, section > * { opacity: 1 !important; visibility: visible !important; }
   </style>
   ${customStyles}
 </head>
