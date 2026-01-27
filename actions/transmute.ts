@@ -311,22 +311,23 @@ const ASSEMBLER_PROMPT = `You are a SENIOR FRONTEND ENGINEER at an AWWWARDS-winn
 Your job is to create STUNNING, ANIMATED, PRODUCTION-QUALITY web interfaces.
 
 ═══════════════════════════════════════════════════════════════════════════════
-🎨 CRITICAL: THEME DETECTION - USE VIDEO COLORS!
+🎨 THEME & COLORS (can be overridden by STYLE DIRECTIVE if provided)
 ═══════════════════════════════════════════════════════════════════════════════
 
-CHECK scanData.ui.theme FIRST:
-- If "light" → <body class="bg-white text-gray-900"> or bg-gray-50
-- If "dark" → <body class="bg-[#0a0a0a] text-white"> or bg-zinc-900
+**IF NO STYLE DIRECTIVE** (Auto-Detect mode):
+- CHECK scanData.ui.theme: "light" → bg-white, "dark" → bg-[#0a0a0a]
+- USE scanData.ui.colors for exact colors from video
 
-USE scanData.ui.colors for EXACT colors from video:
+**IF STYLE DIRECTIVE IS PROVIDED** (User selected a style):
+- IGNORE scanData.ui.colors and scanData.ui.theme completely
+- USE ONLY the colors/theme from the STYLE DIRECTIVE
+- The style directive overrides ALL visual aspects (colors, gradients, shadows, animations)
+
+DEFAULT (no style directive):
 - background → body and main container backgrounds
 - surface → card backgrounds  
 - text → main text color
-- textMuted → secondary text
 - primary → buttons, links, accents
-- border → borders, dividers
-
-DO NOT ASSUME DARK THEME! Match what's in the video!
 
 ═══════════════════════════════════════════════════════════════════════════════
 🟢 CONTENT FIDELITY 1:1 — MANDATORY (NO SHORTCUTS!)
@@ -656,10 +657,8 @@ CORRECT - Full section:
 ☑ Glassmorphism on cards/panels
 ☑ Gradient text on headings  
 ☑ Colored shadows (not gray)
-☑ USE THE THEME FROM scanData.ui.theme (light or dark)!
-☑ If theme is "light" → white/cream backgrounds, dark text
-☑ If theme is "dark" → dark backgrounds, light text
-☑ MATCH the colors extracted from video in scanData.ui.colors!
+☑ IF STYLE DIRECTIVE provided → USE IT for all colors/theme (ignore video colors!)
+☑ IF NO STYLE DIRECTIVE → use scanData.ui.theme and scanData.ui.colors from video
 
 Generate complete HTML:`;
 
@@ -946,7 +945,28 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
     // Build assembler prompt
     let assemblerPrompt = ASSEMBLER_PROMPT;
     
-    if (styleDirective) {
+    // Check if user selected a specific style (not auto-detect)
+    const hasCustomStyle = styleDirective && 
+      !styleDirective.toLowerCase().includes('auto') && 
+      styleDirective.trim().length > 10;
+    
+    if (hasCustomStyle) {
+      // User selected a specific style - OVERRIDE video colors completely
+      assemblerPrompt += `\n\n**═══════════════════════════════════════════════════════════════**
+**🎨 STYLE DIRECTIVE - OVERRIDE VIDEO COLORS/STYLES!**
+**═══════════════════════════════════════════════════════════════**
+IMPORTANT: User has selected a CUSTOM STYLE. You MUST:
+1. IGNORE scanData.ui.colors completely - do NOT use video's original colors
+2. IGNORE scanData.ui.theme - apply the style's own theme (light/dark)
+3. APPLY ALL style instructions below for colors, gradients, shadows, animations
+4. Keep ONLY the TEXT CONTENT and STRUCTURE from scanData (headlines, nav items, metrics, etc.)
+
+**STYLE TO APPLY:**
+${styleDirective}
+
+The style directive above defines ALL visual aspects: colors, backgrounds, gradients, shadows, animations, hover effects. USE IT, not the video colors!`;
+    } else if (styleDirective) {
+      // Auto-detect or light directive - use video colors
       assemblerPrompt += `\n\n**STYLE DIRECTIVE:**\n${styleDirective}`;
     }
     
@@ -959,8 +979,13 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
     const chartCount = scanData?.data?.charts?.length || 0;
     const tableCount = scanData?.data?.tables?.length || 0;
     
+    // Color instruction depends on whether custom style is selected
+    const colorInstruction = hasCustomStyle 
+      ? "IGNORE scanData.ui.colors - use STYLE DIRECTIVE colors instead!"
+      : "Use colors from scanData.ui.colors.";
+    
     assemblerPrompt += `\n\n**═══════════════════════════════════════════════════════════════**
-**SCAN DATA (Source of Truth - USE THIS DATA ONLY):**
+**SCAN DATA (Source of Truth for CONTENT & STRUCTURE):**
 **═══════════════════════════════════════════════════════════════**
 
 \`\`\`json
@@ -972,7 +997,7 @@ ${JSON.stringify(scanData, null, 2)}
 2. Create ${metricCount} metric cards with EXACT values from scanData.
 3. Create ${chartCount} charts using ChartComponent (Chart.js).
 4. Create ${tableCount} tables with all rows — no dropping rows.
-5. Use colors from scanData.ui.colors.
+5. ${colorInstruction}
 6. CONTENT 1:1: Every headline, paragraph, nav label, button text, FAQ item, footer line from scanData MUST appear in the output VERBATIM. Do not skip any section, do not shorten any text.
 
 Generate the complete HTML file now:`;
