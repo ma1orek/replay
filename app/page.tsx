@@ -3850,6 +3850,16 @@ function ReplayToolContent() {
   section:empty { min-height: 0 !important; }
   /* Ensure grid/flex children are visible */
   .grid > *, .flex > * { opacity: 1 !important; visibility: visible !important; }
+  /* FIX TRANSPARENT ELEMENTS: Add minimal background to elements with border but no visible bg */
+  [class*="border"]:not([class*="bg-"]):not([class*="border-0"]):not([class*="border-none"]):not([class*="border-transparent"]) {
+    background-color: rgba(39, 39, 42, 0.5) !important; /* zinc-800/50 */
+  }
+  /* Cards, modules and similar components that often have transparent bg */
+  .card, .module, [class*="card"], [class*="module"], [class*="-card"], [class*="-module"] {
+    background-color: rgba(39, 39, 42, 0.6) !important;
+  }
+  /* Override for elements that explicitly set bg-transparent */
+  [class*="bg-transparent"] { background-color: transparent !important; }
 </style>
 <script>
 // Force all elements visible after load
@@ -18805,6 +18815,10 @@ i[data-lucide]:has(svg){opacity:1!important}
 i[data-lucide] svg{width:inherit;height:inherit;stroke:currentColor;fill:none}
 /* Only hide icon wrappers that are truly broken (not whole sections) */
 .lucide:empty,.lucide-icon:empty{opacity:0;width:1em;height:1em}
+/* FIX TRANSPARENT ELEMENTS: Add minimal bg to elements with border but no visible bg */
+[class*="border"]:not([class*="bg-"]):not([class*="border-0"]):not([class*="border-none"]):not([class*="border-transparent"]){background-color:rgba(39,39,42,0.5)!important}
+.card,.module,[class*="card"],[class*="module"],[class*="-card"],[class*="-module"]{background-color:rgba(39,39,42,0.6)!important}
+[class*="bg-transparent"]{background-color:transparent!important}
 </style>
 <script>
 function autoResize(){
