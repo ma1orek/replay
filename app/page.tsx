@@ -3053,6 +3053,8 @@ function ReplayToolContent() {
   const [libraryPreviewSize, setLibraryPreviewSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const [isLibraryFullscreen, setIsLibraryFullscreen] = useState(false);
   const [libraryPanelCollapsed, setLibraryPanelCollapsed] = useState(false);
+  const [isGeneratingLibraryDocs, setIsGeneratingLibraryDocs] = useState(false);
+  const [libraryDocsGenerated, setLibraryDocsGenerated] = useState(false);
   
   // Handle Escape key to close fullscreen
   useEffect(() => {
@@ -8794,6 +8796,55 @@ Try these prompts in Cursor or v0:
     }
   };
 
+  // Generate Library Documentation with AI
+  const generateLibraryDocs = useCallback(async () => {
+    if (!libraryData?.components || libraryData.components.length === 0 || isGeneratingLibraryDocs) return;
+    
+    setIsGeneratingLibraryDocs(true);
+    try {
+      const response = await fetch("/api/generate/library-docs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          components: libraryData.components,
+          tokens: libraryData.tokens || {},
+          styleInfo: styleInfo,
+          projectName: generationTitle || "Design System"
+        })
+      });
+      
+      if (!response.ok) throw new Error("Failed to generate docs");
+      
+      const result = await response.json();
+      
+      if (result.success && result.data?.docs) {
+        setLibraryData((prev: any) => ({
+          ...prev,
+          docs: result.data.docs
+        }));
+        setLibraryDocsGenerated(true);
+        showToast("Documentation generated!", "success");
+      }
+    } catch (error: any) {
+      console.error("Library docs generation error:", error);
+      showToast("Failed to generate documentation", "error");
+    } finally {
+      setIsGeneratingLibraryDocs(false);
+    }
+  }, [libraryData?.components, styleInfo, generationTitle, showToast, isGeneratingLibraryDocs]);
+
+  // Auto-generate library docs when components are available and docs not generated
+  useEffect(() => {
+    if (
+      libraryData?.components?.length > 0 && 
+      !libraryDocsGenerated && 
+      !isGeneratingLibraryDocs &&
+      !libraryData?.docs?.length
+    ) {
+      generateLibraryDocs();
+    }
+  }, [libraryData?.components?.length, libraryDocsGenerated, isGeneratingLibraryDocs, libraryData?.docs?.length, generateLibraryDocs]);
+
   // AI-Powered Blueprints Analysis (Single Source of Truth)
   const analyzeBlueprints = async () => {
     if (!generatedCode || isAnalyzingBlueprints) return;
@@ -9443,6 +9494,7 @@ Try these prompts in Cursor or v0:
     setMobileSyncShownForGeneration(null); // Reset so modal can show for new generation
     setLibraryData(null); // Reset library for new generation
     setLibraryPropsOverride({}); // Reset library props
+    setLibraryDocsGenerated(false); // Reset docs generation flag
     // Auto-switch to Preview mode when generation starts
     setViewMode("preview");
     
@@ -11658,8 +11710,10 @@ ${publishCode}
                             // Load library data for this project
                             if (genToLoad.libraryData) {
                               setLibraryData(genToLoad.libraryData);
+                              setLibraryDocsGenerated(!!genToLoad.libraryData?.docs?.length);
                             } else {
                               setLibraryData(null); // Reset library when switching projects
+                              setLibraryDocsGenerated(false);
                             }
                             
                             // Auto-expand versions if there are any
@@ -12245,11 +12299,18 @@ ${publishCode}
                       </button>
                       {librarySectionsExpanded.docs && (
                         <div className="ml-2 space-y-0.5 mt-1">
-                          {(libraryData.docs?.length > 0 ? libraryData.docs : [
+                          {isGeneratingLibraryDocs ? (
+                            <div className="flex items-center gap-2 px-2 py-2 text-xs text-zinc-500">
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              <span>Generating docs...</span>
+                            </div>
+                          ) : (libraryData.docs?.length > 0 ? libraryData.docs : [
                             { id: "welcome", title: "Welcome", type: "welcome" },
-                            { id: "getting-started", title: "Getting Started" },
-                            { id: "colors", title: "Colors" },
-                            { id: "typography", title: "Typography" },
+                            { id: "getting-started", title: "Getting Started", type: "getting-started" },
+                            { id: "colors", title: "Colors", type: "colors" },
+                            { id: "typography", title: "Typography", type: "typography" },
+                            { id: "iconography", title: "Iconography", type: "iconography" },
+                            { id: "examples", title: "Examples", type: "examples" },
                           ]).map((doc: any) => (
                             <button
                               key={doc.id}
@@ -16677,10 +16738,10 @@ export default function GeneratedPage() {
                                 <div className="space-y-10">
                                   <div>
                                     <h1 className={cn("text-4xl font-bold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
-                                      {selectedDoc.title || "Design System"}
+                                      {selectedDoc.content?.headline || selectedDoc.title || "Design System"}
                                     </h1>
                                     <p className={cn("text-lg leading-relaxed", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
-                                      Welcome to your Design System - a comprehensive collection of reusable components built with modern standards and designed for scalability, accessibility, and developer experience.
+                                      {selectedDoc.content?.description || "Welcome to your Design System - a comprehensive collection of reusable components built with modern standards and designed for scalability, accessibility, and developer experience."}
                                     </p>
                                   </div>
                                   
@@ -16810,7 +16871,7 @@ export default function GeneratedPage() {
                                   <div>
                                     <h1 className={cn("text-4xl font-bold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Getting Started</h1>
                                     <p className={cn("text-lg", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
-                                      Learn how to install and use the design system components in your project.
+                                      {selectedDoc.content?.description || "Learn how to install and use the design system components in your project."}
                                     </p>
                                   </div>
                                   
@@ -17136,9 +17197,39 @@ export default function App() {
                                   <div>
                                     <h1 className={cn("text-4xl font-bold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Real-World Examples</h1>
                                     <p className={cn("text-lg", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
-                                      Discover how the design system powers applications across different frameworks and technology stacks.
+                                      {selectedDoc.content?.description || "Discover how the design system powers applications across different frameworks and technology stacks."}
                                     </p>
                                   </div>
+                                  
+                                  {/* AI-Generated Examples */}
+                                  {selectedDoc.content?.examples && selectedDoc.content.examples.length > 0 && (
+                                    <div>
+                                      <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
+                                        <Code className="w-5 h-5 text-zinc-400" /> Code Examples
+                                      </h2>
+                                      <div className="space-y-6">
+                                        {selectedDoc.content.examples.map((example: any, i: number) => (
+                                          <div key={i} className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
+                                            <div className={cn("px-4 py-3 flex items-center justify-between", libraryBackground === "light" ? "bg-zinc-50 border-b border-zinc-200" : "bg-zinc-900 border-b border-zinc-800")}>
+                                              <div>
+                                                <h3 className={cn("font-semibold text-sm", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{example.title}</h3>
+                                                <p className={cn("text-xs mt-0.5", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{example.description}</p>
+                                              </div>
+                                              <button 
+                                                onClick={() => navigator.clipboard.writeText(example.code.replace(/\\n/g, '\n'))}
+                                                className="px-3 py-1 text-xs bg-zinc-700 text-white rounded hover:bg-zinc-600"
+                                              >
+                                                Copy
+                                              </button>
+                                            </div>
+                                            <pre className={cn("p-4 text-sm font-mono overflow-x-auto", libraryBackground === "light" ? "bg-zinc-50" : "bg-[#0d0d0d]")}>
+                                              <code className={libraryBackground === "light" ? "text-zinc-800" : "text-zinc-300"}>{example.code.replace(/\\n/g, '\n')}</code>
+                                            </pre>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
                                   
                                   {/* React Applications */}
                                   <div>
