@@ -258,6 +258,47 @@ export async function GET(
   const safeTitle = typedProject.title.replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const safeDescription = (typedProject.description || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   
+  // Visibility fix CSS - forces all elements visible (AI generates opacity:0 for GSAP animations)
+  const visibilityFixCss = `
+<style id="visibility-fix">
+  /* Force all elements visible - fix AI generated fade/slide animations */
+  [style*="opacity: 0"], [style*="opacity:0"] { opacity: 1 !important; }
+  [style*="visibility: hidden"], [style*="visibility:hidden"] { visibility: visible !important; }
+  [style*="translate"] { opacity: 1 !important; }
+  .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .slide-left, .slide-right,
+  .scale-up, .rotate-in, .blur-fade, .animate-fade,
+  [class*="fade-"], [class*="slide-"], [class*="stagger-"], [class*="animate-"] {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  .stagger-cards > * {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  [data-state="hidden"], [data-visible="false"], [data-aos] {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+  }
+  /* Ensure grid/flex children are visible */
+  .grid > *, .flex > * { opacity: 1 !important; visibility: visible !important; }
+  /* Fix any transform hiding */
+  [style*="translateY(-100"], [style*="translateX(-100"] { transform: none !important; opacity: 1 !important; }
+</style>
+<script>
+// Force visibility after page load
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    document.querySelectorAll('*').forEach(function(el) {
+      var style = window.getComputedStyle(el);
+      if (style.opacity === '0') el.style.opacity = '1';
+      if (style.visibility === 'hidden') el.style.visibility = 'visible';
+    });
+  }, 100);
+});
+</script>
+`;
+
   // Badge HTML - small, subtle, bottom-right corner (injected before </body>)
   const badgeHtml = showBadge ? `
     <a 
@@ -363,6 +404,13 @@ export async function GET(
       code = code.replace(/<!DOCTYPE[^>]*>/i, (match) => `${match}\n<html lang="en"><head>${seoMeta}</head>`);
     }
     
+    // Inject visibility fix CSS into <head>
+    if (code.includes('</head>')) {
+      code = code.replace('</head>', `${visibilityFixCss}\n</head>`);
+    } else if (code.includes('<body')) {
+      code = code.replace('<body', `${visibilityFixCss}\n<body`);
+    }
+    
     // Inject badge before </body>
     if (badgeHtml) {
       if (code.includes('</body>')) {
@@ -443,6 +491,17 @@ export async function GET(
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { min-height: 100vh; font-family: 'Inter', sans-serif; }
+    /* Force all elements visible - fix AI generated fade/slide animations */
+    [style*="opacity: 0"], [style*="opacity:0"] { opacity: 1 !important; }
+    [style*="visibility: hidden"], [style*="visibility:hidden"] { visibility: visible !important; }
+    .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .slide-left, .slide-right,
+    .scale-up, .rotate-in, .blur-fade, .animate-fade,
+    [class*="fade-"], [class*="slide-"], [class*="stagger-"], [class*="animate-"] {
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+    .stagger-cards > * { opacity: 1 !important; visibility: visible !important; }
+    .grid > *, .flex > * { opacity: 1 !important; visibility: visible !important; }
   </style>
   ${customStyles}
 </head>
