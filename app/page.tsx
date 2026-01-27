@@ -3134,73 +3134,68 @@ function ReplayToolContent() {
   const [isDraggingOverCanvas, setIsDraggingOverCanvas] = useState(false);
   const visionFileInputRef = useRef<HTMLInputElement>(null);
   
-  // Auto layout function for Blueprints - MASONRY STYLE (varied sizes)
+  // Auto layout function for Blueprints - SIMPLE GRID (no category grouping)
   const autoLayoutBlueprints = useCallback(() => {
     if (!libraryData?.components || libraryData.components.length === 0) return;
     
     const newPositions: Record<string, { x: number; y: number }> = {};
     
-    // Group by category
-    const categories: Record<string, any[]> = {};
-    libraryData.components.forEach((comp: any) => {
-      const cat = comp.category || 'other';
-      if (!categories[cat]) categories[cat] = [];
-      categories[cat].push(comp);
+    // Simple grid layout - all components together
+    const GAP_X = 40; // Horizontal gap between components
+    const GAP_Y = 40; // Vertical gap between components
+    const START_X = 60;
+    const START_Y = 60;
+    const NUM_COLUMNS = 4; // 4 columns for good distribution
+    const COLUMN_WIDTH = 320; // Standard width per column
+    
+    // Track column heights for masonry effect
+    const columnHeights = Array(NUM_COLUMNS).fill(0);
+    
+    // Sort components by category for visual grouping but place in same grid
+    const sortedComponents = [...libraryData.components].sort((a: any, b: any) => {
+      const catA = a.category || 'zzz';
+      const catB = b.category || 'zzz';
+      return catA.localeCompare(catB);
     });
     
-    // MASONRY LAYOUT - wider columns, better spacing
-    const GAP = 80; // Gap between columns
-    const COMPONENT_GAP = 100; // Extra gap between components vertically
-    const CATEGORY_GAP = 150; // Separation between categories
-    const START_Y = 150;
-    const NUM_COLUMNS = 3; // More columns for better distribution
-    const COLUMN_WIDTH = 400; // Much wider columns for natural component size
-    
-    let currentX = 100;
-    
-    Object.entries(categories).forEach(([category, comps]) => {
-      // Track column heights for masonry - use 3 columns
-      const columnHeights = Array(NUM_COLUMNS).fill(0);
+    sortedComponents.forEach((comp: any) => {
+      const id = `comp-${comp.id}`;
       
-      comps.forEach((comp: any, idx: number) => {
-        const id = `comp-${comp.id}`;
-        
-        // Estimate component height based on type/name
-        let estimatedHeight = 220; // Increased base height
-        const name = (comp.name || '').toLowerCase();
-        if (name.includes('sidebar') || name.includes('nav') || name.includes('navbar')) estimatedHeight = 500;
-        else if (name.includes('card') || name.includes('table')) estimatedHeight = 350;
-        else if (name.includes('header') || name.includes('banner') || name.includes('hero')) estimatedHeight = 280;
-        else if (name.includes('button') || name.includes('badge')) estimatedHeight = 120;
-        else if (name.includes('stat') || name.includes('metric') || name.includes('counter')) estimatedHeight = 250;
-        else if (name.includes('footer') || name.includes('form')) estimatedHeight = 400;
-        else if (name.includes('pricing')) estimatedHeight = 450;
-        else if (name.includes('testimonial')) estimatedHeight = 320;
-        
-        // Find shortest column
-        let shortestCol = 0;
-        for (let i = 1; i < NUM_COLUMNS; i++) {
-          if (columnHeights[i] < columnHeights[shortestCol]) {
-            shortestCol = i;
-          }
+      // Estimate component height based on type/name
+      let estimatedHeight = 200;
+      const name = (comp.name || '').toLowerCase();
+      if (name.includes('navbar') || name.includes('navigation') || name.includes('sidebar')) estimatedHeight = 100;
+      else if (name.includes('hero') || name.includes('section')) estimatedHeight = 300;
+      else if (name.includes('card')) estimatedHeight = 280;
+      else if (name.includes('form') || name.includes('contact')) estimatedHeight = 350;
+      else if (name.includes('pricing')) estimatedHeight = 400;
+      else if (name.includes('button') || name.includes('badge')) estimatedHeight = 80;
+      else if (name.includes('banner') || name.includes('marquee')) estimatedHeight = 100;
+      else if (name.includes('stat') || name.includes('counter')) estimatedHeight = 150;
+      else if (name.includes('testimonial')) estimatedHeight = 250;
+      else if (name.includes('team') || name.includes('member')) estimatedHeight = 300;
+      else if (name.includes('feature')) estimatedHeight = 220;
+      
+      // Find shortest column
+      let shortestCol = 0;
+      for (let i = 1; i < NUM_COLUMNS; i++) {
+        if (columnHeights[i] < columnHeights[shortestCol]) {
+          shortestCol = i;
         }
-        
-        newPositions[id] = { 
-          x: currentX + shortestCol * (COLUMN_WIDTH + GAP), 
-          y: START_Y + columnHeights[shortestCol]
-        };
-        
-        // Update column height with extra spacing between components
-        columnHeights[shortestCol] += estimatedHeight + COMPONENT_GAP;
-      });
+      }
       
-      // Move to next category with more separation
-      currentX += NUM_COLUMNS * COLUMN_WIDTH + (NUM_COLUMNS - 1) * GAP + CATEGORY_GAP;
+      newPositions[id] = { 
+        x: START_X + shortestCol * (COLUMN_WIDTH + GAP_X), 
+        y: START_Y + columnHeights[shortestCol]
+      };
+      
+      // Update column height
+      columnHeights[shortestCol] += estimatedHeight + GAP_Y;
     });
     
     setBlueprintPositions(newPositions);
-    // Reset zoom and offset
-    setBlueprintsZoom(75);
+    // Reset zoom to fit and center
+    setBlueprintsZoom(100);
     setBlueprintsOffset({ x: 0, y: 0 });
   }, [libraryData?.components]);
 
@@ -3480,26 +3475,28 @@ function ReplayToolContent() {
       }
     });
     
-    // Create new positions for components without positions
+    // Create new positions for components without positions - match autoLayoutBlueprints settings
     const newPositions: Record<string, { x: number; y: number }> = {};
-    const GAP = 80;
-    const COLUMN_WIDTH = 400;
-    const NUM_COLUMNS = 3;
-    const START_Y = maxY + 250; // Start below existing components
+    const GAP_X = 40;
+    const GAP_Y = 40;
+    const COLUMN_WIDTH = 320;
+    const NUM_COLUMNS = 4;
+    const START_Y = maxY + 100; // Start below existing components
     
-    // 3-column masonry for new components
+    // 4-column masonry for new components
     const columnHeights = Array(NUM_COLUMNS).fill(0);
     newComponentsWithoutPositions.forEach((id: string, idx: number) => {
       // Find the component to estimate height
       const comp = libraryData.components.find((c: any) => `comp-${c.id}` === id);
-      let estimatedHeight = 220;
+      let estimatedHeight = 200;
       const name = (comp?.name || '').toLowerCase();
-      if (name.includes('sidebar') || name.includes('nav') || name.includes('navbar')) estimatedHeight = 500;
-      else if (name.includes('card') || name.includes('table')) estimatedHeight = 350;
-      else if (name.includes('header') || name.includes('banner') || name.includes('hero')) estimatedHeight = 280;
-      else if (name.includes('button') || name.includes('badge')) estimatedHeight = 120;
-      else if (name.includes('stat') || name.includes('metric') || name.includes('counter')) estimatedHeight = 250;
-      else if (name.includes('pricing')) estimatedHeight = 450;
+      if (name.includes('navbar') || name.includes('navigation') || name.includes('sidebar')) estimatedHeight = 100;
+      else if (name.includes('hero') || name.includes('section')) estimatedHeight = 300;
+      else if (name.includes('card')) estimatedHeight = 280;
+      else if (name.includes('form') || name.includes('contact')) estimatedHeight = 350;
+      else if (name.includes('pricing')) estimatedHeight = 400;
+      else if (name.includes('button') || name.includes('badge')) estimatedHeight = 80;
+      else if (name.includes('banner') || name.includes('marquee')) estimatedHeight = 100;
       
       // Find shortest column
       let shortestCol = 0;
@@ -3510,11 +3507,11 @@ function ReplayToolContent() {
       }
       
       newPositions[id] = {
-        x: 100 + shortestCol * (COLUMN_WIDTH + GAP),
+        x: 60 + shortestCol * (COLUMN_WIDTH + GAP_X),
         y: START_Y + columnHeights[shortestCol]
       };
       
-      columnHeights[shortestCol] += estimatedHeight + GAP;
+      columnHeights[shortestCol] += estimatedHeight + GAP_Y;
     });
     
     // Update positions all at once
@@ -9014,15 +9011,28 @@ Try these prompts in Cursor or v0:
     }
   }, [libraryData?.components, styleInfo, generationTitle, showToast, isGeneratingLibraryDocs, editableCode, generatedCode]);
 
-  // Auto-generate library docs when components are available and docs not generated
+  // Auto-generate library docs when components are available
+  // Always regenerate when activeGeneration changes (new project loaded)
+  const lastDocsGenerationId = useRef<string | null>(null);
+  
   useEffect(() => {
     const hasComponents = libraryData?.components && libraryData.components.length > 0;
+    const currentGenId = activeGeneration?.id || null;
     const hasDocs = libraryData?.docs && libraryData.docs.length > 0;
     
-    if (hasComponents && !libraryDocsGenerated && !isGeneratingLibraryDocs && !hasDocs) {
-      generateLibraryDocs();
+    // Generate docs if:
+    // 1. We have components AND
+    // 2. Not currently generating AND
+    // 3. Either no docs exist OR this is a different project than last generation
+    const shouldGenerate = hasComponents && 
+      !isGeneratingLibraryDocs && 
+      (!hasDocs || (currentGenId && lastDocsGenerationId.current !== currentGenId));
+    
+    if (shouldGenerate) {
+      lastDocsGenerationId.current = currentGenId;
+      generateLibraryDocs(true); // Force regenerate for new projects
     }
-  }, [libraryData?.components?.length, libraryDocsGenerated, isGeneratingLibraryDocs, libraryData?.docs?.length, generateLibraryDocs]);
+  }, [libraryData?.components?.length, isGeneratingLibraryDocs, libraryData?.docs?.length, generateLibraryDocs, activeGeneration?.id]);
 
   // AI-Powered Blueprints Analysis (Single Source of Truth)
   const analyzeBlueprints = async () => {
