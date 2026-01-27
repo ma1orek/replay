@@ -814,8 +814,8 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
     // ════════════════════════════════════════════════════════════════
     console.log("[transmute] Phase 1: Starting unified scan with Pro model...");
     
-    // 200s timeout for Phase 1 to handle large videos (up to 20MB)
-    const phase1Timeout = 200000;
+    // 90s timeout for Phase 1 - video scan should be fast with flash models
+    const phase1Timeout = 90000;
     console.log("[transmute] Phase 1 timeout:", phase1Timeout / 1000, "s");
     
     let scanResult;
@@ -934,8 +934,8 @@ Generate the complete HTML file now:`;
       const model = genAI.getGenerativeModel({
         model: modelName,
         generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 100000,
+          temperature: 0.2,
+          maxOutputTokens: 40000, // Reduced from 100k - faster generation
         },
       });
       return withTimeout(
@@ -945,8 +945,8 @@ Generate the complete HTML file now:`;
       );
     };
     
-    // Try models in order: stable flash first, then pro as fallback
-    const modelsToTry = ["gemini-2.0-flash", "gemini-1.5-flash"];
+    // Try fastest model first
+    const modelsToTry = ["gemini-1.5-flash", "gemini-2.0-flash"];
     let lastError: any;
     
     for (const modelName of modelsToTry) {
