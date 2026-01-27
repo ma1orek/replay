@@ -8701,6 +8701,73 @@ Try these prompts in Cursor or v0:
     showToast("Project duplicated!", "success");
   };
   
+  // Use project's video as input for NEW generation (no previous code/context)
+  const useAsInput = async (gen: GenerationRecord) => {
+    setHistoryMenuOpen(null);
+    
+    // Load full generation to get video URL
+    let fullGen = gen;
+    if (!gen.videoUrl) {
+      showToast("Loading video...", "info");
+      const loaded = await loadFullGeneration(gen.id);
+      if (!loaded) {
+        showToast("Failed to load project", "error");
+        return;
+      }
+      fullGen = loaded;
+    }
+    
+    if (!fullGen.videoUrl) {
+      showToast("No video found in this project", "error");
+      return;
+    }
+    
+    // Reset everything - start fresh
+    setActiveGeneration(null);
+    setGeneratedCode(null);
+    setDisplayedCode("");
+    setEditableCode("");
+    setPreviewUrl(null);
+    setFlowNodes([]);
+    setFlowEdges([]);
+    setStyleInfo(null);
+    setLibraryData(null);
+    setLibraryDocsGenerated(false);
+    setScanData(null);
+    setRefinements(""); // Clear context - start fresh!
+    
+    // Clear existing flows and add video from project
+    setFlows([]);
+    
+    // Fetch video blob from URL and add as flow
+    try {
+      const response = await fetch(fullGen.videoUrl);
+      const blob = await response.blob();
+      
+      const newFlow: FlowItem = {
+        id: `flow_${Date.now()}`,
+        name: fullGen.title || "Video Input",
+        videoBlob: blob,
+        videoUrl: fullGen.videoUrl,
+        thumbnail: fullGen.thumbnailUrl || undefined,
+        duration: 0,
+        trimStart: 0,
+        trimEnd: 0,
+      };
+      setFlows([newFlow]);
+    } catch (error) {
+      console.error("Failed to fetch video:", error);
+      showToast("Failed to load video", "error");
+      return;
+    }
+    
+    // Switch to input view
+    setViewMode("input");
+    setSidebarView("detail");
+    
+    showToast("Video loaded! Configure style and generate fresh", "success");
+  };
+  
   // Open delete confirmation modal
   const confirmDeleteGeneration = (id: string, title: string) => {
     setDeleteTargetId(id);
@@ -12076,6 +12143,15 @@ ${publishCode}
                                     className="w-full px-3 py-2 text-left text-xs text-zinc-400 hover:bg-zinc-800/50 flex items-center gap-2"
                                   >
                                     <Copy className="w-3 h-3" /> Duplicate
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      useAsInput(gen);
+                                    }}
+                                    className="w-full px-3 py-2 text-left text-xs text-zinc-400 hover:bg-zinc-800/50 flex items-center gap-2"
+                                    title="Use video from this project to start fresh generation"
+                                  >
+                                    <Video className="w-3 h-3" /> Use as Input
                                   </button>
                                   <button
                                     onClick={() => {
