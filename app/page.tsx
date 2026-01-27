@@ -102,7 +102,8 @@ import {
   Save,
   Moon,
   Sun,
-  Grid2X2
+  Grid2X2,
+  Wrench
 } from "lucide-react";
 import * as LucideIcons from 'lucide-react';
 import { cn, generateId, formatDuration, updateProjectAnalytics } from "@/lib/utils";
@@ -11246,6 +11247,184 @@ ${publishCode}
     }
   };
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // REPAIR & PUBLISH - Fixes broken code by wrapping in full HTML with React
+  // ═══════════════════════════════════════════════════════════════════════════
+  const handleRepairAndPublish = async () => {
+    if (!editableCode || isPublishing) return;
+    
+    setIsPublishing(true);
+    try {
+      const existingSlug = activeGeneration?.publishedSlug;
+      console.log('[handleRepairAndPublish] Starting repair for slug:', existingSlug);
+      
+      // Take whatever code we have and wrap it in a full HTML document with React/Babel
+      let codeToRepair = editableCode.trim();
+      
+      // If code already looks like full HTML, extract just the body content
+      if (codeToRepair.includes('<!DOCTYPE') || codeToRepair.includes('<html')) {
+        // Try to extract body content
+        const bodyMatch = codeToRepair.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        if (bodyMatch && bodyMatch[1]) {
+          codeToRepair = bodyMatch[1].trim();
+        }
+        // Also try to extract script content if it's React
+        const scriptMatch = codeToRepair.match(/<script[^>]*type="text\/babel"[^>]*>([\s\S]*?)<\/script>/i);
+        if (scriptMatch && scriptMatch[1]) {
+          codeToRepair = scriptMatch[1].trim();
+        }
+      }
+      
+      // Check if this looks like React/JSX code
+      const isReactCode = codeToRepair.includes('useState') || 
+                          codeToRepair.includes('useEffect') || 
+                          codeToRepair.includes('const App') ||
+                          codeToRepair.includes('function App') ||
+                          codeToRepair.includes('className=');
+      
+      let repairedCode: string;
+      
+      if (isReactCode) {
+        // Wrap React code in full HTML with Babel
+        console.log('[handleRepairAndPublish] Wrapping as React code');
+        repairedCode = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${generationTitle || 'Untitled Project'}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { min-height: 100vh; font-family: 'Inter', sans-serif; }
+    .hover-lift { transition: all 0.3s ease; }
+    .hover-lift:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+    .glassmorphism { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+  </style>
+</head>
+<body class="antialiased bg-[#0a0a0a] text-white">
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+    
+    // Chart.js wrapper
+    const ChartComponent = ({ type, data, options = {} }) => {
+      const canvasRef = useRef(null);
+      const chartRef = useRef(null);
+      useEffect(() => {
+        if (canvasRef.current) {
+          if (chartRef.current) chartRef.current.destroy();
+          chartRef.current = new Chart(canvasRef.current, { type, data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, ...options } });
+        }
+        return () => { if (chartRef.current) chartRef.current.destroy(); };
+      }, [type, data, options]);
+      return <canvas ref={canvasRef} />;
+    };
+
+    // Icon helper
+    const Icon = ({ name, className = "w-5 h-5" }) => {
+      const ref = useRef(null);
+      useEffect(() => {
+        if (ref.current && window.lucide) {
+          ref.current.innerHTML = '';
+          const iconEl = document.createElement('i');
+          iconEl.setAttribute('data-lucide', name);
+          iconEl.className = className;
+          ref.current.appendChild(iconEl);
+          window.lucide.createIcons({ root: ref.current });
+        }
+      }, [name, className]);
+      return <span ref={ref} className="inline-flex items-center justify-center" />;
+    };
+
+${codeToRepair}
+
+    // Auto-render if App exists
+    if (typeof App !== 'undefined') {
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    }
+  </script>
+</body>
+</html>`;
+      } else {
+        // Plain HTML - just wrap with CDN scripts
+        console.log('[handleRepairAndPublish] Wrapping as plain HTML');
+        repairedCode = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${generationTitle || 'Untitled Project'}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { min-height: 100vh; font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="min-h-screen bg-[#0a0a0a] text-white">
+${codeToRepair}
+</body>
+</html>`;
+      }
+      
+      console.log('[handleRepairAndPublish] Repaired code length:', repairedCode.length);
+      
+      // Publish the repaired code
+      const response = await fetch("/api/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: repairedCode,
+          title: generationTitle || "Untitled Project",
+          thumbnailDataUrl: null,
+          existingSlug,
+        }),
+      });
+      
+      const data = await response.json();
+      console.log('[handleRepairAndPublish] API response:', data);
+      
+      if (data.success && data.url) {
+        const newSlug = data.slug;
+        setPublishedUrl(data.url);
+        
+        if (newSlug && activeGeneration) {
+          const updatedGen: GenerationRecord = {
+            ...activeGeneration,
+            publishedSlug: newSlug,
+          };
+          setActiveGeneration(updatedGen);
+          setGenerations(prev => prev.map(g => 
+            g.id === activeGeneration.id ? updatedGen : g
+          ));
+          saveGenerationToSupabase(updatedGen);
+        }
+        
+        showToast("Project repaired and published!", "success");
+      } else {
+        showToast(data.error || "Failed to repair and publish", "error");
+      }
+    } catch (error) {
+      console.error("Repair error:", error);
+      showToast("Failed to repair project", "error");
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
   const handleRefresh = () => {
     // Disable editing modes on refresh
     setIsDirectEditMode(false);
@@ -14851,6 +15030,19 @@ ${publishCode}
                             )}
                           </button>
                         </div>
+                        
+                        {/* Repair button - fixes broken published pages */}
+                        {publishedUrl && (
+                          <button
+                            onClick={() => handleRepairAndPublish()}
+                            disabled={isPublishing}
+                            className="w-full py-2 rounded-lg bg-amber-600/20 hover:bg-amber-600/30 border border-amber-600/30 text-amber-400 text-xs font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                            title="Fix broken page - rewraps code with proper HTML structure"
+                          >
+                            <Wrench className="w-3.5 h-3.5" />
+                            Repair & Republish (fix broken page)
+                          </button>
+                        )}
                       </div>
                     </div>
                   </>
