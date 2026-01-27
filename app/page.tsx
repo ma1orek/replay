@@ -11084,30 +11084,27 @@ Try these prompts in Cursor or v0:
         console.log('[handlePublish] Using editableCode as fallback');
       }
       
-      // If code doesn't have Tailwind CDN, wrap it in a full HTML document
-      if (!publishCode.includes('cdn.tailwindcss.com') && !publishCode.includes('<!DOCTYPE')) {
-        // Check if this is JSX/React code - if so, we can't publish it directly
-        // The user needs to switch to single-file mode or we need to find the HTML file
-        if (publishCode.includes('export default function') || publishCode.includes('className=')) {
-          // This is React/JSX code - warn and try to find HTML alternative
-          console.warn('[handlePublish] Code appears to be React/JSX, looking for HTML alternative...');
+      // ═══════════════════════════════════════════════════════════════════════════
+      // CRITICAL: Preserve full HTML documents with React/Babel - don't strip scripts!
+      // ═══════════════════════════════════════════════════════════════════════════
+      
+      // If code is already a full HTML document, use it as-is (preserve React/Babel!)
+      if (publishCode.includes('<!DOCTYPE') || publishCode.includes('<html')) {
+        console.log('[handlePublish] Using full HTML document as-is (preserving React/Babel)');
+        // Just ensure className is converted to class for static content
+        // But DON'T touch script contents - React needs className there!
+      } else if (!publishCode.includes('cdn.tailwindcss.com')) {
+        // Code is not a full HTML document - need to wrap it
+        
+        // Check if this is JSX/React code
+        if (publishCode.includes('export default function') || 
+            publishCode.includes('const App') || 
+            publishCode.includes('useState') ||
+            publishCode.includes('type="text/babel"')) {
+          // This is React/JSX code - wrap with React/Babel runtime!
+          console.log('[handlePublish] Wrapping React/JSX code with Babel runtime');
           
-          // Try harder to find an HTML file
-          const anyHtmlFile = generatedFiles.find(f => f.language === 'html');
-          if (anyHtmlFile?.content) {
-            publishCode = anyHtmlFile.content;
-            console.log('[handlePublish] Found HTML file:', anyHtmlFile.path);
-          } else {
-            // Last resort: just convert className to class and wrap
-            // Don't try to extract from return() - that breaks the code
-            let htmlContent = publishCode.replace(/className=/g, 'class=');
-            // Remove just the export/function wrapper, keep the JSX intact
-            htmlContent = htmlContent.replace(/^[\s\S]*?return\s*\(\s*/, '');
-            htmlContent = htmlContent.replace(/\s*\)\s*;?\s*\}\s*$/, '');
-            // Remove React fragments
-            htmlContent = htmlContent.replace(/<>\s*/g, '').replace(/\s*<\/>/g, '');
-            
-            publishCode = `<!DOCTYPE html>
+          publishCode = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -11116,19 +11113,28 @@ Try these prompts in Cursor or v0:
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { min-height: 100vh; }
+    html, body { min-height: 100vh; font-family: 'Inter', sans-serif; }
   </style>
 </head>
-<body class="min-h-screen bg-[#0a0a0a] text-white">
-${htmlContent}
+<body class="antialiased bg-[#0a0a0a] text-white">
+  <div id="root"></div>
+  <script type="text/babel">
+${publishCode}
+  </script>
 </body>
 </html>`;
-          }
         } else {
-          // Plain HTML without wrapper - just add CDN scripts
+          // Plain HTML snippet without React - just wrap with CDN scripts
+          console.log('[handlePublish] Wrapping plain HTML with CDN scripts');
+          
           publishCode = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11140,8 +11146,9 @@ ${htmlContent}
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { min-height: 100vh; }
+    html, body { min-height: 100vh; font-family: 'Inter', sans-serif; }
   </style>
 </head>
 <body class="min-h-screen bg-[#0a0a0a] text-white">
