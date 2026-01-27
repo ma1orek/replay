@@ -258,7 +258,7 @@ export async function GET(
   const safeTitle = typedProject.title.replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const safeDescription = (typedProject.description || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   
-  // Badge HTML - small, subtle, bottom-right corner
+  // Badge HTML - small, subtle, bottom-right corner (injected before </body>)
   const badgeHtml = showBadge ? `
     <a 
       href="https://www.replay.build?ref=badge" 
@@ -296,71 +296,104 @@ export async function GET(
     <script>
       var badge = document.getElementById('replay-badge');
       var logo = document.getElementById('replay-logo');
-      badge.addEventListener('mouseenter', function() {
-        this.style.background = 'rgba(255, 110, 60, 1)';
-        this.style.color = 'white';
-        this.style.transform = 'scale(1.03)';
-        this.style.borderColor = 'rgba(255, 140, 90, 0.5)';
-        logo.querySelector('path').setAttribute('stroke', 'white');
-        logo.querySelector('rect').setAttribute('fill', 'white');
-      });
-      badge.addEventListener('mouseleave', function() {
-        this.style.background = 'rgba(0, 0, 0, 0.9)';
-        this.style.color = 'rgba(255, 255, 255, 0.85)';
-        this.style.transform = 'scale(1)';
-        this.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-        logo.querySelector('path').setAttribute('stroke', '#FF6E3C');
-        logo.querySelector('rect').setAttribute('fill', '#FF6E3C');
-      });
+      if (badge && logo) {
+        badge.addEventListener('mouseenter', function() {
+          this.style.background = 'rgba(255, 110, 60, 1)';
+          this.style.color = 'white';
+          this.style.transform = 'scale(1.03)';
+          this.style.borderColor = 'rgba(255, 140, 90, 0.5)';
+          logo.querySelector('path').setAttribute('stroke', 'white');
+          logo.querySelector('rect').setAttribute('fill', 'white');
+        });
+        badge.addEventListener('mouseleave', function() {
+          this.style.background = 'rgba(0, 0, 0, 0.9)';
+          this.style.color = 'rgba(255, 255, 255, 0.85)';
+          this.style.transform = 'scale(1)';
+          this.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+          logo.querySelector('path').setAttribute('stroke', '#FF6E3C');
+          logo.querySelector('rect').setAttribute('fill', '#FF6E3C');
+        });
+      }
     </script>
   ` : '';
   
-  // Convert code to HTML if it's JSX/React
-  let htmlContent = jsxToHtml(typedProject.code);
+  let code = typedProject.code || '';
   
-  // CRITICAL: If extraction returned empty but we have code, use raw code as fallback
-  if (!htmlContent || htmlContent.trim().length === 0) {
-    if (typedProject.code && typedProject.code.trim().length > 0) {
-      // Try to use the raw code, just clean it up minimally
-      let rawCode = typedProject.code.trim();
-      // Replace className with class
-      rawCode = rawCode.replace(/className=/g, 'class=');
-      // If it's a full HTML document, use it directly (remove doctype for embedding)
-      if (/^<!DOCTYPE|^<html/i.test(rawCode)) {
-        // Extract everything between <body> and </body> or use full html minus doctype
-        const bodyMatch = rawCode.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-        if (bodyMatch) {
-          htmlContent = bodyMatch[1];
-        } else {
-          // Just strip doctype and html/head tags, keep body content
-          htmlContent = rawCode
-            .replace(/<!DOCTYPE[^>]*>/i, '')
-            .replace(/<html[^>]*>/i, '')
-            .replace(/<\/html>/i, '')
-            .replace(/<head[\s\S]*?<\/head>/i, '')
-            .replace(/<body[^>]*>/i, '')
-            .replace(/<\/body>/i, '')
-            .trim();
-        }
+  // Check if this is a full HTML document with React/Babel (our generated code format)
+  const isFullHtmlWithReact = code.includes('<!DOCTYPE') && 
+    (code.includes('react.production.min.js') || code.includes('babel.min.js') || code.includes('type="text/babel"'));
+  
+  // Check if this is a full HTML document (any kind)
+  const isFullHtml = /^<!DOCTYPE|^<html/i.test(code.trim());
+  
+  let fullHtml: string;
+  
+  if (isFullHtmlWithReact || isFullHtml) {
+    // ═══════════════════════════════════════════════════════════════════════════
+    // FULL HTML DOCUMENT - Preserve everything, just inject SEO meta and badge
+    // This handles React/Babel code that MUST keep all scripts intact!
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    // Inject SEO meta tags into <head>
+    const seoMeta = `
+  <title>${safeTitle}</title>
+  <meta name="description" content="${safeDescription}">
+  <meta property="og:title" content="${safeTitle}">
+  <meta property="og:description" content="${safeDescription}">
+  <meta property="og:url" content="https://www.replay.build/p/${typedProject.slug}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Replay">
+  ${typedProject.thumbnail_url ? `<meta property="og:image" content="${typedProject.thumbnail_url}">` : ''}
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${safeTitle}">
+  <meta name="twitter:description" content="${safeDescription}">
+  ${typedProject.thumbnail_url ? `<meta name="twitter:image" content="${typedProject.thumbnail_url}">` : ''}
+  <link rel="canonical" href="https://www.replay.build/p/${typedProject.slug}">`;
+    
+    // Replace or inject title (remove existing title first)
+    code = code.replace(/<title>[^<]*<\/title>/i, '');
+    
+    // Inject SEO meta after <head> or after charset meta
+    if (code.includes('<head>')) {
+      code = code.replace('<head>', `<head>${seoMeta}`);
+    } else if (code.includes('<head ')) {
+      code = code.replace(/<head[^>]*>/, (match) => `${match}${seoMeta}`);
+    } else {
+      // Inject after <!DOCTYPE html>
+      code = code.replace(/<!DOCTYPE[^>]*>/i, (match) => `${match}\n<html lang="en"><head>${seoMeta}</head>`);
+    }
+    
+    // Inject badge before </body>
+    if (badgeHtml) {
+      if (code.includes('</body>')) {
+        code = code.replace('</body>', `${badgeHtml}\n</body>`);
+      } else if (code.includes('</html>')) {
+        code = code.replace('</html>', `${badgeHtml}\n</html>`);
       } else {
-        htmlContent = rawCode;
+        code = code + badgeHtml;
       }
     }
-  }
-  
-  // Final safety: if still empty, show error message
-  if (!htmlContent || htmlContent.trim().length === 0) {
-    htmlContent = '<div style="padding: 40px; text-align: center; color: #666;">Content could not be rendered. Please try republishing.</div>';
-  }
-  
-  // Extract body classes from original code to preserve styling
-  const bodyClasses = extractBodyClasses(typedProject.code);
-  
-  // Extract custom styles from head section
-  const customStyles = extractHeadStyles(typedProject.code);
-  
-  // Full HTML document - CLEAN, just the output
-  const fullHtml = `<!DOCTYPE html>
+    
+    fullHtml = code;
+  } else {
+    // ═══════════════════════════════════════════════════════════════════════════
+    // JSX/PARTIAL CODE - Wrap in full HTML document (legacy fallback)
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    let htmlContent = jsxToHtml(code);
+    
+    // Final safety: if still empty, show error message
+    if (!htmlContent || htmlContent.trim().length === 0) {
+      htmlContent = '<div style="padding: 40px; text-align: center; color: #666;">Content could not be rendered. Please try republishing.</div>';
+    }
+    
+    // Extract body classes from original code to preserve styling
+    const bodyClasses = extractBodyClasses(code);
+    
+    // Extract custom styles from head section
+    const customStyles = extractHeadStyles(code);
+    
+    fullHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -392,12 +425,24 @@ export async function GET(
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   
+  <!-- React + Babel for React components -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  
   <!-- Alpine.js for interactivity -->
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { min-height: 100vh; }
+    html, body { min-height: 100vh; font-family: 'Inter', sans-serif; }
   </style>
   ${customStyles}
 </head>
@@ -406,6 +451,7 @@ ${htmlContent}
 ${badgeHtml}
 </body>
 </html>`;
+  }
   
   return new NextResponse(fullHtml, {
     headers: {
