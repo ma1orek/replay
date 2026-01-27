@@ -13,6 +13,99 @@ function getGeminiKey() {
   return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
 }
 
+// Helper: Delay function
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Helper: User-friendly error messages
+function getUserFriendlyError(error: any): string {
+  const message = error?.message || String(error);
+  
+  // 503 Service Unavailable - model overloaded
+  if (message.includes('503') || message.includes('overloaded') || message.includes('Service Unavailable')) {
+    return "Serwer AI jest obecnie przeciążony. Spróbuj ponownie za chwilę - automatycznie ponawiamy...";
+  }
+  
+  // 429 Rate limit
+  if (message.includes('429') || message.includes('rate limit') || message.includes('quota')) {
+    return "Osiągnięto limit zapytań. Poczekaj chwilę i spróbuj ponownie.";
+  }
+  
+  // 500 Internal server error
+  if (message.includes('500') || message.includes('Internal Server Error')) {
+    return "Wystąpił błąd serwera AI. Spróbuj ponownie.";
+  }
+  
+  // Timeout
+  if (message.includes('timeout') || message.includes('ETIMEDOUT')) {
+    return "Zapytanie trwało zbyt długo. Spróbuj ponownie z krótszym żądaniem.";
+  }
+  
+  // Network error
+  if (message.includes('fetch') || message.includes('network') || message.includes('ECONNREFUSED')) {
+    return "Problem z połączeniem. Sprawdź internet i spróbuj ponownie.";
+  }
+  
+  // Generic fallback
+  return "Wystąpił nieoczekiwany błąd. Spróbuj ponownie.";
+}
+
+// Helper: Execute Gemini with retry logic
+async function executeGeminiWithRetry(
+  genAI: GoogleGenerativeAI,
+  modelName: string,
+  prompt: string | any[],
+  config: any,
+  maxRetries: number = 3,
+  onRetry?: (attempt: number, error: any) => void
+): Promise<any> {
+  let lastError: any;
+  
+  // Try different models in order of preference
+  const modelsToTry = [
+    modelName,
+    "gemini-2.0-flash", // Fallback to stable Flash
+    "gemini-1.5-flash", // Last resort
+  ].filter((m, i, arr) => arr.indexOf(m) === i); // Remove duplicates
+  
+  for (const currentModel of modelsToTry) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const model = genAI.getGenerativeModel({
+          model: currentModel,
+          generationConfig: config,
+        });
+        
+        const result = await model.generateContentStream(prompt);
+        return { result, modelUsed: currentModel };
+        
+      } catch (error: any) {
+        lastError = error;
+        const isOverloaded = error?.message?.includes('503') || error?.message?.includes('overloaded');
+        const isRateLimit = error?.message?.includes('429');
+        
+        console.error(`[Gemini] ${currentModel} attempt ${attempt}/${maxRetries} failed:`, error?.message);
+        
+        // Notify about retry
+        if (onRetry && (isOverloaded || isRateLimit)) {
+          onRetry(attempt, error);
+        }
+        
+        // Wait before retry (exponential backoff)
+        if (attempt < maxRetries && (isOverloaded || isRateLimit)) {
+          const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 8000);
+          await delay(waitTime);
+        } else if (!isOverloaded && !isRateLimit) {
+          // Non-retryable error, try next model
+          break;
+        }
+      }
+    }
+    console.log(`[Gemini] Trying fallback model after ${modelName} failed`);
+  }
+  
+  throw lastError;
+}
+
 // Fix broken image URLs - replace ALL external images with picsum
 function fixBrokenImageUrls(code: string): string {
   if (!code) return code;
@@ -244,10 +337,6 @@ export async function POST(request: NextRequest) {
           }
           
           const genAI = new GoogleGenerativeAI(geminiKey);
-          const model = genAI.getGenerativeModel({
-            model: "gemini-3-flash-preview", // Flash for plan mode
-            generationConfig: { temperature: 0.7, maxOutputTokens: 1000 },
-          });
           
           const pageCount = (currentCode.match(/x-show=["']currentPage/gi) || []).length || 1;
           const planPrompt = `Jesteś Replay - przyjaznym asystentem.
@@ -265,7 +354,18 @@ PYTANIE: ${editRequest}
 Odpowiedz krótko i przyjaźnie:`;
 
           try {
-            const result = await model.generateContentStream(planPrompt);
+            // Use retry logic with fallback models
+            const { result } = await executeGeminiWithRetry(
+              genAI,
+              "gemini-2.0-flash", // Start with stable model
+              planPrompt,
+              { temperature: 0.7, maxOutputTokens: 1000 },
+              3,
+              (attempt, error) => {
+                const friendlyMsg = getUserFriendlyError(error);
+                send("status", { message: `${friendlyMsg} (próba ${attempt}/3)`, phase: "retry" });
+              }
+            );
             
             let fullText = "";
             for await (const chunk of result.stream) {
@@ -278,8 +378,9 @@ Odpowiedz krótko i przyjaźnie:`;
 
             send("complete", { code: fullText, isChat: true });
           } catch (err: any) {
-            console.error("[Plan Mode] Gemini error:", err);
-            send("error", { error: err?.message || "Failed to get response" });
+            console.error("[Plan Mode] Gemini error after retries:", err);
+            const friendlyError = getUserFriendlyError(err);
+            send("error", { error: friendlyError, technical: err?.message });
           }
           controller.close();
           return;
@@ -343,7 +444,7 @@ Odpowiedz krótko i przyjaźnie:`;
           
           const genAI = new GoogleGenerativeAI(geminiKey);
           const model = genAI.getGenerativeModel({
-            model: "gemini-3-pro-preview", // Pro for quality code edits
+            model: "gemini-2.0-flash", // Stable model for image processing
             generationConfig: { temperature: 0.8, maxOutputTokens: 65536 },
           });
           
@@ -559,12 +660,16 @@ CRITICAL RULES:
               }
             }
           } catch (geminiError: any) {
-            console.error("[Stream Edit] Gemini error:", geminiError);
-            send("error", { error: geminiError?.message || "Failed to process image. Please try with a smaller image." });
+            console.error("[Stream Edit] Gemini image error:", geminiError);
+            const friendlyError = getUserFriendlyError(geminiError);
+            send("error", { 
+              error: friendlyError + " Spróbuj z mniejszym obrazkiem lub bez obrazka.", 
+              technical: geminiError?.message 
+            });
           }
         } else {
           // Use Gemini for text-only edits (consistent with generation)
-          send("status", { message: "Generating code with Gemini 3 Pro...", phase: "ai" });
+          send("status", { message: "Generating code with AI...", phase: "ai" });
           
           const geminiKey = getGeminiKey();
           if (!geminiKey) {
@@ -574,10 +679,6 @@ CRITICAL RULES:
           }
           
           const genAI = new GoogleGenerativeAI(geminiKey);
-          const model = genAI.getGenerativeModel({
-            model: "gemini-3-pro-preview", // Pro for quality code edits
-            generationConfig: { temperature: 0.7, maxOutputTokens: 65536 },
-          });
 
           send("status", { message: "Writing code...", phase: "writing" });
 
@@ -585,7 +686,20 @@ CRITICAL RULES:
             const systemPrompt = buildSystemPrompt(chatHistory);
             const fullPrompt = `${systemPrompt}\n\n${prompt}`;
             
-            const result = await model.generateContentStream(fullPrompt);
+            // Use retry logic with fallback models
+            const { result, modelUsed } = await executeGeminiWithRetry(
+              genAI,
+              "gemini-2.0-flash", // Start with stable fast model
+              fullPrompt,
+              { temperature: 0.7, maxOutputTokens: 65536 },
+              3,
+              (attempt, error) => {
+                const friendlyMsg = getUserFriendlyError(error);
+                send("status", { message: `${friendlyMsg} (próba ${attempt}/3)`, phase: "retry" });
+              }
+            );
+            
+            console.log(`[Stream Edit] Using model: ${modelUsed}`);
             
             let fullCode = "";
             let chunkCount = 0;
@@ -654,8 +768,9 @@ CRITICAL RULES:
               }
             }
           } catch (streamError: any) {
-            console.error("[Stream Edit] Gemini error:", streamError);
-            send("error", { error: streamError?.message || "AI generation failed. Please try again." });
+            console.error("[Stream Edit] Gemini error after retries:", streamError);
+            const friendlyError = getUserFriendlyError(streamError);
+            send("error", { error: friendlyError, technical: streamError?.message });
           }
         }
 
@@ -676,10 +791,6 @@ CRITICAL RULES:
       "Connection": "keep-alive",
     },
   });
-}
-
-function delay(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function extractCode(response: string): string | null {
