@@ -5336,14 +5336,27 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
   }, [fetchGenerations]);
   
   // PRIMARY DATA SOURCE: Supabase - load first page when user logs in
+  const hasFetchedInitialRef = useRef(false);
+  const lastUserIdRef = useRef<string | null>(null);
+  
   useEffect(() => {
     if (!user || !hasLoadedFromStorage) {
       // If no user, mark history as loaded (empty)
       if (!user && hasLoadedFromStorage) {
         setIsLoadingHistory(false);
+        hasFetchedInitialRef.current = false; // Reset on logout
+        lastUserIdRef.current = null;
       }
       return;
     }
+    
+    // Prevent duplicate fetches - only fetch if user changed or first time
+    if (hasFetchedInitialRef.current && lastUserIdRef.current === user.id) {
+      return;
+    }
+    
+    hasFetchedInitialRef.current = true;
+    lastUserIdRef.current = user.id;
     
     // Initial fetch - only first 10 projects
     fetchGenerations({ reset: true });
