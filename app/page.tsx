@@ -13439,9 +13439,9 @@ ${publishCode}
                       <div className="flex items-center gap-1">
                         <button 
                           onClick={startRecording}
-                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 transition-all text-red-400 text-[10px] font-medium normal-case"
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-700/50 border border-white/[0.08] hover:bg-zinc-700/70 hover:border-white/[0.15] transition-all text-white/60 hover:text-white/80 text-[10px] font-medium normal-case"
                         >
-                          <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-white/40" />
                           Record
                         </button>
                         <button 
@@ -13640,7 +13640,7 @@ ${publishCode}
                         <Square className="w-3 h-3 fill-red-500 text-red-500" />{formatDuration(recordingDuration)}
                       </button>
                     ) : (
-                      <button onClick={startRecording} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs bg-zinc-800/50 border border-red-500/30 hover:border-red-500/50 text-zinc-400 hover:text-zinc-200 transition-all"><div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> Record</button>
+                      <button onClick={startRecording} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs bg-zinc-800/50 border border-white/[0.08] hover:border-white/[0.15] text-zinc-400 hover:text-zinc-200 transition-all"><div className="w-2 h-2 rounded-full bg-white/40" /> Record</button>
                     )}
                     <button onClick={() => fileInputRef.current?.click()} className="btn-black flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs"><Upload className="w-3.5 h-3.5" /> Upload</button>
                   </div>
@@ -19449,7 +19449,7 @@ document.querySelectorAll('img').forEach(img=>{
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <button onClick={() => fileInputRef.current?.click()} className="btn-black flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"><Upload className="w-3.5 h-3.5" /> Upload New</button>
-                          <button onClick={startRecording} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-zinc-800/50 border border-red-500/30 hover:border-red-500/50 text-zinc-400 hover:text-zinc-200 transition-all"><div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> Record New</button>
+                          <button onClick={startRecording} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-zinc-800/50 border border-white/[0.08] hover:border-white/[0.15] text-zinc-400 hover:text-zinc-200 transition-all"><div className="w-2 h-2 rounded-full bg-white/40" /> Record New</button>
                         </div>
                         <button onClick={applyTrim} className="btn-black flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs bg-zinc-800/20 text-zinc-300 border border-zinc-700">
                           <Check className="w-3.5 h-3.5" /> Apply Trim
@@ -19463,7 +19463,7 @@ document.querySelectorAll('img').forEach(img=>{
                       <EmptyState icon="logo" title="No video selected" subtitle="Record or upload a video first" showEarlyAccess={generations.length === 0} />
                       <div className="flex items-center justify-center gap-2 mt-4">
                         <button onClick={() => fileInputRef.current?.click()} className="btn-black flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs"><Upload className="w-3.5 h-3.5" /> Upload</button>
-                        <button onClick={startRecording} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs bg-zinc-800/50 border border-red-500/30 hover:border-red-500/50 text-zinc-400 hover:text-zinc-200 transition-all"><div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" /> Record</button>
+                        <button onClick={startRecording} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs bg-zinc-800/50 border border-white/[0.08] hover:border-white/[0.15] text-zinc-400 hover:text-zinc-200 transition-all"><div className="w-2.5 h-2.5 rounded-full bg-white/40" /> Record</button>
                       </div>
                     </div>
                   </div>
@@ -20218,8 +20218,8 @@ document.querySelectorAll('img').forEach(img=>{
                         <Square className="w-3 h-3 fill-current" />{formatDuration(recordingDuration)}
                       </button>
                     ) : (
-                      <button onClick={startRecording} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-zinc-800/50 border border-red-500/30 active:bg-red-500/10 text-zinc-400 transition-all min-h-[44px]">
-                        <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" /> Record
+                      <button onClick={startRecording} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-zinc-800/50 border border-white/[0.08] active:bg-white/10 text-zinc-400 transition-all min-h-[44px]">
+                        <div className="w-2.5 h-2.5 rounded-full bg-white/40" /> Record
                       </button>
                     )}
                     <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-zinc-800/50 active:bg-white/10 text-zinc-400 min-h-[44px]">
