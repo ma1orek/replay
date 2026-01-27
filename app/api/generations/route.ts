@@ -69,11 +69,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, generation: record });
     }
 
-    // For history list, fetch only essential fields (much faster)
-    // OPTIMIZED: Removed 'versions' from minimal - it can be HUGE (contains full code)
-    // Version count can be fetched separately if needed, or shown as "?" until loaded
+    // For history list, fetch essential fields including versions for history timeline
+    // versions are needed to show edit history in sidebar
     const selectFields = minimal
-      ? "id, title, input_context, created_at, status, input_video_url, published_slug, input_style, user_id"
+      ? "id, title, input_context, created_at, status, input_video_url, published_slug, input_style, user_id, versions"
       : "*";
 
     // Build query with optional search filter
@@ -100,8 +99,7 @@ export async function GET(request: NextRequest) {
     // Transform to match the frontend GenerationRecord format
     const records = (generations || []).map((gen: any) => {
       if (minimal) {
-        // Minimal response for history list - NO versions (they can be huge)
-        // This drastically reduces Supabase egress costs
+        // Minimal response for history list - includes versions for edit history timeline
         return {
           id: gen.id,
           title: gen.title || gen.input_context?.split('\n')[0]?.slice(0, 50) || 'Untitled Project',
@@ -111,8 +109,8 @@ export async function GET(request: NextRequest) {
           videoUrl: gen.input_video_url,
           publishedSlug: gen.published_slug || null,
           styleDirective: gen.input_style || '',
-          user_id: gen.user_id, // For access control
-          // versions NOT included - loaded on demand when user selects project
+          user_id: gen.user_id,
+          versions: gen.versions || [], // Include versions for history timeline
         };
       }
       // Full response
