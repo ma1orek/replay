@@ -819,10 +819,10 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
     console.log("[transmute] Phase 1 timeout:", phase1Timeout / 1000, "s");
     
     let scanResult;
-    let usedModel = "gemini-2.0-flash";
+    let usedModel = "gemini-3-pro-preview";
     
-    // Try models in order: stable flash first (handles video well), then fallbacks
-    const phase1Models = ["gemini-2.0-flash", "gemini-1.5-flash"];
+    // Use Gemini 3 Pro for best video understanding
+    const phase1Models = ["gemini-3-pro-preview"];
     let phase1Error: any;
     
     for (const modelName of phase1Models) {
@@ -927,7 +927,7 @@ Generate the complete HTML file now:`;
     console.log("[transmute] Phase 2 timeout:", Math.round(phase2Timeout / 1000), "s");
     
     let assemblyResult;
-    let assemblerUsedModel = "gemini-2.0-flash"; // Start with stable model
+    let assemblerUsedModel = "gemini-3-pro-preview"; // Use Gemini 3 Pro for code generation
     
     // Helper: Try model with retry
     const tryModel = async (modelName: string, timeout: number): Promise<any> => {
@@ -945,8 +945,8 @@ Generate the complete HTML file now:`;
       );
     };
     
-    // Try stable model first (gemini-2.0-flash), then fallback
-    const modelsToTry = ["gemini-2.0-flash", "gemini-1.5-flash"];
+    // Use Gemini 3 Pro for code generation
+    const modelsToTry = ["gemini-3-pro-preview"];
     let lastError: any;
     
     for (const modelName of modelsToTry) {

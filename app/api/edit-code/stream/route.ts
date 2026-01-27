@@ -63,8 +63,7 @@ async function executeGeminiWithRetry(
   // Try different models in order of preference
   const modelsToTry = [
     modelName,
-    "gemini-2.0-flash", // Fallback to stable Flash
-    "gemini-1.5-flash", // Last resort
+    "gemini-3-pro-preview", // Use Gemini 3 Pro for code editing
   ].filter((m, i, arr) => arr.indexOf(m) === i); // Remove duplicates
   
   for (const currentModel of modelsToTry) {
@@ -357,7 +356,7 @@ Odpowiedz krótko i przyjaźnie:`;
             // Use retry logic with fallback models
             const { result } = await executeGeminiWithRetry(
               genAI,
-              "gemini-2.0-flash", // Start with stable model
+              "gemini-3-pro-preview", // Use Gemini 3 Pro
               planPrompt,
               { temperature: 0.7, maxOutputTokens: 1000 },
               3,
@@ -444,7 +443,7 @@ Odpowiedz krótko i przyjaźnie:`;
           
           const genAI = new GoogleGenerativeAI(geminiKey);
           const model = genAI.getGenerativeModel({
-            model: "gemini-2.0-flash", // Stable model for image processing
+            model: "gemini-3-pro-preview", // Gemini 3 Pro for image processing
             generationConfig: { temperature: 0.8, maxOutputTokens: 65536 },
           });
           
@@ -689,7 +688,7 @@ CRITICAL RULES:
             // Use retry logic with fallback models
             const { result, modelUsed } = await executeGeminiWithRetry(
               genAI,
-              "gemini-2.0-flash", // Start with stable fast model
+              "gemini-3-pro-preview", // Use Gemini 3 Pro
               fullPrompt,
               { temperature: 0.7, maxOutputTokens: 65536 },
               3,
