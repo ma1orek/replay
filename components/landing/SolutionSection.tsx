@@ -3,24 +3,25 @@
 import React, { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { Play, Scan, FileCode } from "lucide-react";
+import { BlurFade } from "@/components/ui/blur-fade";
 
 const steps = [
   {
     id: "01",
     title: "Record",
-    description: "Screen recording replaces documentation. Your users show how it works.",
+    description: "Capture user intent. Don't guess requirements. Replay records real user sessions, capturing DOM events, network flows, and business logic in action.",
     icon: Play
   },
   {
     id: "02",
     title: "Extract",
-    description: "AI maps screens, components, and data flows from real usage.",
+    description: "Structure the chaos. Our engine doesn't just copy screens. It identifies patterns to build a unified Component Library and Design Tokens from the raw footage.",
     icon: Scan
   },
   {
     id: "03",
-    title: "Export",
-    description: "Clean React + Tailwind. Engineers review and connect APIs.",
+    title: "Deploy",
+    description: "Code is just the start. Receive a fully synchronized Design System, atomic Component Library, and scalable React architecture. The complete source of truth, ready for production.",
     icon: FileCode
   }
 ];
@@ -40,13 +41,25 @@ const RecordVisual = () => {
       <TechGrid />
       <div className="relative z-10 flex flex-col items-center gap-4">
         <div className="relative">
-          <div className="absolute inset-0 bg-red-500/20 blur-xl rounded-full" />
+          <motion.div 
+            className="absolute inset-0 bg-red-500/20 blur-xl rounded-full"
+            animate={{ opacity: [0.3, 0.6, 0.3], scale: [1, 1.1, 1] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          />
           <div className="w-16 h-16 rounded-full border border-red-500/30 flex items-center justify-center bg-zinc-900/50 backdrop-blur-sm">
-            <div className="w-4 h-4 rounded-full bg-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]" />
+            <motion.div 
+              className="w-4 h-4 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"
+              animate={{ opacity: [1, 0.5, 1], scale: [1, 0.9, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            />
           </div>
         </div>
         <div className="flex items-center gap-2 px-2 py-1 border border-zinc-800 bg-zinc-900 rounded text-[10px] font-mono text-zinc-500">
-          <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+          <motion.div 
+            className="w-1.5 h-1.5 rounded-full bg-red-500"
+            animate={{ opacity: [1, 0.3, 1] }}
+            transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+          />
           <span>REC_00:04:21</span>
         </div>
       </div>
@@ -73,22 +86,30 @@ const ExtractVisual = () => {
           <div className="w-1/4 h-full bg-zinc-900 border border-zinc-800 rounded" />
           <div className="flex-1 flex flex-col gap-2">
             <div className="h-1/2 w-full bg-zinc-900 border border-zinc-800 rounded relative overflow-hidden group">
-              <div className="absolute inset-0 border-2 border-blue-500/30 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="absolute top-1 right-1 bg-blue-500/20 text-blue-400 text-[8px] px-1 font-mono">Hero</div>
+              <div className="absolute inset-0 border-2 border-orange-500/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute top-1 right-1 bg-orange-500/20 text-orange-400 text-[8px] px-1 font-mono">Hero</div>
             </div>
             <div className="flex-1 w-full bg-zinc-900 border border-zinc-800 rounded relative overflow-hidden group">
-              <div className="absolute inset-0 border-2 border-emerald-500/30 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="absolute top-1 right-1 bg-emerald-500/20 text-emerald-400 text-[8px] px-1 font-mono">Grid</div>
+              <div className="absolute inset-0 border-2 border-orange-500/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute top-1 right-1 bg-orange-500/20 text-orange-400 text-[8px] px-1 font-mono">Grid</div>
             </div>
           </div>
         </div>
       </div>
       
-      {/* Scanning effect */}
+      {/* Scanning effect - orange, subtle, fade in/out */}
       <motion.div
-        className="absolute top-0 left-0 w-full h-px bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)] z-20"
-        animate={{ top: ["0%", "100%"] }}
-        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+        className="absolute left-0 w-full h-px bg-orange-500/60 shadow-[0_0_8px_rgba(249,115,22,0.3)] z-20"
+        animate={{ 
+          top: ["0%", "100%", "0%"],
+          opacity: [0, 0.8, 0.8, 0]
+        }}
+        transition={{ 
+          duration: 4, 
+          repeat: Infinity, 
+          ease: "easeInOut",
+          times: [0, 0.45, 0.55, 1]
+        }}
       />
     </div>
   );
@@ -121,7 +142,11 @@ const ExportVisual = () => {
         <div className="text-zinc-500">{"}"}</div>
       </div>
       <div className="absolute bottom-3 right-3">
-        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+        <motion.div 
+          className="w-2 h-2 bg-orange-500 rounded-full"
+          animate={{ opacity: [1, 0.4, 1] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+        />
       </div>
     </div>
   );
@@ -153,37 +178,33 @@ export function SolutionSection() {
         {/* Steps - Technical Grid Layout - Full Width */}
         <div className="grid md:grid-cols-3 gap-4">
           {steps.map((step, index) => (
-            <motion.div
-              key={step.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.4, delay: 0.2 + index * 0.15 }}
-              className="group relative bg-zinc-950 border border-zinc-800 p-6 flex flex-col hover:bg-zinc-900/30 transition-colors"
-            >
-              {/* Corner accents */}
-              <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-zinc-700 opacity-50" />
-              <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-zinc-700 opacity-50" />
-              <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-zinc-700 opacity-50" />
-              <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-zinc-700 opacity-50" />
-              
-              {/* Visual */}
-              <div className="aspect-[4/3] mb-6 border border-zinc-800 overflow-hidden bg-zinc-900/50 group-hover:border-zinc-700 transition-colors">
-                {step.id === "01" && <RecordVisual />}
-                {step.id === "02" && <ExtractVisual />}
-                {step.id === "03" && <ExportVisual />}
-              </div>
-
-              {/* Text */}
-              <div className="mt-auto">
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="text-[10px] font-mono text-zinc-600 border border-zinc-800 px-1.5 py-0.5">{step.id}</span>
-                  <h3 className="text-base font-medium text-zinc-200 group-hover:text-white transition-colors">{step.title}</h3>
+            <BlurFade key={step.id} delay={0.2 + index * 0.1} inView>
+              <div className="group relative bg-zinc-950 border border-zinc-800 p-6 flex flex-col hover:bg-zinc-900/30 transition-colors h-full">
+                {/* Corner accents */}
+                <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-zinc-700 opacity-50" />
+                <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-zinc-700 opacity-50" />
+                <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-zinc-700 opacity-50" />
+                <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-zinc-700 opacity-50" />
+                
+                {/* Visual */}
+                <div className="aspect-[4/3] mb-6 border border-zinc-800 overflow-hidden bg-zinc-900/50 group-hover:border-zinc-700 transition-colors">
+                  {step.id === "01" && <RecordVisual />}
+                  {step.id === "02" && <ExtractVisual />}
+                  {step.id === "03" && <ExportVisual />}
                 </div>
-                <p className="text-sm text-zinc-500 leading-relaxed">
-                  {step.description}
-                </p>
+
+                {/* Text */}
+                <div>
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="text-[10px] font-mono text-zinc-600 border border-zinc-800 px-1.5 py-0.5">{step.id}</span>
+                    <h3 className="text-base font-medium text-zinc-200 group-hover:text-white transition-colors">{step.title}</h3>
+                  </div>
+                  <p className="text-sm text-zinc-500 leading-relaxed">
+                    {step.description}
+                  </p>
+                </div>
               </div>
-            </motion.div>
+            </BlurFade>
           ))}
         </div>
 

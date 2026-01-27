@@ -4573,22 +4573,24 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
         }
         
         // Set active generation for editing and Liveblocks room
+        // IMPORTANT: Use correct Supabase column names (output_code, input_style, input_context, etc.)
         const loadedGeneration: GenerationRecord = {
           id: gen.id,
           title: gen.title || "Untitled Project",
           autoTitle: gen.auto_title ?? true,
           timestamp: gen.created_at ? new Date(gen.created_at).getTime() : Date.now(),
           status: "complete",
-          code: gen.code || "",
-          styleDirective: gen.style_directive || "",
-          refinements: gen.refinements || "",
-          flowNodes: gen.flow_nodes || [],
-          flowEdges: gen.flow_edges || [],
-          styleInfo: gen.style_info,
-          videoUrl: gen.video_url,
+          code: gen.output_code || "", // Supabase column is output_code
+          styleDirective: gen.input_style || "", // Supabase column is input_style
+          refinements: gen.input_context || "", // Supabase column is input_context
+          flowNodes: gen.output_architecture?.flowNodes || [],
+          flowEdges: gen.output_architecture?.flowEdges || [],
+          styleInfo: gen.output_design_system,
+          videoUrl: gen.input_video_url,
           versions: gen.versions || [],
           publishedSlug: gen.published_slug,
           chatMessages: gen.chat_messages,
+          libraryData: gen.library_data,
         };
         setActiveGeneration(loadedGeneration);
         

@@ -46,6 +46,8 @@ import { useProfile } from "@/lib/profile/context";
 
 import { Navbar } from "@/components/landing/Navbar";
 import { SolutionSection } from "@/components/landing/SolutionSection";
+import { VideoCompare } from "@/components/ui/video-compare";
+import { BlurFade } from "@/components/ui/blur-fade";
 
 // ═══════════════════════════════════════════════════════════════
 // UI HELPERS (Technical Style)
@@ -139,7 +141,7 @@ function HeroSection() {
 
             {/* CTAs */}
             <div className="mt-10 flex flex-col sm:flex-row gap-4">
-              <Button size="lg" asChild className="group bg-white text-zinc-900 border border-white hover:bg-zinc-100 h-12 px-8 rounded-full text-base">
+              <Button size="lg" asChild className="group bg-white text-zinc-900 border-2 border-white hover:bg-zinc-100 h-12 px-8 rounded-full text-base ring-1 ring-white/50">
                 <Link href="/contact">
                   Book a pilot
                   <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -175,6 +177,263 @@ function HeroSection() {
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-zinc-950 to-transparent" />
+    </section>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TRUST BAR - Animated Marquee with Legacy Systems
+// ═══════════════════════════════════════════════════════════════
+
+function TrustBarSection() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-50px" });
+
+  // All the legacy systems, industries, and technologies
+  const items = [
+    // Industries
+    "Financial Services",
+    "Healthcare",
+    "Telecom",
+    "Logistics",
+    "GovTech",
+    "Insurance",
+    "Banking",
+    "Manufacturing",
+    "Retail",
+    "Energy",
+    // Legacy Technologies
+    "COBOL",
+    "Mainframe",
+    "AS/400",
+    "Oracle Forms",
+    "PowerBuilder",
+    "Delphi",
+    "Visual Basic 6",
+    "Classic ASP",
+    "Cold Fusion",
+    "Lotus Notes",
+    // Frameworks
+    "JSP/JSF",
+    "Struts",
+    "Spring MVC",
+    "PHP Legacy",
+    "Perl CGI",
+    "jQuery Spaghetti",
+    "AngularJS 1.x",
+    "Backbone.js",
+    "ExtJS",
+    "GWT",
+    // Databases
+    "DB2",
+    "Informix",
+    "Sybase",
+    "MS Access",
+    "FoxPro",
+    // Systems
+    "SAP GUI",
+    "PeopleSoft",
+    "Siebel CRM",
+    "Salesforce Classic",
+    "SharePoint 2010",
+    "Lotus Domino",
+    "Custom ERP",
+    "Internal Portals",
+    "Legacy Intranets",
+    "Monolithic Apps"
+  ];
+
+  return (
+    <section className="py-8 bg-zinc-950 border-t border-zinc-900 overflow-hidden" ref={ref}>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={isInView ? { opacity: 1 } : {}}
+        transition={{ duration: 0.5 }}
+        className="flex flex-col items-center gap-4"
+      >
+        <p className="text-xs text-zinc-500 text-center font-mono uppercase tracking-widest px-4">
+          Built for teams modernizing mission-critical systems
+        </p>
+        
+        {/* Marquee Container with Fade */}
+        <div className="relative w-full">
+          {/* Left Fade */}
+          <div className="absolute left-0 top-0 bottom-0 w-32 md:w-48 bg-gradient-to-r from-zinc-950 to-transparent z-10 pointer-events-none" />
+          {/* Right Fade */}
+          <div className="absolute right-0 top-0 bottom-0 w-32 md:w-48 bg-gradient-to-l from-zinc-950 to-transparent z-10 pointer-events-none" />
+          
+          {/* Scrolling Track */}
+          <div className="flex overflow-hidden">
+            <motion.div
+              className="flex gap-8 items-center"
+              animate={{
+                x: [0, -50 * items.length],
+              }}
+              transition={{
+                x: {
+                  duration: 60,
+                  repeat: Infinity,
+                  ease: "linear",
+                },
+              }}
+            >
+              {/* First set */}
+              {items.map((item, i) => (
+                <span 
+                  key={`a-${i}`}
+                  className="text-sm text-zinc-600 whitespace-nowrap font-medium tracking-wide flex items-center gap-2"
+                >
+                  <span className="w-1 h-1 rounded-full bg-zinc-700" />
+                  {item}
+                </span>
+              ))}
+              {/* Duplicate for seamless loop */}
+              {items.map((item, i) => (
+                <span 
+                  key={`b-${i}`}
+                  className="text-sm text-zinc-600 whitespace-nowrap font-medium tracking-wide flex items-center gap-2"
+                >
+                  <span className="w-1 h-1 rounded-full bg-zinc-700" />
+                  {item}
+                </span>
+              ))}
+              {/* Third set for extra smoothness */}
+              {items.map((item, i) => (
+                <span 
+                  key={`c-${i}`}
+                  className="text-sm text-zinc-600 whitespace-nowrap font-medium tracking-wide flex items-center gap-2"
+                >
+                  <span className="w-1 h-1 rounded-full bg-zinc-700" />
+                  {item}
+                </span>
+              ))}
+            </motion.div>
+          </div>
+        </div>
+      </motion.div>
+    </section>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MANUAL MODERNIZATION TRAP - Cards + Video Compare
+// ═══════════════════════════════════════════════════════════════
+
+function ManualModernizationTrapSection() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  const trapCards = [
+    {
+      icon: FileQuestion,
+      title: "The Documentation Gap",
+      description: "Nobody knows how logic works. Senior devs spend months reverse-engineering undocumented spaghetti code instead of building."
+    },
+    {
+      icon: AlertOctagon,
+      title: "The Roadmap Freeze", 
+      description: "18 months of 'modernization' means 18 months of zero new features. Business stalls while engineering plays catch-up."
+    },
+    {
+      icon: TrendingDown,
+      title: "The 'Broken' Delivery",
+      description: "Manual rewrites introduce regressions. You fix the code but break the business logic that worked for 10 years."
+    }
+  ];
+
+  return (
+    <section className="py-20 lg:py-28 bg-zinc-950 border-t border-zinc-900" ref={ref}>
+      <div className="landing-container">
+        {/* Section Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-12"
+        >
+          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-white mb-4">
+            The Manual Modernization{" "}
+            <span className="italic text-zinc-500">Trap</span>
+          </h2>
+          <p className="text-zinc-500 max-w-lg mx-auto">
+            Why 70% of rewrite projects fail or run over budget.
+          </p>
+        </motion.div>
+
+        {/* TOP: Video Compare - Side by Side */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+          {/* OLD WAY */}
+          <BlurFade delay={0.1} inView>
+            <div className="flex flex-col">
+              <div className="flex items-center justify-between mb-3 px-1">
+                <div>
+                  <p className="text-sm font-mono text-zinc-400 uppercase tracking-wider">The Old Way</p>
+                  <p className="text-xs text-zinc-600">Manual Reverse-Engineering</p>
+                </div>
+                <span className="text-xs font-mono text-zinc-600 bg-zinc-900 px-2 py-1 border border-zinc-800">12-18 mo</span>
+              </div>
+              <div className="border border-zinc-800 bg-zinc-900 overflow-hidden aspect-video">
+                <video
+                  src="https://auth.replay.build/storage/v1/object/public/videos/nqYIsFb5xQ6v3DJ3BCvg-_e5d2d52be84c475ca24219a8733c259d%20(1).mp4"
+                  className="w-full h-full object-cover"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                />
+              </div>
+              <p className="text-xs text-zinc-600 mt-3 px-1">High risk of regressions. Infinite loops. Team burnout.</p>
+            </div>
+          </BlurFade>
+
+          {/* REPLAY WAY */}
+          <BlurFade delay={0.2} inView>
+            <div className="flex flex-col">
+              <div className="flex items-center justify-between mb-3 px-1">
+                <div>
+                  <p className="text-sm font-mono text-orange-500 uppercase tracking-wider">The Replay Way</p>
+                  <p className="text-xs text-zinc-600">Automated Extraction</p>
+                </div>
+                <span className="text-xs font-mono text-orange-500 bg-orange-500/10 px-2 py-1 border border-orange-500/30">Days</span>
+              </div>
+              <div className="border border-orange-500/30 bg-zinc-900 overflow-hidden aspect-video relative">
+                <video
+                  src="https://auth.replay.build/storage/v1/object/public/videos/n6_ouT2RyKYzCkGwtDRav_e8db0ca9272c47dbb9ee330d0194df86%20(1).mp4"
+                  className="w-full h-full object-cover"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                />
+              </div>
+              <p className="text-xs text-zinc-500 mt-3 px-1">Zero guessing. Pixel-perfect code. Strategic oversight.</p>
+            </div>
+          </BlurFade>
+        </div>
+
+        {/* BOTTOM: Three Problem Cards in a Row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {trapCards.map((card, index) => (
+            <BlurFade key={index} delay={0.3 + index * 0.1} inView>
+              <div className="group p-6 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 transition-colors relative h-full">
+                {/* Corner accents */}
+                <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-zinc-700 opacity-50" />
+                <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-zinc-700 opacity-50" />
+                <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-zinc-700 opacity-50" />
+                <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-zinc-700 opacity-50" />
+                
+                <card.icon className="w-5 h-5 text-zinc-500 mb-4" />
+                <h3 className="text-base font-medium text-white mb-2">
+                  {card.title}
+                </h3>
+                <p className="text-sm text-zinc-500 leading-relaxed">
+                  {card.description}
+                </p>
+              </div>
+            </BlurFade>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }
@@ -407,35 +666,34 @@ function BentoFeaturesSection() {
     title?: string;
     icon?: any;
   }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.5, delay, ease: "easeOut" }}
-      className={cn(
-        "relative group bg-zinc-950 border border-zinc-800 overflow-hidden",
-        className
-      )}
-    >
-      {/* Corner accents */}
-      <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-zinc-700 opacity-50" />
-      <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-zinc-700 opacity-50" />
-      <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-zinc-700 opacity-50" />
-      <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-zinc-700 opacity-50" />
-      
-      {/* Grid overlay */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_80%)]" />
-
-      {/* Content */}
-      <div className="relative z-10 h-full flex flex-col p-6">
-        {(title || Icon) && (
-          <div className="flex items-center gap-3 mb-4 pb-4 border-b border-zinc-900 border-dashed">
-            {Icon && <Icon className="w-4 h-4 text-zinc-500" />}
-            {title && <span className="text-sm font-mono text-zinc-300 tracking-tight">{title}</span>}
-          </div>
+    <BlurFade delay={delay} inView className={cn("h-full", className)}>
+      <div
+        className={cn(
+          "relative group bg-zinc-950 border border-zinc-800 overflow-hidden h-full",
+          className
         )}
-        <div className="flex-1">{children}</div>
+      >
+        {/* Corner accents */}
+        <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-zinc-700 opacity-50" />
+        <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-zinc-700 opacity-50" />
+        <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-zinc-700 opacity-50" />
+        <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-zinc-700 opacity-50" />
+        
+        {/* Grid overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_80%)]" />
+
+        {/* Content */}
+        <div className="relative z-10 h-full flex flex-col p-6">
+          {(title || Icon) && (
+            <div className="flex items-center gap-3 mb-4 pb-4 border-b border-zinc-900 border-dashed">
+              {Icon && <Icon className="w-4 h-4 text-zinc-500" />}
+              {title && <span className="text-sm font-mono text-zinc-300 tracking-tight">{title}</span>}
+            </div>
+          )}
+          <div className="flex-1">{children}</div>
+        </div>
       </div>
-    </motion.div>
+    </BlurFade>
   );
 
   return (
@@ -630,12 +888,7 @@ function ROIAndSecuritySection() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           {/* LEFT: Data-Driven Growth / ROI Calculator */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6 }}
-            className="flex flex-col"
-          >
+          <BlurFade delay={0.1} inView className="flex flex-col">
             {/* Header */}
             <div className="mb-6">
               <h2 className="font-serif text-2xl md:text-3xl text-white mb-2">
@@ -709,15 +962,10 @@ function ROIAndSecuritySection() {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </BlurFade>
 
           {/* RIGHT: Built for regulated environments / Security */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="flex flex-col"
-          >
+          <BlurFade delay={0.2} inView className="flex flex-col">
             {/* Header */}
             <div className="mb-6">
               <h2 className="font-serif text-2xl md:text-3xl text-white mb-2">
@@ -763,7 +1011,7 @@ function ROIAndSecuritySection() {
                 </p>
               </div>
             </div>
-          </motion.div>
+          </BlurFade>
 
         </div>
       </div>
@@ -804,11 +1052,14 @@ function FAQSection() {
   return (
     <section className="py-24 bg-zinc-950 border-t border-zinc-900">
       <div className="landing-container max-w-3xl">
-        <h2 className="text-3xl font-serif text-white mb-12 text-center">Frequently Asked Questions</h2>
+        <BlurFade delay={0.1} inView>
+          <h2 className="text-3xl font-serif text-white mb-12 text-center">Frequently Asked Questions</h2>
+        </BlurFade>
         <div className="space-y-4">
           {faqs.map((faq, i) => (
-            <div key={i} className="border-b border-zinc-800 bg-transparent overflow-hidden">
-              <button
+            <BlurFade key={i} delay={0.15 + i * 0.05} inView>
+              <div className="border-b border-zinc-800 bg-transparent overflow-hidden">
+                <button
                 onClick={() => setOpenIndex(openIndex === i ? null : i)}
                 className="w-full flex items-center justify-between py-6 text-left"
               >
@@ -830,8 +1081,60 @@ function FAQSection() {
                 )}
               </AnimatePresence>
             </div>
+            </BlurFade>
           ))}
         </div>
+      </div>
+    </section>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PRE-FOOTER CTA - Final Push
+// ═══════════════════════════════════════════════════════════════
+
+function PreFooterCTASection() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  return (
+    <section className="py-24 lg:py-32 bg-zinc-950 border-t border-zinc-900 relative overflow-hidden" ref={ref}>
+      {/* Subtle gradient background */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div 
+          className="absolute inset-0 opacity-[0.05]"
+          style={{
+            background: 'radial-gradient(ellipse 60% 40% at 50% 100%, rgba(249,115,22,0.4) 0%, transparent 60%)'
+          }}
+        />
+      </div>
+      
+      <div className="landing-container relative z-10">
+        <BlurFade delay={0.1} inView className="max-w-3xl mx-auto text-center">
+          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-white mb-6">
+            Rewrites fail.{" "}
+            <span className="italic text-zinc-500">Yours doesn't have to.</span>
+          </h2>
+          <p className="text-zinc-400 text-lg mb-10 max-w-xl mx-auto leading-relaxed">
+            Manual modernization runs over budget, slips for quarters, or gets paused indefinitely.
+          </p>
+          
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Button size="lg" asChild className="group bg-white text-zinc-900 border border-white hover:bg-zinc-100 h-12 px-8 rounded-full text-base">
+              <Link href="/contact">
+                Book a Pilot Strategy Call
+                <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </Button>
+            <Button size="lg" asChild className="bg-transparent text-zinc-400 border border-zinc-700 hover:bg-zinc-900 hover:text-white hover:border-zinc-600 h-12 px-8 rounded-full text-base">
+              <Link href="/docs">
+                View Documentation
+                <FileText className="ml-2 w-4 h-4" />
+              </Link>
+            </Button>
+          </div>
+        </BlurFade>
       </div>
     </section>
   );
@@ -877,10 +1180,13 @@ export default function LandingPage() {
       <Navbar />
       <main>
         <HeroSection />
-        <SolutionSection />
+        <TrustBarSection />
+        <ManualModernizationTrapSection />
         <BentoFeaturesSection />
+        <SolutionSection />
         <ROIAndSecuritySection />
         <FAQSection />
+        <PreFooterCTASection />
         <FooterSection />
       </main>
     </div>

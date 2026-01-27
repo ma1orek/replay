@@ -87,12 +87,12 @@
 
 html, body {
   overscroll-behavior: none;
-  background: var(--bg-base);
+  background: #0a0a0b;
 }
 
 body {
   font-family: var(--font-sans);
-  background: var(--bg-base);
+  background: #0a0a0b;
   color: var(--text-primary);
   min-height: 100vh;
   overflow-x: hidden;
