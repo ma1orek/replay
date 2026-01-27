@@ -8835,12 +8835,10 @@ Try these prompts in Cursor or v0:
 
   // Auto-generate library docs when components are available and docs not generated
   useEffect(() => {
-    if (
-      libraryData?.components?.length > 0 && 
-      !libraryDocsGenerated && 
-      !isGeneratingLibraryDocs &&
-      !libraryData?.docs?.length
-    ) {
+    const hasComponents = libraryData?.components && libraryData.components.length > 0;
+    const hasDocs = libraryData?.docs && libraryData.docs.length > 0;
+    
+    if (hasComponents && !libraryDocsGenerated && !isGeneratingLibraryDocs && !hasDocs) {
       generateLibraryDocs();
     }
   }, [libraryData?.components?.length, libraryDocsGenerated, isGeneratingLibraryDocs, libraryData?.docs?.length, generateLibraryDocs]);
