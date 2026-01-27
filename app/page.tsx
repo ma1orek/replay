@@ -106,7 +106,7 @@ import {
 } from "lucide-react";
 import * as LucideIcons from 'lucide-react';
 import { cn, generateId, formatDuration, updateProjectAnalytics } from "@/lib/utils";
-import { stabilizePicsumUrls } from "@/lib/assets";
+import { stabilizePicsumUrls, simpleHash } from "@/lib/assets";
 import { transmuteVideoToCode } from "@/actions/transmute";
 import { getDatabaseContext, formatDatabaseContextForPrompt } from "@/lib/supabase/schema";
 import { useIsMobile } from "@/lib/useIsMobile";
@@ -1452,8 +1452,16 @@ const highlightCode = (code: string): string => {
 };
 
 // Convert JSX code to plain HTML for rendering (Storybook-like preview)
+// Uses stable hash-based IDs for images to prevent random changes on re-render
 const jsxToHtml = (jsxCode: string): string => {
   if (!jsxCode) return '';
+  
+  // Create a stable seed from the code itself - this ensures same code = same images
+  const codeSeed = simpleHash(jsxCode);
+  // VERIFIED working picsum IDs for stable image selection
+  const validPicsumIds = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70];
+  // Helper to get stable image ID based on seed and offset
+  const getStableImageId = (offset: number) => validPicsumIds[(codeSeed + offset) % validPicsumIds.length];
   
   let html = jsxCode;
   
@@ -1797,7 +1805,7 @@ const jsxToHtml = (jsxCode: string): string => {
   // If it looks like it should have images but doesn't, inject one
   if ((looksLikeImageComponent || hasImagePlaceholder) && hasNoImages) {
     // Find a good place to inject - after opening div or at start of content
-    const imageId = Math.floor(Math.random() * 50) + 10; // Random id 10-60
+    const imageId = getStableImageId(0); // Stable id based on code hash
     const placeholderImg = `<img src="https://picsum.photos/id/${imageId}/400/300" class="w-full h-48 object-cover rounded-lg mb-4" alt="Preview" />`;
     
     // Try to inject after first opening tag
@@ -1828,12 +1836,13 @@ const jsxToHtml = (jsxCode: string): string => {
   
   // For avatar-like components, use pravatar
   if (/avatar|profile|user|team|author/i.test(html)) {
-    const userId = Math.floor(Math.random() * 70) + 1;
+    const userId = (codeSeed % 70) + 1; // Stable user ID based on code hash
     html = html.replace(/src="https:\/\/picsum\.photos\/[^"]+"/g, `src="https://i.pravatar.cc/150?img=${userId}"`);
   }
   
   // FINAL FIX: Ensure ALL <img> tags have valid src
   // Find <img> tags without src or with broken src
+  let imgCounter = 0;
   html = html.replace(/<img([^>]*)>/gi, (match, attrs) => {
     // Check if has valid src
     if (attrs.includes('src="http') || attrs.includes("src='http") || attrs.includes('src="data:')) {
@@ -1841,7 +1850,7 @@ const jsxToHtml = (jsxCode: string): string => {
     }
     // If has no src attribute or empty/broken src, add one
     if (!attrs.includes('src=') || attrs.match(/src=["']\s*["']/)) {
-      const imgId = Math.floor(Math.random() * 50) + 20;
+      const imgId = getStableImageId(10 + imgCounter++); // Stable id based on code hash + counter
       // Add src attribute
       return `<img src="https://picsum.photos/id/${imgId}/400/300"${attrs.replace(/src=["'][^"']*["']/g, '')}>`;
     }
@@ -1849,9 +1858,10 @@ const jsxToHtml = (jsxCode: string): string => {
   });
   
   // Also fix background-image URLs
+  let bgCounter = 0;
   html = html.replace(/background-image:\s*url\(\s*['"]?([^)'"]+)['"]?\s*\)/gi, (match, url) => {
     if (url.startsWith('http') || url.startsWith('data:')) return match;
-    const imgId = Math.floor(Math.random() * 50) + 30;
+    const imgId = getStableImageId(30 + bgCounter++); // Stable id based on code hash + counter
     return `background-image: url('https://picsum.photos/id/${imgId}/800/600')`;
   });
   

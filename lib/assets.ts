@@ -473,8 +473,9 @@ export function generatePicsumUrl(width: number = 800, height: number = 600): st
 
 /**
  * Simple hash function to generate a stable number from a string
+ * Exported so it can be used in other files for stable image IDs
  */
-function simpleHash(str: string): number {
+export function simpleHash(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
