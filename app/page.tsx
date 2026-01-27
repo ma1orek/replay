@@ -3392,44 +3392,82 @@ function ReplayToolContent() {
 
   // Track if blueprint positions have been loaded from localStorage
   const [blueprintLayoutLoaded, setBlueprintLayoutLoaded] = useState(false);
+  const lastLayoutedComponentCount = useRef(0);
   
-  // Initialize positions when library data changes - only auto-layout for genuinely new components
+  // Initialize positions when library data changes - ALWAYS auto-layout new components properly
   useEffect(() => {
-    if (libraryData?.components && libraryData.components.length > 0) {
-      // Wait for positions to potentially load from localStorage first
-      const timeoutId = setTimeout(() => {
-        // Get component IDs from library
-        const componentIds = libraryData.components.map((c: any) => `comp-${c.id}`);
-        const existingPositionIds = Object.keys(blueprintPositions);
-        
-        // Only auto-layout for NEW components that don't have positions
-        const newComponentsWithoutPositions = componentIds.filter((id: string) => !existingPositionIds.includes(id));
-        
-        if (newComponentsWithoutPositions.length > 0 && existingPositionIds.length === 0) {
-          // No saved positions at all - do full auto-layout
-          autoLayoutBlueprints();
-        } else if (newComponentsWithoutPositions.length > 0) {
-          // Some components have positions, only position new ones
-          const lastPos = existingPositionIds.reduce((max, id) => {
-            const pos = blueprintPositions[id];
-            return pos && pos.y > max.y ? pos : max;
-          }, { x: 50, y: 0 });
-          
-          let offsetY = lastPos.y + 300; // Place below existing components
-          newComponentsWithoutPositions.forEach((id: string) => {
-            setBlueprintPositions(prev => ({
-              ...prev,
-              [id]: { x: 50, y: offsetY }
-            }));
-            offsetY += 300;
-          });
-        }
-        setBlueprintLayoutLoaded(true);
-      }, 200); // Wait for localStorage load
-      
-      return () => clearTimeout(timeoutId);
+    if (!libraryData?.components || libraryData.components.length === 0) return;
+    
+    const componentCount = libraryData.components.length;
+    const componentIds = libraryData.components.map((c: any) => `comp-${c.id}`);
+    const existingPositionIds = Object.keys(blueprintPositions);
+    const newComponentsWithoutPositions = componentIds.filter((id: string) => !existingPositionIds.includes(id));
+    
+    // Skip if all components already have positions
+    if (newComponentsWithoutPositions.length === 0) {
+      setBlueprintLayoutLoaded(true);
+      return;
     }
-  }, [libraryData?.components?.length, libraryData?.components, autoLayoutBlueprints, blueprintPositions]);
+    
+    // If no existing positions OR this is a fresh load, do full auto-layout
+    if (existingPositionIds.length === 0 || lastLayoutedComponentCount.current === 0) {
+      lastLayoutedComponentCount.current = componentCount;
+      autoLayoutBlueprints();
+      setBlueprintLayoutLoaded(true);
+      return;
+    }
+    
+    // Otherwise, position new components using masonry-style layout
+    // Find the rightmost and bottom positions of existing components
+    let maxY = 0;
+    let rightmostX = 60;
+    existingPositionIds.forEach(id => {
+      const pos = blueprintPositions[id];
+      if (pos) {
+        if (pos.y > maxY) maxY = pos.y;
+        if (pos.x > rightmostX) rightmostX = pos.x;
+      }
+    });
+    
+    // Create new positions for components without positions
+    const newPositions: Record<string, { x: number; y: number }> = {};
+    const GAP = 40;
+    const COLUMN_WIDTH = 320;
+    const START_Y = maxY + 200; // Start below existing components
+    
+    // Simple 2-column masonry for new components
+    const columnHeights = [0, 0];
+    newComponentsWithoutPositions.forEach((id: string, idx: number) => {
+      // Find the component to estimate height
+      const comp = libraryData.components.find((c: any) => `comp-${c.id}` === id);
+      let estimatedHeight = 150;
+      const name = (comp?.name || '').toLowerCase();
+      if (name.includes('sidebar') || name.includes('nav')) estimatedHeight = 400;
+      else if (name.includes('card') || name.includes('table')) estimatedHeight = 250;
+      else if (name.includes('header') || name.includes('banner')) estimatedHeight = 120;
+      else if (name.includes('button') || name.includes('badge')) estimatedHeight = 80;
+      else if (name.includes('stat') || name.includes('metric')) estimatedHeight = 180;
+      
+      // Find shortest column
+      const shortestCol = columnHeights[0] <= columnHeights[1] ? 0 : 1;
+      
+      newPositions[id] = {
+        x: 60 + shortestCol * (COLUMN_WIDTH + GAP),
+        y: START_Y + columnHeights[shortestCol]
+      };
+      
+      columnHeights[shortestCol] += estimatedHeight + GAP;
+    });
+    
+    // Update positions all at once
+    setBlueprintPositions(prev => ({
+      ...prev,
+      ...newPositions
+    }));
+    
+    lastLayoutedComponentCount.current = componentCount;
+    setBlueprintLayoutLoaded(true);
+  }, [libraryData?.components?.length, autoLayoutBlueprints]);
   
   // Handle resize messages from blueprint iframes for "hug contents" behavior
   useEffect(() => {
