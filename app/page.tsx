@@ -18599,15 +18599,47 @@ export default function App() {
                         {/* Spacer to push New Component button to right */}
                         <div className="flex-1" />
                         
-                        {/* + New Component - PROMINENT BUTTON on far right */}
+                        {/* + New Component - Creates component instantly on canvas */}
                         <button 
                           onClick={() => {
-                            setVisionImportMode("image");
-                            setVisionImportImage(null);
-                            setVisionImportDescription("");
-                            setVisionImportInstructions("");
-                            setVisionImportComponentName("");
-                            setShowVisionImportModal(true);
+                            // Create new component instantly on canvas
+                            const newId = `new_${Date.now()}`;
+                            const newComponent = {
+                              id: newId,
+                              name: "New Component",
+                              code: '<div className="p-6 bg-zinc-800 rounded-xl text-white text-center min-w-[200px]"><p className="text-lg font-medium">New Component</p><p className="text-sm text-zinc-400 mt-1">Paste image or describe below</p></div>',
+                              category: "CUSTOM",
+                              description: "New custom component"
+                            };
+                            
+                            // Add to library
+                            setLibraryData((prev: any) => ({
+                              ...prev,
+                              components: [...(prev?.components || []), newComponent]
+                            }));
+                            
+                            // Calculate center position on canvas
+                            const canvasEl = blueprintsCanvasRef.current;
+                            let centerX = 400, centerY = 300;
+                            if (canvasEl) {
+                              const rect = canvasEl.getBoundingClientRect();
+                              centerX = (-blueprintsOffset.x + rect.width / 2) / (blueprintsZoom / 100);
+                              centerY = (-blueprintsOffset.y + rect.height / 2) / (blueprintsZoom / 100);
+                            }
+                            
+                            // Set position for new component
+                            setBlueprintPositions(prev => ({
+                              ...prev,
+                              [`comp-${newId}`]: { x: centerX - 100, y: centerY - 50 }
+                            }));
+                            
+                            // Select the new component to show edit bar
+                            setSelectedBlueprintComponent(`comp-${newId}`);
+                            setBlueprintEditedCode(null);
+                            setBlueprintChatHistory([]);
+                            
+                            // Mark as draft
+                            setBlueprintStatuses(prev => ({ ...prev, [newId]: 'draft' }));
                           }}
                           className={cn(
                             "px-4 py-2 rounded-lg transition-all duration-150 group relative flex items-center gap-2",
@@ -19235,6 +19267,75 @@ document.querySelectorAll('img').forEach(img=>{
                               {/* AI Input - Main Action Area */}
                               <div className="p-3">
                                 <div className="flex items-center gap-2">
+                                  {/* Upload Image Button */}
+                                  <button
+                                    onClick={() => {
+                                      // Trigger file input for image upload
+                                      const input = document.createElement('input');
+                                      input.type = 'file';
+                                      input.accept = 'image/*';
+                                      input.onchange = async (e) => {
+                                        const file = (e.target as HTMLInputElement).files?.[0];
+                                        if (!file) return;
+                                        
+                                        setIsEditingBlueprint(true);
+                                        setBlueprintChatHistory(prev => [...prev, { role: 'user', content: '📷 Uploading image...' }]);
+                                        
+                                        const reader = new FileReader();
+                                        reader.onload = async () => {
+                                          const base64 = reader.result as string;
+                                          try {
+                                            // Call vision API to generate code from image
+                                            const response = await fetch('/api/blueprint/vision', {
+                                              method: 'POST',
+                                              headers: { 'Content-Type': 'application/json' },
+                                              body: JSON.stringify({
+                                                image: base64,
+                                                componentName: selectedComp.name,
+                                                instructions: 'Rebuild this component from the image'
+                                              })
+                                            });
+                                            
+                                            if (!response.ok) throw new Error('Vision API failed');
+                                            
+                                            const reader2 = response.body?.getReader();
+                                            const decoder = new TextDecoder();
+                                            let generatedCode = '';
+                                            
+                                            while (reader2) {
+                                              const { done, value } = await reader2.read();
+                                              if (done) break;
+                                              const text = decoder.decode(value);
+                                              const lines = text.split('\n').filter(l => l.startsWith('data: '));
+                                              for (const line of lines) {
+                                                try {
+                                                  const data = JSON.parse(line.slice(6));
+                                                  if (data.type === 'partial' || data.type === 'done') {
+                                                    generatedCode = data.code;
+                                                    setBlueprintEditedCode(generatedCode);
+                                                  }
+                                                } catch {}
+                                              }
+                                            }
+                                            
+                                            setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: 'Created from image ✓' }]);
+                                          } catch (error) {
+                                            setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: 'Failed to process image' }]);
+                                          }
+                                          setIsEditingBlueprint(false);
+                                        };
+                                        reader.readAsDataURL(file);
+                                      };
+                                      input.click();
+                                    }}
+                                    disabled={isEditingBlueprint}
+                                    className="p-3 rounded-xl bg-zinc-800/50 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors disabled:opacity-50 group relative"
+                                    title="Upload image"
+                                  >
+                                    <ImageIcon className="w-4 h-4" />
+                                    <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 border border-zinc-700">Upload image</span>
+                                  </button>
+                                  
                                   <div className="flex-1 relative">
                                     <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                                     <input
@@ -19267,7 +19368,69 @@ document.querySelectorAll('img').forEach(img=>{
                                             );
                                         }
                                       }}
-                                      placeholder="Ask AI to change... (e.g., 'Make it red', 'Add icon')"
+                                      onPaste={async (e) => {
+                                        // Handle Ctrl+V paste of images (Figma frames)
+                                        const items = e.clipboardData?.items;
+                                        if (!items) return;
+                                        
+                                        for (let i = 0; i < items.length; i++) {
+                                          if (items[i].type.startsWith('image/')) {
+                                            e.preventDefault();
+                                            const file = items[i].getAsFile();
+                                            if (!file) continue;
+                                            
+                                            setIsEditingBlueprint(true);
+                                            setBlueprintChatHistory(prev => [...prev, { role: 'user', content: '📋 Pasted Figma frame...' }]);
+                                            
+                                            const reader = new FileReader();
+                                            reader.onload = async () => {
+                                              const base64 = reader.result as string;
+                                              try {
+                                                // Call vision API
+                                                const response = await fetch('/api/blueprint/vision', {
+                                                  method: 'POST',
+                                                  headers: { 'Content-Type': 'application/json' },
+                                                  body: JSON.stringify({
+                                                    image: base64,
+                                                    componentName: selectedComp.name,
+                                                    instructions: 'Recreate this UI component exactly as shown'
+                                                  })
+                                                });
+                                                
+                                                if (!response.ok) throw new Error('Vision API failed');
+                                                
+                                                const reader2 = response.body?.getReader();
+                                                const decoder = new TextDecoder();
+                                                let generatedCode = '';
+                                                
+                                                while (reader2) {
+                                                  const { done, value } = await reader2.read();
+                                                  if (done) break;
+                                                  const text = decoder.decode(value);
+                                                  const lines = text.split('\n').filter(l => l.startsWith('data: '));
+                                                  for (const line of lines) {
+                                                    try {
+                                                      const data = JSON.parse(line.slice(6));
+                                                      if (data.type === 'partial' || data.type === 'done') {
+                                                        generatedCode = data.code;
+                                                        setBlueprintEditedCode(generatedCode);
+                                                      }
+                                                    } catch {}
+                                                  }
+                                                }
+                                                
+                                                setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: 'Created from Figma ✓' }]);
+                                              } catch (error) {
+                                                setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: 'Failed to process image' }]);
+                                              }
+                                              setIsEditingBlueprint(false);
+                                            };
+                                            reader.readAsDataURL(file);
+                                            break;
+                                          }
+                                        }
+                                      }}
+                                      placeholder="Describe or paste Figma (Ctrl+V)..."
                                       className="w-full pl-10 pr-4 py-3 text-sm bg-zinc-800/50 border border-zinc-700/50 rounded-xl text-white placeholder-zinc-500 focus:border-zinc-500/50 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 transition-all"
                                       disabled={isEditingBlueprint}
                                       autoFocus
@@ -19316,9 +19479,13 @@ document.querySelectorAll('img').forEach(img=>{
                                   </button>
                                 </div>
                                 
-                                {/* Quick Actions */}
+                                {/* Quick Actions + Paste hint */}
                                 <div className="mt-2 flex items-center gap-1.5 overflow-x-auto pb-1">
-                                  {['Make it red', 'Add icon', 'Add button', 'Add line chart', 'Make bigger', 'Add shadow'].map(action => (
+                                  <span className="flex-shrink-0 px-2 py-1 text-[10px] bg-zinc-800/50 text-zinc-500 rounded border border-zinc-700/50">
+                                    <kbd className="font-mono">Ctrl+V</kbd> paste Figma
+                                  </span>
+                                  <div className="w-px h-4 bg-zinc-700/50" />
+                                  {['Make it red', 'Add icon', 'Add button', 'Make bigger', 'Add shadow'].map(action => (
                                     <button
                                       key={action}
                                       onClick={() => setBlueprintChatInput(action)}
