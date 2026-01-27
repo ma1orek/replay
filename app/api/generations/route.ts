@@ -32,10 +32,11 @@ export async function GET(request: NextRequest) {
     const minimal = searchParams.get("minimal") === "true";
 
     // If fetching single generation by ID
+    // OPTIMIZED: Select only needed fields (avoid huge unused columns if any)
     if (singleId) {
       const { data: gen, error } = await adminSupabase
         .from("generations")
-        .select("*")
+        .select("id, title, created_at, status, output_code, input_style, input_context, output_architecture, output_design_system, input_video_url, versions, published_slug, library_data, user_id")
         .eq("id", singleId)
         .eq("user_id", user.id)
         .single();
@@ -67,9 +68,10 @@ export async function GET(request: NextRequest) {
     }
 
     // For history list, fetch only essential fields (much faster)
-    // Include versions for version count display, user_id for access control
+    // OPTIMIZED: Removed 'versions' from minimal - it can be HUGE (contains full code)
+    // Version count can be fetched separately if needed, or shown as "?" until loaded
     const selectFields = minimal
-      ? "id, title, input_context, created_at, status, input_video_url, published_slug, versions, input_style, user_id"
+      ? "id, title, input_context, created_at, status, input_video_url, published_slug, input_style, user_id"
       : "*";
 
     const { data: generations, error, count } = await adminSupabase
@@ -87,7 +89,8 @@ export async function GET(request: NextRequest) {
     // Transform to match the frontend GenerationRecord format
     const records = (generations || []).map((gen: any) => {
       if (minimal) {
-        // Minimal response for history list (includes versions for display)
+        // Minimal response for history list - NO versions (they can be huge)
+        // This drastically reduces Supabase egress costs
         return {
           id: gen.id,
           title: gen.title || gen.input_context?.split('\n')[0]?.slice(0, 50) || 'Untitled Project',
@@ -96,9 +99,9 @@ export async function GET(request: NextRequest) {
           status: gen.status as "running" | "complete" | "failed",
           videoUrl: gen.input_video_url,
           publishedSlug: gen.published_slug || null,
-          versions: gen.versions || [],
           styleDirective: gen.input_style || '',
           user_id: gen.user_id, // For access control
+          // versions NOT included - loaded on demand when user selects project
         };
       }
       // Full response

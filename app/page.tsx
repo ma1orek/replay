@@ -5128,8 +5128,9 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
       lastFetchTimeRef.current = now;
       
       try {
-        // Fetch minimal data for history list (much faster) - increased limit to 500
-        const response = await fetch("/api/generations?minimal=true&limit=500");
+        // Fetch minimal data for history list (much faster)
+        // OPTIMIZED: Reduced limit from 500 to 100 to reduce Supabase egress
+        const response = await fetch("/api/generations?minimal=true&limit=100");
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.generations) {
@@ -5187,25 +5188,18 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
       }
     };
     
-    // Initial fetch
+    // Initial fetch only - sync on demand when user clicks refresh
     fetchFromSupabase(true);
     
-    // Set up periodic sync (every 60 seconds - reduced from 15s to prevent DB overload)
-    const intervalId = setInterval(() => fetchFromSupabase(false), 60000);
+    // OPTIMIZED: Increased interval from 60s to 5 minutes to reduce Supabase egress
+    // Users can manually refresh if needed, or data syncs when they select a project
+    const intervalId = setInterval(() => fetchFromSupabase(false), 300000); // 5 minutes
     
-    // Sync when tab becomes visible (but debounced)
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        fetchFromSupabase(false);
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    // Don't sync on every focus - removed to reduce DB load
+    // REMOVED: visibilitychange sync - was causing too many DB requests
+    // Data syncs automatically every 5 min or when user selects a project
     
     return () => {
       clearInterval(intervalId);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [user, hasLoadedFromStorage]);
   

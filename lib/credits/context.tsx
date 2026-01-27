@@ -77,10 +77,10 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      // Fetch wallet
+      // Fetch wallet - OPTIMIZED: select only needed fields
       const { data: walletData, error: walletError } = await supabase
         .from("credit_wallets")
-        .select("*")
+        .select("monthly_credits, rollover_credits, topup_credits, rollover_expires_at")
         .eq("user_id", user.id)
         .single();
 

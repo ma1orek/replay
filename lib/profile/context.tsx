@@ -35,9 +35,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
     try {
       const supabase = createClient();
+      // OPTIMIZED: Select only needed fields instead of * to reduce egress
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, email, full_name, avatar_url")
         .eq("id", user.id)
         .single();
 
