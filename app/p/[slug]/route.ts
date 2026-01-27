@@ -316,7 +316,42 @@ export async function GET(
   ` : '';
   
   // Convert code to HTML if it's JSX/React
-  const htmlContent = jsxToHtml(typedProject.code);
+  let htmlContent = jsxToHtml(typedProject.code);
+  
+  // CRITICAL: If extraction returned empty but we have code, use raw code as fallback
+  if (!htmlContent || htmlContent.trim().length === 0) {
+    if (typedProject.code && typedProject.code.trim().length > 0) {
+      // Try to use the raw code, just clean it up minimally
+      let rawCode = typedProject.code.trim();
+      // Replace className with class
+      rawCode = rawCode.replace(/className=/g, 'class=');
+      // If it's a full HTML document, use it directly (remove doctype for embedding)
+      if (/^<!DOCTYPE|^<html/i.test(rawCode)) {
+        // Extract everything between <body> and </body> or use full html minus doctype
+        const bodyMatch = rawCode.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+        if (bodyMatch) {
+          htmlContent = bodyMatch[1];
+        } else {
+          // Just strip doctype and html/head tags, keep body content
+          htmlContent = rawCode
+            .replace(/<!DOCTYPE[^>]*>/i, '')
+            .replace(/<html[^>]*>/i, '')
+            .replace(/<\/html>/i, '')
+            .replace(/<head[\s\S]*?<\/head>/i, '')
+            .replace(/<body[^>]*>/i, '')
+            .replace(/<\/body>/i, '')
+            .trim();
+        }
+      } else {
+        htmlContent = rawCode;
+      }
+    }
+  }
+  
+  // Final safety: if still empty, show error message
+  if (!htmlContent || htmlContent.trim().length === 0) {
+    htmlContent = '<div style="padding: 40px; text-align: center; color: #666;">Content could not be rendered. Please try republishing.</div>';
+  }
   
   // Extract body classes from original code to preserve styling
   const bodyClasses = extractBodyClasses(typedProject.code);
