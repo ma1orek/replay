@@ -24,450 +24,163 @@ import {
   PhoneCall,
   MoveRight,
   Minus,
+  Terminal,
+  Cpu,
+  Workflow,
+  Box,
+  Grid,
+  Plus,
+  Lock,
+  FileText,
+  Database
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { AnimatedGroup } from "@/components/ui/animated-group";
 import { DitheringShader } from "@/components/ui/dithering-shader";
+// BeamsBackground removed - caused scroll lag
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
 import { useAuth } from "@/lib/auth/context";
 import Avatar from "@/components/Avatar";
 import { useProfile } from "@/lib/profile/context";
 
-// ═══════════════════════════════════════════════════════════════
-// ANIMATION VARIANTS
-// ═══════════════════════════════════════════════════════════════
-
-const fadeInUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { 
-    opacity: 1, 
-    y: 0,
-    transition: { duration: 0.6, ease: [0.4, 0, 0.2, 1] }
-  }
-};
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.2
-    }
-  }
-};
+import { Navbar } from "@/components/landing/Navbar";
+import { SolutionSection } from "@/components/landing/SolutionSection";
 
 // ═══════════════════════════════════════════════════════════════
-// SMOOTH SCROLL HANDLER
+// UI HELPERS (Technical Style)
 // ═══════════════════════════════════════════════════════════════
 
-function smoothScrollTo(id: string) {
-  const element = document.getElementById(id);
-  if (element) {
-    element.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// HEADER COMPONENT
-// ═══════════════════════════════════════════════════════════════
-
-const menuItems = [
-  { name: "Features", href: "#features" },
-  { name: "Solution", href: "#solution" },
-  { name: "Security", href: "#security" },
-  { name: "Pricing", href: "/pricing" },
-  { name: "Docs", href: "/docs" },
-];
-
-function Header() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [activeSection, setActiveSection] = useState("");
-  const { user, isLoading: authLoading } = useAuth();
-  const { profile } = useProfile();
-  
-  // Get user display name
-  const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
-
-  // Track active section on scroll
-  useEffect(() => {
-    const handleSectionScroll = () => {
-      const sections = ["features", "solution", "security"];
-      let current = "";
-      for (const id of sections) {
-        const el = document.getElementById(id);
-        if (el) {
-          const rect = el.getBoundingClientRect();
-          if (rect.top <= 150) current = id;
-        }
-      }
-      setActiveSection(current);
-    };
-    window.addEventListener("scroll", handleSectionScroll);
-    return () => window.removeEventListener("scroll", handleSectionScroll);
-  }, []);
-
-  useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 50);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    if (href.startsWith("#")) {
-      e.preventDefault();
-      smoothScrollTo(href.substring(1));
-      setMenuOpen(false);
-    }
-  };
-
-  return (
-    <header className="fixed top-0 left-0 right-0 z-50 px-4 pt-4">
-      <nav className={cn(
-        "mx-auto max-w-6xl rounded-2xl transition-all duration-300",
-        isScrolled 
-          ? "bg-white/90 backdrop-blur-xl border border-zinc-200 shadow-lg" 
-          : "bg-transparent"
-      )}>
-        <div className="px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <Logo dark />
-          </Link>
-
-          {/* Desktop Menu */}
-          <div className="hidden lg:flex items-center gap-8">
-            {menuItems.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                onClick={(e) => handleNavClick(e, item.href)}
-                className={cn("text-sm transition-all duration-200", item.href === `#${activeSection}` ? "text-orange-500 font-medium" : "text-zinc-600 hover:text-zinc-900")}
-              >
-                {item.name}
-              </Link>
-            ))}
-          </div>
-
-          <div className="hidden lg:flex items-center gap-3">
-            {authLoading ? (
-              <div className="w-8 h-8 rounded-full bg-zinc-200 animate-pulse" />
-            ) : user ? (
-              <>
-                <Link 
-                  href="/tool" 
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-medium transition-colors"
-                >
-                  Go to App
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link href="/settings" className="flex items-center gap-2">
-                  <Avatar 
-                    src={profile?.avatar_url} 
-                    fallback={displayName[0]?.toUpperCase() || 'U'} 
-                    size={32}
-                    className="border border-zinc-200"
-                  />
-                </Link>
-              </>
-            ) : (
-              <>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/login">Sign in</Link>
-                </Button>
-                <Button size="sm" asChild className="bg-zinc-900 text-white hover:bg-zinc-800">
-                  <Link href="/contact">Book a Demo</Link>
-                </Button>
-              </>
-            )}
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="lg:hidden p-2 rounded-lg hover:bg-zinc-100 transition-colors"
-          >
-            {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-        </div>
-
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {menuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="lg:hidden border-t border-zinc-200 px-6 py-4 bg-white rounded-b-2xl"
-            >
-              <div className="flex flex-col gap-4">
-                {menuItems.map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    onClick={(e) => handleNavClick(e, item.href)}
-                    className="text-zinc-600 hover:text-zinc-900 transition-colors py-2"
-                  >
-                    {item.name}
-                  </Link>
-                ))}
-                <div className="flex flex-col gap-3 pt-4 border-t border-zinc-200">
-                  {user ? (
-                    <>
-                      <div className="flex items-center gap-3 py-2">
-                        <Avatar 
-                          src={profile?.avatar_url} 
-                          fallback={displayName[0]?.toUpperCase() || 'U'} 
-                          size={32}
-                          className="border border-zinc-200"
-                        />
-                        <span className="text-sm font-medium text-zinc-700">{displayName}</span>
-                      </div>
-                      <Button variant="default" asChild className="w-full bg-zinc-900 hover:bg-zinc-800">
-                        <Link href="/tool">Go to App</Link>
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button variant="dark-outline" asChild className="w-full">
-                        <Link href="/login">Sign in</Link>
-                      </Button>
-                      <Button asChild className="w-full bg-zinc-900 text-white hover:bg-zinc-800">
-                        <Link href="/contact">Book a Demo</Link>
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </nav>
-    </header>
-  );
-}
+const TechGrid = () => (
+  <div className="absolute inset-0 pointer-events-none select-none overflow-hidden" aria-hidden="true">
+    <div 
+      className="absolute inset-0 opacity-[0.02]"
+      style={{
+        backgroundImage: `
+          linear-gradient(to right, #808080 1px, transparent 1px),
+          linear-gradient(to bottom, #808080 1px, transparent 1px)
+        `,
+        backgroundSize: '40px 40px',
+        maskImage: 'linear-gradient(to bottom, transparent, black 20%, black 80%, transparent)'
+      }}
+    />
+    <div 
+      className="absolute inset-0 opacity-[0.015]" 
+      style={{
+        backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)',
+        backgroundSize: '20px 20px'
+      }}
+    />
+  </div>
+);
 
 // ═══════════════════════════════════════════════════════════════
 // HERO SECTION
 // ═══════════════════════════════════════════════════════════════
 
 function HeroSection() {
-  const [dimensions, setDimensions] = useState({ width: 1920, height: 1080 });
-  
+  const ref = useRef(null);
+  const [dimensions, setDimensions] = useState({ width: 1200, height: 800 });
+
   useEffect(() => {
-    const updateDimensions = () => {
-      setDimensions({ 
-        width: window.innerWidth * 2, 
-        height: window.innerHeight * 2 
+    if (typeof window !== "undefined") {
+      setDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight
       });
-    };
-    updateDimensions();
-    window.addEventListener('resize', updateDimensions);
-    return () => window.removeEventListener('resize', updateDimensions);
+      
+      const handleResize = () => {
+        setDimensions({
+          width: window.innerWidth,
+          height: window.innerHeight
+        });
+      };
+      
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
+    }
   }, []);
 
   return (
-    <section className="relative min-h-screen flex flex-col overflow-hidden">
-      {/* Shader Background */}
+    <section className="relative h-screen max-h-[1080px] flex flex-col overflow-hidden bg-[#09090b]">
+      {/* Shader Background - Dark */}
       <div className="absolute inset-0 z-0">
         <DitheringShader
           width={dimensions.width}
           height={dimensions.height}
           shape="wave"
           type="8x8"
-          colorBack="#fffbf7"
+          colorBack="#09090b"
           colorFront="#f97316"
           pxSize={4}
           speed={0.3}
           className="w-full h-full"
           style={{ width: "100%", height: "100%" }}
         />
-        {/* Gradient overlay for readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#fffbf7]/90 via-[#fffbf7]/70 to-[#fffbf7]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/80 via-zinc-950/60 to-zinc-950" />
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 pt-32 pb-20">
+      <div className="relative z-10 flex flex-col items-center px-4 pt-28 md:pt-32">
         <div className="max-w-5xl mx-auto text-center">
           <AnimatedGroup preset="blur-slide" className="flex flex-col items-center">
-            {/* Badge - Subtle */}
-            <div className="mb-8 self-start"><span className="inline-flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-500 border border-zinc-200 rounded-full bg-white/80 backdrop-blur-sm">Visual Reverse Engineering for Enterprise</span></div>
-
             {/* Headline */}
-            <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl leading-[1.05] tracking-tight text-zinc-900">
-              <span className="whitespace-nowrap">Modernize without{" "}<span className="italic text-orange-600">rewriting.</span></span>
+            <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl leading-[1.05] tracking-tight text-white">
+              <span className="whitespace-nowrap">Modernize without{" "}<span className="italic text-orange-500">rewriting.</span></span>
               <br />
-              <span className="whitespace-nowrap">Document without{" "}<span className="italic text-orange-600">archaeology.</span></span>
+              <span className="whitespace-nowrap">Document without{" "}<span className="italic text-orange-500">archaeology.</span></span>
             </h1>
 
             {/* Subheadline */}
-            <p className="mt-8 text-lg md:text-xl text-zinc-600 max-w-2xl leading-relaxed">
+            <p className="mt-6 text-lg md:text-xl text-zinc-400 max-w-2xl leading-relaxed">
               Replay observes real user workflows in your legacy system and generates 
               documented React components — directly from video.
             </p>
 
-            {/* Proof Bullets */}
-            <motion.div 
-              className="mt-10 flex flex-wrap justify-center gap-x-8 gap-y-3"
-              variants={staggerContainer}
-              initial="hidden"
-              animate="visible"
-            >
-              {["No rewrites", "No reverse engineering workshops", "No guesswork", "Engineer-owned code"].map((item, i) => (
-                <motion.div 
-                  key={item}
-                  variants={fadeInUp}
-                  className="flex items-center gap-2 text-zinc-700"
-                >
-                  <Check className="w-5 h-5 text-orange-500" />
-                  <span className="text-sm font-medium">{item}</span>
-                </motion.div>
-              ))}
-            </motion.div>
-
             {/* CTAs */}
-            <div className="mt-12 flex flex-col sm:flex-row gap-4">
-              <Button size="xl" asChild className="group bg-zinc-900 text-white border border-zinc-900 hover:bg-zinc-800 shadow-sm">
+            <div className="mt-10 flex flex-col sm:flex-row gap-4">
+              <Button size="lg" asChild className="group bg-white text-zinc-900 border border-white hover:bg-zinc-100 h-12 px-8 rounded-full text-base">
                 <Link href="/contact">
                   Book a pilot
-                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </Button>
-              <Button size="xl" asChild className="bg-white text-zinc-900 border border-zinc-300 hover:bg-zinc-50 shadow-sm">
+              <Button size="lg" asChild className="bg-transparent text-white border border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600 h-12 px-8 rounded-full text-base">
                 <Link href="https://www.replay.build/tool?project=flow_1769444036799_r8hrcxyx2">
                   Explore Live Sandbox
-                  <ArrowRight className="ml-2 w-5 h-5" />
+                  <ArrowRight className="ml-2 w-4 h-4" />
                 </Link>
               </Button>
             </div>
-
           </AnimatedGroup>
         </div>
       </div>
 
-      {/* Hero Visual - Screen mockup */}
-      <div className="relative z-10 px-4 pb-20">
+      {/* Hero Visual - No Border/Stroke/Shadow */}
+      <div className="relative z-10 flex-1 flex items-start justify-center px-4 mt-12">
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8, duration: 0.8 }}
-          className="max-w-6xl mx-auto"
+          transition={{ delay: 0.6, duration: 0.7 }}
+          className="w-full max-w-6xl"
         >
-          <div className="relative bg-white rounded-2xl border border-zinc-200 shadow-2xl shadow-zinc-200/50 overflow-hidden">
-            {/* Browser header */}
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-100 bg-zinc-50">
-              <div className="flex gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-red-400" />
-                <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                <div className="w-3 h-3 rounded-full bg-green-400" />
-              </div>
-              <div className="flex-1 text-center text-xs text-zinc-400">replay.build</div>
-            </div>
-            {/* Screenshot placeholder */}
-            <div className="aspect-[16/9] bg-gradient-to-br from-zinc-50 to-zinc-100 flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
-                  <Play className="w-8 h-8 text-white ml-1" />
-                </div>
-                <p className="text-zinc-400 text-sm">Legacy UI → Modern React Components</p>
-              </div>
-            </div>
+          <div className="relative overflow-hidden">
+            <img 
+              src="/hero-bg.png" 
+              alt="Replay Platform" 
+              className="w-full h-auto"
+            />
           </div>
         </motion.div>
       </div>
 
-      {/* Curve transition */}
-      <div className="absolute bottom-0 left-0 right-0 h-24 bg-white" style={{ borderRadius: "2rem 2rem 0 0" }} />
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-zinc-950 to-transparent" />
     </section>
   );
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SOCIAL PROOF SECTION (Marquee)
-// ═══════════════════════════════════════════════════════════════
-
-function SocialProofSection() {
-  const stats = [
-    { value: "10+", label: "Enterprise pilots" },
-    { value: "500k", label: "Lines of legacy code analyzed" },
-    { value: "70%", label: "Avg. time savings" },
-    { value: "3", label: "Months to production" },
-  ];
-
-  const logos = [
-    "Financial Services", "Healthcare Systems", "Insurance Platforms", "Government Legacy",
-    "Retail Operations", "Supply Chain", "Manufacturing ERP", "Telecom Billing"
-  ];
-
-  return (
-    <section className="py-24 bg-white overflow-hidden">
-      <div className="landing-container">
-        {/* "Built for teams" FIRST */}
-        <motion.div 
-          className="text-center mb-16"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <p className="text-lg text-zinc-600 font-medium">
-            Built for teams modernizing mission-critical systems
-          </p>
-        </motion.div>
-
-        {/* Stats Grid - consistent sizing */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-12 mb-20">
-          {stats.map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="text-center"
-            >
-              <p className="text-5xl md:text-6xl font-light text-zinc-900 tracking-tight">{stat.value}</p>
-              <p className="text-base text-zinc-500 mt-3">{stat.label}</p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-      
-      {/* Marquee */}
-      <div className="relative overflow-hidden py-8 border-y border-zinc-100">
-        <div className="absolute left-0 top-0 bottom-0 w-40 bg-gradient-to-r from-white to-transparent z-10" />
-        <div className="absolute right-0 top-0 bottom-0 w-40 bg-gradient-to-l from-white to-transparent z-10" />
-        
-        <div className="flex whitespace-nowrap">
-          <div className="animate-marquee flex">
-            {logos.map((logo, i) => (
-              <span
-                key={i}
-                className="mx-16 text-lg text-zinc-400 tracking-tight"
-              >
-                {logo}
-              </span>
-            ))}
-          </div>
-          <div className="animate-marquee flex" aria-hidden="true">
-            {logos.map((logo, i) => (
-              <span
-                key={`dup-${i}`}
-                className="mx-16 text-lg text-zinc-400 tracking-tight"
-              >
-                {logo}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-// PROBLEM SECTION (Bento Grid)
+// PROBLEM SECTION (Bento Grid) - Technical Style
 // ═══════════════════════════════════════════════════════════════
 
 function ProblemSection() {
@@ -475,1002 +188,8 @@ function ProblemSection() {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section id="features" className="py-20 lg:py-32 bg-white" ref={ref}>
+    <section id="features" className="py-20 lg:py-28 bg-zinc-950 border-t border-zinc-900" ref={ref}>
       <div className="landing-container">
-        {/* Section Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-zinc-900 mb-6">
-            Rewrites fail.{" "}
-            <span className="italic text-orange-600">Yours doesn't have to.</span>
-          </h2>
-          <p className="text-lg text-zinc-600 max-w-2xl mx-auto">
-            Manual modernization runs over budget, slips for quarters, or gets paused indefinitely.
-          </p>
-        </motion.div>
-
-        {/* Problem Cards - Clean, consistent, minimal colors */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Card 1 - Documentation */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5 }}
-            className="p-8 rounded-2xl bg-white border border-zinc-200 hover:border-zinc-300 hover:shadow-lg transition-all"
-          >
-            <div className="w-12 h-12 rounded-xl bg-zinc-100 flex items-center justify-center mb-6">
-              <FileQuestion className="w-6 h-6 text-zinc-600" />
-            </div>
-            <h3 className="text-xl font-semibold text-zinc-900 mb-3">The Documentation Gap</h3>
-            <p className="text-zinc-600 leading-relaxed mb-6">
-              Nobody documented how it works. Senior devs spend months reverse engineering undocumented code.
-            </p>
-            <div className="pt-6 border-t border-zinc-100">
-              <p className="text-4xl font-light text-zinc-900">67%</p>
-              <p className="text-sm text-zinc-500 mt-1">of legacy systems lack documentation</p>
-            </div>
-          </motion.div>
-
-          {/* Card 2 - Roadmap */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="p-8 rounded-2xl bg-white border border-zinc-200 hover:border-zinc-300 hover:shadow-lg transition-all"
-          >
-            <div className="w-12 h-12 rounded-xl bg-zinc-100 flex items-center justify-center mb-6">
-              <AlertOctagon className="w-6 h-6 text-zinc-600" />
-            </div>
-            <h3 className="text-xl font-semibold text-zinc-900 mb-3">The Roadmap Freeze</h3>
-            <p className="text-zinc-600 leading-relaxed mb-6">
-              18 months of 'modernization'. Zero new features shipped. Leadership questions progress.
-            </p>
-            <div className="pt-6 border-t border-zinc-100">
-              <p className="text-4xl font-light text-zinc-900">18mo</p>
-              <p className="text-sm text-zinc-500 mt-1">average enterprise rewrite timeline</p>
-            </div>
-          </motion.div>
-
-          {/* Card 3 - Risk */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="p-8 rounded-2xl bg-white border border-zinc-200 hover:border-zinc-300 hover:shadow-lg transition-all"
-          >
-            <div className="w-12 h-12 rounded-xl bg-zinc-100 flex items-center justify-center mb-6">
-              <TrendingDown className="w-6 h-6 text-zinc-600" />
-            </div>
-            <h3 className="text-xl font-semibold text-zinc-900 mb-3">The Failure Rate</h3>
-            <p className="text-zinc-600 leading-relaxed mb-6">
-              Most rewrites get paused, cancelled, or dramatically exceed their timeline and budget.
-            </p>
-            <div className="pt-6 border-t border-zinc-100">
-              <p className="text-4xl font-light text-zinc-900">70%</p>
-              <p className="text-sm text-zinc-500 mt-1">fail or exceed timeline</p>
-            </div>
-          </motion.div>
-        </div>
-        
-        {/* Combined Solution Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="mt-8 p-6 rounded-2xl bg-white/90 backdrop-blur-sm border border-zinc-200/60 shadow-sm"
-        >
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h4 className="text-zinc-800 font-medium text-base tracking-tight">Production-ready code in days, not years</h4>
-                <p className="text-zinc-500 text-sm">Skip the discovery phase. Start with working UI components.</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span className="text-emerald-600 text-sm font-medium">Ready to deploy</span>
-            </div>
-          </div>
-
-          {/* Timeline Bars */}
-          <div className="space-y-5 pt-4 border-t border-zinc-100">
-            {/* Traditional Rewrite Bar */}
-            <div className="flex items-start gap-4">
-              <div className="w-28 flex-shrink-0 pt-1">
-                <span className="text-sm font-medium text-zinc-700">Traditional</span>
-                <p className="text-[10px] text-zinc-400">18-24 months</p>
-              </div>
-              <div className="flex-1">
-                <div className="w-full h-[2px] bg-zinc-200 rounded-full overflow-hidden">
-                  <motion.div 
-                    className="h-full rounded-full"
-                    style={{ background: "linear-gradient(90deg, #a1a1aa 0%, #a1a1aa 60%, #ef4444 100%)" }}
-                    initial={{ width: "0%" }}
-                    animate={isInView ? { width: "100%" } : {}}
-                    transition={{ duration: 2.5, delay: 0.3, ease: "easeOut" }}
-                  />
-                </div>
-                <motion.span 
-                  className="block text-right mt-1 text-[10px] font-medium text-red-400"
-                  initial={{ opacity: 0 }}
-                  animate={isInView ? { opacity: 1 } : {}}
-                  transition={{ delay: 2.5 }}
-                >
-                  ...ongoing
-                </motion.span>
-              </div>
-            </div>
-
-            {/* Replay Bar */}
-            <div className="flex items-start gap-4">
-              <div className="w-28 flex-shrink-0 pt-1">
-                <span className="text-sm font-medium text-zinc-900">Replay</span>
-                <p className="text-[10px] text-emerald-600">Days to weeks</p>
-              </div>
-              <div className="flex-1 relative">
-                <div className="w-full h-[2px] bg-zinc-200 rounded-full overflow-hidden">
-                  <motion.div 
-                    className="h-full bg-emerald-500 rounded-full"
-                    initial={{ width: "0%" }}
-                    animate={isInView ? { width: "12%" } : {}}
-                    transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
-                  />
-                </div>
-                {/* Done label below bar */}
-                <motion.span
-                  className="absolute mt-1 text-[10px] font-semibold text-emerald-600"
-                  style={{ left: "12%", transform: "translateX(-50%)" }}
-                  initial={{ opacity: 0 }}
-                  animate={isInView ? { opacity: 1 } : {}}
-                  transition={{ duration: 0.3, delay: 1.3 }}
-                >
-                  Done ✓
-                </motion.span>
-              </div>
-            </div>
-          </div>
-          
-          {/* Scale indicator */}
-          <div className="mt-6 ml-32 flex items-center justify-between text-[9px] text-zinc-400">
-            <span>Start</span>
-            <span>6 mo</span>
-            <span>12 mo</span>
-            <span>18 mo</span>
-            <span>24 mo</span>
-          </div>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-// SOLUTION SECTION (3-Step Process) - Technical Minimalist
-// ═══════════════════════════════════════════════════════════════
-
-function SolutionSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-  return (
-    <section id="solution" className="relative py-20 lg:py-32 bg-zinc-50 overflow-hidden" ref={ref}>
-      {/* Grain overlay for light section */}
-      <div className="absolute inset-0 opacity-[0.03]" 
-        style={{ 
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")` 
-        }} 
-      />
-      
-      <div className="landing-container relative z-10">
-        {/* Section Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-20"
-        >
-          <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-zinc-900 mb-6">
-            From black box to{" "}
-            <span className="italic text-zinc-500">documented codebase</span>
-          </h2>
-          <p className="text-lg text-zinc-500 max-w-2xl mx-auto">
-            Three steps. No guessing. No archaeology.
-          </p>
-        </motion.div>
-
-        {/* Steps with technical animations */}
-        <div className="grid md:grid-cols-3 gap-4 lg:gap-6">
-          {/* Step 1 - Record */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5 }}
-            className="group relative"
-          >
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-zinc-200/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative p-6 rounded-xl bg-white border border-zinc-200 hover:border-zinc-300 transition-all duration-500 h-full">
-              {/* Corner accent */}
-              <svg className="absolute top-3 right-3 w-6 h-6 text-zinc-200 group-hover:text-zinc-400 transition-colors" viewBox="0 0 24 24">
-                <path d="M18 24V18H24" stroke="currentColor" fill="none" strokeWidth="1"/>
-              </svg>
-              
-              {/* Step Number */}
-              <div className="w-8 h-8 mb-4 rounded-lg bg-zinc-900 flex items-center justify-center">
-                <span className="font-mono text-sm text-white">01</span>
-              </div>
-              
-              <h3 className="text-lg font-medium text-zinc-900 mb-2">Record the Workflow</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed mb-6">Your users already know how it works. A few minutes of screen recording replaces extensive documentation efforts.</p>
-              
-              {/* Technical Visual */}
-              <div className="relative w-full h-28 bg-zinc-950 rounded-lg overflow-hidden">
-                <div className="absolute inset-0 opacity-10"
-                  style={{
-                    backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-                    backgroundSize: '20px 20px'
-                  }}
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <motion.div 
-                    className="w-12 h-12 rounded-full border-2 border-white/20 flex items-center justify-center"
-                    animate={{ scale: [1, 1.1, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    <motion.div 
-                      className="w-4 h-4 rounded-full bg-white"
-                      animate={{ opacity: [1, 0.5, 1] }}
-                      transition={{ duration: 1, repeat: Infinity }}
-                    />
-                  </motion.div>
-                </div>
-                <div className="absolute bottom-2 right-2 px-2 py-1 bg-white/10 backdrop-blur text-white text-[10px] rounded font-mono flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                  REC 00:05:32
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Step 2 - Extract */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.15 }}
-            className="group relative"
-          >
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-zinc-200/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative p-6 rounded-xl bg-white border border-zinc-200 hover:border-zinc-300 transition-all duration-500 h-full">
-              <svg className="absolute top-3 right-3 w-6 h-6 text-zinc-200 group-hover:text-zinc-400 transition-colors" viewBox="0 0 24 24">
-                <path d="M18 24V18H24" stroke="currentColor" fill="none" strokeWidth="1"/>
-              </svg>
-              
-              <div className="w-8 h-8 mb-4 rounded-lg bg-zinc-900 flex items-center justify-center">
-                <span className="font-mono text-sm text-white">02</span>
-              </div>
-              
-              <h3 className="text-lg font-medium text-zinc-900 mb-2">Extraction Engine Maps</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed mb-6">Replay maps screens, components, and interactions from real usage — including validations and data relationships.</p>
-              
-              {/* Technical Visual - Component mapping */}
-              <div className="relative w-full h-28 bg-zinc-950 rounded-lg overflow-hidden p-3">
-                <div className="absolute inset-0 opacity-10"
-                  style={{
-                    backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-                    backgroundSize: '20px 20px'
-                  }}
-                />
-                <div className="relative flex gap-2 h-full">
-                  <motion.div 
-                    className="flex-1 rounded border border-white/20 bg-white/5"
-                    animate={{ borderColor: ['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.4)', 'rgba(255,255,255,0.2)'] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  />
-                  <div className="flex-1 flex flex-col gap-2">
-                    <motion.div 
-                      className="flex-1 rounded border border-white/20 bg-white/5"
-                      animate={{ borderColor: ['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.4)', 'rgba(255,255,255,0.2)'] }}
-                      transition={{ duration: 2, repeat: Infinity, delay: 0.3 }}
-                    />
-                    <motion.div 
-                      className="flex-1 rounded border border-white/20 bg-white/5"
-                      animate={{ borderColor: ['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.4)', 'rgba(255,255,255,0.2)'] }}
-                      transition={{ duration: 2, repeat: Infinity, delay: 0.6 }}
-                    />
-                  </div>
-                </div>
-                <div className="absolute top-1 right-1 flex gap-1">
-                  {["Nav", "Form", "Table"].map((label, i) => (
-                    <motion.span 
-                      key={label}
-                      className="px-1.5 py-0.5 bg-white/10 text-white/60 text-[9px] rounded font-mono"
-                      initial={{ opacity: 0 }}
-                      animate={isInView ? { opacity: 1 } : {}}
-                      transition={{ delay: 1 + i * 0.15 }}
-                    >
-                      {label}
-                    </motion.span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Step 3 - Export */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="group relative"
-          >
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-zinc-200/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative p-6 rounded-xl bg-white border border-zinc-200 hover:border-zinc-300 transition-all duration-500 h-full">
-              <svg className="absolute top-3 right-3 w-6 h-6 text-zinc-200 group-hover:text-zinc-400 transition-colors" viewBox="0 0 24 24">
-                <path d="M18 24V18H24" stroke="currentColor" fill="none" strokeWidth="1"/>
-              </svg>
-              
-              <div className="w-8 h-8 mb-4 rounded-lg bg-zinc-900 flex items-center justify-center">
-                <span className="font-mono text-sm text-white">03</span>
-              </div>
-              
-              <h3 className="text-lg font-medium text-zinc-900 mb-2">Export Documented Code</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed mb-6">Clean React + Tailwind components. Your engineers review the output and connect to existing APIs.</p>
-              
-              {/* Code preview */}
-              <div className="relative w-full h-28 bg-zinc-950 rounded-lg p-3 font-mono text-[10px] overflow-hidden">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <div className="w-2 h-2 rounded-full bg-white/20" />
-                  <div className="w-2 h-2 rounded-full bg-white/20" />
-                  <div className="w-2 h-2 rounded-full bg-white/20" />
-                </div>
-                <motion.div 
-                  className="space-y-1 text-white/70"
-                  initial={{ opacity: 0 }}
-                  animate={isInView ? { opacity: 1 } : {}}
-                  transition={{ delay: 0.8 }}
-                >
-                  <div><span className="text-white/40">export</span> <span className="text-white/60">function</span> <span className="text-white">UserForm</span><span className="text-white/40">()</span> <span className="text-white/40">{"{"}</span></div>
-                  <div className="pl-3"><span className="text-white/40">return</span> <span className="text-white/40">(</span></div>
-                  <div className="pl-6 text-white/30">{"// Generated component"}</div>
-                </motion.div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* CTAs */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.8 }}
-          className="mt-16 flex flex-col sm:flex-row gap-4 justify-center"
-        >
-          <Button size="lg" asChild className="group bg-zinc-900 text-white hover:bg-zinc-800">
-            <Link href="/pricing">
-              Check Pricing
-              <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </Button>
-          <Button size="lg" asChild className="bg-white text-zinc-900 border border-zinc-300 hover:bg-zinc-50">
-            <Link href="https://www.replay.build/tool?project=flow_1769444036799_r8hrcxyx2">
-              Explore Demo Workflow
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Link>
-          </Button>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-// BENTO FEATURES SECTION - Clean & Minimal
-// ═══════════════════════════════════════════════════════════════
-
-function BentoFeaturesSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-  // Simple Bento Card Component - no hover effects, clean
-  const BentoCard = ({ 
-    className, 
-    children, 
-    delay = 0 
-  }: { 
-    className?: string; 
-    children: React.ReactNode; 
-    delay?: number;
-  }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.5, delay, ease: "easeOut" }}
-      className={cn(
-        "rounded-xl bg-zinc-900/60 border border-zinc-800/60 overflow-hidden",
-        className
-      )}
-    >
-      {children}
-    </motion.div>
-  );
-
-  return (
-    <section className="relative py-20 lg:py-32 bg-zinc-950 overflow-hidden" ref={ref}>
-      {/* Subtle Background */}
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 opacity-[0.02]"
-          style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)`,
-            backgroundSize: '60px 60px'
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-zinc-950 via-transparent to-zinc-950" />
-      </div>
-
-      <div className="landing-container relative z-10">
-        {/* Section Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-800/50 border border-zinc-700/50 mb-6">
-            <span className="text-xs text-zinc-400">The Complete System</span>
-          </div>
-          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-white mb-4">
-            Everything you need to{" "}
-            <span className="italic text-zinc-500">modernize</span>
-          </h2>
-          <p className="text-sm text-zinc-500 max-w-xl mx-auto">
-            From video to deployed architecture. One unified system.
-          </p>
-        </motion.div>
-
-        {/* Bento Grid - Library as Main */}
-        <div className="grid grid-cols-12 gap-3 lg:gap-4">
-          
-          {/* LIBRARY - Large Main Card */}
-          <BentoCard className="col-span-12 lg:col-span-8 row-span-2" delay={0.1}>
-            <div className="p-5 lg:p-6 h-full flex flex-col">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center">
-                  <Layers className="w-4 h-4 text-zinc-400" />
-                </div>
-                <h3 className="text-base font-medium text-white">Library</h3>
-              </div>
-              <p className="text-zinc-500 text-xs mb-4 max-w-sm">
-                Auto-generated Design System. Every button, color, and input cataloged as reusable tokens.
-              </p>
-              
-              {/* Component Grid Preview */}
-              <div className="flex-1 grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
-                {[
-                  { name: "Button", el: <div className="w-full h-6 rounded bg-white" /> },
-                  { name: "Input", el: <div className="w-full h-6 rounded border border-zinc-700 bg-zinc-800" /> },
-                  { name: "Card", el: <div className="w-full h-6 rounded bg-zinc-800 border border-zinc-700" /> },
-                  { name: "Badge", el: <div className="w-8 h-4 rounded-full bg-zinc-700 mx-auto" /> },
-                  { name: "Avatar", el: <div className="w-6 h-6 rounded-full bg-zinc-600 mx-auto" /> },
-                  { name: "Toggle", el: <div className="w-8 h-4 rounded-full bg-zinc-700 mx-auto" /> },
-                  { name: "Select", el: <div className="w-full h-6 rounded bg-zinc-800 border border-zinc-700" /> },
-                  { name: "Modal", el: <div className="w-full h-6 rounded bg-zinc-800 border border-zinc-600" /> },
-                  { name: "Table", el: <div className="w-full h-6 rounded bg-zinc-800 flex gap-px"><div className="flex-1 bg-zinc-700" /><div className="flex-1 bg-zinc-700" /></div> },
-                  { name: "Chart", el: <div className="w-full h-6 rounded bg-zinc-800 flex items-end gap-0.5 p-1"><div className="flex-1 bg-zinc-600 h-2" /><div className="flex-1 bg-zinc-600 h-4" /><div className="flex-1 bg-zinc-600 h-3" /></div> },
-                  { name: "Nav", el: <div className="w-full h-6 rounded bg-zinc-800 flex items-center gap-1 px-1"><div className="w-2 h-2 rounded bg-zinc-600" /><div className="flex-1 h-1 bg-zinc-700" /></div> },
-                  { name: "Form", el: <div className="w-full h-6 rounded bg-zinc-800 flex flex-col gap-0.5 p-1"><div className="w-full h-1 bg-zinc-700" /><div className="w-2/3 h-1 bg-zinc-700" /></div> },
-                ].map((comp, i) => (
-                  <motion.div
-                    key={comp.name}
-                    initial={{ opacity: 0 }}
-                    animate={isInView ? { opacity: 1 } : {}}
-                    transition={{ duration: 0.3, delay: 0.2 + i * 0.05 }}
-                    className="p-2 rounded-lg bg-zinc-900/80 border border-zinc-800/50"
-                  >
-                    <div className="mb-1.5">{comp.el}</div>
-                    <span className="text-[9px] text-zinc-600 font-mono">{comp.name}</span>
-                  </motion.div>
-                ))}
-              </div>
-              
-              {/* Tags */}
-              <div className="mt-4 pt-3 border-t border-zinc-800/50 flex flex-wrap gap-1.5">
-                {["WCAG", "Visual Tests", "Controls", "Actions", "Variants"].map((tag) => (
-                  <span key={tag} className="px-2 py-0.5 rounded bg-zinc-800/50 text-[9px] text-zinc-500">{tag}</span>
-                ))}
-              </div>
-            </div>
-          </BentoCard>
-
-          {/* FLOW MAP - Vertical */}
-          <BentoCard className="col-span-12 sm:col-span-6 lg:col-span-4 row-span-2" delay={0.15}>
-            <div className="p-5 h-full flex flex-col">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center">
-                  <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-                  </svg>
-                </div>
-                <h3 className="text-base font-medium text-white">Flow Map</h3>
-              </div>
-              <p className="text-zinc-500 text-xs mb-4">
-                Visual architecture mapping from video. Detecting visited pages and logic gaps.
-              </p>
-              
-              {/* Flow Visualization */}
-              <div className="flex-1 relative bg-zinc-900/50 rounded-lg border border-zinc-800/50 overflow-hidden min-h-[200px]">
-                <div className="absolute inset-0 opacity-[0.02]"
-                  style={{
-                    backgroundImage: `linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)`,
-                    backgroundSize: '20px 20px'
-                  }}
-                />
-                {/* Nodes */}
-                <motion.div
-                  className="absolute top-6 left-6 w-12 h-12 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center"
-                  initial={{ opacity: 0 }}
-                  animate={isInView ? { opacity: 1 } : {}}
-                  transition={{ duration: 0.4, delay: 0.3 }}
-                >
-                  <span className="text-zinc-400 text-[9px] font-mono">LOGIN</span>
-                </motion.div>
-                <motion.div
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-lg bg-zinc-800 border border-zinc-600 flex items-center justify-center"
-                  initial={{ opacity: 0 }}
-                  animate={isInView ? { opacity: 1 } : {}}
-                  transition={{ duration: 0.4, delay: 0.5 }}
-                >
-                  <span className="text-zinc-300 text-[10px] font-mono">DASH</span>
-                </motion.div>
-                <motion.div
-                  className="absolute top-6 right-6 w-12 h-12 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center"
-                  initial={{ opacity: 0 }}
-                  animate={isInView ? { opacity: 1 } : {}}
-                  transition={{ duration: 0.4, delay: 0.7 }}
-                >
-                  <span className="text-zinc-400 text-[9px] font-mono">USERS</span>
-                </motion.div>
-                <motion.div
-                  className="absolute bottom-6 left-1/2 -translate-x-1/2 w-10 h-10 rounded-lg bg-zinc-900 border border-dashed border-zinc-700 flex items-center justify-center"
-                  initial={{ opacity: 0 }}
-                  animate={isInView ? { opacity: 0.5 } : {}}
-                  transition={{ duration: 0.4, delay: 0.9 }}
-                >
-                  <span className="text-zinc-600 text-[9px]">?</span>
-                </motion.div>
-                
-                {/* Simple connection lines */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                  <motion.line
-                    x1="60" y1="50" x2="50%" y2="50%"
-                    stroke="rgba(113,113,122,0.3)"
-                    strokeWidth="1"
-                    initial={{ pathLength: 0 }}
-                    animate={isInView ? { pathLength: 1 } : {}}
-                    transition={{ duration: 0.6, delay: 0.4 }}
-                  />
-                  <motion.line
-                    x1="50%" y1="50%" x2="calc(100% - 60px)" y2="50"
-                    stroke="rgba(113,113,122,0.3)"
-                    strokeWidth="1"
-                    initial={{ pathLength: 0 }}
-                    animate={isInView ? { pathLength: 1 } : {}}
-                    transition={{ duration: 0.6, delay: 0.6 }}
-                  />
-                </svg>
-                
-                {/* Labels */}
-                <div className="absolute bottom-2 left-2 flex items-center gap-3">
-                  <div className="flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
-                    <span className="text-[8px] text-zinc-600">Observed</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full border border-dashed border-zinc-600" />
-                    <span className="text-[8px] text-zinc-600">Detected</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </BentoCard>
-
-          {/* BLUEPRINTS */}
-          <BentoCard className="col-span-6 lg:col-span-4" delay={0.2}>
-            <div className="p-5 h-full flex flex-col">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center">
-                  <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6z" />
-                  </svg>
-                </div>
-                <h3 className="text-sm font-medium text-white">Blueprints</h3>
-              </div>
-              <p className="text-zinc-500 text-[11px] mb-3">
-                Edit components with AI. Changes propagate globally.
-              </p>
-              
-              <div className="flex-1 bg-zinc-900/50 rounded-lg border border-zinc-800/50 p-2.5">
-                <div className="flex items-center gap-1.5 mb-2 pb-1.5 border-b border-zinc-800/50">
-                  <Zap className="w-3 h-3 text-zinc-500" />
-                  <span className="text-[10px] text-zinc-500">AI Edit</span>
-                </div>
-                <div className="text-[10px] text-zinc-600 font-mono mb-2">
-                  &gt; "Make it rounded"
-                </div>
-                <motion.div
-                  className="w-full h-6 bg-zinc-800"
-                  initial={{ borderRadius: "4px" }}
-                  animate={isInView ? { borderRadius: "9999px" } : {}}
-                  transition={{ duration: 0.6, delay: 0.8 }}
-                />
-              </div>
-            </div>
-          </BentoCard>
-
-          {/* MULTIPLAYER */}
-          <BentoCard className="col-span-6 lg:col-span-4" delay={0.25}>
-            <div className="p-5 h-full flex flex-col">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center">
-                  <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-sm font-medium text-white">Multiplayer</h3>
-              </div>
-              <p className="text-zinc-500 text-[11px] mb-3">
-                Real-time collaboration with live cursors.
-              </p>
-              
-              <div className="flex-1 relative bg-zinc-900/50 rounded-lg border border-zinc-800/50 min-h-[60px]">
-                <motion.div
-                  className="absolute flex items-center gap-1"
-                  style={{ left: "20%", top: "30%" }}
-                  animate={{ left: ["20%", "50%", "30%"], top: ["30%", "50%", "40%"] }}
-                  transition={{ duration: 6, repeat: Infinity, repeatType: "reverse" }}
-                >
-                  <svg className="w-3 h-3 text-zinc-400" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M5.5 3.5L19.5 12L12 13L9 20.5L5.5 3.5Z" />
-                  </svg>
-                  <span className="px-1 py-0.5 rounded bg-zinc-700 text-[8px] text-zinc-300">Alex</span>
-                </motion.div>
-                <motion.div
-                  className="absolute flex items-center gap-1"
-                  style={{ left: "60%", top: "60%" }}
-                  animate={{ left: ["60%", "30%", "50%"], top: ["60%", "35%", "55%"] }}
-                  transition={{ duration: 7, repeat: Infinity, repeatType: "reverse", delay: 1 }}
-                >
-                  <svg className="w-3 h-3 text-zinc-500" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M5.5 3.5L19.5 12L12 13L9 20.5L5.5 3.5Z" />
-                  </svg>
-                  <span className="px-1 py-0.5 rounded bg-zinc-700 text-[8px] text-zinc-300">Sam</span>
-                </motion.div>
-              </div>
-            </div>
-          </BentoCard>
-
-          {/* AI AUTOMATION */}
-          <BentoCard className="col-span-6 lg:col-span-4" delay={0.3}>
-            <div className="p-5 h-full flex flex-col">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center">
-                  <Zap className="w-4 h-4 text-zinc-400" />
-                </div>
-                <h3 className="text-sm font-medium text-white">AI Automation</h3>
-              </div>
-              <p className="text-zinc-500 text-[11px] mb-3">
-                API Contracts, E2E Tests, Tech Debt Audits.
-              </p>
-              
-              <div className="flex-1 space-y-1.5">
-                {[
-                  { name: "API Contracts", done: true },
-                  { name: "E2E Tests", done: true },
-                  { name: "Documentation", done: false },
-                ].map((item) => (
-                  <div key={item.name} className="flex items-center justify-between py-1.5 px-2.5 rounded bg-zinc-900/50 border border-zinc-800/50">
-                    <span className="text-[10px] text-zinc-500">{item.name}</span>
-                    {item.done ? (
-                      <Check className="w-3 h-3 text-zinc-500" />
-                    ) : (
-                      <div className="w-3 h-3 border border-zinc-600 border-t-transparent rounded-full animate-spin" />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </BentoCard>
-
-          {/* LIVE PREVIEW */}
-          <BentoCard className="col-span-12 lg:col-span-6" delay={0.35}>
-            <div className="p-5 h-full flex flex-col sm:flex-row gap-4">
-              <div className="sm:w-1/3">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center">
-                    <Eye className="w-4 h-4 text-zinc-400" />
-                  </div>
-                  <h3 className="text-sm font-medium text-white">Preview</h3>
-                </div>
-                <p className="text-zinc-500 text-[11px] mb-3">
-                  Point & click editing with instant feedback.
-                </p>
-                <div className="flex flex-wrap gap-1">
-                  {["Mobile", "Desktop"].map((m) => (
-                    <span key={m} className="px-1.5 py-0.5 rounded bg-zinc-800/50 text-[9px] text-zinc-600">{m}</span>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="sm:flex-1 bg-zinc-900/50 rounded-lg border border-zinc-800/50 overflow-hidden min-h-[100px]">
-                <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-zinc-800/50">
-                  <span className="w-2 h-2 rounded-full bg-zinc-700" />
-                  <span className="w-2 h-2 rounded-full bg-zinc-700" />
-                  <span className="w-2 h-2 rounded-full bg-zinc-700" />
-                  <div className="flex-1 h-3 rounded bg-zinc-800/50 mx-4" />
-                </div>
-                <div className="p-3">
-                  <div className="w-2/3 h-3 rounded bg-zinc-800 mb-2" />
-                  <div className="w-1/2 h-2 rounded bg-zinc-800/50 mb-3" />
-                  <div className="w-16 h-5 rounded bg-zinc-800 flex items-center justify-center">
-                    <span className="text-[8px] text-zinc-500">Button</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </BentoCard>
-
-          {/* CODE EXPORT */}
-          <BentoCard className="col-span-12 lg:col-span-6" delay={0.4}>
-            <div className="p-5 h-full flex flex-col">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center">
-                  <Code className="w-4 h-4 text-zinc-400" />
-                </div>
-                <h3 className="text-sm font-medium text-white">Export Code</h3>
-              </div>
-              <p className="text-zinc-500 text-[11px] mb-3">
-                Clean React + Tailwind. Ready for your engineers.
-              </p>
-              
-              <div className="flex-1 bg-zinc-900/50 rounded-lg border border-zinc-800/50 p-3 font-mono text-[9px] overflow-hidden">
-                <div className="text-zinc-500">export function <span className="text-zinc-300">UserForm</span>() {'{'}</div>
-                <div className="pl-2 text-zinc-600">return (</div>
-                <div className="pl-4 text-zinc-600">&lt;div className="..."&gt;</div>
-                <div className="pl-6 text-zinc-700">// Generated component</div>
-                <div className="pl-4 text-zinc-600">&lt;/div&gt;</div>
-                <div className="pl-2 text-zinc-600">)</div>
-                <div className="text-zinc-500">{'}'}</div>
-              </div>
-            </div>
-          </BentoCard>
-
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-// ROI CALCULATOR SECTION
-// ═══════════════════════════════════════════════════════════════
-
-function ROICalculatorSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-  
-  const [screens, setScreens] = useState(15);
-  const [hoursPerScreen, setHoursPerScreen] = useState(40);
-  const [hourlyRate, setHourlyRate] = useState(100);
-
-  const totalHours = screens * hoursPerScreen;
-  const replayHours = Math.round(totalHours * 0.3); // 70% savings estimate
-  const savedHours = totalHours - replayHours;
-  const savedValue = savedHours * hourlyRate;
-
-  return (
-    <section className="py-20 lg:py-32 bg-white" ref={ref}>
-      <div className="landing-container">
-        {/* Section Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-zinc-900 mb-6">
-            Estimate your modernization{" "}
-            <span className="italic text-orange-600">investment</span>
-          </h2>
-          <p className="text-lg text-zinc-600 max-w-2xl mx-auto">
-            See potential time savings with visual workflow extraction.
-          </p>
-        </motion.div>
-
-        {/* Calculator */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.2 }}
-          className="max-w-4xl mx-auto"
-        >
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Inputs */}
-            <div className="space-y-8 p-8 rounded-2xl bg-zinc-50 border border-zinc-200">
-              <p className="text-xs text-zinc-500 uppercase tracking-wider font-medium">ROI Calculator</p>
-              
-              <div>
-                <label className="flex justify-between mb-3">
-                  <span className="text-sm font-medium text-zinc-700">Screens/Modules to Migrate</span>
-                  <span className="text-sm font-bold text-orange-600">{screens}</span>
-                </label>
-                <input
-                  type="range"
-                  min="5"
-                  max="50"
-                  value={screens}
-                  onChange={(e) => setScreens(Number(e.target.value))}
-                  className="roi-slider"
-                />
-              </div>
-              
-              <div>
-                <label className="flex justify-between mb-3">
-                  <span className="text-sm font-medium text-zinc-700">Hours per Screen (Manual)</span>
-                  <span className="text-sm font-bold text-orange-600">{hoursPerScreen}h</span>
-                </label>
-                <input
-                  type="range"
-                  min="20"
-                  max="60"
-                  value={hoursPerScreen}
-                  onChange={(e) => setHoursPerScreen(Number(e.target.value))}
-                  className="roi-slider"
-                />
-              </div>
-              
-              <div>
-                <label className="flex justify-between mb-3">
-                  <span className="text-sm font-medium text-zinc-700">Team Hourly Rate</span>
-                  <span className="text-sm font-bold text-orange-600">${hourlyRate}</span>
-                </label>
-                <input
-                  type="range"
-                  min="50"
-                  max="150"
-                  value={hourlyRate}
-                  onChange={(e) => setHourlyRate(Number(e.target.value))}
-                  className="roi-slider"
-                />
-              </div>
-            </div>
-
-            {/* Results */}
-            <div className="p-8 rounded-2xl bg-zinc-900 text-white border-2 border-orange-500/30">
-              <h3 className="text-sm font-medium text-zinc-400 mb-6">POTENTIAL SAVINGS</h3>
-              
-              <div className="space-y-6">
-                <div>
-                  <p className="text-sm text-zinc-400">Hours Saved</p>
-                  <p className="font-serif text-4xl text-white">{savedHours.toLocaleString()}</p>
-                </div>
-                
-                <div>
-                  <p className="text-sm text-zinc-400">Estimated Value</p>
-                  <p className="font-serif text-5xl text-orange-500">${savedValue.toLocaleString()}</p>
-                </div>
-                
-                <div className="pt-6 border-t border-zinc-800">
-                  <p className="text-xs text-zinc-500">
-                    Estimates based on typical pilot results. Actual savings vary by system complexity.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-// SECURITY SECTION - Technical Animated Version
-// ═══════════════════════════════════════════════════════════════
-
-// Animated Grid Background
-function AnimatedGridBackground() {
-  return (
-    <div className="absolute inset-0 overflow-hidden">
-      {/* Grid pattern */}
-      <div className="absolute inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-          backgroundSize: '60px 60px'
-        }}
-      />
-      
-      {/* Floating particles */}
-      {[...Array(20)].map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute w-1 h-1 bg-white/20 rounded-full"
-          style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-          }}
-          animate={{
-            y: [0, -30, 0],
-            opacity: [0.2, 0.5, 0.2],
-          }}
-          transition={{
-            duration: 3 + Math.random() * 2,
-            repeat: Infinity,
-            delay: Math.random() * 2,
-          }}
-        />
-      ))}
-      
-      {/* Corner brackets */}
-      <svg className="absolute top-8 left-8 w-16 h-16 text-white/10" viewBox="0 0 64 64">
-        <path d="M0 20V0h20M44 0h20v20" stroke="currentColor" fill="none" strokeWidth="1"/>
-      </svg>
-      <svg className="absolute bottom-8 right-8 w-16 h-16 text-white/10" viewBox="0 0 64 64">
-        <path d="M0 44v20h20M44 64h20V44" stroke="currentColor" fill="none" strokeWidth="1"/>
-      </svg>
-      
-      {/* Grain overlay */}
-      <div className="absolute inset-0 opacity-[0.015]" 
-        style={{ 
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")` 
-        }} 
-      />
-    </div>
-  );
-}
-
-function SecuritySection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-  const features = [
-    {
-      icon: Shield,
-      title: "Configurable Retention",
-      body: "Default is processing-only with no storage. Configure retention policies to match your compliance requirements.",
-      badge: null
-    },
-    {
-      icon: Eye,
-      title: "PII Detection",
-      body: "Automatic detection of sensitive data patterns. Blur or mask before processing.",
-      badge: "BETA"
-    },
-    {
-      icon: Server,
-      title: "On-Premise Deployment",
-      body: "Deploy Replay on your infrastructure for complete data isolation.",
-      badge: "ENTERPRISE"
-    },
-    {
-      icon: ClipboardCheck,
-      title: "Security Controls",
-      body: "Audit logging, access controls, and security practices aligned with SOC 2 framework.",
-      badge: "IN PROGRESS"
-    }
-  ];
-
-  return (
-    <section id="security" className="relative py-20 lg:py-32 bg-zinc-950 text-white overflow-hidden" ref={ref}>
-      {/* Animated Background */}
-      <AnimatedGridBackground />
-      
-      <div className="landing-container relative z-10">
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -1479,88 +198,187 @@ function SecuritySection() {
           className="text-center mb-16"
         >
           <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-white mb-6">
-            Built for{" "}
-            <span className="italic text-zinc-400">regulated environments</span>
+            Rewrites fail.{" "}
+            <span className="italic text-zinc-500">Yours doesn't have to.</span>
           </h2>
-          <p className="text-lg text-zinc-500 max-w-2xl mx-auto">
-            Your recordings, your control.
+          <p className="text-zinc-500 max-w-xl mx-auto text-lg">
+            Manual modernization runs over budget, slips for quarters, or gets paused indefinitely.
           </p>
         </motion.div>
 
-        {/* Features Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {features.map((feature, i) => (
-            <motion.div
-              key={feature.title}
-              initial={{ opacity: 0, y: 30 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="group relative"
-            >
-              {/* Animated border */}
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              
-              <div className="relative p-6 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-white/10 transition-all duration-500 hover:bg-white/[0.04] h-full">
-                {/* Scan line on hover */}
-                <motion.div
-                  className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 group-hover:opacity-100"
-                  initial={{ scaleX: 0 }}
-                  whileHover={{ scaleX: 1 }}
-                  transition={{ duration: 0.5 }}
-                />
-                
-                <div className="flex items-start justify-between mb-4">
-                  <motion.div 
-                    className="w-10 h-10 rounded-lg bg-white/[0.03] border border-white/[0.08] flex items-center justify-center"
-                    whileHover={{ scale: 1.05, borderColor: 'rgba(255,255,255,0.2)' }}
-                  >
-                    <feature.icon className="w-5 h-5 text-zinc-400 group-hover:text-white transition-colors duration-300" />
-                  </motion.div>
-                  {feature.badge && (
-                    <span className={cn(
-                      "px-2 py-0.5 text-[10px] font-mono tracking-wider rounded border",
-                      feature.badge === "BETA" && "border-zinc-700 text-zinc-500",
-                      feature.badge === "ENTERPRISE" && "border-zinc-700 text-zinc-500",
-                      feature.badge === "IN PROGRESS" && "border-zinc-700 text-zinc-500"
-                    )}>
-                      {feature.badge}
-                    </span>
-                  )}
+        {/* Problem Cards - Dark Grid Style */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-zinc-800 border border-zinc-800 rounded-lg overflow-hidden">
+          {/* Card 1 - Documentation */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5 }}
+            className="group p-8 bg-zinc-950 hover:bg-zinc-900/50 transition-colors relative"
+          >
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 rounded bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+                <FileQuestion className="w-4 h-4 text-zinc-400" />
+              </div>
+              <h3 className="text-base font-medium text-white">The Documentation Gap</h3>
+            </div>
+            <div className="mb-8">
+              <motion.p 
+                className="text-4xl font-light text-white tabular-nums tracking-tight"
+                initial={{ opacity: 0 }}
+                animate={isInView ? { opacity: 1 } : {}}
+                transition={{ delay: 0.5 }}
+              >
+                67%
+              </motion.p>
+              <p className="text-xs text-zinc-500 mt-2 uppercase tracking-wider">lack documentation</p>
+            </div>
+            <p className="text-sm text-zinc-500 leading-relaxed">
+              Nobody documented how it works. Senior devs spend months reverse engineering undocumented code.
+            </p>
+          </motion.div>
+
+          {/* Card 2 - Roadmap */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="group p-8 bg-zinc-950 hover:bg-zinc-900/50 transition-colors relative"
+          >
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 rounded bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+                <AlertOctagon className="w-4 h-4 text-zinc-400" />
+              </div>
+              <h3 className="text-base font-medium text-white">The Roadmap Freeze</h3>
+            </div>
+            <div className="mb-8">
+              <motion.p 
+                className="text-4xl font-light text-white tabular-nums tracking-tight"
+                initial={{ opacity: 0 }}
+                animate={isInView ? { opacity: 1 } : {}}
+                transition={{ delay: 0.6 }}
+              >
+                18mo
+              </motion.p>
+              <p className="text-xs text-zinc-500 mt-2 uppercase tracking-wider">rewrite timeline</p>
+            </div>
+            <p className="text-sm text-zinc-500 leading-relaxed">
+              18 months of 'modernization'. Zero new features shipped. Leadership questions progress.
+            </p>
+          </motion.div>
+
+          {/* Card 3 - Risk */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="group p-8 bg-zinc-950 hover:bg-zinc-900/50 transition-colors relative"
+          >
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 rounded bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+                <TrendingDown className="w-4 h-4 text-zinc-400" />
+              </div>
+              <h3 className="text-base font-medium text-white">The Failure Rate</h3>
+            </div>
+            <div className="mb-8">
+              <motion.p 
+                className="text-4xl font-light text-white tabular-nums tracking-tight"
+                initial={{ opacity: 0 }}
+                animate={isInView ? { opacity: 1 } : {}}
+                transition={{ delay: 0.7 }}
+              >
+                70%
+              </motion.p>
+              <p className="text-xs text-zinc-500 mt-2 uppercase tracking-wider">fail or exceed timeline</p>
+            </div>
+            <p className="text-sm text-zinc-500 leading-relaxed">
+              Most rewrites get paused, cancelled, or dramatically exceed their timeline and budget.
+            </p>
+          </motion.div>
+        </div>
+        
+        {/* Timeline Comparison - Technical */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="mt-8 p-1 rounded-lg bg-zinc-800 border border-zinc-800"
+        >
+          <div className="bg-zinc-950 p-8 rounded border border-zinc-900 relative overflow-hidden">
+            <TechGrid />
+            <div className="relative z-10">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-8">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Zap className="w-4 h-4 text-orange-500" />
+                    <h4 className="text-white text-sm font-medium">Production-ready code in days</h4>
+                  </div>
+                  <p className="text-zinc-500 text-xs">Skip the discovery phase. Start with working UI.</p>
                 </div>
-                <h3 className="text-sm font-medium text-white mb-2 group-hover:text-white transition-colors">{feature.title}</h3>
-                <p className="text-xs text-zinc-500 leading-relaxed group-hover:text-zinc-400 transition-colors">{feature.body}</p>
-                
-                {/* Corner accent */}
-                <div className="absolute bottom-2 right-2 w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <svg viewBox="0 0 16 16" className="w-full h-full text-white/10">
-                    <path d="M12 16V12H16" stroke="currentColor" fill="none" strokeWidth="1"/>
-                  </svg>
+                <div className="flex items-center gap-2 px-3 py-1 rounded bg-zinc-900 border border-zinc-800">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-emerald-500 text-xs font-mono">READY_TO_DEPLOY</span>
                 </div>
               </div>
-            </motion.div>
-          ))}
-        </div>
 
-        {/* Compliance Note */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={isInView ? { opacity: 1 } : {}}
-          transition={{ delay: 0.6 }}
-          className="mt-12 text-center"
-        >
-          <div className="inline-flex items-center gap-6 text-xs text-zinc-600 font-mono">
-            <span className="flex items-center gap-2">
-              <span className="w-1 h-1 rounded-full bg-zinc-600" />
-              SOC 2 Type II
-            </span>
-            <span className="flex items-center gap-2">
-              <span className="w-1 h-1 rounded-full bg-zinc-600" />
-              GDPR
-            </span>
-            <span className="flex items-center gap-2">
-              <span className="w-1 h-1 rounded-full bg-zinc-600" />
-              HIPAA-ready
-            </span>
+              <div className="space-y-6">
+                {/* Traditional */}
+                <div className="relative">
+                  <div className="flex items-center justify-between text-xs text-zinc-500 mb-2 font-mono">
+                    <span>TRADITIONAL</span>
+                    <span>18-24 MONTHS</span>
+                  </div>
+                  <div className="h-2 bg-zinc-900 rounded overflow-hidden border border-zinc-800">
+                    <motion.div 
+                      className="h-full bg-gradient-to-r from-zinc-700 to-zinc-600"
+                      initial={{ width: "0%" }}
+                      animate={isInView ? { width: "100%" } : {}}
+                      transition={{ duration: 2, delay: 0.5 }}
+                    />
+                  </div>
+                  <span className="absolute right-0 top-8 text-[10px] text-zinc-600 font-mono">...ongoing</span>
+                </div>
+
+                {/* Replay */}
+                <div className="relative">
+                  <div className="flex items-center justify-between text-xs text-zinc-300 mb-2 font-mono">
+                    <span className="text-white">REPLAY</span>
+                    <span className="text-emerald-500">DAYS TO WEEKS</span>
+                  </div>
+                  <div className="h-2 bg-zinc-900 rounded overflow-hidden border border-zinc-800 relative">
+                    {/* Grid lines inside bar */}
+                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNCIgaGVpZ2h0PSI0IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xIDFhMSAxIDAgMCAxIDAgMmgxVjFIMXoiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] opacity-50" />
+                    <motion.div 
+                      className="h-full bg-emerald-500"
+                      initial={{ width: "0%" }}
+                      animate={isInView ? { width: "12%" } : {}}
+                      transition={{ duration: 0.8, delay: 0.8 }}
+                    />
+                  </div>
+                  <motion.div
+                    className="absolute top-8 text-[10px] text-emerald-500 font-mono flex items-center gap-1"
+                    style={{ left: "12%", transform: "translateX(-50%)" }}
+                    initial={{ opacity: 0 }}
+                    animate={isInView ? { opacity: 1 } : {}}
+                    transition={{ delay: 1.6 }}
+                  >
+                    <Check className="w-3 h-3" />
+                    <span>DONE</span>
+                  </motion.div>
+                </div>
+              </div>
+              
+              {/* Timeline Ticks */}
+              <div className="mt-8 flex justify-between text-[9px] text-zinc-700 font-mono border-t border-zinc-900 pt-2">
+                <span>START</span>
+                <span>6 MO</span>
+                <span>12 MO</span>
+                <span>18 MO</span>
+                <span>24 MO</span>
+              </div>
+            </div>
           </div>
         </motion.div>
       </div>
@@ -1569,86 +387,75 @@ function SecuritySection() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// FAQ SECTION - Technical Dark Theme
+// BENTO FEATURES SECTION - Technical Command Grid
 // ═══════════════════════════════════════════════════════════════
 
-function FAQSection() {
+function BentoFeaturesSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
 
-  const faqs = [
-    {
-      q: "Does it connect to our backend systems?",
-      a: "Replay generates frontend components. Your team connects them to existing APIs and databases during integration. We map data structure from what's visible in the UI."
-    },
-    {
-      q: "Is the generated code maintainable?",
-      a: "Yes. Output uses standard React patterns with Tailwind and Shadcn components. Code follows conventions your team already knows."
-    },
-    {
-      q: "How accurate is the extraction?",
-      a: "Accuracy depends on UI complexity and recording quality. Most teams use Replay to accelerate UI reconstruction, then review business logic during integration."
-    },
-    {
-      q: "What about sensitive data in recordings?",
-      a: "PII detection (beta) identifies common patterns. For maximum security, use on-premise deployment where recordings never leave your network."
-    },
-    {
-      q: "Can we deploy on our infrastructure?",
-      a: "Yes. Enterprise customers can deploy Replay on-premise with full network isolation."
-    },
-    {
-      q: "What types of applications work best?",
-      a: "Any application with consistent UI workflows that you can screen-record. Best results on form-based applications, dashboards, and data entry systems."
-    }
-  ];
+  const BentoCard = ({ 
+    className, 
+    children, 
+    delay = 0,
+    title,
+    icon: Icon
+  }: { 
+    className?: string; 
+    children: React.ReactNode; 
+    delay?: number;
+    title?: string;
+    icon?: any;
+  }) => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={isInView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.5, delay, ease: "easeOut" }}
+      className={cn(
+        "relative group bg-zinc-950 border border-zinc-800 overflow-hidden",
+        className
+      )}
+    >
+      {/* Corner accents */}
+      <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-zinc-700 opacity-50" />
+      <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-zinc-700 opacity-50" />
+      <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-zinc-700 opacity-50" />
+      <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-zinc-700 opacity-50" />
+      
+      {/* Grid overlay */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_80%)]" />
+
+      {/* Content */}
+      <div className="relative z-10 h-full flex flex-col p-6">
+        {(title || Icon) && (
+          <div className="flex items-center gap-3 mb-4 pb-4 border-b border-zinc-900 border-dashed">
+            {Icon && <Icon className="w-4 h-4 text-zinc-500" />}
+            {title && <span className="text-sm font-mono text-zinc-300 tracking-tight">{title}</span>}
+          </div>
+        )}
+        <div className="flex-1">{children}</div>
+      </div>
+    </motion.div>
+  );
 
   return (
-    <section className="relative py-20 lg:py-32 bg-zinc-950 overflow-hidden" ref={ref}>
-      {/* Top separator line */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl px-8">
-        <div className="h-px bg-gradient-to-r from-transparent via-zinc-700 to-transparent" />
-      </div>
-      
-      {/* Background */}
-      <div className="absolute inset-0">
-        {/* Grid pattern */}
-        <div className="absolute inset-0 opacity-[0.02]"
+    <section className="relative py-20 bg-zinc-950 overflow-hidden" ref={ref}>
+      {/* Subtle gradient glow instead of heavy BeamsBackground */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        {/* Subtle radial glow */}
+        <div 
+          className="absolute inset-0 opacity-[0.08]"
           style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-            backgroundSize: '60px 60px'
+            background: 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(100,150,255,0.3) 0%, transparent 60%)'
           }}
         />
-        {/* Floating particles */}
-        {[...Array(12)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 bg-white/15 rounded-full"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              y: [0, -20, 0],
-              opacity: [0.15, 0.3, 0.15],
-            }}
-            transition={{
-              duration: 4 + Math.random() * 2,
-              repeat: Infinity,
-              delay: Math.random() * 2,
-            }}
-          />
-        ))}
-        {/* Grain */}
-        <div className="absolute inset-0 opacity-[0.02]" 
-          style={{ 
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")` 
-          }} 
-        />
+        {/* Top fade */}
+        <div className="absolute inset-x-0 top-0 h-60 bg-gradient-to-b from-zinc-950 to-transparent" />
+        {/* Bottom fade */}
+        <div className="absolute inset-x-0 bottom-0 h-60 bg-gradient-to-t from-zinc-950 to-transparent" />
       </div>
-      
-      <div className="landing-container max-w-3xl relative z-10">
+
+      <div className="landing-container relative z-10">
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -1656,66 +463,373 @@ function FAQSection() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="font-serif text-4xl md:text-5xl text-white mb-6">
-            Questions your team{" "}
-            <span className="italic text-zinc-400">will ask</span>
+          <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-white mb-4">
+            Everything you need to{" "}
+            <span className="italic text-zinc-500">modernize</span>
           </h2>
-          <p className="text-lg text-zinc-500">
-            Clear answers for technical evaluation.
+          <p className="text-sm text-zinc-500 max-w-xl mx-auto font-mono">
+            From video to deployed architecture. One unified system.
           </p>
         </motion.div>
 
-        {/* FAQ Grid */}
-        <div className="grid gap-3">
-          {faqs.map((faq, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.4, delay: i * 0.08 }}
-              className="group"
-            >
-              <div className={cn(
-                "relative p-5 rounded-xl border transition-all duration-300 cursor-pointer",
-                openIndex === i 
-                  ? "bg-white/[0.03] border-white/10" 
-                  : "bg-white/[0.01] border-white/[0.05] hover:bg-white/[0.02] hover:border-white/[0.08]"
-              )}
-                onClick={() => setOpenIndex(openIndex === i ? null : i)}
-              >
-                {/* Corner accent */}
-                <svg className={cn(
-                  "absolute top-3 right-3 w-4 h-4 transition-colors",
-                  openIndex === i ? "text-white/20" : "text-white/5"
-                )} viewBox="0 0 16 16">
-                  <path d="M12 16V12H16" stroke="currentColor" fill="none" strokeWidth="1"/>
-                </svg>
-                
-                <button className="w-full flex items-center justify-between text-left">
-                  <span className={cn(
-                    "font-medium text-sm transition-colors pr-8",
-                    openIndex === i ? "text-white" : "text-zinc-300 group-hover:text-white"
-                  )}>{faq.q}</span>
-                  <ChevronDown className={cn(
-                    "w-4 h-4 transition-transform flex-shrink-0",
-                    openIndex === i ? "rotate-180 text-zinc-400" : "text-zinc-600"
-                  )} />
-                </button>
-                <AnimatePresence>
-                  {openIndex === i && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden"
-                    >
-                      <p className="mt-4 text-sm text-zinc-500 leading-relaxed">{faq.a}</p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+        {/* Technical Grid Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+
+          {/* RECONSTRUCTION - First / Top */}
+          <BentoCard className="col-span-1 md:col-span-12 min-h-[300px]" delay={0.05} title="RECONSTRUCTION" icon={Database}>
+            <div className="flex flex-col md:flex-row gap-8 h-full">
+              <div className="md:w-1/3 flex flex-col justify-center">
+                <h3 className="text-xl text-white font-medium mb-3">Reconstruct from video</h3>
+                <p className="text-sm text-zinc-500 leading-relaxed">
+                  Turn screen recordings into pixel-perfect React code. Our engine analyzes layout, typography, and spacing to recreate your interface with accuracy in given style creating new design system.
+                </p>
               </div>
-            </motion.div>
+              <div className="md:w-2/3 relative rounded border border-zinc-800 overflow-hidden group">
+                <img src="/recon.png" alt="Reconstruction" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
+              </div>
+            </div>
+          </BentoCard>
+          
+          {/* LIBRARY - Large Main Card */}
+          <BentoCard className="col-span-1 md:col-span-8 md:row-span-2 min-h-[400px]" delay={0.1} title="COMPONENT LIBRARY" icon={Layers}>
+            <p className="text-zinc-500 text-xs mb-6 max-w-sm">
+              From chaos to a living Design System. Instantly catalog every button, color, and input as reusable tokens.
+            </p>
+            
+            <div className="relative w-full h-[300px] rounded border border-zinc-800 overflow-hidden group">
+              <img src="/lib.png" alt="Library" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
+            </div>
+          </BentoCard>
+
+          {/* FLOW MAP */}
+          <BentoCard className="col-span-1 md:col-span-4 md:row-span-2 min-h-[400px]" delay={0.15} title="FLOW" icon={Workflow}>
+            <p className="text-zinc-500 text-xs mb-6">
+              Visual architecture mapping from video. Detecting visited pages and logic gaps.
+            </p>
+            
+            <div className="relative w-full h-[300px] rounded border border-zinc-800 overflow-hidden group">
+              <img src="/flow.png" alt="Flow Map" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
+            </div>
+          </BentoCard>
+
+          {/* BLUEPRINTS */}
+          <BentoCard className="col-span-1 md:col-span-4 min-h-[240px]" delay={0.2} title="BLUEPRINTS" icon={Box}>
+            <p className="text-zinc-500 text-[11px] mb-4">
+              Edit components with AI. Changes propagate globally.
+            </p>
+            
+            <div className="relative w-full h-32 rounded border border-zinc-800 overflow-hidden group">
+              <img src="/blue.png" alt="Blueprints" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
+            </div>
+          </BentoCard>
+
+          {/* MULTIPLAYER - Animated */}
+          <BentoCard className="col-span-1 md:col-span-4 min-h-[240px]" delay={0.25} title="MULTIPLAYER" icon={Grid}>
+            <p className="text-zinc-500 text-[11px] mb-4">
+              Real-time collaboration with live cursors.
+            </p>
+            
+            <div className="relative w-full h-32 rounded border border-zinc-800 overflow-hidden">
+              <img src="/multi-1.png" alt="Multiplayer" className="w-full h-full object-cover opacity-60" />
+              
+              {/* Animated Cursors */}
+              <motion.div 
+                className="absolute z-10 top-1/4 left-1/4"
+                animate={{ x: [0, 40, 0], y: [0, 20, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <div className="relative">
+                  <svg className="w-4 h-4 text-orange-500 fill-current" viewBox="0 0 24 24"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
+                  <span className="absolute left-3 top-3 bg-orange-500 text-black text-[8px] px-1 rounded font-bold">John</span>
+                </div>
+              </motion.div>
+
+              <motion.div 
+                className="absolute z-10 bottom-1/3 right-1/3"
+                animate={{ x: [0, -30, 0], y: [0, -40, 0] }}
+                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+              >
+                <div className="relative">
+                  <svg className="w-4 h-4 text-blue-500 fill-current" viewBox="0 0 24 24"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
+                  <span className="absolute left-3 top-3 bg-blue-500 text-black text-[8px] px-1 rounded font-bold">Oliver</span>
+                </div>
+              </motion.div>
+
+              <motion.div 
+                className="absolute z-10 top-1/2 right-10"
+                animate={{ x: [0, -20, 0], y: [0, 30, 0] }}
+                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+              >
+                <div className="relative">
+                  <svg className="w-4 h-4 text-purple-500 fill-current" viewBox="0 0 24 24"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
+                  <span className="absolute left-3 top-3 bg-purple-500 text-black text-[8px] px-1 rounded font-bold">Megan</span>
+                </div>
+              </motion.div>
+            </div>
+          </BentoCard>
+
+          {/* AI AUTOMATION / CODE */}
+          <BentoCard className="col-span-1 md:col-span-4 min-h-[240px]" delay={0.3} title="AUTOMATION & CODE" icon={Cpu}>
+            <p className="text-zinc-500 text-[11px] mb-4">
+              Instant API contracts, tests, and technical debt audits.
+            </p>
+            
+            <div className="relative w-full h-32 rounded border border-zinc-800 overflow-hidden group">
+              <img src="/code.png" alt="Code" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
+            </div>
+          </BentoCard>
+
+        </div>
+
+        {/* CTA Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ delay: 0.5 }}
+          className="mt-12 flex flex-col sm:flex-row gap-3 justify-center items-center"
+        >
+          <Button size="lg" asChild className="h-11 px-6 rounded-full bg-white text-zinc-950 hover:bg-zinc-200">
+            <Link href="/pricing" className="flex items-center gap-2">
+              Check Pricing
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </Button>
+          <Button size="lg" variant="ghost" asChild className="h-11 px-6 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-900 border border-transparent hover:border-zinc-800">
+            <Link href="https://www.replay.build/tool?project=flow_1769444036799_r8hrcxyx2" className="flex items-center gap-2">
+              Try Demo
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </Button>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COMBINED ROI + SECURITY SECTION - Side by Side
+// ═══════════════════════════════════════════════════════════════
+
+function ROIAndSecuritySection() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  
+  const [screens, setScreens] = useState(15);
+  const [hoursPerScreen, setHoursPerScreen] = useState(40);
+  const [hourlyRate, setHourlyRate] = useState(100);
+
+  const totalHours = screens * hoursPerScreen;
+  const replayHours = Math.round(totalHours * 0.3);
+  const savedHours = totalHours - replayHours;
+  const savedValue = savedHours * hourlyRate;
+
+  return (
+    <section className="py-20 lg:py-28 bg-zinc-950 border-t border-zinc-900" ref={ref}>
+      <div className="landing-container">
+        {/* Two Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          {/* LEFT: Data-Driven Growth / ROI Calculator */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6 }}
+            className="flex flex-col"
+          >
+            {/* Header */}
+            <div className="mb-6">
+              <h2 className="font-serif text-2xl md:text-3xl text-white mb-2">
+                Data-Driven Growth
+              </h2>
+              <p className="text-zinc-500 text-sm">
+                Stop guessing. Start saving. Calculate your modernization potential.
+              </p>
+            </div>
+
+            {/* ROI Panel */}
+            <div className="bg-zinc-950 border border-zinc-800 flex-1">
+              <TechGrid />
+              
+              {/* Header Bar */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-zinc-500" />
+                  <h3 className="text-sm font-medium text-zinc-300">Estimate Savings</h3>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-6 relative z-10">
+                {[
+                  { label: "Screens to Migrate", value: screens, setter: setScreens, min: 5, max: 50, unit: "" },
+                  { label: "Hours per Screen", value: hoursPerScreen, setter: setHoursPerScreen, min: 20, max: 60, unit: "h" },
+                  { label: "Hourly Rate", value: hourlyRate, setter: setHourlyRate, min: 50, max: 150, unit: "$" }
+                ].map((control) => (
+                  <div key={control.label}>
+                    <div className="flex justify-between mb-2 font-mono text-xs">
+                      <span className="text-zinc-500">{control.label}</span>
+                      <span className="text-orange-500">{control.unit === "$" ? "$" : ""}{control.value}{control.unit !== "$" ? control.unit : ""}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={control.min}
+                      max={control.max}
+                      value={control.value}
+                      onChange={(e) => control.setter(Number(e.target.value))}
+                      className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                    />
+                  </div>
+                ))}
+
+                <div className="pt-6 border-t border-zinc-800 space-y-4">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-xs text-zinc-500">Hours Saved</span>
+                    <motion.span 
+                      key={savedHours}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-3xl font-light text-white tabular-nums"
+                    >
+                      {savedHours.toLocaleString()}
+                    </motion.span>
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-xs text-zinc-500">Estimated Value</span>
+                    <motion.span 
+                      key={savedValue}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-4xl font-light text-white tabular-nums tracking-tight"
+                    >
+                      ${savedValue.toLocaleString()}
+                    </motion.span>
+                  </div>
+                  <p className="text-[10px] text-zinc-600 font-mono pt-2">
+                    Based on 70% average time savings from pilot results.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* RIGHT: Built for regulated environments / Security */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="flex flex-col"
+          >
+            {/* Header */}
+            <div className="mb-6">
+              <h2 className="font-serif text-2xl md:text-3xl text-white mb-2">
+                Built for regulated environments
+              </h2>
+              <p className="text-zinc-500 text-sm">Your recordings, your control.</p>
+            </div>
+
+            {/* Security Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
+              {/* Card 1 */}
+              <div className="p-5 bg-zinc-950 border border-zinc-800">
+                <h3 className="text-white font-medium mb-2 text-sm">Configurable Retention</h3>
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  Default is processing-only with no storage. Configure retention policies to match your compliance requirements.
+                </p>
+              </div>
+
+              {/* Card 2 */}
+              <div className="p-5 bg-zinc-950 border border-zinc-800 relative overflow-hidden">
+                <div className="absolute top-3 right-3 px-2 py-0.5 border border-zinc-700 text-[9px] font-mono text-zinc-400">BETA</div>
+                <h3 className="text-white font-medium mb-2 text-sm">PII Detection</h3>
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  Automatic detection of sensitive data patterns. Blur or mask before processing.
+                </p>
+              </div>
+
+              {/* Card 3 */}
+              <div className="p-5 bg-zinc-950 border border-zinc-800 relative overflow-hidden">
+                <div className="absolute top-3 right-3 px-2 py-0.5 border border-zinc-700 text-[9px] font-mono text-zinc-400">ENTERPRISE</div>
+                <h3 className="text-white font-medium mb-2 text-sm">On-Premise Deployment</h3>
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  Deploy Replay on your infrastructure for complete data isolation.
+                </p>
+              </div>
+
+              {/* Card 4 */}
+              <div className="p-5 bg-zinc-950 border border-zinc-800 relative overflow-hidden">
+                <div className="absolute top-3 right-3 px-2 py-0.5 border border-zinc-700 text-[9px] font-mono text-zinc-400">IN PROGRESS</div>
+                <h3 className="text-white font-medium mb-2 text-sm">Security Controls</h3>
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  Audit logging, access controls, and security practices aligned with SOC 2 framework.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FAQ SECTION - Expanded Accordion
+// ═══════════════════════════════════════════════════════════════
+
+function FAQSection() {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  const faqs = [
+    { 
+      q: "Does Replay work with custom internal frameworks?", 
+      a: "Yes. Replay's extraction engine is framework-agnostic at the visual level. We map pixels and interactions to your target design system, regardless of the legacy underlying tech (JSP, JSF, PHP, etc.)." 
+    },
+    { 
+      q: "How accurate is the code generation?", 
+      a: "We aim for 90-95% visual accuracy. The generated code is clean React + Tailwind, structured logically. It requires developer review for business logic connection, but the heavy lifting of UI reconstruction is automated." 
+    },
+    { 
+      q: "Is my data safe?", 
+      a: "Absolutely. We offer on-premise deployment for enterprise clients, ensuring no data ever leaves your VPC. For cloud users, we are SOC 2 Type II compliant." 
+    },
+    {
+      q: "Can I export to other frameworks?",
+      a: "Currently we optimize for React and Tailwind CSS. Support for Vue, Angular, and plain HTML/CSS is on our roadmap."
+    },
+    {
+      q: "How does the pricing work?",
+      a: "We offer usage-based pricing for teams and custom licenses for enterprise. Contact us for a pilot to estimate your modernization costs."
+    }
+  ];
+
+  return (
+    <section className="py-24 bg-zinc-950 border-t border-zinc-900">
+      <div className="landing-container max-w-3xl">
+        <h2 className="text-3xl font-serif text-white mb-12 text-center">Frequently Asked Questions</h2>
+        <div className="space-y-4">
+          {faqs.map((faq, i) => (
+            <div key={i} className="border-b border-zinc-800 bg-transparent overflow-hidden">
+              <button
+                onClick={() => setOpenIndex(openIndex === i ? null : i)}
+                className="w-full flex items-center justify-between py-6 text-left"
+              >
+                <span className="text-white font-medium">{faq.q}</span>
+                <ChevronDown className={cn("w-5 h-5 text-zinc-500 transition-transform", openIndex === i && "rotate-180")} />
+              </button>
+              <AnimatePresence>
+                {openIndex === i && (
+                  <motion.div
+                    initial={{ height: 0 }}
+                    animate={{ height: "auto" }}
+                    exit={{ height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="pb-6 text-sm text-zinc-400 leading-relaxed">
+                      {faq.a}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           ))}
         </div>
       </div>
@@ -1724,85 +838,24 @@ function FAQSection() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// FOOTER CTA SECTION + FOOTER (Combined dark)
+// FOOTER - Minimal Dark
 // ═══════════════════════════════════════════════════════════════
 
 function FooterSection() {
   return (
-    <section className="relative bg-zinc-950 overflow-hidden">
-      {/* Animated Background for dark sections */}
-      <div className="absolute inset-0">
-        {/* Grid pattern */}
-        <div className="absolute inset-0 opacity-[0.02]"
-          style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-            backgroundSize: '80px 80px'
-          }}
-        />
-        {/* Grain */}
-        <div className="absolute inset-0 opacity-[0.02]" 
-          style={{ 
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")` 
-          }} 
-        />
-      </div>
-      
-      {/* CTA */}
-      <div className="relative z-10 py-24 lg:py-32 border-t border-zinc-800/50">
-        <div className="landing-container text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-white mb-6">
-              See Replay extract from{" "}
-              <span className="italic text-zinc-400">your legacy screen</span>
-            </h2>
-            <p className="text-lg text-zinc-500 max-w-2xl mx-auto mb-10">
-              One recording. One call. Real output to evaluate.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="xl" asChild className="group bg-white text-zinc-900 border border-zinc-700 hover:bg-zinc-100">
-                <Link href="/contact">
-                  Book a Demo
-                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-              </Button>
-            </div>
-            
-            <p className="mt-8 text-sm text-zinc-500">
-              We'll process one of your workflows live during the call
-            </p>
-          </motion.div>
+    <footer className="py-12 bg-zinc-950 border-t border-zinc-900">
+      <div className="landing-container flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="flex items-center gap-2">
+          <Logo dark={false} />
         </div>
-      </div>
-
-      {/* Footer */}
-      <footer className="py-12 border-t border-zinc-800">
-        <div className="landing-container">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2">
-              <Logo />
-            </div>
-            
-            <div className="flex flex-wrap justify-center gap-6 text-sm text-zinc-500">
-              <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
-              <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
-              <Link href="/docs" className="hover:text-white transition-colors">Documentation</Link>
-              <Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link>
-              <Link href="/blog" className="hover:text-white transition-colors">Blog</Link>
-            </div>
-            
-            <p className="text-sm text-zinc-600">
-              © 2026 Replay. All rights reserved.
-            </p>
-          </div>
+        <div className="flex gap-6 text-xs text-zinc-500 font-mono">
+          <Link href="/privacy" className="hover:text-white transition-colors">PRIVACY</Link>
+          <Link href="/terms" className="hover:text-white transition-colors">TERMS</Link>
+          <Link href="/docs" className="hover:text-white transition-colors">DOCS</Link>
         </div>
-      </footer>
-    </section>
+        <p className="text-xs text-zinc-600 font-mono">© 2026 REPLAY</p>
+      </div>
+    </footer>
   );
 }
 
@@ -1820,23 +873,13 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="landing-page min-h-screen relative">
-      {/* Global grain overlay */}
-      <div 
-        className="fixed inset-0 pointer-events-none z-[100] opacity-[0.02]" 
-        style={{ 
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")` 
-        }} 
-      />
-      <Header />
+    <div className="landing-page min-h-screen relative bg-black text-white selection:bg-orange-500/30">
+      <Navbar />
       <main>
         <HeroSection />
-        <SocialProofSection />
-        <ProblemSection />
         <SolutionSection />
         <BentoFeaturesSection />
-        <ROICalculatorSection />
-        <SecuritySection />
+        <ROIAndSecuritySection />
         <FAQSection />
         <FooterSection />
       </main>

@@ -3112,6 +3112,16 @@ function ReplayToolContent() {
   const [editingComponentName, setEditingComponentName] = useState<string | null>(null); // For inline name editing
   const [editingNameValue, setEditingNameValue] = useState("");
   
+  // Vision Import state (Import components from screenshots/Figma frames)
+  const [showVisionImportModal, setShowVisionImportModal] = useState(false);
+  const [visionImportImage, setVisionImportImage] = useState<string | null>(null);
+  const [visionImportLoading, setVisionImportLoading] = useState(false);
+  const [visionImportProgress, setVisionImportProgress] = useState("");
+  const [visionImportInstructions, setVisionImportInstructions] = useState("");
+  const [visionImportComponentName, setVisionImportComponentName] = useState("");
+  const [isDraggingOverCanvas, setIsDraggingOverCanvas] = useState(false);
+  const visionFileInputRef = useRef<HTMLInputElement>(null);
+  
   // Auto layout function for Blueprints - MASONRY STYLE (varied sizes)
   const autoLayoutBlueprints = useCallback(() => {
     if (!libraryData?.components || libraryData.components.length === 0) return;
@@ -3171,6 +3181,212 @@ function ReplayToolContent() {
     setBlueprintsZoom(75);
     setBlueprintsOffset({ x: 0, y: 0 });
   }, [libraryData?.components]);
+
+  // Vision Import - Convert image/screenshot to component code
+  const processVisionImport = useCallback(async (imageBase64: string) => {
+    if (!imageBase64) return;
+    
+    setVisionImportLoading(true);
+    setVisionImportProgress("Analyzing image with AI Vision...");
+    
+    try {
+      const response = await fetch('/api/blueprint/vision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64,
+          componentName: visionImportComponentName || undefined,
+          additionalInstructions: visionImportInstructions || undefined
+        })
+      });
+      
+      if (!response.ok) throw new Error('Vision API error');
+      
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No reader');
+      
+      const decoder = new TextDecoder();
+      let generatedCode = '';
+      let componentName = 'ImportedComponent';
+      let category = 'atoms';
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
+        
+        for (const line of lines) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.type === 'partial') {
+              generatedCode = data.code;
+              setVisionImportProgress("Generating code...");
+            } else if (data.type === 'done') {
+              generatedCode = data.code;
+              componentName = data.componentName || 'ImportedComponent';
+              category = data.category || 'atoms';
+            } else if (data.type === 'error') {
+              throw new Error(data.error);
+            }
+          } catch (e) {}
+        }
+      }
+      
+      // Create new component in library
+      const newId = `vision-${Date.now()}`;
+      const newComp = {
+        id: newId,
+        name: visionImportComponentName || componentName,
+        category: category,
+        code: generatedCode,
+        description: 'Imported from image using AI Vision',
+        props: [],
+        variants: []
+      };
+      
+      setLibraryData((prev: any) => ({
+        ...prev,
+        components: [...(prev?.components || []), newComp]
+      }));
+      
+      // Position the new component on canvas
+      const rect = blueprintsCanvasRef.current?.getBoundingClientRect();
+      const scale = blueprintsZoom / 100;
+      const canvasCenter = rect ? {
+        x: (rect.width / 2 - blueprintsOffset.x) / scale,
+        y: (rect.height / 2 - blueprintsOffset.y) / scale
+      } : { x: 200, y: 200 };
+      
+      setBlueprintPositions(prev => ({
+        ...prev,
+        [`comp-${newId}`]: canvasCenter
+      }));
+      
+      // Select the new component
+      setSelectedBlueprintComponent(`comp-${newId}`);
+      
+      // Broadcast to other users
+      broadcastLibraryComponentAdd(newComp);
+      broadcastBlueprintPosition(`comp-${newId}`, canvasCenter.x, canvasCenter.y);
+      
+      showToast("Component imported from image!", "success");
+      setShowVisionImportModal(false);
+      setVisionImportImage(null);
+      setVisionImportInstructions("");
+      setVisionImportComponentName("");
+      
+    } catch (error: any) {
+      console.error("Vision import error:", error);
+      showToast("Failed to import component", "error");
+    } finally {
+      setVisionImportLoading(false);
+      setVisionImportProgress("");
+    }
+  }, [visionImportComponentName, visionImportInstructions, blueprintsZoom, blueprintsOffset, showToast]);
+
+  // Handle paste event for Vision import (Ctrl+V on Blueprint canvas)
+  const handleBlueprintPaste = useCallback(async (e: ClipboardEvent) => {
+    if (viewMode !== 'blueprints') return;
+    
+    const clipboardData = e.clipboardData;
+    if (!clipboardData) return;
+    
+    const files = clipboardData.files;
+    const items = clipboardData.items;
+    
+    let imageFile: File | null = null;
+    
+    // Check for files first
+    for (let i = 0; i < files.length; i++) {
+      if (files[i].type.startsWith('image/')) {
+        imageFile = files[i];
+        break;
+      }
+    }
+    
+    // Check items if no file found
+    if (!imageFile && items) {
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith('image/')) {
+          imageFile = items[i].getAsFile();
+          if (imageFile) break;
+        }
+      }
+    }
+    
+    if (!imageFile) return;
+    
+    e.preventDefault();
+    
+    // Convert to base64
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      setVisionImportImage(base64);
+      setShowVisionImportModal(true);
+    };
+    reader.readAsDataURL(imageFile);
+  }, [viewMode]);
+
+  // Handle file input for Vision import
+  const handleVisionFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      setVisionImportImage(base64);
+      setShowVisionImportModal(true);
+    };
+    reader.readAsDataURL(file);
+    
+    // Reset input
+    if (visionFileInputRef.current) {
+      visionFileInputRef.current.value = '';
+    }
+  }, []);
+
+  // Handle drag & drop for Vision import
+  const handleBlueprintDragOver = useCallback((e: React.DragEvent) => {
+    if (viewMode !== 'blueprints') return;
+    e.preventDefault();
+    setIsDraggingOverCanvas(true);
+  }, [viewMode]);
+
+  const handleBlueprintDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOverCanvas(false);
+  }, []);
+
+  const handleBlueprintDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOverCanvas(false);
+    
+    if (viewMode !== 'blueprints') return;
+    
+    const files = e.dataTransfer.files;
+    for (let i = 0; i < files.length; i++) {
+      if (files[i].type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result as string;
+          setVisionImportImage(base64);
+          setShowVisionImportModal(true);
+        };
+        reader.readAsDataURL(files[i]);
+        break;
+      }
+    }
+  }, [viewMode]);
+
+  // Attach paste listener for Blueprint canvas
+  useEffect(() => {
+    document.addEventListener('paste', handleBlueprintPaste);
+    return () => document.removeEventListener('paste', handleBlueprintPaste);
+  }, [handleBlueprintPaste]);
 
   // Track if blueprint positions have been loaded from localStorage
   const [blueprintLayoutLoaded, setBlueprintLayoutLoaded] = useState(false);
@@ -3239,22 +3455,24 @@ function ReplayToolContent() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(true); // Show loading until first Supabase fetch
   const [activeGeneration, setActiveGeneration] = useState<GenerationRecord | null>(null);
   const [generationTitle, setGenerationTitle] = useState<string>("Untitled Project");
-  // Initialize showHistoryMode from URL params (works with SSR since searchParams is available)
+  // Initialize showHistoryMode - default to true so users see their projects first
   const [showHistoryMode, setShowHistoryMode] = useState(() => {
-    // Check URL params first (most reliable, available during SSR via searchParams)
+    // Check URL params for explicit override
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('projects') === 'true') {
-        return true;
+      // If ?new=true, start with empty project
+      if (urlParams.get('new') === 'true') {
+        return false;
       }
-      // Also check localStorage as fallback
+      // Also check localStorage as fallback for explicit new project request
       const openFromStorage = localStorage.getItem("replay_open_projects");
-      if (openFromStorage === "true") {
+      if (openFromStorage === "false") {
         localStorage.removeItem("replay_open_projects");
-        return true;
+        return false;
       }
     }
-    return false;
+    // Default: show projects list
+    return true;
   });
   const [showProjectSettings, setShowProjectSettings] = useState(false);
   const [historyMenuOpen, setHistoryMenuOpen] = useState<string | null>(null);
@@ -17854,7 +18072,27 @@ export default function App() {
                         setBlueprintsZoom(newZoom);
                         setBlueprintsOffset({ x: newOffsetX, y: newOffsetY });
                       }}
+                      onDragOver={handleBlueprintDragOver}
+                      onDragLeave={handleBlueprintDragLeave}
+                      onDrop={handleBlueprintDrop}
                     >
+                      {/* Drop zone overlay for Vision import */}
+                      {isDraggingOverCanvas && (
+                        <div className="absolute inset-0 z-50 bg-violet-500/10 backdrop-blur-sm border-2 border-dashed border-violet-500/50 rounded-xl flex items-center justify-center pointer-events-none">
+                          <div className="text-center">
+                            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-violet-500/20 flex items-center justify-center">
+                              <svg className="w-8 h-8 text-violet-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2" />
+                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                <path d="M21 15l-5-5L5 21" />
+                              </svg>
+                            </div>
+                            <p className="text-lg font-medium text-violet-300">Drop image to create component</p>
+                            <p className="text-sm text-violet-400/70 mt-1">Screenshot, Figma frame, or any design</p>
+                          </div>
+                        </div>
+                      )}
+                      
                       {/* Center Toolbar - Tool controls - neutral colors */}
                       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex flex-wrap items-center justify-center gap-1 bg-zinc-900/98 backdrop-blur-xl rounded-xl p-1.5 border border-zinc-700/50 shadow-2xl shadow-black/40 max-w-[calc(100%-2rem)] sm:max-w-none">
                         {/* Grid toggle */}
@@ -17938,6 +18176,34 @@ export default function App() {
                           <Square className="w-4 h-4" />
                           <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Outline</span>
                         </button>
+                        
+                        <div className="w-px h-5 bg-zinc-700 mx-1" />
+                        
+                        {/* Import from Image - AI Vision */}
+                        <button 
+                          onClick={() => visionFileInputRef.current?.click()}
+                          className={cn(
+                            "p-2 rounded-lg transition-all duration-150 group relative",
+                            "hover:bg-gradient-to-r hover:from-violet-600/20 hover:to-blue-600/20",
+                            "text-zinc-400 hover:text-violet-300"
+                          )}
+                        >
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                            <circle cx="8.5" cy="8.5" r="1.5" />
+                            <path d="M21 15l-5-5L5 21" />
+                          </svg>
+                          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                            Import from Image (Ctrl+V)
+                          </span>
+                        </button>
+                        <input 
+                          ref={visionFileInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleVisionFileSelect}
+                        />
                         
                         <div className="w-px h-5 bg-zinc-700 mx-1" />
                         
@@ -18048,28 +18314,21 @@ export default function App() {
                               <Map className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
                               <h3 className="text-lg font-semibold text-white mb-2">Component Canvas</h3>
                               <p className="text-sm text-zinc-400 mb-6">
-                                Drag components around to arrange your design system. Each component is a separate draggable element.
+                                Import components from screenshots, Figma frames, or create them manually. Double-click anywhere to create a new component.
                               </p>
-                              <div className="flex gap-3 justify-center">
+                              <div className="flex flex-col gap-3 items-center">
                                 <button
-                                  onClick={() => setViewMode("library")}
-                                  className="px-4 py-2 text-sm bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 transition-colors"
+                                  onClick={() => visionFileInputRef.current?.click()}
+                                  className="px-5 py-2.5 text-sm bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 text-white rounded-lg transition-all flex items-center gap-2"
                                 >
-                                  Go to Library
+                                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                                    <circle cx="8.5" cy="8.5" r="1.5" />
+                                    <path d="M21 15l-5-5L5 21" />
+                                  </svg>
+                                  Import from Image
                                 </button>
-                                <button
-                                  onClick={() => {
-                                    const name = prompt("Describe the component to generate:");
-                                    if (name) {
-                                      setEditInput(`Create a new component: ${name}`);
-                                      setViewMode("preview");
-                                    }
-                                  }}
-                                  className="px-4 py-2 text-sm bg-zinc-700 text-white rounded-lg hover:bg-zinc-600 transition-colors flex items-center gap-2"
-                                >
-                                  <Sparkles className="w-4 h-4" />
-                                  Generate
-                                </button>
+                                <span className="text-xs text-zinc-500">or paste with Ctrl+V / drag & drop</span>
                               </div>
                             </div>
                           </div>
@@ -21022,6 +21281,133 @@ document.querySelectorAll('img').forEach(img=>{
               >
                 Delete
               </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+      
+      {/* Vision Import Modal - Import component from image/screenshot */}
+      {showVisionImportModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+          onClick={() => {
+            if (!visionImportLoading) {
+              setShowVisionImportModal(false);
+              setVisionImportImage(null);
+            }
+          }}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            className="bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-zinc-800 bg-gradient-to-r from-violet-500/10 to-blue-500/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-blue-500/20 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-violet-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <path d="M21 15l-5-5L5 21" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-white">Import from Image</h3>
+                  <p className="text-xs text-zinc-500">AI Vision converts screenshots & Figma frames to code</p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Content */}
+            <div className="p-6">
+              {/* Image Preview */}
+              {visionImportImage && (
+                <div className="mb-5 rounded-xl border border-zinc-700/50 overflow-hidden bg-zinc-800/30">
+                  <img 
+                    src={visionImportImage} 
+                    alt="Preview" 
+                    className="w-full max-h-[300px] object-contain"
+                  />
+                </div>
+              )}
+              
+              {/* Component Name */}
+              <div className="mb-4">
+                <label className="block text-xs font-medium text-zinc-400 mb-2">Component Name (optional)</label>
+                <input
+                  type="text"
+                  value={visionImportComponentName}
+                  onChange={(e) => setVisionImportComponentName(e.target.value)}
+                  placeholder="Auto-detect from image..."
+                  disabled={visionImportLoading}
+                  className="w-full px-4 py-2.5 bg-zinc-800/50 border border-zinc-700/50 rounded-lg text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30 disabled:opacity-50"
+                />
+              </div>
+              
+              {/* Additional Instructions */}
+              <div className="mb-5">
+                <label className="block text-xs font-medium text-zinc-400 mb-2">Additional Instructions (optional)</label>
+                <textarea
+                  value={visionImportInstructions}
+                  onChange={(e) => setVisionImportInstructions(e.target.value)}
+                  placeholder="e.g., Use dark theme, add hover effects, match brand colors..."
+                  disabled={visionImportLoading}
+                  rows={2}
+                  className="w-full px-4 py-2.5 bg-zinc-800/50 border border-zinc-700/50 rounded-lg text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30 resize-none disabled:opacity-50"
+                />
+              </div>
+              
+              {/* Progress */}
+              {visionImportLoading && visionImportProgress && (
+                <div className="mb-4 flex items-center gap-3 p-3 rounded-lg bg-violet-500/10 border border-violet-500/20">
+                  <Loader2 className="w-4 h-4 text-violet-400 animate-spin" />
+                  <span className="text-sm text-violet-300">{visionImportProgress}</span>
+                </div>
+              )}
+            </div>
+            
+            {/* Actions */}
+            <div className="px-6 py-4 bg-zinc-900/50 border-t border-zinc-800 flex items-center justify-between">
+              <div className="text-xs text-zinc-500">
+                <span className="text-zinc-400">Tip:</span> Paste with Ctrl+V or drag & drop images
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    setShowVisionImportModal(false);
+                    setVisionImportImage(null);
+                    setVisionImportInstructions("");
+                    setVisionImportComponentName("");
+                  }}
+                  disabled={visionImportLoading}
+                  className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-white transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => visionImportImage && processVisionImport(visionImportImage)}
+                  disabled={!visionImportImage || visionImportLoading}
+                  className="px-5 py-2 text-sm font-medium bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {visionImportLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      Generate Component
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </motion.div>
         </motion.div>
