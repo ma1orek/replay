@@ -56,19 +56,29 @@ function jsxToHtml(code: string): string {
   if (/^<!DOCTYPE|^<html/i.test(html)) {
     html = html.replace(/className=/g, 'class=');
     
-    // Extract body content - find opening and closing body tags
-    const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-    if (bodyMatch && bodyMatch[1]) {
-      return bodyMatch[1].trim();
+    // Find body tag start (can have attributes with newlines)
+    const bodyOpenMatch = html.match(/<body[\s\S]*?>/i);
+    if (bodyOpenMatch) {
+      const bodyStartIndex = html.indexOf(bodyOpenMatch[0]) + bodyOpenMatch[0].length;
+      const bodyEndIndex = html.lastIndexOf('</body>');
+      
+      if (bodyEndIndex > bodyStartIndex) {
+        const content = html.slice(bodyStartIndex, bodyEndIndex);
+        return content.trim();
+      }
     }
     
     // Fallback: if no body tags found but it's HTML, try to extract content between html tags
-    const htmlMatch = html.match(/<html[^>]*>([\s\S]*)<\/html>/i);
-    if (htmlMatch && htmlMatch[1]) {
+    const htmlOpenMatch = html.match(/<html[\s\S]*?>/i);
+    const htmlCloseIndex = html.lastIndexOf('</html>');
+    if (htmlOpenMatch && htmlCloseIndex > 0) {
+      const htmlStartIndex = html.indexOf(htmlOpenMatch[0]) + htmlOpenMatch[0].length;
+      let content = html.slice(htmlStartIndex, htmlCloseIndex);
       // Remove head section if present
-      let content = htmlMatch[1].replace(/<head>[\s\S]*<\/head>/i, '');
+      content = content.replace(/<head[\s\S]*?<\/head>/i, '');
       // Remove body tags if present
-      content = content.replace(/<\/?body[^>]*>/gi, '');
+      content = content.replace(/<body[\s\S]*?>/gi, '');
+      content = content.replace(/<\/body>/gi, '');
       return content.trim();
     }
     
@@ -78,9 +88,13 @@ function jsxToHtml(code: string): string {
   // If just starts with <body>, extract its content
   if (/^<body/i.test(html)) {
     html = html.replace(/className=/g, 'class=');
-    const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-    if (bodyMatch && bodyMatch[1]) {
-      return bodyMatch[1].trim();
+    const bodyOpenMatch = html.match(/<body[\s\S]*?>/i);
+    if (bodyOpenMatch) {
+      const bodyStartIndex = html.indexOf(bodyOpenMatch[0]) + bodyOpenMatch[0].length;
+      const bodyEndIndex = html.lastIndexOf('</body>');
+      if (bodyEndIndex > bodyStartIndex) {
+        return html.slice(bodyStartIndex, bodyEndIndex).trim();
+      }
     }
   }
   
