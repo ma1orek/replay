@@ -216,17 +216,17 @@ export async function POST(request: NextRequest) {
             })
             .eq("user_id", userId);
 
-          // Reset credits to free tier
+          // Reset credits to 0 (Sandbox tier - no free credits)
           await supabase
             .from("credit_wallets")
             .update({
-              monthly_credits: 100,
+              monthly_credits: 0,
               rollover_credits: 0,
               updated_at: new Date().toISOString(),
             })
             .eq("user_id", userId);
           
-          console.log("Downgraded user to free:", userId);
+          console.log("Downgraded user to Sandbox (0 credits):", userId);
         }
         break;
       }

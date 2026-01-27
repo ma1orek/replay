@@ -16,7 +16,7 @@ export function getStripe(): Stripe {
 // ═══════════════════════════════════════════════════════════════
 // PRICING TIERS (January 2026) - CREDIT-BASED
 // ═══════════════════════════════════════════════════════════════
-// Free: 100 credits (demo)
+// Sandbox (Free): 0 credits - must upgrade to Pro for credits
 // Pro: $149/mo = 3000 credits/month (unlimited projects)
 // Agency: $499/mo = 15000 credits/month (team features)
 // Enterprise: Custom
@@ -41,8 +41,9 @@ export const STRIPE_PRICES = {
 };
 
 // Credits per plan (monthly)
+// IMPORTANT: Free tier gets 0 credits - must upgrade to Pro/Agency for credits
 export const PLAN_CREDITS: Record<string, number> = {
-  free: 100,
+  free: 0,      // Sandbox - no credits, must upgrade
   pro: 3000,
   agency: 15000,
   enterprise: 999999,
@@ -69,15 +70,15 @@ export interface PlanConfig {
 
 export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
   free: {
-    name: "Free",
+    name: "Sandbox",
     price: 0,
     yearlyPrice: 0,
-    credits: 100,
+    credits: 0,
     teamSeats: 1,
     features: [
-      "100 credits to start",
+      "Preview mode only",
       "1 project",
-      "Basic export",
+      "Upgrade to Pro for credits",
     ],
   },
   pro: {
