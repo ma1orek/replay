@@ -1,16 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
 
-// Increase body size limit for large images (up to 10MB)
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
-  },
-};
-
-// For Next.js App Router - export maxDuration and dynamic
+// For Next.js App Router - route segment config
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
