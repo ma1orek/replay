@@ -18215,17 +18215,23 @@ export default function App() {
                     >
                       {/* Drop zone overlay for Vision import */}
                       {isDraggingOverCanvas && (
-                        <div className="absolute inset-0 z-50 bg-violet-500/10 backdrop-blur-sm border-2 border-dashed border-violet-500/50 rounded-xl flex items-center justify-center pointer-events-none">
-                          <div className="text-center">
-                            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-violet-500/20 flex items-center justify-center">
-                              <svg className="w-8 h-8 text-violet-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <div className="absolute inset-0 z-50 bg-gradient-to-br from-violet-500/15 to-blue-500/15 backdrop-blur-sm border-2 border-dashed border-violet-500/60 rounded-xl flex items-center justify-center pointer-events-none">
+                          <div className="text-center animate-pulse">
+                            <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-violet-500/30 to-blue-500/30 flex items-center justify-center shadow-lg shadow-violet-500/20">
+                              <svg className="w-10 h-10 text-violet-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                                 <rect x="3" y="3" width="18" height="18" rx="2" />
                                 <circle cx="8.5" cy="8.5" r="1.5" />
                                 <path d="M21 15l-5-5L5 21" />
+                                <path d="M12 8v8M8 12h8" strokeLinecap="round" />
                               </svg>
                             </div>
-                            <p className="text-lg font-medium text-violet-300">Drop image to create component</p>
-                            <p className="text-sm text-violet-400/70 mt-1">Screenshot, Figma frame, or any design</p>
+                            <p className="text-xl font-semibold text-white mb-1">Drop to Import</p>
+                            <p className="text-sm text-violet-300">AI Vision will convert your image to code</p>
+                            <div className="flex items-center justify-center gap-2 mt-3 text-xs text-zinc-400">
+                              <span className="px-2 py-0.5 bg-zinc-800/80 rounded">Screenshot</span>
+                              <span className="px-2 py-0.5 bg-zinc-800/80 rounded">Figma Frame</span>
+                              <span className="px-2 py-0.5 bg-zinc-800/80 rounded">Design mockup</span>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -18316,13 +18322,14 @@ export default function App() {
                         
                         <div className="w-px h-5 bg-zinc-700 mx-1" />
                         
-                        {/* Import from Image - AI Vision */}
+                        {/* Import from Image - AI Vision - PROMINENT BUTTON */}
                         <button 
                           onClick={() => visionFileInputRef.current?.click()}
                           className={cn(
-                            "p-2 rounded-lg transition-all duration-150 group relative",
-                            "hover:bg-gradient-to-r hover:from-violet-600/20 hover:to-blue-600/20",
-                            "text-zinc-400 hover:text-violet-300"
+                            "px-3 py-1.5 rounded-lg transition-all duration-150 group relative flex items-center gap-2",
+                            "bg-gradient-to-r from-violet-600/30 to-blue-600/30 hover:from-violet-600/50 hover:to-blue-600/50",
+                            "border border-violet-500/30 hover:border-violet-500/50",
+                            "text-violet-300 hover:text-white"
                           )}
                         >
                           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -18330,8 +18337,9 @@ export default function App() {
                             <circle cx="8.5" cy="8.5" r="1.5" />
                             <path d="M21 15l-5-5L5 21" />
                           </svg>
-                          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                            Import from Image (Ctrl+V)
+                          <span className="text-[11px] font-medium">Import</span>
+                          <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-zinc-900 border border-zinc-700 text-[10px] text-zinc-300 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl">
+                            <span className="text-violet-400">Click</span> to upload or <span className="text-violet-400">Ctrl+V</span> to paste from Figma
                           </span>
                         </button>
                         <input 
