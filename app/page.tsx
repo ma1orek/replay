@@ -11848,6 +11848,9 @@ ${publishCode}
                               setDisplayedCode(genToLoad.code);
                               setEditableCode(genToLoad.code);
                               setPreviewUrl(createPreviewUrl(genToLoad.code));
+                              // CRITICAL: Set these to show Replay AI / Input tabs
+                              setGenerationComplete(true);
+                              setSidebarMode("chat");
                             }
                             if (genToLoad.flowNodes) setFlowNodes(genToLoad.flowNodes);
                             if (genToLoad.flowEdges) setFlowEdges(genToLoad.flowEdges);
