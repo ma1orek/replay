@@ -13804,10 +13804,57 @@ ${publishCode}
                 })()}
               </div>
 
-              {/* Analysis Section - now scrolls with everything */}
-              <div className="border-b border-zinc-800">
-                <div className="px-4 py-3 border-b border-zinc-800 flex items-center gap-2"><Activity className="w-4 h-4 text-zinc-500" /><span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Analysis</span></div>
-                <div ref={analysisRef} className="p-4">
+              {/* Database Section */}
+              <div className="p-4 border-b border-white/[0.06]">
+                <div className="sidebar-label text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3 flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Database className="w-3.5 h-3.5" /> DATABASE
+                  </span>
+                  <span className="text-[10px] text-white/25 bg-zinc-800/50 px-2 py-0.5 rounded normal-case font-normal">Optional</span>
+                </div>
+                <button 
+                  onClick={() => {
+                    if (!user || isDemoMode) {
+                      setShowAuthModal(true);
+                      showToast("Sign up free to connect Supabase. Get 1 free generation!", "info");
+                      return;
+                    }
+                    if (!isPaidPlan) {
+                      showToast("Supabase integration is a Pro feature. Upgrade to connect your database!", "info");
+                      return;
+                    }
+                    setShowProjectSettings(true);
+                  }}
+                  className={cn(
+                    "w-full px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-2 transition-colors bg-zinc-800/60 border border-zinc-700/50 hover:bg-zinc-700/60 text-zinc-300",
+                    (!user || isDemoMode || !isPaidPlan) && "opacity-50 cursor-not-allowed"
+                  )}
+                  title={!user || isDemoMode ? "Sign up to use Supabase integration" : !isPaidPlan ? "Pro feature - Upgrade to connect" : "Connect Supabase to fetch real data"}
+                >
+                  <Database className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[#3ECF8E]" />
+                  <span className="text-zinc-300">Wire to Supabase</span>
+                  {(!user || isDemoMode || !isPaidPlan) && <Lock className="w-3 h-3 text-white/30" />}
+                </button>
+                <p className="text-[10px] text-white/25 mt-2 text-center">
+                  {!user || isDemoMode ? "Sign up to connect database" : !isPaidPlan ? "Pro feature" : "Connect your database to wire real data"}
+                </p>
+              </div>
+              
+              {/* Colors Preview */}
+              {styleInfo && styleInfo.colors.length > 0 && (
+                <div className="p-3">
+                  <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider block mb-2">Current Colors</span>
+                  <div className="flex gap-1 flex-wrap">
+                    {styleInfo.colors.slice(0, 6).map((c, i) => (
+                      <div key={i} className="w-6 h-6 rounded border border-zinc-700" style={{ background: c.value }} title={c.value} />
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Hidden Analysis Section */}
+              <div className="hidden">
+                <div ref={analysisRef}>
               {(isProcessing || isStreamingCode) && analysisPhase ? (
                 <div className="space-y-4">
                   {/* UX SIGNALS - Technical analysis tags */}
