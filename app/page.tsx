@@ -13390,38 +13390,42 @@ ${publishCode}
                     </div>
                     {flows.length === 0 ? (
                       <>
-                        {/* Upload Area with Drag & Drop */}
-                        <div 
+                        {/* Compact Upload Button */}
+                        <button 
                           onClick={() => fileInputRef.current?.click()}
                           onDragOver={handleDragOver}
                           onDragLeave={handleDragLeave}
                           onDrop={handleDrop}
                           className={cn(
-                            "dropzone-pro relative rounded-xl transition-all cursor-pointer group mb-3",
-                            isDragging && "active"
+                            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all cursor-pointer group mb-2",
+                            "bg-zinc-800/50 border border-white/[0.08] hover:border-[var(--accent-orange)]/40 hover:bg-zinc-800/70",
+                            isDragging && "border-[var(--accent-orange)] bg-[var(--accent-orange)]/10"
                           )}
                         >
-                          <div className="p-5 text-center">
-                            <div className={cn(
-                              "w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 transition-colors bg-zinc-800/50",
-                              isDragging ? "bg-[var(--accent-orange)]/20" : "group-hover:bg-[var(--accent-orange)]/10"
-                            )}>
-                              <Upload className={cn(
-                                "w-6 h-6 transition-colors text-white/30",
-                                isDragging ? "text-[var(--accent-orange)]" : "group-hover:text-[var(--accent-orange)]/60"
-                              )} />
-                            </div>
-                            <p className="text-[13px] text-white/80 font-medium">{isDragging ? "Drop video here" : "Upload your video"}</p>
-                            <p className="text-[11px] text-white/30 mt-1">or drag & drop</p>
+                          <div className={cn(
+                            "w-8 h-8 rounded-lg flex items-center justify-center transition-colors bg-zinc-700/50",
+                            isDragging ? "bg-[var(--accent-orange)]/20" : "group-hover:bg-[var(--accent-orange)]/10"
+                          )}>
+                            <Upload className={cn(
+                              "w-4 h-4 transition-colors text-white/40",
+                              isDragging ? "text-[var(--accent-orange)]" : "group-hover:text-[var(--accent-orange)]/70"
+                            )} />
                           </div>
-                        </div>
+                          <div className="text-left">
+                            <p className="text-[12px] text-white/70 font-medium">{isDragging ? "Drop here" : "Upload video"}</p>
+                            <p className="text-[10px] text-white/30">or drag & drop</p>
+                          </div>
+                        </button>
                         
-                        {/* Record Button */}
+                        {/* Compact Record Button */}
                         <button 
                           onClick={startRecording}
-                          className="w-full flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl bg-zinc-800/50 border border-white/[0.08] hover:border-red-500/40 hover:bg-zinc-800/50 text-[13px] text-white/70 hover:text-white transition-all"
+                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-zinc-800/50 border border-white/[0.08] hover:border-red-500/30 hover:bg-zinc-800/70 transition-all group"
                         >
-                          <div className="status-dot recording w-2.5 h-2.5" /> Record screen
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-zinc-700/50 group-hover:bg-red-500/10 transition-colors">
+                            <div className="status-dot recording w-2 h-2" />
+                          </div>
+                          <span className="text-[12px] text-white/70 font-medium">Record screen</span>
                         </button>
                       </>
                     ) : (
