@@ -8701,7 +8701,7 @@ Try these prompts in Cursor or v0:
     showToast("Project duplicated!", "success");
   };
   
-  // Use project's video as input for NEW generation (no previous code/context)
+  // Use project's video as input for NEW project (Untitled, clean slate, with that video)
   const useAsInput = async (gen: GenerationRecord) => {
     setHistoryMenuOpen(null);
     
@@ -8722,8 +8722,29 @@ Try these prompts in Cursor or v0:
       return;
     }
     
-    // Reset everything - start fresh
-    setActiveGeneration(null);
+    // Create NEW project (Untitled) so it appears in list
+    const newGenId = generateId();
+    const newGen: GenerationRecord = {
+      id: newGenId,
+      title: "Untitled Project",
+      autoTitle: true,
+      timestamp: Date.now(),
+      status: "complete",
+      code: "",
+      styleDirective: fullGen.styleDirective || "",
+      refinements: "",
+      flowNodes: [],
+      flowEdges: [],
+      styleInfo: null,
+      videoUrl: fullGen.videoUrl,
+      versions: [],
+      publishedSlug: undefined,
+      chatMessages: [],
+      libraryData: null,
+    };
+    setGenerations(prev => [...prev, newGen]);
+    setActiveGeneration(newGen);
+    setGenerationTitle("Untitled Project");
     setGeneratedCode(null);
     setDisplayedCode("");
     setEditableCode("");
@@ -8734,38 +8755,52 @@ Try these prompts in Cursor or v0:
     setLibraryData(null);
     setLibraryDocsGenerated(false);
     setScanData(null);
-    setRefinements(""); // Clear context - start fresh!
+    setRefinements("");
+    setGenerationComplete(false);
+    setChatMessages([]);
     
-    // Clear existing flows and add video from project
-    setFlows([]);
+    const flowId = `flow_${Date.now()}`;
+    const newFlow: FlowItem = {
+      id: flowId,
+      name: fullGen.title || "Video Input",
+      videoBlob: new Blob(),
+      videoUrl: fullGen.videoUrl,
+      thumbnail: fullGen.thumbnailUrl || "",
+      duration: 30,
+      trimStart: 0,
+      trimEnd: 30,
+    };
+    setFlows([newFlow]);
+    setSelectedFlowId(flowId);
     
-    // Fetch video blob from URL and add as flow
-    try {
-      const response = await fetch(fullGen.videoUrl);
-      const blob = await response.blob();
-      
-      const newFlow: FlowItem = {
-        id: `flow_${Date.now()}`,
-        name: fullGen.title || "Video Input",
-        videoBlob: blob,
-        videoUrl: fullGen.videoUrl,
-        thumbnail: fullGen.thumbnailUrl || undefined,
-        duration: 0,
-        trimStart: 0,
-        trimEnd: 0,
-      };
-      setFlows([newFlow]);
-    } catch (error) {
-      console.error("Failed to fetch video:", error);
-      showToast("Failed to load video", "error");
-      return;
-    }
+    // Load real duration from video metadata (fixes 00:00)
+    const tempV = document.createElement('video');
+    tempV.preload = 'metadata';
+    tempV.crossOrigin = 'anonymous';
+    tempV.muted = true;
+    tempV.onloadedmetadata = () => { tempV.currentTime = Math.min(1, tempV.duration * 0.25); };
+    tempV.onseeked = () => {
+      const d = Math.round(tempV.duration);
+      let thumb = fullGen.thumbnailUrl || "";
+      try {
+        const c = document.createElement('canvas');
+        const vw = tempV.videoWidth || 640, vh = tempV.videoHeight || 360;
+        c.width = 320; c.height = Math.round((320 / vw) * vh) || 180;
+        const ctx = c.getContext('2d');
+        if (ctx && vw > 0 && vh > 0) {
+          ctx.drawImage(tempV, 0, 0, c.width, c.height);
+          thumb = c.toDataURL('image/jpeg', 0.8);
+        }
+      } catch (_) {}
+      setFlows(prev => prev.map(f => f.id === flowId ? { ...f, duration: d, trimEnd: d, thumbnail: thumb || f.thumbnail } : f));
+    };
+    tempV.onerror = () => {};
+    tempV.src = fullGen.videoUrl;
     
-    // Switch to input view
     setViewMode("input");
     setSidebarView("detail");
-    
-    showToast("Video loaded! Configure style and generate fresh", "success");
+    if (user) saveGenerationToSupabase(newGen);
+    showToast("New project created with this video. Configure style and generate.", "success");
   };
   
   // Open delete confirmation modal
@@ -12035,10 +12070,30 @@ ${publishCode}
                               };
                               setFlows([newFlow]);
                               setSelectedFlowId(newFlowId);
-                              // Regenerate thumbnail if missing
-                              if (!genToLoad.thumbnailUrl) {
-                                regenerateThumbnail(newFlowId, genToLoad.videoUrl);
-                              }
+                              // Load actual duration from video metadata (fixes 00:00 when loading project)
+                              const tempV = document.createElement('video');
+                              tempV.preload = 'metadata';
+                              tempV.crossOrigin = 'anonymous';
+                              tempV.muted = true;
+                              tempV.onloadedmetadata = () => { tempV.currentTime = Math.min(1, tempV.duration * 0.25); };
+                              tempV.onseeked = () => {
+                                const d = Math.round(tempV.duration);
+                                let thumb = genToLoad.thumbnailUrl || "";
+                                try {
+                                  const c = document.createElement('canvas');
+                                  const vw = tempV.videoWidth || 640, vh = tempV.videoHeight || 360;
+                                  c.width = 320; c.height = Math.round((320 / vw) * vh) || 180;
+                                  const ctx = c.getContext('2d');
+                                  if (ctx && vw > 0 && vh > 0) {
+                                    ctx.drawImage(tempV, 0, 0, c.width, c.height);
+                                    thumb = c.toDataURL('image/jpeg', 0.8);
+                                  }
+                                } catch (_) {}
+                                setFlows(prev => prev.map(f => f.id === newFlowId ? { ...f, duration: d, trimEnd: d, thumbnail: thumb || f.thumbnail } : f));
+                              };
+                              tempV.onerror = () => {};
+                              tempV.src = genToLoad.videoUrl;
+                              if (!genToLoad.thumbnailUrl) regenerateThumbnail(newFlowId, genToLoad.videoUrl);
                             }
                             setSidebarView("detail"); // Switch to detail view
                             setGenerationComplete(true);
