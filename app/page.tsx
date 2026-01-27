@@ -3505,6 +3505,16 @@ function ReplayToolContent() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(true); // Show loading until first Supabase fetch
   const [activeGeneration, setActiveGeneration] = useState<GenerationRecord | null>(null);
   const [generationTitle, setGenerationTitle] = useState<string>("Untitled Project");
+  
+  // Pagination & Search state for history
+  const [historyOffset, setHistoryOffset] = useState(0);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [historySearch, setHistorySearch] = useState("");
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMoreHistory, setHasMoreHistory] = useState(true);
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const HISTORY_PAGE_SIZE = 10;
+  
   // Initialize showHistoryMode - default to true so users see their projects first
   const [showHistoryMode, setShowHistoryMode] = useState(() => {
     // Check URL params for explicit override
@@ -5100,7 +5110,82 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
   const isFetchingRef = useRef(false);
   const lastFetchTimeRef = useRef(0);
   
-  // PRIMARY DATA SOURCE: Supabase - load full history when user logs in
+  // Fetch generations from Supabase with pagination and search
+  const fetchGenerations = useCallback(async (options: { 
+    reset?: boolean; 
+    search?: string;
+    loadMore?: boolean;
+  } = {}) => {
+    const { reset = false, search = historySearch, loadMore = false } = options;
+    
+    if (!user) return;
+    
+    // Prevent concurrent fetches
+    if (isFetchingRef.current && !reset) {
+      console.log("[Supabase] Fetch already in progress, skipping");
+      return;
+    }
+    
+    isFetchingRef.current = true;
+    if (loadMore) {
+      setIsLoadingMore(true);
+    } else if (reset) {
+      setIsLoadingHistory(true);
+    }
+    
+    try {
+      const offset = reset ? 0 : historyOffset;
+      const searchParam = search ? `&search=${encodeURIComponent(search)}` : '';
+      const url = `/api/generations?minimal=true&limit=${HISTORY_PAGE_SIZE}&offset=${offset}${searchParam}`;
+      
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.generations) {
+          // Update total and hasMore
+          setHistoryTotal(data.total || 0);
+          setHasMoreHistory(offset + data.generations.length < (data.total || 0));
+          setHistoryOffset(offset + data.generations.length);
+          
+          if (reset) {
+            // Replace all generations (search or initial load)
+            setGenerations(data.generations);
+          } else {
+            // Append to existing (load more)
+            setGenerations(prev => {
+              const existingIds = new Set(prev.map(g => g.id));
+              const newGens = data.generations.filter((g: GenerationRecord) => !existingIds.has(g.id));
+              return [...prev, ...newGens];
+            });
+          }
+          
+          console.log(`[Supabase] Loaded ${data.generations.length} generations (offset: ${offset}, total: ${data.total})`);
+        }
+      }
+    } catch (e) {
+      console.error("Error fetching from Supabase:", e);
+    } finally {
+      isFetchingRef.current = false;
+      setIsLoadingHistory(false);
+      setIsLoadingMore(false);
+    }
+  }, [user, historyOffset, historySearch, HISTORY_PAGE_SIZE]);
+  
+  // Load more generations
+  const loadMoreGenerations = useCallback(() => {
+    if (!isLoadingMore && hasMoreHistory) {
+      fetchGenerations({ loadMore: true });
+    }
+  }, [fetchGenerations, isLoadingMore, hasMoreHistory]);
+  
+  // Search generations (server-side)
+  const searchGenerations = useCallback((searchTerm: string) => {
+    setHistorySearch(searchTerm);
+    setHistoryOffset(0);
+    fetchGenerations({ reset: true, search: searchTerm });
+  }, [fetchGenerations]);
+  
+  // PRIMARY DATA SOURCE: Supabase - load first page when user logs in
   useEffect(() => {
     if (!user || !hasLoadedFromStorage) {
       // If no user, mark history as loaded (empty)
@@ -5110,98 +5195,11 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
       return;
     }
     
-    const fetchFromSupabase = async (force = false) => {
-      // Prevent concurrent fetches
-      if (isFetchingRef.current) {
-        console.log("[Supabase] Fetch already in progress, skipping");
-        return;
-      }
-      
-      // Don't fetch more than once every 10 seconds (unless forced)
-      const now = Date.now();
-      if (!force && now - lastFetchTimeRef.current < 10000) {
-        console.log("[Supabase] Debounced, last fetch was", Math.round((now - lastFetchTimeRef.current) / 1000), "s ago");
-        return;
-      }
-      
-      isFetchingRef.current = true;
-      lastFetchTimeRef.current = now;
-      
-      try {
-        // Fetch minimal data for history list (much faster)
-        // OPTIMIZED: Reduced limit from 500 to 100 to reduce Supabase egress
-        const response = await fetch("/api/generations?minimal=true&limit=100");
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.generations) {
-            // Merge with existing generations to preserve full data for current session
-            // IMPORTANT: Supabase is the source of truth - don't keep old local-only generations
-            setGenerations(prev => {
-              // Use Record object instead of Map for better TS compatibility
-              const supabaseById: Record<string, GenerationRecord> = {};
-              data.generations.forEach((g: GenerationRecord) => {
-                supabaseById[g.id] = g;
-              });
-              
-              const merged: GenerationRecord[] = [];
-              const processedIds = new Set<string>();
-              
-              // Only keep generations that exist in Supabase, but preserve full data from prev
-              for (const prevGen of prev) {
-                const newGen = supabaseById[prevGen.id];
-                if (newGen) {
-                  // Merge: keep code/versions from prev if not in new (minimal fetch)
-                  merged.push({
-                    ...newGen,
-                    code: prevGen.code || newGen.code,
-                    versions: prevGen.versions || newGen.versions,
-                    flowNodes: prevGen.flowNodes || newGen.flowNodes,
-                    flowEdges: prevGen.flowEdges || newGen.flowEdges,
-                    styleInfo: prevGen.styleInfo || newGen.styleInfo,
-                    styleDirective: prevGen.styleDirective || newGen.styleDirective || '',
-                    refinements: prevGen.refinements || newGen.refinements || '',
-                  } as GenerationRecord);
-                  processedIds.add(prevGen.id);
-                }
-                // REMOVED: Don't keep local-only generations - Supabase is source of truth
-                // Old stale data in localStorage was causing projects to show that don't exist
-              }
-              
-              // Add any new generations from Supabase that weren't in prev
-              data.generations.forEach((newGen: GenerationRecord) => {
-                if (!processedIds.has(newGen.id)) {
-                  merged.push(newGen);
-                }
-              });
-              
-              // Sort by timestamp (newest first)
-              return merged.sort((a, b) => b.timestamp - a.timestamp);
-            });
-            console.log(`[Supabase] Synced ${data.generations.length} generations (total: ${data.total})`);
-          }
-        }
-      } catch (e) {
-        console.error("Error syncing with Supabase:", e);
-      } finally {
-        isFetchingRef.current = false;
-        setIsLoadingHistory(false); // Mark history as loaded
-      }
-    };
+    // Initial fetch - only first 10 projects
+    fetchGenerations({ reset: true });
     
-    // Initial fetch only - sync on demand when user clicks refresh
-    fetchFromSupabase(true);
-    
-    // OPTIMIZED: Increased interval from 60s to 5 minutes to reduce Supabase egress
-    // Users can manually refresh if needed, or data syncs when they select a project
-    const intervalId = setInterval(() => fetchFromSupabase(false), 300000); // 5 minutes
-    
-    // REMOVED: visibilitychange sync - was causing too many DB requests
-    // Data syncs automatically every 5 min or when user selects a project
-    
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [user, hasLoadedFromStorage]);
+    // No periodic sync - too expensive. User can refresh manually or load more
+  }, [user, hasLoadedFromStorage]); // eslint-disable-line react-hooks/exhaustive-deps
   
   
   // Save active generation to Supabase when complete
@@ -11648,18 +11646,45 @@ ${publishCode}
                 </button>
               </div>
               
-              {/* Search */}
+              {/* Search - server-side with debounce */}
               <div className="px-3 pb-2">
                 <div className="relative">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
                   <input
                     type="text"
                     value={historySearch}
-                    onChange={(e) => setHistorySearch(e.target.value)}
-                    placeholder="Search projects..."
-                    className="w-full pl-9 pr-3 py-2 rounded-md bg-zinc-800/50 border border-zinc-700/50 text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600"
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setHistorySearch(value);
+                      // Debounced server-side search
+                      if (searchDebounceRef.current) {
+                        clearTimeout(searchDebounceRef.current);
+                      }
+                      searchDebounceRef.current = setTimeout(() => {
+                        searchGenerations(value);
+                      }, 400);
+                    }}
+                    placeholder="Search all projects..."
+                    className="w-full pl-9 pr-8 py-2 rounded-md bg-zinc-800/50 border border-zinc-700/50 text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600"
                   />
+                  {historySearch && (
+                    <button
+                      onClick={() => {
+                        setHistorySearch("");
+                        if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+                        searchGenerations("");
+                      }}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
+                {historyTotal > 0 && (
+                  <p className="text-[10px] text-zinc-600 mt-1 px-1">
+                    {historySearch ? `Found ${historyTotal} projects` : `${historyTotal} projects total`}
+                  </p>
+                )}
               </div>
               
               {/* Divider */}
@@ -11687,7 +11712,6 @@ ${publishCode}
                   <div className="space-y-2">{generations
                       .slice()
                       .sort((a, b) => b.timestamp - a.timestamp)
-                      .filter(gen => !historySearch || gen.title.toLowerCase().includes(historySearch.toLowerCase()))
                       .map((gen) => (
                       <div 
                         key={gen.id}
@@ -12056,6 +12080,27 @@ ${publishCode}
                         </div>
                       </div>
                     ))}
+                    
+                    {/* Load More Button */}
+                    {hasMoreHistory && (
+                      <button
+                        onClick={loadMoreGenerations}
+                        disabled={isLoadingMore}
+                        className="w-full py-2.5 mt-2 rounded-lg border border-zinc-700/50 bg-zinc-800/30 text-xs text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-300 transition-colors flex items-center justify-center gap-2"
+                      >
+                        {isLoadingMore ? (
+                          <>
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="w-3 h-3" />
+                            Load more ({historyTotal - generations.length} remaining)
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

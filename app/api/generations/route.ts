@@ -6,9 +6,10 @@ export const runtime = "nodejs";
 // GET - Fetch user's generations
 // Query params:
 // - id: fetch single generation by ID (with full data)
-// - limit: max number of generations (default 100)
+// - limit: max number of generations (default 10 for pagination)
 // - offset: pagination offset (default 0)
 // - minimal: if "true", fetch only metadata for history list (no code/versions)
+// - search: search term to filter by title (server-side search)
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -27,9 +28,10 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const singleId = searchParams.get("id");
-    const limit = Math.min(parseInt(searchParams.get("limit") || "100"), 500); // Max 500
+    const limit = Math.min(parseInt(searchParams.get("limit") || "10"), 100); // Default 10, max 100
     const offset = parseInt(searchParams.get("offset") || "0");
     const minimal = searchParams.get("minimal") === "true";
+    const searchTerm = searchParams.get("search") || "";
 
     // If fetching single generation by ID
     // OPTIMIZED: Select only needed fields (avoid huge unused columns if any)
@@ -74,10 +76,19 @@ export async function GET(request: NextRequest) {
       ? "id, title, input_context, created_at, status, input_video_url, published_slug, input_style, user_id"
       : "*";
 
-    const { data: generations, error, count } = await adminSupabase
+    // Build query with optional search filter
+    let query = adminSupabase
       .from("generations")
       .select(selectFields, { count: "exact" })
-      .eq("user_id", user.id)
+      .eq("user_id", user.id);
+    
+    // Add search filter if provided (searches title and input_context)
+    if (searchTerm) {
+      // Use ilike for case-insensitive search on title OR input_context
+      query = query.or(`title.ilike.%${searchTerm}%,input_context.ilike.%${searchTerm}%`);
+    }
+    
+    const { data: generations, error, count } = await query
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
