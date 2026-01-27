@@ -26,11 +26,13 @@ Perform FOUR analysis passes and output a UNIFIED JSON:
 - Identify component types (cards, tables, charts)
 - Sample colors accurately
 
-**PASS 2 - DATA EXTRACTION:**
-- Transcribe ALL visible text/numbers EXACTLY
-- Extract table columns and rows (every cell)
+**PASS 2 - DATA EXTRACTION (CONTENT 1:1):**
+- Transcribe ALL visible text/numbers EXACTLY — verbatim, no paraphrasing, no shortening
+- Every headline, paragraph, nav label, button text, list item, FAQ, footer line → include in full
+- Extract table columns and rows (every cell) — do not drop rows or "first 3"
 - Extract chart data points (estimate from axes)
 - Capture form fields and their types
+- Do NOT skip sections (hero, partners, certyfikaty, FAQ, newsletter, footer — all must be present)
 
 **PASS 3 - BEHAVIOR MAPPING:**
 - Track click sequences shown in video
@@ -311,11 +313,12 @@ THIS IS THE MOST IMPORTANT PASS! You MUST identify ALL unique pages/screens/view
 - If result has only 1 page but video shows multiple screens = WRONG!
 
 **CRITICAL INSTRUCTIONS:**
-1. EXACT text transcription - no paraphrasing or translating
-2. COMPLETE menu listing - count every single item
+1. EXACT text transcription - no paraphrasing or translating (CONTENT 1:1 verbatim)
+2. COMPLETE menu listing - count every single item; include every nav label exactly
 3. ACCURATE color sampling - sample from actual pixels  
 4. ESTIMATED data for charts - use axis labels to estimate values
 5. MULTIPLE PAGES - detect ALL screens shown in video!
+6. CONTENT 1:1 - every headline, paragraph, button, FAQ, footer text must appear in full; do not skip or shorten sections
 
 Now analyze the video completely and return the unified JSON:`;
 

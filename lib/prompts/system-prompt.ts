@@ -507,6 +507,8 @@ CRITICAL: You MUST generate the COMPLETE page with ALL sections visible in video
 - NEVER leave sections empty or placeholder
 - Every section shown in video = fully implemented section in output
 
+CONTENT 1:1 (MANDATORY): Every headline, paragraph, nav label, button text, list item, FAQ, footer line from the video MUST appear in output VERBATIM. No paraphrasing, no shortening, no dropping sections. Do NOT replace real text with "Title", "Description" or summaries. Output must reflect all content 1:1.
+
 ═══════════════════════════════════════════════════════════════════════════════
 📄 MULTI-PAGE SPA - DETECT ALL PAGES FROM VIDEO!
 ═══════════════════════════════════════════════════════════════════════════════
@@ -653,9 +655,10 @@ Implementation with Alpine.js:
 
 🚫 CRITICAL RULES:
 1. DON'T add nav link if you don't build the page → prevents black screen!
-2. EVERY page must have FULL sections with real content
+2. EVERY page must have FULL sections with real content — CONTENT 1:1: every text verbatim, no shortening.
 3. If video shows 5 pages → create all 5 pages
 4. NO empty pages, NO placeholder content
+5. Do NOT omit or summarize any section (hero, partners, FAQ, newsletter, footer — all must appear with full text)
 
 ═══════════════════════════════════════════════════════════════════════════════
 📱 RESPONSIVE & MOBILE

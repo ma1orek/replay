@@ -27,7 +27,7 @@ The code will be rendered in an iframe with Tailwind CSS available.
 **OUTPUT RULES:**
 1. Use Tailwind CSS classes exclusively
 2. Match colors as closely as possible using Tailwind palette (zinc, slate, blue, etc.)
-3. Preserve exact text content from the image
+3. CONTENT 1:1 — Preserve EVERY piece of text from the image VERBATIM. Every headline, paragraph, nav label, button, list item, footer line, FAQ question/answer must appear exactly as in the image. Do NOT skip sections, summarize, shorten, or replace with "Title"/"Description". Output must reflect all content 1:1.
 4. Use semantic HTML (button, nav, section, article, etc.)
 5. For images in the design: use https://picsum.photos/seed/{descriptive-name}/W/H
 6. For avatars: use https://i.pravatar.cc/150?img=X (X = 1-70)
@@ -35,6 +35,7 @@ The code will be rendered in an iframe with Tailwind CSS available.
 8. Ensure responsive design with flex/grid
 9. Add hover states where appropriate (hover:)
 10. Match border-radius, shadows, spacing precisely
+11. Include EVERY section visible in the image (hero, features, partners, FAQ, newsletter, footer, etc.) — no omitting.
 
 **COMPONENT CATEGORIES:**
 - atoms: Single elements (buttons, badges, inputs, avatars)
@@ -70,6 +71,11 @@ Stat card:
   <div className="text-2xl font-bold text-white mt-1">$45,231</div>
   <span className="text-xs text-green-500">+20.1% from last month</span>
 </div>
+
+**CONTENT 1:1 (MANDATORY):**
+- Every section visible in the image MUST appear in the output with its FULL text.
+- Do not shorten paragraphs, drop nav items, or replace real copy with placeholders.
+- Copy headlines, subheadlines, CTA text, list items, FAQ text, footer blocks VERBATIM.
 
 **OUTPUT:**
 Return ONLY the modified JSX. Start with < and end with >. NO markdown, NO code blocks, NO explanations.
@@ -169,7 +175,7 @@ export async function POST(request: NextRequest) {
       model: "gemini-3-pro-preview",
       generationConfig: {
         temperature: 0.3,
-        maxOutputTokens: 8192,
+        maxOutputTokens: 32768, // enough for full-page 1:1 content (hero, FAQ, footer, etc.)
       }
     });
 

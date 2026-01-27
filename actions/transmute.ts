@@ -75,6 +75,19 @@ HOW TO GET THE REAL NAME:
 7. LOGO TEXT: Read the EXACT logo text - letter by letter. DO NOT invent.
 8. SIDEBAR TYPE: Identify if sidebar contains MENU ITEMS (icons+labels) or USER LIST (avatars+names).
 
+═══════════════════════════════════════════════════════════════════════════════
+🟢 CONTENT 1:1 — OBOWIĄZKOWE (NIE POMIJAJ, NIE SKRACAJ!)
+═══════════════════════════════════════════════════════════════════════════════
+Content musi być odtworzony W CAŁOŚCI, 1:1 z tym co widać. ZAKAZ:
+- skracania paragrafów, "pierwszych 3 punktów", "itp."
+- pomijania sekcji (hero, partnerzy, FAQ, newsletter, stopka — wszystkie muszą być)
+- parafrazowania ("Dostarczamy zaawansowane…" ≠ "We deliver advanced…" — dokładna treść)
+- używania placeholderów zamiast realnego tekstu
+
+WYMAGANE: Każdy nagłówek, akapit, etykieta nav, tekst przycisku, pozycja listy, pytanie/odpowiedź FAQ,
+tekst w stopce, pole formularza — wpisuj do JSON VERBATIM (znak w znak). Jeśli jest 7 pozycji menu,
+wypisz wszystkie 7. Jeśli sekcja ma 4 akapity, wypisz wszystkie 4. Zero wyjątków.
+
 **OUTPUT UNIFIED JSON:**
 {
   "meta": {
@@ -137,14 +150,15 @@ HOW TO GET THE REAL NAME:
       "gap": "24px",
       "padding": "32px"
     },
+    "theme": "dark OR light - DETECT from video! Light = white/cream bg, Dark = black/gray bg",
     "colors": {
-      "background": "#0a0a0a",
-      "surface": "#18181b",
-      "primary": "#6366f1",
-      "secondary": "#8b5cf6",
-      "text": "#fafafa",
-      "textMuted": "#71717a",
-      "border": "#27272a",
+      "background": "EXTRACT from video - #ffffff for light, #0a0a0a for dark",
+      "surface": "EXTRACT from video - card/panel background color",
+      "primary": "EXTRACT from video - main accent color",
+      "secondary": "EXTRACT from video - secondary accent",
+      "text": "EXTRACT from video - main text color",
+      "textMuted": "EXTRACT from video - secondary text color",
+      "border": "EXTRACT from video - border color",
       "success": "#22c55e",
       "error": "#ef4444",
       "warning": "#f59e0b"
@@ -274,7 +288,7 @@ Watch the ENTIRE video carefully:
 1. Look at the NAVIGATION - every menu item = potential page
 2. Watch for PAGE TRANSITIONS - user clicking menu items
 3. Note DIFFERENT LAYOUTS - each unique layout = different page
-4. Extract FULL CONTENT for each page - headlines, text, images, forms
+4. Extract FULL CONTENT for each page - headlines, text, images, forms (1:1 verbatim, no shortening!)
 
 If video shows:
 - "Home" page → extract hero, features, testimonials
@@ -284,6 +298,8 @@ If video shows:
 - "Blog/News" → extract article cards, categories
 
 EVERY page shown in video MUST be included in "pages.detected" array!
+For each page, include EVERY section (hero, partners, certyfikaty, FAQ, newsletter, footer, etc.) with FULL text.
+CONTENT 1:1: every string must appear verbatim — no paraphrasing, no "…", no dropping items.
 
 Analyze the video and extract EVERYTHING:`;
 
@@ -293,6 +309,34 @@ Analyze the video and extract EVERYTHING:`;
 
 const ASSEMBLER_PROMPT = `You are a SENIOR FRONTEND ENGINEER at an AWWWARDS-winning design agency.
 Your job is to create STUNNING, ANIMATED, PRODUCTION-QUALITY web interfaces.
+
+═══════════════════════════════════════════════════════════════════════════════
+🎨 CRITICAL: THEME DETECTION - USE VIDEO COLORS!
+═══════════════════════════════════════════════════════════════════════════════
+
+CHECK scanData.ui.theme FIRST:
+- If "light" → <body class="bg-white text-gray-900"> or bg-gray-50
+- If "dark" → <body class="bg-[#0a0a0a] text-white"> or bg-zinc-900
+
+USE scanData.ui.colors for EXACT colors from video:
+- background → body and main container backgrounds
+- surface → card backgrounds  
+- text → main text color
+- textMuted → secondary text
+- primary → buttons, links, accents
+- border → borders, dividers
+
+DO NOT ASSUME DARK THEME! Match what's in the video!
+
+═══════════════════════════════════════════════════════════════════════════════
+🟢 CONTENT FIDELITY 1:1 — MANDATORY (NO SHORTCUTS!)
+═══════════════════════════════════════════════════════════════════════════════
+Output MUST contain every text from scanData VERBATIM. No paraphrasing, no shortening, no omitting.
+- Every nav label, headline, subheadline, paragraph, button text → copy from scanData exactly.
+- Every section from scanData.pages.detected[].sections MUST be rendered with its full content.
+- If scanData has 7 menu items → output all 7. If a page has 6 sections → render all 6.
+- Do NOT replace real text with "Title", "Description", "Lorem" or summaries.
+Content 1:1 is non-negotiable. Every string from the scan must appear in the output as-is.
 
 ═══════════════════════════════════════════════════════════════════════════════
 🚨 CRITICAL: WHAT MAKES A PAGE IMPRESSIVE (NOT GENERIC!)
@@ -424,7 +468,9 @@ Add to <style>:
 .card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 .card:hover { transform: translateY(-4px) scale(1.01); }
 
+/* USE APPROPRIATE GLASSMORPHISM BASED ON THEME! */
 .glassmorphism { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+.glassmorphism-light { background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 4px 30px rgba(0,0,0,0.08); }
 
 ═══════════════════════════════════════════════════════════════════════════════
 📄 MULTI-PAGE SPA - CRITICAL FOR MULTIPLE PAGES!
@@ -500,17 +546,23 @@ CORRECT - Full section:
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
         .hover-lift { transition: all 0.3s ease; }
-        .hover-lift:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .hover-lift:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
         .hover-glow { transition: all 0.3s ease; }
         .hover-glow:hover { box-shadow: 0 0 30px rgba(99, 102, 241, 0.4); }
         .btn-primary { transition: all 0.3s ease; }
         .btn-primary:hover { transform: translateY(-2px) scale(1.02); }
         .card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .card:hover { transform: translateY(-4px) scale(1.01); }
+        /* Dark theme glassmorphism */
         .glassmorphism { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        /* Light theme glassmorphism - use this for light backgrounds! */
+        .glassmorphism-light { background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 4px 30px rgba(0,0,0,0.08); }
     </style>
 </head>
-<body class="antialiased bg-[#0a0a0a] text-white">
+<!-- 🚨 CRITICAL: SET body class based on scanData.ui.theme! -->
+<!-- If theme="light" → class="antialiased bg-white text-gray-900" -->
+<!-- If theme="dark" → class="antialiased bg-[#0a0a0a] text-white" -->
+<body class="antialiased">
     <div id="root"></div>
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
@@ -602,9 +654,12 @@ CORRECT - Full section:
 
 🎨 STYLE:
 ☑ Glassmorphism on cards/panels
-☑ Gradient text on headings
+☑ Gradient text on headings  
 ☑ Colored shadows (not gray)
-☑ Dark theme with depth
+☑ USE THE THEME FROM scanData.ui.theme (light or dark)!
+☑ If theme is "light" → white/cream backgrounds, dark text
+☑ If theme is "dark" → dark backgrounds, light text
+☑ MATCH the colors extracted from video in scanData.ui.colors!
 
 Generate complete HTML:`;
 
@@ -913,11 +968,12 @@ ${JSON.stringify(scanData, null, 2)}
 \`\`\`
 
 **ASSEMBLY INSTRUCTIONS:**
-1. Build sidebar with EXACTLY ${menuCount} menu items
-2. Create ${metricCount} metric cards with EXACT values
-3. Create ${chartCount} charts using ChartComponent (Chart.js)
-4. Create ${tableCount} tables with all rows
-5. Use colors from scanData.ui.colors
+1. Build sidebar with EXACTLY ${menuCount} menu items — use scanData labels verbatim.
+2. Create ${metricCount} metric cards with EXACT values from scanData.
+3. Create ${chartCount} charts using ChartComponent (Chart.js).
+4. Create ${tableCount} tables with all rows — no dropping rows.
+5. Use colors from scanData.ui.colors.
+6. CONTENT 1:1: Every headline, paragraph, nav label, button text, FAQ item, footer line from scanData MUST appear in the output VERBATIM. Do not skip any section, do not shorten any text.
 
 Generate the complete HTML file now:`;
     
