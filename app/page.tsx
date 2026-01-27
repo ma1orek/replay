@@ -4824,15 +4824,30 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
           }
         }
         
-        // Load saved code from localStorage (restore after refresh)
+        // Load saved code from localStorage ONLY if it's a recent refresh (< 2 min)
+        // This prevents old projects from loading when user visits /tool fresh
         const savedCode = localStorage.getItem("replay_generated_code");
-        if (savedCode && savedCode.length > 100) {
-          console.log("[Load] Restoring code from localStorage:", savedCode.length, "chars");
+        const lastEditTime = localStorage.getItem("replay_last_edit_time");
+        const projectParam = new URLSearchParams(window.location.search).get('project');
+        
+        // Only restore if:
+        // 1. There's saved code
+        // 2. Last edit was within 2 minutes (likely a page refresh, not new visit)
+        // 3. No project param in URL (project param = explicit project load)
+        const isRecentRefresh = lastEditTime && (Date.now() - parseInt(lastEditTime)) < 2 * 60 * 1000;
+        
+        if (savedCode && savedCode.length > 100 && isRecentRefresh && !projectParam) {
+          console.log("[Load] Restoring code from localStorage (recent refresh):", savedCode.length, "chars");
           setGeneratedCode(savedCode);
           setDisplayedCode(savedCode);
           setEditableCode(savedCode);
           setGenerationComplete(true);
           setSidebarMode("chat");
+        } else if (savedCode && !isRecentRefresh) {
+          // Clear stale localStorage if it's an old session
+          console.log("[Load] Clearing stale localStorage (last edit:", lastEditTime ? `${Math.round((Date.now() - parseInt(lastEditTime)) / 1000)}s ago` : "unknown", ")");
+          localStorage.removeItem("replay_generated_code");
+          localStorage.removeItem("replay_last_edit_time");
         }
         
         setHasLoadedFromStorage(true);
@@ -4877,11 +4892,12 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
     }
   }, [flows, hasLoadedFromStorage]);
 
-  // Save generated code to localStorage
+  // Save generated code to localStorage with timestamp
   useEffect(() => {
     if (!hasLoadedFromStorage || !generatedCode) return;
     try {
       localStorage.setItem("replay_generated_code", generatedCode);
+      localStorage.setItem("replay_last_edit_time", Date.now().toString());
     } catch (e) {
       console.error("Error saving code:", e);
     }
