@@ -99,13 +99,15 @@ export async function POST(request: NextRequest) {
       
       if (existingRecord) {
         // Record exists, update it
+        console.log('[publish] Updating record, code length:', code.length);
+        
         const { data, error } = await updateClient
           .from("published_projects")
           .update({
             title,
             description,
             code,
-            thumbnail_url: thumbnailUrl,
+            thumbnail_url: thumbnailUrl || existingRecord.thumbnail_url,
             updated_at: new Date().toISOString(),
           })
           .eq("slug", existingSlug)
@@ -114,14 +116,39 @@ export async function POST(request: NextRequest) {
 
         if (error) {
           console.error("Database update error:", error);
-          // If update failed with regular client (RLS), try creating at same slug won't work
-          // So we should return the existing slug anyway to maintain URL consistency
-          console.log('[publish] Update failed, but keeping existing slug for consistency');
+          
+          // Try with admin client if regular client failed
+          if (updateClient === supabase && adminSupabase) {
+            console.log('[publish] Retrying with admin client...');
+            const { data: retryData, error: retryError } = await adminSupabase
+              .from("published_projects")
+              .update({
+                title,
+                description,
+                code,
+                thumbnail_url: thumbnailUrl || existingRecord.thumbnail_url,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("slug", existingSlug)
+              .select()
+              .single();
+            
+            if (retryError) {
+              console.error("Admin update also failed:", retryError);
+              return NextResponse.json({
+                error: "Failed to update project: " + retryError.message,
+              }, { status: 500 });
+            }
+            console.log('[publish] Admin update succeeded');
+          } else {
+            return NextResponse.json({
+              error: "Failed to update project: " + error.message,
+            }, { status: 500 });
+          }
         } else {
-          console.log('[publish] Successfully updated existing project');
+          console.log('[publish] Successfully updated existing project, new code length:', data?.code?.length);
         }
         
-        // ALWAYS return the existing slug when we have one - never create a new URL
         return NextResponse.json({
           success: true,
           slug: existingSlug,

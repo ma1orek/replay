@@ -11192,6 +11192,8 @@ ${publishCode}
       }
       
       console.log('[handlePublish] Code validation passed, publishing...');
+      console.log('[handlePublish] Sending code length:', publishCode.length, 'existingSlug:', existingSlug);
+      console.log('[handlePublish] Code first 100 chars:', publishCode.substring(0, 100));
       
       const response = await fetch("/api/publish", {
         method: "POST",
@@ -11206,6 +11208,13 @@ ${publishCode}
       
       const data = await response.json();
       console.log('[handlePublish] API response:', data);
+      
+      if (!response.ok) {
+        console.error('[handlePublish] API error:', response.status, data);
+        showToast(data.error || "Failed to update", "error");
+        setIsPublishing(false);
+        return;
+      }
       
       if (data.success && data.url) {
         const newSlug = data.slug;
