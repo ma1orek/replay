@@ -4581,7 +4581,12 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
           console.log("[Project URL] Preview URL created");
         }
         
-        setGenerationTitle(gen.title || "Untitled Project");
+        const loadedTitle = gen.title || "Untitled Project";
+        setGenerationTitle(loadedTitle);
+        // Also save to localStorage so title persists on refresh
+        try {
+          localStorage.setItem("replay_generation_title", loadedTitle);
+        } catch (e) {}
         
         // Load flow data - stored as output_architecture.flowNodes/flowEdges in Supabase
         if (gen.output_architecture?.flowNodes?.length > 0) {
@@ -4641,6 +4646,12 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
           libraryData: gen.library_data,
         };
         setActiveGeneration(loadedGeneration);
+        
+        // CRITICAL: Restore published URL if project was published
+        if (gen.published_slug) {
+          setPublishedUrl(`https://www.replay.build/p/${gen.published_slug}`);
+          console.log("[Project URL] Restored published URL:", gen.published_slug);
+        }
         
         // Load chat messages if any
         if (gen.chat_messages?.length > 0) {
