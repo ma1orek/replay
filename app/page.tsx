@@ -646,7 +646,24 @@ interface LibraryDoc {
   id: string;
   title: string;
   type: "welcome" | "getting-started" | "iconography" | "colors" | "typography" | "spacing" | "examples" | "changelog";
-  content: string;  // MDX content
+  content: string | {  // MDX content or AI-generated structured content
+    headline?: string;
+    description?: string;
+    stats?: { components: number; variants: number; tokens: number };
+    principles?: { icon: string; title: string; description: string }[];
+    quickLinks?: string[];
+    installation?: { npm: string; yarn: string };
+    quickStart?: string;
+    features?: { icon: string; title: string; description: string }[];
+    palette?: Record<string, any>;
+    usage?: { color: string; use: string }[];
+    fontFamily?: { primary: string; mono: string };
+    scale?: { name: string; size: string; weight: string; sample: string; px: string; lineHeight: string }[];
+    library?: string;
+    sizes?: { name: string; size: number }[];
+    categories?: { name: string; icons: string[] }[];
+    examples?: { title: string; description: string; code: string }[];
+  };
 }
 
 interface DesignTokens {
