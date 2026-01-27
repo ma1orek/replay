@@ -4663,54 +4663,64 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
           setFlows([videoFlow]);
           setSelectedFlowId(flowId);
           
-          // Load actual duration AND thumbnail from video metadata
+          // Load actual duration AND thumbnail from video metadata (handles WebM with Infinity duration)
           const tempVideo = document.createElement('video');
           tempVideo.preload = 'metadata';
           tempVideo.crossOrigin = 'anonymous';
           tempVideo.muted = true;
+          let durationFixed = false;
+          
+          const updateFlowDuration = () => {
+            if (durationFixed) return;
+            const d = tempVideo.duration;
+            if (d && isFinite(d) && d > 0) {
+              durationFixed = true;
+              const realDuration = Math.round(d);
+              let thumbnailUrl = gen.input_thumbnail_url || "";
+              try {
+                const canvas = document.createElement("canvas");
+                const vw = tempVideo.videoWidth || 640;
+                const vh = tempVideo.videoHeight || 360;
+                canvas.width = 320;
+                canvas.height = Math.round((320 / vw) * vh) || 180;
+                const ctx = canvas.getContext("2d");
+                if (ctx && vw > 0 && vh > 0) {
+                  ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
+                  thumbnailUrl = canvas.toDataURL("image/jpeg", 0.8);
+                }
+              } catch (e) {
+                console.error("[Project URL] Thumbnail generation error:", e);
+              }
+              console.log("[Project URL] Duration fixed:", realDuration, "s");
+              setFlows(prev => prev.map(f => 
+                f.id === flowId 
+                  ? { ...f, duration: realDuration, trimEnd: realDuration, thumbnail: thumbnailUrl || f.thumbnail }
+                  : f
+              ));
+            }
+          };
           
           tempVideo.onloadedmetadata = () => {
-            const realDuration = Math.round(tempVideo.duration);
-            console.log("[Project URL] Video duration loaded:", realDuration, "s");
-            // Seek to get a good thumbnail frame
-            tempVideo.currentTime = Math.min(1, realDuration * 0.25);
+            // WebM fix: if duration is Infinity, seek far to force calculation
+            if (!isFinite(tempVideo.duration) || tempVideo.duration <= 0) {
+              console.log("[Project URL] WebM detected, seeking to get duration...");
+              tempVideo.currentTime = 1e10;
+            } else {
+              tempVideo.currentTime = Math.min(1, tempVideo.duration * 0.25);
+              updateFlowDuration();
+            }
           };
           
           tempVideo.onseeked = () => {
-            // Generate thumbnail from video frame
-            let thumbnailUrl = "";
-            try {
-              const canvas = document.createElement("canvas");
-              const vw = tempVideo.videoWidth || 640;
-              const vh = tempVideo.videoHeight || 360;
-              canvas.width = 320;
-              canvas.height = Math.round((320 / vw) * vh) || 180;
-              const ctx = canvas.getContext("2d");
-              if (ctx && vw > 0 && vh > 0) {
-                ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
-                thumbnailUrl = canvas.toDataURL("image/jpeg", 0.8);
-              }
-            } catch (e) {
-              console.error("[Project URL] Thumbnail generation error:", e);
+            updateFlowDuration();
+            // After getting duration, seek to thumbnail frame
+            if (!durationFixed && isFinite(tempVideo.duration) && tempVideo.duration > 0) {
+              tempVideo.currentTime = Math.min(1, tempVideo.duration * 0.25);
             }
-            
-            const realDuration = Math.round(tempVideo.duration);
-            console.log("[Project URL] Thumbnail generated, duration:", realDuration, "s");
-            setFlows(prev => prev.map(f => 
-              f.id === flowId 
-                ? { 
-                    ...f, 
-                    duration: realDuration, 
-                    trimEnd: realDuration,
-                    thumbnail: thumbnailUrl || f.thumbnail 
-                  }
-                : f
-            ));
           };
           
-          tempVideo.onerror = () => {
-            console.log("[Project URL] Could not load video, using defaults");
-          };
+          tempVideo.ondurationchange = () => updateFlowDuration();
+          tempVideo.onerror = () => console.log("[Project URL] Could not load video");
           tempVideo.src = gen.input_video_url;
         }
         
@@ -8773,28 +8783,49 @@ Try these prompts in Cursor or v0:
     setFlows([newFlow]);
     setSelectedFlowId(flowId);
     
-    // Load real duration from video metadata (fixes 00:00)
+    // Load real duration from video metadata (fixes 00:00 for WebM)
     const tempV = document.createElement('video');
     tempV.preload = 'metadata';
     tempV.crossOrigin = 'anonymous';
     tempV.muted = true;
-    tempV.onloadedmetadata = () => { tempV.currentTime = Math.min(1, tempV.duration * 0.25); };
-    tempV.onseeked = () => {
-      const d = Math.round(tempV.duration);
-      let thumb = fullGen.thumbnailUrl || "";
-      try {
-        const c = document.createElement('canvas');
-        const vw = tempV.videoWidth || 640, vh = tempV.videoHeight || 360;
-        c.width = 320; c.height = Math.round((320 / vw) * vh) || 180;
-        const ctx = c.getContext('2d');
-        if (ctx && vw > 0 && vh > 0) {
-          ctx.drawImage(tempV, 0, 0, c.width, c.height);
-          thumb = c.toDataURL('image/jpeg', 0.8);
-        }
-      } catch (_) {}
-      setFlows(prev => prev.map(f => f.id === flowId ? { ...f, duration: d, trimEnd: d, thumbnail: thumb || f.thumbnail } : f));
+    let durationFixed = false;
+    const updateDuration = () => {
+      if (durationFixed) return;
+      const d = tempV.duration;
+      if (d && isFinite(d) && d > 0) {
+        durationFixed = true;
+        const dur = Math.round(d);
+        let thumb = fullGen.thumbnailUrl || "";
+        try {
+          const c = document.createElement('canvas');
+          const vw = tempV.videoWidth || 640, vh = tempV.videoHeight || 360;
+          c.width = 320; c.height = Math.round((320 / vw) * vh) || 180;
+          const ctx = c.getContext('2d');
+          if (ctx && vw > 0 && vh > 0) {
+            ctx.drawImage(tempV, 0, 0, c.width, c.height);
+            thumb = c.toDataURL('image/jpeg', 0.8);
+          }
+        } catch (_) {}
+        console.log("[UseAsInput] Video duration loaded:", dur, "s");
+        setFlows(prev => prev.map(f => f.id === flowId ? { ...f, duration: dur, trimEnd: dur, thumbnail: thumb || f.thumbnail } : f));
+      }
     };
-    tempV.onerror = () => {};
+    tempV.onloadedmetadata = () => {
+      if (!isFinite(tempV.duration) || tempV.duration <= 0) {
+        tempV.currentTime = 1e10; // Seek far to get real duration for WebM
+      } else {
+        tempV.currentTime = Math.min(1, tempV.duration * 0.25);
+        updateDuration();
+      }
+    };
+    tempV.onseeked = () => {
+      updateDuration();
+      if (!durationFixed && isFinite(tempV.duration) && tempV.duration > 0) {
+        tempV.currentTime = Math.min(1, tempV.duration * 0.25);
+      }
+    };
+    tempV.ondurationchange = () => updateDuration();
+    tempV.onerror = () => console.log("[UseAsInput] Video load error");
     tempV.src = fullGen.videoUrl;
     
     setViewMode("input");
@@ -12075,23 +12106,46 @@ ${publishCode}
                               tempV.preload = 'metadata';
                               tempV.crossOrigin = 'anonymous';
                               tempV.muted = true;
-                              tempV.onloadedmetadata = () => { tempV.currentTime = Math.min(1, tempV.duration * 0.25); };
-                              tempV.onseeked = () => {
-                                const d = Math.round(tempV.duration);
-                                let thumb = genToLoad.thumbnailUrl || "";
-                                try {
-                                  const c = document.createElement('canvas');
-                                  const vw = tempV.videoWidth || 640, vh = tempV.videoHeight || 360;
-                                  c.width = 320; c.height = Math.round((320 / vw) * vh) || 180;
-                                  const ctx = c.getContext('2d');
-                                  if (ctx && vw > 0 && vh > 0) {
-                                    ctx.drawImage(tempV, 0, 0, c.width, c.height);
-                                    thumb = c.toDataURL('image/jpeg', 0.8);
-                                  }
-                                } catch (_) {}
-                                setFlows(prev => prev.map(f => f.id === newFlowId ? { ...f, duration: d, trimEnd: d, thumbnail: thumb || f.thumbnail } : f));
+                              let durationFixed = false;
+                              const updateDuration = () => {
+                                if (durationFixed) return;
+                                const d = tempV.duration;
+                                if (d && isFinite(d) && d > 0) {
+                                  durationFixed = true;
+                                  const dur = Math.round(d);
+                                  let thumb = genToLoad.thumbnailUrl || "";
+                                  try {
+                                    const c = document.createElement('canvas');
+                                    const vw = tempV.videoWidth || 640, vh = tempV.videoHeight || 360;
+                                    c.width = 320; c.height = Math.round((320 / vw) * vh) || 180;
+                                    const ctx = c.getContext('2d');
+                                    if (ctx && vw > 0 && vh > 0) {
+                                      ctx.drawImage(tempV, 0, 0, c.width, c.height);
+                                      thumb = c.toDataURL('image/jpeg', 0.8);
+                                    }
+                                  } catch (_) {}
+                                  console.log("[LoadProject] Video duration loaded:", dur, "s");
+                                  setFlows(prev => prev.map(f => f.id === newFlowId ? { ...f, duration: dur, trimEnd: dur, thumbnail: thumb || f.thumbnail } : f));
+                                }
                               };
-                              tempV.onerror = () => {};
+                              tempV.onloadedmetadata = () => {
+                                // WebM often has Infinity duration until seeked - seek far to fix
+                                if (!isFinite(tempV.duration) || tempV.duration <= 0) {
+                                  tempV.currentTime = 1e10; // Seek far to get real duration
+                                } else {
+                                  tempV.currentTime = Math.min(1, tempV.duration * 0.25);
+                                  updateDuration();
+                                }
+                              };
+                              tempV.onseeked = () => {
+                                updateDuration();
+                                // If still no valid duration after far seek, try seeking to thumbnail frame
+                                if (!durationFixed && isFinite(tempV.duration) && tempV.duration > 0) {
+                                  tempV.currentTime = Math.min(1, tempV.duration * 0.25);
+                                }
+                              };
+                              tempV.ondurationchange = () => updateDuration();
+                              tempV.onerror = () => console.log("[LoadProject] Video load error");
                               tempV.src = genToLoad.videoUrl;
                               if (!genToLoad.thumbnailUrl) regenerateThumbnail(newFlowId, genToLoad.videoUrl);
                             }
@@ -19737,10 +19791,11 @@ document.querySelectorAll('img').forEach(img=>{
                         }}
                         onLoadedMetadata={(e) => {
                           const video = e.currentTarget;
-                          // Always update duration when we get valid metadata (fixes loaded projects showing wrong duration)
-                          if (video.duration && isFinite(video.duration) && video.duration > 0) {
+                          // WebM fix: if duration is Infinity, seek far to force calculation
+                          if (!isFinite(video.duration) || video.duration <= 0) {
+                            video.currentTime = 1e10; // Seek far ahead to get real duration
+                          } else if (video.duration && isFinite(video.duration) && video.duration > 0) {
                             const newDuration = Math.round(video.duration);
-                            // Update if duration changed or was a placeholder (30s default)
                             if (newDuration !== selectedFlow.duration) {
                               setFlows(prev => prev.map(f => 
                                 f.id === selectedFlow.id 
@@ -19749,8 +19804,22 @@ document.querySelectorAll('img').forEach(img=>{
                               ));
                             }
                           }
-                          // IMPORTANT: Reset playhead to start position
                           setCurrentTime(0);
+                        }}
+                        onDurationChange={(e) => {
+                          // WebM: duration becomes valid after seeking
+                          const video = e.currentTarget;
+                          if (video.duration && isFinite(video.duration) && video.duration > 0) {
+                            const newDuration = Math.round(video.duration);
+                            if (newDuration !== selectedFlow.duration && newDuration > 0) {
+                              console.log("[VideoPlayer] Duration updated:", newDuration, "s");
+                              setFlows(prev => prev.map(f => 
+                                f.id === selectedFlow.id 
+                                  ? { ...f, duration: newDuration, trimEnd: Math.min(f.trimEnd || newDuration, newDuration), trimStart: Math.min(f.trimStart || 0, newDuration) }
+                                  : f
+                              ));
+                            }
+                          }
                         }}
                         onPlay={() => setIsPlaying(true)} 
                         onPause={() => setIsPlaying(false)}
