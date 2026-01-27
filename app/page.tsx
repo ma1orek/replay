@@ -8692,8 +8692,23 @@ Try these prompts in Cursor or v0:
   
   // Restore to a specific version
   const restoreVersion = useCallback((genId: string, version: GenerationVersion) => {
+    console.log('[restoreVersion] Called with genId:', genId, 'version:', version.label);
+    console.log('[restoreVersion] Version code length:', version.code?.length || 0);
+    console.log('[restoreVersion] Version code first 100 chars:', version.code?.substring(0, 100));
+    
     const gen = generations.find(g => g.id === genId);
-    if (!gen) return;
+    if (!gen) {
+      console.error('[restoreVersion] Generation not found:', genId);
+      showToast("Failed to restore - generation not found", "error");
+      return;
+    }
+    
+    // Check if version has code
+    if (!version.code || version.code.length < 50) {
+      console.error('[restoreVersion] Version has no/invalid code');
+      showToast("Failed to restore - version code is missing", "error");
+      return;
+    }
     
     // Save current state as a version before restoring (with descriptive name)
     if (activeGeneration?.id === genId && generatedCode && generatedCode !== version.code) {
@@ -8702,19 +8717,24 @@ Try these prompts in Cursor or v0:
     }
     
     // Restore the version
+    console.log('[restoreVersion] Setting code states...');
     setGeneratedCode(version.code);
     setDisplayedCode(version.code);
     setEditableCode(version.code);
-    setFlowNodes(version.flowNodes);
-    setFlowEdges(version.flowEdges);
+    setFlowNodes(version.flowNodes || []);
+    setFlowEdges(version.flowEdges || []);
     if (version.styleInfo) setStyleInfo(version.styleInfo);
     
     // Update preview
-    setPreviewUrl(createPreviewUrl(version.code));
+    console.log('[restoreVersion] Creating preview URL...');
+    const newPreviewUrl = createPreviewUrl(version.code);
+    console.log('[restoreVersion] New preview URL:', newPreviewUrl?.substring(0, 50));
+    setPreviewUrl(newPreviewUrl);
     
     showToast(`Restored to: ${version.label}`, "success");
     setExpandedVersions(null);
-  }, [generations, activeGeneration, generatedCode, saveVersion]);
+    console.log('[restoreVersion] Complete!');
+  }, [generations, activeGeneration, generatedCode, saveVersion, createPreviewUrl, showToast]);
   
   const duplicateGeneration = async (gen: GenerationRecord) => {
     setHistoryMenuOpen(null);
