@@ -3538,7 +3538,7 @@ function ReplayToolContent() {
   const [historyMenuOpen, setHistoryMenuOpen] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
-  const [historySearch, setHistorySearch] = useState("");
+  // historySearch is defined earlier in pagination state
   const [expandedVersions, setExpandedVersions] = useState<string | null>(null); // Which generation's versions are shown
   
   // Agentic Chat Sidebar
