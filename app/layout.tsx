@@ -13,9 +13,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Replay - Video to Code AI | Build Apps from Screen Recordings",
-  description: "Record your screen, get production-ready code. Replay uses AI to transform videos into fully functional React apps with Tailwind CSS. No prompts needed - just record and build.",
-  keywords: ["video to code", "ai code generation", "screen recording to app", "react code generator", "tailwind css", "frontend ai", "ui builder", "no-code to code", "figma to code", "design to code"],
+  title: "Replay | Modernize Legacy Systems. From Video to Full React Codebase.",
+  description: "Stop manual reverse-engineering. Transform legacy software into a production-ready ecosystem: Design System, Component Library, and clean React code. Captured directly from user sessions.",
+  keywords: ["legacy modernization", "reverse engineering", "design system generator", "video to code", "react migration", "enterprise software modernization", "frontend automation"],
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon-32x32.png",
@@ -23,24 +23,25 @@ export const metadata: Metadata = {
     apple: "/favicon-32x32.png",
   },
   openGraph: {
-    title: "Replay - Record Your Screen, Get Production Code",
-    description: "The fastest way to build web apps. Record a video of any UI, and Replay's AI generates complete React + Tailwind code. Edit with AI chat, publish instantly.",
+    title: "Legacy Spaghetti → Modern Design System.",
+    description: "Don't spend months documenting old apps. Replay extracts a complete, scalable frontend architecture from simple screen recordings.",
+    url: "https://replay.build/",
     type: "website",
     siteName: "Replay.build",
     images: [
       {
-        url: "https://www.replay.build/og-image.png",
+        url: "https://replay.build/images/og-mud-vs-luxury.jpg",
         width: 1200,
         height: 630,
-        alt: "Replay - Video to Code AI",
+        alt: "Replay - Legacy Modernization",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Replay - Record Your Screen, Get Production Code",
-    description: "The fastest way to build web apps. Record a video of any UI, and Replay's AI generates complete React + Tailwind code. Edit with AI chat, publish instantly.",
-    images: ["https://www.replay.build/og-image.png"],
+    title: "Modernize Legacy Systems Instantly | Replay",
+    description: "Turn black-box legacy apps into a living React Design System. No workshops, just extraction.",
+    images: ["https://replay.build/images/og-mud-vs-luxury.jpg"],
   },
   appleWebApp: {
     capable: true,
