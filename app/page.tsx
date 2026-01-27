@@ -11066,22 +11066,33 @@ Try these prompts in Cursor or v0:
       const existingSlug = activeGeneration?.publishedSlug;
       console.log('[handlePublish] existingSlug:', existingSlug, 'activeGeneration:', activeGeneration?.id);
       
-      // PRIORITY: Find index.html from generatedFiles (this is the actual HTML output)
+      // ═══════════════════════════════════════════════════════════════════════════
+      // PRIORITY ORDER for finding the best code to publish:
+      // 1. generatedCode (original AI output with full React/Babel) 
+      // 2. HTML file from generatedFiles
+      // 3. editableCode (fallback - may be incomplete)
+      // ═══════════════════════════════════════════════════════════════════════════
       let publishCode = '';
       
-      // Find HTML file in generatedFiles (flat FileNode array)
-      const htmlFile = generatedFiles.find(f => 
-        f.language === 'html' && (f.path.includes('index.html') || f.name === 'index.html')
-      );
-      
-      // Try to get HTML from generatedFiles first
-      if (htmlFile?.content && htmlFile.content.includes('<') && !htmlFile.content.includes('export default function')) {
-        publishCode = htmlFile.content;
-        console.log('[handlePublish] Using HTML from generatedFiles:', htmlFile.path);
+      // FIRST: Try to use generatedCode if it's a full HTML document with React
+      if (generatedCode && (generatedCode.includes('<!DOCTYPE') || generatedCode.includes('<html'))) {
+        publishCode = generatedCode;
+        console.log('[handlePublish] Using generatedCode (full HTML with React/Babel)');
       } else {
-        // Fallback to editableCode
-        publishCode = editableCode;
-        console.log('[handlePublish] Using editableCode as fallback');
+        // Find HTML file in generatedFiles (flat FileNode array)
+        const htmlFile = generatedFiles.find(f => 
+          f.language === 'html' && (f.path.includes('index.html') || f.name === 'index.html')
+        );
+        
+        // Try to get HTML from generatedFiles
+        if (htmlFile?.content && htmlFile.content.includes('<!DOCTYPE')) {
+          publishCode = htmlFile.content;
+          console.log('[handlePublish] Using HTML from generatedFiles:', htmlFile.path);
+        } else {
+          // Fallback to editableCode
+          publishCode = editableCode;
+          console.log('[handlePublish] Using editableCode as fallback');
+        }
       }
       
       // ═══════════════════════════════════════════════════════════════════════════
