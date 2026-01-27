@@ -60,11 +60,21 @@ function jsxToHtml(code: string): string {
     const bodyOpenMatch = html.match(/<body[\s\S]*?>/i);
     if (bodyOpenMatch) {
       const bodyStartIndex = html.indexOf(bodyOpenMatch[0]) + bodyOpenMatch[0].length;
-      const bodyEndIndex = html.lastIndexOf('</body>');
+      let bodyEndIndex = html.lastIndexOf('</body>');
       
-      if (bodyEndIndex > bodyStartIndex) {
-        const content = html.slice(bodyStartIndex, bodyEndIndex);
-        return content.trim();
+      // If no closing body tag, try </html> or end of string
+      if (bodyEndIndex <= bodyStartIndex) {
+        bodyEndIndex = html.lastIndexOf('</html>');
+      }
+      if (bodyEndIndex <= bodyStartIndex) {
+        bodyEndIndex = html.length;
+      }
+      
+      const content = html.slice(bodyStartIndex, bodyEndIndex);
+      // Clean up any remaining closing tags
+      const cleaned = content.replace(/<\/html>/gi, '').trim();
+      if (cleaned.length > 0) {
+        return cleaned;
       }
     }
     
@@ -79,6 +89,18 @@ function jsxToHtml(code: string): string {
       // Remove body tags if present
       content = content.replace(/<body[\s\S]*?>/gi, '');
       content = content.replace(/<\/body>/gi, '');
+      if (content.trim().length > 0) {
+        return content.trim();
+      }
+    }
+    
+    // Last resort: return everything after </head> if present
+    const headEndIndex = html.indexOf('</head>');
+    if (headEndIndex > 0) {
+      let content = html.slice(headEndIndex + 7);
+      content = content.replace(/<body[\s\S]*?>/gi, '');
+      content = content.replace(/<\/body>/gi, '');
+      content = content.replace(/<\/html>/gi, '');
       return content.trim();
     }
     
@@ -91,10 +113,11 @@ function jsxToHtml(code: string): string {
     const bodyOpenMatch = html.match(/<body[\s\S]*?>/i);
     if (bodyOpenMatch) {
       const bodyStartIndex = html.indexOf(bodyOpenMatch[0]) + bodyOpenMatch[0].length;
-      const bodyEndIndex = html.lastIndexOf('</body>');
-      if (bodyEndIndex > bodyStartIndex) {
-        return html.slice(bodyStartIndex, bodyEndIndex).trim();
+      let bodyEndIndex = html.lastIndexOf('</body>');
+      if (bodyEndIndex <= bodyStartIndex) {
+        bodyEndIndex = html.length;
       }
+      return html.slice(bodyStartIndex, bodyEndIndex).trim();
     }
   }
   
