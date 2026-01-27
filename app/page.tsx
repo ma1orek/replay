@@ -8873,12 +8873,16 @@ Try these prompts in Cursor or v0:
     }
   };
 
-  // Generate Library Documentation with AI
-  const generateLibraryDocs = useCallback(async () => {
-    if (!libraryData?.components || libraryData.components.length === 0 || isGeneratingLibraryDocs) return;
+  // Generate Library Documentation with AI - uses REAL extracted data from code
+  const generateLibraryDocs = useCallback(async (forceRegenerate: boolean = false) => {
+    if (!libraryData?.components || libraryData.components.length === 0) return;
+    if (isGeneratingLibraryDocs && !forceRegenerate) return;
     
     setIsGeneratingLibraryDocs(true);
     try {
+      // Get the full code for analysis
+      const fullCode = editableCode || generatedCode || "";
+      
       const response = await fetch("/api/generate/library-docs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -8886,7 +8890,8 @@ Try these prompts in Cursor or v0:
           components: libraryData.components,
           tokens: libraryData.tokens || {},
           styleInfo: styleInfo,
-          projectName: generationTitle || "Design System"
+          projectName: generationTitle || "Design System",
+          fullCode: fullCode // Send full code for color/typography extraction
         })
       });
       
@@ -8900,7 +8905,7 @@ Try these prompts in Cursor or v0:
           docs: result.data.docs
         }));
         setLibraryDocsGenerated(true);
-        showToast("Documentation generated!", "success");
+        showToast(`Documentation generated! (${result.extracted?.colors || 0} colors, ${result.extracted?.icons || 0} icons)`, "success");
       }
     } catch (error: any) {
       console.error("Library docs generation error:", error);
@@ -8908,7 +8913,7 @@ Try these prompts in Cursor or v0:
     } finally {
       setIsGeneratingLibraryDocs(false);
     }
-  }, [libraryData?.components, styleInfo, generationTitle, showToast, isGeneratingLibraryDocs]);
+  }, [libraryData?.components, styleInfo, generationTitle, showToast, isGeneratingLibraryDocs, editableCode, generatedCode]);
 
   // Auto-generate library docs when components are available and docs not generated
   useEffect(() => {
@@ -12424,15 +12429,33 @@ ${publishCode}
                     
                     {/* DOCS Section */}
                     <div className="mb-2">
-                      <button 
-                        onClick={() => setLibrarySectionsExpanded(prev => ({ ...prev, docs: !prev.docs }))}
-                        className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-semibold text-zinc-500 uppercase tracking-wider hover:text-zinc-300 hover:bg-zinc-800/30 rounded transition-colors"
-                      >
-                        {librarySectionsExpanded.docs ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                        <FileText className="w-3 h-3" />
-                        DOCS
-                        <span className="text-zinc-600 ml-auto">{libraryData.docs?.length || 4}</span>
-                      </button>
+                      <div className="flex items-center">
+                        <button 
+                          onClick={() => setLibrarySectionsExpanded(prev => ({ ...prev, docs: !prev.docs }))}
+                          className="flex-1 flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-semibold text-zinc-500 uppercase tracking-wider hover:text-zinc-300 hover:bg-zinc-800/30 rounded transition-colors"
+                        >
+                          {librarySectionsExpanded.docs ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                          <FileText className="w-3 h-3" />
+                          DOCS
+                          <span className="text-zinc-600 ml-auto">{libraryData.docs?.length || 6}</span>
+                        </button>
+                        {/* Regenerate Docs Button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            generateLibraryDocs(true);
+                          }}
+                          disabled={isGeneratingLibraryDocs}
+                          className="p-1.5 text-zinc-500 hover:text-violet-400 hover:bg-violet-500/10 rounded transition-colors"
+                          title="Regenerate documentation from code"
+                        >
+                          {isGeneratingLibraryDocs ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <RefreshCw className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
                       {librarySectionsExpanded.docs && (
                         <div className="ml-2 space-y-0.5 mt-1">
                           {isGeneratingLibraryDocs ? (
