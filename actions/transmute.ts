@@ -819,27 +819,48 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
     console.log("[transmute] Phase 1 timeout:", phase1Timeout / 1000, "s");
     
     let scanResult;
-    let usedModel = "gemini-3-pro-preview";
+    let usedModel = "gemini-2.0-flash";
     
-    // Always use Pro model
-    const scannerModel = genAI.getGenerativeModel({
-      model: "gemini-3-pro-preview",
-      generationConfig: {
-        temperature: 0.1,
-        maxOutputTokens: 16384,
-        // @ts-ignore
-        thinkingConfig: { thinkingBudget: 8192 },
-      },
-    });
+    // Try models in order: stable flash first (handles video well), then fallbacks
+    const phase1Models = ["gemini-2.0-flash", "gemini-1.5-flash"];
+    let phase1Error: any;
     
-    scanResult = await withTimeout(
-      scannerModel.generateContent([
-        { text: UNIFIED_SCAN_PROMPT },
-        { inlineData: { mimeType: videoData.mimeType, data: videoData.base64 } },
-      ]),
-      phase1Timeout,
-      "Phase 1 Unified Scan"
-    );
+    for (const modelName of phase1Models) {
+      try {
+        console.log(`[transmute] Phase 1 trying model: ${modelName}`);
+        const scannerModel = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 16384,
+          },
+        });
+        
+        scanResult = await withTimeout(
+          scannerModel.generateContent([
+            { text: UNIFIED_SCAN_PROMPT },
+            { inlineData: { mimeType: videoData.mimeType, data: videoData.base64 } },
+          ]),
+          phase1Timeout,
+          `Phase 1 Video Scan (${modelName})`
+        );
+        usedModel = modelName;
+        break;
+      } catch (error: any) {
+        phase1Error = error;
+        console.error(`[transmute] Phase 1 ${modelName} failed:`, error?.message);
+        const isRetryable = error?.message?.includes('503') || 
+                           error?.message?.includes('overloaded') || 
+                           error?.message?.includes('timed out');
+        if (!isRetryable) {
+          throw error;
+        }
+      }
+    }
+    
+    if (!scanResult) {
+      throw phase1Error || new Error("All models failed for Phase 1");
+    }
     
     console.log("[transmute] Phase 1 used model:", usedModel);
     
@@ -902,31 +923,54 @@ Generate the complete HTML file now:`;
     
     // Calculate remaining time for Phase 2 (leave buffer for Vercel 300s limit)
     const elapsedMs = Date.now() - startTime;
-    const phase2Timeout = Math.max(60000, 280000 - elapsedMs); // At least 60s, up to remaining time
+    const phase2Timeout = Math.max(150000, 280000 - elapsedMs); // At least 150s, up to remaining time
     console.log("[transmute] Phase 2 timeout:", Math.round(phase2Timeout / 1000), "s");
     
     let assemblyResult;
-    const assemblerUsedModel = "gemini-3-pro-preview";
+    let assemblerUsedModel = "gemini-2.0-flash"; // Start with stable model
     
-    // Always use Pro model for best quality
-    const assemblerModel = genAI.getGenerativeModel({
-      model: "gemini-3-pro-preview",
-      generationConfig: {
-        temperature: 0.3,
-        maxOutputTokens: 100000,
-        // @ts-ignore
-        thinkingConfig: { thinkingBudget: 16384 },
-      },
-    });
+    // Helper: Try model with retry
+    const tryModel = async (modelName: string, timeout: number): Promise<any> => {
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 100000,
+        },
+      });
+      return withTimeout(
+        model.generateContent([{ text: assemblerPrompt }]),
+        timeout,
+        `Phase 2 Code Assembly (${modelName})`
+      );
+    };
     
-    // CRITICAL: Only send TEXT to assembler - no video!
-    assemblyResult = await withTimeout(
-      assemblerModel.generateContent([
-        { text: assemblerPrompt }
-      ]),
-      phase2Timeout,
-      "Phase 2 Code Assembly"
-    );
+    // Try models in order: stable flash first, then pro as fallback
+    const modelsToTry = ["gemini-2.0-flash", "gemini-1.5-flash"];
+    let lastError: any;
+    
+    for (const modelName of modelsToTry) {
+      try {
+        console.log(`[transmute] Phase 2 trying model: ${modelName}`);
+        assemblyResult = await tryModel(modelName, phase2Timeout);
+        assemblerUsedModel = modelName;
+        break;
+      } catch (error: any) {
+        lastError = error;
+        console.error(`[transmute] Phase 2 ${modelName} failed:`, error?.message);
+        // If it's a timeout or overload, try next model
+        const isRetryable = error?.message?.includes('503') || 
+                           error?.message?.includes('overloaded') || 
+                           error?.message?.includes('timed out');
+        if (!isRetryable) {
+          throw error; // Non-retryable error
+        }
+      }
+    }
+    
+    if (!assemblyResult) {
+      throw lastError || new Error("All models failed for Phase 2");
+    }
     
     console.log("[transmute] Phase 2 used model:", assemblerUsedModel);
     
