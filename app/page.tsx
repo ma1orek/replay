@@ -3131,6 +3131,8 @@ function ReplayToolContent() {
   const [visionImportProgress, setVisionImportProgress] = useState("");
   const [visionImportInstructions, setVisionImportInstructions] = useState("");
   const [visionImportComponentName, setVisionImportComponentName] = useState("");
+  const [visionImportMode, setVisionImportMode] = useState<"image" | "describe">("image"); // Toggle between image import and describe
+  const [visionImportDescription, setVisionImportDescription] = useState(""); // For creating components from description
   const [isDraggingOverCanvas, setIsDraggingOverCanvas] = useState(false);
   const visionFileInputRef = useRef<HTMLInputElement>(null);
   
@@ -3148,29 +3150,31 @@ function ReplayToolContent() {
       categories[cat].push(comp);
     });
     
-    // MASONRY LAYOUT - components flow naturally
-    const GAP = 40;
-    const CATEGORY_GAP = 80;
-    const START_Y = 100;
+    // MASONRY LAYOUT - components flow naturally with MORE SPACING
+    const GAP = 60; // Increased from 40 for better spacing
+    const COMPONENT_GAP = 80; // Extra gap between components vertically
+    const CATEGORY_GAP = 120; // Increased from 80 for more separation
+    const START_Y = 120;
     
-    let currentX = 60;
+    let currentX = 80;
     
     Object.entries(categories).forEach(([category, comps]) => {
       // Track column heights for masonry
       const columnHeights = [0, 0]; // 2 columns per category
-      const COLUMN_WIDTH = 320;
+      const COLUMN_WIDTH = 340; // Slightly wider columns
       
       comps.forEach((comp: any, idx: number) => {
         const id = `comp-${comp.id}`;
         
         // Estimate component height based on type/name
-        let estimatedHeight = 150;
+        let estimatedHeight = 180; // Increased base height
         const name = (comp.name || '').toLowerCase();
-        if (name.includes('sidebar') || name.includes('nav')) estimatedHeight = 400;
-        else if (name.includes('card') || name.includes('table')) estimatedHeight = 250;
-        else if (name.includes('header') || name.includes('banner')) estimatedHeight = 120;
-        else if (name.includes('button') || name.includes('badge')) estimatedHeight = 80;
-        else if (name.includes('stat') || name.includes('metric')) estimatedHeight = 180;
+        if (name.includes('sidebar') || name.includes('nav')) estimatedHeight = 450;
+        else if (name.includes('card') || name.includes('table')) estimatedHeight = 300;
+        else if (name.includes('header') || name.includes('banner') || name.includes('hero')) estimatedHeight = 200;
+        else if (name.includes('button') || name.includes('badge')) estimatedHeight = 100;
+        else if (name.includes('stat') || name.includes('metric')) estimatedHeight = 220;
+        else if (name.includes('footer') || name.includes('form')) estimatedHeight = 350;
         
         // Find shortest column
         const shortestCol = columnHeights[0] <= columnHeights[1] ? 0 : 1;
@@ -3180,11 +3184,11 @@ function ReplayToolContent() {
           y: START_Y + columnHeights[shortestCol]
         };
         
-        // Update column height
-        columnHeights[shortestCol] += estimatedHeight + GAP;
+        // Update column height with extra spacing between components
+        columnHeights[shortestCol] += estimatedHeight + COMPONENT_GAP;
       });
       
-      // Move to next category
+      // Move to next category with more separation
       currentX += 2 * COLUMN_WIDTH + GAP + CATEGORY_GAP;
     });
     
@@ -3194,19 +3198,49 @@ function ReplayToolContent() {
     setBlueprintsOffset({ x: 0, y: 0 });
   }, [libraryData?.components]);
 
-  // Vision Import - Convert image/screenshot to component code
-  const processVisionImport = useCallback(async (imageBase64: string) => {
-    if (!imageBase64) return;
+  // Vision Import - Convert image/screenshot OR description to component code
+  const processVisionImport = useCallback(async (imageBase64: string | null, description?: string) => {
+    if (!imageBase64 && !description) return;
     
     setVisionImportLoading(true);
-    setVisionImportProgress("Analyzing image with AI Vision...");
+    setVisionImportProgress(imageBase64 ? "Analyzing image with AI Vision..." : "Creating component from description...");
     
     try {
+      // Compress image if it's too large using inline compression
+      let processedImage = imageBase64;
+      if (imageBase64) {
+        // Check size (rough estimate: base64 is ~1.37x the original)
+        const estimatedSize = (imageBase64.length * 0.75) / (1024 * 1024); // MB
+        if (estimatedSize > 3) {
+          setVisionImportProgress("Compressing image...");
+          // Inline compression for base64
+          processedImage = await new Promise<string>((resolve) => {
+            const img = document.createElement('img');
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              const maxWidth = 1000;
+              let { width, height } = img;
+              if (width > maxWidth) {
+                height = (height * maxWidth) / width;
+                width = maxWidth;
+              }
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              ctx?.drawImage(img, 0, 0, width, height);
+              resolve(canvas.toDataURL('image/jpeg', 0.7));
+            };
+            img.src = imageBase64;
+          });
+        }
+      }
+      
       const response = await fetch('/api/blueprint/vision', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          imageBase64,
+          imageBase64: processedImage,
+          description: description || undefined,
           componentName: visionImportComponentName || undefined,
           additionalInstructions: visionImportInstructions || undefined
         })
@@ -3283,11 +3317,12 @@ function ReplayToolContent() {
       broadcastLibraryComponentAdd(newComp);
       broadcastBlueprintPosition(`comp-${newId}`, canvasCenter.x, canvasCenter.y);
       
-      showToast("Component imported from image!", "success");
+      showToast(imageBase64 ? "Component imported from image!" : "Component created from description!", "success");
       setShowVisionImportModal(false);
       setVisionImportImage(null);
       setVisionImportInstructions("");
       setVisionImportComponentName("");
+      setVisionImportDescription("");
       
     } catch (error: any) {
       console.error("Vision import error:", error);
@@ -18377,9 +18412,30 @@ export default function App() {
                         
                         <div className="w-px h-5 bg-zinc-700 mx-1" />
                         
+                        {/* New Component Button - Opens modal with options */}
+                        <button 
+                          onClick={() => {
+                            setVisionImportMode("describe");
+                            setVisionImportImage(null);
+                            setVisionImportDescription("");
+                            setShowVisionImportModal(true);
+                          }}
+                          className={cn(
+                            "p-2 rounded-lg transition-all duration-150 group relative flex items-center gap-1",
+                            "hover:bg-zinc-800 text-zinc-400 hover:text-white"
+                          )}
+                          title="New Component"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">New Component</span>
+                        </button>
+                        
                         {/* Import from Image - AI Vision - PROMINENT BUTTON */}
                         <button 
-                          onClick={() => visionFileInputRef.current?.click()}
+                          onClick={() => {
+                            setVisionImportMode("image");
+                            setShowVisionImportModal(true);
+                          }}
                           className={cn(
                             "px-3 py-1.5 rounded-lg transition-all duration-150 group relative flex items-center gap-2",
                             "bg-gradient-to-r from-violet-600/30 to-blue-600/30 hover:from-violet-600/50 hover:to-blue-600/50",
@@ -21486,7 +21542,7 @@ document.querySelectorAll('img').forEach(img=>{
         </motion.div>
       )}
       
-      {/* Vision Import Modal - Import component from image/screenshot */}
+      {/* Vision Import Modal - Import component from image/screenshot OR create from description */}
       {showVisionImportModal && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -21497,6 +21553,7 @@ document.querySelectorAll('img').forEach(img=>{
             if (!visionImportLoading) {
               setShowVisionImportModal(false);
               setVisionImportImage(null);
+              setVisionImportDescription("");
             }
           }}
         >
@@ -21509,32 +21566,162 @@ document.querySelectorAll('img').forEach(img=>{
           >
             {/* Header */}
             <div className="px-6 py-4 border-b border-zinc-800 bg-gradient-to-r from-violet-500/10 to-blue-500/10">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-blue-500/20 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-violet-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <path d="M21 15l-5-5L5 21" />
-                  </svg>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-blue-500/20 flex items-center justify-center">
+                    {visionImportMode === "image" ? (
+                      <svg className="w-5 h-5 text-violet-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <path d="M21 15l-5-5L5 21" />
+                      </svg>
+                    ) : (
+                      <Sparkles className="w-5 h-5 text-violet-400" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-white">
+                      {visionImportMode === "image" ? "Import from Image" : "Create Component"}
+                    </h3>
+                    <p className="text-xs text-zinc-500">
+                      {visionImportMode === "image" 
+                        ? "AI Vision converts screenshots & Figma frames to code" 
+                        : "Describe what you want and AI will create it"}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-base font-semibold text-white">Import from Image</h3>
-                  <p className="text-xs text-zinc-500">AI Vision converts screenshots & Figma frames to code</p>
+                
+                {/* Mode Toggle */}
+                <div className="flex items-center bg-zinc-800/50 rounded-lg p-1">
+                  <button
+                    onClick={() => setVisionImportMode("image")}
+                    className={cn(
+                      "px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+                      visionImportMode === "image"
+                        ? "bg-violet-600 text-white"
+                        : "text-zinc-400 hover:text-white"
+                    )}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <path d="M21 15l-5-5L5 21" />
+                      </svg>
+                      Image
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setVisionImportMode("describe")}
+                    className={cn(
+                      "px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+                      visionImportMode === "describe"
+                        ? "bg-violet-600 text-white"
+                        : "text-zinc-400 hover:text-white"
+                    )}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Describe
+                    </span>
+                  </button>
                 </div>
               </div>
             </div>
             
             {/* Content */}
             <div className="p-6">
-              {/* Image Preview */}
-              {visionImportImage && (
-                <div className="mb-5 rounded-xl border border-zinc-700/50 overflow-hidden bg-zinc-800/30">
-                  <img 
-                    src={visionImportImage} 
-                    alt="Preview" 
-                    className="w-full max-h-[300px] object-contain"
-                  />
-                </div>
+              {visionImportMode === "image" ? (
+                <>
+                  {/* Image Upload Area */}
+                  {!visionImportImage ? (
+                    <div 
+                      className="mb-5 rounded-xl border-2 border-dashed border-zinc-700 hover:border-violet-500/50 transition-colors bg-zinc-800/20 cursor-pointer"
+                      onClick={() => visionFileInputRef.current?.click()}
+                      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const file = e.dataTransfer.files[0];
+                        if (file && file.type.startsWith('image/')) {
+                          const reader = new FileReader();
+                          reader.onload = () => setVisionImportImage(reader.result as string);
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    >
+                      <div className="p-10 text-center">
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-violet-500/20 to-blue-500/20 flex items-center justify-center">
+                          <svg className="w-8 h-8 text-violet-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                            <circle cx="8.5" cy="8.5" r="1.5" />
+                            <path d="M21 15l-5-5L5 21" />
+                          </svg>
+                        </div>
+                        <p className="text-sm text-white mb-1">Drop image here or click to upload</p>
+                        <p className="text-xs text-zinc-500">
+                          Supports screenshots, Figma frames, mockups
+                        </p>
+                        <div className="mt-4 flex items-center justify-center gap-2 text-xs text-zinc-500">
+                          <span className="px-2 py-1 bg-zinc-800 rounded">Ctrl+V</span>
+                          <span>to paste from clipboard</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mb-5 rounded-xl border border-zinc-700/50 overflow-hidden bg-zinc-800/30 relative group">
+                      <img 
+                        src={visionImportImage} 
+                        alt="Preview" 
+                        className="w-full max-h-[300px] object-contain"
+                      />
+                      <button
+                        onClick={() => setVisionImportImage(null)}
+                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-zinc-900/80 text-zinc-400 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  {/* Description Input */}
+                  <div className="mb-5">
+                    <label className="block text-xs font-medium text-zinc-400 mb-2">Describe the component you want</label>
+                    <textarea
+                      value={visionImportDescription}
+                      onChange={(e) => setVisionImportDescription(e.target.value)}
+                      placeholder="e.g., A modern pricing card with dark theme, showing plan name, price, features list with checkmarks, and a CTA button with gradient..."
+                      disabled={visionImportLoading}
+                      rows={5}
+                      className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700/50 rounded-lg text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30 resize-none disabled:opacity-50"
+                      autoFocus
+                    />
+                  </div>
+                  
+                  {/* Quick Examples */}
+                  <div className="mb-4">
+                    <p className="text-xs text-zinc-500 mb-2">Quick examples:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        "Modern card with hover effect",
+                        "Glassmorphism button",
+                        "Stats counter with icons",
+                        "Testimonial with avatar",
+                        "Feature grid with icons"
+                      ].map((example) => (
+                        <button
+                          key={example}
+                          onClick={() => setVisionImportDescription(example)}
+                          className="px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-md transition-colors"
+                        >
+                          {example}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
               )}
               
               {/* Component Name */}
@@ -21544,24 +21731,26 @@ document.querySelectorAll('img').forEach(img=>{
                   type="text"
                   value={visionImportComponentName}
                   onChange={(e) => setVisionImportComponentName(e.target.value)}
-                  placeholder="Auto-detect from image..."
+                  placeholder="Auto-detect..."
                   disabled={visionImportLoading}
                   className="w-full px-4 py-2.5 bg-zinc-800/50 border border-zinc-700/50 rounded-lg text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30 disabled:opacity-50"
                 />
               </div>
               
-              {/* Additional Instructions */}
-              <div className="mb-5">
-                <label className="block text-xs font-medium text-zinc-400 mb-2">Additional Instructions (optional)</label>
-                <textarea
-                  value={visionImportInstructions}
-                  onChange={(e) => setVisionImportInstructions(e.target.value)}
-                  placeholder="e.g., Use dark theme, add hover effects, match brand colors..."
-                  disabled={visionImportLoading}
-                  rows={2}
-                  className="w-full px-4 py-2.5 bg-zinc-800/50 border border-zinc-700/50 rounded-lg text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30 resize-none disabled:opacity-50"
-                />
-              </div>
+              {/* Additional Instructions (only for image mode) */}
+              {visionImportMode === "image" && (
+                <div className="mb-5">
+                  <label className="block text-xs font-medium text-zinc-400 mb-2">Additional Instructions (optional)</label>
+                  <textarea
+                    value={visionImportInstructions}
+                    onChange={(e) => setVisionImportInstructions(e.target.value)}
+                    placeholder="e.g., Use dark theme, add hover effects, match brand colors..."
+                    disabled={visionImportLoading}
+                    rows={2}
+                    className="w-full px-4 py-2.5 bg-zinc-800/50 border border-zinc-700/50 rounded-lg text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30 resize-none disabled:opacity-50"
+                  />
+                </div>
+              )}
               
               {/* Progress */}
               {visionImportLoading && visionImportProgress && (
@@ -21575,7 +21764,15 @@ document.querySelectorAll('img').forEach(img=>{
             {/* Actions */}
             <div className="px-6 py-4 bg-zinc-900/50 border-t border-zinc-800 flex items-center justify-between">
               <div className="text-xs text-zinc-500">
-                <span className="text-zinc-400">Tip:</span> Paste with Ctrl+V or drag & drop images
+                {visionImportMode === "image" ? (
+                  <>
+                    <span className="text-zinc-400">Tip:</span> Paste with Ctrl+V or drag & drop images
+                  </>
+                ) : (
+                  <>
+                    <span className="text-zinc-400">Tip:</span> Be descriptive for better results
+                  </>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 <button
@@ -21584,6 +21781,7 @@ document.querySelectorAll('img').forEach(img=>{
                     setVisionImportImage(null);
                     setVisionImportInstructions("");
                     setVisionImportComponentName("");
+                    setVisionImportDescription("");
                   }}
                   disabled={visionImportLoading}
                   className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-white transition-colors disabled:opacity-50"
@@ -21591,8 +21789,15 @@ document.querySelectorAll('img').forEach(img=>{
                   Cancel
                 </button>
                 <button
-                  onClick={() => visionImportImage && processVisionImport(visionImportImage)}
-                  disabled={!visionImportImage || visionImportLoading}
+                  onClick={() => {
+                    if (visionImportMode === "image" && visionImportImage) {
+                      processVisionImport(visionImportImage);
+                    } else if (visionImportMode === "describe" && visionImportDescription.trim()) {
+                      // Create component from description
+                      processVisionImport(null, visionImportDescription);
+                    }
+                  }}
+                  disabled={(visionImportMode === "image" && !visionImportImage) || (visionImportMode === "describe" && !visionImportDescription.trim()) || visionImportLoading}
                   className="px-5 py-2 text-sm font-medium bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {visionImportLoading ? (

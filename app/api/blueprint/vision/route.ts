@@ -1,6 +1,19 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
 
+// Increase body size limit for large images (up to 10MB)
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+  },
+};
+
+// For Next.js App Router - export maxDuration and dynamic
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 const VISION_TO_CODE_PROMPT = `
@@ -154,10 +167,11 @@ function suggestComponentName(description: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const { imageBase64, imageUrl, componentName, additionalInstructions } = await request.json();
+    const { imageBase64, imageUrl, componentName, additionalInstructions, description } = await request.json();
     
-    if (!imageBase64 && !imageUrl) {
-      return NextResponse.json({ error: "No image provided" }, { status: 400 });
+    // Allow either image OR description
+    if (!imageBase64 && !imageUrl && !description) {
+      return NextResponse.json({ error: "No image or description provided" }, { status: 400 });
     }
 
     const model = genAI.getGenerativeModel({ 
@@ -168,6 +182,9 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    // Determine if this is image-based or description-based
+    const isDescriptionMode = !imageBase64 && !imageUrl && description;
+    
     // Build the prompt
     let prompt = VISION_TO_CODE_PROMPT;
     
@@ -175,10 +192,14 @@ export async function POST(request: NextRequest) {
       prompt += `\n\n**ADDITIONAL INSTRUCTIONS:**\n${additionalInstructions}`;
     }
     
-    prompt += `\n\n**NOW CONVERT THE PROVIDED IMAGE TO JSX CODE:**`;
+    if (isDescriptionMode) {
+      prompt += `\n\n**CREATE A COMPONENT FROM THIS DESCRIPTION:**\n${description}\n\nGenerate a beautiful, modern component that matches this description. Use Tailwind CSS, dark theme (zinc-900 backgrounds), and ensure it looks professional and polished.`;
+    } else {
+      prompt += `\n\n**NOW CONVERT THE PROVIDED IMAGE TO JSX CODE:**`;
+    }
 
-    // Prepare image part
-    let imagePart: any;
+    // Prepare image part (if available)
+    let imagePart: any = null;
     
     if (imageBase64) {
       // Base64 image
@@ -207,10 +228,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Use streaming for live updates
-    const result = await model.generateContentStream([
-      { text: prompt },
-      imagePart
-    ]);
+    const contentParts: any[] = [{ text: prompt }];
+    if (imagePart) {
+      contentParts.push(imagePart);
+    }
+    
+    const result = await model.generateContentStream(contentParts);
     
     // Create readable stream for SSE
     const encoder = new TextEncoder();
