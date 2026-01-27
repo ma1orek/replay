@@ -4246,6 +4246,8 @@ ${processedCode}
     // TRANSFORM SIDEBAR TO AGENTIC CHAT
     setSidebarMode("chat");
     setSidebarTab("chat");
+    setSidebarView("detail"); // Ensure we're in detail view to show Replay AI / Input tabs
+    setSidebarCollapsed(false); // Ensure sidebar is visible
     setMobilePanel("chat"); // Also switch mobile to chat
     setGenerationComplete(true); // Mark generation as complete to show chat view
     
