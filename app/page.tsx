@@ -11211,6 +11211,68 @@ ${publishCode}
         return;
       }
       
+      // ═══════════════════════════════════════════════════════════════════════════
+      // INJECT VISIBILITY FIX - Same as preview uses!
+      // This ensures published page looks exactly like preview
+      // ═══════════════════════════════════════════════════════════════════════════
+      const visibilityFix = `
+<style id="publish-visibility-fix">
+  /* AGGRESSIVE VISIBILITY FIX - Same as preview */
+  [style*="opacity: 0"], [style*="opacity:0"], [style*="opacity: 0."] { opacity: 1 !important; }
+  [style*="visibility: hidden"], [style*="visibility:hidden"] { visibility: visible !important; }
+  .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .slide-left, .slide-right,
+  .scale-up, .rotate-in, .blur-fade, .animate-fade,
+  [class*="fade-"], [class*="slide-"], [class*="stagger-"], [class*="animate-"],
+  [class*="gsap"], [class*="scroll"] {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  .stagger-cards, .stagger-cards > *, [class*="stagger"] > * {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  [class*="card"], [class*="Card"], [class*="step"], [class*="Step"],
+  [class*="feature"], [class*="Feature"], [class*="item"], [class*="Item"] {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  .grid > *, .flex > *, section > div, section > * {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  [data-state="hidden"], [data-visible="false"], [data-aos] {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+  }
+</style>
+<script>
+(function() {
+  function forceVisible() {
+    document.querySelectorAll('*').forEach(function(el) {
+      var style = window.getComputedStyle(el);
+      if (parseFloat(style.opacity) < 0.1) el.style.setProperty('opacity', '1', 'important');
+      if (style.visibility === 'hidden') el.style.setProperty('visibility', 'visible', 'important');
+    });
+  }
+  document.addEventListener('DOMContentLoaded', function() { forceVisible(); setTimeout(forceVisible, 100); setTimeout(forceVisible, 300); });
+  window.addEventListener('load', function() { forceVisible(); setTimeout(forceVisible, 100); setTimeout(forceVisible, 500); setTimeout(forceVisible, 1000); });
+  var count = 0; var iv = setInterval(function() { forceVisible(); if (++count > 20) clearInterval(iv); }, 100);
+})();
+</script>`;
+      
+      // Inject visibility fix into the code
+      if (publishCode.includes('</head>')) {
+        publishCode = publishCode.replace('</head>', `${visibilityFix}\n</head>`);
+        console.log('[handlePublish] Injected visibility fix before </head>');
+      } else if (publishCode.includes('<body')) {
+        publishCode = publishCode.replace('<body', `${visibilityFix}\n<body`);
+        console.log('[handlePublish] Injected visibility fix before <body>');
+      } else if (publishCode.includes('</body>')) {
+        publishCode = publishCode.replace('</body>', `${visibilityFix}\n</body>`);
+        console.log('[handlePublish] Injected visibility fix before </body>');
+      }
+      
       console.log('[handlePublish] Code validation passed, publishing...');
       console.log('[handlePublish] Sending code length:', publishCode.length, 'existingSlug:', existingSlug);
       console.log('[handlePublish] Code first 100 chars:', publishCode.substring(0, 100));
