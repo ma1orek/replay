@@ -352,6 +352,69 @@ The difference between "generic Bootstrap" and "AWWWARDS nominee" is:
 5. TYPOGRAPHY HIERARCHY - bold choices, gradient text, varied weights
 
 ═══════════════════════════════════════════════════════════════════════════════
+🌟 MANDATORY: ANIMATED BACKGROUNDS & VISIBLE ELEMENTS
+═══════════════════════════════════════════════════════════════════════════════
+
+**HERO SECTION MUST HAVE animated background:**
+\`\`\`jsx
+{/* Animated gradient orbs in hero - REQUIRED! */}
+<div className="absolute inset-0 overflow-hidden">
+  <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/30 rounded-full blur-[100px] animate-pulse" />
+  <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/30 rounded-full blur-[100px] animate-pulse" style={{animationDelay: '1s'}} />
+  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/20 rounded-full blur-[120px] animate-pulse" style={{animationDelay: '2s'}} />
+</div>
+\`\`\`
+
+**CARDS MUST BE VISIBLE - Use solid backgrounds with borders:**
+\`\`\`jsx
+{/* WRONG - invisible cards */}
+<div className="bg-white/5 ...">  {/* TOO TRANSPARENT! */}
+
+{/* CORRECT - visible cards */}
+<div className="bg-zinc-900/90 border border-zinc-700/50 backdrop-blur-sm shadow-xl ...">
+<div className="bg-white/90 border border-gray-200 shadow-lg ...">  {/* for light theme */}
+\`\`\`
+
+**PRICING CARDS - Must have visible borders and backgrounds:**
+\`\`\`jsx
+<div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-8 hover:border-indigo-500/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(99,102,241,0.2)]">
+  <h3 className="text-2xl font-bold text-white">Plan Name</h3>
+  <p className="text-4xl font-bold text-white mt-4">49,99 zł</p>
+  {/* Content clearly visible */}
+</div>
+\`\`\`
+
+**SECTION DIVIDERS with gradients:**
+\`\`\`jsx
+{/* Add between sections */}
+<div className="h-px bg-gradient-to-r from-transparent via-zinc-700 to-transparent" />
+\`\`\`
+
+**GRADIENT TEXT for headings:**
+\`\`\`jsx
+<h1 className="text-5xl font-bold bg-gradient-to-r from-white via-indigo-200 to-indigo-400 bg-clip-text text-transparent">
+\`\`\`
+
+═══════════════════════════════════════════════════════════════════════════════
+⚠️ VISIBILITY RULES - ELEMENTS MUST BE READABLE!
+═══════════════════════════════════════════════════════════════════════════════
+
+FORBIDDEN opacity values for backgrounds:
+- bg-white/5, bg-white/10 - TOO TRANSPARENT
+- bg-black/5, bg-black/10 - TOO TRANSPARENT
+
+REQUIRED minimum opacity:
+- Cards: bg-zinc-900/80 or bg-zinc-800 (dark) | bg-white/90 or bg-gray-50 (light)
+- Text: text-white or text-zinc-100 (dark) | text-gray-900 (light)
+- Borders: border-zinc-700 (dark) | border-gray-200 (light)
+
+EVERY card/panel MUST have:
+1. Solid or high-opacity background (min 80%)
+2. Visible border
+3. Shadow for depth
+4. Hover effect that changes border color or adds glow
+
+═══════════════════════════════════════════════════════════════════════════════
 🚫 FRAMEWORK: USE REACT ONLY! NO ALPINE.JS!
 ═══════════════════════════════════════════════════════════════════════════════
 
@@ -544,20 +607,68 @@ CORRECT - Full section:
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         body { font-family: 'Inter', sans-serif; }
+        
+        /* Hover effects */
         .hover-lift { transition: all 0.3s ease; }
-        .hover-lift:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        .hover-lift:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
         .hover-glow { transition: all 0.3s ease; }
-        .hover-glow:hover { box-shadow: 0 0 30px rgba(99, 102, 241, 0.4); }
+        .hover-glow:hover { box-shadow: 0 0 40px rgba(99, 102, 241, 0.5); border-color: rgba(99, 102, 241, 0.5); }
         .btn-primary { transition: all 0.3s ease; }
-        .btn-primary:hover { transform: translateY(-2px) scale(1.02); }
-        .card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .card:hover { transform: translateY(-4px) scale(1.01); }
-        /* Dark theme glassmorphism */
-        .glassmorphism { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
-        /* Light theme glassmorphism - use this for light backgrounds! */
-        .glassmorphism-light { background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 4px 30px rgba(0,0,0,0.08); }
+        .btn-primary:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4); }
+        
+        /* Card styles - VISIBLE backgrounds */
+        .card { 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            background: rgba(24, 24, 27, 0.9);
+            border: 1px solid rgba(63, 63, 70, 0.5);
+        }
+        .card:hover { 
+            transform: translateY(-4px) scale(1.01); 
+            border-color: rgba(99, 102, 241, 0.5);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 30px rgba(99, 102, 241, 0.1);
+        }
+        
+        /* Glassmorphism with VISIBLE backgrounds */
+        .glassmorphism { 
+            background: rgba(24, 24, 27, 0.8); 
+            backdrop-filter: blur(12px); 
+            border: 1px solid rgba(63, 63, 70, 0.5);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .glassmorphism-light { 
+            background: rgba(255,255,255,0.9); 
+            backdrop-filter: blur(12px); 
+            border: 1px solid rgba(0,0,0,0.1); 
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1); 
+        }
+        
+        /* Animated gradient orbs */
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-20px) scale(1.05); }
+        }
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.1); }
+        }
+        .animate-float { animation: float 6s ease-in-out infinite; }
+        .animate-pulse-glow { animation: pulse-glow 4s ease-in-out infinite; }
+        
+        /* Gradient text */
+        .gradient-text {
+            background: linear-gradient(135deg, #fff 0%, #a5b4fc 50%, #818cf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Section dividers */
+        .section-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent);
+        }
     </style>
 </head>
 <!-- 🚨 CRITICAL: SET body class based on scanData.ui.theme! -->
@@ -643,22 +754,36 @@ CORRECT - Full section:
 ☑ NO "TODO" or placeholder comments
 ☑ NO empty div wrappers
 
-🎬 ANIMATIONS:
+🎬 ANIMATIONS (CRITICAL!):
 ☑ GSAP + ScrollTrigger scripts in <head>
-☑ GSAP animations initialized in useEffect
-☑ DIFFERENT animation class on each section (fade-up, slide-left, stagger-cards)
-☑ Hover effects on ALL buttons and cards
+☑ GSAP animations initialized in useEffect with ALL animation types
+☑ DIFFERENT animation class on EACH section (fade-up, slide-left, slide-right, scale-up, stagger-cards)
+☑ Hover effects on ALL buttons (.btn-primary:hover) and cards (.card:hover, .hover-lift)
+☑ Counter animation on stats/numbers
+
+🌟 ANIMATED BACKGROUNDS (REQUIRED!):
+☑ Hero section has animated gradient orbs (blur-[100px], animate-pulse)
+☑ At least 2-3 floating gradient blobs with different colors
+☑ Gradient dividers between sections
+☑ Subtle animated elements (animate-float, animate-pulse-glow)
+
+👁️ VISIBILITY (ELEMENTS MUST BE READABLE!):
+☑ Cards use bg-zinc-900/90 or bg-zinc-800 (NOT bg-white/5!)
+☑ All cards have visible borders (border-zinc-700)
+☑ Text is high contrast (text-white, text-zinc-100)
+☑ Pricing cards are clearly visible with solid backgrounds
+☑ Hover states change border color to accent (border-indigo-500/50)
 
 🖼️ IMAGES:
 ☑ Picsum: https://picsum.photos/seed/NAME/W/H
 ☑ Avatars: https://i.pravatar.cc/150?img=XX
 
 🎨 STYLE:
-☑ Glassmorphism on cards/panels
-☑ Gradient text on headings  
-☑ Colored shadows (not gray)
-☑ IF STYLE DIRECTIVE provided → USE IT for all colors/theme (ignore video colors!)
-☑ IF NO STYLE DIRECTIVE → use scanData.ui.theme and scanData.ui.colors from video
+☑ Gradient text on main headings (bg-gradient-to-r bg-clip-text text-transparent)
+☑ Colored shadows on hover (shadow-[0_0_30px_rgba(99,102,241,0.3)])
+☑ Glassmorphism with VISIBLE backgrounds (bg-zinc-900/80, not bg-white/5)
+☑ IF STYLE DIRECTIVE provided → USE IT for all colors/theme
+☑ IF NO STYLE DIRECTIVE → use scanData.ui.theme and scanData.ui.colors
 
 Generate complete HTML:`;
 
