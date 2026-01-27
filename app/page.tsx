@@ -4651,21 +4651,53 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
           setFlows([videoFlow]);
           setSelectedFlowId(flowId);
           
-          // Load actual duration from video metadata
+          // Load actual duration AND thumbnail from video metadata
           const tempVideo = document.createElement('video');
           tempVideo.preload = 'metadata';
           tempVideo.crossOrigin = 'anonymous';
+          tempVideo.muted = true;
+          
           tempVideo.onloadedmetadata = () => {
             const realDuration = Math.round(tempVideo.duration);
             console.log("[Project URL] Video duration loaded:", realDuration, "s");
+            // Seek to get a good thumbnail frame
+            tempVideo.currentTime = Math.min(1, realDuration * 0.25);
+          };
+          
+          tempVideo.onseeked = () => {
+            // Generate thumbnail from video frame
+            let thumbnailUrl = "";
+            try {
+              const canvas = document.createElement("canvas");
+              const vw = tempVideo.videoWidth || 640;
+              const vh = tempVideo.videoHeight || 360;
+              canvas.width = 320;
+              canvas.height = Math.round((320 / vw) * vh) || 180;
+              const ctx = canvas.getContext("2d");
+              if (ctx && vw > 0 && vh > 0) {
+                ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
+                thumbnailUrl = canvas.toDataURL("image/jpeg", 0.8);
+              }
+            } catch (e) {
+              console.error("[Project URL] Thumbnail generation error:", e);
+            }
+            
+            const realDuration = Math.round(tempVideo.duration);
+            console.log("[Project URL] Thumbnail generated, duration:", realDuration, "s");
             setFlows(prev => prev.map(f => 
               f.id === flowId 
-                ? { ...f, duration: realDuration, trimEnd: realDuration }
+                ? { 
+                    ...f, 
+                    duration: realDuration, 
+                    trimEnd: realDuration,
+                    thumbnail: thumbnailUrl || f.thumbnail 
+                  }
                 : f
             ));
           };
+          
           tempVideo.onerror = () => {
-            console.log("[Project URL] Could not load video duration, using default");
+            console.log("[Project URL] Could not load video, using defaults");
           };
           tempVideo.src = gen.input_video_url;
         }
