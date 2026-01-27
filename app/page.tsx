@@ -13406,57 +13406,53 @@ ${publishCode}
                   
                   {/* Upload Section - Primary */}
                   <div className="p-4 border-b border-white/[0.06]">
+                    {/* Header with VIDEOS label and action buttons */}
                     <div className="sidebar-label text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3 flex items-center justify-between">
                       <span className="flex items-center gap-2">
-                        <Video className="w-3.5 h-3.5" /> VIDEO INPUT
+                        <Video className="w-3.5 h-3.5" /> VIDEOS {flows.length > 0 && <span className="text-white/30">{flows.length}</span>}
                       </span>
-                      {flows.length > 0 && (
+                      {/* Compact action buttons */}
+                      <div className="flex items-center gap-1">
+                        <button 
+                          onClick={startRecording}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 transition-all text-red-400 text-[10px] font-medium normal-case"
+                        >
+                          <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                          Record
+                        </button>
                         <button 
                           onClick={() => fileInputRef.current?.click()}
-                          className="text-[10px] text-white/40 hover:text-white/70 flex items-center gap-1 px-2 py-0.5 rounded hover:bg-zinc-800/50 transition-colors normal-case font-normal"
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-700/50 border border-white/[0.08] hover:bg-zinc-700/70 hover:border-white/[0.15] transition-all text-white/60 hover:text-white/80 text-[10px] font-medium normal-case"
                         >
-                          <Plus className="w-3 h-3" /> Add more
+                          <Upload className="w-3 h-3" />
+                          Upload
                         </button>
-                      )}
+                      </div>
                     </div>
                     {flows.length === 0 ? (
                       <>
-                        {/* Compact Upload Button */}
+                        {/* Add video drop area */}
                         <button 
                           onClick={() => fileInputRef.current?.click()}
                           onDragOver={handleDragOver}
                           onDragLeave={handleDragLeave}
                           onDrop={handleDrop}
                           className={cn(
-                            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all cursor-pointer group mb-2",
-                            "bg-zinc-800/50 border border-white/[0.08] hover:border-[var(--accent-orange)]/40 hover:bg-zinc-800/70",
-                            isDragging && "border-[var(--accent-orange)] bg-[var(--accent-orange)]/10"
+                            "w-full flex items-center justify-center gap-2 px-3 py-3 rounded-lg transition-all cursor-pointer",
+                            "bg-zinc-800/30 border border-dashed border-white/[0.08] hover:border-white/[0.15] hover:bg-zinc-800/50",
+                            isDragging && "border-[var(--accent-orange)] bg-[var(--accent-orange)]/10 border-solid"
                           )}
                         >
-                          <div className={cn(
-                            "w-8 h-8 rounded-lg flex items-center justify-center transition-colors bg-zinc-700/50",
-                            isDragging ? "bg-[var(--accent-orange)]/20" : "group-hover:bg-[var(--accent-orange)]/10"
+                          <Plus className={cn(
+                            "w-4 h-4 transition-colors text-white/30",
+                            isDragging && "text-[var(--accent-orange)]"
+                          )} />
+                          <span className={cn(
+                            "text-[12px] text-white/40 font-medium",
+                            isDragging && "text-[var(--accent-orange)]"
                           )}>
-                            <Upload className={cn(
-                              "w-4 h-4 transition-colors text-white/40",
-                              isDragging ? "text-[var(--accent-orange)]" : "group-hover:text-[var(--accent-orange)]/70"
-                            )} />
-                          </div>
-                          <div className="text-left">
-                            <p className="text-[12px] text-white/70 font-medium">{isDragging ? "Drop here" : "Upload video"}</p>
-                            <p className="text-[10px] text-white/30">or drag & drop</p>
-                          </div>
-                        </button>
-                        
-                        {/* Compact Record Button */}
-                        <button 
-                          onClick={startRecording}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-zinc-800/50 border border-white/[0.08] hover:border-red-500/30 hover:bg-zinc-800/70 transition-all group"
-                        >
-                          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-zinc-700/50 group-hover:bg-red-500/10 transition-colors">
-                            <div className="status-dot recording w-2 h-2" />
-                          </div>
-                          <span className="text-[12px] text-white/70 font-medium">Record screen</span>
+                            {isDragging ? "Drop video here" : "Add video"}
+                          </span>
                         </button>
                       </>
                     ) : (
