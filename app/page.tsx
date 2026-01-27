@@ -11680,11 +11680,25 @@ ${publishCode}
                     </button>
                   )}
                 </div>
-                {historyTotal > 0 && (
-                  <p className="text-[10px] text-zinc-600 mt-1 px-1">
-                    {historySearch ? `Found ${historyTotal} projects` : `${historyTotal} projects total`}
-                  </p>
-                )}
+                <div className="flex items-center justify-between mt-1 px-1">
+                  {historyTotal > 0 && (
+                    <p className="text-[10px] text-zinc-600">
+                      {historySearch ? `Found ${historyTotal} projects` : `${historyTotal} projects total`}
+                    </p>
+                  )}
+                  <button
+                    onClick={() => {
+                      setHistoryOffset(0);
+                      fetchGenerations({ reset: true });
+                    }}
+                    disabled={isLoadingHistory}
+                    className="text-[10px] text-zinc-500 hover:text-zinc-300 flex items-center gap-1 transition-colors"
+                    title="Refresh projects list"
+                  >
+                    <RefreshCw className={cn("w-3 h-3", isLoadingHistory && "animate-spin")} />
+                    <span>Refresh</span>
+                  </button>
+                </div>
               </div>
               
               {/* Divider */}
