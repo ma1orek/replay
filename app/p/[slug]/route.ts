@@ -14,16 +14,74 @@ interface Project {
   hide_badge?: boolean;
 }
 
+// Extract body classes from HTML code
+function extractBodyClasses(code: string): string {
+  if (!code) return '';
+  
+  // Look for body tag with class attribute
+  const bodyMatch = code.match(/<body[^>]*(?:class|className)=["']([^"']+)["'][^>]*>/i);
+  if (bodyMatch && bodyMatch[1]) {
+    return bodyMatch[1];
+  }
+  
+  return '';
+}
+
+// Extract custom styles from head section
+function extractHeadStyles(code: string): string {
+  if (!code) return '';
+  
+  // Find all style tags in head
+  const headMatch = code.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+  if (!headMatch) return '';
+  
+  const headContent = headMatch[1];
+  const styleMatches = headContent.match(/<style[^>]*>[\s\S]*?<\/style>/gi);
+  
+  if (styleMatches) {
+    return styleMatches.join('\n');
+  }
+  
+  return '';
+}
+
 // Convert JSX/React code to plain HTML for rendering
 function jsxToHtml(code: string): string {
   if (!code) return '';
   
   let html = code.trim();
   
-  // If code already starts with proper HTML tags, it's HTML
-  if (/^<!DOCTYPE|^<html|^<body/i.test(html)) {
+  // If code is already a full HTML document, extract BODY CONTENT only
+  // (because we wrap it in our own HTML structure)
+  if (/^<!DOCTYPE|^<html/i.test(html)) {
     html = html.replace(/className=/g, 'class=');
+    
+    // Extract body content - find opening and closing body tags
+    const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+    if (bodyMatch && bodyMatch[1]) {
+      return bodyMatch[1].trim();
+    }
+    
+    // Fallback: if no body tags found but it's HTML, try to extract content between html tags
+    const htmlMatch = html.match(/<html[^>]*>([\s\S]*)<\/html>/i);
+    if (htmlMatch && htmlMatch[1]) {
+      // Remove head section if present
+      let content = htmlMatch[1].replace(/<head>[\s\S]*<\/head>/i, '');
+      // Remove body tags if present
+      content = content.replace(/<\/?body[^>]*>/gi, '');
+      return content.trim();
+    }
+    
     return html;
+  }
+  
+  // If just starts with <body>, extract its content
+  if (/^<body/i.test(html)) {
+    html = html.replace(/className=/g, 'class=');
+    const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+    if (bodyMatch && bodyMatch[1]) {
+      return bodyMatch[1].trim();
+    }
   }
   
   // CRITICAL FIX: Find the first COMPLETE HTML opening tag
@@ -223,6 +281,12 @@ export async function GET(
   // Convert code to HTML if it's JSX/React
   const htmlContent = jsxToHtml(typedProject.code);
   
+  // Extract body classes from original code to preserve styling
+  const bodyClasses = extractBodyClasses(typedProject.code);
+  
+  // Extract custom styles from head section
+  const customStyles = extractHeadStyles(typedProject.code);
+  
   // Full HTML document - CLEAN, just the output
   const fullHtml = `<!DOCTYPE html>
 <html lang="en">
@@ -263,8 +327,9 @@ export async function GET(
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { min-height: 100vh; }
   </style>
+  ${customStyles}
 </head>
-<body>
+<body${bodyClasses ? ` class="${bodyClasses}"` : ''}>
 ${htmlContent}
 ${badgeHtml}
 </body>
