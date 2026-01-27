@@ -869,8 +869,8 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
     // ════════════════════════════════════════════════════════════════
     console.log("[transmute] Phase 1: Starting unified scan with Pro model...");
     
-    // 90s timeout for Phase 1 - video scan should be fast with flash models
-    const phase1Timeout = 90000;
+    // 200s timeout for Phase 1 - large videos (20MB) need more time with Pro model
+    const phase1Timeout = 200000;
     console.log("[transmute] Phase 1 timeout:", phase1Timeout / 1000, "s");
     
     let scanResult;
