@@ -4635,18 +4635,39 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
         // IMPORTANT: Load video into flows if present
         if (gen.input_video_url && gen.input_video_url.length > 0) {
           console.log("[Project URL] Loading video into flows:", gen.input_video_url);
+          const flowId = generateId();
+          
+          // Create flow with placeholder duration first
           const videoFlow: FlowItem = {
-            id: generateId(),
+            id: flowId,
             name: gen.title || "Project Video",
             videoBlob: new Blob(), // Empty blob as placeholder
             videoUrl: gen.input_video_url,
-            duration: 0,
+            duration: 30, // Default duration, will be updated
             thumbnail: gen.input_thumbnail_url || "",
             trimStart: 0,
-            trimEnd: 0,
+            trimEnd: 30,
           };
           setFlows([videoFlow]);
-          setSelectedFlowId(videoFlow.id);
+          setSelectedFlowId(flowId);
+          
+          // Load actual duration from video metadata
+          const tempVideo = document.createElement('video');
+          tempVideo.preload = 'metadata';
+          tempVideo.crossOrigin = 'anonymous';
+          tempVideo.onloadedmetadata = () => {
+            const realDuration = Math.round(tempVideo.duration);
+            console.log("[Project URL] Video duration loaded:", realDuration, "s");
+            setFlows(prev => prev.map(f => 
+              f.id === flowId 
+                ? { ...f, duration: realDuration, trimEnd: realDuration }
+                : f
+            ));
+          };
+          tempVideo.onerror = () => {
+            console.log("[Project URL] Could not load video duration, using default");
+          };
+          tempVideo.src = gen.input_video_url;
         }
         
         // For showcase demo project, add welcome message explaining what this is
