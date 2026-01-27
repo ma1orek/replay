@@ -4722,6 +4722,13 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
           tempVideo.ondurationchange = () => updateFlowDuration();
           tempVideo.onerror = () => console.log("[Project URL] Could not load video");
           tempVideo.src = gen.input_video_url;
+          
+          // Fallback: if after 5s we still don't have duration, keep placeholder (30s) - some WebM never report duration
+          setTimeout(() => {
+            if (!durationFixed) {
+              console.log("[Project URL] Duration fallback - keeping placeholder 30s");
+            }
+          }, 5000);
         }
         
         // For showcase demo project, add welcome message explaining what this is
@@ -9646,12 +9653,17 @@ Try these prompts in Cursor or v0:
     const contextChanged = (refinements || "").trim() !== (activeGeneration?.refinements || "").trim();
     const styleChanged = (styleDirective || "").trim() !== (activeGeneration?.styleDirective || "").trim();
     
+    console.log("[handleGenerate] hasExistingProject:", hasExistingProject, "contextChanged:", contextChanged, "styleChanged:", styleChanged, "refinements:", (refinements || "").trim().substring(0, 50));
+    
     if (hasExistingProject && (contextChanged || styleChanged) && (refinements || "").trim()) {
+      console.log("[handleGenerate] Entering SMART EDIT mode");
       // Use Edit mode - cheaper and preserves existing structure
       const editPrompt = (refinements || "").trim() + (styleChanged ? ` Apply style: ${styleDirective}` : "");
       
       // Credits gate for edit
+      console.log("[handleGenerate] Checking credits for AI_EDIT, cost:", CREDIT_COSTS.AI_EDIT, "canAfford:", canAfford(CREDIT_COSTS.AI_EDIT));
       if (!canAfford(CREDIT_COSTS.AI_EDIT)) {
+        console.log("[handleGenerate] Not enough credits for AI_EDIT - showing modal");
         setShowOutOfCreditsModal(true);
         return;
       }
@@ -9779,7 +9791,9 @@ Try these prompts in Cursor or v0:
     }
     
     // Credits gate: check if user can afford
+    console.log("[handleGenerate] Full generation path - checking credits, cost:", CREDIT_COSTS.VIDEO_GENERATE, "canAfford:", canAfford(CREDIT_COSTS.VIDEO_GENERATE));
     if (!canAfford(CREDIT_COSTS.VIDEO_GENERATE)) {
+      console.log("[handleGenerate] Not enough credits for VIDEO_GENERATE - showing modal");
       setShowOutOfCreditsModal(true);
       return;
     }
