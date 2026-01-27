@@ -4150,7 +4150,8 @@ ${processedCode}
   
   // Max generation time (6 minutes on mobile, 4 on desktop) - after this, consider it stuck/failed
   const isMobileDevice = typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const MAX_GENERATION_TIME_MS = isMobileDevice ? 6 * 60 * 1000 : 4 * 60 * 1000;
+  // 5 minutes on desktop (Vercel limit is 300s), 6 minutes on mobile
+  const MAX_GENERATION_TIME_MS = isMobileDevice ? 6 * 60 * 1000 : 5 * 60 * 1000;
   
   // Complete generation and show results
   const completeGeneration = useCallback((code: string) => {
