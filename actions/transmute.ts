@@ -935,7 +935,7 @@ Generate the complete HTML file now:`;
         model: modelName,
         generationConfig: {
           temperature: 0.2,
-          maxOutputTokens: 40000, // Reduced from 100k - faster generation
+          maxOutputTokens: 100000, // Full output for complex projects
         },
       });
       return withTimeout(
@@ -945,8 +945,8 @@ Generate the complete HTML file now:`;
       );
     };
     
-    // Try fastest model first
-    const modelsToTry = ["gemini-1.5-flash", "gemini-2.0-flash"];
+    // Try stable model first (gemini-2.0-flash), then fallback
+    const modelsToTry = ["gemini-2.0-flash", "gemini-1.5-flash"];
     let lastError: any;
     
     for (const modelName of modelsToTry) {
