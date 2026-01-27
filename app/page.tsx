@@ -11169,6 +11169,30 @@ ${publishCode}
         }
       }
       
+      // ═══════════════════════════════════════════════════════════════════════════
+      // VALIDATION: Ensure code is valid before publishing
+      // ═══════════════════════════════════════════════════════════════════════════
+      const trimmedCode = publishCode.trim();
+      const isValidCode = trimmedCode.startsWith('<!DOCTYPE') || 
+                          trimmedCode.startsWith('<html') || 
+                          trimmedCode.startsWith('<') ||
+                          trimmedCode.includes('<!DOCTYPE');
+      
+      // Check for obviously broken code (starts with ); } or similar garbage)
+      const isBrokenCode = /^[\s\)\}\];,]+/.test(trimmedCode) || 
+                           trimmedCode.length < 100 ||
+                           (!trimmedCode.includes('<') && !trimmedCode.includes('function'));
+      
+      if (!isValidCode || isBrokenCode) {
+        console.error('[handlePublish] Code validation failed - code appears broken or incomplete');
+        console.error('[handlePublish] First 200 chars:', trimmedCode.substring(0, 200));
+        showToast("Cannot publish - code appears broken. Please regenerate the project.", "error");
+        setIsPublishing(false);
+        return;
+      }
+      
+      console.log('[handlePublish] Code validation passed, publishing...');
+      
       const response = await fetch("/api/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
