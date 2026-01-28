@@ -2957,8 +2957,7 @@ function ReplayToolContent() {
     }
   };
   
-  // Check if user has paid plan (PRO or higher)
-  const isPaidPlan = membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise";
+  // isPaidPlan is now provided by useCredits() hook
   const [pendingAction, setPendingAction] = useState<"generate" | "edit" | null>(null);
   const [analysisDescription, setAnalysisDescription] = useState<string>("");
   const [editInput, setEditInput] = useState("");
