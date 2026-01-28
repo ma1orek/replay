@@ -4596,7 +4596,60 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
           .single();
         
         if (error || !gen) {
-          console.log("[Project URL] Project not found, creating new session");
+          console.log("[Project URL] Project not found in Supabase, error:", error?.message);
+          
+          // Check if we have this project in localStorage (unsaved local project)
+          const localKey = `replay_local_project_${projectId}`;
+          const localProject = localStorage.getItem(localKey);
+          
+          if (localProject) {
+            try {
+              const parsed = JSON.parse(localProject);
+              console.log("[Project URL] Found local project, restoring...");
+              
+              if (parsed.code && parsed.code.length > 0) {
+                setGeneratedCode(parsed.code);
+                setDisplayedCode(parsed.code);
+                setEditableCode(parsed.code);
+                setGenerationComplete(true);
+                setSidebarMode("chat");
+                if (previewUrl) URL.revokeObjectURL(previewUrl);
+                setPreviewUrl(createPreviewUrl(parsed.code));
+              }
+              
+              if (parsed.title) setGenerationTitle(parsed.title);
+              if (parsed.flowNodes) setFlowNodes(parsed.flowNodes);
+              if (parsed.flowEdges) setFlowEdges(parsed.flowEdges);
+              if (parsed.libraryData) setLibraryData(parsed.libraryData);
+              
+              setActiveGeneration({
+                id: projectId,
+                title: parsed.title || "Untitled Project",
+                autoTitle: !parsed.title,
+                timestamp: parsed.timestamp || Date.now(),
+                status: "complete",
+                code: parsed.code || "",
+                styleDirective: parsed.styleDirective || "",
+                refinements: parsed.refinements || "",
+                flowNodes: parsed.flowNodes || [],
+                flowEdges: parsed.flowEdges || [],
+                versions: parsed.versions || [],
+                styleInfo: parsed.styleInfo || null,
+                libraryData: parsed.libraryData || null,
+              });
+              
+              showToast("Project restored from local storage", "info");
+              setHasLoadedFromUrl(true);
+              return;
+            } catch (e) {
+              console.error("[Project URL] Failed to parse local project:", e);
+            }
+          }
+          
+          // No local data either - show message and create empty session
+          console.log("[Project URL] No local data found, creating new session");
+          showToast("Project not found. It may not have been saved yet.", "error");
+          
           // Project doesn't exist - this is a new collaboration session
           // Just set the project ID for Liveblocks room
           setActiveGeneration({
@@ -10398,6 +10451,26 @@ Try these prompts in Cursor or v0:
         // Immediately save to Supabase for cross-device sync
         saveGenerationToSupabase(newGeneration);
         
+        // Also save to localStorage as backup (for refresh before Supabase sync completes)
+        try {
+          const localKey = `replay_local_project_${newGeneration.id}`;
+          localStorage.setItem(localKey, JSON.stringify({
+            code: newGeneration.code,
+            title: newGeneration.title,
+            timestamp: newGeneration.timestamp,
+            flowNodes: newGeneration.flowNodes,
+            flowEdges: newGeneration.flowEdges,
+            styleInfo: newGeneration.styleInfo,
+            styleDirective: newGeneration.styleDirective,
+            refinements: newGeneration.refinements,
+            versions: newGeneration.versions,
+            libraryData: newGeneration.libraryData,
+          }));
+          console.log("[Generation] Saved backup to localStorage:", newGeneration.id);
+        } catch (e) {
+          console.warn("[Generation] Failed to save localStorage backup:", e);
+        }
+        
         // Set initial chat message showing generation is complete
         setChatMessages([{
           id: generateId(),
@@ -12890,6 +12963,18 @@ ${publishCode}
                             if (result.success && result.data) {
                               setLibraryData(result.data);
                               setSelectedLibraryItem("doc-welcome");
+                              // Update localStorage backup with library data
+                              if (activeGeneration?.id) {
+                                try {
+                                  const localKey = `replay_local_project_${activeGeneration.id}`;
+                                  const existing = localStorage.getItem(localKey);
+                                  if (existing) {
+                                    const parsed = JSON.parse(existing);
+                                    parsed.libraryData = result.data;
+                                    localStorage.setItem(localKey, JSON.stringify(parsed));
+                                  }
+                                } catch (e) {}
+                              }
                             }
                           } catch (e) {
                             console.error("Library generation failed:", e);
@@ -12932,6 +13017,18 @@ ${publishCode}
                               setLibraryData(result.data);
                               setLibraryCodeHash((editableCode || generatedCode).slice(0, 500) + (editableCode || generatedCode).length);
                               setSelectedLibraryItem("doc-welcome");
+                              // Update localStorage backup with library data
+                              if (activeGeneration?.id) {
+                                try {
+                                  const localKey = `replay_local_project_${activeGeneration.id}`;
+                                  const existing = localStorage.getItem(localKey);
+                                  if (existing) {
+                                    const parsed = JSON.parse(existing);
+                                    parsed.libraryData = result.data;
+                                    localStorage.setItem(localKey, JSON.stringify(parsed));
+                                  }
+                                } catch (e) {}
+                              }
                             }
                           } catch (e) {
                             console.error("Library generation failed:", e);
