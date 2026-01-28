@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, Code, Download, ExternalLink, Database, Sparkles, X, Zap, Check, Loader2, CreditCard, Crown } from "lucide-react";
+import { X, Loader2, Zap } from "lucide-react";
 import { useAuth } from "@/lib/auth/context";
 import AuthModal from "./AuthModal";
 import FocusLock from "react-focus-lock";
@@ -10,58 +10,46 @@ import FocusLock from "react-focus-lock";
 interface UpgradeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  feature?: "code" | "download" | "publish" | "supabase" | "general";
+  feature?: "code" | "download" | "publish" | "supabase" | "general" | "reconstruct";
 }
 
 const featureMessages = {
   code: {
     title: "Unlock Full Source Code",
-    description: "Your code is ready. We've successfully reconstructed the UI logic, animations, and data structure.",
-    icon: Code,
+    description: "Export React + Tailwind code for your project.",
   },
   download: {
     title: "Download Your Project",
-    description: "Export your generated code and use it anywhere",
-    icon: Download,
+    description: "Export your generated code and use it anywhere.",
   },
   publish: {
     title: "Publish to Web",
-    description: "Share your project with a live URL",
-    icon: ExternalLink,
+    description: "Share your project with a live URL.",
   },
   supabase: {
     title: "Supabase Integration",
-    description: "Connect your database and see schema details",
-    icon: Database,
+    description: "Connect your database and see schema details.",
   },
   general: {
-    title: "Unlock Full Source Code",
-    description: "Your code is ready. Choose how you want to access it.",
-    icon: Sparkles,
+    title: "Upgrade to Pro",
+    description: "Get full access to all Replay features.",
+  },
+  reconstruct: {
+    title: "Credits Required",
+    description: "You need credits to reconstruct UI from video.",
   },
 };
 
-// Stripe Price IDs - Pro $149/mo
-const PRO_SUBSCRIPTION_PRICE_ID = "price_1SotMYAxch1s4iBGLZZ7ATBs"; // $149/mo - update to actual Stripe price ID
-
-const proFeatures = [
-  "3,000 credits/month (~20 generations)",
-  "Unlimited projects",
-  "React + Tailwind export",
-  "Flow Map & Design System",
-  "AI editing (~10 credits)",
-  "Publish to web",
-];
+// Stripe Price ID - Pro $149/mo
+const PRO_SUBSCRIPTION_PRICE_ID = "price_1SotMYAxch1s4iBGLZZ7ATBs";
 
 export default function UpgradeModal({ isOpen, onClose, feature = "general" }: UpgradeModalProps) {
   const featureInfo = featureMessages[feature];
   const { user } = useAuth();
-  // Only PRO subscription available
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Auto-focus close button when modal opens
   useEffect(() => {
     if (isOpen && closeButtonRef.current) {
       closeButtonRef.current.focus();
@@ -69,7 +57,6 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
   }, [isOpen]);
 
   const handleCheckout = async () => {
-    // If not logged in, show auth modal first
     if (!user) {
       setShowAuthModal(true);
       return;
@@ -103,7 +90,6 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
     }
   };
 
-  // Handle auth success - proceed with checkout
   const handleAuthSuccess = () => {
     setShowAuthModal(false);
     setTimeout(() => handleCheckout(), 100);
@@ -118,7 +104,7 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-md z-50"
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
             onClick={onClose}
           />
           
@@ -132,7 +118,7 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
           >
             <FocusLock returnFocus>
               <div 
-                className="relative w-full max-w-lg bg-[#0a0a0a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
+                className="relative w-full max-w-sm bg-[#111] border border-zinc-800 rounded-xl shadow-2xl overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
                 role="dialog"
                 aria-modal="true"
@@ -142,78 +128,61 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
                 <button
                   ref={closeButtonRef}
                   onClick={onClose}
-                  className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-white/10 transition-colors z-10 focus-ring-strong"
+                  className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-white/10 transition-colors z-10"
                   aria-label="Close modal"
                 >
-                  <X className="w-4 h-4 text-white/60" />
+                  <X className="w-4 h-4 text-zinc-500" />
                 </button>
 
-                {/* Header */}
-                <div className="relative p-6 pb-4 text-center">
-                  <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 border border-[#FF6E3C]/20 flex items-center justify-center">
-                    <Lock className="w-6 h-6 text-[#FF6E3C]" />
+                {/* Content */}
+                <div className="p-6">
+                  {/* Header */}
+                  <div className="text-center mb-6">
+                    <h2 id="upgrade-modal-title" className="text-lg font-semibold text-white mb-1">
+                      {featureInfo.title}
+                    </h2>
+                    <p className="text-sm text-zinc-500">{featureInfo.description}</p>
                   </div>
-                  <h2 id="upgrade-modal-title" className="text-xl font-bold text-white mb-2">{featureInfo.title}</h2>
-                  <p className="text-sm text-white/60 max-w-sm mx-auto">{featureInfo.description}</p>
-                </div>
 
-                {/* Pro Subscription - Only Option */}
-                <div className="px-6 pb-4">
-                  <div className="w-full p-4 rounded-xl border-2 border-[#FF6E3C] bg-[#FF6E3C]/10">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-5 h-5 rounded-full border-2 border-[#FF6E3C] bg-[#FF6E3C] flex items-center justify-center">
-                          <Check className="w-3 h-3 text-white" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <Crown className="w-4 h-4 text-amber-400" />
-                            <span className="font-semibold text-white">Pro Subscription</span>
-                          </div>
-                          <p className="text-xs text-white/50 mt-0.5">Monthly • Unlimited potential</p>
-                        </div>
-                      </div>
+                  {/* Pro Plan Box */}
+                  <div className="p-4 rounded-lg bg-zinc-900 border border-zinc-800 mb-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-medium text-white">Pro</span>
                       <div className="text-right">
-                        <span className="text-2xl font-bold text-white">$149</span>
-                        <p className="text-[10px] text-white/40">/month</p>
+                        <span className="text-xl font-bold text-white">$149</span>
+                        <span className="text-xs text-zinc-500">/mo</span>
                       </div>
                     </div>
-                    <ul className="space-y-1.5 ml-8">
-                      {proFeatures.map((feat, i) => (
-                        <li key={i} className="flex items-center gap-2 text-xs text-white/60">
-                          <Check className="w-3 h-3 text-amber-400 flex-shrink-0" />
-                          {feat}
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="space-y-1.5 text-xs text-zinc-400">
+                      <p>3,000 credits/month (~20 generations)</p>
+                      <p>Unlimited projects</p>
+                      <p>React + Tailwind export</p>
+                      <p>Flow Map & Design System</p>
+                    </div>
                   </div>
-                </div>
 
-                {/* CTA */}
-                <div className="p-6 pt-2 space-y-3 border-t border-white/5">
+                  {/* CTA */}
                   <button
                     onClick={handleCheckout}
                     disabled={isCheckingOut}
-                    className="block w-full py-3.5 rounded-xl bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white text-sm font-semibold text-center hover:opacity-90 transition-opacity disabled:opacity-50"
+                    className="w-full py-3 rounded-lg bg-white text-black text-sm font-medium hover:bg-zinc-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {isCheckingOut ? (
-                      <span className="flex items-center justify-center gap-2">
+                      <>
                         <Loader2 className="w-4 h-4 animate-spin" />
                         Processing...
-                      </span>
+                      </>
                     ) : (
-                      "Subscribe to Pro for $149/mo"
+                      <>
+                        <Zap className="w-4 h-4" />
+                        Get Pro
+                      </>
                     )}
                   </button>
-                  <p className="text-center text-[11px] text-white/40">
-                    Cancel anytime. Credits roll over.
+
+                  <p className="text-center text-[11px] text-zinc-600 mt-3">
+                    Cancel anytime. Secure payment via Stripe.
                   </p>
-                  <button
-                    onClick={onClose}
-                    className="w-full py-2 text-white/40 text-xs hover:text-white/60 transition-colors"
-                  >
-                    Maybe later
-                  </button>
                 </div>
               </div>
             </FocusLock>
