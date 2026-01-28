@@ -527,11 +527,17 @@ function SettingsContent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-zinc-500 mb-1">Current plan</p>
-                    <h2 className="text-2xl font-bold text-zinc-100 capitalize flex items-center gap-2">
-                      {currentPlan}
-                      {currentPlan === "pro" && <span className="px-2 py-0.5 text-xs bg-white text-black rounded-full">PRO</span>}
-                    </h2>
-                    {membership?.current_period_end && currentPlan === "pro" && (
+                    {isLoading ? (
+                      <div className="h-8 w-24 bg-zinc-800 rounded animate-pulse" />
+                    ) : (
+                      <h2 className="text-2xl font-bold text-zinc-100 capitalize flex items-center gap-2">
+                        {currentPlan === "free" ? "Sandbox" : currentPlan}
+                        {currentPlan === "pro" && <span className="px-2 py-0.5 text-xs bg-[#FF6E3C] text-white rounded-full">PRO</span>}
+                        {currentPlan === "agency" && <span className="px-2 py-0.5 text-xs bg-purple-500 text-white rounded-full">AGENCY</span>}
+                        {currentPlan === "enterprise" && <span className="px-2 py-0.5 text-xs bg-blue-500 text-white rounded-full">ENTERPRISE</span>}
+                      </h2>
+                    )}
+                    {membership?.current_period_end && (currentPlan === "pro" || currentPlan === "agency") && (
                       <p className="text-xs text-zinc-500 mt-1">
                         Renews {new Date(membership.current_period_end).toLocaleDateString()}
                       </p>
@@ -546,7 +552,7 @@ function SettingsContent() {
                     >
                       {isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
                     </button>
-                    {currentPlan === "pro" && (
+                    {(currentPlan === "pro" || currentPlan === "agency") && (
                       <button
                         onClick={handleManageSubscription}
                         disabled={isManagingSubscription}
@@ -561,7 +567,7 @@ function SettingsContent() {
               </div>
 
               {/* Pricing Cards - matching pricing page exactly */}
-              <div className="grid md:grid-cols-3 gap-4">
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Sandbox - $0 */}
                 <div className={cn(
                   "bg-[#141414]/80 backdrop-blur border rounded-2xl p-6",
@@ -645,7 +651,7 @@ function SettingsContent() {
                 {/* Agency - $499/mo */}
                 <div className={cn(
                   "bg-[#141414]/80 backdrop-blur border rounded-2xl p-6",
-                  currentPlan === "agency" ? "border-zinc-500" : "border-zinc-800/50"
+                  currentPlan === "agency" ? "border-purple-500" : "border-zinc-800/50"
                 )}>
                   <div className="mb-4">
                     <h3 className="text-lg font-semibold text-zinc-200">{AGENCY_PLAN.name}</h3>
@@ -663,12 +669,62 @@ function SettingsContent() {
                       </li>
                     ))}
                   </ul>
-                  <Link
-                    href="/contact"
-                    className="block w-full py-2.5 rounded-xl text-sm text-center bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors"
-                  >
-                    Contact Sales
-                  </Link>
+                  {currentPlan === "agency" ? (
+                    <button
+                      onClick={handleManageSubscription}
+                      disabled={isManagingSubscription}
+                      className="w-full py-2.5 rounded-xl text-sm bg-purple-500/10 text-purple-400 border border-purple-500/30 hover:bg-purple-500/20 transition-colors"
+                    >
+                      {isManagingSubscription ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Manage Plan"}
+                    </button>
+                  ) : (
+                    <Link
+                      href="/contact"
+                      className="block w-full py-2.5 rounded-xl text-sm text-center bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors"
+                    >
+                      Contact Sales
+                    </Link>
+                  )}
+                </div>
+
+                {/* Enterprise - Custom */}
+                <div className={cn(
+                  "bg-[#141414]/80 backdrop-blur border rounded-2xl p-6",
+                  currentPlan === "enterprise" ? "border-blue-500" : "border-zinc-800/50"
+                )}>
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold text-zinc-200">Enterprise</h3>
+                    <p className="text-sm text-zinc-500">For banks & enterprise</p>
+                  </div>
+                  <div className="mb-4">
+                    <span className="text-3xl font-bold text-zinc-100">Custom</span>
+                  </div>
+                  <ul className="space-y-2 mb-6">
+                    {[
+                      "Custom credits",
+                      "On-premise / Private Cloud",
+                      "SSO / SAML integration",
+                      "SLA & Security audit",
+                      "Dedicated support",
+                    ].map((f) => (
+                      <li key={f} className="flex items-center gap-2 text-sm text-zinc-400">
+                        <Check className="w-4 h-4 text-zinc-600" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  {currentPlan === "enterprise" ? (
+                    <div className="w-full py-2.5 rounded-xl text-sm text-center bg-blue-500/10 text-blue-400 border border-blue-500/30">
+                      Current Plan
+                    </div>
+                  ) : (
+                    <Link
+                      href="/contact"
+                      className="block w-full py-2.5 rounded-xl text-sm text-center bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors"
+                    >
+                      Book a Demo
+                    </Link>
+                  )}
                 </div>
               </div>
             </motion.div>
