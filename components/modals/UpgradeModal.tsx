@@ -41,16 +41,16 @@ const featureMessages = {
   },
 };
 
-// Stripe Price IDs
-const PRO_SUBSCRIPTION_PRICE_ID = "price_1SotL1Axch1s4iBGWMvO0JBZ"; // $25/mo
+// Stripe Price IDs - Pro $149/mo
+const PRO_SUBSCRIPTION_PRICE_ID = "price_1SotMYAxch1s4iBGLZZ7ATBs"; // $149/mo - update to actual Stripe price ID
 
 const proFeatures = [
-  "1,500+ credits per month (~20 gens)",
-  "Full Access & Export",
+  "3,000 credits/month (~20 generations)",
+  "Unlimited projects",
+  "React + Tailwind export",
+  "Flow Map & Design System",
+  "AI editing (~10 credits)",
   "Publish to web",
-  "Priority support",
-  "Credits roll over",
-  "Private projects",
 ];
 
 export default function UpgradeModal({ isOpen, onClose, feature = "general" }: UpgradeModalProps) {
@@ -83,8 +83,8 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
         body: JSON.stringify({
           type: "subscription",
           priceId: PRO_SUBSCRIPTION_PRICE_ID,
-          tierId: "pro25",
-          credits: 1500,
+          tierId: "pro",
+          credits: 3000,
           interval: "monthly"
         }),
       });
@@ -174,7 +174,7 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
                         </div>
                       </div>
                       <div className="text-right">
-                        <span className="text-2xl font-bold text-white">$25</span>
+                        <span className="text-2xl font-bold text-white">$149</span>
                         <p className="text-[10px] text-white/40">/month</p>
                       </div>
                     </div>
@@ -202,7 +202,7 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
                         Processing...
                       </span>
                     ) : (
-                      "Subscribe to Pro for $25/mo"
+                      "Subscribe to Pro for $149/mo"
                     )}
                   </button>
                   <p className="text-center text-[11px] text-white/40">

@@ -477,19 +477,16 @@ export default function AdminPage() {
     }
   };
 
-  // Available tiers for admin assignment
-  // Maker removed - only PRO subscriptions available
+  // Available tiers for admin assignment - matching pricing page
+  // Sandbox: $0, 0 credits
+  // Pro: $149/mo, 3,000 credits  
+  // Agency: $499/mo, 15,000 credits
+  // Enterprise: Custom
   const PRO_TIERS = [
-    { id: "free", label: "Free", credits: 100, membership: "free", isTopup: false },
-    // Maker removed - only PRO subscriptions available
-    { id: "pro25", label: "Pro 25", credits: 1500, membership: "pro", isTopup: false },
-    { id: "pro50", label: "Pro 50", credits: 3300, membership: "pro", isTopup: false },
-    { id: "pro100", label: "Pro 100", credits: 7500, membership: "pro", isTopup: false },
-    { id: "pro200", label: "Pro 200", credits: 16500, membership: "pro", isTopup: false },
-    { id: "pro300", label: "Pro 300", credits: 25500, membership: "pro", isTopup: false },
-    { id: "pro500", label: "Pro 500", credits: 45000, membership: "pro", isTopup: false },
-    { id: "pro1000", label: "Pro 1000", credits: 96000, membership: "pro", isTopup: false },
-    { id: "pro2000", label: "Pro 2000", credits: 225000, membership: "pro", isTopup: false },
+    { id: "sandbox", label: "Sandbox (Free)", credits: 0, membership: "free", isTopup: false, price: "$0" },
+    { id: "pro", label: "Pro ($149/mo)", credits: 3000, membership: "pro", isTopup: false, price: "$149/mo" },
+    { id: "agency", label: "Agency ($499/mo)", credits: 15000, membership: "agency", isTopup: false, price: "$499/mo" },
+    { id: "enterprise", label: "Enterprise (Custom)", credits: 50000, membership: "enterprise", isTopup: false, price: "Custom" },
   ];
 
   // Open plan selection modal

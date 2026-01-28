@@ -56,90 +56,40 @@ const SIDEBAR_ITEMS = [
   { id: "projects", label: "Your Projects", icon: FolderOpen },
 ];
 
-// Pricing tiers - matching homepage exactly
-const PRICING_TIERS = [
-  {
-    id: 'pro25',
-    credits: 1500,
-    monthlyPrice: 25,
-    stripePriceId_Monthly: "price_1SotL1Axch1s4iBGWMvO0JBZ",
-    yearlyPriceMonthly: 20,
-    yearlyPriceTotal: 240,
-    yearlySavings: "$60",
-    stripePriceId_Yearly: "price_1SotSpAxch1s4iBGbDC8je02",
-  },
-  {
-    id: 'pro50',
-    credits: 3300,
-    monthlyPrice: 50,
-    stripePriceId_Monthly: "price_1SotLqAxch1s4iBG1ViXkfc2",
-    yearlyPriceTotal: 480,
-    yearlyPriceMonthly: 40,
-    yearlySavings: "$120",
-    stripePriceId_Yearly: "price_1SotT5Axch1s4iBGUt6BTDDf",
-  },
-  {
-    id: 'pro100',
-    credits: 7500,
-    popular: true,
-    monthlyPrice: 100,
-    stripePriceId_Monthly: "price_1SotMYAxch1s4iBGLZZ7ATBs",
-    yearlyPriceTotal: 960,
-    yearlyPriceMonthly: 80,
-    yearlySavings: "$240",
-    stripePriceId_Yearly: "price_1SotTJAxch1s4iBGYRBGTHK6",
-  },
-  {
-    id: 'pro200',
-    credits: 16500,
-    monthlyPrice: 200,
-    stripePriceId_Monthly: "price_1SotN4Axch1s4iBGUJEfzznw",
-    yearlyPriceTotal: 1920,
-    yearlyPriceMonthly: 160,
-    yearlySavings: "$480",
-    stripePriceId_Yearly: "price_1SotTdAxch1s4iBGpyDigl9b",
-  },
-  {
-    id: 'pro300',
-    credits: 25500,
-    monthlyPrice: 300,
-    stripePriceId_Monthly: "price_1SotNMAxch1s4iBGzRD7B7VI",
-    yearlyPriceTotal: 2880,
-    yearlyPriceMonthly: 240,
-    yearlySavings: "$720",
-    stripePriceId_Yearly: "price_1SotTqAxch1s4iBGgaWwuU0Z",
-  },
-  {
-    id: 'pro500',
-    credits: 45000,
-    monthlyPrice: 500,
-    stripePriceId_Monthly: "price_1SotNuAxch1s4iBGPl81sHqx",
-    yearlyPriceTotal: 4800,
-    yearlyPriceMonthly: 400,
-    yearlySavings: "$1,200",
-    stripePriceId_Yearly: "price_1SotU1Axch1s4iBGC1uEWWXN",
-  },
-  {
-    id: 'pro1000',
-    credits: 96000,
-    monthlyPrice: 1000,
-    stripePriceId_Monthly: "price_1SotO9Axch1s4iBGCDE83jPv",
-    yearlyPriceTotal: 9600,
-    yearlyPriceMonthly: 800,
-    yearlySavings: "$2,400",
-    stripePriceId_Yearly: "price_1SotUEAxch1s4iBGUqWwl9Db",
-  },
-  {
-    id: 'pro2000',
-    credits: 225000,
-    monthlyPrice: 2000,
-    stripePriceId_Monthly: "price_1SotOOAxch1s4iBGWiUHzG1M",
-    yearlyPriceTotal: 19200,
-    yearlyPriceMonthly: 1600,
-    yearlySavings: "$4,800",
-    stripePriceId_Yearly: "price_1SotV0Axch1s4iBGZYfILH0H",
-  }
-];
+// Pricing tiers - matching pricing page exactly
+// Pro: $149/mo, 3,000 credits
+// Agency: $499/mo, 15,000 credits (TODO: add when Stripe price ready)
+const PRO_PLAN = {
+  id: 'pro',
+  name: 'Pro',
+  description: 'For freelancers',
+  credits: 3000,
+  monthlyPrice: 149,
+  stripePriceId_Monthly: "price_1SotMYAxch1s4iBGLZZ7ATBs", // Update to actual $149 Stripe price ID
+  features: [
+    "3,000 credits/month",
+    "Unlimited projects",
+    "React + Tailwind export",
+    "Flow Map & Design System",
+    "AI editing (~10 credits)",
+  ],
+};
+
+const AGENCY_PLAN = {
+  id: 'agency',
+  name: 'Agency',
+  description: 'For teams',
+  credits: 15000,
+  monthlyPrice: 499,
+  stripePriceId_Monthly: null, // TODO: Add when Stripe price ready
+  features: [
+    "15,000 credits/month",
+    "Unlimited projects",
+    "5 team members",
+    "Shared Design System",
+    "Priority GPU + API",
+  ],
+};
 
 const TOPUPS = [
   { amount: 20, credits: 900, label: "$20", creditsLabel: "900 credits", gens: "~6 gens" },
@@ -150,15 +100,10 @@ const TOPUPS = [
 function SettingsContent() {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "account");
-  const [billingInterval, setBillingInterval] = useState<"monthly" | "yearly">("monthly");
-  const [selectedTierIndex, setSelectedTierIndex] = useState(2);
-  const [tierDropdownOpen, setTierDropdownOpen] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState<string | null>(null);
   const [testMessage, setTestMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isManagingSubscription, setIsManagingSubscription] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  
-  const selectedTier = PRICING_TIERS[selectedTierIndex];
   
   // Profile states
   const [isEditingName, setIsEditingName] = useState(false);
@@ -219,14 +164,11 @@ function SettingsContent() {
   };
   
   const handleProSubscription = () => {
-    const priceId = billingInterval === "yearly" 
-      ? selectedTier.stripePriceId_Yearly 
-      : selectedTier.stripePriceId_Monthly;
     handleCheckout("subscription", {
-      priceId,
-      tierId: selectedTier.id,
-      credits: selectedTier.credits,
-      interval: billingInterval,
+      priceId: PRO_PLAN.stripePriceId_Monthly,
+      tierId: PRO_PLAN.id,
+      credits: PRO_PLAN.credits,
+      interval: "monthly",
     });
   };
 
@@ -618,34 +560,9 @@ function SettingsContent() {
                 </div>
               </div>
 
-              {/* Billing Toggle */}
-              <div className="flex items-center justify-center gap-4 py-4">
-                <span className={cn("text-sm font-medium", billingInterval === "monthly" ? "text-zinc-200" : "text-zinc-500")}>
-                  Monthly
-                </span>
-                <button
-                  onClick={() => setBillingInterval(billingInterval === "monthly" ? "yearly" : "monthly")}
-                  className={cn(
-                    "w-12 h-6 rounded-full transition-colors relative",
-                    billingInterval === "yearly" ? "bg-zinc-100" : "bg-zinc-700"
-                  )}
-                >
-                  <div className={cn(
-                    "absolute top-1 w-4 h-4 rounded-full bg-white transition-transform",
-                    billingInterval === "yearly" ? "left-7" : "left-1"
-                  )} />
-                </button>
-                <span className={cn("text-sm font-medium", billingInterval === "yearly" ? "text-zinc-200" : "text-zinc-500")}>
-                  Yearly
-                </span>
-                {billingInterval === "yearly" && (
-                  <span className="px-2 py-1 text-xs bg-emerald-500/20 text-emerald-400 rounded-full">Save 20%</span>
-                )}
-              </div>
-
-              {/* Pricing Cards */}
+              {/* Pricing Cards - matching pricing page exactly */}
               <div className="grid md:grid-cols-3 gap-4">
-                {/* Sandbox */}
+                {/* Sandbox - $0 */}
                 <div className={cn(
                   "bg-[#141414]/80 backdrop-blur border rounded-2xl p-6",
                   currentPlan === "free" ? "border-emerald-500" : "border-zinc-800/50"
@@ -658,7 +575,12 @@ function SettingsContent() {
                     <span className="text-3xl font-bold text-zinc-100">$0</span>
                   </div>
                   <ul className="space-y-2 mb-6">
-                    {["0 credits", "Demo project (read-only)", "Preview only"].map((f) => (
+                    {[
+                      "Full access to demo project",
+                      "Explore Flow Map & Library",
+                      "Read-only (no generations)",
+                      "Upgrade to Pro anytime",
+                    ].map((f) => (
                       <li key={f} className="flex items-center gap-2 text-sm text-zinc-400">
                         <Check className="w-4 h-4 text-zinc-600" />
                         {f}
@@ -667,7 +589,7 @@ function SettingsContent() {
                   </ul>
                   {currentPlan === "free" ? (
                     <div className="w-full py-2.5 rounded-xl text-sm text-center bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                      Included
+                      Current Plan
                     </div>
                   ) : (
                     <div className="w-full py-2.5 rounded-xl text-sm text-center bg-zinc-800 text-zinc-500">
@@ -676,66 +598,26 @@ function SettingsContent() {
                   )}
                 </div>
 
-                {/* Pro */}
+                {/* Pro - $149/mo */}
                 <div className={cn(
                   "bg-[#141414]/80 backdrop-blur border rounded-2xl p-6 relative",
-                  currentPlan === "pro" ? "border-zinc-500" : "border-zinc-800/50"
+                  currentPlan === "pro" ? "border-[#FF6E3C]" : "border-zinc-800/50"
                 )}>
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="px-3 py-1 text-xs bg-white text-black rounded-full font-medium">Most Popular</span>
+                    <span className="px-3 py-1 text-xs bg-[#FF6E3C] text-white rounded-full font-medium">Most Popular</span>
                   </div>
                   <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-zinc-100">Pro</h3>
-                    <p className="text-sm text-zinc-500">For developers</p>
+                    <h3 className="text-lg font-semibold text-zinc-100">{PRO_PLAN.name}</h3>
+                    <p className="text-sm text-zinc-500">{PRO_PLAN.description}</p>
                   </div>
-                  <div className="mb-2">
-                    <span className="text-3xl font-bold text-zinc-100">
-                      ${billingInterval === "yearly" ? selectedTier.yearlyPriceMonthly : selectedTier.monthlyPrice}
-                    </span>
-                    <span className="text-zinc-500">/mo</span>
+                  <div className="mb-4">
+                    <span className="text-3xl font-bold text-zinc-100">${PRO_PLAN.monthlyPrice}</span>
+                    <span className="text-zinc-500">/month</span>
                   </div>
-                  {billingInterval === "yearly" && (
-                    <p className="text-xs text-emerald-400 mb-4">Save {selectedTier.yearlySavings}/year</p>
-                  )}
-                  
-                  {/* Capacity dropdown */}
-                  <div className="relative mb-4">
-                    <button
-                      onClick={() => setTierDropdownOpen(!tierDropdownOpen)}
-                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-sm text-zinc-300"
-                    >
-                      <span>{selectedTier.credits.toLocaleString()} credits</span>
-                      <ChevronDown className={cn("w-4 h-4 transition-transform", tierDropdownOpen && "rotate-180")} />
-                    </button>
-                    <AnimatePresence>
-                      {tierDropdownOpen && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -5 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -5 }}
-                          className="absolute top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-lg overflow-hidden z-10"
-                        >
-                          {PRICING_TIERS.map((tier, idx) => (
-                            <button
-                              key={tier.id}
-                              onClick={() => { setSelectedTierIndex(idx); setTierDropdownOpen(false); }}
-                              className={cn(
-                                "w-full px-3 py-2 text-left text-sm hover:bg-zinc-800 transition-colors",
-                                idx === selectedTierIndex ? "bg-zinc-800 text-zinc-100" : "text-zinc-300"
-                              )}
-                            >
-                              {tier.credits.toLocaleString()} credits - ${tier.monthlyPrice}/mo
-                            </button>
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-
                   <ul className="space-y-2 mb-6">
-                    {[`${selectedTier.credits.toLocaleString()} credits/month`, `~${Math.floor(selectedTier.credits / 150)} generations`, "Private projects", "Publish to web"].map((f) => (
+                    {PRO_PLAN.features.map((f) => (
                       <li key={f} className="flex items-center gap-2 text-sm text-zinc-400">
-                        <Check className="w-4 h-4 text-zinc-100" />
+                        <Check className="w-4 h-4 text-[#FF6E3C]" />
                         {f}
                       </li>
                     ))}
@@ -753,24 +635,28 @@ function SettingsContent() {
                     <button
                       onClick={handleProSubscription}
                       disabled={isCheckingOut === "pro"}
-                      className="w-full py-2.5 rounded-xl text-sm bg-white text-black font-medium hover:bg-zinc-200 transition-all"
+                      className="w-full py-2.5 rounded-xl text-sm bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white font-medium hover:opacity-90 transition-all"
                     >
-                      {isCheckingOut === "pro" ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Subscribe"}
+                      {isCheckingOut === "pro" ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Get Started"}
                     </button>
                   )}
                 </div>
 
-                {/* Enterprise */}
-                <div className="bg-[#141414]/80 backdrop-blur border border-zinc-800/50 rounded-2xl p-6">
+                {/* Agency - $499/mo */}
+                <div className={cn(
+                  "bg-[#141414]/80 backdrop-blur border rounded-2xl p-6",
+                  currentPlan === "agency" ? "border-zinc-500" : "border-zinc-800/50"
+                )}>
                   <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-zinc-200">Enterprise</h3>
-                    <p className="text-sm text-zinc-500">For teams</p>
+                    <h3 className="text-lg font-semibold text-zinc-200">{AGENCY_PLAN.name}</h3>
+                    <p className="text-sm text-zinc-500">{AGENCY_PLAN.description}</p>
                   </div>
                   <div className="mb-4">
-                    <span className="text-3xl font-bold text-zinc-100">Custom</span>
+                    <span className="text-3xl font-bold text-zinc-100">${AGENCY_PLAN.monthlyPrice}</span>
+                    <span className="text-zinc-500">/month</span>
                   </div>
                   <ul className="space-y-2 mb-6">
-                    {["Everything in Pro", "Unlimited seats", "Priority support", "Custom contracts"].map((f) => (
+                    {AGENCY_PLAN.features.map((f) => (
                       <li key={f} className="flex items-center gap-2 text-sm text-zinc-400">
                         <Check className="w-4 h-4 text-zinc-600" />
                         {f}
