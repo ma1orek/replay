@@ -38,11 +38,6 @@ export const PLAN_LIMITS: Record<string, { monthlyCredits: number; rolloverCap: 
     rolloverCap: 0,
     rolloverExpiry: 0,
   },
-  sandbox: {
-    monthlyCredits: 0, // Alias for free
-    rolloverCap: 0,
-    rolloverExpiry: 0,
-  },
   pro: {
     monthlyCredits: 3000,
     rolloverCap: 600,
@@ -158,7 +153,7 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
   );
 
   // Check if user is on Sandbox (free) plan - no generations allowed
-  const isSandbox = membership?.plan === "free" || membership?.plan === "sandbox" || !membership;
+  const isSandbox = membership?.plan === "free" || !membership;
   
   // Check if user has a paid plan
   const isPaidPlan = membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise";
