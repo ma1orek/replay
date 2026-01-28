@@ -340,59 +340,136 @@ Output MUST contain every text from scanData VERBATIM. No paraphrasing, no short
 Content 1:1 is non-negotiable. Every string from the scan must appear in the output as-is.
 
 ═══════════════════════════════════════════════════════════════════════════════
-🚨 CRITICAL: WHAT MAKES A PAGE IMPRESSIVE (NOT GENERIC!)
+🖼️ STYLE REFERENCE IMAGE - COPY 1:1!
 ═══════════════════════════════════════════════════════════════════════════════
 
-The difference between "generic Bootstrap" and "AWWWARDS nominee" is:
+**IF STYLE REFERENCE IMAGE IS PROVIDED:**
+You MUST copy the visual style from the reference image EXACTLY:
+1. **COLOR SCHEME**: Extract exact hex colors from the image and use them
+2. **TYPOGRAPHY**: Match font weights, sizes, letter-spacing
+3. **SPACING**: Copy padding, margins, gaps exactly
+4. **EFFECTS**: Replicate shadows, gradients, borders, blur effects
+5. **LAYOUT**: Match the grid system, card sizes, section proportions
+6. **MOOD**: Capture the overall aesthetic - minimalist, bold, elegant, etc.
 
-1. ANIMATIONS ON EVERYTHING - GSAP scroll animations on EVERY section
-2. DEPTH & LAYERS - gradients, glassmorphism, shadows with color
-3. MICRO-INTERACTIONS - every hover, every click has feedback
-4. REAL IMAGES - Picsum photos, not placeholders
-5. TYPOGRAPHY HIERARCHY - bold choices, gradient text, varied weights
+The content comes from the VIDEO, but the VISUAL STYLE comes from the REFERENCE IMAGE.
+This is NON-NEGOTIABLE - the output must look like it was designed by the same person.
 
 ═══════════════════════════════════════════════════════════════════════════════
-🌟 MANDATORY: ANIMATED BACKGROUNDS & VISIBLE ELEMENTS
+🏆 AWWWARDS-LEVEL QUALITY - THIS IS NOT OPTIONAL!
 ═══════════════════════════════════════════════════════════════════════════════
 
-**HERO SECTION MUST HAVE animated background:**
+The difference between "generic Bootstrap" and "AWWWARDS WINNER" is:
+
+1. **ANIMATIONS ON EVERYTHING**
+   - GSAP scroll animations on EVERY section (not just hero!)
+   - Staggered card reveals
+   - Parallax backgrounds
+   - Text character animations
+   - Number counters that animate on scroll
+
+2. **DEPTH & LAYERS**
+   - Multiple gradient orbs floating in backgrounds
+   - Glassmorphism cards with visible backdrop blur
+   - Colored shadows (not gray!)
+   - Layered elements with z-index
+
+3. **MICRO-INTERACTIONS**
+   - Hover lift on EVERY card
+   - Button scale + glow on hover
+   - Underline animations on links
+   - Icon rotations on hover
+   - Cursor effects
+
+4. **VISUAL RICHNESS**
+   - Gradient text on important headings
+   - Mesh gradients in backgrounds
+   - Noise texture overlays
+   - Glowing borders on hover
+   - Animated SVG decorations
+
+5. **TYPOGRAPHY MASTERY**
+   - 6-8xl headings with tight line-height
+   - Font weight contrast (800 vs 400)
+   - Letter-spacing variations
+   - Gradient text effects
+
+═══════════════════════════════════════════════════════════════════════════════
+🌟 ANIMATED BACKGROUNDS - EVERY PAGE NEEDS THIS!
+═══════════════════════════════════════════════════════════════════════════════
+
+**HERO SECTION - Full cinematic background:**
 \`\`\`jsx
-{/* Animated gradient orbs in hero - REQUIRED! */}
-<div className="absolute inset-0 overflow-hidden">
-  <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/30 rounded-full blur-[100px] animate-pulse" />
-  <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/30 rounded-full blur-[100px] animate-pulse" style={{animationDelay: '1s'}} />
-  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/20 rounded-full blur-[120px] animate-pulse" style={{animationDelay: '2s'}} />
+{/* HERO BACKGROUND - Always include! */}
+<section className="relative min-h-screen overflow-hidden">
+  {/* Gradient mesh background */}
+  <div className="absolute inset-0 bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950" />
+  
+  {/* Animated gradient orbs - REQUIRED! */}
+  <div className="absolute inset-0 overflow-hidden">
+    <div className="gradient-orb absolute -top-40 -right-40 w-[500px] h-[500px] bg-purple-600/30" />
+    <div className="gradient-orb absolute -bottom-40 -left-40 w-[600px] h-[600px] bg-blue-600/25" style={{animationDelay: '1s'}} />
+    <div className="gradient-orb absolute top-1/3 left-1/4 w-[400px] h-[400px] bg-indigo-500/20" style={{animationDelay: '2s'}} />
+    <div className="gradient-orb absolute bottom-1/4 right-1/3 w-[350px] h-[350px] bg-violet-500/20" style={{animationDelay: '3s'}} />
+  </div>
+  
+  {/* Grid pattern overlay */}
+  <div className="absolute inset-0 bg-[url('data:image/svg+xml,...')] opacity-[0.02]" />
+  
+  {/* Noise texture */}
+  <div className="absolute inset-0 bg-noise opacity-[0.03]" />
+  
+  {/* Content */}
+  <div className="relative z-10 container mx-auto px-6 py-32">
+    <h1 className="hero-title text-6xl md:text-8xl font-extrabold gradient-text leading-tight">
+      {/* Headline from scanData */}
+    </h1>
+  </div>
+</section>
+\`\`\`
+
+**SECTION BACKGROUNDS - Alternate between styles:**
+\`\`\`jsx
+{/* Light gradient section */}
+<section className="relative py-24 bg-gradient-to-b from-zinc-900 to-zinc-950">
+  <div className="absolute inset-0 overflow-hidden">
+    <div className="gradient-orb absolute -top-20 left-1/4 w-96 h-96 bg-indigo-500/10" />
+  </div>
+  {/* Section content */}
+</section>
+
+{/* Dark with glow */}
+<section className="relative py-24 bg-zinc-950">
+  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent" />
+  {/* Section content */}
+</section>
+\`\`\`
+
+**CARDS MUST BE VISIBLE:**
+\`\`\`jsx
+{/* CORRECT - High-contrast visible card */}
+<div className="card p-8 rounded-2xl hover-lift hover-glow">
+  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mb-6">
+    <Icon name="star" className="w-7 h-7 text-white" />
+  </div>
+  <h3 className="text-xl font-bold text-white mb-3">Card Title</h3>
+  <p className="text-zinc-400">Description text here</p>
 </div>
 \`\`\`
 
-**CARDS MUST BE VISIBLE - Use solid backgrounds with borders:**
+**FEATURED/PRICING CARDS - Premium look:**
 \`\`\`jsx
-{/* WRONG - invisible cards */}
-<div className="bg-white/5 ...">  {/* TOO TRANSPARENT! */}
-
-{/* CORRECT - visible cards */}
-<div className="bg-zinc-900/90 border border-zinc-700/50 backdrop-blur-sm shadow-xl ...">
-<div className="bg-white/90 border border-gray-200 shadow-lg ...">  {/* for light theme */}
-\`\`\`
-
-**PRICING CARDS - Must have visible borders and backgrounds:**
-\`\`\`jsx
-<div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-8 hover:border-indigo-500/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(99,102,241,0.2)]">
-  <h3 className="text-2xl font-bold text-white">Plan Name</h3>
-  <p className="text-4xl font-bold text-white mt-4">49,99 zł</p>
-  {/* Content clearly visible */}
+<div className="relative rounded-3xl overflow-hidden group">
+  {/* Animated border glow */}
+  <div className="absolute -inset-[1px] bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm" />
+  
+  {/* Card content */}
+  <div className="relative bg-zinc-900 rounded-3xl p-8 border border-zinc-800">
+    <span className="px-3 py-1 bg-indigo-500/20 text-indigo-400 text-xs font-medium rounded-full">Popular</span>
+    <h3 className="text-2xl font-bold text-white mt-4">Pro Plan</h3>
+    <p className="text-5xl font-extrabold text-white mt-2">99 zł<span className="text-lg text-zinc-500">/mies</span></p>
+  </div>
 </div>
-\`\`\`
-
-**SECTION DIVIDERS with gradients:**
-\`\`\`jsx
-{/* Add between sections */}
-<div className="h-px bg-gradient-to-r from-transparent via-zinc-700 to-transparent" />
-\`\`\`
-
-**GRADIENT TEXT for headings:**
-\`\`\`jsx
-<h1 className="text-5xl font-bold bg-gradient-to-r from-white via-indigo-200 to-indigo-400 bg-clip-text text-transparent">
 \`\`\`
 
 ═══════════════════════════════════════════════════════════════════════════════
@@ -464,77 +541,265 @@ IF sidebarType is "navigation":
 Charts MUST have explicit height (h-64, h-80) and use maintainAspectRatio: false!
 
 ═══════════════════════════════════════════════════════════════════════════════
-🎬 GSAP ANIMATIONS - MANDATORY ON EVERY SECTION!
+🎬 GSAP ANIMATIONS - AWWWARDS-LEVEL (MANDATORY!)
 ═══════════════════════════════════════════════════════════════════════════════
 
 REQUIRED in <head>:
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
-REQUIRED before </body> - USE DIVERSE ANIMATIONS:
-<script>
-gsap.registerPlugin(ScrollTrigger);
+INITIALIZE ANIMATIONS IN useEffect - COMPLETE ANIMATION SUITE:
+\`\`\`javascript
+useEffect(() => {
+  gsap.registerPlugin(ScrollTrigger);
+  
+  // ═══════════════════════════════════════════════════════════════
+  // HERO ANIMATIONS - Entrance sequence
+  // ═══════════════════════════════════════════════════════════════
+  const heroTl = gsap.timeline();
+  heroTl.from('.hero-title', { opacity: 0, y: 100, duration: 1.2, ease: 'power4.out' })
+        .from('.hero-subtitle', { opacity: 0, y: 50, duration: 0.8, ease: 'power3.out' }, '-=0.6')
+        .from('.hero-cta', { opacity: 0, scale: 0.8, duration: 0.6, ease: 'back.out(1.7)' }, '-=0.4')
+        .from('.hero-image', { opacity: 0, x: 100, duration: 1, ease: 'power3.out' }, '-=0.8');
+  
+  // ═══════════════════════════════════════════════════════════════
+  // SCROLL ANIMATIONS - Each section type
+  // ═══════════════════════════════════════════════════════════════
+  
+  // FADE UP - Standard sections
+  gsap.utils.toArray('.fade-up').forEach(el => {
+    gsap.from(el, {
+      scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none reverse' },
+      opacity: 0, y: 80, duration: 1, ease: 'power3.out'
+    });
+  });
+  
+  // SLIDE FROM LEFT
+  gsap.utils.toArray('.slide-left').forEach(el => {
+    gsap.from(el, {
+      scrollTrigger: { trigger: el, start: 'top 85%' },
+      opacity: 0, x: -120, duration: 1.2, ease: 'power3.out'
+    });
+  });
+  
+  // SLIDE FROM RIGHT
+  gsap.utils.toArray('.slide-right').forEach(el => {
+    gsap.from(el, {
+      scrollTrigger: { trigger: el, start: 'top 85%' },
+      opacity: 0, x: 120, duration: 1.2, ease: 'power3.out'
+    });
+  });
+  
+  // STAGGER CARDS - Beautiful card reveals
+  gsap.utils.toArray('.stagger-cards').forEach(container => {
+    gsap.from(container.children, {
+      scrollTrigger: { trigger: container, start: 'top 80%' },
+      opacity: 0, y: 80, scale: 0.9, rotation: -3,
+      stagger: 0.15, duration: 0.8, ease: 'power3.out'
+    });
+  });
+  
+  // SCALE UP WITH BOUNCE
+  gsap.utils.toArray('.scale-up').forEach(el => {
+    gsap.from(el, {
+      scrollTrigger: { trigger: el, start: 'top 85%' },
+      opacity: 0, scale: 0.5, duration: 0.8, ease: 'back.out(2)'
+    });
+  });
+  
+  // BLUR FADE - Text reveals
+  gsap.utils.toArray('.blur-fade').forEach(el => {
+    gsap.from(el, {
+      scrollTrigger: { trigger: el, start: 'top 85%' },
+      opacity: 0, filter: 'blur(30px)', y: 30, duration: 1, ease: 'power2.out'
+    });
+  });
+  
+  // COUNTER ANIMATION - Numbers that count up
+  document.querySelectorAll('.counter').forEach(el => {
+    const target = parseInt(el.textContent.replace(/[^0-9]/g, '')) || 100;
+    const suffix = el.textContent.replace(/[0-9]/g, '');
+    el.textContent = '0' + suffix;
+    ScrollTrigger.create({
+      trigger: el, start: 'top 85%',
+      onEnter: () => gsap.to(el, { 
+        textContent: target, duration: 2.5, ease: 'power2.out',
+        snap: { textContent: 1 },
+        onUpdate: function() { el.textContent = Math.floor(this.targets()[0].textContent) + suffix; }
+      })
+    });
+  });
+  
+  // ═══════════════════════════════════════════════════════════════
+  // PARALLAX BACKGROUNDS
+  // ═══════════════════════════════════════════════════════════════
+  gsap.utils.toArray('.parallax-bg').forEach(bg => {
+    gsap.to(bg, {
+      scrollTrigger: { trigger: bg.parentElement, start: 'top bottom', end: 'bottom top', scrub: 1 },
+      y: -100, ease: 'none'
+    });
+  });
+  
+  // FLOATING ELEMENTS
+  gsap.utils.toArray('.float').forEach(el => {
+    gsap.to(el, { y: -20, duration: 2, ease: 'power1.inOut', yoyo: true, repeat: -1 });
+  });
+  
+  // GRADIENT ORB MOVEMENT
+  gsap.utils.toArray('.gradient-orb').forEach((orb, i) => {
+    gsap.to(orb, {
+      x: 'random(-50, 50)', y: 'random(-50, 50)',
+      duration: 'random(4, 8)', ease: 'power1.inOut',
+      yoyo: true, repeat: -1, delay: i * 0.5
+    });
+  });
+  
+}, []);
+\`\`\`
 
-// FADE UP (hero)
-gsap.from('.fade-up', { scrollTrigger: { trigger: '.fade-up', start: 'top 80%' }, opacity: 0, y: 80, duration: 1, ease: 'power3.out' });
-
-// SLIDE LEFT (about)
-gsap.from('.slide-left', { scrollTrigger: { trigger: '.slide-left', start: 'top 80%' }, opacity: 0, x: -100, duration: 1, ease: 'power2.out' });
-
-// SLIDE RIGHT (features)
-gsap.from('.slide-right', { scrollTrigger: { trigger: '.slide-right', start: 'top 80%' }, opacity: 0, x: 100, duration: 1, ease: 'power2.out' });
-
-// SCALE UP (cards)
-gsap.from('.scale-up', { scrollTrigger: { trigger: '.scale-up', start: 'top 85%' }, opacity: 0, scale: 0.8, duration: 0.8, ease: 'back.out(1.7)' });
-
-// STAGGER CARDS (grids)
-gsap.from('.stagger-cards > *', { scrollTrigger: { trigger: '.stagger-cards', start: 'top 80%' }, opacity: 0, y: 60, scale: 0.9, stagger: 0.1, duration: 0.6, ease: 'power2.out' });
-
-// ROTATE IN (portfolio)
-gsap.from('.rotate-in', { scrollTrigger: { trigger: '.rotate-in', start: 'top 85%' }, opacity: 0, rotation: -10, y: 40, duration: 0.9, ease: 'power2.out' });
-
-// BLUR FADE (text)
-gsap.from('.blur-fade', { scrollTrigger: { trigger: '.blur-fade', start: 'top 85%' }, opacity: 0, filter: 'blur(20px)', duration: 1, ease: 'power2.out' });
-
-// COUNTER ANIMATION (stats)
-document.querySelectorAll('.counter').forEach(el => {
-  const target = parseInt(el.textContent) || 100;
-  el.textContent = '0';
-  ScrollTrigger.create({ trigger: el, start: 'top 85%', onEnter: () => {
-    gsap.to(el, { textContent: target, duration: 2, ease: 'power1.out', snap: { textContent: 1 } });
-  }});
-});
-</script>
-
-ASSIGN DIFFERENT CLASSES TO EACH SECTION:
-- Hero: class="fade-up"
-- About: class="slide-left"  
-- Features: class="slide-right"
-- Cards grid: class="stagger-cards"
-- Stats: class="counter"
-- Portfolio: class="rotate-in"
-- Text blocks: class="blur-fade"
+ASSIGN CLASSES TO ELEMENTS:
+- Hero title: class="hero-title"
+- Hero subtitle: class="hero-subtitle"  
+- Hero CTA buttons: class="hero-cta"
+- Hero image/visual: class="hero-image"
+- Section content: class="fade-up" or "slide-left" or "slide-right"
+- Card grids: class="stagger-cards" (on the container!)
+- Stats numbers: class="counter"
+- Background orbs: class="gradient-orb"
+- Floating elements: class="float"
 
 ═══════════════════════════════════════════════════════════════════════════════
-✨ CSS HOVER EFFECTS - MANDATORY!
+✨ CSS STYLES - AWWWARDS QUALITY!
 ═══════════════════════════════════════════════════════════════════════════════
 
-Add to <style>:
-.hover-lift { transition: all 0.3s ease; }
-.hover-lift:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+REQUIRED CSS in <style> tag:
+\`\`\`css
+/* ═══════════════════════════════════════════════════════════════
+   ANIMATIONS & KEYFRAMES
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(2deg); }
+}
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.1); }
+}
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
 
-.hover-glow { transition: all 0.3s ease; }
-.hover-glow:hover { box-shadow: 0 0 30px rgba(99, 102, 241, 0.4); }
+/* ═══════════════════════════════════════════════════════════════
+   HOVER EFFECTS - Use on EVERY interactive element!
+   ═══════════════════════════════════════════════════════════════ */
+.hover-lift {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.hover-lift:hover {
+  transform: translateY(-12px) scale(1.02);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3), 0 0 40px rgba(99, 102, 241, 0.1);
+}
 
-.btn-primary { transition: all 0.3s ease; }
-.btn-primary:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4); }
+.hover-glow {
+  transition: all 0.3s ease;
+  position: relative;
+}
+.hover-glow::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(45deg, #6366f1, #8b5cf6, #d946ef);
+  border-radius: inherit;
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.3s ease;
+  filter: blur(15px);
+}
+.hover-glow:hover::before { opacity: 0.6; }
+.hover-glow:hover { border-color: rgba(99, 102, 241, 0.5); }
 
-.card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-.card:hover { transform: translateY(-4px) scale(1.01); }
+.btn-primary {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s ease;
+}
+.btn-primary:hover::before { left: 100%; }
+.btn-primary:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 15px 40px rgba(99, 102, 241, 0.4);
+}
 
-/* USE APPROPRIATE GLASSMORPHISM BASED ON THEME! */
-.glassmorphism { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
-.glassmorphism-light { background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 4px 30px rgba(0,0,0,0.08); }
+/* ═══════════════════════════════════════════════════════════════
+   CARD STYLES - Visible with depth!
+   ═══════════════════════════════════════════════════════════════ */
+.card {
+  background: rgba(24, 24, 27, 0.9);
+  border: 1px solid rgba(63, 63, 70, 0.5);
+  backdrop-filter: blur(12px);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card:hover {
+  transform: translateY(-8px) scale(1.02);
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 30px rgba(99, 102, 241, 0.15);
+}
+
+.glassmorphism {
+  background: rgba(24, 24, 27, 0.8);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(63, 63, 70, 0.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+.glassmorphism-light {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GRADIENT TEXT
+   ═══════════════════════════════════════════════════════════════ */
+.gradient-text {
+  background: linear-gradient(135deg, #fff 0%, #a5b4fc 50%, #818cf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.gradient-text-animated {
+  background: linear-gradient(90deg, #fff, #a5b4fc, #818cf8, #a5b4fc, #fff);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-shift 4s linear infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BACKGROUND EFFECTS
+   ═══════════════════════════════════════════════════════════════ */
+.animate-float { animation: float 6s ease-in-out infinite; }
+.animate-pulse-glow { animation: pulse-glow 4s ease-in-out infinite; }
+.gradient-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(100px);
+  animation: pulse-glow 5s ease-in-out infinite;
+}
+\`\`\`
 
 ═══════════════════════════════════════════════════════════════════════════════
 📄 MULTI-PAGE SPA - CRITICAL FOR MULTIPLE PAGES!
@@ -739,53 +1004,57 @@ CORRECT - Full section:
 \`\`\`
 
 ═══════════════════════════════════════════════════════════════════════════════
-✅ CHECKLIST - Your code MUST have:
+✅ AWWWARDS CHECKLIST - Your code MUST have ALL of these:
 ═══════════════════════════════════════════════════════════════════════════════
+
+🖼️ STYLE REFERENCE (if provided):
+☑ Colors EXACTLY match the reference image
+☑ Typography style matches (weights, sizes, spacing)
+☑ Card styles match reference
+☑ Overall aesthetic/mood matches
 
 📄 MULTI-PAGE (if scanData.pages.hasMultiplePages):
 ☑ ALL pages from scanData.pages.detected are built
 ☑ Navigation only shows links for pages you ACTUALLY created
-☑ NO nav link without page content (causes black screen!)
 ☑ Use React state: const [currentPage, setCurrentPage] = useState('home')
-☑ Render pages conditionally: {currentPage === 'about' && <AboutPage />}
 
-🚫 NO EMPTY SECTIONS:
-☑ EVERY section has real content (headlines, text, images)
-☑ NO "TODO" or placeholder comments
-☑ NO empty div wrappers
+🎬 HERO SECTION (CRITICAL!):
+☑ Hero has class="hero-title", "hero-subtitle", "hero-cta", "hero-image"
+☑ Hero timeline animation plays on load
+☑ Animated gradient orbs in hero background (class="gradient-orb")
+☑ Large typography (text-6xl md:text-8xl font-extrabold)
+☑ Gradient text on headline (class="gradient-text")
 
-🎬 ANIMATIONS (CRITICAL!):
-☑ GSAP + ScrollTrigger scripts in <head>
-☑ GSAP animations initialized in useEffect with ALL animation types
-☑ DIFFERENT animation class on EACH section (fade-up, slide-left, slide-right, scale-up, stagger-cards)
-☑ Hover effects on ALL buttons (.btn-primary:hover) and cards (.card:hover, .hover-lift)
-☑ Counter animation on stats/numbers
+🌟 SECTION ANIMATIONS (EVERY section!):
+☑ GSAP animations initialized in useEffect
+☑ Each section has animation class: fade-up, slide-left, slide-right, scale-up
+☑ Card grids use stagger-cards class on container
+☑ Stats use counter class for number animation
+☑ Parallax backgrounds where appropriate
 
-🌟 ANIMATED BACKGROUNDS (REQUIRED!):
-☑ Hero section has animated gradient orbs (blur-[100px], animate-pulse)
-☑ At least 2-3 floating gradient blobs with different colors
+✨ MICRO-INTERACTIONS (on EVERYTHING!):
+☑ ALL cards have hover-lift AND hover-glow
+☑ ALL buttons have btn-primary class with shine effect
+☑ Icon containers have gradient background
+☑ Links have underline animation on hover
+
+🎨 VISUAL EFFECTS:
+☑ Gradient orbs in hero (at least 3-4 with different colors)
 ☑ Gradient dividers between sections
-☑ Subtle animated elements (animate-float, animate-pulse-glow)
+☑ Noise/grid texture overlays (subtle)
+☑ Colored shadows (not gray!) on hover
 
-👁️ VISIBILITY (ELEMENTS MUST BE READABLE!):
-☑ Cards use bg-zinc-900/90 or bg-zinc-800 (NOT bg-white/5!)
-☑ All cards have visible borders (border-zinc-700)
-☑ Text is high contrast (text-white, text-zinc-100)
-☑ Pricing cards are clearly visible with solid backgrounds
-☑ Hover states change border color to accent (border-indigo-500/50)
+👁️ VISIBILITY (NON-NEGOTIABLE!):
+☑ Cards: bg-zinc-900/90 with border-zinc-700 (NOT bg-white/5!)
+☑ Text: text-white or text-zinc-100 (NOT text-white/50!)
+☑ Borders visible on all cards
+☑ High contrast everywhere
 
 🖼️ IMAGES:
 ☑ Picsum: https://picsum.photos/seed/NAME/W/H
 ☑ Avatars: https://i.pravatar.cc/150?img=XX
 
-🎨 STYLE:
-☑ Gradient text on main headings (bg-gradient-to-r bg-clip-text text-transparent)
-☑ Colored shadows on hover (shadow-[0_0_30px_rgba(99,102,241,0.3)])
-☑ Glassmorphism with VISIBLE backgrounds (bg-zinc-900/80, not bg-white/5)
-☑ IF STYLE DIRECTIVE provided → USE IT for all colors/theme
-☑ IF NO STYLE DIRECTIVE → use scanData.ui.theme and scanData.ui.colors
-
-Generate complete HTML:`;
+Generate STUNNING, AWWWARDS-QUALITY code:`;
 
 // ============================================================================
 // HELPER FUNCTIONS
