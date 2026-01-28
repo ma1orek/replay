@@ -19143,14 +19143,14 @@ export default function App() {
                               <div className="flex flex-col gap-3 items-center">
                                 <button
                                   onClick={() => visionFileInputRef.current?.click()}
-                                  className="px-5 py-2.5 text-sm bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 text-white rounded-lg transition-all flex items-center gap-2"
+                                  className="p-3 bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 text-white rounded-lg transition-all"
+                                  title="Import from Image"
                                 >
-                                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <rect x="3" y="3" width="18" height="18" rx="2" />
                                     <circle cx="8.5" cy="8.5" r="1.5" />
                                     <path d="M21 15l-5-5L5 21" />
                                   </svg>
-                                  Import from Image
                                 </button>
                                 <span className="text-xs text-zinc-500">or paste with Ctrl+V / drag & drop</span>
                               </div>
@@ -19660,9 +19660,9 @@ document.querySelectorAll('img').forEach(img=>{
                                               method: 'POST',
                                               headers: { 'Content-Type': 'application/json' },
                                               body: JSON.stringify({
-                                                image: base64,
+                                                imageBase64: base64,
                                                 componentName: selectedComp.name,
-                                                instructions: 'Rebuild this component from the image'
+                                                additionalInstructions: 'Rebuild this component from the image'
                                               })
                                             });
                                             
@@ -19761,9 +19761,9 @@ document.querySelectorAll('img').forEach(img=>{
                                                   method: 'POST',
                                                   headers: { 'Content-Type': 'application/json' },
                                                   body: JSON.stringify({
-                                                    image: base64,
+                                                    imageBase64: base64,
                                                     componentName: selectedComp.name,
-                                                    instructions: 'Recreate this UI component exactly as shown'
+                                                    additionalInstructions: 'Recreate this UI component exactly as shown'
                                                   })
                                                 });
                                                 
