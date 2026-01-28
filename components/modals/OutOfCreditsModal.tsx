@@ -2,22 +2,27 @@
 
 import { useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Zap, Check, Sparkles, Crown, ArrowRight } from "lucide-react";
+import { X, Zap, Check, Sparkles, Crown, ArrowRight, Play, Lock } from "lucide-react";
 import Logo from "@/components/Logo";
 import FocusLock from "react-focus-lock";
+import Link from "next/link";
 
 interface OutOfCreditsModalProps {
   isOpen: boolean;
   onClose: () => void;
   requiredCredits?: number;
   availableCredits?: number;
+  isSandbox?: boolean; // If true, show Sandbox-specific messaging
 }
+
+const DEMO_PROJECT_URL = "https://www.replay.build/tool?project=flow_1769444036799_r8hrcxyx2";
 
 export default function OutOfCreditsModal({
   isOpen,
   onClose,
   requiredCredits = 75,
   availableCredits = 0,
+  isSandbox = false,
 }: OutOfCreditsModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -96,23 +101,40 @@ export default function OutOfCreditsModal({
                 </button>
 
                 <div className="p-6 md:p-8">
-                  {/* Header */}
+                  {/* Header - Different for Sandbox vs Out of Credits */}
                   <div className="text-center mb-6">
                     <div className="flex justify-center mb-4">
-                      <div className="w-16 h-16 rounded-2xl bg-[#FF6E3C]/10 flex items-center justify-center">
-                        <Zap className="w-8 h-8 text-[#FF6E3C]" />
+                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${isSandbox ? 'bg-blue-500/10' : 'bg-[#FF6E3C]/10'}`}>
+                        {isSandbox ? (
+                          <Lock className="w-8 h-8 text-blue-400" />
+                        ) : (
+                          <Zap className="w-8 h-8 text-[#FF6E3C]" />
+                        )}
                       </div>
                     </div>
                     <h2 id="credits-modal-title" className="text-2xl font-bold text-white mb-2">
-                      Unlock Source Code
+                      {isSandbox ? "Unlock Replay Intelligence" : "Need More Credits"}
                     </h2>
                     <p className="text-sm text-white/50">
-                      Get instant access to React + Tailwind code for this project.
+                      {isSandbox 
+                        ? "You're on the Sandbox plan. To extract code from your own videos, you need GPU credits."
+                        : "Get instant access to React + Tailwind code for this project."
+                      }
                     </p>
                   </div>
 
-                  {/* Pro Subscription - Only Option */}
-                  <div className="mb-6">
+                  {/* Sandbox Info Box */}
+                  {isSandbox && (
+                    <div className="mb-4 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                      <p className="text-xs text-blue-300">
+                        <span className="font-semibold">Sandbox Plan:</span> Explore the demo project for free. 
+                        Upgrade to Pro to generate code from your own videos.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Pro Subscription Option */}
+                  <div className="mb-4">
                     <div className="w-full p-4 rounded-xl border-2 border-[#FF6E3C] bg-[#FF6E3C]/5">
                       <div className="flex items-start gap-4">
                         <div className="w-5 h-5 rounded-full border-2 border-[#FF6E3C] bg-[#FF6E3C] flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -121,7 +143,7 @@ export default function OutOfCreditsModal({
                         
                         <div className="flex-1">
                           <div className="flex items-baseline gap-2 mb-1">
-                            <span className="text-2xl font-bold text-white">$25</span>
+                            <span className="text-2xl font-bold text-white">$149</span>
                             <span className="text-sm text-white/50">/month</span>
                           </div>
                           <div className="flex items-center gap-2 text-sm font-semibold text-white mb-2">
@@ -131,15 +153,15 @@ export default function OutOfCreditsModal({
                           <ul className="space-y-1">
                             <li className="flex items-center gap-2 text-xs text-white/60">
                               <Sparkles className="w-3 h-3 text-[#FF6E3C]" />
-                              1,500 credits/month (~20 generations)
+                              3,000 credits/month (~20 generations)
                             </li>
                             <li className="flex items-center gap-2 text-xs text-white/60">
                               <Check className="w-3 h-3 text-green-500" />
-                              Full Access • Priority support
+                              React + Tailwind export
                             </li>
                             <li className="flex items-center gap-2 text-xs text-white/60">
                               <Check className="w-3 h-3 text-green-500" />
-                              Credits roll over
+                              AI editing • Design System • Flow Map
                             </li>
                           </ul>
                         </div>
@@ -157,11 +179,22 @@ export default function OutOfCreditsModal({
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
                       <>
-                        Subscribe for $25/mo
+                        Upgrade to Pro
                         <ArrowRight className="w-5 h-5" />
                       </>
                     )}
                   </button>
+
+                  {/* Alternative: Explore Demo (for Sandbox users) */}
+                  {isSandbox && (
+                    <Link 
+                      href={DEMO_PROJECT_URL}
+                      className="mt-3 w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-white/10 text-white/70 hover:text-white hover:bg-white/5 transition-all text-sm"
+                    >
+                      <Play className="w-4 h-4" />
+                      Explore Demo Project Instead
+                    </Link>
+                  )}
 
                   {/* Footer */}
                   <p className="text-center text-xs text-white/30 mt-4">

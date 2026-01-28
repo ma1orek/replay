@@ -2710,7 +2710,7 @@ function ReplayToolContent() {
   const router = useRouter();
   const { pending, setPending, clearPending } = usePendingFlow();
   const { user, isLoading: authLoading, signOut } = useAuth();
-  const { totalCredits: userTotalCredits, wallet, membership, canAfford, refreshCredits, isLoading: creditsLoading } = useCredits();
+  const { totalCredits: userTotalCredits, wallet, membership, canAfford, refreshCredits, isLoading: creditsLoading, isSandbox, isPaidPlan } = useCredits();
   const { profile } = useProfile();
   const { toast, showToast, hideToast } = useToast();
   
@@ -11884,6 +11884,7 @@ ${publishCode}
         onClose={() => setShowOutOfCreditsModal(false)}
         requiredCredits={CREDIT_COSTS.VIDEO_GENERATE}
         availableCredits={userTotalCredits}
+        isSandbox={isSandbox}
       />
       
       {/* Hidden file input for video upload */}

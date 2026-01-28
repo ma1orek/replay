@@ -27,12 +27,19 @@ interface CreditsContextType {
   isLoading: boolean;
   refreshCredits: () => Promise<void>;
   canAfford: (cost: number) => boolean;
+  isSandbox: boolean; // True if user is on free/sandbox plan with no credits
+  isPaidPlan: boolean; // True if user has pro/agency/enterprise
 }
 
-// Plan limits
+// Plan limits - Sandbox (free) has 0 credits, must upgrade to Pro
 export const PLAN_LIMITS: Record<string, { monthlyCredits: number; rolloverCap: number; rolloverExpiry: number }> = {
   free: {
-    monthlyCredits: 100,
+    monthlyCredits: 0, // Sandbox tier - read-only, no generations
+    rolloverCap: 0,
+    rolloverExpiry: 0,
+  },
+  sandbox: {
+    monthlyCredits: 0, // Alias for free
     rolloverCap: 0,
     rolloverExpiry: 0,
   },
@@ -42,8 +49,8 @@ export const PLAN_LIMITS: Record<string, { monthlyCredits: number; rolloverCap: 
     rolloverExpiry: 90,
   },
   agency: {
-    monthlyCredits: 10000,
-    rolloverCap: 2000,
+    monthlyCredits: 15000, // Updated to match pricing page
+    rolloverCap: 3000,
     rolloverExpiry: 90,
   },
   enterprise: {
@@ -150,6 +157,12 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
     [totalCredits]
   );
 
+  // Check if user is on Sandbox (free) plan - no generations allowed
+  const isSandbox = membership?.plan === "free" || membership?.plan === "sandbox" || !membership;
+  
+  // Check if user has a paid plan
+  const isPaidPlan = membership?.plan === "pro" || membership?.plan === "agency" || membership?.plan === "enterprise";
+
   return (
     <CreditsContext.Provider
       value={{
@@ -159,6 +172,8 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         refreshCredits: fetchCredits,
         canAfford,
+        isSandbox,
+        isPaidPlan,
       }}
     >
       {children}
