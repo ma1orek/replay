@@ -1,0 +1,139 @@
+---
+description: Design guidelines for Replay - distinctive UI, avoiding generic AI aesthetics
+globs: ["**/*.tsx", "**/*.jsx", "**/*.html", "**/*.css", "**/components/**/*"]
+alwaysApply: false
+---
+
+# Replay Design Guidelines
+
+Based on: frontend-design (anthropics/skills), web-design-guidelines (vercel-labs/agent-skills)
+
+## Design Thinking
+
+Before coding UI, understand the context and commit to a BOLD aesthetic direction:
+
+- **Purpose**: What problem does this interface solve? Who uses it?
+- **Tone**: Pick an extreme - brutally minimal, maximalist chaos, retro-futuristic, organic/natural, luxury/refined, playful/toy-like, editorial/magazine, brutalist/raw, art deco/geometric, soft/pastel, industrial/utilitarian
+- **Constraints**: Technical requirements (framework, performance, accessibility)
+- **Differentiation**: What makes this UNFORGETTABLE? What's the one thing someone will remember?
+
+## Frontend Aesthetics Guidelines
+
+### Typography
+- Choose fonts that are beautiful, unique, and interesting
+- AVOID generic fonts: Arial, Inter, Roboto, system fonts
+- Pair a distinctive display font with a refined body font
+- Use gradient text on key headings for premium feel
+
+### Color & Theme
+- Commit to a cohesive aesthetic
+- Use CSS variables for consistency
+- Dominant colors with sharp accents outperform timid, evenly-distributed palettes
+- Dark theme default: #0a0a0a to #111111 (rich black, not gray)
+
+### Motion
+- Use animations for effects and micro-interactions
+- Prioritize CSS-only solutions for HTML
+- Focus on high-impact moments: one well-orchestrated page load with staggered reveals
+- Use scroll-triggering and hover states that surprise
+
+### Spatial Composition
+- Unexpected layouts
+- Asymmetry
+- Overlap
+- Diagonal flow
+- Grid-breaking elements
+- Generous negative space OR controlled density
+
+### Backgrounds & Visual Details
+- Create atmosphere and depth rather than defaulting to solid colors
+- Apply creative forms: gradient meshes, noise textures, geometric patterns
+- Layered transparencies, dramatic shadows, decorative borders
+- Custom cursors, grain overlays for texture
+
+## NEVER Use Generic AI Aesthetics
+
+- Overused font families (Inter, Roboto, Arial, system fonts)
+- Cliched color schemes (purple gradients on white backgrounds)
+- Predictable layouts and component patterns
+- Cookie-cutter design that lacks context-specific character
+
+## CSS Variables (Design Tokens) - MANDATORY
+
+```css
+:root {
+  /* Brand colors */
+  --color-primary: #6366f1;
+  --color-primary-hover: #818cf8;
+  --color-primary-dark: #4f46e5;
+  
+  /* Semantic colors */
+  --color-accent: #f59e0b;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  
+  /* Surfaces */
+  --color-bg: #0a0a0a;
+  --color-bg-elevated: #111111;
+  --color-surface: rgba(255, 255, 255, 0.05);
+  --color-border: rgba(255, 255, 255, 0.1);
+  
+  /* Text */
+  --color-foreground: #ffffff;
+  --color-muted: rgba(255, 255, 255, 0.7);
+  --color-subtle: rgba(255, 255, 255, 0.5);
+}
+```
+
+## Glassmorphism Pattern
+
+```css
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+```
+
+## Hover Effects - MANDATORY
+
+```css
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+}
+
+.hover-glow {
+  transition: all 0.3s ease;
+}
+.hover-glow:hover {
+  box-shadow: 0 0 30px rgba(99, 102, 241, 0.4);
+}
+```
+
+## Accessibility Requirements
+
+- Clickable elements MUST use `<button>` or `<a>`, NOT `<div>`
+- Icon-only buttons MUST have `aria-label`
+- Interactive cards should be wrapped in `<button>` or use `role="button" tabindex="0"`
+- Sufficient color contrast for text readability
+- Focus states for keyboard navigation
+
+## Image Sources (NO rate limits)
+
+- Photos: `https://picsum.photos/seed/{NAME}/{WIDTH}/{HEIGHT}`
+- Avatars: `https://i.pravatar.cc/150?img={1-70}`
+- Illustrated avatars: `https://api.dicebear.com/7.x/avataaars/svg?seed={name}`
+
+## Forbidden
+
+- Text placeholders like "[Image: ...]"
+- Empty `src=""` attributes
+- Inline SVG paths (use Lucide icons instead)
+- Hardcoded hex colors in element classes
+- `<div>` with `cursor-pointer` for clickable elements

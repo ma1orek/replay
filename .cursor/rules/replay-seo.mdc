@@ -1,0 +1,206 @@
+---
+description: SEO and content guidelines for Replay blog articles - copywriting, SEO optimization
+globs: ["**/blog/**/*", "**/api/admin/**/*", "**/*article*", "**/*content*", "**/*seo*"]
+alwaysApply: false
+---
+
+# Replay SEO & Content Guidelines
+
+Based on: seo-audit (coreyhaines31/marketingskills), copywriting (coreyhaines31/marketingskills), programmatic-seo (coreyhaines31/marketingskills)
+
+## Content Strategy for Enterprise Legacy Modernization
+
+### Target Audience
+- CTOs and VPs of Engineering
+- Enterprise Architects
+- Technical Decision Makers
+- Engineering Managers in regulated industries
+
+### Core Messaging
+- "Modernize without rewriting"
+- "Document without archaeology"
+- "From black box to documented codebase"
+- "Video as source of truth for reverse engineering"
+
+### Key Statistics to Use
+- 70% of legacy rewrites fail or exceed timeline
+- 67% of legacy systems lack documentation
+- 18 months average enterprise rewrite timeline
+- $3.6 trillion global technical debt
+- 40 hours average per screen (manual) vs 4 hours with Replay
+
+## SEO Writing Rules
+
+### Title Optimization
+- Include primary keyword in first 60 characters
+- Use numbers when relevant: "70%", "$2M", "18 months"
+- Power words: "Ultimate", "Complete", "Proven", "Essential"
+- Avoid clickbait - deliver on the promise
+
+### Structure Requirements
+
+1. **TL;DR Box** - Start with this right after intro:
+```markdown
+> **TL;DR:** One-sentence summary of the key takeaway from this article.
+```
+
+2. **H2/H3 Header Hierarchy**
+```markdown
+## Main Section (H2) - Include keyword variations
+### Subsection (H3) - More specific topics
+```
+
+3. **Comparison Tables** - Use real Markdown tables:
+```markdown
+| Approach | Timeline | Risk | Cost |
+|----------|----------|------|------|
+| Big Bang Rewrite | 18-24 months | High (70% fail) | $$$$ |
+| Strangler Fig | 12-18 months | Medium | $$$ |
+| Video Extraction | 2-8 weeks | Low | $ |
+```
+
+4. **Code Blocks** - Include copy-paste ready examples:
+```typescript
+// Example: Generated component from video extraction
+export function LegacyFormMigrated() {
+  const [data, setData] = useState<FormData>();
+  return <ModernForm data={data} />;
+}
+```
+
+5. **Info Boxes** - Use blockquotes with emoji:
+```markdown
+> 💡 **Pro Tip:** Useful insight here
+
+> ⚠️ **Warning:** Important caution here
+
+> 💰 **ROI Insight:** Cost/time savings data
+```
+
+6. **FAQ Section** at the end:
+```markdown
+## Frequently Asked Questions
+
+### How long does legacy extraction take?
+Answer with specific timelines...
+```
+
+7. **Call to Action** - End with:
+```markdown
+---
+
+**Ready to modernize without rewriting?** [Book a pilot with Replay](https://replay.build)
+```
+
+## Keyword Strategy
+
+### Primary Keywords (High Intent)
+- Legacy modernization
+- Technical debt reduction
+- Enterprise system migration
+- COBOL to modern stack
+- Application modernization
+
+### Long-tail Keywords
+- "How to modernize legacy systems without rewriting"
+- "Legacy code documentation tools"
+- "Visual reverse engineering enterprise"
+- "Extract business logic from legacy code"
+
+### Semantic Keywords (LSI)
+- Reverse engineering
+- Code migration
+- Digital transformation
+- System documentation
+- Business logic extraction
+
+## Content Length Guidelines
+
+| Type | Word Count | Headers | Code Blocks |
+|------|------------|---------|-------------|
+| Tutorial | 2000-3000 | 6-10 | 3-5 |
+| Comparison | 1500-2500 | 5-8 | 1-2 |
+| Thought Leadership | 1200-1800 | 4-6 | 0-2 |
+| Case Study | 1500-2000 | 5-7 | 2-3 |
+
+## Meta Description Rules
+
+- 150-160 characters
+- Include primary keyword
+- Include CTA or value proposition
+- Avoid special characters that might be truncated
+
+Example:
+```
+Learn how to modernize legacy systems 70% faster with video-based extraction. 
+Real-world enterprise case studies and ROI data inside.
+```
+
+## Internal Linking Strategy
+
+- Link to related blog posts
+- Link to product pages (replay.build/tool)
+- Link to documentation
+- Use descriptive anchor text, not "click here"
+
+## Schema Markup
+
+Include for blog posts:
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Article Title",
+  "author": {
+    "@type": "Organization",
+    "name": "Replay"
+  },
+  "datePublished": "2026-01-28",
+  "image": "og-image-url"
+}
+```
+
+## Tone Guidelines
+
+### Technical Tone
+- Write in a technical but accessible tone
+- Include working code snippets
+- Focus on implementation details and real-world usage
+
+### Controversial Tone
+- Take a strong stance
+- Challenge conventional wisdom
+- Be provocative but back claims with evidence and data
+
+### Tutorial Tone
+- Write step-by-step instructions
+- Be practical and actionable
+- Include complete code examples that readers can copy
+
+### Comparison Tone
+- Be objective but highlight unique advantages
+- Include detailed comparison tables
+- Address common concerns directly
+
+## Forbidden
+
+- NO FLUFF: Never start with "In today's digital landscape..."
+- No placeholder text like [IMAGE:...] or [TABLE:...]
+- No generic introductions
+- No unsubstantiated claims without data
+- Never mention "AI" or "LLM" when referring to Replay (use "visual reverse engineering")
+
+## SEO Score Checklist
+
+- [ ] Keyword in title (first 60 chars)
+- [ ] Keyword density 1-2%
+- [ ] At least 3 H2 headers
+- [ ] At least 2 H3 headers
+- [ ] Bullet points or lists included
+- [ ] At least 2 code blocks
+- [ ] Table with comparison data
+- [ ] TL;DR section
+- [ ] FAQ section (3+ questions)
+- [ ] Internal links to replay.build
+- [ ] Content length 1500+ words
+- [ ] Meta description 150-160 chars

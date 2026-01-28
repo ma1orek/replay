@@ -1,0 +1,281 @@
+---
+description: React and Next.js best practices for Replay - patterns, components, state management
+globs: ["**/*.tsx", "**/*.jsx", "**/*.ts", "**/app/**/*", "**/components/**/*"]
+alwaysApply: false
+---
+
+# Replay React & Next.js Patterns
+
+Based on: vercel-react-best-practices (vercel-labs/agent-skills), nextjs-app-router-patterns (wshobson/agents)
+
+## Component Structure
+
+### File Organization
+```
+components/
+├── ui/                    # Reusable UI primitives
+│   ├── Button.tsx
+│   ├── Card.tsx
+│   └── Input.tsx
+├── features/              # Feature-specific components
+│   ├── VideoInput/
+│   └── CodePreview/
+└── layouts/               # Layout components
+    ├── Header.tsx
+    └── Sidebar.tsx
+```
+
+### Component Pattern
+
+```tsx
+// Prefer named exports
+export function FeatureCard({ title, description, icon }: FeatureCardProps) {
+  // Hooks at top
+  const [isHovered, setIsHovered] = useState(false);
+  
+  // Event handlers
+  const handleClick = useCallback(() => {
+    // logic
+  }, []);
+  
+  // Early returns for loading/error states
+  if (!title) return null;
+  
+  // Main render
+  return (
+    <button
+      className="group p-6 rounded-xl bg-white/5 border border-white/10 
+                 hover:border-primary transition-all duration-300"
+      onClick={handleClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* content */}
+    </button>
+  );
+}
+```
+
+## State Management Patterns
+
+### Local State (useState)
+- Use for UI state that doesn't need to be shared
+- Keep state as close to where it's used as possible
+
+### Server State (React Query / SWR)
+```tsx
+// Prefer react-query for server state
+const { data, isLoading, error } = useQuery({
+  queryKey: ['projects', projectId],
+  queryFn: () => fetchProject(projectId),
+  staleTime: 5 * 60 * 1000, // 5 minutes
+});
+```
+
+### URL State
+```tsx
+// Use URL for shareable state
+const searchParams = useSearchParams();
+const tab = searchParams.get('tab') || 'overview';
+```
+
+## Next.js App Router Patterns
+
+### Server Components (Default)
+```tsx
+// app/projects/page.tsx - Server Component
+export default async function ProjectsPage() {
+  const projects = await getProjects(); // Direct DB/API call
+  
+  return (
+    <div>
+      {projects.map(project => (
+        <ProjectCard key={project.id} project={project} />
+      ))}
+    </div>
+  );
+}
+```
+
+### Client Components (When Needed)
+```tsx
+'use client';
+
+// Use client components for:
+// - useState, useEffect, useRef
+// - Event handlers
+// - Browser APIs
+// - Third-party libraries that use client features
+
+export function InteractiveChart({ data }: ChartProps) {
+  const chartRef = useRef<HTMLCanvasElement>(null);
+  
+  useEffect(() => {
+    // Chart.js initialization
+  }, [data]);
+  
+  return <canvas ref={chartRef} />;
+}
+```
+
+### Server Actions
+```tsx
+// actions/project.ts
+'use server';
+
+export async function createProject(formData: FormData) {
+  const title = formData.get('title') as string;
+  
+  // Validate
+  if (!title) throw new Error('Title required');
+  
+  // Create in DB
+  const project = await db.project.create({ data: { title } });
+  
+  // Revalidate cache
+  revalidatePath('/projects');
+  
+  return project;
+}
+```
+
+## Performance Patterns
+
+### Dynamic Imports
+```tsx
+const HeavyComponent = dynamic(() => import('./HeavyComponent'), {
+  loading: () => <Skeleton className="h-64" />,
+  ssr: false, // Skip SSR for client-only components
+});
+```
+
+### Memoization
+```tsx
+// Memoize expensive computations
+const sortedItems = useMemo(() => 
+  items.sort((a, b) => a.name.localeCompare(b.name)),
+  [items]
+);
+
+// Memoize callbacks passed to children
+const handleSelect = useCallback((id: string) => {
+  setSelected(id);
+}, []);
+```
+
+### Image Optimization
+```tsx
+import Image from 'next/image';
+
+<Image
+  src="/hero.png"
+  alt="Hero image"
+  width={1200}
+  height={600}
+  priority // For above-the-fold images
+  placeholder="blur"
+  blurDataURL={blurDataUrl}
+/>
+```
+
+## TypeScript Patterns
+
+### Props Types
+```tsx
+interface CardProps {
+  title: string;
+  description?: string;
+  variant?: 'default' | 'highlighted';
+  onAction?: () => void;
+  children: React.ReactNode;
+}
+
+// For components extending HTML elements
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  isLoading?: boolean;
+}
+```
+
+### Utility Types
+```tsx
+// Pick specific properties
+type ProjectSummary = Pick<Project, 'id' | 'title' | 'status'>;
+
+// Omit properties
+type CreateProjectInput = Omit<Project, 'id' | 'createdAt'>;
+
+// Partial for updates
+type UpdateProjectInput = Partial<CreateProjectInput>;
+```
+
+## Error Handling
+
+### Error Boundaries
+```tsx
+// app/error.tsx
+'use client';
+
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen">
+      <h2 className="text-xl font-bold mb-4">Something went wrong</h2>
+      <button onClick={reset} className="btn btn-primary">
+        Try again
+      </button>
+    </div>
+  );
+}
+```
+
+### Loading States
+```tsx
+// app/loading.tsx
+export default function Loading() {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+    </div>
+  );
+}
+```
+
+## Testing Patterns
+
+### Component Testing
+```tsx
+import { render, screen, fireEvent } from '@testing-library/react';
+
+describe('FeatureCard', () => {
+  it('renders title and description', () => {
+    render(<FeatureCard title="Test" description="Description" />);
+    
+    expect(screen.getByText('Test')).toBeInTheDocument();
+    expect(screen.getByText('Description')).toBeInTheDocument();
+  });
+  
+  it('calls onClick when clicked', () => {
+    const onClick = vi.fn();
+    render(<FeatureCard title="Test" onClick={onClick} />);
+    
+    fireEvent.click(screen.getByRole('button'));
+    expect(onClick).toHaveBeenCalled();
+  });
+});
+```
+
+## Forbidden Patterns
+
+- `any` type without explicit comment explaining why
+- Inline styles (use Tailwind classes)
+- Direct DOM manipulation (use refs and React patterns)
+- Mixing server and client code in same file without proper separation
+- Prop drilling more than 2 levels (use context or composition)
+- `useEffect` for data fetching in App Router (use Server Components)

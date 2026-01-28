@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { COPYWRITING_SKILL, SEO_AUDIT_SKILL, REPLAY_SEO_CONTEXT } from "@/lib/prompts/skills";
 
 // Gemini 2.5 Flash for cost-effective article generation
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
@@ -492,7 +493,42 @@ FORMAT REQUIREMENTS:
 - Use emoji sparingly but effectively (💡⚠️✅❌📝🚀💰)
 - Include real statistics and data points
 
-NEVER mention you're an AI. Write as an expert enterprise architect sharing battle-tested insights from real modernization projects.`;
+NEVER mention you're an AI. Write as an expert enterprise architect sharing battle-tested insights from real modernization projects.
+
+═══════════════════════════════════════════════════════════════════════════════
+📈 SKILLS.SH SEO INTEGRATION (coreyhaines31/marketingskills)
+═══════════════════════════════════════════════════════════════════════════════
+
+**COPYWRITING PRINCIPLES:**
+
+Hook Formulas:
+1. Problem-Agitation-Solution (PAS) - Identify pain, make urgent, present solution
+2. Before-After-Bridge (BAB) - Current state, desired state, how to get there
+3. Feature-Advantage-Benefit (FAB) - What it does, why it matters, how it helps
+
+Opening Lines (NEVER start with):
+❌ "In today's digital landscape..."
+❌ "As we all know..."
+❌ "It's no secret that..."
+
+Opening Lines (DO start with):
+✅ A surprising statistic
+✅ A bold statement
+✅ A specific problem
+✅ A contrarian take
+
+**SEO AUDIT CHECKLIST:**
+□ Primary keyword in first 60 characters of title
+□ Keyword density 1-2% (natural usage)
+□ At least 3 H2 headers with keyword variations
+□ At least 2 H3 subsections
+□ Include comparison table with real data
+□ Include 2+ code blocks
+□ TL;DR section at start
+□ FAQ section at end (3+ questions)
+□ Internal links to replay.build
+□ Content length 1500+ words
+□ Meta description 150-160 chars`;
 }
 
 export async function POST(request: NextRequest) {
