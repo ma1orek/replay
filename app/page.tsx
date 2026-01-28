@@ -3804,26 +3804,78 @@ function ReplayToolContent() {
   
   const injectPageSelection = useCallback((code: string, pageId?: string | null): string => {
     if (!pageId) return code;
+    
+    // Normalize pageId for matching (lowercase, remove special chars)
+    const normalizedId = pageId.toLowerCase().replace(/[^a-z0-9]/g, '');
+    
     const script = `
 <script>
 (function() {
   var targetPage = ${JSON.stringify(pageId)};
+  var normalizedTarget = ${JSON.stringify(normalizedId)};
+  
   function trySetPage() {
     try {
+      // 1. Try Alpine.js first (x-data with currentPage)
       var root = document.querySelector('[x-data]');
       if (root && root._x_dataStack && root._x_dataStack[0]) {
         var data = root._x_dataStack[0];
-        if (data.currentPage !== undefined) data.currentPage = targetPage;
-        if (data.page !== undefined) data.page = targetPage;
-        if (data.activeTab !== undefined) data.activeTab = targetPage;
-        if (data.activeView !== undefined) data.activeView = targetPage;
+        if (data.currentPage !== undefined) { data.currentPage = targetPage; return; }
+        if (data.page !== undefined) { data.page = targetPage; return; }
+        if (data.activeTab !== undefined) { data.activeTab = targetPage; return; }
+        if (data.activeView !== undefined) { data.activeView = targetPage; return; }
       }
-    } catch (e) {}
+      
+      // 2. Try React - trigger click on nav item
+      var navItems = document.querySelectorAll('nav button, nav a, [class*="nav"] button, header button, header a');
+      for (var i = 0; i < navItems.length; i++) {
+        var text = (navItems[i].textContent || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (text === normalizedTarget || text.includes(normalizedTarget)) {
+          navItems[i].click();
+          return;
+        }
+      }
+      
+      // 3. Fallback - scroll to section with matching id/class/heading
+      var selectors = [
+        '#' + targetPage,
+        '#' + normalizedTarget,
+        '[id*="' + normalizedTarget + '"]',
+        'section[class*="' + normalizedTarget + '"]',
+        '[class*="' + normalizedTarget + '"]'
+      ];
+      for (var j = 0; j < selectors.length; j++) {
+        try {
+          var el = document.querySelector(selectors[j]);
+          if (el) {
+            el.scrollIntoView({ behavior: 'instant', block: 'start' });
+            return;
+          }
+        } catch(e) {}
+      }
+      
+      // 4. Search for heading with matching text
+      var headings = document.querySelectorAll('h1, h2, h3, section > div:first-child');
+      for (var k = 0; k < headings.length; k++) {
+        var hText = (headings[k].textContent || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (hText.includes(normalizedTarget) || normalizedTarget.includes(hText.slice(0, 6))) {
+          headings[k].scrollIntoView({ behavior: 'instant', block: 'start' });
+          return;
+        }
+      }
+    } catch (e) { console.log('Page selection error:', e); }
   }
+  
   document.addEventListener('alpine:init', trySetPage);
   document.addEventListener('alpine:initialized', trySetPage);
-  setTimeout(trySetPage, 50);
-  setTimeout(trySetPage, 200);
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(trySetPage, 50);
+    setTimeout(trySetPage, 200);
+    setTimeout(trySetPage, 500);
+  });
+  if (document.readyState === 'complete') {
+    setTimeout(trySetPage, 50);
+  }
 })();
 </script>`;
     if (code.includes('</body>')) return code.replace('</body>', script + '</body>');
