@@ -19029,7 +19029,7 @@ export default function App() {
                             const newComponent = {
                               id: newId,
                               name: "New Component",
-                              code: '<div className="p-6 bg-zinc-800 rounded-xl text-white text-center min-w-[200px]"><p className="text-lg font-medium">New Component</p><p className="text-sm text-zinc-400 mt-1">Paste image or describe below</p></div>',
+                              code: '<div className="p-4 bg-zinc-800 rounded-xl text-white text-center min-w-[120px]"><p className="text-sm font-medium">New Component</p></div>',
                               category: "CUSTOM",
                               description: "New custom component"
                             };
@@ -19358,7 +19358,7 @@ export default function App() {
                                         .replace(/pollinations\.ai\/prompt\/([^?]+)\?/g, `pollinations.ai/prompt/$1?seed=${comp.id || 'stable'}&`);
                                       
                                       return (
-                                      <div className="relative">
+                                      <div className="relative inline-flex">
                                         <iframe
                                           key={`bp-iframe-${comp.id}-${isSelected && blueprintEditedCode ? blueprintEditedCode.slice(0, 50) : 'orig'}`}
                                           srcDoc={`<!DOCTYPE html>
