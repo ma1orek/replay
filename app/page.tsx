@@ -11959,6 +11959,13 @@ ${publishCode}
         isSandbox={isSandbox}
       />
       
+      {/* Upgrade Modal for FREE users trying to access Pro features */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        feature={upgradeFeature}
+      />
+      
       {/* Hidden file input for video upload */}
       <input 
         type="file" 
