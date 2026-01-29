@@ -18037,15 +18037,15 @@ export default function GeneratedPage() {
                       : null;
                     // Find doc - include virtual docs fallback (Overview, Getting Started, Colors, Typography, Spacing, Icons, Components, Examples)
                     const docId = selectedLibraryItem?.replace("doc-", "");
-                    const virtualDocs = [
-                      { id: "overview", title: "Overview", type: "overview" },
-                      { id: "getting-started", title: "Getting Started", type: "getting-started" },
-                      { id: "colors", title: "Colors", type: "colors" },
-                      { id: "typography", title: "Typography", type: "typography" },
-                      { id: "spacing", title: "Spacing", type: "spacing" },
-                      { id: "icons", title: "Icons", type: "icons" },
-                      { id: "components", title: "Components", type: "components" },
-                      { id: "examples", title: "Examples", type: "examples" },
+                    const virtualDocs: any[] = [
+                      { id: "overview", title: "Overview", type: "overview", content: {} },
+                      { id: "getting-started", title: "Getting Started", type: "getting-started", content: {} },
+                      { id: "colors", title: "Colors", type: "colors", content: {} },
+                      { id: "typography", title: "Typography", type: "typography", content: {} },
+                      { id: "spacing", title: "Spacing", type: "spacing", content: {} },
+                      { id: "icons", title: "Icons", type: "icons", content: {} },
+                      { id: "components", title: "Components", type: "components", content: {} },
+                      { id: "examples", title: "Examples", type: "examples", content: {} },
                     ];
                     const allDocs = [...(libraryData?.docs || []), ...virtualDocs];
                     const selectedDoc = selectedLibraryItem?.startsWith("doc-")
