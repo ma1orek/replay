@@ -10269,16 +10269,43 @@ Try these prompts in Cursor or v0:
           
           const { signedUrl, publicUrl } = await urlRes.json();
           
-          // Upload directly to Supabase Storage (use converted blob)
-          const uploadRes = await fetch(signedUrl, {
-            method: "PUT",
-            headers: { "Content-Type": videoContentType },
-            body: flow.videoBlob,
-          });
+          // Upload directly to Supabase Storage with retry logic
+          let uploadRes: Response | null = null;
+          let uploadAttempts = 0;
+          const maxUploadAttempts = 3;
           
-          if (!uploadRes.ok) {
-            console.error("Direct upload failed:", uploadRes.status, uploadRes.statusText);
-            showToast("Failed to upload video. Please try again.", "error");
+          while (uploadAttempts < maxUploadAttempts) {
+            uploadAttempts++;
+            try {
+              console.log(`Upload attempt ${uploadAttempts}/${maxUploadAttempts}...`);
+              uploadRes = await fetch(signedUrl, {
+                method: "PUT",
+                headers: { "Content-Type": videoContentType },
+                body: flow.videoBlob,
+              });
+              
+              if (uploadRes.ok) {
+                console.log("Upload successful on attempt", uploadAttempts);
+                break;
+              } else {
+                console.error(`Upload attempt ${uploadAttempts} failed:`, uploadRes.status, uploadRes.statusText);
+              }
+            } catch (uploadError: any) {
+              console.error(`Upload attempt ${uploadAttempts} error:`, uploadError.message);
+              if (uploadAttempts === maxUploadAttempts) {
+                showToast("Network error during upload. Please check your connection and try again.", "error");
+                setIsProcessing(false);
+                generationStartTimeRef.current = null;
+                return;
+              }
+              // Wait before retry (exponential backoff)
+              await new Promise(r => setTimeout(r, 1000 * uploadAttempts));
+            }
+          }
+          
+          if (!uploadRes || !uploadRes.ok) {
+            console.error("All upload attempts failed");
+            showToast("Failed to upload video after multiple attempts. Please try a smaller file or check your connection.", "error");
             setIsProcessing(false);
             generationStartTimeRef.current = null;
             return;
