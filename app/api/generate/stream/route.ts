@@ -415,10 +415,109 @@ Wrap in \`\`\`html blocks.`;
             }
           }
           
+          // Extract REPLAY_METADATA for pages detection
+          let scanData = null;
+          const metadataMatch = cleanCode.match(/<!--\s*REPLAY_METADATA\s*([\s\S]*?)\s*-->/);
+          if (metadataMatch) {
+            try {
+              const metadata = JSON.parse(metadataMatch[1]);
+              console.log("[stream] Extracted REPLAY_METADATA:", metadata);
+              
+              // Build scanData.pages from metadata
+              const pages: any[] = [];
+              
+              // Add implemented pages (seen in video)
+              if (metadata.implementedPages) {
+                metadata.implementedPages.forEach((pageName: string, i: number) => {
+                  pages.push({
+                    id: pageName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                    title: pageName,
+                    path: pageName.toLowerCase() === 'home' ? '/' : `/${pageName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+                    isDefault: pageName.toLowerCase() === 'home',
+                    seenInVideo: true,
+                    components: [],
+                    description: `${pageName} page - shown in video`
+                  });
+                });
+              }
+              
+              // Add possible pages (from nav but not shown)
+              if (metadata.possiblePages) {
+                metadata.possiblePages.forEach((pageName: string) => {
+                  const pageId = pageName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                  // Skip if already in implemented pages
+                  if (!pages.some(p => p.id === pageId)) {
+                    pages.push({
+                      id: pageId,
+                      title: pageName,
+                      path: `/${pageId}`,
+                      isDefault: false,
+                      seenInVideo: false,
+                      components: [],
+                      description: `${pageName} - detected in navigation, not shown in video`
+                    });
+                  }
+                });
+              }
+              
+              // Add detected nav links as possible pages
+              if (metadata.detectedNavLinks) {
+                metadata.detectedNavLinks.forEach((linkName: string) => {
+                  const pageId = linkName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                  if (!pages.some(p => p.id === pageId)) {
+                    pages.push({
+                      id: pageId,
+                      title: linkName,
+                      path: `/${pageId}`,
+                      isDefault: false,
+                      seenInVideo: false,
+                      components: [],
+                      description: `${linkName} - detected in navigation`
+                    });
+                  }
+                });
+              }
+              
+              if (pages.length > 0) {
+                scanData = { pages };
+                console.log("[stream] Built scanData with", pages.length, "pages");
+              }
+            } catch (e) {
+              console.log("[stream] Could not parse REPLAY_METADATA");
+            }
+          }
+          
+          // Also try to detect pages from Alpine.js x-show directives
+          if (!scanData) {
+            const alpinePages = cleanCode.match(/x-show="page\s*===?\s*'([^']+)'/g);
+            if (alpinePages && alpinePages.length > 0) {
+              const pageNames = alpinePages.map(match => {
+                const nameMatch = match.match(/'([^']+)'/);
+                return nameMatch ? nameMatch[1] : null;
+              }).filter(Boolean);
+              
+              const uniquePages = [...new Set(pageNames)];
+              if (uniquePages.length > 0) {
+                const pages = uniquePages.map((pageName, i) => ({
+                  id: String(pageName).toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                  title: String(pageName).charAt(0).toUpperCase() + String(pageName).slice(1),
+                  path: pageName === 'home' ? '/' : `/${String(pageName).toLowerCase()}`,
+                  isDefault: pageName === 'home' || i === 0,
+                  seenInVideo: true,
+                  components: [],
+                  description: `${pageName} page - detected from Alpine.js`
+                }));
+                scanData = { pages };
+                console.log("[stream] Detected", pages.length, "pages from Alpine.js x-show directives");
+              }
+            }
+          }
+          
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
             type: "complete",
             code: cleanCode,
             flowData, // Include flow data for building the flow map
+            scanData, // Include scanData for Flow pages detection
             tokenUsage: usageMetadata ? {
               promptTokens: usageMetadata.promptTokenCount || 0,
               candidatesTokens: usageMetadata.candidatesTokenCount || 0,

@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Loader2, 
   Trash2,
+  Trash,
   Upload,
   Download,
   ChevronRight,
@@ -18,6 +19,7 @@ import {
   Video,
   Code,
   Eye,
+  EyeOff,
   Square,
   ChevronDown,
   User,
@@ -27,6 +29,7 @@ import {
   FileInput,
   Send,
   Pencil,
+  Edit,
   X,
   GitBranch,
   Box,
@@ -47,9 +50,12 @@ import {
   Crosshair,
   Clock,
   Plus,
+  Minus,
   Copy,
   History,
   Lock,
+  Unlock,
+  Key,
   MoreVertical,
   GripVertical,
   Folder,
@@ -63,6 +69,7 @@ import {
   Database,
   MessageSquare,
   ArrowRight,
+  ArrowLeft,
   MousePointer2,
   Info,
   Rocket,
@@ -102,7 +109,19 @@ import {
   Save,
   Moon,
   Sun,
-  Grid2X2
+  Grid2X2,
+  Home,
+  Menu,
+  Mail,
+  Phone,
+  Calendar,
+  Heart,
+  Star,
+  Bell,
+  Bookmark,
+  Share,
+  HelpCircle,
+  Terminal
 } from "lucide-react";
 import * as LucideIcons from 'lucide-react';
 import { cn, generateId, formatDuration, updateProjectAnalytics } from "@/lib/utils";
@@ -16762,15 +16781,18 @@ export default function GeneratedPage() {
                                 <p className="text-xs text-zinc-400 font-mono mt-0.5">{color.value}</p>
                               </div>
                             </div>
-                          )) : Object.entries(scanData?.ui?.colors || {}).slice(0, 6).map(([name, value], i) => (
+                          )) : Object.entries(scanData?.ui?.colors || {}).slice(0, 6).map(([name, value], i) => {
+                            const colorValue = typeof value === 'string' ? value : (typeof value === 'object' && value !== null ? ((value as any).bg || (value as any).value || '#888') : String(value));
+                            return (
                             <div key={i} className="flex items-center gap-4 p-3 rounded-lg bg-zinc-900/50 border border-zinc-800/50">
-                              <div className="w-16 h-16 rounded-lg flex-shrink-0 shadow-lg" style={{ backgroundColor: value as string, border: '1px solid rgba(255,255,255,0.1)' }} />
+                              <div className="w-16 h-16 rounded-lg flex-shrink-0 shadow-lg" style={{ backgroundColor: colorValue, border: '1px solid rgba(255,255,255,0.1)' }} />
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-zinc-200 capitalize">{name}</p>
-                                <p className="text-xs text-zinc-400 font-mono mt-0.5">{value as string}</p>
+                                <p className="text-xs text-zinc-400 font-mono mt-0.5">{colorValue}</p>
                               </div>
                             </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -18123,52 +18145,45 @@ export default function GeneratedPage() {
                                   <div>
                                     <h1 className={cn("text-4xl font-bold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Getting Started</h1>
                                     <p className={cn("text-lg", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
-                                      {selectedDoc.content?.description || "Learn how to install and use the design system components in your project."}
+                                      {selectedDoc.content?.description || "Quick guide to implementing this design system."}
                                     </p>
                                   </div>
                                   
-                                  {/* Installation */}
-                                  <div>
-                                    <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
-                                      <Package className="w-5 h-5 text-zinc-400" /> Installation
-                                    </h2>
-                                    <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
-                                      <div className={cn("px-4 py-2 text-xs font-mono border-b flex items-center justify-between", libraryBackground === "light" ? "bg-zinc-100 border-zinc-200 text-zinc-600" : "bg-zinc-900 border-zinc-800 text-zinc-400")}>
-                                        <span>Terminal</span>
-                                        <button onClick={() => navigator.clipboard.writeText("npm install @company/design-system")} className="text-zinc-400 hover:text-white">Copy</button>
+                                  {/* Installation - from AI */}
+                                  {selectedDoc.content?.installation && (
+                                    <div>
+                                      <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
+                                        <Package className="w-5 h-5 text-zinc-400" /> Installation
+                                      </h2>
+                                      <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
+                                        <div className={cn("px-4 py-2 text-xs font-mono border-b flex items-center justify-between", libraryBackground === "light" ? "bg-zinc-100 border-zinc-200 text-zinc-600" : "bg-zinc-900 border-zinc-800 text-zinc-400")}>
+                                          <span>Terminal</span>
+                                          <button onClick={() => { navigator.clipboard.writeText(selectedDoc.content.installation); showToast("Copied!", "success"); }} className="text-zinc-400 hover:text-white">Copy</button>
+                                        </div>
+                                        <pre className={cn("p-4 text-sm font-mono overflow-x-auto", libraryBackground === "light" ? "bg-zinc-50" : "bg-[#0d0d0d]")}>
+                                          <code className={libraryBackground === "light" ? "text-zinc-800" : "text-zinc-300"}>{selectedDoc.content.installation}</code>
+                                        </pre>
                                       </div>
-                                      <pre className={cn("p-4 text-sm font-mono overflow-x-auto", libraryBackground === "light" ? "bg-zinc-50" : "bg-[#0d0d0d]")}>
-                                        <code className={libraryBackground === "light" ? "text-zinc-800" : "text-zinc-300"}>npm install @company/design-system</code>
-                                      </pre>
                                     </div>
-                                  </div>
+                                  )}
                                   
-                                  {/* Usage */}
-                                  <div>
-                                    <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
-                                      <Rocket className="w-5 h-5 text-zinc-400" /> Basic Usage
-                                    </h2>
-                                    <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
-                                      <div className={cn("px-4 py-2 text-xs font-mono border-b", libraryBackground === "light" ? "bg-zinc-100 border-zinc-200 text-zinc-600" : "bg-zinc-900 border-zinc-800 text-zinc-400")}>React</div>
-                                      <Highlight 
-                                        theme={themes.nightOwl} 
-                                        code={`import { Button, Card, Input } from '@company/ui';
-
-export default function App() {
-  return (
-    <Card className="p-6">
-      <h2>Welcome</h2>
-      <Input placeholder="Enter your email..." />
-      <Button variant="primary">Subscribe</Button>
-    </Card>
-  );
-}`}
-                                        language="tsx"
-                                      >
-                                        {({ style, tokens, getLineProps, getTokenProps }) => (
-                                          <pre className="p-4 text-sm overflow-x-auto" style={{ ...style, background: "#0d0d0d", fontFamily: "'JetBrains Mono', monospace" }}>
-                                            {tokens.map((line, i) => (
-                                              <div key={i} {...getLineProps({ line })}>
+                                  {/* Quick Start - from AI */}
+                                  {selectedDoc.content?.quickStart && (
+                                    <div>
+                                      <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
+                                        <Rocket className="w-5 h-5 text-zinc-400" /> Quick Start
+                                      </h2>
+                                      <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
+                                        <div className={cn("px-4 py-2 text-xs font-mono border-b", libraryBackground === "light" ? "bg-zinc-100 border-zinc-200 text-zinc-600" : "bg-zinc-900 border-zinc-800 text-zinc-400")}>React + TypeScript</div>
+                                        <Highlight 
+                                          theme={themes.nightOwl} 
+                                          code={selectedDoc.content.quickStart}
+                                          language="tsx"
+                                        >
+                                          {({ style, tokens, getLineProps, getTokenProps }) => (
+                                            <pre className="p-4 text-sm overflow-x-auto" style={{ ...style, background: "#0d0d0d", fontFamily: "'JetBrains Mono', monospace" }}>
+                                              {tokens.map((line, i) => (
+                                                <div key={i} {...getLineProps({ line })}>
                                                 {line.map((token, key) => <span key={key} {...getTokenProps({ token })} />)}
                                               </div>
                                             ))}
@@ -18177,25 +18192,34 @@ export default function App() {
                                       </Highlight>
                                     </div>
                                   </div>
+                                  )}
                                   
-                                  {/* Features */}
-                                  <div>
-                                    <h2 className={cn("text-xl font-semibold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Features</h2>
-                                    <div className="grid grid-cols-2 gap-4">
-                                      {[
-                                        { title: "Live Preview", desc: "Interactive preview with zoom controls", icon: <Eye className="w-5 h-5" /> },
-                                        { title: "Code Export", desc: "Copy-ready HTML/JSX code", icon: <FileText className="w-5 h-5" /> },
-                                        { title: "Controls", desc: "Configurable props with live updates", icon: <Settings className="w-5 h-5" /> },
-                                        { title: "Variants", desc: "Pre-built component variations", icon: <GitBranch className="w-5 h-5" /> },
-                                      ].map((f, i) => (
-                                        <div key={i} className={cn("p-4 rounded-xl border", libraryBackground === "light" ? "bg-white border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
-                                          <div className="text-zinc-400 mb-2">{f.icon}</div>
-                                          <h3 className={cn("font-semibold", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{f.title}</h3>
-                                          <p className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{f.desc}</p>
-                                        </div>
-                                      ))}
+                                  {/* Features - from AI or fallback */}
+                                  {selectedDoc.content?.features && selectedDoc.content.features.length > 0 ? (
+                                    <div>
+                                      <h2 className={cn("text-xl font-semibold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Features</h2>
+                                      <div className="grid grid-cols-2 gap-4">
+                                        {selectedDoc.content.features.map((f: any, i: number) => (
+                                          <div key={i} className={cn("p-4 rounded-xl border", libraryBackground === "light" ? "bg-white border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
+                                            <div className="text-zinc-400 mb-2">
+                                              {f.icon === "Code" && <Code className="w-5 h-5" />}
+                                              {f.icon === "Paintbrush" && <Palette className="w-5 h-5" />}
+                                              {f.icon === "Smartphone" && <Monitor className="w-5 h-5" />}
+                                              {f.icon === "Accessibility" && <Shield className="w-5 h-5" />}
+                                            </div>
+                                            <h3 className={cn("font-semibold", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{f.title}</h3>
+                                            <p className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{f.description}</p>
+                                          </div>
+                                        ))}
+                                      </div>
                                     </div>
-                                  </div>
+                                  ) : (
+                                    <div className={cn("rounded-xl border p-8 text-center", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50")}>
+                                      <Rocket className={cn("w-8 h-8 mx-auto mb-3", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")} />
+                                      <p className={cn("text-sm", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>No getting started info yet</p>
+                                      <p className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>Generate Library to create documentation</p>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                               
@@ -18527,32 +18551,21 @@ export default function App() {
                                           return { name, shades, baseColor };
                                         };
                                         
-                                        // Get colors from libraryData or use defaults
-                                        const baseColors = Object.entries(libraryData?.tokens?.colors || {}).length > 0 
-                                          ? Object.entries(libraryData?.tokens?.colors || {}).map(([name, value]) => ({
-                                              name,
-                                              color: typeof value === 'string' ? value : (typeof value === 'object' && value !== null ? ((value as any).bg || (value as any).value || '#6366f1') : '#6366f1')
-                                            }))
-                                          : [
-                                              { name: "slate", color: "#64748b" },
-                                              { name: "red", color: "#ef4444" },
-                                              { name: "orange", color: "#f97316" },
-                                              { name: "amber", color: "#f59e0b" },
-                                              { name: "yellow", color: "#eab308" },
-                                              { name: "lime", color: "#84cc16" },
-                                              { name: "green", color: "#22c55e" },
-                                              { name: "emerald", color: "#10b981" },
-                                              { name: "teal", color: "#14b8a6" },
-                                              { name: "cyan", color: "#06b6d4" },
-                                              { name: "sky", color: "#0ea5e9" },
-                                              { name: "blue", color: "#3b82f6" },
-                                              { name: "indigo", color: "#6366f1" },
-                                              { name: "violet", color: "#8b5cf6" },
-                                              { name: "purple", color: "#a855f7" },
-                                              { name: "fuchsia", color: "#d946ef" },
-                                              { name: "pink", color: "#ec4899" },
-                                              { name: "rose", color: "#f43f5e" },
-                                            ];
+                                        // Get colors ONLY from libraryData - no defaults
+                                        const baseColors = Object.entries(libraryData?.tokens?.colors || {}).map(([name, value]) => ({
+                                          name,
+                                          color: typeof value === 'string' ? value : (typeof value === 'object' && value !== null ? ((value as any).bg || (value as any).value || '#6366f1') : '#6366f1')
+                                        }));
+                                        
+                                        if (baseColors.length === 0) {
+                                          return (
+                                            <div className={cn("p-8 text-center col-span-11", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
+                                              <Palette className="w-8 h-8 mx-auto mb-3 opacity-50" />
+                                              <p className="text-sm">No colors extracted yet</p>
+                                              <p className="text-xs mt-1 opacity-70">Generate Library to extract colors from your design</p>
+                                            </div>
+                                          );
+                                        }
                                         
                                         const palettes = baseColors.map(({ name, color }) => generateShades(color, name));
                                         
@@ -18628,67 +18641,65 @@ export default function App() {
                                     </div>
                                   </div>
                                   
-                                  {/* Semantic Colors - Cards Style */}
-                                  <div>
-                                    <h2 className={cn("text-lg font-semibold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Semantic Colors</h2>
-                                    <div className="grid grid-cols-5 gap-3">
-                                      {[
-                                        { name: "Primary", color: "#3b82f6", desc: "Main actions", token: "primary" },
-                                        { name: "Success", color: "#10b981", desc: "Positive states", token: "success" },
-                                        { name: "Warning", color: "#f59e0b", desc: "Caution states", token: "warning" },
-                                        { name: "Error", color: "#ef4444", desc: "Error states", token: "error" },
-                                        { name: "Info", color: "#06b6d4", desc: "Informational", token: "info" },
-                                      ].map((semantic) => (
-                                        <div key={semantic.name} className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50")}>
-                                          <div className="h-20 w-full" style={{ backgroundColor: semantic.color }} />
-                                          <div className="p-3">
-                                            <div className={cn("font-medium text-sm", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{semantic.name}</div>
-                                            <div className={cn("text-[10px] mb-2", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{semantic.desc}</div>
-                                            <div className="flex items-center justify-between">
-                                              <code className={cn("text-[10px] font-mono px-1.5 py-0.5 rounded", libraryBackground === "light" ? "bg-zinc-100 text-zinc-600" : "bg-zinc-800 text-zinc-400")}>{semantic.token}</code>
-                                              <button 
-                                                onClick={() => navigator.clipboard.writeText(semantic.color)}
-                                                className={cn("text-[10px]", libraryBackground === "light" ? "text-zinc-400 hover:text-zinc-600" : "text-zinc-500 hover:text-zinc-300")}
-                                              >
-                                                Copy
-                                              </button>
+                                  {/* Semantic Colors - From AI Generation */}
+                                  {selectedDoc.content?.semantic?.feedback && selectedDoc.content.semantic.feedback.length > 0 && (
+                                    <div>
+                                      <h2 className={cn("text-lg font-semibold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Semantic Colors</h2>
+                                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                        {selectedDoc.content.semantic.feedback.map((semantic: any) => (
+                                          <div key={semantic.name} className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50")}>
+                                            <div className="h-16 w-full" style={{ backgroundColor: semantic.value }} />
+                                            <div className="p-3">
+                                              <div className={cn("font-medium text-sm", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{semantic.name}</div>
+                                              <div className="flex items-center justify-between mt-2">
+                                                <code className={cn("text-[10px] font-mono px-1.5 py-0.5 rounded", libraryBackground === "light" ? "bg-zinc-100 text-zinc-600" : "bg-zinc-800 text-zinc-400")}>{semantic.token}</code>
+                                                {semantic.wcag && (
+                                                  <span className={cn("text-[9px] px-1.5 py-0.5 rounded", semantic.wcag === "AAA" ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400")}>{semantic.wcag}</span>
+                                                )}
+                                              </div>
                                             </div>
                                           </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                  
-                                  {/* CSS Variables Export */}
-                                  <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
-                                    <div className={cn("px-4 py-3 flex items-center justify-between border-b", libraryBackground === "light" ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
-                                      <div className="flex items-center gap-2">
-                                        <Code className="w-4 h-4 text-zinc-400" />
-                                        <span className={cn("text-sm font-medium", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>CSS Custom Properties</span>
+                                        ))}
                                       </div>
-                                      <button 
-                                        onClick={() => navigator.clipboard.writeText(`:root {\n${Object.entries(libraryData?.tokens?.colors || {}).map(([n,v]) => `  --color-${n}: ${typeof v === 'string' ? v : (typeof v === 'object' && v !== null ? ((v as any).bg || (v as any).value || '#000') : String(v))};`).join('\n')}\n}`)}
-                                        className={cn("px-3 py-1 text-xs rounded-lg transition-colors", libraryBackground === "light" ? "bg-zinc-200 text-zinc-600 hover:bg-zinc-300" : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700")}
-                                      >
-                                        Copy All
-                                      </button>
                                     </div>
-                                    <Highlight 
-                                      theme={themes.nightOwl} 
-                                      code={`:root {\n  /* Primary */\n  --color-primary-50: #eff6ff;\n  --color-primary-500: #3b82f6;\n  --color-primary-900: #1e3a8a;\n  \n  /* Semantic */\n  --color-success: #10b981;\n  --color-warning: #f59e0b;\n  --color-error: #ef4444;\n  --color-info: #06b6d4;\n}`}
-                                      language="css"
-                                    >
-                                      {({ style, tokens, getLineProps, getTokenProps }) => (
-                                        <pre className="p-4 text-xs overflow-x-auto" style={{ ...style, background: libraryBackground === "light" ? "#fafafa" : "#0d0d0d", fontFamily: "'JetBrains Mono', monospace" }}>
-                                          {tokens.map((line, i) => (
-                                            <div key={i} {...getLineProps({ line })}>
-                                              {line.map((token, key) => <span key={key} {...getTokenProps({ token })} />)}
-                                            </div>
-                                          ))}
-                                        </pre>
-                                      )}
-                                    </Highlight>
-                                  </div>
+                                  )}
+                                  
+                                  {/* CSS Variables Export - Real data only */}
+                                  {Object.keys(libraryData?.tokens?.colors || {}).length > 0 && (
+                                    <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
+                                      <div className={cn("px-4 py-3 flex items-center justify-between border-b", libraryBackground === "light" ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
+                                        <div className="flex items-center gap-2">
+                                          <Code className="w-4 h-4 text-zinc-400" />
+                                          <span className={cn("text-sm font-medium", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>CSS Custom Properties</span>
+                                        </div>
+                                        <button 
+                                          onClick={() => {
+                                            const css = `:root {\n${Object.entries(libraryData?.tokens?.colors || {}).map(([n,v]) => `  --color-${n}: ${typeof v === 'string' ? v : (typeof v === 'object' && v !== null ? ((v as any).bg || (v as any).value || '#000') : String(v))};`).join('\n')}\n}`;
+                                            navigator.clipboard.writeText(css);
+                                            showToast("CSS copied!", "success");
+                                          }}
+                                          className={cn("px-3 py-1 text-xs rounded-lg transition-colors", libraryBackground === "light" ? "bg-zinc-200 text-zinc-600 hover:bg-zinc-300" : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700")}
+                                        >
+                                          Copy All
+                                        </button>
+                                      </div>
+                                      <Highlight 
+                                        theme={themes.nightOwl} 
+                                        code={`:root {\n${Object.entries(libraryData?.tokens?.colors || {}).slice(0, 12).map(([n,v]) => `  --color-${n}: ${typeof v === 'string' ? v : (typeof v === 'object' && v !== null ? ((v as any).bg || (v as any).value || '#000') : String(v))};`).join('\n')}\n}`}
+                                        language="css"
+                                      >
+                                        {({ style, tokens, getLineProps, getTokenProps }) => (
+                                          <pre className="p-4 text-xs overflow-x-auto" style={{ ...style, background: libraryBackground === "light" ? "#fafafa" : "#0d0d0d", fontFamily: "'JetBrains Mono', monospace" }}>
+                                            {tokens.map((line, i) => (
+                                              <div key={i} {...getLineProps({ line })}>
+                                                {line.map((token, key) => <span key={key} {...getTokenProps({ token })} />)}
+                                              </div>
+                                            ))}
+                                          </pre>
+                                        )}
+                                      </Highlight>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                               
@@ -18813,19 +18824,79 @@ export default function App() {
                                       <h2 className={cn("text-lg font-semibold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
                                         Detected Icons ({selectedDoc.content.icons.length})
                                       </h2>
-                                      <div className="grid grid-cols-6 sm:grid-cols-8 lg:grid-cols-10 gap-2">
-                                        {selectedDoc.content.icons.map((icon: string, i: number) => (
-                                          <div 
-                                            key={i} 
-                                            className={cn("flex flex-col items-center gap-1.5 p-3 rounded-lg border hover:border-zinc-500 transition-colors cursor-pointer", libraryBackground === "light" ? "border-zinc-200 hover:bg-zinc-50" : "border-zinc-800 hover:bg-zinc-800/50")}
-                                            onClick={() => { navigator.clipboard.writeText(icon); showToast(`Copied: ${icon}`, "success"); }}
-                                          >
-                                            <div className={cn("w-5 h-5 flex items-center justify-center", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>
-                                              <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="w-full h-full"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" /></svg>
-                                            </div>
-                                            <span className={cn("text-[9px] font-mono truncate w-full text-center", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{icon}</span>
-                                          </div>
-                                        ))}
+                                      <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50")}>
+                                        <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-px bg-zinc-800">
+                                          {selectedDoc.content.icons.map((icon: string, i: number) => {
+                                            // Map icon names to Lucide components
+                                            const iconMap: Record<string, React.ReactNode> = {
+                                              'Home': <Home className="w-5 h-5" />,
+                                              'Menu': <Menu className="w-5 h-5" />,
+                                              'Search': <Search className="w-5 h-5" />,
+                                              'User': <User className="w-5 h-5" />,
+                                              'Settings': <Settings className="w-5 h-5" />,
+                                              'Plus': <Plus className="w-5 h-5" />,
+                                              'Minus': <Minus className="w-5 h-5" />,
+                                              'Check': <Check className="w-5 h-5" />,
+                                              'X': <X className="w-5 h-5" />,
+                                              'ChevronRight': <ChevronRight className="w-5 h-5" />,
+                                              'ChevronLeft': <ChevronLeft className="w-5 h-5" />,
+                                              'ChevronDown': <ChevronDown className="w-5 h-5" />,
+                                              'ChevronUp': <ChevronUp className="w-5 h-5" />,
+                                              'ArrowRight': <ArrowRight className="w-5 h-5" />,
+                                              'ArrowLeft': <ArrowLeft className="w-5 h-5" />,
+                                              'Mail': <Mail className="w-5 h-5" />,
+                                              'Phone': <Phone className="w-5 h-5" />,
+                                              'Calendar': <Calendar className="w-5 h-5" />,
+                                              'Clock': <Clock className="w-5 h-5" />,
+                                              'Heart': <Heart className="w-5 h-5" />,
+                                              'Star': <Star className="w-5 h-5" />,
+                                              'Bell': <Bell className="w-5 h-5" />,
+                                              'Bookmark': <Bookmark className="w-5 h-5" />,
+                                              'Download': <Download className="w-5 h-5" />,
+                                              'Upload': <Upload className="w-5 h-5" />,
+                                              'Edit': <Edit className="w-5 h-5" />,
+                                              'Trash': <Trash className="w-5 h-5" />,
+                                              'Copy': <Copy className="w-5 h-5" />,
+                                              'Share': <Share className="w-5 h-5" />,
+                                              'Link': <Link2 className="w-5 h-5" />,
+                                              'Eye': <Eye className="w-5 h-5" />,
+                                              'EyeOff': <EyeOff className="w-5 h-5" />,
+                                              'Lock': <Lock className="w-5 h-5" />,
+                                              'Unlock': <Unlock className="w-5 h-5" />,
+                                              'Key': <Key className="w-5 h-5" />,
+                                              'Shield': <Shield className="w-5 h-5" />,
+                                              'AlertCircle': <AlertCircle className="w-5 h-5" />,
+                                              'Info': <Info className="w-5 h-5" />,
+                                              'HelpCircle': <HelpCircle className="w-5 h-5" />,
+                                              'Loader': <Loader2 className="w-5 h-5" />,
+                                              'Play': <Play className="w-5 h-5" />,
+                                              'Pause': <Pause className="w-5 h-5" />,
+                                              'File': <FileText className="w-5 h-5" />,
+                                              'Folder': <Folder className="w-5 h-5" />,
+                                              'Image': <ImageIcon className="w-5 h-5" />,
+                                              'Video': <Film className="w-5 h-5" />,
+                                              'Code': <Code className="w-5 h-5" />,
+                                              'Terminal': <Terminal className="w-5 h-5" />,
+                                              'Globe': <Globe className="w-5 h-5" />,
+                                              'Map': <Map className="w-5 h-5" />,
+                                              'Zap': <Zap className="w-5 h-5" />,
+                                              'Rocket': <Rocket className="w-5 h-5" />,
+                                            };
+                                            const IconComponent = iconMap[icon] || <Box className="w-5 h-5" />;
+                                            return (
+                                              <div 
+                                                key={i} 
+                                                className={cn("flex flex-col items-center gap-2 p-4 cursor-pointer transition-colors", libraryBackground === "light" ? "bg-white hover:bg-zinc-50" : "bg-zinc-900 hover:bg-zinc-800")}
+                                                onClick={() => { navigator.clipboard.writeText(`<${icon} />`); showToast(`Copied: <${icon} />`, "success"); }}
+                                              >
+                                                <div className={cn(libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>
+                                                  {IconComponent}
+                                                </div>
+                                                <span className={cn("text-[10px] font-mono truncate w-full text-center", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{icon}</span>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
                                       </div>
                                     </div>
                                   ) : (
@@ -18909,30 +18980,91 @@ export default function App() {
                                     </div>
                                   )}
                                   
-                                  {/* Categories from actual components */}
-                                  <div>
-                                    <h2 className={cn("text-xl font-semibold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Components by Category</h2>
-                                    <div className="space-y-3">
-                                      {[...new Set(libraryData?.components?.map((c: any) => c.category) || ["layout", "navigation", "feedback"])].map((cat: any) => {
-                                        const catComponents = libraryData?.components?.filter((c: any) => c.category === cat) || [];
-                                        return (
-                                          <div key={cat} className={cn("p-4 rounded-lg border", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
-                                            <h3 className={cn("font-semibold capitalize mb-2", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{cat || "Other"}</h3>
-                                            <div className="flex flex-wrap gap-2">
-                                              {(catComponents.length > 0 ? catComponents : [{ name: "Example" }]).map((comp: any, i: number) => (
-                                                <span key={i} className={cn("px-2 py-1 text-xs rounded", libraryBackground === "light" ? "bg-zinc-100 text-zinc-600" : "bg-zinc-800 text-zinc-400")}>{comp.name}</span>
-                                              ))}
-                                            </div>
+                                  {/* Atomic Design Categories - from AI */}
+                                  {(selectedDoc.content?.atoms || selectedDoc.content?.molecules || selectedDoc.content?.organisms) && (
+                                    <div className="space-y-6">
+                                      {/* Atoms */}
+                                      {selectedDoc.content?.atoms && selectedDoc.content.atoms.length > 0 && (
+                                        <div>
+                                          <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
+                                            <div className="w-3 h-3 rounded-full bg-blue-500" /> Atoms
+                                          </h2>
+                                          <div className="grid grid-cols-2 gap-4">
+                                            {selectedDoc.content.atoms.map((atom: any, i: number) => (
+                                              <div key={i} className={cn("p-4 rounded-xl border", libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50")}>
+                                                <h3 className={cn("font-semibold text-sm", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{atom.name}</h3>
+                                                <p className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{atom.description}</p>
+                                                {atom.variants && <div className="flex gap-1 mt-2 flex-wrap">{atom.variants.map((v: string, vi: number) => <span key={vi} className="px-1.5 py-0.5 text-[10px] bg-blue-500/20 text-blue-400 rounded">{v}</span>)}</div>}
+                                              </div>
+                                            ))}
                                           </div>
-                                        );
-                                      })}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Molecules */}
+                                      {selectedDoc.content?.molecules && selectedDoc.content.molecules.length > 0 && (
+                                        <div>
+                                          <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
+                                            <div className="w-3 h-3 rounded-full bg-emerald-500" /> Molecules
+                                          </h2>
+                                          <div className="grid grid-cols-2 gap-4">
+                                            {selectedDoc.content.molecules.map((mol: any, i: number) => (
+                                              <div key={i} className={cn("p-4 rounded-xl border", libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50")}>
+                                                <h3 className={cn("font-semibold text-sm", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{mol.name}</h3>
+                                                <p className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{mol.description}</p>
+                                                {mol.composition && <div className="flex gap-1 mt-2 flex-wrap">{mol.composition.map((c: string, ci: number) => <span key={ci} className="px-1.5 py-0.5 text-[10px] bg-emerald-500/20 text-emerald-400 rounded">{c}</span>)}</div>}
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Organisms */}
+                                      {selectedDoc.content?.organisms && selectedDoc.content.organisms.length > 0 && (
+                                        <div>
+                                          <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
+                                            <div className="w-3 h-3 rounded-full bg-violet-500" /> Organisms
+                                          </h2>
+                                          <div className="grid grid-cols-2 gap-4">
+                                            {selectedDoc.content.organisms.map((org: any, i: number) => (
+                                              <div key={i} className={cn("p-4 rounded-xl border", libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50")}>
+                                                <h3 className={cn("font-semibold text-sm", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{org.name}</h3>
+                                                <p className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{org.description}</p>
+                                                {org.composition && <div className="flex gap-1 mt-2 flex-wrap">{org.composition.map((c: string, ci: number) => <span key={ci} className="px-1.5 py-0.5 text-[10px] bg-violet-500/20 text-violet-400 rounded">{c}</span>)}</div>}
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
-                                  </div>
+                                  )}
+                                  
+                                  {/* Categories from actual components - only if no atomic data */}
+                                  {!selectedDoc.content?.atoms && !selectedDoc.content?.molecules && !selectedDoc.content?.organisms && libraryData?.components && libraryData.components.length > 0 && (
+                                    <div>
+                                      <h2 className={cn("text-xl font-semibold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Components by Category</h2>
+                                      <div className="space-y-3">
+                                        {[...new Set(libraryData.components.map((c: any) => c.category))].filter(Boolean).map((cat: any) => {
+                                          const catComponents = libraryData.components.filter((c: any) => c.category === cat);
+                                          return (
+                                            <div key={cat} className={cn("p-4 rounded-lg border", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
+                                              <h3 className={cn("font-semibold capitalize mb-2", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{cat}</h3>
+                                              <div className="flex flex-wrap gap-2">
+                                                {catComponents.map((comp: any, i: number) => (
+                                                  <span key={i} className={cn("px-2 py-1 text-xs rounded cursor-pointer hover:opacity-80", libraryBackground === "light" ? "bg-zinc-100 text-zinc-600" : "bg-zinc-800 text-zinc-400")} onClick={() => setSelectedLibraryItem(comp.id)}>{comp.name}</span>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                               
                               {/* Default/other docs */}
-                              {!["welcome", "colors", "typography", "getting-started", "iconography", "examples"].includes(selectedDoc.type || "") && (
+                              {!["welcome", "overview", "colors", "typography", "getting-started", "iconography", "examples", "components", "spacing", "shadows"].includes(selectedDoc.type || "") && (
                                 <div>
                                   <h1 className={cn("text-4xl font-bold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>{selectedDoc.title}</h1>
                                   <div className={cn("prose prose-sm max-w-none", libraryBackground === "light" ? "prose-zinc" : "prose-invert")}>
