@@ -3144,6 +3144,10 @@ function ReplayToolContent() {
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [generatePromptInput, setGeneratePromptInput] = useState("");
   const [blueprintSearchQuery, setBlueprintSearchQuery] = useState("");
+  // Flow - New Page Modal
+  const [showNewPageModal, setShowNewPageModal] = useState(false);
+  const [newPageName, setNewPageName] = useState("");
+  const [newPageDescription, setNewPageDescription] = useState("");
   const blueprintsCanvasRef = useRef<HTMLDivElement>(null);
   // Draggable component positions on canvas
   const [blueprintPositions, setBlueprintPositions] = useState<Record<string, { x: number; y: number }>>({});
@@ -13513,27 +13517,9 @@ ${publishCode}
                   </button>
                   <button
                     onClick={() => {
-                      const newPageName = prompt("Enter page name:", "New Page");
-                      if (newPageName && newPageName.trim()) {
-                        const pageName = newPageName.trim();
-                        const pageId = pageName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `custom-${Date.now()}`;
-                        // Check if ID already exists
-                        const existingIds = flowNodes.map(n => n.id);
-                        const uniqueId = existingIds.includes(pageId) ? `${pageId}-${Date.now()}` : pageId;
-                        // Calculate position for new node
-                        const maxY = Math.max(...flowNodes.map(n => n.y || 0), 0);
-                        const newNode = {
-                          id: uniqueId,
-                          name: pageName,
-                          type: 'view' as const,
-                          status: 'detected' as const,
-                          description: 'Custom page - click Reconstruct to generate',
-                          x: 100,
-                          y: maxY + 200,
-                          confidence: 'high' as const
-                        };
-                        setFlowNodes(prev => [...prev, newNode]);
-                      }
+                      setNewPageName("");
+                      setNewPageDescription("");
+                      setShowNewPageModal(true);
                     }}
                     className="p-1 hover:bg-zinc-800 rounded transition-colors"
                     title="Add custom page"
@@ -16035,25 +16021,9 @@ export default function GeneratedPage() {
                       <div className="w-px h-4 bg-zinc-700 mx-1" />
                       <button 
                         onClick={() => {
-                          const newPageName = prompt("Enter page name:", "New Page");
-                          if (newPageName && newPageName.trim()) {
-                            const pageName = newPageName.trim();
-                            const pageId = pageName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `custom-${Date.now()}`;
-                            const existingIds = flowNodes.map(n => n.id);
-                            const uniqueId = existingIds.includes(pageId) ? `${pageId}-${Date.now()}` : pageId;
-                            const maxY = Math.max(...flowNodes.map(n => n.y || 0), 0);
-                            const newNode = {
-                              id: uniqueId,
-                              name: pageName,
-                              type: 'view' as const,
-                              status: 'detected' as const,
-                              description: 'Custom page - click Reconstruct to generate',
-                              x: 100,
-                              y: maxY + 200,
-                              confidence: 'high' as const
-                            };
-                            setFlowNodes(prev => [...prev, newNode]);
-                          }
+                          setNewPageName("");
+                          setNewPageDescription("");
+                          setShowNewPageModal(true);
                         }}
                         className="px-2 py-1 rounded hover:bg-zinc-800 transition-colors text-[10px] text-zinc-400 hover:text-white flex items-center gap-1"
                         title="Add custom page"
@@ -23467,6 +23437,120 @@ new MutationObserver(()=>{fixBrokenImages()}).observe(document.body,{childList:t
                 className="px-4 py-2 text-sm font-medium bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
               >
                 Delete
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+      
+      {/* New Page Modal for Flow - AI Page Generator */}
+      {showNewPageModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={() => setShowNewPageModal(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-lg bg-zinc-900 rounded-2xl border border-zinc-800 shadow-2xl overflow-hidden"
+          >
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                  <Plus className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-white">Create New Page</h2>
+                  <p className="text-xs text-zinc-500">Add a custom page to your flow</p>
+                </div>
+              </div>
+              <button onClick={() => setShowNewPageModal(false)} className="p-2 hover:bg-zinc-800 rounded-lg transition-colors">
+                <X className="w-5 h-5 text-zinc-400" />
+              </button>
+            </div>
+            
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              {/* Page Name */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Page Name</label>
+                <input
+                  type="text"
+                  value={newPageName}
+                  onChange={(e) => setNewPageName(e.target.value)}
+                  placeholder="e.g. Dashboard, Settings, Profile..."
+                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500"
+                  autoFocus
+                />
+              </div>
+              
+              {/* Page Description - for AI generation */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">
+                  Description <span className="text-zinc-500 font-normal">(for AI generation)</span>
+                </label>
+                <textarea
+                  value={newPageDescription}
+                  onChange={(e) => setNewPageDescription(e.target.value)}
+                  placeholder="Describe what this page should contain... e.g. 'A user settings page with profile photo, name, email, password change, and notification preferences'"
+                  rows={4}
+                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 resize-none"
+                />
+              </div>
+              
+              <p className="text-xs text-zinc-500">
+                After creating, click <span className="text-cyan-400 font-medium">Reconstruct</span> on the page card to generate it with AI.
+              </p>
+            </div>
+            
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-zinc-800 flex items-center justify-end gap-3">
+              <button
+                onClick={() => setShowNewPageModal(false)}
+                className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (newPageName.trim()) {
+                    const pageName = newPageName.trim();
+                    const pageId = pageName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `custom-${Date.now()}`;
+                    const existingIds = flowNodes.map(n => n.id);
+                    const uniqueId = existingIds.includes(pageId) ? `${pageId}-${Date.now()}` : pageId;
+                    const maxY = Math.max(...flowNodes.map(n => n.y || 0), 0);
+                    const newNode = {
+                      id: uniqueId,
+                      name: pageName,
+                      type: 'view' as const,
+                      status: 'detected' as const,
+                      description: newPageDescription.trim() || 'Custom page - click Reconstruct to generate',
+                      x: 100,
+                      y: maxY + 200,
+                      confidence: 'high' as const
+                    };
+                    setFlowNodes(prev => [...prev, newNode]);
+                    setShowNewPageModal(false);
+                    setNewPageName("");
+                    setNewPageDescription("");
+                  }
+                }}
+                disabled={!newPageName.trim()}
+                className={cn(
+                  "px-5 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2",
+                  newPageName.trim()
+                    ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-400 hover:to-blue-500"
+                    : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                )}
+              >
+                <Plus className="w-4 h-4" />
+                Create Page
               </button>
             </div>
           </motion.div>
