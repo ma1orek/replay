@@ -569,7 +569,7 @@ function SettingsContent() {
               </div>
 
               {/* Pricing Cards - matching pricing page exactly */}
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
                 {/* Sandbox - $0 */}
                 <div className={cn(
                   "bg-[#141414]/80 backdrop-blur border rounded-2xl p-6",
@@ -608,11 +608,11 @@ function SettingsContent() {
 
                 {/* Pro - $149/mo */}
                 <div className={cn(
-                  "bg-[#141414]/80 backdrop-blur border rounded-2xl p-6 relative",
+                  "bg-[#141414]/80 backdrop-blur border rounded-2xl p-6 pt-8 relative overflow-visible",
                   currentPlan === "pro" ? "border-zinc-500" : "border-zinc-800/50"
                 )}>
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="px-3 py-1 text-xs bg-[#FF6E3C] text-white rounded-full font-medium">Most Popular</span>
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+                    <span className="px-3 py-1 text-xs bg-[#FF6E3C] text-white rounded-full font-medium whitespace-nowrap">Most Popular</span>
                   </div>
                   <div className="mb-4">
                     <h3 className="text-lg font-semibold text-zinc-100">{PRO_PLAN.name}</h3>
