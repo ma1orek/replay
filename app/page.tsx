@@ -17711,8 +17711,11 @@ export default function GeneratedPage() {
               <div className="flex-1 overflow-hidden flex bg-[#111111]">
                 {/* Fullscreen Preview Overlay */}
                 {isLibraryFullscreen && (() => {
-                  const selectedComponent = selectedLibraryItem?.startsWith("comp-") 
-                    ? libraryData?.components?.find((c: any) => `comp-${c.id}` === selectedLibraryItem)
+                  const compId = selectedLibraryItem?.startsWith("comp-") 
+                    ? selectedLibraryItem.replace("comp-", "")
+                    : null;
+                  const selectedComponent = compId
+                    ? libraryData?.components?.find((c: any) => c.id === compId || c.id === selectedLibraryItem || `comp-${c.id}` === selectedLibraryItem)
                     : null;
                   return selectedComponent?.code ? (
                     <div className="fixed inset-0 z-50 bg-[#111111] flex flex-col">
@@ -17943,12 +17946,15 @@ export default function GeneratedPage() {
                   
                   {/* Canvas - Component Preview - STORYBOOK STYLE */}
                   {(() => {
-                    // Find selected component from libraryData
-                    const selectedComponent = selectedLibraryItem?.startsWith("comp-") 
-                      ? libraryData?.components?.find((c: any) => `comp-${c.id}` === selectedLibraryItem)
+                    // Find selected component from libraryData - match by comp-{id} or direct id
+                    const compId = selectedLibraryItem?.startsWith("comp-") 
+                      ? selectedLibraryItem.replace("comp-", "")
+                      : null;
+                    const selectedComponent = compId
+                      ? libraryData?.components?.find((c: any) => c.id === compId || c.id === selectedLibraryItem || `comp-${c.id}` === selectedLibraryItem)
                       : null;
                     const selectedDoc = selectedLibraryItem?.startsWith("doc-")
-                      ? libraryData?.docs?.find((d: any) => `doc-${d.id}` === selectedLibraryItem)
+                      ? libraryData?.docs?.find((d: any) => `doc-${d.id}` === selectedLibraryItem || d.id === selectedLibraryItem?.replace("doc-", ""))
                       : null;
                     
                     return (
