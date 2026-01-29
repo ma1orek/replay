@@ -11709,7 +11709,7 @@ ${publishCode}
     );
   };
 
-  const EmptyState = ({ icon: Icon, title, subtitle, showEarlyAccess = false }: { icon: any; title: string; subtitle: string; showEarlyAccess?: boolean }) => (
+  const EmptyState = ({ icon: Icon, title, subtitle }: { icon: any; title: string; subtitle: string }) => (
     <div className="flex flex-col items-center justify-center text-center px-8 py-16">
       {/* Small subtle icon - NOT a giant logo */}
       <div className="w-12 h-12 rounded-xl bg-zinc-800/50 flex items-center justify-center mb-5">
@@ -11724,12 +11724,6 @@ ${publishCode}
       </div>
       <h3 className="text-sm font-medium text-zinc-300">{title}</h3>
       <p className="text-sm text-zinc-500 mt-1.5 max-w-xs">{subtitle}</p>
-      {showEarlyAccess && (
-        <div className="mt-5 px-3 py-2 rounded-lg bg-zinc-800/50 border border-zinc-700/50">
-          <p className="text-xs text-zinc-300/80 font-medium">Early Access</p>
-          <p className="text-xs text-zinc-500 mt-0.5">Edge cases welcome.</p>
-        </div>
-      )}
     </div>
   );
 
@@ -15308,7 +15302,7 @@ ${publishCode}
                   </>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-[#111111]">
-                    <EmptyState icon="logo" title="Drop or record video. Get code." subtitle="We analyze the flow, map interactions, and export clean code." showEarlyAccess={generations.length === 0} />
+                    <EmptyState icon="logo" title="Drop or record video. Get code." subtitle="We analyze the flow, map interactions, and export clean code." />
                   </div>
                 )}
               </div>
@@ -20890,7 +20884,7 @@ new MutationObserver(()=>{fixBrokenImages()}).observe(document.body,{childList:t
                 ) : (
                   <div className="flex-1 flex items-center justify-center bg-[#111111]">
                     <div className="text-center">
-                      <EmptyState icon="logo" title="No video selected" subtitle="Record or upload a video first" showEarlyAccess={generations.length === 0} />
+                      <EmptyState icon="logo" title="No video selected" subtitle="Record or upload a video first" />
                       <div className="flex items-center justify-center gap-2 mt-4">
                         <button onClick={() => fileInputRef.current?.click()} className="btn-black flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs"><Upload className="w-3.5 h-3.5" /> Upload</button>
                         <button onClick={startRecording} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs bg-zinc-800/50 border border-white/[0.08] hover:border-white/[0.15] text-zinc-400 hover:text-zinc-200 transition-all"><div className="w-2.5 h-2.5 rounded-full bg-white/40" /> Record</button>
