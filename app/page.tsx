@@ -18026,14 +18026,30 @@ export default function GeneratedPage() {
                     // Find selected component from libraryData - match by comp-{id} or direct id
                     const compId = selectedLibraryItem?.startsWith("comp-") 
                       ? selectedLibraryItem.replace("comp-", "")
+                      : selectedLibraryItem;
+                    const selectedComponent = compId && !selectedLibraryItem?.startsWith("doc-")
+                      ? libraryData?.components?.find((c: any) => 
+                          c.id === compId || 
+                          c.id === selectedLibraryItem || 
+                          `comp-${c.id}` === selectedLibraryItem ||
+                          c.name === selectedLibraryItem
+                        )
                       : null;
-                    const selectedComponent = compId
-                      ? libraryData?.components?.find((c: any) => c.id === compId || c.id === selectedLibraryItem || `comp-${c.id}` === selectedLibraryItem)
-                      : null;
-                    // Find doc - no virtual docs, must be real generated
+                    // Find doc - include virtual docs fallback (Overview, Getting Started, Colors, Typography, Spacing, Icons, Components, Examples)
                     const docId = selectedLibraryItem?.replace("doc-", "");
+                    const virtualDocs = [
+                      { id: "overview", title: "Overview", type: "overview" },
+                      { id: "getting-started", title: "Getting Started", type: "getting-started" },
+                      { id: "colors", title: "Colors", type: "colors" },
+                      { id: "typography", title: "Typography", type: "typography" },
+                      { id: "spacing", title: "Spacing", type: "spacing" },
+                      { id: "icons", title: "Icons", type: "icons" },
+                      { id: "components", title: "Components", type: "components" },
+                      { id: "examples", title: "Examples", type: "examples" },
+                    ];
+                    const allDocs = [...(libraryData?.docs || []), ...virtualDocs];
                     const selectedDoc = selectedLibraryItem?.startsWith("doc-")
-                      ? libraryData?.docs?.find((d: any) => `doc-${d.id}` === selectedLibraryItem || d.id === docId)
+                      ? allDocs.find((d: any) => `doc-${d.id}` === selectedLibraryItem || d.id === docId)
                       : null;
                     
                     return (
