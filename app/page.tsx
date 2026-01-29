@@ -430,6 +430,7 @@ interface FlowItem {
   duration: number;
   trimStart: number;
   trimEnd: number;
+  isImage?: boolean;
 }
 
 interface ArchNode {
@@ -8714,12 +8715,55 @@ Try these prompts in Cursor or v0:
       for (const file of Array.from(files)) {
         const isVideo = file.type.startsWith("video/") || 
                         file.name.toLowerCase().match(/\.(mp4|mov|webm|avi|mkv|m4v)$/);
+        const isImage = file.type.startsWith("image/") ||
+                        file.name.toLowerCase().match(/\.(png|jpg|jpeg|gif|webp)$/);
+        
         if (isVideo) {
           const sizeMB = file.size / 1024 / 1024;
           console.log(`Dropped video: ${file.name}, size: ${sizeMB.toFixed(1)}MB, type: ${file.type}`);
           await addVideoToFlows(file, file.name.replace(/\.[^/.]+$/, ""));
+        } else if (isImage) {
+          // Handle image drop - create a flow from image
+          const imageUrl = URL.createObjectURL(file);
+          const flowId = `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          const flowName = file.name.replace(/\.[^/.]+$/, "");
+          
+          // Create image element to get dimensions
+          const img = new window.Image();
+          img.src = imageUrl;
+          await new Promise((resolve) => { img.onload = resolve; });
+          
+          // Create a canvas to generate thumbnail
+          const canvas = document.createElement('canvas');
+          const maxSize = 400;
+          const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const thumbnail = canvas.toDataURL('image/jpeg', 0.8);
+          
+          // Convert image to blob
+          const response = await fetch(imageUrl);
+          const imageBlob = await response.blob();
+          
+          const newFlow: FlowItem = {
+            id: flowId,
+            name: flowName,
+            thumbnail: thumbnail,
+            videoUrl: imageUrl,
+            videoBlob: imageBlob,
+            duration: 0,
+            trimStart: 0,
+            trimEnd: 0,
+            isImage: true,
+          };
+          
+          setFlows((prev) => [...prev, newFlow]);
+          setSelectedFlowId(flowId);
+          showToast(`Image "${flowName}" added`, "success");
         } else {
-          showToast("Please drop a video file", "error");
+          showToast("Please drop a video or image file", "error");
         }
       }
     }
@@ -12070,17 +12114,60 @@ ${publishCode}
         type="file" 
         ref={fileInputRef} 
         className="hidden" 
-        accept="video/*,.mp4,.mov,.webm,.avi,.mkv,.m4v"
+        accept="video/*,.mp4,.mov,.webm,.avi,.mkv,.m4v,image/*,.png,.jpg,.jpeg,.gif,.webp"
         onChange={async (e) => {
           const files = e.target.files;
           if (files && files.length > 0) {
             for (const file of Array.from(files)) {
               const isVideo = file.type.startsWith("video/") || 
                               file.name.toLowerCase().match(/\.(mp4|mov|webm|avi|mkv|m4v)$/);
+              const isImage = file.type.startsWith("image/") ||
+                              file.name.toLowerCase().match(/\.(png|jpg|jpeg|gif|webp)$/);
+              
               if (isVideo) {
                 await addVideoToFlows(file, file.name.replace(/\.[^/.]+$/, ""));
+              } else if (isImage) {
+                // Handle image upload - create a flow from image
+                const imageUrl = URL.createObjectURL(file);
+                const flowId = `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                const flowName = file.name.replace(/\.[^/.]+$/, "");
+                
+                // Create image element to get dimensions
+                const img = new window.Image();
+                img.src = imageUrl;
+                await new Promise((resolve) => { img.onload = resolve; });
+                
+                // Create a canvas to generate thumbnail
+                const canvas = document.createElement('canvas');
+                const maxSize = 400;
+                const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+                const ctx = canvas.getContext('2d');
+                ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const thumbnail = canvas.toDataURL('image/jpeg', 0.8);
+                
+                // Convert image to blob for upload
+                const response = await fetch(imageUrl);
+                const imageBlob = await response.blob();
+                
+                const newFlow: FlowItem = {
+                  id: flowId,
+                  name: flowName,
+                  thumbnail: thumbnail,
+                  videoUrl: imageUrl,
+                  videoBlob: imageBlob,
+                  duration: 0, // Images have no duration
+                  trimStart: 0,
+                  trimEnd: 0,
+                  isImage: true, // Flag to identify as image
+                };
+                
+                setFlows((prev) => [...prev, newFlow]);
+                setSelectedFlowId(flowId);
+                showToast(`Image "${flowName}" added`, "success");
               } else {
-                showToast("Please select a video file", "error");
+                showToast("Please select a video or image file", "error");
               }
             }
           }
@@ -14149,10 +14236,35 @@ ${publishCode}
                   
                   {/* Upload Section - Primary */}
                   <div className="p-4 border-b border-white/[0.06]">
-                    {/* Header with VIDEOS label and action buttons */}
+                    {/* Header with INPUT label and action buttons */}
                     <div className="sidebar-label text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3 flex items-center justify-between">
                       <span className="flex items-center gap-2">
-                        <Video className="w-3.5 h-3.5" /> VIDEOS {flows.length > 0 && <span className="text-white/30">{flows.length}</span>}
+                        <Video className="w-3.5 h-3.5" /> INPUT {flows.length > 0 && <span className="text-white/30">{flows.length}</span>}
+                        {/* Info tooltip */}
+                        <div className="relative group">
+                          <Info className="w-3 h-3 text-white/30 hover:text-white/50 cursor-help transition-colors" />
+                          <div className="absolute left-0 top-full mt-2 w-72 p-3 rounded-lg bg-zinc-900 border border-white/10 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                            <p className="text-[11px] font-semibold text-white/80 mb-2">Input Guidelines</p>
+                            <div className="space-y-2.5">
+                              <div className="flex gap-2">
+                                <Film className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                                <div>
+                                  <p className="text-[10px] font-semibold text-emerald-400">Video (Best Results)</p>
+                                  <p className="text-[9px] text-white/50">Upload .mp4 or .mov. Captures user flows, interactions, hover states, and dynamic logic.</p>
+                                  <p className="text-[9px] text-white/40 italic mt-0.5">Tip: Record the full user journey for a complete flow map.</p>
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <ImageIcon className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                                <div>
+                                  <p className="text-[10px] font-semibold text-blue-400">Static Images</p>
+                                  <p className="text-[9px] text-white/50">Upload .png or .jpg. Best for extracting visual structure, typography, and colors.</p>
+                                  <p className="text-[9px] text-white/40 italic mt-0.5">Logic and motion will be inferred by AI.</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </span>
                       {/* Compact action buttons */}
                       <div className="flex items-center gap-1">
@@ -14174,27 +14286,32 @@ ${publishCode}
                     </div>
                     {flows.length === 0 ? (
                       <>
-                        {/* Add video drop area */}
+                        {/* Upload Source drop area */}
                         <button 
                           onClick={() => fileInputRef.current?.click()}
                           onDragOver={handleDragOver}
                           onDragLeave={handleDragLeave}
                           onDrop={handleDrop}
                           className={cn(
-                            "w-full flex items-center justify-center gap-2 px-3 py-3 rounded-lg transition-all cursor-pointer",
+                            "w-full flex flex-col items-center justify-center gap-1 px-3 py-4 rounded-lg transition-all cursor-pointer",
                             "bg-zinc-800/30 border border-dashed border-white/[0.08] hover:border-white/[0.15] hover:bg-zinc-800/50",
                             isDragging && "border-[var(--accent-orange)] bg-[var(--accent-orange)]/10 border-solid"
                           )}
                         >
-                          <Plus className={cn(
-                            "w-4 h-4 transition-colors text-white/30",
-                            isDragging && "text-[var(--accent-orange)]"
-                          )} />
-                          <span className={cn(
-                            "text-[12px] text-white/40 font-medium",
-                            isDragging && "text-[var(--accent-orange)]"
-                          )}>
-                            {isDragging ? "Drop video here" : "Add video"}
+                          <div className="flex items-center gap-2">
+                            <Plus className={cn(
+                              "w-4 h-4 transition-colors text-white/30",
+                              isDragging && "text-[var(--accent-orange)]"
+                            )} />
+                            <span className={cn(
+                              "text-[12px] text-white/40 font-medium",
+                              isDragging && "text-[var(--accent-orange)]"
+                            )}>
+                              {isDragging ? "Drop here" : "Upload Source"}
+                            </span>
+                          </div>
+                          <span className="text-[9px] text-white/25">
+                            Drop video for logic or image for layout
                           </span>
                         </button>
                       </>
@@ -14340,12 +14457,37 @@ ${publishCode}
             /* CONFIG MODE - Before Generation - Same style as Input tab */
             <div className="flex-1 overflow-y-auto custom-scrollbar" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}>
               
-              {/* Videos Section - Same as Input tab */}
+              {/* Input Section - Same as Input tab */}
               <div className="p-4 border-b border-white/[0.06]">
-                {/* Header with VIDEOS label and action buttons */}
+                {/* Header with INPUT label and action buttons */}
                 <div className="sidebar-label text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3 flex items-center justify-between">
                   <span className="flex items-center gap-2">
-                    <Video className="w-3.5 h-3.5" /> VIDEOS {flows.length > 0 && <span className="text-white/30">{flows.length}</span>}
+                    <Video className="w-3.5 h-3.5" /> INPUT {flows.length > 0 && <span className="text-white/30">{flows.length}</span>}
+                    {/* Info tooltip */}
+                    <div className="relative group">
+                      <Info className="w-3 h-3 text-white/30 hover:text-white/50 cursor-help transition-colors" />
+                      <div className="absolute left-0 top-full mt-2 w-72 p-3 rounded-lg bg-zinc-900 border border-white/10 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                        <p className="text-[11px] font-semibold text-white/80 mb-2">Input Guidelines</p>
+                        <div className="space-y-2.5">
+                          <div className="flex gap-2">
+                            <Film className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                            <div>
+                              <p className="text-[10px] font-semibold text-emerald-400">Video (Best Results)</p>
+                              <p className="text-[9px] text-white/50">Upload .mp4 or .mov. Captures user flows, interactions, hover states, and dynamic logic.</p>
+                              <p className="text-[9px] text-white/40 italic mt-0.5">Tip: Record the full user journey for a complete flow map.</p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <ImageIcon className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                            <div>
+                              <p className="text-[10px] font-semibold text-blue-400">Static Images</p>
+                              <p className="text-[9px] text-white/50">Upload .png or .jpg. Best for extracting visual structure, typography, and colors.</p>
+                              <p className="text-[9px] text-white/40 italic mt-0.5">Logic and motion will be inferred by AI.</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </span>
                   {/* Compact action buttons */}
                   <div className="flex items-center gap-1">
@@ -14373,27 +14515,32 @@ ${publishCode}
                 </div>
                 {flows.length === 0 ? (
                   <>
-                    {/* Add video drop area - compact like Input tab */}
+                    {/* Upload Source drop area */}
                     <button 
                       onClick={() => fileInputRef.current?.click()}
                       onDragOver={handleDragOver}
                       onDragLeave={handleDragLeave}
                       onDrop={handleDrop}
                       className={cn(
-                        "w-full flex items-center justify-center gap-2 px-3 py-3 rounded-lg transition-all cursor-pointer",
+                        "w-full flex flex-col items-center justify-center gap-1 px-3 py-4 rounded-lg transition-all cursor-pointer",
                         "bg-zinc-800/30 border border-dashed border-white/[0.08] hover:border-white/[0.15] hover:bg-zinc-800/50",
                         isDragging && "border-[var(--accent-orange)] bg-[var(--accent-orange)]/10 border-solid"
                       )}
                     >
-                      <Plus className={cn(
-                        "w-4 h-4 transition-colors text-white/30",
-                        isDragging && "text-[var(--accent-orange)]"
-                      )} />
-                      <span className={cn(
-                        "text-[12px] text-white/40 font-medium",
-                        isDragging && "text-[var(--accent-orange)]"
-                      )}>
-                        {isDragging ? "Drop video here" : "Add video"}
+                      <div className="flex items-center gap-2">
+                        <Plus className={cn(
+                          "w-4 h-4 transition-colors text-white/30",
+                          isDragging && "text-[var(--accent-orange)]"
+                        )} />
+                        <span className={cn(
+                          "text-[12px] text-white/40 font-medium",
+                          isDragging && "text-[var(--accent-orange)]"
+                        )}>
+                          {isDragging ? "Drop here" : "Upload Source"}
+                        </span>
+                      </div>
+                      <span className="text-[9px] text-white/25">
+                        Drop video for logic or image for layout
                       </span>
                     </button>
                   </>
@@ -14427,7 +14574,7 @@ ${publishCode}
                       )}
                     >
                       <Plus className="w-3 h-3 text-white/30" />
-                      <span className="text-[10px] text-white/40">Add video</span>
+                      <span className="text-[10px] text-white/40">+Add</span>
                     </button>
                   </div>
                 )}
