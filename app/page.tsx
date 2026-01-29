@@ -18035,21 +18035,21 @@ export default function GeneratedPage() {
                           c.name === selectedLibraryItem
                         )
                       : null;
-                    // Find doc - include virtual docs fallback (Overview, Getting Started, Colors, Typography, Spacing, Icons, Components, Examples)
+                    // Find doc from libraryData.docs (real generated docs only)
                     const docId = selectedLibraryItem?.replace("doc-", "");
-                    const virtualDocs: any[] = [
-                      { id: "overview", title: "Overview", type: "overview", content: {} },
-                      { id: "getting-started", title: "Getting Started", type: "getting-started", content: {} },
-                      { id: "colors", title: "Colors", type: "colors", content: {} },
-                      { id: "typography", title: "Typography", type: "typography", content: {} },
-                      { id: "spacing", title: "Spacing", type: "spacing", content: {} },
-                      { id: "icons", title: "Icons", type: "icons", content: {} },
-                      { id: "components", title: "Components", type: "components", content: {} },
-                      { id: "examples", title: "Examples", type: "examples", content: {} },
-                    ];
-                    const allDocs = [...(libraryData?.docs || []), ...virtualDocs];
+                    // Map virtual doc types to real content sections
+                    const docTypeMap: Record<string, any> = {
+                      "overview": { id: "overview", title: "Overview", type: "overview", content: libraryData?.overview || {} },
+                      "getting-started": { id: "getting-started", title: "Getting Started", type: "getting-started", content: {} },
+                      "colors": { id: "colors", title: "Colors", type: "colors", content: {} },
+                      "typography": { id: "typography", title: "Typography", type: "typography", content: {} },
+                      "spacing": { id: "spacing", title: "Spacing", type: "spacing", content: {} },
+                      "icons": { id: "icons", title: "Icons", type: "icons", content: {} },
+                      "components": { id: "components", title: "Components", type: "components", content: {} },
+                      "examples": { id: "examples", title: "Examples", type: "examples", content: {} },
+                    };
                     const selectedDoc = selectedLibraryItem?.startsWith("doc-")
-                      ? allDocs.find((d: any) => `doc-${d.id}` === selectedLibraryItem || d.id === docId)
+                      ? (libraryData?.docs?.find((d: any) => `doc-${d.id}` === selectedLibraryItem || d.id === docId) || docTypeMap[docId || ""])
                       : null;
                     
                     return (
@@ -20051,7 +20051,23 @@ module.exports = {
                             </div>
                           ) : (
                             <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                              <p className="text-sm text-zinc-500">Component not found</p>
+                              {isRegeneratingLibrary ? (
+                                <>
+                                  <div className="relative w-10 h-10 mb-4">
+                                    <div className="absolute inset-0 rounded-full border-2 border-zinc-700" />
+                                    <div className="absolute inset-0 rounded-full border-2 border-zinc-400 border-t-transparent animate-spin" />
+                                  </div>
+                                  <p className="text-sm text-zinc-400">Loading...</p>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center mb-4">
+                                    <MousePointer className="w-5 h-5 text-zinc-500" />
+                                  </div>
+                                  <p className="text-sm text-zinc-400 mb-1">Select a component</p>
+                                  <p className="text-xs text-zinc-600">Choose from the sidebar on the left</p>
+                                </>
+                              )}
                             </div>
                           )}
                         </div>
