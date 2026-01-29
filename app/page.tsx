@@ -14970,7 +14970,8 @@ ${publishCode}
                   <>
                     {(() => {
                       const meta = user.user_metadata;
-                      const displayName = meta?.full_name || meta?.name || user.email?.split('@')[0] || 'User';
+                      // Priority: profile.full_name > user_metadata.full_name > email
+                      const displayName = profile?.full_name || meta?.full_name || meta?.name || user.email?.split('@')[0] || 'User';
                       const plan = membership?.plan || "free";
                       return (
                         <button 
