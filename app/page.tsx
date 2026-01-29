@@ -14344,9 +14344,9 @@ ${publishCode}
                       <span className="flex items-center gap-2">
                         <Video className="w-3.5 h-3.5" /> INPUT {flows.length > 0 && <span className="text-white/30">{flows.length}</span>}
                         {/* Info tooltip */}
-                        <div className="relative group">
+                        <div className="relative group/inputtip">
                           <Info className="w-3 h-3 text-white/30 hover:text-white/50 cursor-help transition-colors" />
-                          <div className="absolute left-0 bottom-full mb-2 w-48 p-2 rounded-md bg-zinc-800 border border-zinc-700 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100]">
+                          <div className="fixed ml-2 left-auto w-48 p-2 rounded-md bg-zinc-800 border border-zinc-700 shadow-xl opacity-0 invisible group-hover/inputtip:opacity-100 group-hover/inputtip:visible transition-all z-[9999] pointer-events-none" style={{ transform: 'translateY(-50%)' }}>
                             <p className="text-[10px] text-white/70 mb-1.5"><span className="text-white/90 font-medium">Video</span> — flows, interactions, logic</p>
                             <p className="text-[10px] text-white/70"><span className="text-white/90 font-medium">Image</span> — layout, colors, typography</p>
                           </div>
@@ -14550,9 +14550,9 @@ ${publishCode}
                   <span className="flex items-center gap-2">
                     <Video className="w-3.5 h-3.5" /> INPUT {flows.length > 0 && <span className="text-white/30">{flows.length}</span>}
                     {/* Info tooltip */}
-                    <div className="relative group">
+                    <div className="relative group/inputtip2">
                       <Info className="w-3 h-3 text-white/30 hover:text-white/50 cursor-help transition-colors" />
-                      <div className="absolute left-0 bottom-full mb-2 w-48 p-2 rounded-md bg-zinc-800 border border-zinc-700 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100]">
+                      <div className="fixed ml-2 left-auto w-48 p-2 rounded-md bg-zinc-800 border border-zinc-700 shadow-xl opacity-0 invisible group-hover/inputtip2:opacity-100 group-hover/inputtip2:visible transition-all z-[9999] pointer-events-none" style={{ transform: 'translateY(-50%)' }}>
                         <p className="text-[10px] text-white/70 mb-1.5"><span className="text-white/90 font-medium">Video</span> — flows, interactions, logic</p>
                         <p className="text-[10px] text-white/70"><span className="text-white/90 font-medium">Image</span> — layout, colors, typography</p>
                       </div>
