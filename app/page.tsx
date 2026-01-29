@@ -9261,11 +9261,14 @@ Try these prompts in Cursor or v0:
   };
 
   // Generate Library Documentation with AI - uses REAL extracted data from code
+  const [libraryDocsError, setLibraryDocsError] = useState(false);
+  
   const generateLibraryDocs = useCallback(async (forceRegenerate: boolean = false) => {
     if (!libraryData?.components || libraryData.components.length === 0) return;
     if (isGeneratingLibraryDocs && !forceRegenerate) return;
     
     setIsGeneratingLibraryDocs(true);
+    setLibraryDocsError(false);
     try {
       // Get the full code for analysis
       const fullCode = editableCode || generatedCode || "";
@@ -9293,10 +9296,14 @@ Try these prompts in Cursor or v0:
         }));
         setLibraryDocsGenerated(true);
         showToast(`Documentation generated! (${result.extracted?.colors || 0} colors, ${result.extracted?.icons || 0} icons)`, "success");
+      } else {
+        // Set error flag to prevent infinite retries
+        setLibraryDocsError(true);
       }
     } catch (error: any) {
       console.error("Library docs generation error:", error);
       showToast("Failed to generate documentation", "error");
+      setLibraryDocsError(true); // Stop retrying on error
     } finally {
       setIsGeneratingLibraryDocs(false);
     }
@@ -9310,20 +9317,28 @@ Try these prompts in Cursor or v0:
     const hasComponents = libraryData?.components && libraryData.components.length > 0;
     const currentGenId = activeGeneration?.id || null;
     const hasDocs = libraryData?.docs && libraryData.docs.length > 0;
+    const isNewProject = currentGenId && lastDocsGenerationId.current !== currentGenId;
+    
+    // Reset error flag when switching to a new project
+    if (isNewProject) {
+      setLibraryDocsError(false);
+    }
     
     // Generate docs if:
     // 1. We have components AND
     // 2. Not currently generating AND
-    // 3. Either no docs exist OR this is a different project than last generation
+    // 3. No error from previous attempt (unless new project) AND
+    // 4. Either no docs exist OR this is a different project
     const shouldGenerate = hasComponents && 
       !isGeneratingLibraryDocs && 
-      (!hasDocs || (currentGenId && lastDocsGenerationId.current !== currentGenId));
+      (!libraryDocsError || isNewProject) &&
+      (!hasDocs || isNewProject);
     
     if (shouldGenerate) {
       lastDocsGenerationId.current = currentGenId;
       generateLibraryDocs(true); // Force regenerate for new projects
     }
-  }, [libraryData?.components?.length, isGeneratingLibraryDocs, libraryData?.docs?.length, generateLibraryDocs, activeGeneration?.id]);
+  }, [libraryData?.components?.length, isGeneratingLibraryDocs, libraryData?.docs?.length, generateLibraryDocs, activeGeneration?.id, libraryDocsError]);
 
   // AI-Powered Blueprints Analysis (Single Source of Truth)
   const analyzeBlueprints = async () => {
