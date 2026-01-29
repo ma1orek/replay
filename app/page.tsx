@@ -13238,8 +13238,9 @@ ${publishCode}
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => {
-                      if (generatedCode || editableCode) {
-                        buildFlowLive(editableCode || generatedCode);
+                      const code = editableCode || generatedCode;
+                      if (code) {
+                        buildFlowLive(code);
                       }
                     }}
                     className="p-1 hover:bg-zinc-800 rounded transition-colors"
