@@ -3070,7 +3070,7 @@ function ReplayToolContent() {
   const [libraryCodeHash, setLibraryCodeHash] = useState<string | null>(null); // Track which code library was generated from
   const [showLibraryGrid, setShowLibraryGrid] = useState(false);
   // Library sidebar collapse states
-  const [librarySectionsExpanded, setLibrarySectionsExpanded] = useState<Record<string, boolean>>({ docs: true, components: true });
+  const [librarySectionsExpanded, setLibrarySectionsExpanded] = useState<Record<string, boolean>>({ docs: true, foundations: true, primitives: true, components: true, patterns: true, product: true });
   const [libraryCategoriesExpanded, setLibraryCategoriesExpanded] = useState<Record<string, boolean>>({});
   const [showLibraryOutline, setShowLibraryOutline] = useState(false);
   const [showLibraryCode, setShowLibraryCode] = useState(false);
@@ -13307,103 +13307,172 @@ ${publishCode}
                       )}
                     </div>
                     
-                    {/* COMPONENTS Section */}
-                    <div>
-                      <button 
-                        onClick={() => setLibrarySectionsExpanded(prev => ({ ...prev, components: !prev.components }))}
-                        className="w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-semibold text-zinc-500 uppercase tracking-wider hover:text-zinc-300 hover:bg-zinc-800/30 rounded transition-colors"
-                      >
-                        {librarySectionsExpanded.components ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                        <Box className="w-3 h-3" />
-                        COMPONENTS
-                        <span className="text-zinc-600 ml-auto">{libraryData.components?.length || 0}</span>
-                      </button>
-                      {librarySectionsExpanded.components && (
-                        <div className="ml-2 space-y-1 mt-1">
-                          {(() => {
-                            const getCategoryIcon = (cat: string) => {
-                              const icons: Record<string, React.ReactNode> = {
-                                layout: <Layout className="w-3 h-3" />,
-                                navigation: <Map className="w-3 h-3" />,
-                                buttons: <MousePointer className="w-3 h-3" />,
-                                cards: <Box className="w-3 h-3" />,
-                                other: <Box className="w-3 h-3" />,
-                              };
-                              return icons[cat] || <Box className="w-3 h-3" />;
-                            };
+                    {/* ═══════════════════════════════════════════════════════════════════ */}
+                    {/* 5-LAYER DESIGN SYSTEM HIERARCHY */}
+                    {/* ═══════════════════════════════════════════════════════════════════ */}
+                    
+                    {/* Layer config */}
+                    {(() => {
+                      const layers = [
+                        { id: 'foundations', name: 'Foundations', icon: <Palette className="w-3 h-3" />, color: 'text-violet-400', bgColor: 'bg-violet-500/10', description: 'Design tokens' },
+                        { id: 'primitives', name: 'Primitives', icon: <Box className="w-3 h-3" />, color: 'text-blue-400', bgColor: 'bg-blue-500/10', description: 'Atoms' },
+                        { id: 'components', name: 'Components', icon: <Layers className="w-3 h-3" />, color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', description: 'Molecules' },
+                        { id: 'patterns', name: 'Patterns', icon: <Layout className="w-3 h-3" />, color: 'text-amber-400', bgColor: 'bg-amber-500/10', description: 'Recipes' },
+                        { id: 'product', name: 'Product', icon: <Rocket className="w-3 h-3" />, color: 'text-rose-400', bgColor: 'bg-rose-500/10', description: 'Business' },
+                      ];
+                      
+                      // Group components by layer
+                      const componentsByLayer: Record<string, any[]> = {
+                        foundations: [],
+                        primitives: [],
+                        components: [],
+                        patterns: [],
+                        product: []
+                      };
+                      
+                      libraryData.components
+                        ?.filter((comp: any) => 
+                          !librarySearchQuery || 
+                          comp.name?.toLowerCase().includes(librarySearchQuery.toLowerCase()) ||
+                          comp.layer?.toLowerCase().includes(librarySearchQuery.toLowerCase())
+                        )
+                        ?.forEach((comp: any) => {
+                          const layer = comp.layer?.toLowerCase() || 'components';
+                          if (componentsByLayer[layer]) {
+                            componentsByLayer[layer].push(comp);
+                          } else {
+                            componentsByLayer.components.push(comp);
+                          }
+                        });
+                      
+                      return (
+                        <div className="space-y-1">
+                          {layers.map((layer) => {
+                            const layerComponents = componentsByLayer[layer.id] || [];
+                            const isExpanded = librarySectionsExpanded[layer.id] !== false;
+                            const hasItems = layer.id === 'foundations' 
+                              ? Object.keys(libraryData.foundations?.colors || {}).length > 0 || Object.keys(libraryData.foundations?.typography || {}).length > 0
+                              : layerComponents.length > 0;
                             
-                            const categories: Record<string, { color: string; components: any[] }> = {};
-                            libraryData.components
-                              ?.filter((comp: any) => 
-                                !librarySearchQuery || 
-                                comp.name?.toLowerCase().includes(librarySearchQuery.toLowerCase()) ||
-                                comp.category?.toLowerCase().includes(librarySearchQuery.toLowerCase())
-                              )
-                              ?.forEach((comp: any) => {
-                                const cat = comp.category?.toLowerCase() || "other";
-                                if (!categories[cat]) categories[cat] = { color: "text-zinc-400", components: [] };
-                                categories[cat].components.push(comp);
-                              });
-                            
-                            return Object.entries(categories).map(([catName, cat]) => {
-                              const isExpanded = libraryCategoriesExpanded[catName] !== false;
-                              return (
-                                <div key={catName}>
-                                  <button 
-                                    onClick={() => setLibraryCategoriesExpanded(prev => ({ ...prev, [catName]: !isExpanded }))}
-                                    className="w-full flex items-center gap-2 px-2 py-1 text-[10px] font-medium text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30 rounded transition-colors"
-                                  >
-                                    {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                                    {getCategoryIcon(catName)}
-                                    <span>{catName.charAt(0).toUpperCase() + catName.slice(1)}</span>
-                                    <span className="text-zinc-600 ml-auto">{cat.components.length}</span>
-                                  </button>
-                                  {isExpanded && (
-                                    <div className="ml-5 space-y-0.5">
-                                      {cat.components.map((comp: any) => (
-                                        <div
-                                          key={comp.id}
-                                          className={cn(
-                                            "w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md transition-colors group/comp cursor-pointer",
-                                            selectedLibraryItem === `comp-${comp.id}` ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300"
-                                          )}
-                                          onClick={() => {
-                                            setSelectedLibraryItem(`comp-${comp.id}`);
-                                            setLibraryPropsOverride({});
-                                          }}
-                                        >
-                                          <Box className="w-3 h-3 flex-shrink-0" />
-                                          <span className="truncate flex-1 text-left">{comp.name}</span>
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              if (libraryData) {
-                                                const updated = {
-                                                  ...libraryData,
-                                                  components: libraryData.components.filter((c: any) => c.id !== comp.id)
-                                                };
-                                                setLibraryData(updated);
-                                                if (selectedLibraryItem === `comp-${comp.id}`) {
-                                                  setSelectedLibraryItem(null);
-                                                }
-                                              }
-                                            }}
-                                            className="opacity-0 group-hover/comp:opacity-100 p-0.5 hover:bg-zinc-700 rounded transition-opacity"
-                                            title="Delete component"
-                                          >
-                                            <X className="w-3 h-3" />
-                                          </button>
-                                        </div>
-                                      ))}
-                                    </div>
+                            return (
+                              <div key={layer.id}>
+                                <button 
+                                  onClick={() => setLibrarySectionsExpanded(prev => ({ ...prev, [layer.id]: !isExpanded }))}
+                                  className={cn(
+                                    "w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider rounded transition-colors",
+                                    hasItems ? "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/30" : "text-zinc-600"
                                   )}
-                                </div>
-                              );
-                            });
-                          })()}
+                                >
+                                  {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                                  <span className={layer.color}>{layer.icon}</span>
+                                  {layer.name}
+                                  <span className="text-zinc-600 ml-auto text-[9px] font-normal">
+                                    {layer.id === 'foundations' 
+                                      ? `${Object.keys(libraryData.foundations?.colors || {}).length} colors`
+                                      : layerComponents.length
+                                    }
+                                  </span>
+                                </button>
+                                
+                                {isExpanded && (
+                                  <div className="ml-2 space-y-0.5 mt-0.5">
+                                    {/* Foundations layer - show tokens */}
+                                    {layer.id === 'foundations' && (
+                                      <>
+                                        {/* Colors */}
+                                        {Object.keys(libraryData.foundations?.colors || {}).length > 0 && (
+                                          <button
+                                            onClick={() => setSelectedLibraryItem('doc-colors')}
+                                            className={cn(
+                                              "w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md transition-colors",
+                                              selectedLibraryItem === 'doc-colors' ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300"
+                                            )}
+                                          >
+                                            <Palette className="w-3 h-3 text-violet-400" />
+                                            <span>Colors</span>
+                                            <span className="text-zinc-600 ml-auto text-[10px]">{Object.keys(libraryData.foundations?.colors || {}).length}</span>
+                                          </button>
+                                        )}
+                                        {/* Typography */}
+                                        {Object.keys(libraryData.foundations?.typography?.fontSize || {}).length > 0 && (
+                                          <button
+                                            onClick={() => setSelectedLibraryItem('doc-typography')}
+                                            className={cn(
+                                              "w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md transition-colors",
+                                              selectedLibraryItem === 'doc-typography' ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300"
+                                            )}
+                                          >
+                                            <Type className="w-3 h-3 text-violet-400" />
+                                            <span>Typography</span>
+                                          </button>
+                                        )}
+                                        {/* Spacing */}
+                                        {Object.keys(libraryData.foundations?.spacing || {}).length > 0 && (
+                                          <button
+                                            onClick={() => setSelectedLibraryItem('doc-spacing')}
+                                            className={cn(
+                                              "w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md transition-colors",
+                                              selectedLibraryItem === 'doc-spacing' ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300"
+                                            )}
+                                          >
+                                            <Ruler className="w-3 h-3 text-violet-400" />
+                                            <span>Spacing</span>
+                                          </button>
+                                        )}
+                                      </>
+                                    )}
+                                    
+                                    {/* Other layers - show components */}
+                                    {layer.id !== 'foundations' && layerComponents.map((comp: any) => (
+                                      <div
+                                        key={comp.id}
+                                        className={cn(
+                                          "w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md transition-colors group/comp cursor-pointer",
+                                          selectedLibraryItem === comp.id ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300"
+                                        )}
+                                        onClick={() => {
+                                          setSelectedLibraryItem(comp.id);
+                                          setLibraryPropsOverride({});
+                                        }}
+                                      >
+                                        <span className={layer.color}>{layer.icon}</span>
+                                        <span className="truncate flex-1 text-left">{comp.name}</span>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (libraryData) {
+                                              const updated = {
+                                                ...libraryData,
+                                                components: libraryData.components.filter((c: any) => c.id !== comp.id)
+                                              };
+                                              setLibraryData(updated);
+                                              if (selectedLibraryItem === comp.id) {
+                                                setSelectedLibraryItem(null);
+                                              }
+                                            }
+                                          }}
+                                          className="opacity-0 group-hover/comp:opacity-100 p-0.5 hover:bg-zinc-700 rounded transition-opacity"
+                                          title="Delete component"
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </button>
+                                      </div>
+                                    ))}
+                                    
+                                    {/* Empty state */}
+                                    {layer.id !== 'foundations' && layerComponents.length === 0 && (
+                                      <div className="px-2 py-2 text-[10px] text-zinc-600 italic">
+                                        No {layer.name.toLowerCase()} extracted
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
-                      )}
-                    </div>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
