@@ -686,6 +686,21 @@ interface LibraryData {
   components: LibraryComponent[];
   docs: LibraryDoc[];
   tokens: DesignTokens;
+  foundations?: {
+    colors?: Record<string, string>;
+    typography?: {
+      fontFamily?: Record<string, string>;
+      fontSize?: Record<string, string>;
+      fontWeight?: Record<string, number>;
+      lineHeight?: Record<string, number | string>;
+    };
+    spacing?: Record<string, string>;
+    borderRadius?: Record<string, string>;
+    shadows?: Record<string, string>;
+  };
+  primitives?: LibraryComponent[];
+  patterns?: LibraryComponent[];
+  product?: LibraryComponent[];
 }
 
 // Library UI state
