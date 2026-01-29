@@ -13261,6 +13261,87 @@ ${publishCode}
                       </button>
                     )}
                     
+                    {/* Export Buttons */}
+                    {libraryData?.components?.length > 0 && (
+                      <div className="flex gap-1 mb-2">
+                        <button
+                          onClick={() => {
+                            // Export HTML - convert JSX to clean HTML
+                            const components = libraryData?.components || [];
+                            let html = `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>Components Library</title>\n  <script src="https://cdn.tailwindcss.com"></script>\n</head>\n<body class="bg-zinc-900 p-8">\n\n`;
+                            
+                            components.forEach((comp: any) => {
+                              const code = comp.code || '';
+                              // Convert JSX to HTML
+                              const htmlCode = code
+                                .replace(/className=/g, 'class=')
+                                .replace(/htmlFor=/g, 'for=')
+                                .replace(/\{\/\*.*?\*\/\}/g, '')
+                                .replace(/\{`([^`]*)`\}/g, '$1')
+                                .replace(/\{"([^"]*)"\}/g, '$1')
+                                .replace(/\{([^}]+)\}/g, '{{$1}}'); // Convert props to placeholders
+                              
+                              html += `<!-- ${comp.name} -->\n<div class="mb-12">\n  <h2 class="text-xl font-bold text-white mb-4">${comp.name}</h2>\n  <div class="p-4 border border-zinc-700 rounded-lg">\n    ${htmlCode}\n  </div>\n</div>\n\n`;
+                            });
+                            
+                            html += `</body>\n</html>`;
+                            
+                            const blob = new Blob([html], { type: 'text/html' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'components-library.html';
+                            a.click();
+                            URL.revokeObjectURL(url);
+                            showToast("HTML exported!", "success");
+                          }}
+                          className="flex-1 px-2 py-1.5 text-[10px] border border-zinc-700/50 bg-zinc-800/30 text-zinc-400 rounded-md hover:bg-zinc-800 hover:text-zinc-300 flex items-center justify-center gap-1 transition-colors"
+                        >
+                          <Code className="w-3 h-3" />
+                          HTML
+                        </button>
+                        <button
+                          onClick={() => {
+                            // Export JSON Schema for CMS
+                            const components = libraryData?.components || [];
+                            const schema = {
+                              "$schema": "http://json-schema.org/draft-07/schema#",
+                              "title": "Design System Components",
+                              "description": "JSON Schema for CMS content mapping",
+                              "components": components.map((comp: any) => ({
+                                "name": comp.name,
+                                "id": comp.id,
+                                "description": comp.description || "",
+                                "category": comp.category || "component",
+                                "layer": comp.layer || "components",
+                                "fields": (comp.props || []).map((prop: any) => ({
+                                  "name": prop.name,
+                                  "type": prop.type || "string",
+                                  "required": prop.required || false,
+                                  "default": prop.default || null,
+                                  "description": prop.description || "",
+                                  "options": prop.options || null
+                                }))
+                              }))
+                            };
+                            
+                            const blob = new Blob([JSON.stringify(schema, null, 2)], { type: 'application/json' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'components-schema.json';
+                            a.click();
+                            URL.revokeObjectURL(url);
+                            showToast("JSON Schema exported!", "success");
+                          }}
+                          className="flex-1 px-2 py-1.5 text-[10px] border border-zinc-700/50 bg-zinc-800/30 text-zinc-400 rounded-md hover:bg-zinc-800 hover:text-zinc-300 flex items-center justify-center gap-1 transition-colors"
+                        >
+                          <FileText className="w-3 h-3" />
+                          Schema
+                        </button>
+                      </div>
+                    )}
+                    
                     {/* DOCS Section */}
                     <div className="mb-2">
                       <div className="flex items-center">
@@ -18563,10 +18644,104 @@ export default function GeneratedPage() {
                                     <div className="flex items-center justify-between mb-4">
                                       <h2 className={cn("text-lg font-semibold", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Color Palettes</h2>
                                       <div className="flex items-center gap-2">
-                                        <button className={cn("px-3 py-1.5 text-xs rounded-lg transition-colors", libraryBackground === "light" ? "bg-zinc-100 text-zinc-600 hover:bg-zinc-200" : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700")}>
+                                        <button 
+                                          onClick={() => {
+                                            const tokens = libraryData?.tokens || libraryData?.foundations || {};
+                                            const colors = tokens.colors || {};
+                                            const typography = tokens.typography || {};
+                                            const spacing = tokens.spacing || {};
+                                            const borderRadius = tokens.borderRadius || {};
+                                            const shadows = tokens.shadows || {};
+                                            
+                                            let css = `:root {\n  /* Colors */\n`;
+                                            Object.entries(colors).forEach(([name, value]) => {
+                                              const val = typeof value === 'string' ? value : (typeof value === 'object' && value !== null ? ((value as any).bg || (value as any).value || '#000') : '#000');
+                                              css += `  --color-${name.toLowerCase().replace(/\s+/g, '-')}: ${val};\n`;
+                                            });
+                                            css += `\n  /* Typography */\n`;
+                                            if (typography.fontFamily) {
+                                              Object.entries(typography.fontFamily).forEach(([name, value]) => {
+                                                css += `  --font-${name}: ${value};\n`;
+                                              });
+                                            }
+                                            if (typography.fontSize) {
+                                              Object.entries(typography.fontSize).forEach(([name, value]) => {
+                                                css += `  --font-size-${name}: ${value};\n`;
+                                              });
+                                            }
+                                            css += `\n  /* Spacing */\n`;
+                                            Object.entries(spacing).forEach(([name, value]) => {
+                                              css += `  --spacing-${name}: ${value};\n`;
+                                            });
+                                            css += `\n  /* Border Radius */\n`;
+                                            Object.entries(borderRadius).forEach(([name, value]) => {
+                                              css += `  --radius-${name}: ${value};\n`;
+                                            });
+                                            css += `\n  /* Shadows */\n`;
+                                            Object.entries(shadows).forEach(([name, value]) => {
+                                              css += `  --shadow-${name}: ${value};\n`;
+                                            });
+                                            css += `}\n`;
+                                            
+                                            const blob = new Blob([css], { type: 'text/css' });
+                                            const url = URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = 'design-tokens.css';
+                                            a.click();
+                                            URL.revokeObjectURL(url);
+                                            showToast("CSS exported!", "success");
+                                          }}
+                                          className={cn("px-3 py-1.5 text-xs rounded-lg transition-colors", libraryBackground === "light" ? "bg-zinc-100 text-zinc-600 hover:bg-zinc-200" : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700")}
+                                        >
                                           Export CSS
                                         </button>
-                                        <button className={cn("px-3 py-1.5 text-xs rounded-lg transition-colors", libraryBackground === "light" ? "bg-zinc-100 text-zinc-600 hover:bg-zinc-200" : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700")}>
+                                        <button 
+                                          onClick={() => {
+                                            const tokens = libraryData?.tokens || libraryData?.foundations || {};
+                                            const colors = tokens.colors || {};
+                                            const typography = tokens.typography || {};
+                                            const spacing = tokens.spacing || {};
+                                            const borderRadius = tokens.borderRadius || {};
+                                            
+                                            const colorsObj: Record<string, string> = {};
+                                            Object.entries(colors).forEach(([name, value]) => {
+                                              const val = typeof value === 'string' ? value : (typeof value === 'object' && value !== null ? ((value as any).bg || (value as any).value || '#000') : '#000');
+                                              colorsObj[name.toLowerCase().replace(/\s+/g, '-')] = val;
+                                            });
+                                            
+                                            const fontFamilyObj: Record<string, string[]> = {};
+                                            if (typography.fontFamily) {
+                                              Object.entries(typography.fontFamily).forEach(([name, value]) => {
+                                                fontFamilyObj[name] = [String(value)];
+                                              });
+                                            }
+                                            
+                                            const config = `/** @type {import('tailwindcss').Config} */
+module.exports = {
+  theme: {
+    extend: {
+      colors: ${JSON.stringify(colorsObj, null, 8).replace(/^/gm, '      ').trim()},
+      fontFamily: ${JSON.stringify(fontFamilyObj, null, 8).replace(/^/gm, '      ').trim()},
+      spacing: ${JSON.stringify(spacing, null, 8).replace(/^/gm, '      ').trim()},
+      borderRadius: ${JSON.stringify(borderRadius, null, 8).replace(/^/gm, '      ').trim()},
+    },
+  },
+  plugins: [],
+}
+`;
+                                            
+                                            const blob = new Blob([config], { type: 'text/javascript' });
+                                            const url = URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = 'tailwind.config.js';
+                                            a.click();
+                                            URL.revokeObjectURL(url);
+                                            showToast("Tailwind config exported!", "success");
+                                          }}
+                                          className={cn("px-3 py-1.5 text-xs rounded-lg transition-colors", libraryBackground === "light" ? "bg-zinc-100 text-zinc-600 hover:bg-zinc-200" : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700")}
+                                        >
                                           Export Tailwind
                                         </button>
                                       </div>
