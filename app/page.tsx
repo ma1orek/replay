@@ -14243,26 +14243,9 @@ ${publishCode}
                         {/* Info tooltip */}
                         <div className="relative group">
                           <Info className="w-3 h-3 text-white/30 hover:text-white/50 cursor-help transition-colors" />
-                          <div className="fixed left-[280px] top-[140px] w-72 p-4 rounded-xl bg-zinc-900/95 backdrop-blur-sm border border-white/10 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999]">
-                            <p className="text-xs font-semibold text-white mb-3">Input Guidelines</p>
-                            <div className="space-y-3">
-                              <div className="flex gap-3 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                                <Film className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-                                <div>
-                                  <p className="text-[11px] font-semibold text-emerald-400 mb-1">Video (Best Results)</p>
-                                  <p className="text-[10px] text-white/60 leading-relaxed">Upload .mp4 or .mov. Captures user flows, interactions, hover states, and dynamic logic.</p>
-                                  <p className="text-[10px] text-white/40 italic mt-1.5">Tip: Record the full user journey for a complete flow map.</p>
-                                </div>
-                              </div>
-                              <div className="flex gap-3 p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                                <ImageIcon className="w-5 h-5 text-blue-400 flex-shrink-0" />
-                                <div>
-                                  <p className="text-[11px] font-semibold text-blue-400 mb-1">Static Images</p>
-                                  <p className="text-[10px] text-white/60 leading-relaxed">Upload .png or .jpg. Best for extracting visual structure, typography, and colors.</p>
-                                  <p className="text-[10px] text-white/40 italic mt-1.5">Logic and motion will be inferred by AI.</p>
-                                </div>
-                              </div>
-                            </div>
+                          <div className="absolute left-0 bottom-full mb-2 w-48 p-2 rounded-md bg-zinc-800 border border-zinc-700 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100]">
+                            <p className="text-[10px] text-white/70 mb-1.5"><span className="text-white/90 font-medium">Video</span> — flows, interactions, logic</p>
+                            <p className="text-[10px] text-white/70"><span className="text-white/90 font-medium">Image</span> — layout, colors, typography</p>
                           </div>
                         </div>
                       </span>
@@ -14466,26 +14449,9 @@ ${publishCode}
                     {/* Info tooltip */}
                     <div className="relative group">
                       <Info className="w-3 h-3 text-white/30 hover:text-white/50 cursor-help transition-colors" />
-                      <div className="fixed left-[280px] top-[140px] w-72 p-4 rounded-xl bg-zinc-900/95 backdrop-blur-sm border border-white/10 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999]">
-                        <p className="text-xs font-semibold text-white mb-3">Input Guidelines</p>
-                        <div className="space-y-3">
-                          <div className="flex gap-3 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                            <Film className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-                            <div>
-                              <p className="text-[11px] font-semibold text-emerald-400 mb-1">Video (Best Results)</p>
-                              <p className="text-[10px] text-white/60 leading-relaxed">Upload .mp4 or .mov. Captures user flows, interactions, hover states, and dynamic logic.</p>
-                              <p className="text-[10px] text-white/40 italic mt-1.5">Tip: Record the full user journey for a complete flow map.</p>
-                            </div>
-                          </div>
-                          <div className="flex gap-3 p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                            <ImageIcon className="w-5 h-5 text-blue-400 flex-shrink-0" />
-                            <div>
-                              <p className="text-[11px] font-semibold text-blue-400 mb-1">Static Images</p>
-                              <p className="text-[10px] text-white/60 leading-relaxed">Upload .png or .jpg. Best for extracting visual structure, typography, and colors.</p>
-                              <p className="text-[10px] text-white/40 italic mt-1.5">Logic and motion will be inferred by AI.</p>
-                            </div>
-                          </div>
-                        </div>
+                      <div className="absolute left-0 bottom-full mb-2 w-48 p-2 rounded-md bg-zinc-800 border border-zinc-700 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100]">
+                        <p className="text-[10px] text-white/70 mb-1.5"><span className="text-white/90 font-medium">Video</span> — flows, interactions, logic</p>
+                        <p className="text-[10px] text-white/70"><span className="text-white/90 font-medium">Image</span> — layout, colors, typography</p>
                       </div>
                     </div>
                   </span>
