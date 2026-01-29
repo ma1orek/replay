@@ -425,18 +425,21 @@ function SettingsContent() {
                     </div>
                     <span className="text-sm text-zinc-400">{user?.email || "—"}</span>
                   </div>
-                </div>
-              </div>
 
-              {/* Danger Zone */}
-              <div className="bg-[#141414]/80 backdrop-blur border border-red-500/20 rounded-2xl p-6">
-                <h2 className="text-base font-semibold text-red-400 mb-4">Danger zone</h2>
-                <button
-                  onClick={() => signOut()}
-                  className="px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-medium hover:bg-red-500/20 transition-colors"
-                >
-                  Sign out
-                </button>
+                  {/* Sign out */}
+                  <div className="flex items-center justify-between py-4 border-t border-zinc-800/50">
+                    <div>
+                      <label className="text-sm text-zinc-300">Sign out</label>
+                      <p className="text-xs text-zinc-500">Log out from your account</p>
+                    </div>
+                    <button
+                      onClick={() => signOut()}
+                      className="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-sm text-zinc-300 transition-colors"
+                    >
+                      Sign out
+                    </button>
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}
