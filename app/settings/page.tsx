@@ -532,9 +532,11 @@ function SettingsContent() {
                     ) : (
                       <h2 className="text-2xl font-bold text-zinc-100 capitalize flex items-center gap-2">
                         {currentPlan === "free" ? "Sandbox" : currentPlan}
-                        {currentPlan === "pro" && <span className="px-2 py-0.5 text-xs bg-[#FF6E3C] text-white rounded-full">PRO</span>}
-                        {currentPlan === "agency" && <span className="px-2 py-0.5 text-xs bg-purple-500 text-white rounded-full">AGENCY</span>}
-                        {currentPlan === "enterprise" && <span className="px-2 py-0.5 text-xs bg-blue-500 text-white rounded-full">ENTERPRISE</span>}
+                        {currentPlan !== "free" && (
+                          <span className="px-2 py-0.5 text-xs bg-zinc-700 text-zinc-300 rounded-full uppercase">
+                            {currentPlan}
+                          </span>
+                        )}
                       </h2>
                     )}
                     {membership?.current_period_end && (currentPlan === "pro" || currentPlan === "agency") && (
@@ -607,7 +609,7 @@ function SettingsContent() {
                 {/* Pro - $149/mo */}
                 <div className={cn(
                   "bg-[#141414]/80 backdrop-blur border rounded-2xl p-6 relative",
-                  currentPlan === "pro" ? "border-[#FF6E3C]" : "border-zinc-800/50"
+                  currentPlan === "pro" ? "border-zinc-500" : "border-zinc-800/50"
                 )}>
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                     <span className="px-3 py-1 text-xs bg-[#FF6E3C] text-white rounded-full font-medium">Most Popular</span>
@@ -633,7 +635,7 @@ function SettingsContent() {
                     <button
                       onClick={handleManageSubscription}
                       disabled={isManagingSubscription}
-                      className="w-full py-2.5 rounded-xl text-sm bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors"
+                      className="w-full py-2.5 rounded-xl text-sm bg-zinc-700 text-zinc-200 hover:bg-zinc-600 transition-colors"
                     >
                       {isManagingSubscription ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Manage Plan"}
                     </button>
@@ -641,7 +643,7 @@ function SettingsContent() {
                     <button
                       onClick={handleProSubscription}
                       disabled={isCheckingOut === "pro"}
-                      className="w-full py-2.5 rounded-xl text-sm bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white font-medium hover:opacity-90 transition-all"
+                      className="w-full py-2.5 rounded-xl text-sm bg-white text-black font-medium hover:bg-zinc-200 transition-all"
                     >
                       {isCheckingOut === "pro" ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Get Started"}
                     </button>
@@ -651,7 +653,7 @@ function SettingsContent() {
                 {/* Agency - $499/mo */}
                 <div className={cn(
                   "bg-[#141414]/80 backdrop-blur border rounded-2xl p-6",
-                  currentPlan === "agency" ? "border-purple-500" : "border-zinc-800/50"
+                  currentPlan === "agency" ? "border-zinc-500" : "border-zinc-800/50"
                 )}>
                   <div className="mb-4">
                     <h3 className="text-lg font-semibold text-zinc-200">{AGENCY_PLAN.name}</h3>
@@ -673,7 +675,7 @@ function SettingsContent() {
                     <button
                       onClick={handleManageSubscription}
                       disabled={isManagingSubscription}
-                      className="w-full py-2.5 rounded-xl text-sm bg-purple-500/10 text-purple-400 border border-purple-500/30 hover:bg-purple-500/20 transition-colors"
+                      className="w-full py-2.5 rounded-xl text-sm bg-zinc-700 text-zinc-200 hover:bg-zinc-600 transition-colors"
                     >
                       {isManagingSubscription ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Manage Plan"}
                     </button>
@@ -690,7 +692,7 @@ function SettingsContent() {
                 {/* Enterprise - Custom */}
                 <div className={cn(
                   "bg-[#141414]/80 backdrop-blur border rounded-2xl p-6",
-                  currentPlan === "enterprise" ? "border-blue-500" : "border-zinc-800/50"
+                  currentPlan === "enterprise" ? "border-zinc-500" : "border-zinc-800/50"
                 )}>
                   <div className="mb-4">
                     <h3 className="text-lg font-semibold text-zinc-200">Enterprise</h3>
@@ -714,7 +716,7 @@ function SettingsContent() {
                     ))}
                   </ul>
                   {currentPlan === "enterprise" ? (
-                    <div className="w-full py-2.5 rounded-xl text-sm text-center bg-blue-500/10 text-blue-400 border border-blue-500/30">
+                    <div className="w-full py-2.5 rounded-xl text-sm text-center bg-zinc-700 text-zinc-200">
                       Current Plan
                     </div>
                   ) : (
