@@ -30,7 +30,8 @@ export type CreditReason =
   | "rollover_grant" 
   | "topup_purchase" 
   | "admin_adjust"
-  | "signup_bonus";
+  | "signup_bonus"
+  | "sandbox_signup";
 export type GenerationStatus = "queued" | "running" | "complete" | "failed";
 
 export interface Profile {
