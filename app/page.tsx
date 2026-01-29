@@ -19540,10 +19540,46 @@ window.onload=()=>{
 };
 // Observe body for changes
 new ResizeObserver(()=>{setTimeout(autoResize,10)}).observe(document.body);
-// Force load images
-document.querySelectorAll('img').forEach(img=>{
-  if(!img.complete){img.onload=autoResize;img.onerror=()=>{img.style.display='none'}}
-});
+// Fix broken images - replace with Unsplash placeholders (same as Library)
+const fixBrokenImages = () => {
+  document.querySelectorAll('img').forEach((img, index) => {
+    if (img.dataset.fixed) return;
+    const src = img.getAttribute('src') || '';
+    const isBroken = !src || src === '' || 
+      src.startsWith('/') || src.startsWith('./') || src.startsWith('../') ||
+      src.includes('placeholder') || src.includes('example.com') ||
+      src.includes('undefined') || src.includes('null');
+    if (isBroken) {
+      const alt = (img.getAttribute('alt') || '').toLowerCase();
+      const className = (img.className || '').toLowerCase();
+      let query = 'abstract';
+      if (alt.includes('avatar') || alt.includes('profile') || className.includes('avatar') || className.includes('rounded-full')) {
+        query = 'portrait,face';
+      } else if (alt.includes('blog') || alt.includes('cover') || alt.includes('hero')) {
+        query = 'technology,minimal';
+      } else if (alt.includes('product')) {
+        query = 'product,minimal';
+      }
+      const photos = ['1618005182384-a83a8bd57fbe', '1557683316-973673baf926', '1579546929518-9e396f3cc809', '1558591710-4b4a1ae0f04d', '1557804506-669a67965ba0'];
+      img.src = 'https://images.unsplash.com/photo-' + photos[index % 5] + '?w=400&h=300&fit=crop&auto=format';
+      img.dataset.fixed = 'true';
+    }
+    img.onerror = function() {
+      if (!this.dataset.errorFixed) {
+        const photos = ['1618005182384-a83a8bd57fbe', '1557683316-973673baf926', '1579546929518-9e396f3cc809'];
+        this.src = 'https://images.unsplash.com/photo-' + photos[Math.floor(Math.random() * 3)] + '?w=400&h=300&fit=crop&auto=format';
+        this.dataset.errorFixed = 'true';
+      }
+    };
+    if(!img.complete){img.onload=autoResize}
+  });
+};
+// Run fixes
+setTimeout(fixBrokenImages, 100);
+setTimeout(fixBrokenImages, 500);
+setTimeout(fixBrokenImages, 1500);
+// Also observe mutations
+new MutationObserver(()=>{fixBrokenImages()}).observe(document.body,{childList:true,subtree:true});
 </script>
 </head><body>${jsxToHtml(stableCode)}</body></html>`}
                                           className="border-0 pointer-events-none"
