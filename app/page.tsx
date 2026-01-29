@@ -11180,8 +11180,15 @@ Try these prompts in Cursor or v0:
   const handleDownload = () => {
     if (!editableCode) return;
     
-    // Demo mode: require sign up to download
-    if (isDemoMode && !user) {
+    // Demo mode: download is Pro feature
+    if (isDemoMode) {
+      setUpgradeFeature("download");
+      setShowUpgradeModal(true);
+      return;
+    }
+    
+    // Not logged in: require sign up
+    if (!user) {
       setShowAuthModal(true);
       showToast("Sign up free to download code. You get 1 free generation!", "info");
       return;
@@ -11202,8 +11209,15 @@ Try these prompts in Cursor or v0:
   const handlePublishClick = () => {
     if (!editableCode) return;
     
-    // Demo mode: require sign up to publish
-    if (isDemoMode && !user) {
+    // Demo mode: publish is Pro feature
+    if (isDemoMode) {
+      setUpgradeFeature("publish");
+      setShowUpgradeModal(true);
+      return;
+    }
+    
+    // Not logged in: require sign up
+    if (!user) {
       setShowAuthModal(true);
       showToast("Sign up free to publish. You get 1 free generation!", "info");
       return;
@@ -13718,8 +13732,8 @@ ${publishCode}
                   {/* Input Area - Minimal */}
                   <div className="flex-shrink-0 p-2 border-t border-zinc-800">
                     <div className="rounded-xl bg-zinc-800/50 border border-white/[0.05] relative">
-                      {/* Auth overlay for non-logged users only - BUT NOT in demo mode (let them see everything) */}
-                      {!user && !DEMO_PROJECT_IDS.has(activeGeneration?.id || '') && (
+                      {/* Auth overlay - only for non-logged users (demo mode can see but not use) */}
+                      {!user && (
                         <div 
                           onClick={() => {
                             setShowAuthModal(true);
@@ -13733,17 +13747,33 @@ ${publishCode}
                           </div>
                         </div>
                       )}
+                      {/* Pro feature overlay for demo mode (logged in but viewing demo) */}
+                      {user && isDemoMode && (
+                        <div 
+                          onClick={() => {
+                            setUpgradeFeature("code");
+                            setShowUpgradeModal(true);
+                          }}
+                          className="absolute inset-0 z-10 cursor-pointer flex items-center justify-center bg-zinc-900/80 backdrop-blur-[2px] rounded-xl"
+                        >
+                          <div className="flex items-center gap-2 text-zinc-400 text-xs">
+                            <Sparkles className="w-3.5 h-3.5 text-[#FF6E3C]" />
+                            <span>AI Edit is a Pro feature</span>
+                          </div>
+                        </div>
+                      )}
                       <textarea
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
-                        disabled={!user && !DEMO_PROJECT_IDS.has(activeGeneration?.id || '')}
+                        disabled={!user}
                         onPaste={handlePasteImage}
                         onKeyDown={async (e) => {
                           if (e.key === "Enter" && !e.shiftKey && chatInput.trim() && editableCode) {
                             e.preventDefault();
-                            // Demo mode: show message that this is read-only
-                            if (DEMO_PROJECT_IDS.has(activeGeneration?.id || '')) {
-                              showToast("This is a read-only demo. Sign up to create your own projects!", "info");
+                            // Demo mode: AI Edit is Pro feature
+                            if (isDemoMode) {
+                              setUpgradeFeature("code");
+                              setShowUpgradeModal(true);
                               return;
                             }
                             // Auth check - only block non-logged users
@@ -15011,7 +15041,14 @@ ${publishCode}
               <div className="relative">
                 <button
                   onClick={() => {
-                    if (!user || isDemoMode) {
+                    // Demo mode: publish is Pro feature
+                    if (isDemoMode) {
+                      setUpgradeFeature("publish");
+                      setShowUpgradeModal(true);
+                      return;
+                    }
+                    // Not logged in: require sign up
+                    if (!user) {
                       setShowAuthModal(true);
                       showToast("Sign up free to publish. You get 1 free generation!", "info");
                       return;
@@ -16153,7 +16190,12 @@ export default function GeneratedPage() {
                                     className="flow-node-btn flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-medium bg-zinc-700 hover:bg-zinc-600 text-white transition-colors"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      if (!user || isDemoMode) {
+                                      if (isDemoMode) {
+                                        setUpgradeFeature("code");
+                                        setShowUpgradeModal(true);
+                                        return;
+                                      }
+                                      if (!user) {
                                         setShowAuthModal(true);
                                         showToast("Sign up free to reconstruct pages!", "info");
                                         return;
@@ -16172,7 +16214,12 @@ export default function GeneratedPage() {
                                     className="flow-node-btn flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-medium bg-zinc-800/50 hover:bg-white/10 text-zinc-500 transition-colors"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      if (!user || isDemoMode) {
+                                      if (isDemoMode) {
+                                        setUpgradeFeature("code");
+                                        setShowUpgradeModal(true);
+                                        return;
+                                      }
+                                      if (!user) {
                                         setShowAuthModal(true);
                                         showToast("Sign up free to generate pages!", "info");
                                         return;
@@ -22683,8 +22730,8 @@ new MutationObserver(()=>{fixBrokenImages()}).observe(document.body,{childList:t
             {/* Chat Input - Only show in chat tab */}
             {sidebarTab === "chat" && (
             <div className="p-3 border-t border-zinc-800 flex-shrink-0 relative">
-              {/* Auth overlay for non-logged users OR demo mode - Mobile */}
-              {(!user || isDemoMode) && (
+              {/* Auth overlay for non-logged users - Mobile */}
+              {!user && (
                 <div 
                   onClick={() => {
                     setShowAuthModal(true);
@@ -22695,6 +22742,21 @@ new MutationObserver(()=>{fixBrokenImages()}).observe(document.body,{childList:t
                   <div className="flex items-center gap-2 text-zinc-400 text-sm">
                     <Lock className="w-4 h-4" />
                     <span>Sign up to edit with AI</span>
+                  </div>
+                </div>
+              )}
+              {/* Pro feature overlay for demo mode - Mobile */}
+              {user && isDemoMode && (
+                <div 
+                  onClick={() => {
+                    setUpgradeFeature("code");
+                    setShowUpgradeModal(true);
+                  }}
+                  className="absolute inset-0 z-10 cursor-pointer flex items-center justify-center bg-zinc-900/80 backdrop-blur-[2px]"
+                >
+                  <div className="flex items-center gap-2 text-zinc-400 text-sm">
+                    <Sparkles className="w-4 h-4 text-[#FF6E3C]" />
+                    <span>AI Edit is a Pro feature</span>
                   </div>
                 </div>
               )}
@@ -22714,13 +22776,19 @@ new MutationObserver(()=>{fixBrokenImages()}).observe(document.body,{childList:t
                   <textarea
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
-                    disabled={!user || isDemoMode}
+                    disabled={!user}
                     onPaste={handlePasteImage}
                     onKeyDown={async (e) => {
                       if (e.key === "Enter" && !e.shiftKey && chatInput.trim() && editableCode) {
                         e.preventDefault();
-                        // Auth check on mobile - block non-logged users AND demo mode
-                        if (!user || isDemoMode) {
+                        // Demo mode: AI Edit is Pro feature
+                        if (isDemoMode) {
+                          setUpgradeFeature("code");
+                          setShowUpgradeModal(true);
+                          return;
+                        }
+                        // Auth check on mobile - block non-logged users
+                        if (!user) {
                           setShowAuthModal(true);
                           showToast("Sign up free to edit with AI. Get 1 free generation!", "info");
                           return;
