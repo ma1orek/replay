@@ -2292,12 +2292,13 @@ const InteractiveReactPreview = ({
       background: transparent; 
       color: ${textColor}; 
       font-family: system-ui, -apple-system, sans-serif;
-      width: auto;
-      min-width: auto;
+      width: 100%;
+      min-width: 100%;
+      overflow-x: hidden;
     }
     #root { 
-      width: auto;
-      display: inline-block;
+      width: 100%;
+      min-height: 100px;
     }
     .error-display {
       background: #fef2f2;
@@ -2617,7 +2618,7 @@ const InteractiveReactPreview = ({
   }, [onSizeChange]);
 
   return (
-    <div className={cn("relative inline-block", className)}>
+    <div className={cn("relative w-full", className)}>
       {error && (
         <div className="absolute top-2 left-2 right-2 z-10 bg-red-500/90 text-white text-xs p-2 rounded">
           {error}
@@ -2626,12 +2627,12 @@ const InteractiveReactPreview = ({
       <iframe
         ref={iframeRef}
         srcDoc={iframeDoc}
-        className="border-0"
+        className="border-0 w-full"
         style={{ 
-          width: iframeWidth ? `${iframeWidth}px` : 'auto',
-          minWidth: '120px',
-          maxWidth: '100%',
+          width: '100%',
+          minWidth: '100%',
           height: `${iframeHeight}px`, 
+          minHeight: '150px',
           background: 'transparent',
         }}
         sandbox="allow-scripts allow-same-origin"
@@ -18078,15 +18079,6 @@ export default function GeneratedPage() {
                                       </p>
                                     </div>
                                     <div className="flex items-center gap-2 flex-wrap">
-                                      <span className="px-3 py-1 text-xs rounded-full font-medium bg-zinc-800 text-zinc-300 border border-zinc-700">
-                                        WCAG 2.1 AA
-                                      </span>
-                                      <span className="px-3 py-1 text-xs rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
-                                        P3 Wide Gamut
-                                      </span>
-                                      <span className="px-3 py-1 text-xs rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
-                                        {selectedDoc.content?.accessibilityScore || "92% AA Compliant"}
-                                      </span>
                                       <span className="px-3 py-1 text-xs rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
                                         {selectedDoc.content?.themeType || "Dark Theme"}
                                       </span>
@@ -18640,10 +18632,6 @@ export default function GeneratedPage() {
                                       <p className={cn("text-sm", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
                                         OKLCH-powered color scales with WCAG accessibility compliance
                                       </p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <span className={cn("px-2 py-1 text-[10px] rounded-full font-medium", libraryBackground === "light" ? "bg-emerald-100 text-emerald-700" : "bg-emerald-500/20 text-emerald-400")}>WCAG 2.1 AA</span>
-                                      <span className={cn("px-2 py-1 text-[10px] rounded-full font-medium", libraryBackground === "light" ? "bg-blue-100 text-blue-700" : "bg-blue-500/20 text-blue-400")}>P3 Wide Gamut</span>
                                     </div>
                                   </div>
                                   
@@ -20637,7 +20625,7 @@ module.exports = {
                                         .replace(/pollinations\.ai\/prompt\/([^?]+)\?/g, `pollinations.ai/prompt/$1?seed=${comp.id || 'stable'}&`);
                                       
                                       return (
-                                      <div className="relative inline-flex">
+                                      <div className="relative w-full">
                                         <iframe
                                           key={`bp-iframe-${comp.id}-${isSelected && blueprintEditedCode ? blueprintEditedCode.slice(0, 50) : 'orig'}`}
                                           srcDoc={`<!DOCTYPE html>
@@ -20777,9 +20765,10 @@ new MutationObserver(()=>{fixBrokenImages()}).observe(document.body,{childList:t
                                             } catch(err) {}
                                           }}
                                           style={{ 
-                                            width: size?.width ? `${size.width}px` : 'fit-content',
-                                            height: size?.height ? `${size.height}px` : 'fit-content',
-                                            // No min-width - hug content
+                                            width: size?.width ? `${size.width}px` : '100%',
+                                            height: size?.height ? `${size.height}px` : 'auto',
+                                            minWidth: '200px',
+                                            minHeight: '100px',
                                             background: 'transparent',
                                             display: 'block'
                                           }}
