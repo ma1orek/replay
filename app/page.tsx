@@ -13176,7 +13176,7 @@ ${publishCode}
                             const result = await response.json();
                             if (result.success && result.data) {
                               setLibraryData(result.data);
-                              setSelectedLibraryItem("doc-welcome");
+                              setSelectedLibraryItem("doc-overview");
                               // Update localStorage backup with library data
                               if (activeGeneration?.id) {
                                 try {
@@ -13230,7 +13230,7 @@ ${publishCode}
                             if (result.success && result.data) {
                               setLibraryData(result.data);
                               setLibraryCodeHash((editableCode || generatedCode).slice(0, 500) + (editableCode || generatedCode).length);
-                              setSelectedLibraryItem("doc-welcome");
+                              setSelectedLibraryItem("doc-overview");
                               // Update localStorage backup with library data
                               if (activeGeneration?.id) {
                                 try {
@@ -19352,7 +19352,7 @@ module.exports = {
                               
                               {/* Preview Box with Show Code button */}
                               <div className={cn(
-                                "rounded-xl border overflow-hidden",
+                                "rounded-xl border overflow-hidden max-h-[600px] flex flex-col",
                                 libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50"
                               )}>
                                 {/* Preview Toolbar */}
@@ -19419,7 +19419,9 @@ module.exports = {
                                   );
                                   
                                   return (
-                                    <div className="w-full flex justify-center">
+                                    <div className="w-full flex-1 overflow-auto"
+                                      style={{ minHeight: '200px', maxHeight: '450px' }}
+                                    >
                                       {/* Viewport container - changes width based on mobile/desktop */}
                                       <div 
                                         className={cn(
