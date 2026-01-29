@@ -773,7 +773,7 @@ function BentoFeaturesSection() {
           {/* BLUEPRINTS */}
           <BentoCard className="col-span-1 md:col-span-4 min-h-[240px]" delay={0.2} title="BLUEPRINTS" icon={Box}>
             <p className="text-zinc-500 text-[11px] mb-4">
-              Edit components with AI. Changes propagate globally.
+              Create & edit components with AI. Changes propagate globally.
             </p>
             
             <div className="relative w-full h-32 rounded border border-zinc-800 overflow-hidden group">
