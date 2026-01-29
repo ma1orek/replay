@@ -18029,23 +18029,11 @@ export default function GeneratedPage() {
                     const selectedComponent = compId
                       ? libraryData?.components?.find((c: any) => c.id === compId || c.id === selectedLibraryItem || `comp-${c.id}` === selectedLibraryItem)
                       : null;
-                    // Find doc or create virtual doc for foundations
+                    // Find doc - no virtual docs, must be real generated
                     const docId = selectedLibraryItem?.replace("doc-", "");
-                    const foundDoc = selectedLibraryItem?.startsWith("doc-")
+                    const selectedDoc = selectedLibraryItem?.startsWith("doc-")
                       ? libraryData?.docs?.find((d: any) => `doc-${d.id}` === selectedLibraryItem || d.id === docId)
                       : null;
-                    
-                    // Create virtual docs for foundations that may not be in docs array
-                    const virtualDocs: Record<string, any> = {
-                      'spacing': { id: 'spacing', title: 'Spacing', type: 'spacing', content: {} },
-                      'iconography': { id: 'iconography', title: 'Iconography', type: 'iconography', content: {} },
-                      'colors': { id: 'colors', title: 'Colors', type: 'colors', content: {} },
-                      'typography': { id: 'typography', title: 'Typography', type: 'typography', content: {} },
-                      'overview': { id: 'overview', title: 'Overview', type: 'overview', content: {} },
-                      'getting-started': { id: 'getting-started', title: 'Getting Started', type: 'getting-started', content: {} },
-                      'examples': { id: 'examples', title: 'Examples', type: 'examples', content: {} },
-                    };
-                    const selectedDoc = foundDoc || (docId && virtualDocs[docId]) || null;
                     
                     return (
                       <>
@@ -19465,7 +19453,7 @@ module.exports = {
                                   </button>
                                 </div>
                                 
-                                {/* Component Preview - LIVE with props override - TOP LEFT, ACTUAL SIZE */}
+                                {/* Component Preview - LIVE with props override - FULL WIDTH */}
                                 {(() => {
                                   // Apply live props to code for preview
                                   const liveCode = applyPropsToCode(
@@ -19475,13 +19463,13 @@ module.exports = {
                                   );
                                   
                                   return (
-                                    <div className="w-full flex-1 overflow-auto"
+                                    <div className="w-full flex-1"
                                       style={{ minHeight: '200px' }}
                                     >
                                       {/* Viewport container - changes width based on mobile/desktop */}
                                       <div 
                                         className={cn(
-                                          "transition-all duration-300",
+                                          "transition-all duration-300 mx-auto",
                                           libraryViewport === "mobile" 
                                             ? "w-[375px] border-x border-zinc-700/50 shadow-lg" 
                                             : "w-full"
@@ -19491,13 +19479,13 @@ module.exports = {
                                         className="p-6 relative transition-transform duration-200"
                                         style={{ 
                                           transform: `scale(${libraryZoom / 100})`, 
-                                          transformOrigin: 'top left'
+                                          transformOrigin: 'top center'
                                         }}
                                       >
                                       {liveCode ? (
                                         <div 
                                           className={cn(
-                                            "transition-all duration-300 relative group/measure inline-block",
+                                            "transition-all duration-300 relative group/measure w-full",
                                             showLibraryOutline && "outline outline-1 outline-dashed outline-zinc-500/50"
                                           )}
                                         >
@@ -19628,15 +19616,16 @@ module.exports = {
                                 const propsCount = selectedComponent.props?.length || 0;
                                 const variantsCount = selectedComponent.variants?.length || 0;
                                 
-                                // Tab definitions like Storybook
+                                // Tab definitions - only show tabs with real data
+                                const accessibilityCount = selectedComponent.accessibility?.issues?.length || 0;
+                                const usageCount = selectedComponent.usageLocations?.length || 0;
+                                
                                 const tabs = [
-                                  { id: "controls", label: "Controls", count: propsCount },
-                                  { id: "actions", label: "Actions", count: 0 },
-                                  { id: "interactions", label: "Interactions", count: variantsCount },
-                                  { id: "visual", label: "Visual tests", count: 0 },
-                                  { id: "accessibility", label: "Accessibility", count: 1 },
-                                  { id: "usage", label: "Usage", count: selectedComponent.usageLocations?.length || 1 },
-                                ];
+                                  { id: "controls", label: "Controls", count: propsCount, show: true },
+                                  { id: "interactions", label: "Interactions", count: variantsCount, show: variantsCount > 0 },
+                                  { id: "accessibility", label: "Accessibility", count: accessibilityCount, show: true },
+                                  { id: "usage", label: "Usage", count: usageCount, show: usageCount > 0 },
+                                ].filter(t => t.show);
                                 
                                 return (
                                   <div className={cn(
@@ -19908,19 +19897,6 @@ module.exports = {
                                         </div>
                                       )}
                                       
-                                      {/* Actions Tab */}
-                                      {libraryPanel === "actions" && (
-                                        <div className="p-8 text-center">
-                                          <Activity className={cn("w-8 h-8 mx-auto mb-3", libraryBackground === "light" ? "text-zinc-300" : "text-zinc-700")} />
-                                          <p className={cn("text-sm font-medium mb-1", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>
-                                            No actions recorded
-                                          </p>
-                                          <p className={cn("text-xs", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
-                                            Interact with the component to see actions here.
-                                          </p>
-                                        </div>
-                                      )}
-                                      
                                       {/* Interactions Tab */}
                                       {libraryPanel === "interactions" && (
                                         <div className="p-4">
@@ -19963,19 +19939,6 @@ module.exports = {
                                               </p>
                                             </div>
                                           )}
-                                        </div>
-                                      )}
-                                      
-                                      {/* Visual tests Tab */}
-                                      {libraryPanel === "visual" && (
-                                        <div className="p-8 text-center">
-                                          <Eye className={cn("w-8 h-8 mx-auto mb-3", libraryBackground === "light" ? "text-zinc-300" : "text-zinc-700")} />
-                                          <p className={cn("text-sm font-medium mb-1", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>
-                                            Visual tests
-                                          </p>
-                                          <p className={cn("text-xs", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
-                                            Compare visual snapshots of this component.
-                                          </p>
                                         </div>
                                       )}
                                       
