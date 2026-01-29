@@ -18659,23 +18659,17 @@ export default function GeneratedPage() {
                                                 }}
                                               >
                                                 <div 
-                                                  className="h-12 w-full transition-transform group-hover/swatch:scale-105 group-hover/swatch:z-10 group-hover/swatch:shadow-lg"
+                                                  className="h-10 w-full transition-all"
                                                   style={{ backgroundColor: swatch.hex }}
                                                 />
-                                                {/* Contrast Badge */}
-                                                {swatch.contrast && (
-                                                  <span className={cn(
-                                                    "absolute top-1 right-1 px-1 py-0.5 text-[8px] font-bold rounded",
-                                                    swatch.contrast.includes("AAA") ? "bg-emerald-500 text-white" : 
-                                                    swatch.contrast.includes("AA") ? "bg-amber-500 text-black" : 
-                                                    "bg-red-500 text-white"
-                                                  )}>
-                                                    {swatch.contrast.replace(" ✓", "")}
-                                                  </span>
-                                                )}
-                                                {/* Hover Info */}
-                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/swatch:opacity-100 transition-opacity bg-black/60">
+                                                {/* Hover Info - shows hex and contrast badge */}
+                                                <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover/swatch:opacity-100 transition-opacity bg-black/70">
                                                   <span className="text-[9px] font-mono text-white">{swatch.hex}</span>
+                                                  {swatch.contrast && (
+                                                    <span className="mt-1 px-1.5 py-0.5 text-[8px] font-medium rounded bg-zinc-800 text-zinc-300">
+                                                      {swatch.contrast.replace(" ✓", "")}
+                                                    </span>
+                                                  )}
                                                 </div>
                                               </div>
                                             ))}
@@ -18685,31 +18679,27 @@ export default function GeneratedPage() {
                                     </div>
                                   </div>
                                   
-                                  {/* Accessibility Overview - Like SupaColors */}
+                                  {/* Accessibility Overview - minimal dark style */}
                                   <div className={cn("rounded-xl border p-5", libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50")}>
                                     <h3 className={cn("text-sm font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>
-                                      <Eye className="w-4 h-4 text-zinc-400" /> Accessibility Overview
+                                      <Eye className="w-4 h-4 text-zinc-500" /> Accessibility Overview
                                     </h3>
-                                    <div className="grid grid-cols-4 gap-4">
-                                      <div className={cn("p-4 rounded-lg text-center", libraryBackground === "light" ? "bg-emerald-50" : "bg-emerald-500/10")}>
-                                        <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto mb-2 text-sm font-bold">91</div>
-                                        <div className={cn("text-xs font-medium", libraryBackground === "light" ? "text-emerald-700" : "text-emerald-400")}>Readability Score</div>
-                                        <div className={cn("text-[10px]", libraryBackground === "light" ? "text-emerald-600" : "text-emerald-500")}>Overall readability rating</div>
+                                    <div className="grid grid-cols-4 gap-3">
+                                      <div className={cn("p-4 rounded-lg text-center border", libraryBackground === "light" ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
+                                        <div className={cn("text-2xl font-bold mb-1", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>91</div>
+                                        <div className={cn("text-xs font-medium", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Readability Score</div>
                                       </div>
-                                      <div className={cn("p-4 rounded-lg text-center", libraryBackground === "light" ? "bg-blue-50" : "bg-blue-500/10")}>
-                                        <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center mx-auto mb-2 text-sm font-bold">22%</div>
-                                        <div className={cn("text-xs font-medium", libraryBackground === "light" ? "text-blue-700" : "text-blue-400")}>Lc 75+</div>
-                                        <div className={cn("text-[10px]", libraryBackground === "light" ? "text-blue-600" : "text-blue-500")}>Enhanced readability</div>
+                                      <div className={cn("p-4 rounded-lg text-center border", libraryBackground === "light" ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
+                                        <div className={cn("text-2xl font-bold mb-1", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>22%</div>
+                                        <div className={cn("text-xs font-medium", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Lc 75+</div>
                                       </div>
-                                      <div className={cn("p-4 rounded-lg text-center", libraryBackground === "light" ? "bg-violet-50" : "bg-violet-500/10")}>
-                                        <div className="w-10 h-10 rounded-full bg-violet-500 text-white flex items-center justify-center mx-auto mb-2 text-sm font-bold">11%</div>
-                                        <div className={cn("text-xs font-medium", libraryBackground === "light" ? "text-violet-700" : "text-violet-400")}>Lc 90+</div>
-                                        <div className={cn("text-[10px]", libraryBackground === "light" ? "text-violet-600" : "text-violet-500")}>Excellent readability</div>
+                                      <div className={cn("p-4 rounded-lg text-center border", libraryBackground === "light" ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
+                                        <div className={cn("text-2xl font-bold mb-1", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>11%</div>
+                                        <div className={cn("text-xs font-medium", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Lc 90+</div>
                                       </div>
-                                      <div className={cn("p-4 rounded-lg text-center", libraryBackground === "light" ? "bg-amber-50" : "bg-amber-500/10")}>
-                                        <div className="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center mx-auto mb-2 text-sm font-bold">33%</div>
-                                        <div className={cn("text-xs font-medium", libraryBackground === "light" ? "text-amber-700" : "text-amber-400")}>Min. Readable</div>
-                                        <div className={cn("text-[10px]", libraryBackground === "light" ? "text-amber-600" : "text-amber-500")}>Minimum readability pairs</div>
+                                      <div className={cn("p-4 rounded-lg text-center border", libraryBackground === "light" ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
+                                        <div className={cn("text-2xl font-bold mb-1", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>33%</div>
+                                        <div className={cn("text-xs font-medium", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Min. Readable</div>
                                       </div>
                                     </div>
                                   </div>
