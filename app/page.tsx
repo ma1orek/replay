@@ -12941,7 +12941,7 @@ ${publishCode}
             </div>
           ) : !sidebarCollapsed && sidebarView === "detail" && viewMode === "library" && generationComplete ? (
             /* LIBRARY VIEW SIDEBAR - Full Tree (1:1 with removed middle panel) */
-            <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[#141414]">
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[#111111]">
               {/* Search */}
               <div className="p-3 border-b border-zinc-800/50">
                 <div className="relative">
@@ -13233,8 +13233,51 @@ ${publishCode}
           ) : !sidebarCollapsed && sidebarView === "detail" && viewMode === "flow" && generationComplete ? (
             /* FLOW VIEW SIDEBAR - 3-Tier System: Observed → Detected → Inferred */
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-              <div className="flex-shrink-0 px-3 py-2 border-b border-zinc-800">
+              <div className="flex-shrink-0 px-3 py-2 border-b border-zinc-800 flex items-center justify-between">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Flow Map</span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => {
+                      if (generatedCode || editableCode) {
+                        buildFlowLive(editableCode || generatedCode);
+                      }
+                    }}
+                    className="p-1 hover:bg-zinc-800 rounded transition-colors"
+                    title="Refresh flow from code"
+                    disabled={flowBuilding}
+                  >
+                    <RefreshCw className={cn("w-3.5 h-3.5 text-zinc-500 hover:text-zinc-300", flowBuilding && "animate-spin")} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      const newPageName = prompt("Enter page name:", "New Page");
+                      if (newPageName && newPageName.trim()) {
+                        const pageName = newPageName.trim();
+                        const pageId = pageName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `custom-${Date.now()}`;
+                        // Check if ID already exists
+                        const existingIds = flowNodes.map(n => n.id);
+                        const uniqueId = existingIds.includes(pageId) ? `${pageId}-${Date.now()}` : pageId;
+                        // Calculate position for new node
+                        const maxY = Math.max(...flowNodes.map(n => n.y || 0), 0);
+                        const newNode = {
+                          id: uniqueId,
+                          name: pageName,
+                          type: 'view' as const,
+                          status: 'detected' as const,
+                          description: 'Custom page - click Reconstruct to generate',
+                          x: 100,
+                          y: maxY + 200,
+                          confidence: 'high' as const
+                        };
+                        setFlowNodes(prev => [...prev, newNode]);
+                      }
+                    }}
+                    className="p-1 hover:bg-zinc-800 rounded transition-colors"
+                    title="Add custom page"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-zinc-500 hover:text-zinc-300" />
+                  </button>
+                </div>
               </div>
               <div className="flex-1 overflow-y-auto p-3 space-y-4">
                 {/* TIER 1: OBSERVED (SOLID) - Seen on video ≥2s, 100% certain */}
@@ -15688,6 +15731,35 @@ export default function GeneratedPage() {
                       >
                         Auto Layout
                       </button>
+                      <div className="w-px h-4 bg-zinc-700 mx-1" />
+                      <button 
+                        onClick={() => {
+                          const newPageName = prompt("Enter page name:", "New Page");
+                          if (newPageName && newPageName.trim()) {
+                            const pageName = newPageName.trim();
+                            const pageId = pageName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `custom-${Date.now()}`;
+                            const existingIds = flowNodes.map(n => n.id);
+                            const uniqueId = existingIds.includes(pageId) ? `${pageId}-${Date.now()}` : pageId;
+                            const maxY = Math.max(...flowNodes.map(n => n.y || 0), 0);
+                            const newNode = {
+                              id: uniqueId,
+                              name: pageName,
+                              type: 'view' as const,
+                              status: 'detected' as const,
+                              description: 'Custom page - click Reconstruct to generate',
+                              x: 100,
+                              y: maxY + 200,
+                              confidence: 'high' as const
+                            };
+                            setFlowNodes(prev => [...prev, newNode]);
+                          }
+                        }}
+                        className="px-2 py-1 rounded hover:bg-zinc-800 transition-colors text-[10px] text-zinc-400 hover:text-white flex items-center gap-1"
+                        title="Add custom page"
+                      >
+                        <Plus className="w-3 h-3" />
+                        New Page
+                      </button>
                     </div>
                     
                     {/* Toggle buttons - top right - neutral colors */}
@@ -17322,7 +17394,7 @@ export default function GeneratedPage() {
 
             {/* Library - Storybook-like component library */}
             {viewMode === "library" && (
-              <div className="flex-1 overflow-hidden flex bg-[#141414]">
+              <div className="flex-1 overflow-hidden flex bg-[#111111]">
                 {/* Fullscreen Preview Overlay */}
                 {isLibraryFullscreen && (() => {
                   const selectedComponent = selectedLibraryItem?.startsWith("comp-") 
@@ -17586,7 +17658,13 @@ export default function GeneratedPage() {
                         >
                           {!selectedLibraryItem ? (
                             <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                              <BookOpen className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
+                              {/* Replay Logo Icon */}
+                              <div className="w-16 h-16 flex items-center justify-center mb-4">
+                                <svg width="48" height="48" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M8 6L24 16L8 26V6Z" fill="none" stroke="#3f3f46" strokeWidth="2" strokeLinejoin="round"/>
+                                  <path d="M24 6V26" stroke="#3f3f46" strokeWidth="2" strokeLinecap="round"/>
+                                </svg>
+                              </div>
                               <p className="text-sm text-zinc-500">Select a component from the sidebar</p>
                               <p className="text-xs text-zinc-600 mt-1">or extract components from your code</p>
                             </div>
@@ -17847,11 +17925,11 @@ export default function App() {
                                     <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
                                       <div className={cn("px-4 py-2 text-xs font-mono border-b flex items-center justify-between", libraryBackground === "light" ? "bg-zinc-100 border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
                                         <span>CSS Variables</span>
-                                        <button onClick={() => navigator.clipboard.writeText(`:root {\n${Object.entries(libraryData?.tokens?.colors || {}).map(([n,v]) => `  --color-${n}: ${v};`).join('\n')}\n}`)} className="text-zinc-400 text-xs hover:text-white">Copy</button>
+                                        <button onClick={() => navigator.clipboard.writeText(`:root {\n${Object.entries(libraryData?.tokens?.colors || {}).map(([n,v]) => `  --color-${n}: ${typeof v === 'string' ? v : (typeof v === 'object' && v !== null ? ((v as any).bg || (v as any).value || '#000') : String(v))};`).join('\n')}\n}`)} className="text-zinc-400 text-xs hover:text-white">Copy</button>
                                       </div>
                                       <Highlight 
                                         theme={themes.nightOwl} 
-                                        code={`:root {\n${Object.entries(libraryData?.tokens?.colors || { primary: '#6366f1', background: '#09090b' }).map(([n,v]) => `  --color-${n}: ${v};`).join('\n')}\n}`}
+                                        code={`:root {\n${Object.entries(libraryData?.tokens?.colors || { primary: '#6366f1', background: '#09090b' }).map(([n,v]) => `  --color-${n}: ${typeof v === 'string' ? v : (typeof v === 'object' && v !== null ? ((v as any).bg || (v as any).value || '#000') : String(v))};`).join('\n')}\n}`}
                                         language="css"
                                       >
                                         {({ style, tokens, getLineProps, getTokenProps }) => (
@@ -17874,18 +17952,21 @@ export default function App() {
                                     </h2>
                                     {Object.keys(libraryData?.tokens?.colors || {}).length > 0 ? (
                                       <div className="space-y-4">
-                                        {Object.entries(libraryData?.tokens?.colors || {}).map(([name, value]) => (
+                                        {Object.entries(libraryData?.tokens?.colors || {}).map(([name, value]) => {
+                                          // Handle both string values and object values like {bg, text}
+                                          const colorValue = typeof value === 'string' ? value : (typeof value === 'object' && value !== null ? ((value as any).bg || (value as any).value || JSON.stringify(value)) : String(value));
+                                          return (
                                           <div key={name} className={cn("rounded-lg border overflow-hidden", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
                                             <div className={cn("flex items-center justify-between px-4 py-3", libraryBackground === "light" ? "bg-zinc-50" : "bg-zinc-900/50")}>
                                               <span className={cn("font-medium capitalize", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>{name}</span>
-                                              <span className={cn("font-mono text-xs", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{value as string}</span>
+                                              <span className={cn("font-mono text-xs", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{colorValue}</span>
                                             </div>
-                                            <div className="h-12 w-full" style={{ backgroundColor: value as string }} />
+                                            <div className="h-12 w-full" style={{ backgroundColor: colorValue }} />
                                             <div className={cn("px-4 py-2 flex justify-end", libraryBackground === "light" ? "bg-zinc-50" : "bg-zinc-900/50")}>
-                                              <button onClick={() => navigator.clipboard.writeText(value as string)} className="text-xs text-zinc-400 hover:text-white">Copy</button>
+                                              <button onClick={() => navigator.clipboard.writeText(colorValue)} className="text-xs text-zinc-400 hover:text-white">Copy</button>
                                             </div>
                                           </div>
-                                        ))}
+                                        )})}
                                       </div>
                                     ) : (
                                       <div className="grid grid-cols-1 gap-4">
@@ -19306,7 +19387,13 @@ export default function App() {
                         {(!libraryData || !libraryData.components || libraryData.components.length === 0) ? (
                           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style={{ transform: `translate(-50%, -50%) scale(${100/blueprintsZoom})` }}>
                             <div className="bg-zinc-900/80 backdrop-blur-xl rounded-2xl border border-zinc-800 p-8 text-center max-w-md">
-                              <Map className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
+                              {/* Replay Logo Icon */}
+                              <div className="w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                                <svg width="48" height="48" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M8 6L24 16L8 26V6Z" fill="none" stroke="#3f3f46" strokeWidth="2" strokeLinejoin="round"/>
+                                  <path d="M24 6V26" stroke="#3f3f46" strokeWidth="2" strokeLinecap="round"/>
+                                </svg>
+                              </div>
                               <h3 className="text-lg font-semibold text-white mb-2">Component Canvas</h3>
                               <p className="text-sm text-zinc-400 mb-6">
                                 Import components from screenshots, Figma frames, or create them manually. Double-click anywhere to create a new component.

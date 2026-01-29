@@ -66,20 +66,13 @@ export default function CreditsBar() {
               </span>
             </div>
 
-            {/* Progress bar */}
+            {/* Credits balance */}
             <div className="mb-4">
-              <div className="flex items-center justify-between text-xs mb-1.5">
+              <div className="flex items-center justify-between text-xs">
                 <span className="text-white/50">Available</span>
                 <span className="text-white font-medium">
-                  {totalCredits.toLocaleString()} / {maxCredits.toLocaleString()}
+                  {totalCredits.toLocaleString()} credits
                 </span>
-              </div>
-              <div className="h-2 rounded-full bg-white/10 overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${percentage}%` }}
-                  className={`h-full rounded-full ${percentage >= 95 ? 'bg-[#FF6E3C]' : 'bg-gradient-to-r from-zinc-500 to-zinc-400'}`}
-                />
               </div>
             </div>
 
