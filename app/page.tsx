@@ -17659,16 +17659,8 @@ export default function GeneratedPage() {
                           }}
                         >
                           {!selectedLibraryItem ? (
-                            <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                              {/* Replay Logo Icon */}
-                              <div className="w-16 h-16 flex items-center justify-center mb-4">
-                                <svg width="48" height="48" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M8 6L24 16L8 26V6Z" fill="none" stroke="#3f3f46" strokeWidth="2" strokeLinejoin="round"/>
-                                  <path d="M24 6V26" stroke="#3f3f46" strokeWidth="2" strokeLinecap="round"/>
-                                </svg>
-                              </div>
-                              <p className="text-sm text-zinc-500">Select a component from the sidebar</p>
-                              <p className="text-xs text-zinc-600 mt-1">or extract components from your code</p>
+                            <div className="w-full h-full flex items-center justify-center bg-[#111111]">
+                              <EmptyState icon="logo" title="Design System Library" subtitle="Generate from video to extract components, colors, and typography." />
                             </div>
                           ) : selectedDoc ? (
                             /* Documentation view - Rich Solenis-style rendering */
@@ -19409,7 +19401,7 @@ export default function App() {
 
             {/* Blueprints - Infinite Canvas with Draggable Components */}
             {viewMode === "blueprints" && (
-              <div className="flex-1 overflow-hidden relative flex flex-col bg-[#0a0a0b]">
+              <div className="flex-1 overflow-hidden relative flex flex-col bg-[#111111]">
                 {/* Show loader when processing */}
                 {(isProcessing || isStreamingCode || isGeneratingBlueprintsComponent) ? (
                   <div className="w-full h-full flex items-center justify-center">
@@ -19832,34 +19824,8 @@ export default function App() {
                       >
                         {/* Empty state */}
                         {(!libraryData || !libraryData.components || libraryData.components.length === 0) ? (
-                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style={{ transform: `translate(-50%, -50%) scale(${100/blueprintsZoom})` }}>
-                            <div className="bg-zinc-900/80 backdrop-blur-xl rounded-2xl border border-zinc-800 p-8 text-center max-w-md">
-                              {/* Replay Logo Icon */}
-                              <div className="w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                                <svg width="48" height="48" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M8 6L24 16L8 26V6Z" fill="none" stroke="#3f3f46" strokeWidth="2" strokeLinejoin="round"/>
-                                  <path d="M24 6V26" stroke="#3f3f46" strokeWidth="2" strokeLinecap="round"/>
-                                </svg>
-                              </div>
-                              <h3 className="text-lg font-semibold text-white mb-2">Component Canvas</h3>
-                              <p className="text-sm text-zinc-400 mb-6">
-                                Import components from screenshots, Figma frames, or create them manually. Double-click anywhere to create a new component.
-                              </p>
-                              <div className="flex flex-col gap-3 items-center">
-                                <button
-                                  onClick={() => visionFileInputRef.current?.click()}
-                                  className="p-3 bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 text-white rounded-lg transition-all"
-                                  title="Import from Image"
-                                >
-                                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                                    <circle cx="8.5" cy="8.5" r="1.5" />
-                                    <path d="M21 15l-5-5L5 21" />
-                                  </svg>
-                                </button>
-                                <span className="text-xs text-zinc-500">or paste with Ctrl+V / drag & drop</span>
-                              </div>
-                            </div>
+                          <div className="absolute inset-0 flex items-center justify-center bg-[#111111]">
+                            <EmptyState icon="logo" title="Component Blueprints" subtitle="Generate from video to visualize and edit your component architecture." />
                           </div>
                         ) : (
                           <>
