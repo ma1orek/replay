@@ -17930,7 +17930,7 @@ export default function GeneratedPage() {
                                     {/* Icons */}
                                     <div className={cn("p-5 rounded-xl border relative overflow-hidden group cursor-pointer transition-all hover:scale-[1.02]", libraryBackground === "light" ? "bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200" : "bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border-emerald-500/20")} onClick={() => setSelectedLibraryItem("doc-iconography")}>
                                       <div className="absolute top-3 right-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                                        <Grid className="w-16 h-16 text-emerald-500" />
+                                        <Grid3X3 className="w-16 h-16 text-emerald-500" />
                                       </div>
                                       <div className={cn("text-4xl font-bold", libraryBackground === "light" ? "text-emerald-600" : "text-emerald-400")}>
                                         {selectedDoc.content?.stats?.icons || 0}
@@ -17963,7 +17963,7 @@ export default function GeneratedPage() {
                                           {link.icon === "Rocket" && <Rocket className="w-4 h-4" />}
                                           {link.icon === "Palette" && <Palette className="w-4 h-4" />}
                                           {link.icon === "Type" && <Type className="w-4 h-4" />}
-                                          {link.icon === "Grid" && <Grid className="w-4 h-4" />}
+                                          {link.icon === "Grid" && <Grid3X3 className="w-4 h-4" />}
                                           {link.icon === "Layers" && <Layers className="w-4 h-4" />}
                                           {link.label}
                                         </button>
