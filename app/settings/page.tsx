@@ -221,7 +221,7 @@ function SettingsContent() {
   return (
     <div className="min-h-screen bg-[#111111] flex">
       {/* Left Sidebar */}
-      <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[#0a0a0a] border-r border-zinc-800/50 z-20 flex flex-col">
+      <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[#141414] border-r border-zinc-800/50 z-20 flex flex-col">
         {/* Back Link */}
         <div className="p-4 border-b border-zinc-800/50">
           <Link 
