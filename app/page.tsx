@@ -5482,6 +5482,55 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
     // No periodic sync - too expensive. User can refresh manually or load more
   }, [user, hasLoadedFromStorage]); // eslint-disable-line react-hooks/exhaustive-deps
   
+  // Auto-load demo for FREE users with no projects (so they see something, not empty screen)
+  const hasAutoLoadedDemoRef = useRef(false);
+  useEffect(() => {
+    // Only auto-load once per session
+    if (hasAutoLoadedDemoRef.current) return;
+    
+    // Wait for loading to complete
+    if (isLoadingHistory || !hasLoadedFromStorage) return;
+    
+    // Only for logged-in users with no projects
+    if (!user || generations.length > 0) return;
+    
+    // Don't auto-load if already in demo mode or has active generation
+    if (isDemoMode || activeGeneration) return;
+    
+    // Don't auto-load if URL has project param (loading specific project)
+    if (searchParams.get('project') || searchParams.get('demo')) return;
+    
+    console.log("[Auto-Demo] Loading showcase demo for new user");
+    hasAutoLoadedDemoRef.current = true;
+    
+    // Load the showcase demo
+    fetch(`/api/demo/${SHOWCASE_PROJECT_ID}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.generation) {
+          const gen = data.generation;
+          setIsDemoMode(true);
+          setGenerationTitle(gen.title || "Showcase Demo");
+          setActiveGeneration(gen);
+          setGeneratedCode(gen.code);
+          setDisplayedCode(gen.code);
+          setEditableCode(gen.code);
+          setFlowNodes(gen.flowNodes || []);
+          setFlowEdges(gen.flowEdges || []);
+          setStyleInfo(gen.styleInfo || null);
+          setLibraryData(gen.libraryData || null);
+          setChatMessages(gen.chatMessages || []);
+          setGenerationComplete(true);
+          setViewMode("preview");
+          setShowHistoryMode(false);
+          showToast("Welcome! Explore this demo project to see what Replay can do.", "info");
+        }
+      })
+      .catch(err => {
+        console.error("[Auto-Demo] Failed to load demo:", err);
+      });
+  }, [user, generations.length, isLoadingHistory, hasLoadedFromStorage, isDemoMode, activeGeneration, searchParams, SHOWCASE_PROJECT_ID, showToast]);
+  
   
   // Save active generation to Supabase when complete
   // Track failed saves to prevent spam
