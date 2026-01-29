@@ -18005,56 +18005,44 @@ export default function GeneratedPage() {
                                   </div>
                                   
                                   {/* Stats Cards - Atomic Design Breakdown */}
-                                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                                     {/* Total Components */}
-                                    <div className={cn("p-5 rounded-xl border relative overflow-hidden group cursor-pointer transition-all hover:scale-[1.02]", libraryBackground === "light" ? "bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200" : "bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500/20")} onClick={() => setSelectedLibraryItem("doc-examples")}>
-                                      <div className="absolute top-3 right-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                                        <Puzzle className="w-16 h-16 text-blue-500" />
+                                    <div className={cn("p-4 rounded-xl border relative overflow-hidden group cursor-pointer transition-all hover:border-zinc-600", libraryBackground === "light" ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900 border-zinc-800")} onClick={() => setSelectedLibraryItem("doc-components")}>
+                                      <div className="flex items-center justify-between mb-2">
+                                        <Puzzle className={cn("w-5 h-5", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-500")} />
                                       </div>
-                                      <div className={cn("text-4xl font-bold", libraryBackground === "light" ? "text-blue-600" : "text-blue-400")}>
+                                      <div className={cn("text-3xl font-bold", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
                                         {selectedDoc.content?.stats?.totalComponents || libraryData?.components?.length || 0}
                                       </div>
-                                      <div className={cn("text-sm font-medium mt-1", libraryBackground === "light" ? "text-blue-800" : "text-blue-300")}>Components</div>
-                                      <div className={cn("text-[10px] mt-1 space-x-2", libraryBackground === "light" ? "text-blue-600" : "text-blue-400")}>
-                                        <span>{selectedDoc.content?.stats?.atoms || 0} Atoms</span>
-                                        <span>·</span>
-                                        <span>{selectedDoc.content?.stats?.molecules || 0} Molecules</span>
-                                        <span>·</span>
-                                        <span>{selectedDoc.content?.stats?.organisms || 0} Organisms</span>
-                                      </div>
+                                      <div className={cn("text-sm font-medium mt-1", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Components</div>
                                     </div>
                                     {/* Colors */}
-                                    <div className={cn("p-5 rounded-xl border relative overflow-hidden group cursor-pointer transition-all hover:scale-[1.02]", libraryBackground === "light" ? "bg-gradient-to-br from-violet-50 to-purple-50 border-violet-200" : "bg-gradient-to-br from-violet-500/10 to-purple-500/10 border-violet-500/20")} onClick={() => setSelectedLibraryItem("doc-colors")}>
-                                      <div className="absolute top-3 right-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                                        <Palette className="w-16 h-16 text-violet-500" />
+                                    <div className={cn("p-4 rounded-xl border relative overflow-hidden group cursor-pointer transition-all hover:border-zinc-600", libraryBackground === "light" ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900 border-zinc-800")} onClick={() => setSelectedLibraryItem("doc-colors")}>
+                                      <div className="flex items-center justify-between mb-2">
+                                        <Palette className={cn("w-5 h-5", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-500")} />
                                       </div>
-                                      <div className={cn("text-4xl font-bold", libraryBackground === "light" ? "text-violet-600" : "text-violet-400")}>
+                                      <div className={cn("text-3xl font-bold", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
                                         {selectedDoc.content?.stats?.colors || Object.keys(libraryData?.tokens?.colors || {}).length || 0}
                                       </div>
-                                      <div className={cn("text-sm font-medium mt-1", libraryBackground === "light" ? "text-violet-800" : "text-violet-300")}>Color Tokens</div>
-                                      <div className={cn("text-[10px] mt-0.5", libraryBackground === "light" ? "text-violet-600" : "text-violet-400")}>Semantic system</div>
+                                      <div className={cn("text-sm font-medium mt-1", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Color Tokens</div>
                                     </div>
                                     {/* Icons */}
-                                    <div className={cn("p-5 rounded-xl border relative overflow-hidden group cursor-pointer transition-all hover:scale-[1.02]", libraryBackground === "light" ? "bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200" : "bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border-emerald-500/20")} onClick={() => setSelectedLibraryItem("doc-iconography")}>
-                                      <div className="absolute top-3 right-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                                        <Grid3X3 className="w-16 h-16 text-emerald-500" />
+                                    <div className={cn("p-4 rounded-xl border relative overflow-hidden group cursor-pointer transition-all hover:border-zinc-600", libraryBackground === "light" ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900 border-zinc-800")} onClick={() => setSelectedLibraryItem("doc-iconography")}>
+                                      <div className="flex items-center justify-between mb-2">
+                                        <Grid3X3 className={cn("w-5 h-5", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-500")} />
                                       </div>
-                                      <div className={cn("text-4xl font-bold", libraryBackground === "light" ? "text-emerald-600" : "text-emerald-400")}>
+                                      <div className={cn("text-3xl font-bold", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
                                         {selectedDoc.content?.stats?.icons || 0}
                                       </div>
-                                      <div className={cn("text-sm font-medium mt-1", libraryBackground === "light" ? "text-emerald-800" : "text-emerald-300")}>Icons</div>
-                                      <div className={cn("text-[10px] mt-0.5", libraryBackground === "light" ? "text-emerald-600" : "text-emerald-400")}>Lucide React</div>
+                                      <div className={cn("text-sm font-medium mt-1", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Icons</div>
                                     </div>
                                     {/* Accessibility */}
-                                    <div className={cn("p-5 rounded-xl border relative overflow-hidden", libraryBackground === "light" ? "bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200" : "bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/20")}>
-                                      <div className="absolute top-3 right-3 opacity-10">
-                                        <Shield className="w-16 h-16 text-amber-500" />
+                                    <div className={cn("p-4 rounded-xl border relative overflow-hidden", libraryBackground === "light" ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
+                                      <div className="flex items-center justify-between mb-2">
+                                        <Shield className={cn("w-5 h-5", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-500")} />
                                       </div>
-                                      <div className={cn("text-4xl font-bold", libraryBackground === "light" ? "text-amber-600" : "text-amber-400")}>AA</div>
-                                      <div className={cn("text-sm font-medium mt-1", libraryBackground === "light" ? "text-amber-800" : "text-amber-300")}>WCAG Level</div>
-                                      <div className={cn("text-[10px] mt-0.5", libraryBackground === "light" ? "text-amber-600" : "text-amber-400")}>
-                                        {selectedDoc.content?.accessibilityScore || "Accessibility compliant"}
-                                      </div>
+                                      <div className={cn("text-3xl font-bold", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>AA</div>
+                                      <div className={cn("text-sm font-medium mt-1", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>WCAG Level</div>
                                     </div>
                                   </div>
                                   
@@ -20597,11 +20585,9 @@ new MutationObserver(()=>{fixBrokenImages()}).observe(document.body,{childList:t
                                             } catch(err) {}
                                           }}
                                           style={{ 
-                                            width: size?.width ? `${size.width}px` : undefined,
-                                            height: size?.height ? `${size.height}px` : undefined,
-                                            // Smart min-width based on component type
-                                            minWidth: /section|footer|header|hero|nav|layout|container|wrapper/i.test(comp.name) ? '600px' : 
-                                                     /card|feature|testimonial|stat|metric|job|blog|item/i.test(comp.name) ? '280px' : '200px',
+                                            width: size?.width ? `${size.width}px` : 'fit-content',
+                                            height: size?.height ? `${size.height}px` : 'fit-content',
+                                            // No min-width - hug content
                                             background: 'transparent',
                                             display: 'block'
                                           }}
