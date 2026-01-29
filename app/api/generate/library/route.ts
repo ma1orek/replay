@@ -272,10 +272,17 @@ Return the complete JSON structure with all 5 layers populated.`;
     libraryData.components = buildLegacyComponents(libraryData);
     
     // Build tokens for backward compatibility
+    const defaultSpacing = { 
+      "1": "0.25rem", "2": "0.5rem", "3": "0.75rem", "4": "1rem", 
+      "5": "1.25rem", "6": "1.5rem", "8": "2rem", "10": "2.5rem", 
+      "12": "3rem", "16": "4rem" 
+    };
     libraryData.tokens = {
       colors: libraryData.foundations?.colors || {},
       typography: libraryData.foundations?.typography || {},
-      spacing: libraryData.foundations?.spacing || {},
+      spacing: Object.keys(libraryData.foundations?.spacing || {}).length > 0 
+        ? libraryData.foundations.spacing 
+        : defaultSpacing,
       borderRadius: libraryData.foundations?.borderRadius || {},
     };
 
@@ -301,7 +308,11 @@ function createDefaultStructure() {
     foundations: {
       colors: {},
       typography: { fontFamily: {}, fontSize: {}, fontWeight: {} },
-      spacing: {},
+      spacing: { 
+        "1": "0.25rem", "2": "0.5rem", "3": "0.75rem", "4": "1rem", 
+        "5": "1.25rem", "6": "1.5rem", "8": "2rem", "10": "2.5rem", 
+        "12": "3rem", "16": "4rem", "20": "5rem", "24": "6rem" 
+      },
       borderRadius: {},
       shadows: {}
     },
@@ -317,7 +328,11 @@ function ensureStructure(data: any) {
     data.foundations = {
       colors: {},
       typography: { fontFamily: {}, fontSize: {}, fontWeight: {}, lineHeight: {} },
-      spacing: {},
+      spacing: { 
+        "1": "0.25rem", "2": "0.5rem", "3": "0.75rem", "4": "1rem", 
+        "5": "1.25rem", "6": "1.5rem", "8": "2rem", "10": "2.5rem", 
+        "12": "3rem", "16": "4rem" 
+      },
       borderRadius: {},
       shadows: {}
     };
@@ -330,7 +345,14 @@ function ensureStructure(data: any) {
   // Ensure foundations sub-objects
   if (!data.foundations.colors) data.foundations.colors = {};
   if (!data.foundations.typography) data.foundations.typography = {};
-  if (!data.foundations.spacing) data.foundations.spacing = {};
+  // Add default spacing if empty
+  if (!data.foundations.spacing || Object.keys(data.foundations.spacing).length === 0) {
+    data.foundations.spacing = { 
+      "1": "0.25rem", "2": "0.5rem", "3": "0.75rem", "4": "1rem", 
+      "5": "1.25rem", "6": "1.5rem", "8": "2rem", "10": "2.5rem", 
+      "12": "3rem", "16": "4rem" 
+    };
+  }
   if (!data.foundations.borderRadius) data.foundations.borderRadius = {};
   if (!data.foundations.shadows) data.foundations.shadows = {};
   

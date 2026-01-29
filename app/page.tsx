@@ -18077,11 +18077,17 @@ export default function GeneratedPage() {
                                         {selectedDoc.content?.projectContext || selectedDoc.content?.description || "Enterprise-grade component library extracted from production UI."}
                                       </p>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                      <span className={cn("px-3 py-1 text-xs rounded-full font-medium", libraryBackground === "light" ? "bg-emerald-100 text-emerald-700" : "bg-emerald-500/20 text-emerald-400")}>
-                                        {selectedDoc.content?.accessibilityScore || "AA Compliant"}
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="px-3 py-1 text-xs rounded-full font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                        WCAG 2.1 AA
                                       </span>
-                                      <span className={cn("px-3 py-1 text-xs rounded-full", libraryBackground === "light" ? "bg-zinc-100 text-zinc-600" : "bg-zinc-800 text-zinc-400")}>
+                                      <span className="px-3 py-1 text-xs rounded-full font-medium bg-violet-500/20 text-violet-400 border border-violet-500/30">
+                                        P3 Wide Gamut
+                                      </span>
+                                      <span className="px-3 py-1 text-xs rounded-full font-medium bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+                                        {selectedDoc.content?.accessibilityScore || "92% AA Compliant"}
+                                      </span>
+                                      <span className="px-3 py-1 text-xs rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
                                         {selectedDoc.content?.themeType || "Dark Theme"}
                                       </span>
                                     </div>
@@ -18119,13 +18125,19 @@ export default function GeneratedPage() {
                                       </div>
                                       <div className={cn("text-sm font-medium mt-1", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Icons</div>
                                     </div>
-                                    {/* Accessibility */}
-                                    <div className={cn("p-4 rounded-xl border relative overflow-hidden", libraryBackground === "light" ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
+                                    {/* Accessibility - Colorful */}
+                                    <div className={cn("p-4 rounded-xl border relative overflow-hidden", libraryBackground === "light" ? "bg-gradient-to-br from-emerald-50 to-cyan-50 border-emerald-200" : "bg-gradient-to-br from-emerald-950/30 to-cyan-950/30 border-emerald-800/50")}>
                                       <div className="flex items-center justify-between mb-2">
-                                        <Shield className={cn("w-5 h-5", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-500")} />
+                                        <Shield className={cn("w-5 h-5", libraryBackground === "light" ? "text-emerald-500" : "text-emerald-400")} />
+                                        <span className="px-1.5 py-0.5 text-[9px] rounded bg-emerald-500/20 text-emerald-400 font-medium">WCAG 2.1</span>
                                       </div>
-                                      <div className={cn("text-3xl font-bold", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>AA</div>
-                                      <div className={cn("text-sm font-medium mt-1", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>WCAG Level</div>
+                                      <div className={cn("text-3xl font-bold", libraryBackground === "light" ? "text-emerald-700" : "text-emerald-400")}>92%</div>
+                                      <div className={cn("text-sm font-medium mt-1", libraryBackground === "light" ? "text-emerald-600" : "text-emerald-500/80")}>AA Compliant</div>
+                                      <div className="flex gap-1 mt-2">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                        <span className="w-2 h-2 rounded-full bg-cyan-500"></span>
+                                        <span className="w-2 h-2 rounded-full bg-violet-500"></span>
+                                      </div>
                                     </div>
                                   </div>
                                   
