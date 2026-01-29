@@ -128,9 +128,9 @@ function extractIconsFromCode(code: string): string[] {
 }
 
 const LIBRARY_DOCS_PROMPT = `
-**ROLE: DESIGN SYSTEM DOCUMENTATION GENERATOR**
+**ROLE: PROFESSIONAL DESIGN SYSTEM DOCUMENTATION GENERATOR**
 
-You are creating LIVE documentation for a specific design system. Use ONLY the data provided - do NOT invent colors, fonts, or components.
+Create comprehensive, production-ready documentation for this design system. Include ALL interactive states, accessibility info, and real code examples.
 
 **OUTPUT FORMAT:** Return ONLY valid JSON with this exact structure:
 
@@ -141,17 +141,28 @@ You are creating LIVE documentation for a specific design system. Use ONLY the d
       "title": "Welcome",
       "type": "welcome",
       "content": {
-        "headline": "[System Name based on components]",
-        "description": "[1-2 sentences about what this design system is for]",
+        "headline": "[System Name - derive from project/components]",
+        "tagline": "[One-liner describing the system's purpose]",
+        "description": "[2-3 sentences about design philosophy and target use cases]",
+        "version": "1.0.0",
         "stats": {
-          "components": [actual count],
-          "colors": [actual count],
-          "typography": [actual count]
+          "components": [count],
+          "colors": [count],
+          "categories": [count]
         },
         "principles": [
-          { "icon": "Layers", "title": "[principle]", "description": "[based on detected patterns]" }
+          { "icon": "Layers", "title": "Composable", "description": "Build complex UIs from simple, reusable pieces" },
+          { "icon": "Palette", "title": "Consistent", "description": "Unified visual language across all components" },
+          { "icon": "Accessibility", "title": "Accessible", "description": "WCAG 2.1 AA compliant by default" },
+          { "icon": "Zap", "title": "Performant", "description": "Optimized for speed and efficiency" }
         ],
-        "quickLinks": ["Getting Started", "Colors", "Typography", "Iconography", "Examples"]
+        "quickLinks": [
+          { "id": "getting-started", "label": "Getting Started" },
+          { "id": "colors", "label": "Colors" },
+          { "id": "typography", "label": "Typography" },
+          { "id": "spacing", "label": "Spacing" },
+          { "id": "components", "label": "Components" }
+        ]
       }
     },
     {
@@ -159,9 +170,15 @@ You are creating LIVE documentation for a specific design system. Use ONLY the d
       "title": "Getting Started",
       "type": "getting-started",
       "content": {
-        "description": "[How to use these components]",
-        "quickStart": "[Real code example using actual component names from the system]",
-        "features": [{ "icon": "[icon]", "title": "[feature]", "description": "[desc]" }]
+        "description": "Quick guide to using this design system in your project.",
+        "installation": "npm install [package-name] or copy components directly",
+        "quickStart": "[Real import + usage code for main component]",
+        "dependencies": ["react", "tailwindcss", "lucide-react"],
+        "features": [
+          { "icon": "Code", "title": "React + TypeScript", "description": "Fully typed components" },
+          { "icon": "Paintbrush", "title": "Tailwind CSS", "description": "Utility-first styling" },
+          { "icon": "Smartphone", "title": "Responsive", "description": "Mobile-first design" }
+        ]
       }
     },
     {
@@ -169,14 +186,20 @@ You are creating LIVE documentation for a specific design system. Use ONLY the d
       "title": "Colors",
       "type": "colors",
       "content": {
-        "description": "[Theme description - dark/light]",
+        "description": "[Dark/Light theme description based on detected colors]",
         "palette": {
-          "background": { "name": "Background", "shades": [{ "name": "[name]", "value": "[#hex]" }] },
-          "text": { "name": "Text", "shades": [{ "name": "[name]", "value": "[#hex]" }] },
-          "primary": { "name": "Primary", "shades": [{ "name": "[name]", "value": "[#hex]" }] },
-          "accent": { "name": "Accent", "shades": [{ "name": "[name]", "value": "[#hex]" }] }
+          "background": { "name": "Background", "shades": [{ "name": "[zinc-900 etc]", "value": "#hex", "usage": "Main background" }] },
+          "surface": { "name": "Surface", "shades": [{ "name": "[zinc-800 etc]", "value": "#hex", "usage": "Cards, panels" }] },
+          "text": { "name": "Text", "shades": [{ "name": "[white/zinc-100]", "value": "#hex", "usage": "Primary text" }, { "name": "[zinc-400]", "value": "#hex", "usage": "Secondary text" }] },
+          "primary": { "name": "Primary", "shades": [{ "name": "[detected accent]", "value": "#hex", "usage": "Primary actions, links" }] },
+          "semantic": { "name": "Semantic", "shades": [{ "name": "Success", "value": "#22c55e", "usage": "Success states" }, { "name": "Error", "value": "#ef4444", "usage": "Error states" }, { "name": "Warning", "value": "#f59e0b", "usage": "Warnings" }] }
         },
-        "usage": [{ "color": "[color-name]", "use": "[where it's used]" }]
+        "usage": [
+          { "color": "background", "use": "Page backgrounds, main containers" },
+          { "color": "surface", "use": "Cards, modals, dropdowns" },
+          { "color": "primary", "use": "CTAs, links, focus rings" }
+        ],
+        "accessibility": "All color combinations meet WCAG 2.1 AA contrast requirements (4.5:1 for text, 3:1 for UI)."
       }
     },
     {
@@ -184,10 +207,68 @@ You are creating LIVE documentation for a specific design system. Use ONLY the d
       "title": "Typography",
       "type": "typography",
       "content": {
-        "description": "[Typography description]",
-        "fontFamily": { "primary": "[detected font]", "mono": "[detected mono font]" },
+        "description": "Type scale and font usage guidelines.",
+        "fontFamily": { 
+          "primary": "[detected or Inter, system-ui]", 
+          "mono": "[detected or ui-monospace, monospace]" 
+        },
         "scale": [
-          { "name": "[name]", "size": "[size]", "weight": "[weight]", "sample": "[sample text]", "px": "[px]", "lineHeight": "[lh]" }
+          { "name": "Display", "class": "text-4xl", "size": "36px", "weight": "bold", "lineHeight": "1.2", "sample": "Hero Headlines" },
+          { "name": "H1", "class": "text-3xl", "size": "30px", "weight": "bold", "lineHeight": "1.3", "sample": "Page Title" },
+          { "name": "H2", "class": "text-2xl", "size": "24px", "weight": "semibold", "lineHeight": "1.4", "sample": "Section Header" },
+          { "name": "H3", "class": "text-xl", "size": "20px", "weight": "semibold", "lineHeight": "1.4", "sample": "Card Title" },
+          { "name": "Body", "class": "text-base", "size": "16px", "weight": "normal", "lineHeight": "1.6", "sample": "Body text for paragraphs and content." },
+          { "name": "Small", "class": "text-sm", "size": "14px", "weight": "normal", "lineHeight": "1.5", "sample": "Captions and labels" },
+          { "name": "XS", "class": "text-xs", "size": "12px", "weight": "medium", "lineHeight": "1.4", "sample": "BADGES & TAGS" }
+        ],
+        "weights": ["normal (400)", "medium (500)", "semibold (600)", "bold (700)"]
+      }
+    },
+    {
+      "id": "spacing",
+      "title": "Spacing",
+      "type": "spacing",
+      "content": {
+        "description": "Consistent spacing scale based on 4px grid.",
+        "scale": [
+          { "name": "0", "value": "0px", "class": "p-0, m-0, gap-0" },
+          { "name": "1", "value": "4px", "class": "p-1, m-1, gap-1" },
+          { "name": "2", "value": "8px", "class": "p-2, m-2, gap-2" },
+          { "name": "3", "value": "12px", "class": "p-3, m-3, gap-3" },
+          { "name": "4", "value": "16px", "class": "p-4, m-4, gap-4" },
+          { "name": "6", "value": "24px", "class": "p-6, m-6, gap-6" },
+          { "name": "8", "value": "32px", "class": "p-8, m-8, gap-8" },
+          { "name": "12", "value": "48px", "class": "p-12, m-12, gap-12" }
+        ],
+        "usage": [
+          { "context": "Component padding", "recommended": "p-4 (16px)" },
+          { "context": "Card gaps", "recommended": "gap-4 (16px)" },
+          { "context": "Section margins", "recommended": "my-8 (32px)" }
+        ]
+      }
+    },
+    {
+      "id": "shadows",
+      "title": "Shadows & Effects",
+      "type": "shadows",
+      "content": {
+        "description": "Elevation and depth system.",
+        "shadows": [
+          { "name": "sm", "class": "shadow-sm", "usage": "Subtle elevation for inputs" },
+          { "name": "md", "class": "shadow-md", "usage": "Cards and dropdowns" },
+          { "name": "lg", "class": "shadow-lg", "usage": "Modals and popovers" },
+          { "name": "xl", "class": "shadow-xl", "usage": "Floating elements" }
+        ],
+        "borders": [
+          { "name": "Default", "class": "border border-zinc-700", "usage": "Card borders, dividers" },
+          { "name": "Focus", "class": "ring-2 ring-primary", "usage": "Focus states" }
+        ],
+        "radius": [
+          { "name": "sm", "class": "rounded-sm", "value": "2px" },
+          { "name": "md", "class": "rounded-md", "value": "6px" },
+          { "name": "lg", "class": "rounded-lg", "value": "8px" },
+          { "name": "xl", "class": "rounded-xl", "value": "12px" },
+          { "name": "full", "class": "rounded-full", "value": "9999px" }
         ]
       }
     },
@@ -196,10 +277,81 @@ You are creating LIVE documentation for a specific design system. Use ONLY the d
       "title": "Iconography",
       "type": "iconography",
       "content": {
-        "description": "[Icon system description]",
-        "library": "[Lucide/Custom/etc]",
-        "icons": ["[actual icon names found]"],
-        "categories": [{ "name": "[category]", "icons": ["[icon1]", "[icon2]"] }]
+        "description": "Icon system using Lucide React icons.",
+        "library": "lucide-react",
+        "sizes": [
+          { "name": "sm", "class": "w-4 h-4", "usage": "Inline, buttons" },
+          { "name": "md", "class": "w-5 h-5", "usage": "Navigation, default" },
+          { "name": "lg", "class": "w-6 h-6", "usage": "Feature icons" }
+        ],
+        "icons": ["[list of detected icons from code]"],
+        "categories": [
+          { "name": "Navigation", "icons": ["Menu", "ChevronRight", "ChevronDown", "ArrowRight"] },
+          { "name": "Actions", "icons": ["Plus", "Edit", "Trash", "Download", "Upload"] },
+          { "name": "Status", "icons": ["Check", "X", "AlertCircle", "Info"] }
+        ],
+        "usage": "Import icons individually: import { IconName } from 'lucide-react'"
+      }
+    },
+    {
+      "id": "components",
+      "title": "Components",
+      "type": "components",
+      "content": {
+        "description": "Interactive UI components with states and variants.",
+        "categories": [
+          {
+            "name": "Buttons",
+            "components": [
+              {
+                "name": "Button",
+                "description": "Primary action button with multiple variants",
+                "variants": ["primary", "secondary", "ghost", "destructive"],
+                "states": {
+                  "default": "bg-primary text-white",
+                  "hover": "hover:bg-primary/90",
+                  "active": "active:scale-95",
+                  "disabled": "disabled:opacity-50 disabled:cursor-not-allowed",
+                  "focus": "focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                },
+                "sizes": ["sm (h-8 px-3)", "md (h-10 px-4)", "lg (h-12 px-6)"],
+                "code": "<button className=\\"px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors\\">Click me</button>"
+              }
+            ]
+          },
+          {
+            "name": "Inputs",
+            "components": [
+              {
+                "name": "Input",
+                "description": "Text input field",
+                "states": {
+                  "default": "border-zinc-700 bg-zinc-900",
+                  "hover": "hover:border-zinc-600",
+                  "focus": "focus:border-primary focus:ring-1 focus:ring-primary",
+                  "error": "border-red-500 focus:ring-red-500",
+                  "disabled": "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                },
+                "code": "<input type=\\"text\\" className=\\"w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary\\" />"
+              }
+            ]
+          },
+          {
+            "name": "Cards",
+            "components": [
+              {
+                "name": "Card",
+                "description": "Content container with optional header/footer",
+                "states": {
+                  "default": "bg-zinc-900 border border-zinc-800",
+                  "hover": "hover:border-zinc-700 hover:shadow-lg",
+                  "interactive": "cursor-pointer transition-all"
+                },
+                "code": "<div className=\\"p-6 bg-zinc-900 border border-zinc-800 rounded-xl\\">Card content</div>"
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -207,24 +359,52 @@ You are creating LIVE documentation for a specific design system. Use ONLY the d
       "title": "Examples",
       "type": "examples",
       "content": {
-        "description": "[Examples description]",
+        "description": "Real-world usage examples from the codebase.",
         "examples": [
-          { "title": "[Real component name]", "description": "[what it does]", "code": "[actual code from component]" }
+          {
+            "title": "[First actual component name]",
+            "description": "[What this component does]",
+            "code": "[Actual code snippet from the component - 10-20 lines max]",
+            "props": ["prop1: string", "prop2?: boolean"]
+          }
+        ]
+      }
+    },
+    {
+      "id": "accessibility",
+      "title": "Accessibility",
+      "type": "accessibility", 
+      "content": {
+        "description": "Accessibility guidelines and requirements.",
+        "standards": "WCAG 2.1 Level AA",
+        "checklist": [
+          { "item": "Color contrast", "requirement": "4.5:1 for text, 3:1 for UI elements", "status": "pass" },
+          { "item": "Focus indicators", "requirement": "Visible focus rings on all interactive elements", "status": "pass" },
+          { "item": "Keyboard navigation", "requirement": "All controls accessible via keyboard", "status": "pass" },
+          { "item": "Screen readers", "requirement": "Proper ARIA labels and semantic HTML", "status": "pass" }
+        ],
+        "bestPractices": [
+          "Use semantic HTML elements (button, nav, main, etc.)",
+          "Add aria-label for icon-only buttons",
+          "Ensure sufficient color contrast",
+          "Support keyboard navigation (Tab, Enter, Escape)",
+          "Provide loading and error states"
         ]
       }
     }
   ]
 }
 
-**CRITICAL:** 
-1. Use ONLY colors from the extracted colors list
-2. Use ONLY fonts from the extracted typography
-3. Use ONLY icons from the extracted icons list  
-4. Use ONLY component names from the provided list
-5. Examples must use REAL code snippets from components
-6. If dark theme detected (zinc-900, slate-900 backgrounds), describe as dark theme
+**CRITICAL RULES:**
+1. Use ONLY colors actually found in the extracted colors list
+2. Use ONLY icons actually found in the code
+3. Use ONLY real component names from the provided list
+4. Examples MUST contain actual code snippets from the components (not made up)
+5. Detect theme (dark if zinc-900/slate-900/black backgrounds)
+6. Include ALL button/input states: default, hover, active, focus, disabled
+7. Make component code examples copy-pasteable and working
 
-Return ONLY valid JSON.
+Return ONLY valid JSON. No markdown, no explanation.
 `;
 
 export async function POST(request: NextRequest) {

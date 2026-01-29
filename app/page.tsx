@@ -9309,36 +9309,36 @@ Try these prompts in Cursor or v0:
     }
   }, [libraryData?.components, styleInfo, generationTitle, showToast, isGeneratingLibraryDocs, editableCode, generatedCode]);
 
-  // Auto-generate library docs when components are available
-  // Always regenerate when activeGeneration changes (new project loaded)
+  // Auto-generate library docs ONLY when components exist but docs don't
+  // Don't regenerate if docs were already loaded from database
   const lastDocsGenerationId = useRef<string | null>(null);
   
   useEffect(() => {
     const hasComponents = libraryData?.components && libraryData.components.length > 0;
     const currentGenId = activeGeneration?.id || null;
     const hasDocs = libraryData?.docs && libraryData.docs.length > 0;
-    const isNewProject = currentGenId && lastDocsGenerationId.current !== currentGenId;
     
-    // Reset error flag when switching to a new project
-    if (isNewProject) {
+    // Track project changes to reset error flag
+    if (currentGenId && lastDocsGenerationId.current !== currentGenId) {
+      lastDocsGenerationId.current = currentGenId;
       setLibraryDocsError(false);
     }
     
-    // Generate docs if:
+    // ONLY generate docs if:
     // 1. We have components AND
-    // 2. Not currently generating AND
-    // 3. No error from previous attempt (unless new project) AND
-    // 4. Either no docs exist OR this is a different project
+    // 2. NOT currently generating AND
+    // 3. NO docs exist (neither in state nor loaded from DB) AND
+    // 4. No error from previous attempt
     const shouldGenerate = hasComponents && 
       !isGeneratingLibraryDocs && 
-      (!libraryDocsError || isNewProject) &&
-      (!hasDocs || isNewProject);
+      !hasDocs &&
+      !libraryDocsError &&
+      !libraryDocsGenerated;
     
     if (shouldGenerate) {
-      lastDocsGenerationId.current = currentGenId;
-      generateLibraryDocs(true); // Force regenerate for new projects
+      generateLibraryDocs(false);
     }
-  }, [libraryData?.components?.length, isGeneratingLibraryDocs, libraryData?.docs?.length, generateLibraryDocs, activeGeneration?.id, libraryDocsError]);
+  }, [libraryData?.components?.length, isGeneratingLibraryDocs, libraryData?.docs?.length, generateLibraryDocs, activeGeneration?.id, libraryDocsError, libraryDocsGenerated]);
 
   // AI-Powered Blueprints Analysis (Single Source of Truth)
   const analyzeBlueprints = async () => {
