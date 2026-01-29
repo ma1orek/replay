@@ -18544,60 +18544,77 @@ export default function App() {
                                   <div>
                                     <h1 className={cn("text-4xl font-bold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Typography</h1>
                                     <p className={cn("text-lg", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
-                                      The typography system is built on the Inter font family, providing a comprehensive set of utility classes for consistent text styling.
+                                      {selectedDoc.content?.description || "Type scale and font usage guidelines extracted from your project."}
                                     </p>
                                   </div>
                                   
-                                  {/* Font Family */}
+                                  {/* Font Family - from AI */}
                                   <div>
                                     <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
                                       <Type className="w-5 h-5 text-zinc-400" /> Font Family
                                     </h2>
-                                    <p className={cn("text-sm mb-4", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
-                                      We use <strong>Inter</strong> as our primary font family, a highly legible typeface designed specifically for user interfaces.
-                                    </p>
-                                    <ul className={cn("text-sm space-y-1", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
-                                      <li>• Variable font-weight support (100-900)</li>
-                                      <li>• Both normal and italic styles</li>
-                                      <li>• Optimized for screen readability</li>
-                                    </ul>
+                                    {selectedDoc.content?.fontFamily ? (
+                                      <div className="space-y-3">
+                                        <div className={cn("p-4 rounded-lg border", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50")}>
+                                          <p className={cn("text-sm font-medium mb-1", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>Primary Font</p>
+                                          <p className={cn("text-lg font-semibold", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>{selectedDoc.content.fontFamily.primary || "Inter, system-ui"}</p>
+                                        </div>
+                                        {selectedDoc.content.fontFamily.mono && (
+                                          <div className={cn("p-4 rounded-lg border", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50")}>
+                                            <p className={cn("text-sm font-medium mb-1", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>Monospace Font</p>
+                                            <p className={cn("text-lg font-mono", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>{selectedDoc.content.fontFamily.mono}</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <p className={cn("text-sm", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>No font information extracted. Generate Library to analyze typography.</p>
+                                    )}
                                   </div>
                                   
-                                  {/* Typography Scale */}
+                                  {/* Typography Scale - from AI */}
                                   <div>
                                     <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
                                       <Ruler className="w-5 h-5 text-zinc-400" /> Typography Scale
                                     </h2>
-                                    <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
-                                      <table className="w-full text-sm">
-                                        <thead>
-                                          <tr className={cn("border-b", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50")}>
-                                            <th className={cn("px-4 py-3 text-left font-medium", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Style Name</th>
-                                            <th className={cn("px-4 py-3 text-left font-medium", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Value</th>
-                                            <th className={cn("px-4 py-3 text-left font-medium", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Description</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody>
-                                          {[
-                                            { style: "H1", size: "text-4xl", font: "Inter Bold 44/56", desc: "Main page titles" },
-                                            { style: "H2", size: "text-3xl", font: "Inter Bold 30/38", desc: "Section headings" },
-                                            { style: "H3", size: "text-2xl", font: "Inter Bold 20/24", desc: "Subsection headings" },
-                                            { style: "H4", size: "text-xl", font: "Inter Bold 16/20", desc: "Card titles" },
-                                            { style: "Body1", size: "text-base", font: "Inter Regular 16/24", desc: "Main content" },
-                                            { style: "Body2", size: "text-sm", font: "Inter Regular 14/20", desc: "Secondary content" },
-                                            { style: "Caption", size: "text-xs", font: "Inter Medium 12/18", desc: "Captions, metadata" },
-                                            { style: "Label", size: "text-xs", font: "Inter Regular 12/18", desc: "Input labels" },
-                                          ].map((row, i) => (
-                                            <tr key={i} className={cn("border-b last:border-0", libraryBackground === "light" ? "border-zinc-100" : "border-zinc-800/50")}>
-                                              <td className={cn("px-4 py-3 font-semibold", row.size, libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{row.style}</td>
-                                              <td className={cn("px-4 py-3 font-mono text-xs", libraryBackground === "light" ? "text-blue-600" : "text-blue-400")}>{row.font}</td>
-                                              <td className={cn("px-4 py-3", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{row.desc}</td>
-                                            </tr>
-                                          ))}
-                                        </tbody>
-                                      </table>
-                                    </div>
+                                    {selectedDoc.content?.scale && selectedDoc.content.scale.length > 0 ? (
+                                      <div className="space-y-4">
+                                        {selectedDoc.content.scale.map((item: any, i: number) => (
+                                          <div key={i} className={cn("p-4 rounded-lg border", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
+                                            <div className="flex items-baseline justify-between mb-2">
+                                              <span className={cn("font-semibold", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{item.name}</span>
+                                              <span className={cn("text-xs font-mono", libraryBackground === "light" ? "text-blue-600" : "text-blue-400")}>{item.class} · {item.size}</span>
+                                            </div>
+                                            <p className={cn(item.class, "mb-2", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")} style={{ fontWeight: item.weight === 'bold' ? 700 : item.weight === 'semibold' ? 600 : 400 }}>
+                                              {item.sample || "The quick brown fox jumps over the lazy dog."}
+                                            </p>
+                                            <p className={cn("text-xs", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
+                                              Line height: {item.lineHeight || "1.5"}
+                                            </p>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <div className={cn("p-8 rounded-lg border text-center", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50")}>
+                                        <Type className={cn("w-8 h-8 mx-auto mb-3", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")} />
+                                        <p className={cn("text-sm", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>No typography scale extracted yet</p>
+                                        <p className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>Generate Library to analyze font sizes and weights</p>
+                                      </div>
+                                    )}
                                   </div>
+                                  
+                                  {/* Font Weights - from AI */}
+                                  {selectedDoc.content?.weights && selectedDoc.content.weights.length > 0 && (
+                                    <div>
+                                      <h2 className={cn("text-xl font-semibold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Font Weights</h2>
+                                      <div className="flex flex-wrap gap-2">
+                                        {selectedDoc.content.weights.map((weight: string, i: number) => (
+                                          <span key={i} className={cn("px-3 py-1.5 rounded-lg text-sm font-mono", libraryBackground === "light" ? "bg-zinc-100 text-zinc-700" : "bg-zinc-800 text-zinc-300")}>
+                                            {weight}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                               
@@ -18607,44 +18624,83 @@ export default function App() {
                               {selectedDoc.type === "iconography" && (
                                 <div className="space-y-10">
                                   <div>
-                                    <h1 className={cn("text-4xl font-bold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Icons</h1>
+                                    <h1 className={cn("text-4xl font-bold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Iconography</h1>
                                     <p className={cn("text-lg", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
-                                      A comprehensive icon library with multiple weight variants to ensure visual consistency across all applications.
+                                      {selectedDoc.content?.description || "Icons detected in your project."}
                                     </p>
                                   </div>
                                   
-                                  {/* Icon Grid - Bold */}
-                                  <div>
-                                    <h2 className={cn("text-lg font-semibold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Base Bold</h2>
-                                    <div className="grid grid-cols-8 gap-2">
-                                      {["Home", "Search", "Settings", "User", "Bell", "Mail", "Heart", "Star", "Check", "X", "Plus", "Minus", "Edit", "Trash", "Download", "Upload", "Copy", "Link", "Eye", "Lock", "Unlock", "Menu", "Grid", "List"].map((icon) => (
-                                        <div key={icon} className={cn("flex flex-col items-center gap-1.5 p-3 rounded-lg border hover:border-zinc-500 transition-colors cursor-pointer", libraryBackground === "light" ? "border-zinc-200 hover:bg-zinc-50" : "border-zinc-800 hover:bg-zinc-800/50")}>
-                                          <div className={cn("w-5 h-5", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>
-                                            <svg fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" className="w-full h-full"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                                  {/* Icon Sizes */}
+                                  {selectedDoc.content?.sizes && selectedDoc.content.sizes.length > 0 && (
+                                    <div>
+                                      <h2 className={cn("text-lg font-semibold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Icon Sizes</h2>
+                                      <div className="flex flex-wrap gap-4">
+                                        {selectedDoc.content.sizes.map((size: any, i: number) => (
+                                          <div key={i} className={cn("p-4 rounded-lg border text-center", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50")}>
+                                            <div className={cn("mb-2 flex justify-center", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>
+                                              <div className={size.class}>
+                                                <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="w-full h-full"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" /></svg>
+                                              </div>
+                                            </div>
+                                            <p className={cn("text-xs font-semibold", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>{size.name}</p>
+                                            <p className={cn("text-xs font-mono", libraryBackground === "light" ? "text-blue-600" : "text-blue-400")}>{size.class}</p>
+                                            <p className={cn("text-[10px] mt-1", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{size.usage}</p>
                                           </div>
-                                          <span className={cn("text-[9px] font-mono truncate w-full text-center", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{icon.toLowerCase()}</span>
-                                        </div>
-                                      ))}
+                                        ))}
+                                      </div>
                                     </div>
-                                  </div>
+                                  )}
                                   
-                                  {/* Icon Grid - Regular */}
-                                  <div>
-                                    <h2 className={cn("text-lg font-semibold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Base Regular</h2>
-                                    <div className="grid grid-cols-8 gap-2">
-                                      {["add", "arrow-down", "arrow-up", "arrow-left", "arrow-right", "calendar", "clock", "filter", "sort", "refresh", "share", "bookmark", "flag", "tag", "folder", "file"].map((icon) => (
-                                        <div key={icon} className={cn("flex flex-col items-center gap-1.5 p-3 rounded-lg border hover:border-zinc-500 transition-colors cursor-pointer", libraryBackground === "light" ? "border-zinc-200 hover:bg-zinc-50" : "border-zinc-800 hover:bg-zinc-800/50")}>
-                                          <div className={cn("w-5 h-5", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>
-                                            <svg fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" className="w-full h-full"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+                                  {/* Detected Icons from AI */}
+                                  {selectedDoc.content?.icons && selectedDoc.content.icons.length > 0 ? (
+                                    <div>
+                                      <h2 className={cn("text-lg font-semibold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
+                                        Detected Icons ({selectedDoc.content.icons.length})
+                                      </h2>
+                                      <div className="grid grid-cols-6 sm:grid-cols-8 lg:grid-cols-10 gap-2">
+                                        {selectedDoc.content.icons.map((icon: string, i: number) => (
+                                          <div 
+                                            key={i} 
+                                            className={cn("flex flex-col items-center gap-1.5 p-3 rounded-lg border hover:border-zinc-500 transition-colors cursor-pointer", libraryBackground === "light" ? "border-zinc-200 hover:bg-zinc-50" : "border-zinc-800 hover:bg-zinc-800/50")}
+                                            onClick={() => { navigator.clipboard.writeText(icon); showToast(`Copied: ${icon}`, "success"); }}
+                                          >
+                                            <div className={cn("w-5 h-5 flex items-center justify-center", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>
+                                              <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="w-full h-full"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" /></svg>
+                                            </div>
+                                            <span className={cn("text-[9px] font-mono truncate w-full text-center", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{icon}</span>
                                           </div>
-                                          <span className={cn("text-[9px] font-mono truncate w-full text-center", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{icon}</span>
-                                        </div>
-                                      ))}
+                                        ))}
+                                      </div>
                                     </div>
-                                  </div>
+                                  ) : (
+                                    <div className={cn("p-8 rounded-lg border text-center", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50")}>
+                                      <Layers className={cn("w-8 h-8 mx-auto mb-3", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")} />
+                                      <p className={cn("text-sm", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>No icons detected yet</p>
+                                      <p className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>Generate Library to analyze icons used in your code</p>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Icon Categories */}
+                                  {selectedDoc.content?.categories && selectedDoc.content.categories.length > 0 && (
+                                    <div>
+                                      <h2 className={cn("text-lg font-semibold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Categories</h2>
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {selectedDoc.content.categories.map((cat: any, i: number) => (
+                                          <div key={i} className={cn("p-4 rounded-lg border", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
+                                            <h3 className={cn("font-semibold mb-2", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{cat.name}</h3>
+                                            <div className="flex flex-wrap gap-1">
+                                              {cat.icons?.map((icon: string, j: number) => (
+                                                <span key={j} className={cn("px-2 py-0.5 rounded text-xs font-mono", libraryBackground === "light" ? "bg-zinc-100 text-zinc-600" : "bg-zinc-800 text-zinc-400")}>{icon}</span>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
                                   
                                   <p className={cn("text-xs", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
-                                    Using Lucide Icons - <a href="https://lucide.dev" target="_blank" rel="noopener" className="text-zinc-400 hover:text-white hover:underline">lucide.dev</a>
+                                    {selectedDoc.content?.library || "Using Lucide Icons"} - <a href="https://lucide.dev" target="_blank" rel="noopener" className="text-zinc-400 hover:text-white hover:underline">lucide.dev</a>
                                   </p>
                                 </div>
                               )}
@@ -18662,7 +18718,7 @@ export default function App() {
                                   </div>
                                   
                                   {/* AI-Generated Examples */}
-                                  {selectedDoc.content?.examples && selectedDoc.content.examples.length > 0 && (
+                                  {selectedDoc.content?.examples && selectedDoc.content.examples.length > 0 ? (
                                     <div>
                                       <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
                                         <Code className="w-5 h-5 text-zinc-400" /> Code Examples
@@ -18689,41 +18745,15 @@ export default function App() {
                                         ))}
                                       </div>
                                     </div>
+                                  ) : (
+                                    <div className={cn("p-8 rounded-lg border text-center", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50")}>
+                                      <Code className={cn("w-8 h-8 mx-auto mb-3", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")} />
+                                      <p className={cn("text-sm", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>No code examples extracted yet</p>
+                                      <p className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>Generate Library to extract real code snippets from your components</p>
+                                    </div>
                                   )}
                                   
-                                  {/* React Applications */}
-                                  <div>
-                                    <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
-                                      <span>⚛️</span> React Applications
-                                    </h2>
-                                    <p className={cn("text-sm mb-4", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
-                                      See how the Design System integrates seamlessly into React applications.
-                                    </p>
-                                    <div className="grid grid-cols-2 gap-4">
-                                      <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
-                                        <div className={cn("h-40 flex items-center justify-center", libraryBackground === "light" ? "bg-gradient-to-br from-blue-50 to-indigo-100" : "bg-gradient-to-br from-blue-950/50 to-indigo-950/50")}>
-                                          <div className={cn("text-sm", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Preview Image</div>
-                                        </div>
-                                        <div className="p-4">
-                                          <h3 className={cn("font-semibold", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>Dashboard App</h3>
-                                          <p className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>A modern dashboard with metrics, charts, and data tables.</p>
-                                          <div className="flex gap-2 mt-3">
-                                            <button className="px-3 py-1.5 text-xs bg-zinc-700 text-white rounded-lg hover:bg-zinc-600">Preview</button>
-                                            <button className={cn("px-3 py-1.5 text-xs rounded-lg border", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-700")}>Code</button>
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <div className={cn("rounded-xl border overflow-hidden flex items-center justify-center", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50")}>
-                                        <div className="text-center p-8">
-                                          <Rocket className="w-8 h-8 text-zinc-500 mx-auto mb-2" />
-                                          <p className={cn("text-sm font-medium", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>More Coming Soon</p>
-                                          <p className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>We're building more examples</p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  
-                                  {/* Categories */}
+                                  {/* Categories from actual components */}
                                   <div>
                                     <h2 className={cn("text-xl font-semibold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Components by Category</h2>
                                     <div className="space-y-3">
