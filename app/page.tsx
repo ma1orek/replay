@@ -18037,9 +18037,10 @@ export default function GeneratedPage() {
                       : null;
                     // Find doc from libraryData.docs (real generated docs only)
                     const docId = selectedLibraryItem?.replace("doc-", "");
-                    // Map virtual doc types to real content sections
+                    // Map doc types to content sections from libraryData
+                    const libData = libraryData as any;
                     const docTypeMap: Record<string, any> = {
-                      "overview": { id: "overview", title: "Overview", type: "overview", content: libraryData?.overview || {} },
+                      "overview": { id: "overview", title: "Overview", type: "overview", content: libData?.overview || {} },
                       "getting-started": { id: "getting-started", title: "Getting Started", type: "getting-started", content: {} },
                       "colors": { id: "colors", title: "Colors", type: "colors", content: {} },
                       "typography": { id: "typography", title: "Typography", type: "typography", content: {} },
