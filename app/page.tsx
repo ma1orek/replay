@@ -20052,7 +20052,7 @@ module.exports = {
                             </div>
                           ) : (
                             <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                              {isRegeneratingLibrary ? (
+                              {isGeneratingLibrary ? (
                                 <>
                                   <div className="relative w-10 h-10 mb-4">
                                     <div className="absolute inset-0 rounded-full border-2 border-zinc-700" />
