@@ -645,7 +645,7 @@ interface LibraryComponent {
 interface LibraryDoc {
   id: string;
   title: string;
-  type: "welcome" | "getting-started" | "components" | "iconography" | "colors" | "typography" | "spacing" | "examples" | "changelog";
+  type: "overview" | "getting-started" | "components" | "iconography" | "colors" | "typography" | "spacing" | "examples" | "changelog";
   content: any;  // MDX content string or AI-generated structured content object
 }
 
@@ -13156,7 +13156,7 @@ ${publishCode}
                               <span>Generating docs...</span>
                             </div>
                           ) : (libraryData.docs?.length > 0 ? libraryData.docs : [
-                            { id: "welcome", title: "Overview", type: "welcome" },
+                            { id: "overview", title: "Overview", type: "overview" },
                             { id: "getting-started", title: "Getting Started", type: "getting-started" },
                             { id: "components", title: "Components", type: "components" },
                             { id: "colors", title: "Colors", type: "colors" },
@@ -17738,9 +17738,9 @@ export default function GeneratedPage() {
                             <div className="w-full max-w-4xl mx-auto p-8 pb-24">
                               
                               {/* ═══════════════════════════════════════════════════════════════════════════════ */}
-                              {/* WELCOME PAGE - Clean Lucide Icons */}
+                              {/* OVERVIEW PAGE - Shows data from generation */}
                               {/* ═══════════════════════════════════════════════════════════════════════════════ */}
-                              {selectedDoc.type === "welcome" && (
+                              {selectedDoc.type === "overview" && (
                                 <div className="space-y-8">
                                   {/* Hero Header */}
                                   <div className="flex items-start justify-between">
@@ -17779,9 +17779,9 @@ export default function GeneratedPage() {
                                       <div className="absolute top-3 right-3 opacity-10 group-hover:opacity-20 transition-opacity">
                                         <Type className="w-16 h-16 text-emerald-500" />
                                       </div>
-                                      <div className={cn("text-4xl font-bold", libraryBackground === "light" ? "text-emerald-600" : "text-emerald-400")}>8</div>
+                                      <div className={cn("text-4xl font-bold", libraryBackground === "light" ? "text-emerald-600" : "text-emerald-400")}>{Object.keys(libraryData?.tokens?.typography || {}).length || 0}</div>
                                       <div className={cn("text-sm font-medium mt-1", libraryBackground === "light" ? "text-emerald-800" : "text-emerald-300")}>Typography Styles</div>
-                                      <div className={cn("text-[10px] mt-0.5", libraryBackground === "light" ? "text-emerald-600" : "text-emerald-400")}>Inter font family</div>
+                                      <div className={cn("text-[10px] mt-0.5", libraryBackground === "light" ? "text-emerald-600" : "text-emerald-400")}>{libraryData?.tokens?.typography ? "From generation" : "Not extracted"}</div>
                                     </div>
                                     <div className={cn("p-5 rounded-xl border relative overflow-hidden", libraryBackground === "light" ? "bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200" : "bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/20")}>
                                       <div className="absolute top-3 right-3 opacity-10">
@@ -17793,86 +17793,70 @@ export default function GeneratedPage() {
                                     </div>
                                   </div>
                                   
-                                  {/* Component Preview Section */}
+                                  {/* Component Preview Section - From Generation */}
                                   <div>
                                     <div className="flex items-center justify-between mb-4">
                                       <h2 className={cn("text-lg font-semibold", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Components</h2>
                                       <button onClick={() => setSelectedLibraryItem("doc-components")} className={cn("text-xs px-3 py-1.5 rounded-lg transition-colors", libraryBackground === "light" ? "bg-zinc-100 text-zinc-600 hover:bg-zinc-200" : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700")}>View All</button>
                                     </div>
-                                    <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50")}>
-                                      {/* Component Preview Grid */}
-                                      <div className="grid grid-cols-3 divide-x" style={{ borderColor: libraryBackground === "light" ? "#e4e4e7" : "#27272a" }}>
-                                        {/* Buttons Preview */}
-                                        <div className={cn("p-5", libraryBackground === "light" ? "divide-zinc-200" : "divide-zinc-800")}>
-                                          <div className={cn("text-xs font-medium mb-4 uppercase tracking-wider", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Buttons</div>
-                                          <div className="space-y-3">
-                                            <button className="w-full px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">Primary</button>
-                                            <button className={cn("w-full px-4 py-2 text-sm font-medium rounded-lg border transition-colors", libraryBackground === "light" ? "border-zinc-300 text-zinc-700 hover:bg-zinc-50" : "border-zinc-700 text-zinc-300 hover:bg-zinc-800")}>Secondary</button>
-                                            <button className="w-full px-4 py-2 text-sm font-medium rounded-lg text-blue-500 hover:bg-blue-500/10 transition-colors">Ghost</button>
-                                          </div>
-                                        </div>
-                                        {/* Form Elements Preview */}
-                                        <div className={cn("p-5", libraryBackground === "light" ? "divide-zinc-200" : "divide-zinc-800")}>
-                                          <div className={cn("text-xs font-medium mb-4 uppercase tracking-wider", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Form Elements</div>
-                                          <div className="space-y-3">
-                                            <input type="text" placeholder="Input field..." className={cn("w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all", libraryBackground === "light" ? "border-zinc-300 bg-white text-zinc-900" : "border-zinc-700 bg-zinc-800 text-white")} />
-                                            <select className={cn("w-full px-3 py-2 text-sm rounded-lg border outline-none", libraryBackground === "light" ? "border-zinc-300 bg-white text-zinc-900" : "border-zinc-700 bg-zinc-800 text-white")}>
-                                              <option>Select option...</option>
-                                            </select>
-                                            <div className="flex items-center gap-2">
-                                              <input type="checkbox" id="check1" className="w-4 h-4 rounded border-zinc-300" />
-                                              <label htmlFor="check1" className={cn("text-sm", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>Checkbox label</label>
+                                    {libraryData?.components && libraryData.components.length > 0 ? (
+                                      <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50")}>
+                                        <div className="grid grid-cols-2 lg:grid-cols-3 divide-x divide-y" style={{ borderColor: libraryBackground === "light" ? "#e4e4e7" : "#27272a" }}>
+                                          {libraryData.components.slice(0, 6).map((comp) => (
+                                            <div key={comp.id} className={cn("p-4", libraryBackground === "light" ? "hover:bg-zinc-50" : "hover:bg-zinc-800/50")} onClick={() => setSelectedLibraryItem(comp.id)}>
+                                              <div className="flex items-center gap-2 mb-2">
+                                                <div className={cn("w-6 h-6 rounded flex items-center justify-center", libraryBackground === "light" ? "bg-zinc-100" : "bg-zinc-800")}>
+                                                  <Puzzle className={cn("w-3.5 h-3.5", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")} />
+                                                </div>
+                                                <span className={cn("text-sm font-medium", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{comp.name}</span>
+                                              </div>
+                                              <p className={cn("text-xs line-clamp-2", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{comp.description}</p>
+                                              <div className={cn("text-[10px] mt-2 px-2 py-0.5 rounded-full inline-block", libraryBackground === "light" ? "bg-zinc-100 text-zinc-600" : "bg-zinc-800 text-zinc-400")}>{comp.category}</div>
                                             </div>
-                                          </div>
-                                        </div>
-                                        {/* Cards Preview */}
-                                        <div className={cn("p-5", libraryBackground === "light" ? "divide-zinc-200" : "divide-zinc-800")}>
-                                          <div className={cn("text-xs font-medium mb-4 uppercase tracking-wider", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Cards</div>
-                                          <div className={cn("p-4 rounded-lg border", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-700 bg-zinc-800")}>
-                                            <div className={cn("text-sm font-medium", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>Card Title</div>
-                                            <div className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-400")}>Card description text goes here...</div>
-                                            <div className="flex gap-2 mt-3">
-                                              <span className="px-2 py-0.5 text-[10px] rounded-full bg-blue-500/20 text-blue-400">Tag</span>
-                                              <span className="px-2 py-0.5 text-[10px] rounded-full bg-emerald-500/20 text-emerald-400">Status</span>
-                                            </div>
-                                          </div>
+                                          ))}
                                         </div>
                                       </div>
-                                    </div>
+                                    ) : (
+                                      <div className={cn("rounded-xl border p-8 text-center", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50")}>
+                                        <Puzzle className={cn("w-8 h-8 mx-auto mb-3", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")} />
+                                        <p className={cn("text-sm", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>No components extracted yet</p>
+                                        <p className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>Generate from video to extract components</p>
+                                      </div>
+                                    )}
                                   </div>
                                   
-                                  {/* Color Palette Preview */}
+                                  {/* Color Palette Preview - From Generation */}
                                   <div>
                                     <div className="flex items-center justify-between mb-4">
-                                      <h2 className={cn("text-lg font-semibold", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Color Palettes</h2>
+                                      <h2 className={cn("text-lg font-semibold", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Color Tokens</h2>
                                       <button onClick={() => setSelectedLibraryItem("doc-colors")} className={cn("text-xs px-3 py-1.5 rounded-lg transition-colors", libraryBackground === "light" ? "bg-zinc-100 text-zinc-600 hover:bg-zinc-200" : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700")}>View All</button>
                                     </div>
-                                    <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
-                                      <div className="grid grid-cols-6 gap-0">
-                                        {["blue", "violet", "emerald", "amber", "rose", "slate"].map((color) => {
-                                          const colorMap: Record<string, string[]> = {
-                                            blue: ["#eff6ff", "#dbeafe", "#bfdbfe", "#93c5fd", "#60a5fa", "#3b82f6", "#2563eb", "#1d4ed8", "#1e40af", "#1e3a8a"],
-                                            violet: ["#f5f3ff", "#ede9fe", "#ddd6fe", "#c4b5fd", "#a78bfa", "#8b5cf6", "#7c3aed", "#6d28d9", "#5b21b6", "#4c1d95"],
-                                            emerald: ["#ecfdf5", "#d1fae5", "#a7f3d0", "#6ee7b7", "#34d399", "#10b981", "#059669", "#047857", "#065f46", "#064e3b"],
-                                            amber: ["#fffbeb", "#fef3c7", "#fde68a", "#fcd34d", "#fbbf24", "#f59e0b", "#d97706", "#b45309", "#92400e", "#78350f"],
-                                            rose: ["#fff1f2", "#ffe4e6", "#fecdd3", "#fda4af", "#fb7185", "#f43f5e", "#e11d48", "#be123c", "#9f1239", "#881337"],
-                                            slate: ["#f8fafc", "#f1f5f9", "#e2e8f0", "#cbd5e1", "#94a3b8", "#64748b", "#475569", "#334155", "#1e293b", "#0f172a"]
-                                          };
-                                          return (
-                                            <div key={color} className="flex flex-col">
-                                              {colorMap[color].map((hex, i) => (
-                                                <div key={i} className="h-8 w-full cursor-pointer hover:scale-y-125 transition-transform" style={{ backgroundColor: hex }} title={`${color}-${["50","100","200","300","400","500","600","700","800","900"][i]}: ${hex}`} onClick={() => navigator.clipboard.writeText(hex)} />
-                                              ))}
-                                            </div>
-                                          );
-                                        })}
+                                    {Object.keys(libraryData?.tokens?.colors || {}).length > 0 ? (
+                                      <div className={cn("rounded-xl border overflow-hidden p-4", libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50")}>
+                                        <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-3">
+                                          {Object.entries(libraryData?.tokens?.colors || {}).slice(0, 16).map(([name, value]) => {
+                                            const colorValue = typeof value === 'string' ? value : (typeof value === 'object' && value !== null ? ((value as any).bg || (value as any).value || '#888') : '#888');
+                                            return (
+                                              <div key={name} className="text-center">
+                                                <div 
+                                                  className="w-full aspect-square rounded-lg cursor-pointer hover:scale-105 transition-transform shadow-sm border border-white/10"
+                                                  style={{ backgroundColor: colorValue }}
+                                                  onClick={() => { navigator.clipboard.writeText(colorValue); showToast(`Copied ${colorValue}`, "success"); }}
+                                                  title={`${name}: ${colorValue}`}
+                                                />
+                                                <div className={cn("text-[10px] mt-1.5 truncate", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>{name}</div>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
                                       </div>
-                                      <div className={cn("grid grid-cols-6 border-t", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900")}>
-                                        {["blue", "violet", "emerald", "amber", "rose", "slate"].map((color) => (
-                                          <div key={color} className={cn("px-2 py-2 text-center text-[10px] font-medium capitalize", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>{color}</div>
-                                        ))}
+                                    ) : (
+                                      <div className={cn("rounded-xl border p-8 text-center", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50")}>
+                                        <Palette className={cn("w-8 h-8 mx-auto mb-3", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")} />
+                                        <p className={cn("text-sm", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>No colors extracted yet</p>
+                                        <p className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>Generate from video to extract color tokens</p>
                                       </div>
-                                    </div>
+                                    )}
                                   </div>
                                   
                                   {/* Quick Links */}
