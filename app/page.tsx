@@ -12060,7 +12060,7 @@ ${publishCode}
                         onClick={() => setShowMobileMenu(false)}
                         className="block p-4 hover:bg-zinc-800/50 transition-colors border-b border-zinc-800"
                       >
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <span className="text-sm text-white">{userTotalCredits} credits</span>
                             {(plan === "pro" || plan === "agency" || plan === "enterprise") ? (
@@ -12069,28 +12069,15 @@ ${publishCode}
                               </span>
                             ) : (
                               <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-white/10 text-zinc-500 uppercase">
-                                {"Free"}
+                                Free
                               </span>
                             )}
                           </div>
                           <ChevronRight className="w-4 h-4 text-zinc-500" />
                         </div>
-                        <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-zinc-800 rounded-full transition-all"
-                            style={{ width: `${percentage}%` }}
-                          />
+                        <div className="mt-1">
+                          <span className="text-xs text-zinc-500">{isPaidPlan ? "Add credits →" : "Upgrade →"}</span>
                         </div>
-                        {!isPaidPlan && (
-                          <div className="flex items-center justify-between mt-2">
-                            <span className="text-xs text-zinc-300 font-medium">Upgrade →</span>
-                          </div>
-                        )}
-                        {isPaidPlan && (
-                          <div className="flex items-center justify-between mt-2">
-                            <span className="text-xs text-zinc-500">Add credits →</span>
-                          </div>
-                        )}
                       </Link>
                     );
                   })()}
@@ -14946,7 +14933,7 @@ ${publishCode}
                                 onClick={() => setShowProfileMenu(false)}
                                 className="block p-4 hover:bg-zinc-800/50 transition-colors border-b border-zinc-800"
                               >
-                                <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-2">
                                     <span className="text-sm text-white">{userTotalCredits} credits</span>
                                     {isPaidPlan ? (
@@ -14961,21 +14948,9 @@ ${publishCode}
                                   </div>
                                   <ChevronRight className="w-4 h-4 text-zinc-500" />
                                 </div>
-                                <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                                  <div 
-                                    className="h-full bg-zinc-800 rounded-full transition-all"
-                                    style={{ width: `${percentage}%` }}
-                                  />
+                                <div className="mt-1">
+                                  <span className="text-xs text-zinc-500">{isPaidPlan ? "Add credits →" : "Upgrade →"}</span>
                                 </div>
-                                {isPaidPlan ? (
-                                  <div className="mt-2">
-                                    <span className="text-xs text-zinc-500">Add credits →</span>
-                                  </div>
-                                ) : (
-                                  <div className="mt-2">
-                                    <span className="text-xs text-zinc-300 font-medium">Upgrade →</span>
-                                  </div>
-                                )}
                               </Link>
                             );
                           })()}
