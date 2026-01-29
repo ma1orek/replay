@@ -19617,7 +19617,7 @@ module.exports = {
                                 const variantsCount = selectedComponent.variants?.length || 0;
                                 
                                 // Tab definitions - only show tabs with real data
-                                const accessibilityCount = selectedComponent.accessibility?.issues?.length || 0;
+                                const accessibilityCount = Array.isArray(selectedComponent.accessibility) ? selectedComponent.accessibility.length : 0;
                                 const usageCount = selectedComponent.usageLocations?.length || 0;
                                 
                                 const tabs = [
