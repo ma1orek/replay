@@ -13443,10 +13443,10 @@ ${publishCode}
                                         key={comp.id}
                                         className={cn(
                                           "w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md transition-colors group/comp cursor-pointer",
-                                          selectedLibraryItem === comp.id ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300"
+                                          selectedLibraryItem === `comp-${comp.id}` ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300"
                                         )}
                                         onClick={() => {
-                                          setSelectedLibraryItem(comp.id);
+                                          setSelectedLibraryItem(`comp-${comp.id}`);
                                           setLibraryPropsOverride({});
                                         }}
                                       >
@@ -13461,7 +13461,7 @@ ${publishCode}
                                                 components: libraryData.components.filter((c: any) => c.id !== comp.id)
                                               };
                                               setLibraryData(updated);
-                                              if (selectedLibraryItem === comp.id) {
+                                              if (selectedLibraryItem === `comp-${comp.id}`) {
                                                 setSelectedLibraryItem(null);
                                               }
                                             }
@@ -18087,7 +18087,7 @@ export default function GeneratedPage() {
                                       <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50")}>
                                         <div className="grid grid-cols-2 lg:grid-cols-3 divide-x divide-y" style={{ borderColor: libraryBackground === "light" ? "#e4e4e7" : "#27272a" }}>
                                           {libraryData.components.slice(0, 6).map((comp) => (
-                                            <div key={comp.id} className={cn("p-4", libraryBackground === "light" ? "hover:bg-zinc-50" : "hover:bg-zinc-800/50")} onClick={() => setSelectedLibraryItem(comp.id)}>
+                                            <div key={comp.id} className={cn("p-4", libraryBackground === "light" ? "hover:bg-zinc-50" : "hover:bg-zinc-800/50")} onClick={() => setSelectedLibraryItem(`comp-${comp.id}`)}>
                                               <div className="flex items-center gap-2 mb-2">
                                                 <div className={cn("w-6 h-6 rounded flex items-center justify-center", libraryBackground === "light" ? "bg-zinc-100" : "bg-zinc-800")}>
                                                   <Puzzle className={cn("w-3.5 h-3.5", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")} />
@@ -19135,7 +19135,7 @@ export default function GeneratedPage() {
                                               <h3 className={cn("font-semibold capitalize mb-2", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{cat}</h3>
                                               <div className="flex flex-wrap gap-2">
                                                 {catComponents.map((comp: any, i: number) => (
-                                                  <span key={i} className={cn("px-2 py-1 text-xs rounded cursor-pointer hover:opacity-80", libraryBackground === "light" ? "bg-zinc-100 text-zinc-600" : "bg-zinc-800 text-zinc-400")} onClick={() => setSelectedLibraryItem(comp.id)}>{comp.name}</span>
+                                                  <span key={i} className={cn("px-2 py-1 text-xs rounded cursor-pointer hover:opacity-80", libraryBackground === "light" ? "bg-zinc-100 text-zinc-600" : "bg-zinc-800 text-zinc-400")} onClick={() => setSelectedLibraryItem(`comp-${comp.id}`)}>{comp.name}</span>
                                                 ))}
                                               </div>
                                             </div>
