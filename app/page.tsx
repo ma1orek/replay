@@ -18157,7 +18157,7 @@ export default function GeneratedPage() {
                                       <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50")}>
                                         <div className="grid grid-cols-2 lg:grid-cols-3 divide-x divide-y" style={{ borderColor: libraryBackground === "light" ? "#e4e4e7" : "#27272a" }}>
                                           {libraryData.components.slice(0, 6).map((comp) => (
-                                            <div key={comp.id} className={cn("p-4", libraryBackground === "light" ? "hover:bg-zinc-50" : "hover:bg-zinc-800/50")} onClick={() => setSelectedLibraryItem(`comp-${comp.id}`)}>
+                                            <div key={comp.id} className={cn("p-4 cursor-pointer transition-colors", libraryBackground === "light" ? "hover:bg-zinc-50" : "hover:bg-zinc-800/50")} onClick={() => setSelectedLibraryItem(`comp-${comp.id}`)}>
                                               <div className="flex items-center gap-2 mb-2">
                                                 <div className={cn("w-6 h-6 rounded flex items-center justify-center", libraryBackground === "light" ? "bg-zinc-100" : "bg-zinc-800")}>
                                                   <Puzzle className={cn("w-3.5 h-3.5", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")} />
@@ -18879,28 +18879,35 @@ module.exports = {
                                     </div>
                                   </div>
                                   
-                                  {/* Semantic Colors - From AI Generation */}
-                                  {selectedDoc.content?.semantic?.feedback && selectedDoc.content.semantic.feedback.length > 0 && (
-                                    <div>
-                                      <h2 className={cn("text-lg font-semibold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Semantic Colors</h2>
-                                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                        {selectedDoc.content.semantic.feedback.map((semantic: any) => (
-                                          <div key={semantic.name} className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50")}>
-                                            <div className="h-16 w-full" style={{ backgroundColor: semantic.value }} />
-                                            <div className="p-3">
-                                              <div className={cn("font-medium text-sm", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{semantic.name}</div>
-                                              <div className="flex items-center justify-between mt-2">
-                                                <code className={cn("text-[10px] font-mono px-1.5 py-0.5 rounded", libraryBackground === "light" ? "bg-zinc-100 text-zinc-600" : "bg-zinc-800 text-zinc-400")}>{semantic.token}</code>
-                                                {semantic.wcag && (
-                                                  <span className={cn("text-[9px] px-1.5 py-0.5 rounded", semantic.wcag === "AAA" ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400")}>{semantic.wcag}</span>
-                                                )}
+                                  {/* Semantic Colors - From real tokens (success, warning, error, info) */}
+                                  {(() => {
+                                    const tokens = libraryData?.tokens?.colors || {};
+                                    const semanticColors = ['success', 'warning', 'error', 'info'].filter(k => tokens[k]);
+                                    if (semanticColors.length === 0) return null;
+                                    return (
+                                      <div>
+                                        <h2 className={cn("text-lg font-semibold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Semantic Colors</h2>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                          {semanticColors.map((name) => {
+                                            const value = tokens[name];
+                                            const colorValue = typeof value === 'string' ? value : (typeof value === 'object' && value !== null ? ((value as any).bg || (value as any).value || '#888') : '#888');
+                                            return (
+                                              <div key={name} className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50")}>
+                                                <div className="h-16 w-full" style={{ backgroundColor: colorValue }} />
+                                                <div className="p-3">
+                                                  <div className={cn("font-medium text-sm capitalize", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{name}</div>
+                                                  <div className="flex items-center justify-between mt-2">
+                                                    <code className={cn("text-[10px] font-mono px-1.5 py-0.5 rounded", libraryBackground === "light" ? "bg-zinc-100 text-zinc-600" : "bg-zinc-800 text-zinc-400")}>feedback-{name}</code>
+                                                    <span className={cn("text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400")}>AA</span>
+                                                  </div>
+                                                </div>
                                               </div>
-                                            </div>
-                                          </div>
-                                        ))}
+                                            );
+                                          })}
+                                        </div>
                                       </div>
-                                    </div>
-                                  )}
+                                    );
+                                  })()}
                                   
                                   {/* CSS Variables Export - Real data only */}
                                   {Object.keys(libraryData?.tokens?.colors || {}).length > 0 && (
@@ -19352,7 +19359,7 @@ module.exports = {
                               
                               {/* Preview Box with Show Code button */}
                               <div className={cn(
-                                "rounded-xl border overflow-hidden max-h-[600px] flex flex-col",
+                                "rounded-xl border overflow-hidden flex flex-col",
                                 libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50"
                               )}>
                                 {/* Preview Toolbar */}
@@ -19420,7 +19427,7 @@ module.exports = {
                                   
                                   return (
                                     <div className="w-full flex-1 overflow-auto"
-                                      style={{ minHeight: '200px', maxHeight: '450px' }}
+                                      style={{ minHeight: '200px' }}
                                     >
                                       {/* Viewport container - changes width based on mobile/desktop */}
                                       <div 
