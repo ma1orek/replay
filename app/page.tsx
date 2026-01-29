@@ -18029,9 +18029,23 @@ export default function GeneratedPage() {
                     const selectedComponent = compId
                       ? libraryData?.components?.find((c: any) => c.id === compId || c.id === selectedLibraryItem || `comp-${c.id}` === selectedLibraryItem)
                       : null;
-                    const selectedDoc = selectedLibraryItem?.startsWith("doc-")
-                      ? libraryData?.docs?.find((d: any) => `doc-${d.id}` === selectedLibraryItem || d.id === selectedLibraryItem?.replace("doc-", ""))
+                    // Find doc or create virtual doc for foundations
+                    const docId = selectedLibraryItem?.replace("doc-", "");
+                    const foundDoc = selectedLibraryItem?.startsWith("doc-")
+                      ? libraryData?.docs?.find((d: any) => `doc-${d.id}` === selectedLibraryItem || d.id === docId)
                       : null;
+                    
+                    // Create virtual docs for foundations that may not be in docs array
+                    const virtualDocs: Record<string, any> = {
+                      'spacing': { id: 'spacing', title: 'Spacing', type: 'spacing', content: {} },
+                      'iconography': { id: 'iconography', title: 'Iconography', type: 'iconography', content: {} },
+                      'colors': { id: 'colors', title: 'Colors', type: 'colors', content: {} },
+                      'typography': { id: 'typography', title: 'Typography', type: 'typography', content: {} },
+                      'overview': { id: 'overview', title: 'Overview', type: 'overview', content: {} },
+                      'getting-started': { id: 'getting-started', title: 'Getting Started', type: 'getting-started', content: {} },
+                      'examples': { id: 'examples', title: 'Examples', type: 'examples', content: {} },
+                    };
+                    const selectedDoc = foundDoc || (docId && virtualDocs[docId]) || null;
                     
                     return (
                       <>
@@ -18155,7 +18169,7 @@ export default function GeneratedPage() {
                                     </div>
                                     {libraryData?.components && libraryData.components.length > 0 ? (
                                       <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50")}>
-                                        <div className="grid grid-cols-2 lg:grid-cols-3 divide-x divide-y" style={{ borderColor: libraryBackground === "light" ? "#e4e4e7" : "#27272a" }}>
+                                        <div className={cn("grid grid-cols-2 lg:grid-cols-3 divide-x divide-y", libraryBackground === "light" ? "divide-zinc-200" : "divide-zinc-800")}>
                                           {libraryData.components.slice(0, 6).map((comp) => (
                                             <div key={comp.id} className={cn("p-4 cursor-pointer transition-colors", libraryBackground === "light" ? "hover:bg-zinc-50" : "hover:bg-zinc-800/50")} onClick={() => setSelectedLibraryItem(`comp-${comp.id}`)}>
                                               <div className="flex items-center gap-2 mb-2">
@@ -19027,6 +19041,41 @@ module.exports = {
                                       </div>
                                     </div>
                                   )}
+                                </div>
+                              )}
+                              
+                              {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+                              {/* SPACING PAGE */}
+                              {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+                              {selectedDoc.type === "spacing" && (
+                                <div className="space-y-10">
+                                  <div>
+                                    <h1 className={cn("text-4xl font-bold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Spacing</h1>
+                                    <p className={cn("text-lg", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
+                                      {selectedDoc.content?.description || "Spacing scale and layout tokens from your design system."}
+                                    </p>
+                                  </div>
+                                  
+                                  {/* Spacing Scale */}
+                                  <div>
+                                    <h2 className={cn("text-lg font-semibold mb-4", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Spacing Scale</h2>
+                                    <div className="space-y-3">
+                                      {Object.entries(libraryData?.foundations?.spacing || libraryData?.tokens?.spacing || {}).map(([name, value]) => (
+                                        <div key={name} className={cn("flex items-center gap-4 p-3 rounded-lg border", libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50")}>
+                                          <code className={cn("text-sm font-mono w-20", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{name}</code>
+                                          <div className="h-6 bg-violet-500/30 rounded" style={{ width: typeof value === 'string' ? value : `${value}px` }} />
+                                          <span className={cn("text-sm font-mono", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-400")}>{typeof value === 'string' ? value : `${value}px`}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    {Object.keys(libraryData?.foundations?.spacing || libraryData?.tokens?.spacing || {}).length === 0 && (
+                                      <div className={cn("p-8 rounded-lg border text-center", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50")}>
+                                        <Ruler className={cn("w-8 h-8 mx-auto mb-3", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")} />
+                                        <p className={cn("text-sm", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>No spacing tokens detected yet</p>
+                                        <p className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>Regenerate Library to extract spacing values</p>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               )}
                               
