@@ -17881,52 +17881,95 @@ export default function GeneratedPage() {
                                   <div className="flex items-start justify-between">
                                     <div>
                                       <h1 className={cn("text-3xl font-bold mb-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
-                                        {selectedDoc.content?.headline || selectedDoc.title || "Design System"}
+                                        {selectedDoc.content?.systemName || selectedDoc.content?.headline || selectedDoc.title || "Design System"}
                                       </h1>
                                       <p className={cn("text-sm max-w-xl", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
-                                        {selectedDoc.content?.description || "Production-ready components, design tokens, and documentation for building consistent, accessible interfaces."}
+                                        {selectedDoc.content?.projectContext || selectedDoc.content?.description || "Enterprise-grade component library extracted from production UI."}
                                       </p>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                      <span className={cn("px-3 py-1 text-xs rounded-full font-medium", libraryBackground === "light" ? "bg-emerald-100 text-emerald-700" : "bg-emerald-500/20 text-emerald-400")}>v1.0.0</span>
+                                      <span className={cn("px-3 py-1 text-xs rounded-full font-medium", libraryBackground === "light" ? "bg-emerald-100 text-emerald-700" : "bg-emerald-500/20 text-emerald-400")}>
+                                        {selectedDoc.content?.accessibilityScore || "AA Compliant"}
+                                      </span>
+                                      <span className={cn("px-3 py-1 text-xs rounded-full", libraryBackground === "light" ? "bg-zinc-100 text-zinc-600" : "bg-zinc-800 text-zinc-400")}>
+                                        {selectedDoc.content?.themeType || "Dark Theme"}
+                                      </span>
                                     </div>
                                   </div>
                                   
-                                  {/* Stats Cards - Large Visual */}
-                                  <div className="grid grid-cols-4 gap-4">
-                                    <div className={cn("p-5 rounded-xl border relative overflow-hidden group cursor-pointer transition-all hover:scale-[1.02]", libraryBackground === "light" ? "bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200" : "bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500/20")} onClick={() => setSelectedLibraryItem("doc-components")}>
+                                  {/* Stats Cards - Atomic Design Breakdown */}
+                                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                    {/* Total Components */}
+                                    <div className={cn("p-5 rounded-xl border relative overflow-hidden group cursor-pointer transition-all hover:scale-[1.02]", libraryBackground === "light" ? "bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200" : "bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500/20")} onClick={() => setSelectedLibraryItem("doc-examples")}>
                                       <div className="absolute top-3 right-3 opacity-10 group-hover:opacity-20 transition-opacity">
                                         <Puzzle className="w-16 h-16 text-blue-500" />
                                       </div>
-                                      <div className={cn("text-4xl font-bold", libraryBackground === "light" ? "text-blue-600" : "text-blue-400")}>{libraryData?.components?.length || 0}</div>
+                                      <div className={cn("text-4xl font-bold", libraryBackground === "light" ? "text-blue-600" : "text-blue-400")}>
+                                        {selectedDoc.content?.stats?.totalComponents || libraryData?.components?.length || 0}
+                                      </div>
                                       <div className={cn("text-sm font-medium mt-1", libraryBackground === "light" ? "text-blue-800" : "text-blue-300")}>Components</div>
-                                      <div className={cn("text-[10px] mt-0.5", libraryBackground === "light" ? "text-blue-600" : "text-blue-400")}>Ready to use</div>
+                                      <div className={cn("text-[10px] mt-1 space-x-2", libraryBackground === "light" ? "text-blue-600" : "text-blue-400")}>
+                                        <span>{selectedDoc.content?.stats?.atoms || 0} Atoms</span>
+                                        <span>·</span>
+                                        <span>{selectedDoc.content?.stats?.molecules || 0} Molecules</span>
+                                        <span>·</span>
+                                        <span>{selectedDoc.content?.stats?.organisms || 0} Organisms</span>
+                                      </div>
                                     </div>
+                                    {/* Colors */}
                                     <div className={cn("p-5 rounded-xl border relative overflow-hidden group cursor-pointer transition-all hover:scale-[1.02]", libraryBackground === "light" ? "bg-gradient-to-br from-violet-50 to-purple-50 border-violet-200" : "bg-gradient-to-br from-violet-500/10 to-purple-500/10 border-violet-500/20")} onClick={() => setSelectedLibraryItem("doc-colors")}>
                                       <div className="absolute top-3 right-3 opacity-10 group-hover:opacity-20 transition-opacity">
                                         <Palette className="w-16 h-16 text-violet-500" />
                                       </div>
-                                      <div className={cn("text-4xl font-bold", libraryBackground === "light" ? "text-violet-600" : "text-violet-400")}>{Object.keys(libraryData?.tokens?.colors || {}).length || 18}</div>
-                                      <div className={cn("text-sm font-medium mt-1", libraryBackground === "light" ? "text-violet-800" : "text-violet-300")}>Color Palettes</div>
-                                      <div className={cn("text-[10px] mt-0.5", libraryBackground === "light" ? "text-violet-600" : "text-violet-400")}>OKLCH optimized</div>
-                                    </div>
-                                    <div className={cn("p-5 rounded-xl border relative overflow-hidden group cursor-pointer transition-all hover:scale-[1.02]", libraryBackground === "light" ? "bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200" : "bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border-emerald-500/20")} onClick={() => setSelectedLibraryItem("doc-typography")}>
-                                      <div className="absolute top-3 right-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                                        <Type className="w-16 h-16 text-emerald-500" />
+                                      <div className={cn("text-4xl font-bold", libraryBackground === "light" ? "text-violet-600" : "text-violet-400")}>
+                                        {selectedDoc.content?.stats?.colors || Object.keys(libraryData?.tokens?.colors || {}).length || 0}
                                       </div>
-                                      <div className={cn("text-4xl font-bold", libraryBackground === "light" ? "text-emerald-600" : "text-emerald-400")}>{Object.keys(libraryData?.tokens?.typography || {}).length || 0}</div>
-                                      <div className={cn("text-sm font-medium mt-1", libraryBackground === "light" ? "text-emerald-800" : "text-emerald-300")}>Typography Styles</div>
-                                      <div className={cn("text-[10px] mt-0.5", libraryBackground === "light" ? "text-emerald-600" : "text-emerald-400")}>{libraryData?.tokens?.typography ? "From generation" : "Not extracted"}</div>
+                                      <div className={cn("text-sm font-medium mt-1", libraryBackground === "light" ? "text-violet-800" : "text-violet-300")}>Color Tokens</div>
+                                      <div className={cn("text-[10px] mt-0.5", libraryBackground === "light" ? "text-violet-600" : "text-violet-400")}>Semantic system</div>
                                     </div>
+                                    {/* Icons */}
+                                    <div className={cn("p-5 rounded-xl border relative overflow-hidden group cursor-pointer transition-all hover:scale-[1.02]", libraryBackground === "light" ? "bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200" : "bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border-emerald-500/20")} onClick={() => setSelectedLibraryItem("doc-iconography")}>
+                                      <div className="absolute top-3 right-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                        <Grid className="w-16 h-16 text-emerald-500" />
+                                      </div>
+                                      <div className={cn("text-4xl font-bold", libraryBackground === "light" ? "text-emerald-600" : "text-emerald-400")}>
+                                        {selectedDoc.content?.stats?.icons || 0}
+                                      </div>
+                                      <div className={cn("text-sm font-medium mt-1", libraryBackground === "light" ? "text-emerald-800" : "text-emerald-300")}>Icons</div>
+                                      <div className={cn("text-[10px] mt-0.5", libraryBackground === "light" ? "text-emerald-600" : "text-emerald-400")}>Lucide React</div>
+                                    </div>
+                                    {/* Accessibility */}
                                     <div className={cn("p-5 rounded-xl border relative overflow-hidden", libraryBackground === "light" ? "bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200" : "bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/20")}>
                                       <div className="absolute top-3 right-3 opacity-10">
                                         <Shield className="w-16 h-16 text-amber-500" />
                                       </div>
                                       <div className={cn("text-4xl font-bold", libraryBackground === "light" ? "text-amber-600" : "text-amber-400")}>AA</div>
                                       <div className={cn("text-sm font-medium mt-1", libraryBackground === "light" ? "text-amber-800" : "text-amber-300")}>WCAG Level</div>
-                                      <div className={cn("text-[10px] mt-0.5", libraryBackground === "light" ? "text-amber-600" : "text-amber-400")}>Accessibility compliant</div>
+                                      <div className={cn("text-[10px] mt-0.5", libraryBackground === "light" ? "text-amber-600" : "text-amber-400")}>
+                                        {selectedDoc.content?.accessibilityScore || "Accessibility compliant"}
+                                      </div>
                                     </div>
                                   </div>
+                                  
+                                  {/* Quick Links */}
+                                  {selectedDoc.content?.quickLinks && selectedDoc.content.quickLinks.length > 0 && (
+                                    <div className="flex flex-wrap gap-2">
+                                      {selectedDoc.content.quickLinks.map((link: any) => (
+                                        <button
+                                          key={link.id}
+                                          onClick={() => setSelectedLibraryItem(`doc-${link.id}`)}
+                                          className={cn("flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors", libraryBackground === "light" ? "bg-zinc-100 hover:bg-zinc-200 text-zinc-700" : "bg-zinc-800 hover:bg-zinc-700 text-zinc-300")}
+                                        >
+                                          {link.icon === "Rocket" && <Rocket className="w-4 h-4" />}
+                                          {link.icon === "Palette" && <Palette className="w-4 h-4" />}
+                                          {link.icon === "Type" && <Type className="w-4 h-4" />}
+                                          {link.icon === "Grid" && <Grid className="w-4 h-4" />}
+                                          {link.icon === "Layers" && <Layers className="w-4 h-4" />}
+                                          {link.label}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
                                   
                                   {/* Component Preview Section - From Generation */}
                                   <div>
