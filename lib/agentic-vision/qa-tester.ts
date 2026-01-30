@@ -96,7 +96,7 @@ export async function runQATester(
     
     return {
       success: true,
-      verification: result.verification,
+      verification: result.verification || undefined,
       executionTime,
       codeExecuted: result.codeExecuted
     };
