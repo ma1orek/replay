@@ -196,7 +196,7 @@ function parseQAResponse(response: any): {
     const candidate = response.candidates?.[0];
     if (!candidate) {
       console.warn('[QA Tester] No candidates in response');
-      return { verification: null };
+      return { verification: undefined };
     }
     
     const parts = candidate.content?.parts || [];
@@ -253,7 +253,7 @@ function parseQAResponse(response: any): {
     }
     
     console.warn('[QA Tester] Could not parse verification from response');
-    return { verification: null, codeExecuted };
+    return { verification: undefined, codeExecuted };
     
   } catch (error: any) {
     console.error('[QA Tester] Parse error:', error?.message);

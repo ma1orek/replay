@@ -84,7 +84,7 @@ export async function runSurveyor(
     
     return {
       success: true,
-      measurements: result.measurements,
+      measurements: result.measurements || undefined,
       executionTime,
       codeExecuted: result.codeExecuted
     };
@@ -222,7 +222,7 @@ function parseCodeExecutionResponse(response: any): {
     const candidate = response.candidates?.[0];
     if (!candidate) {
       console.warn('[Surveyor] No candidates in response');
-      return { measurements: null };
+      return { measurements: undefined };
     }
     
     const parts = candidate.content?.parts || [];
@@ -284,11 +284,11 @@ function parseCodeExecutionResponse(response: any): {
     }
     
     console.warn('[Surveyor] Could not parse measurements from response');
-    return { measurements: null, codeExecuted };
+    return { measurements: undefined, codeExecuted };
     
   } catch (error: any) {
     console.error('[Surveyor] Parse error:', error?.message);
-    return { measurements: null };
+    return { measurements: undefined };
   }
 }
 
