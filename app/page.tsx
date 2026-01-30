@@ -20504,34 +20504,6 @@ module.exports = {
                           )}
                         </div>
                         
-                        {/* Ruler mode */}
-                        <button 
-                          onClick={() => setShowBlueprintsRuler(!showBlueprintsRuler)}
-                          className={cn(
-                            "p-2 rounded-lg transition-all duration-150 group relative",
-                            showBlueprintsRuler 
-                              ? "bg-zinc-700 text-white" 
-                              : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
-                          )}
-                        >
-                          <Ruler className="w-4 h-4" />
-                          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Measure</span>
-                        </button>
-                        
-                        {/* Outline toggle */}
-                        <button 
-                          onClick={() => setShowBlueprintsOutline(!showBlueprintsOutline)}
-                          className={cn(
-                            "p-2 rounded-lg transition-all duration-150 group relative",
-                            showBlueprintsOutline 
-                              ? "bg-zinc-700 text-white" 
-                              : "hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
-                          )}
-                        >
-                          <Square className="w-4 h-4" />
-                          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Outline</span>
-                        </button>
-                        
                         {/* Spacer to push New Component button to right */}
                         <div className="flex-1" />
                         
@@ -20868,28 +20840,30 @@ module.exports = {
                                           minWidth: isFullWidthComp ? '400px' : '200px',
                                           height: size?.height ? `${size.height}px` : 'auto',
                                           minHeight: '100px',
-                                          overflow: 'hidden'
                                         }}
                                       >
-                                        {/* Use same InteractiveReactPreview as Library for identical rendering */}
-                                        {/* Iframe fills this container 100% - so resizing container = responsive content */}
-                                        <InteractiveReactPreview 
-                                          code={stableCode}
-                                          background="dark"
-                                          className="pointer-events-none w-full h-full"
-                                          componentId={comp.id}
-                                          onSizeChange={(newSize) => {
-                                            // Update size when content reports its natural size (for initial layout)
-                                            if (!size) {
-                                              setBlueprintSizes(prev => ({
-                                                ...prev,
-                                                [id]: { width: newSize.width, height: newSize.height }
-                                              }));
-                                            }
-                                          }}
-                                          isFullWidth={isFullWidthComp}
-                                        />
-                                        {/* Selection indicator - minimal, clean like Library */}
+                                        {/* Content wrapper with overflow hidden */}
+                                        <div className="w-full h-full overflow-hidden rounded">
+                                          {/* Use same InteractiveReactPreview as Library for identical rendering */}
+                                          {/* Iframe fills this container 100% - so resizing container = responsive content */}
+                                          <InteractiveReactPreview 
+                                            code={stableCode}
+                                            background="dark"
+                                            className="pointer-events-none w-full h-full"
+                                            componentId={comp.id}
+                                            onSizeChange={(newSize) => {
+                                              // Update size when content reports its natural size (for initial layout)
+                                              if (!size) {
+                                                setBlueprintSizes(prev => ({
+                                                  ...prev,
+                                                  [id]: { width: newSize.width, height: newSize.height }
+                                                }));
+                                              }
+                                            }}
+                                            isFullWidth={isFullWidthComp}
+                                          />
+                                        </div>
+                                        {/* Selection indicator - OUTSIDE overflow:hidden wrapper for visible handles */}
                                         {isSelected && (
                                           <>
                                             {/* Simple selection border - HIGH z-index to be on top */}
@@ -21316,7 +21290,6 @@ module.exports = {
                                         </button>
                                       </div>
                                     )}
-                                    <Sparkles className={cn("absolute top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400", blueprintContextImage ? "left-14" : "left-3")} />
                                     <input
                                       type="text"
                                       value={blueprintChatInput}
@@ -21463,7 +21436,7 @@ module.exports = {
                                       placeholder={blueprintContextImage ? "Describe what this component should do..." : "Describe changes or paste image..."}
                                       className={cn(
                                         "w-full pr-4 py-3 text-sm bg-zinc-800/50 border border-zinc-700/50 rounded-xl text-white placeholder-zinc-500 focus:border-zinc-500/50 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 transition-all",
-                                        blueprintContextImage ? "pl-[72px]" : "pl-10"
+                                        blueprintContextImage ? "pl-14" : "pl-4"
                                       )}
                                       disabled={isEditingBlueprint}
                                       autoFocus
