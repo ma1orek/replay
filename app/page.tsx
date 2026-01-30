@@ -2274,8 +2274,9 @@ const InteractiveReactPreview = ({
       componentBody = `return (${jsxCode})`;
     }
 
-    const bgColor = background === 'dark' ? '#18181b' : '#ffffff';
-    const textColor = background === 'dark' ? '#ffffff' : '#18181b';
+    // Background prop only affects workspace, NOT component styles
+    // Components define their own colors via Tailwind classes
+    const _bgColor = background; // unused - kept for API compatibility
 
     return `<!DOCTYPE html>
 <html>
@@ -2294,7 +2295,7 @@ const InteractiveReactPreview = ({
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { 
       background: transparent; 
-      color: ${textColor}; 
+      /* Don't set color here - let components define their own text colors via Tailwind */
       font-family: system-ui, -apple-system, sans-serif;
       /* Fill iframe viewport - content will be responsive */
       width: 100%;
