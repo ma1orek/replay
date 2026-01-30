@@ -20733,8 +20733,8 @@ module.exports = {
                                   style={{ 
                                     // Use transform instead of left/top for GPU-accelerated movement (prevents lag/ghosting)
                                     // Add padding for resize handles to be visible outside component
-                                    transform: `translate(${pos.x - 8}px, ${pos.y - 8}px)`,
-                                    padding: '8px',
+                                    transform: `translate(${pos.x - 16}px, ${pos.y - 16}px)`,
+                                    padding: '16px',
                                     willChange: isDragging ? 'transform' : 'auto',
                                     zIndex: isDragging || isResizing ? 100 : isSelected ? 50 : 1,
                                     cursor: isDragging ? 'grabbing' : 'grab'
@@ -20896,7 +20896,7 @@ module.exports = {
                                             {/* Corner: top-left */}
                                             <div 
                                               data-resize-handle="nw"
-                                              className="absolute -top-2 -left-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-sm cursor-nw-resize z-[2001] hover:bg-blue-400 shadow-lg"
+                                              className="absolute -top-3 -left-3 w-5 h-5 bg-blue-500 border-2 border-white rounded cursor-nw-resize z-[2001] hover:bg-blue-400 shadow-lg"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'nw' });
@@ -20913,7 +20913,7 @@ module.exports = {
                                             {/* Corner: top-right */}
                                             <div 
                                               data-resize-handle="ne"
-                                              className="absolute -top-2 -right-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-sm cursor-ne-resize z-[2001] hover:bg-blue-400 shadow-lg"
+                                              className="absolute -top-3 -right-3 w-5 h-5 bg-blue-500 border-2 border-white rounded cursor-ne-resize z-[2001] hover:bg-blue-400 shadow-lg"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'ne' });
@@ -20929,7 +20929,7 @@ module.exports = {
                                             {/* Corner: bottom-left */}
                                             <div 
                                               data-resize-handle="sw"
-                                              className="absolute -bottom-2 -left-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-sm cursor-sw-resize z-[2001] hover:bg-blue-400 shadow-lg"
+                                              className="absolute -bottom-3 -left-3 w-5 h-5 bg-blue-500 border-2 border-white rounded cursor-sw-resize z-[2001] hover:bg-blue-400 shadow-lg"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'sw' });
@@ -20945,7 +20945,7 @@ module.exports = {
                                             {/* Corner: bottom-right */}
                                             <div 
                                               data-resize-handle="se"
-                                              className="absolute -bottom-2 -right-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-sm cursor-se-resize z-[2001] hover:bg-blue-400 shadow-lg"
+                                              className="absolute -bottom-3 -right-3 w-5 h-5 bg-blue-500 border-2 border-white rounded cursor-se-resize z-[2001] hover:bg-blue-400 shadow-lg"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'se' });
@@ -20961,7 +20961,7 @@ module.exports = {
                                             {/* Edge: top */}
                                             <div 
                                               data-resize-handle="n"
-                                              className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-8 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-n-resize z-[2001] hover:bg-blue-400 shadow-lg"
+                                              className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-10 h-4 bg-blue-500 border-2 border-white rounded cursor-n-resize z-[2001] hover:bg-blue-400 shadow-lg"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'n' });
@@ -20977,7 +20977,7 @@ module.exports = {
                                             {/* Edge: bottom */}
                                             <div 
                                               data-resize-handle="s"
-                                              className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-8 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-s-resize z-[2001] hover:bg-blue-400 shadow-lg"
+                                              className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-10 h-4 bg-blue-500 border-2 border-white rounded cursor-s-resize z-[2001] hover:bg-blue-400 shadow-lg"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 's' });
@@ -20993,7 +20993,7 @@ module.exports = {
                                             {/* Edge: left */}
                                             <div 
                                               data-resize-handle="w"
-                                              className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-3 h-8 bg-blue-500 border-2 border-white rounded-sm cursor-w-resize z-[2001] hover:bg-blue-400 shadow-lg"
+                                              className="absolute top-1/2 -left-2.5 -translate-y-1/2 w-4 h-10 bg-blue-500 border-2 border-white rounded cursor-w-resize z-[2001] hover:bg-blue-400 shadow-lg"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'w' });
@@ -21009,7 +21009,7 @@ module.exports = {
                                             {/* Edge: right */}
                                             <div 
                                               data-resize-handle="e"
-                                              className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-3 h-8 bg-blue-500 border-2 border-white rounded-sm cursor-e-resize z-[2001] hover:bg-blue-400 shadow-lg"
+                                              className="absolute top-1/2 -right-2.5 -translate-y-1/2 w-4 h-10 bg-blue-500 border-2 border-white rounded cursor-e-resize z-[2001] hover:bg-blue-400 shadow-lg"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'e' });
@@ -21077,6 +21077,8 @@ module.exports = {
                                                   }));
                                                   setIsEditingBlueprint(false);
                                                   showToast("Component created!", "success");
+                                                  // Auto-fit to show full component
+                                                  fitComponentInView(id);
                                                 },
                                                 (error) => {
                                                   setIsEditingBlueprint(false);
@@ -21121,6 +21123,8 @@ module.exports = {
                                                 }));
                                                 setIsEditingBlueprint(false);
                                                 showToast("Component created!", "success");
+                                                // Auto-fit to show full component
+                                                fitComponentInView(id);
                                               },
                                               (error) => {
                                                 setIsEditingBlueprint(false);
