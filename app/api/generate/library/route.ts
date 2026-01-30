@@ -79,6 +79,16 @@ IMAGE URLs:
 ═══════════════════════════════════════════════════════════════════════════════
 
 {
+  "overview": {
+    "name": "Design System Name (extracted from brand/title)",
+    "description": "Short description of this UI/brand aesthetic",
+    "style": "minimalist | modern | luxury | playful | corporate | tech",
+    "theme": "dark | light | mixed",
+    "primaryBrand": "#hex (main brand color)",
+    "accessibilityScore": "85-100 (estimate based on contrast)",
+    "componentCount": 0
+  },
+  
   "foundations": {
     "colors": {
       "primary": "#hex",
@@ -100,7 +110,13 @@ IMAGE URLs:
     },
     "spacing": { "1": "0.25rem", "2": "0.5rem", "3": "0.75rem", "4": "1rem", "5": "1.25rem", "6": "1.5rem", "8": "2rem", "10": "2.5rem", "12": "3rem", "16": "4rem" },
     "borderRadius": { "none": "0", "sm": "0.25rem", "md": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px" },
-    "shadows": { "sm": "0 1px 2px rgba(0,0,0,0.05)", "md": "0 4px 6px rgba(0,0,0,0.1)", "lg": "0 10px 15px rgba(0,0,0,0.1)", "xl": "0 20px 25px rgba(0,0,0,0.15)" }
+    "shadows": { "sm": "0 1px 2px rgba(0,0,0,0.05)", "md": "0 4px 6px rgba(0,0,0,0.1)", "lg": "0 10px 15px rgba(0,0,0,0.1)", "xl": "0 20px 25px rgba(0,0,0,0.15)" },
+    "iconography": {
+      "library": "lucide | heroicons | custom",
+      "style": "outline | filled | duotone",
+      "defaultSize": "w-5 h-5",
+      "icons": ["Menu", "Check", "X", "ChevronDown", "Search", "User"]
+    }
   },
   
   "primitives": [
@@ -285,13 +301,22 @@ Return the complete JSON structure with all 5 layers populated.`;
         : defaultSpacing,
       borderRadius: libraryData.foundations?.borderRadius || {},
     };
+    
+    // Update component count in overview
+    const totalComponents = (libraryData.primitives?.length || 0) + 
+      (libraryData.components?.length || 0) + 
+      (libraryData.patterns?.length || 0) + 
+      (libraryData.product?.length || 0);
+    if (libraryData.overview) {
+      libraryData.overview.componentCount = totalComponents;
+    }
 
-    console.log(`[Library] Final: ${libraryData.components?.length || 0} total components across all layers`);
+    console.log(`[Library] Final: ${totalComponents} total components across all layers`);
 
     return NextResponse.json({
       success: true,
       data: libraryData,
-      componentCount: libraryData.components?.length || 0,
+      componentCount: totalComponents,
       extractionTime: Date.now() - startTime,
     });
   } catch (error: any) {
@@ -305,6 +330,15 @@ Return the complete JSON structure with all 5 layers populated.`;
 
 function createDefaultStructure() {
   return {
+    overview: {
+      name: "Design System",
+      description: "Component library extracted from UI",
+      style: "modern",
+      theme: "dark",
+      primaryBrand: "#3b82f6",
+      accessibilityScore: 90,
+      componentCount: 0
+    },
     foundations: {
       colors: {},
       typography: { fontFamily: {}, fontSize: {}, fontWeight: {} },
@@ -314,7 +348,13 @@ function createDefaultStructure() {
         "12": "3rem", "16": "4rem", "20": "5rem", "24": "6rem" 
       },
       borderRadius: {},
-      shadows: {}
+      shadows: {},
+      iconography: {
+        library: "lucide",
+        style: "outline",
+        defaultSize: "w-5 h-5",
+        icons: []
+      }
     },
     primitives: [],
     components: [],
@@ -324,6 +364,19 @@ function createDefaultStructure() {
 }
 
 function ensureStructure(data: any) {
+  // Ensure overview with defaults
+  if (!data.overview) {
+    data.overview = {
+      name: "Design System",
+      description: "Component library extracted from UI",
+      style: "modern",
+      theme: "dark",
+      primaryBrand: "#3b82f6",
+      accessibilityScore: 90,
+      componentCount: 0
+    };
+  }
+  
   if (!data.foundations) {
     data.foundations = {
       colors: {},
@@ -334,7 +387,8 @@ function ensureStructure(data: any) {
         "12": "3rem", "16": "4rem" 
       },
       borderRadius: {},
-      shadows: {}
+      shadows: {},
+      iconography: { library: "lucide", style: "outline", defaultSize: "w-5 h-5", icons: [] }
     };
   }
   if (!data.primitives) data.primitives = [];
@@ -355,6 +409,10 @@ function ensureStructure(data: any) {
   }
   if (!data.foundations.borderRadius) data.foundations.borderRadius = {};
   if (!data.foundations.shadows) data.foundations.shadows = {};
+  // Ensure iconography
+  if (!data.foundations.iconography) {
+    data.foundations.iconography = { library: "lucide", style: "outline", defaultSize: "w-5 h-5", icons: [] };
+  }
   
   return data;
 }

@@ -18096,15 +18096,15 @@ export default function GeneratedPage() {
                                   <div className="flex items-start justify-between">
                                     <div>
                                       <h1 className={cn("text-3xl font-bold mb-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
-                                        {selectedDoc.content?.systemName || selectedDoc.content?.headline || selectedDoc.title || "Design System"}
+                                        {(libraryData as any)?.overview?.name || selectedDoc.content?.systemName || selectedDoc.content?.headline || selectedDoc.title || "Design System"}
                                       </h1>
                                       <p className={cn("text-sm max-w-xl", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
-                                        {selectedDoc.content?.projectContext || selectedDoc.content?.description || "Enterprise-grade component library extracted from production UI."}
+                                        {(libraryData as any)?.overview?.description || selectedDoc.content?.projectContext || selectedDoc.content?.description || "Component library extracted from UI"}
                                       </p>
                                     </div>
                                     <div className="flex items-center gap-2 flex-wrap">
                                       <span className="px-3 py-1 text-xs rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
-                                        {selectedDoc.content?.themeType || "Dark Theme"}
+                                        {(libraryData as any)?.overview?.theme || selectedDoc.content?.themeType || "dark"} theme
                                       </span>
                                     </div>
                                   </div>
@@ -18137,7 +18137,7 @@ export default function GeneratedPage() {
                                         <Grid3X3 className={cn("w-5 h-5", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-500")} />
                                       </div>
                                       <div className={cn("text-3xl font-bold", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
-                                        {selectedDoc.content?.stats?.icons || 0}
+                                        {(libraryData as any)?.foundations?.iconography?.icons?.length || selectedDoc.content?.stats?.icons || 0}
                                       </div>
                                       <div className={cn("text-sm font-medium mt-1", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Icons</div>
                                     </div>
@@ -18146,7 +18146,7 @@ export default function GeneratedPage() {
                                       <div className="flex items-center justify-between mb-2">
                                         <Shield className={cn("w-5 h-5", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-500")} />
                                       </div>
-                                      <div className={cn("text-3xl font-bold", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>92%</div>
+                                      <div className={cn("text-3xl font-bold", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>{(libraryData as any)?.overview?.accessibilityScore || 90}%</div>
                                       <div className={cn("text-sm font-medium mt-1", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>AA Compliant</div>
                                     </div>
                                   </div>
