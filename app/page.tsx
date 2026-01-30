@@ -21447,7 +21447,7 @@ module.exports = {
                                 
                                 {/* Quick Actions - context-aware */}
                                 <div className="mt-2 flex items-center gap-1.5 overflow-x-auto pb-1">
-                                  {(comp.isNew 
+                                  {(selectedComp.isNew 
                                     ? ['Line chart', 'Pricing card', 'Login form', 'Hero section', 'Feature grid', 'Stats counter']
                                     : ['Make it red', 'Add icon', 'Add button', 'Make bigger', 'Add shadow', 'Add chart']
                                   ).map(action => (
