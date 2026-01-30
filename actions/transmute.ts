@@ -1,11 +1,22 @@
 "use server";
 
+import { GoogleGenAI } from "@google/genai";
+// Legacy import for backwards compatibility during migration
 import { GoogleGenerativeAI, Part } from "@google/generative-ai";
 
+// Agentic Vision - The Sandwich Architecture
+import { 
+  runParallelSurveyor, 
+  validateMeasurements,
+  formatSurveyorDataForPrompt,
+  LayoutMeasurements 
+} from "@/lib/agentic-vision";
+
 // ═══════════════════════════════════════════════════════════════════════════════
-// MULTI-PASS PIPELINE v2.0 (Server Action Version)
+// MULTI-PASS PIPELINE v3.0 (Server Action Version)
+// NEW: Phase 0: SURVEYOR - Measure layout with Agentic Vision (Code Execution)
 // Phase 1: UNIFIED SCAN - Extract EVERYTHING from video
-// Phase 2: ASSEMBLER - Generate code from JSON data ONLY
+// Phase 2: ASSEMBLER - Generate code from JSON data + HARD MEASUREMENTS
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // ============================================================================
@@ -17,6 +28,8 @@ interface TransmuteOptions {
   styleDirective?: string;
   databaseContext?: string;
   styleReferenceImage?: { url: string; base64?: string };
+  /** Enable Agentic Vision Surveyor for precise measurements (default: true) */
+  useSurveyor?: boolean;
 }
 
 interface TransmuteResult {
@@ -24,6 +37,8 @@ interface TransmuteResult {
   code?: string;
   error?: string;
   scanData?: any;
+  /** Agentic Vision measurements from Surveyor */
+  surveyorMeasurements?: LayoutMeasurements;
   tokenUsage?: {
     promptTokens: number;
     candidatesTokens: number;
@@ -1218,10 +1233,11 @@ function fixChartReference(code: string): string {
 // ============================================================================
 
 export async function transmuteVideoToCode(options: TransmuteOptions): Promise<TransmuteResult> {
-  const { videoUrl, styleDirective, databaseContext, styleReferenceImage } = options;
+  const { videoUrl, styleDirective, databaseContext, styleReferenceImage, useSurveyor = true } = options;
   
-  console.log("[transmute] MULTI-PASS PIPELINE v2.1 - Starting...");
+  console.log("[transmute] MULTI-PASS PIPELINE v3.0 - Starting with Agentic Vision...");
   console.log("[transmute] Video URL:", videoUrl?.substring(0, 100));
+  console.log("[transmute] Surveyor enabled:", useSurveyor);
   
   const apiKey = getApiKey();
   if (!apiKey) {
@@ -1255,6 +1271,45 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
     // Calculate video size for logging
     const videoSizeMB = (videoData.base64.length * 0.75) / (1024 * 1024); // base64 is ~33% larger
     console.log("[transmute] Video size:", videoSizeMB.toFixed(2), "MB");
+    
+    // ════════════════════════════════════════════════════════════════
+    // PHASE 0: THE SURVEYOR - Measure layout with Agentic Vision
+    // Uses Gemini 3 Flash with Code Execution to get HARD DATA
+    // "Measure twice, cut once"
+    // ════════════════════════════════════════════════════════════════
+    let surveyorMeasurements: LayoutMeasurements | undefined;
+    let surveyorPromptData = '';
+    
+    if (useSurveyor) {
+      console.log("[transmute] Phase 0: THE SURVEYOR - Measuring layout with Agentic Vision...");
+      
+      try {
+        // Extract a key frame from video for Surveyor analysis
+        // For now, we use the video data directly - Gemini can extract frames
+        // In production, we'd extract a representative frame
+        const surveyorResult = await withTimeout(
+          runParallelSurveyor(videoData.base64, videoData.mimeType),
+          60000, // 60s timeout for Surveyor
+          "Surveyor Measurement"
+        );
+        
+        if (surveyorResult.success && surveyorResult.measurements) {
+          surveyorMeasurements = validateMeasurements(surveyorResult.measurements);
+          surveyorPromptData = formatSurveyorDataForPrompt(surveyorMeasurements);
+          
+          console.log("[transmute] Surveyor SUCCESS! Confidence:", Math.round(surveyorMeasurements.confidence * 100) + "%");
+          console.log("[transmute] Measured spacing:", JSON.stringify(surveyorMeasurements.spacing));
+          console.log("[transmute] Detected colors:", Object.keys(surveyorMeasurements.colors).length);
+          console.log("[transmute] Detected components:", surveyorMeasurements.components.length);
+        } else {
+          console.warn("[transmute] Surveyor returned no measurements, continuing without hard data");
+        }
+      } catch (surveyorError: any) {
+        // Surveyor failure is non-fatal - we continue without hard measurements
+        console.warn("[transmute] Surveyor failed (non-fatal):", surveyorError?.message);
+        console.warn("[transmute] Continuing without Agentic Vision measurements...");
+      }
+    }
     
     // ════════════════════════════════════════════════════════════════
     // PHASE 1: UNIFIED SCAN - Extract everything from video
@@ -1373,10 +1428,31 @@ The style directive above defines ALL visual aspects: colors, backgrounds, gradi
     const chartCount = scanData?.data?.charts?.length || 0;
     const tableCount = scanData?.data?.tables?.length || 0;
     
+    // ════════════════════════════════════════════════════════════════
+    // INJECT SURVEYOR HARD DATA (The Secret Sauce!)
+    // These are MEASURED values, not guesses. Use them EXACTLY.
+    // ════════════════════════════════════════════════════════════════
+    if (surveyorPromptData) {
+      assemblerPrompt += surveyorPromptData;
+      console.log("[transmute] Injected Surveyor measurements into assembler prompt");
+    }
+    
     // Color instruction depends on whether custom style is selected
     const colorInstruction = hasCustomStyle 
       ? "IGNORE scanData.ui.colors - use STYLE DIRECTIVE colors instead!"
-      : "Use colors from scanData.ui.colors.";
+      : surveyorMeasurements 
+        ? "Use EXACT colors from SURVEYOR MEASUREMENTS above (they are pixel-sampled)!"
+        : "Use colors from scanData.ui.colors.";
+    
+    // Spacing instruction - use Surveyor data if available
+    const spacingInstruction = surveyorMeasurements
+      ? `Use EXACT spacing from SURVEYOR MEASUREMENTS:
+   - Sidebar: ${surveyorMeasurements.spacing.sidebarWidth}
+   - Nav: ${surveyorMeasurements.spacing.navHeight}
+   - Card padding: ${surveyorMeasurements.spacing.cardPadding}
+   - Section gap: ${surveyorMeasurements.spacing.sectionGap}
+   DO NOT use approximate Tailwind classes (p-4, p-6). Use p-[24px] format with EXACT values!`
+      : "Estimate spacing from visual analysis.";
     
     assemblerPrompt += `\n\n**═══════════════════════════════════════════════════════════════**
 **SCAN DATA (Source of Truth for CONTENT & STRUCTURE):**
@@ -1392,8 +1468,14 @@ ${JSON.stringify(scanData, null, 2)}
 3. Create ${chartCount} charts using ChartComponent (Chart.js).
 4. Create ${tableCount} tables with all rows — no dropping rows.
 5. ${colorInstruction}
-6. CONTENT 1:1: Every headline, paragraph, nav label, button text, FAQ item, footer line from scanData MUST appear in the output VERBATIM. Do not skip any section, do not shorten any text.
-
+6. ${spacingInstruction}
+7. CONTENT 1:1: Every headline, paragraph, nav label, button text, FAQ item, footer line from scanData MUST appear in the output VERBATIM. Do not skip any section, do not shorten any text.
+${surveyorMeasurements ? `
+**CRITICAL - SURVEYOR DATA IS LAW:**
+The measurements above came from Agentic Vision Code Execution - they are PIXEL-PERFECT.
+Use p-[${surveyorMeasurements.spacing.cardPadding}] NOT p-4 or p-6.
+Use bg-[${surveyorMeasurements.colors.background}] NOT bg-slate-900.
+` : ''}
 Generate the complete HTML file now:`;
     
     // Calculate remaining time for Phase 2 (leave buffer for Vercel 300s limit)
@@ -1471,11 +1553,15 @@ Generate the complete HTML file now:`;
     } : undefined;
     
     console.log("[transmute] Success! Code length:", code.length);
+    if (surveyorMeasurements) {
+      console.log("[transmute] Surveyor confidence:", Math.round(surveyorMeasurements.confidence * 100) + "%");
+    }
     
     return {
       success: true,
       code,
       scanData,
+      surveyorMeasurements, // Agentic Vision measurements
       tokenUsage,
     };
     

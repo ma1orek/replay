@@ -13,6 +13,7 @@
   "dependencies": {
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
+    "@google/genai": "^1.38.0",
     "@google/generative-ai": "^0.12.0",
     "@liveblocks/client": "^3.13.3",
     "@liveblocks/node": "^3.13.3",

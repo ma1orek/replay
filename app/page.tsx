@@ -2210,13 +2210,15 @@ const InteractiveReactPreview = ({
   background = "dark",
   className = "",
   onSizeChange,
-  isFullWidth = false
+  isFullWidth = false,
+  componentId
 }: { 
   code: string; 
   background?: "light" | "dark";
   className?: string;
   onSizeChange?: (size: { width: number; height: number }) => void;
   isFullWidth?: boolean;
+  componentId?: string;
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [iframeHeight, setIframeHeight] = useState(200);
@@ -2294,24 +2296,21 @@ const InteractiveReactPreview = ({
       background: transparent; 
       color: ${textColor}; 
       font-family: system-ui, -apple-system, sans-serif;
-      width: ${isFullWidth ? '100%' : 'fit-content'};
-      min-width: ${isFullWidth ? '900px' : 'unset'};
-      max-width: 100%;
+      /* Fill iframe viewport - content will be responsive */
+      width: 100%;
+      height: 100%;
+      min-height: 100%;
+      overflow: hidden !important;
     }
     #root { 
-      width: ${isFullWidth ? '100%' : 'fit-content'};
-      min-width: ${isFullWidth ? '900px' : 'unset'};
-      max-width: 100%;
-      display: ${isFullWidth ? 'block' : 'inline-block'};
+      /* Fill viewport - responsive layout */
+      width: 100%;
+      min-height: 100%;
+      overflow: hidden !important;
     }
-    /* Full-width sections - like Storybook */
-    ${isFullWidth ? `
-    header, footer, nav, section, main, .container, .wrapper, .hero, .footer, .header {
-      width: 100% !important;
-      min-width: 900px !important;
-      max-width: 100% !important;
-    }
-    ` : ''}
+    /* No scrollbars */
+    ::-webkit-scrollbar { display: none !important; }
+    * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
     .error-display {
       background: #fef2f2;
       border: 1px solid #fecaca;
@@ -2544,11 +2543,16 @@ const InteractiveReactPreview = ({
       });
     };
     
-    // Size reporting - actual content size, no minimums
+    // Size reporting - measure actual rendered content
     const sendSize = () => {
       const root = document.getElementById('root');
-      const height = root?.scrollHeight || root?.offsetHeight || 40;
-      const width = root?.scrollWidth || root?.offsetWidth || 40;
+      if (!root) return;
+      
+      // Get the actual rendered size of the content
+      const rect = root.getBoundingClientRect();
+      const height = Math.max(rect.height, root.scrollHeight, 100);
+      const width = Math.max(rect.width, root.scrollWidth, 200);
+      
       window.parent.postMessage({ type: 'IFRAME_SIZE', height, width }, '*');
     };
     
@@ -2592,6 +2596,16 @@ const InteractiveReactPreview = ({
       });
     };
     
+    // Listen for parent resize messages (when user manually resizes in Blueprints)
+    // Simple approach: let container control size, content clips naturally
+    window.addEventListener('message', (e) => {
+      if (e.data?.type === 'PARENT_RESIZE') {
+        // Just ensure no scrollbars - container handles clipping
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+      }
+    });
+    
     // Initial + resize + mutation observer
     setTimeout(() => { forceVisible(); fixBrokenImages(); sendSize(); }, 100);
     setTimeout(() => { forceVisible(); fixBrokenImages(); sendSize(); }, 500);
@@ -2605,9 +2619,15 @@ const InteractiveReactPreview = ({
 </html>`;
   }, [code, background, isFullWidth]);
   
-  // Listen for size messages
+  // Listen for size messages - ONLY from THIS iframe (not all iframes!)
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
+      // CRITICAL: Only handle messages from OUR iframe, not all iframes on the page
+      // This prevents one component's size change from affecting all other components
+      if (event.source !== iframeRef.current?.contentWindow) {
+        return;
+      }
+      
       if (event.data?.type === 'IFRAME_SIZE') {
         const newHeight = typeof event.data.height === 'number' ? Math.min(event.data.height + 20, 800) : null;
         const newWidth = typeof event.data.width === 'number' ? event.data.width + 20 : null;
@@ -2629,8 +2649,20 @@ const InteractiveReactPreview = ({
     return () => window.removeEventListener('message', handleMessage);
   }, [onSizeChange]);
 
+  // Container controls size, iframe fills it at 100% for responsiveness
+  // When container is resized, iframe content responds like a real browser window
   return (
-    <div className={cn("relative", isFullWidth ? "w-full" : "inline-block", className)}>
+    <div 
+      className={cn("relative", isFullWidth ? "w-full" : "inline-block", className)}
+      style={{
+        // Container determines size - use reported content size as default
+        width: isFullWidth ? '100%' : (iframeWidth > 100 ? `${iframeWidth}px` : '400px'),
+        minWidth: isFullWidth ? '900px' : '200px',
+        maxWidth: '100%',
+        height: iframeHeight > 50 ? `${iframeHeight}px` : '200px',
+        minHeight: isFullWidth ? '200px' : '100px',
+      }}
+    >
       {error && (
         <div className="absolute top-2 left-2 right-2 z-10 bg-red-500/90 text-white text-xs p-2 rounded">
           {error}
@@ -2638,16 +2670,13 @@ const InteractiveReactPreview = ({
       )}
       <iframe
         ref={iframeRef}
+        id={componentId ? `iframe-${componentId}` : undefined}
         srcDoc={iframeDoc}
         className="border-0"
         style={{ 
-          // Full-width components (product sections) get wide layout like Storybook
-          // Small components (button, icon, card) hug their actual content - no artificial sizes
-          width: isFullWidth ? '100%' : (iframeWidth > 0 ? `${iframeWidth}px` : 'fit-content'),
-          minWidth: isFullWidth ? '900px' : undefined,
-          maxWidth: '100%',
-          height: iframeHeight > 0 ? `${iframeHeight}px` : 'fit-content', 
-          minHeight: isFullWidth ? '200px' : undefined,
+          // Iframe fills container 100% - makes content responsive to container size
+          width: '100%',
+          height: '100%',
           background: 'transparent',
         }}
         sandbox="allow-scripts allow-same-origin"
@@ -3156,6 +3185,7 @@ function ReplayToolContent() {
   const [blueprintChatInput, setBlueprintChatInput] = useState("");
   const [blueprintChatHistory, setBlueprintChatHistory] = useState<{role: 'user' | 'ai', content: string}[]>([]);
   const [isEditingBlueprint, setIsEditingBlueprint] = useState(false);
+  const [blueprintContextImage, setBlueprintContextImage] = useState<string | null>(null); // Base64 image for context
   const [showJsonView, setShowJsonView] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [generatePromptInput, setGeneratePromptInput] = useState("");
@@ -3168,7 +3198,7 @@ function ReplayToolContent() {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [selectedBlueprintComponent, setSelectedBlueprintComponent] = useState<string | null>(null);
   const [resizingComponent, setResizingComponent] = useState<{ id: string; handle: string } | null>(null);
-  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0, posX: 0, posY: 0 });
   const [editingComponentName, setEditingComponentName] = useState<string | null>(null); // For inline name editing
   const [editingNameValue, setEditingNameValue] = useState("");
   
@@ -3607,6 +3637,9 @@ function ReplayToolContent() {
     setBlueprintLayoutLoaded(true);
   }, [libraryData?.components?.length, autoLayoutBlueprints]);
   
+  // Track which components have been manually resized by user
+  const [manuallyResizedComponents, setManuallyResizedComponents] = useState<Set<string>>(new Set());
+  
   // Handle resize messages from blueprint iframes for "hug contents" behavior
   useEffect(() => {
     const handleResize = (e: MessageEvent) => {
@@ -3622,8 +3655,13 @@ function ReplayToolContent() {
           iframe.style.height = `${h}px`;
         }
         
-        // Also update blueprintSizes state so auto-layout knows actual sizes
+        // ONLY update blueprintSizes if component hasn't been manually resized
+        // This prevents iframe auto-size from overwriting user's manual resize
         setBlueprintSizes(prev => {
+          // Skip if manually resized
+          if (manuallyResizedComponents.has(compId)) {
+            return prev;
+          }
           const existing = prev[compId];
           // Only update if size changed significantly (avoid unnecessary re-renders)
           if (existing && Math.abs(existing.width - w) < 5 && Math.abs(existing.height - h) < 5) {
@@ -3635,7 +3673,7 @@ function ReplayToolContent() {
     };
     window.addEventListener('message', handleResize);
     return () => window.removeEventListener('message', handleResize);
-  }, []);
+  }, [manuallyResizedComponents]);
   
   const [isGeneratingLibrary, setIsGeneratingLibrary] = useState(false);
   
@@ -20066,7 +20104,7 @@ module.exports = {
                       }}
                       onMouseMove={(e) => {
                         if (resizingComponent) {
-                          // Resize component
+                          // Resize component - FIXED: also update position for left/top handles
                           const scale = blueprintsZoom / 100;
                           const deltaX = (e.clientX - resizeStart.x) / scale;
                           const deltaY = (e.clientY - resizeStart.y) / scale;
@@ -20074,16 +20112,52 @@ module.exports = {
                           
                           let newWidth = resizeStart.width;
                           let newHeight = resizeStart.height;
+                          let newPosX = resizeStart.posX;
+                          let newPosY = resizeStart.posY;
                           
-                          if (handle.includes('e')) newWidth = Math.max(60, resizeStart.width + deltaX);
-                          if (handle.includes('w')) newWidth = Math.max(60, resizeStart.width - deltaX);
-                          if (handle.includes('s')) newHeight = Math.max(40, resizeStart.height + deltaY);
-                          if (handle.includes('n')) newHeight = Math.max(40, resizeStart.height - deltaY);
+                          // East (right) edge - increase width
+                          if (handle.includes('e')) {
+                            newWidth = Math.max(60, resizeStart.width + deltaX);
+                          }
+                          // West (left) edge - increase width AND move position
+                          if (handle.includes('w')) {
+                            const widthDelta = Math.min(deltaX, resizeStart.width - 60); // Don't shrink below min
+                            newWidth = Math.max(60, resizeStart.width - deltaX);
+                            newPosX = resizeStart.posX + deltaX;
+                            // Clamp position so component doesn't flip
+                            if (newWidth <= 60) {
+                              newPosX = resizeStart.posX + (resizeStart.width - 60);
+                            }
+                          }
+                          // South (bottom) edge - increase height
+                          if (handle.includes('s')) {
+                            newHeight = Math.max(40, resizeStart.height + deltaY);
+                          }
+                          // North (top) edge - increase height AND move position
+                          if (handle.includes('n')) {
+                            newHeight = Math.max(40, resizeStart.height - deltaY);
+                            newPosY = resizeStart.posY + deltaY;
+                            // Clamp position so component doesn't flip
+                            if (newHeight <= 40) {
+                              newPosY = resizeStart.posY + (resizeStart.height - 40);
+                            }
+                          }
                           
+                          // Update size
                           setBlueprintSizes(prev => ({
                             ...prev,
                             [resizingComponent.id]: { width: newWidth, height: newHeight }
                           }));
+                          
+                          // Update position if changed (for w/n handles)
+                          if (handle.includes('w') || handle.includes('n')) {
+                            setBlueprintPositions(prev => ({
+                              ...prev,
+                              [resizingComponent.id]: { x: newPosX, y: newPosY }
+                            }));
+                            broadcastBlueprintPosition(resizingComponent.id, newPosX, newPosY);
+                          }
+                          
                           // Notify iframe about resize for responsive content
                           const iframeEl = document.getElementById(`iframe-${resizingComponent.id.replace('comp-', '')}`) as HTMLIFrameElement;
                           if (iframeEl?.contentWindow) {
@@ -20112,11 +20186,19 @@ module.exports = {
                         }
                       }}
                       onMouseUp={() => {
+                        // Mark component as manually resized so iframe auto-size doesn't override
+                        if (resizingComponent) {
+                          setManuallyResizedComponents(prev => new Set([...prev, resizingComponent.id]));
+                        }
                         setDraggingComponent(null);
                         setResizingComponent(null);
                         setIsBlueprintsPanning(false);
                       }}
                       onMouseLeave={() => {
+                        // Mark component as manually resized so iframe auto-size doesn't override
+                        if (resizingComponent) {
+                          setManuallyResizedComponents(prev => new Set([...prev, resizingComponent.id]));
+                        }
                         setDraggingComponent(null);
                         setResizingComponent(null);
                         setIsBlueprintsPanning(false);
@@ -20577,114 +20659,168 @@ module.exports = {
                                       return (
                                       <div 
                                         className="relative"
+                                        data-component-container={id}
                                         style={{
-                                          // Small components: hug content (no min-width)
-                                          // Full-width components: need min-width for proper layout
-                                          width: size?.width ? `${size.width}px` : (isFullWidthComp ? '900px' : 'fit-content'),
-                                          height: size?.height ? `${size.height}px` : 'fit-content',
-                                          minWidth: isFullWidthComp ? '600px' : undefined,
-                                          minHeight: isFullWidthComp ? '200px' : undefined
+                                          // Manual size when user resized, otherwise auto from content
+                                          width: size?.width ? `${size.width}px` : (isFullWidthComp ? '900px' : 'auto'),
+                                          minWidth: isFullWidthComp ? '400px' : '200px',
+                                          height: size?.height ? `${size.height}px` : 'auto',
+                                          minHeight: '100px',
+                                          overflow: 'hidden'
                                         }}
                                       >
                                         {/* Use same InteractiveReactPreview as Library for identical rendering */}
+                                        {/* Iframe fills this container 100% - so resizing container = responsive content */}
                                         <InteractiveReactPreview 
                                           code={stableCode}
                                           background="dark"
-                                          className="pointer-events-none"
+                                          className="pointer-events-none w-full h-full"
+                                          componentId={comp.id}
                                           onSizeChange={(newSize) => {
-                                            // Update blueprint sizes for auto-layout
-                                            setBlueprintSizes(prev => ({
-                                              ...prev,
-                                              [id]: newSize
-                                            }));
+                                            // Update size when content reports its natural size (for initial layout)
+                                            if (!size) {
+                                              setBlueprintSizes(prev => ({
+                                                ...prev,
+                                                [id]: { width: newSize.width, height: newSize.height }
+                                              }));
+                                            }
                                           }}
                                           isFullWidth={isFullWidthComp}
                                         />
                                         {/* Selection indicator - minimal, clean like Library */}
                                         {isSelected && (
                                           <>
-                                            {/* Simple selection border */}
-                                            <div className="absolute inset-0 border-2 border-blue-500 rounded pointer-events-none" />
+                                            {/* Simple selection border - HIGH z-index to be on top */}
+                                            <div className="absolute inset-0 border-2 border-blue-500 rounded pointer-events-none z-[1000]" />
                                             
-                                            {/* Resize handles - all 4 corners + 4 edges */}
+                                            {/* Resize handles - all 4 corners + 4 edges - HIGH z-index */}
                                             {/* Corner: top-left */}
                                             <div 
                                               data-resize-handle="nw"
-                                              className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-nw-resize z-10 hover:bg-blue-400"
+                                              className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-nw-resize z-[1001] hover:bg-blue-400"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'nw' });
-                                                setResizeStart({ x: e.clientX, y: e.clientY, width: size?.width || 100, height: size?.height || 100 });
+                                                // Get actual size from DOM for accurate resize
+                                                const container = (e.currentTarget as HTMLElement).closest('[data-component-container]');
+                                                const rect = container?.getBoundingClientRect();
+                                                const scale = blueprintsZoom / 100;
+                                                const actualWidth = rect ? rect.width / scale : (size?.width || 200);
+                                                const actualHeight = rect ? rect.height / scale : (size?.height || 200);
+                                                const currentPos = blueprintPositions[id] || pos;
+                                                setResizeStart({ x: e.clientX, y: e.clientY, width: actualWidth, height: actualHeight, posX: currentPos.x, posY: currentPos.y });
                                               }}
                                             />
                                             {/* Corner: top-right */}
                                             <div 
                                               data-resize-handle="ne"
-                                              className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-ne-resize z-10 hover:bg-blue-400"
+                                              className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-ne-resize z-[1001] hover:bg-blue-400"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'ne' });
-                                                setResizeStart({ x: e.clientX, y: e.clientY, width: size?.width || 100, height: size?.height || 100 });
+                                                const container = (e.currentTarget as HTMLElement).closest('[data-component-container]');
+                                                const rect = container?.getBoundingClientRect();
+                                                const scale = blueprintsZoom / 100;
+                                                const actualWidth = rect ? rect.width / scale : (size?.width || 200);
+                                                const actualHeight = rect ? rect.height / scale : (size?.height || 200);
+                                                const currentPos = blueprintPositions[id] || pos;
+                                                setResizeStart({ x: e.clientX, y: e.clientY, width: actualWidth, height: actualHeight, posX: currentPos.x, posY: currentPos.y });
                                               }}
                                             />
                                             {/* Corner: bottom-left */}
                                             <div 
                                               data-resize-handle="sw"
-                                              className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-sw-resize z-10 hover:bg-blue-400"
+                                              className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-sw-resize z-[1001] hover:bg-blue-400"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'sw' });
-                                                setResizeStart({ x: e.clientX, y: e.clientY, width: size?.width || 100, height: size?.height || 100 });
+                                                const container = (e.currentTarget as HTMLElement).closest('[data-component-container]');
+                                                const rect = container?.getBoundingClientRect();
+                                                const scale = blueprintsZoom / 100;
+                                                const actualWidth = rect ? rect.width / scale : (size?.width || 200);
+                                                const actualHeight = rect ? rect.height / scale : (size?.height || 200);
+                                                const currentPos = blueprintPositions[id] || pos;
+                                                setResizeStart({ x: e.clientX, y: e.clientY, width: actualWidth, height: actualHeight, posX: currentPos.x, posY: currentPos.y });
                                               }}
                                             />
                                             {/* Corner: bottom-right */}
                                             <div 
                                               data-resize-handle="se"
-                                              className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-se-resize z-10 hover:bg-blue-400"
+                                              className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-se-resize z-[1001] hover:bg-blue-400"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'se' });
-                                                setResizeStart({ x: e.clientX, y: e.clientY, width: size?.width || 100, height: size?.height || 100 });
+                                                const container = (e.currentTarget as HTMLElement).closest('[data-component-container]');
+                                                const rect = container?.getBoundingClientRect();
+                                                const scale = blueprintsZoom / 100;
+                                                const actualWidth = rect ? rect.width / scale : (size?.width || 200);
+                                                const actualHeight = rect ? rect.height / scale : (size?.height || 200);
+                                                const currentPos = blueprintPositions[id] || pos;
+                                                setResizeStart({ x: e.clientX, y: e.clientY, width: actualWidth, height: actualHeight, posX: currentPos.x, posY: currentPos.y });
                                               }}
                                             />
                                             {/* Edge: top */}
                                             <div 
                                               data-resize-handle="n"
-                                              className="absolute -top-1 left-1/2 -translate-x-1/2 w-6 h-2 bg-blue-500 border border-white rounded-sm cursor-n-resize z-10 hover:bg-blue-400"
+                                              className="absolute -top-1 left-1/2 -translate-x-1/2 w-6 h-2 bg-blue-500 border border-white rounded-sm cursor-n-resize z-[1001] hover:bg-blue-400"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'n' });
-                                                setResizeStart({ x: e.clientX, y: e.clientY, width: size?.width || 100, height: size?.height || 100 });
+                                                const container = (e.currentTarget as HTMLElement).closest('[data-component-container]');
+                                                const rect = container?.getBoundingClientRect();
+                                                const scale = blueprintsZoom / 100;
+                                                const actualWidth = rect ? rect.width / scale : (size?.width || 200);
+                                                const actualHeight = rect ? rect.height / scale : (size?.height || 200);
+                                                const currentPos = blueprintPositions[id] || pos;
+                                                setResizeStart({ x: e.clientX, y: e.clientY, width: actualWidth, height: actualHeight, posX: currentPos.x, posY: currentPos.y });
                                               }}
                                             />
                                             {/* Edge: bottom */}
                                             <div 
                                               data-resize-handle="s"
-                                              className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-2 bg-blue-500 border border-white rounded-sm cursor-s-resize z-10 hover:bg-blue-400"
+                                              className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-2 bg-blue-500 border border-white rounded-sm cursor-s-resize z-[1001] hover:bg-blue-400"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 's' });
-                                                setResizeStart({ x: e.clientX, y: e.clientY, width: size?.width || 100, height: size?.height || 100 });
+                                                const container = (e.currentTarget as HTMLElement).closest('[data-component-container]');
+                                                const rect = container?.getBoundingClientRect();
+                                                const scale = blueprintsZoom / 100;
+                                                const actualWidth = rect ? rect.width / scale : (size?.width || 200);
+                                                const actualHeight = rect ? rect.height / scale : (size?.height || 200);
+                                                const currentPos = blueprintPositions[id] || pos;
+                                                setResizeStart({ x: e.clientX, y: e.clientY, width: actualWidth, height: actualHeight, posX: currentPos.x, posY: currentPos.y });
                                               }}
                                             />
                                             {/* Edge: left */}
                                             <div 
                                               data-resize-handle="w"
-                                              className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-6 bg-blue-500 border border-white rounded-sm cursor-w-resize z-10 hover:bg-blue-400"
+                                              className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-6 bg-blue-500 border border-white rounded-sm cursor-w-resize z-[1001] hover:bg-blue-400"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'w' });
-                                                setResizeStart({ x: e.clientX, y: e.clientY, width: size?.width || 100, height: size?.height || 100 });
+                                                const container = (e.currentTarget as HTMLElement).closest('[data-component-container]');
+                                                const rect = container?.getBoundingClientRect();
+                                                const scale = blueprintsZoom / 100;
+                                                const actualWidth = rect ? rect.width / scale : (size?.width || 200);
+                                                const actualHeight = rect ? rect.height / scale : (size?.height || 200);
+                                                const currentPos = blueprintPositions[id] || pos;
+                                                setResizeStart({ x: e.clientX, y: e.clientY, width: actualWidth, height: actualHeight, posX: currentPos.x, posY: currentPos.y });
                                               }}
                                             />
                                             {/* Edge: right */}
                                             <div 
                                               data-resize-handle="e"
-                                              className="absolute top-1/2 -right-1 -translate-y-1/2 w-2 h-6 bg-blue-500 border border-white rounded-sm cursor-e-resize z-10 hover:bg-blue-400"
+                                              className="absolute top-1/2 -right-1 -translate-y-1/2 w-2 h-6 bg-blue-500 border border-white rounded-sm cursor-e-resize z-[1001] hover:bg-blue-400"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'e' });
-                                                setResizeStart({ x: e.clientX, y: e.clientY, width: size?.width || 100, height: size?.height || 100 });
+                                                const container = (e.currentTarget as HTMLElement).closest('[data-component-container]');
+                                                const rect = container?.getBoundingClientRect();
+                                                const scale = blueprintsZoom / 100;
+                                                const actualWidth = rect ? rect.width / scale : (size?.width || 200);
+                                                const actualHeight = rect ? rect.height / scale : (size?.height || 200);
+                                                const currentPos = blueprintPositions[id] || pos;
+                                                setResizeStart({ x: e.clientX, y: e.clientY, width: actualWidth, height: actualHeight, posX: currentPos.x, posY: currentPos.y });
                                               }}
                                             />
                                             
@@ -20970,7 +21106,23 @@ module.exports = {
                                   </button>
                                   
                                   <div className="flex-1 relative">
-                                    <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                                    {/* Context image thumbnail */}
+                                    {blueprintContextImage && (
+                                      <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1 z-10">
+                                        <img 
+                                          src={blueprintContextImage} 
+                                          alt="Context" 
+                                          className="w-8 h-8 object-cover rounded border border-zinc-600"
+                                        />
+                                        <button
+                                          onClick={() => setBlueprintContextImage(null)}
+                                          className="w-4 h-4 bg-zinc-700 hover:bg-zinc-600 rounded-full flex items-center justify-center text-zinc-400 hover:text-white"
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </button>
+                                      </div>
+                                    )}
+                                    <Sparkles className={cn("absolute top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400", blueprintContextImage ? "left-14" : "left-3")} />
                                     <input
                                       type="text"
                                       value={blueprintChatInput}
@@ -20979,9 +21131,52 @@ module.exports = {
                                         if (e.key === 'Enter' && blueprintChatInput.trim() && !isEditingBlueprint) {
                                           e.preventDefault();
                                           const userMessage = blueprintChatInput.trim();
+                                          const contextImage = blueprintContextImage;
                                           setBlueprintChatInput("");
-                                          setBlueprintChatHistory(prev => [...prev, { role: 'user', content: userMessage }]);
+                                          setBlueprintContextImage(null);
+                                          setBlueprintChatHistory(prev => [...prev, { role: 'user', content: contextImage ? `🖼️ ${userMessage}` : userMessage }]);
                                           setIsEditingBlueprint(true);
+                                          
+                                          // If we have context image, use vision API
+                                          if (contextImage) {
+                                            try {
+                                              const response = await fetch('/api/blueprint/vision', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                  imageBase64: contextImage,
+                                                  componentName: selectedComp.name,
+                                                  additionalInstructions: userMessage
+                                                })
+                                              });
+                                              
+                                              if (!response.ok) throw new Error('Vision API failed');
+                                              
+                                              const reader2 = response.body?.getReader();
+                                              const decoder = new TextDecoder();
+                                              
+                                              while (reader2) {
+                                                const { done, value } = await reader2.read();
+                                                if (done) break;
+                                                const text = decoder.decode(value);
+                                                const lines = text.split('\n').filter(l => l.startsWith('data: '));
+                                                for (const line of lines) {
+                                                  try {
+                                                    const data = JSON.parse(line.slice(6));
+                                                    if (data.type === 'partial' || data.type === 'done') {
+                                                      setBlueprintEditedCode(data.code);
+                                                    }
+                                                  } catch {}
+                                                }
+                                              }
+                                              
+                                              setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: 'Applied ✓' }]);
+                                            } catch (error) {
+                                              setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: 'Failed to process image' }]);
+                                            }
+                                            setIsEditingBlueprint(false);
+                                            return;
+                                          }
                                           
                                           const currentCode = blueprintEditedCode || selectedComp.code || '';
                                             await streamBlueprintEdit(
@@ -21001,8 +21196,8 @@ module.exports = {
                                             );
                                         }
                                       }}
-                                      onPaste={async (e) => {
-                                        // Handle Ctrl+V paste of images (Figma frames)
+                                      onPaste={(e) => {
+                                        // Handle Ctrl+V paste of images - add as context, don't auto-generate
                                         const items = e.clipboardData?.items;
                                         if (!items) return;
                                         
@@ -21012,59 +21207,22 @@ module.exports = {
                                             const file = items[i].getAsFile();
                                             if (!file) continue;
                                             
-                                            setIsEditingBlueprint(true);
-                                            setBlueprintChatHistory(prev => [...prev, { role: 'user', content: '📋 Pasted Figma frame...' }]);
-                                            
+                                            // Convert to base64 and set as context (don't auto-generate)
                                             const reader = new FileReader();
-                                            reader.onload = async () => {
+                                            reader.onload = () => {
                                               const base64 = reader.result as string;
-                                              try {
-                                                // Call vision API
-                                                const response = await fetch('/api/blueprint/vision', {
-                                                  method: 'POST',
-                                                  headers: { 'Content-Type': 'application/json' },
-                                                  body: JSON.stringify({
-                                                    imageBase64: base64,
-                                                    componentName: selectedComp.name,
-                                                    additionalInstructions: 'Recreate this UI component exactly as shown'
-                                                  })
-                                                });
-                                                
-                                                if (!response.ok) throw new Error('Vision API failed');
-                                                
-                                                const reader2 = response.body?.getReader();
-                                                const decoder = new TextDecoder();
-                                                let generatedCode = '';
-                                                
-                                                while (reader2) {
-                                                  const { done, value } = await reader2.read();
-                                                  if (done) break;
-                                                  const text = decoder.decode(value);
-                                                  const lines = text.split('\n').filter(l => l.startsWith('data: '));
-                                                  for (const line of lines) {
-                                                    try {
-                                                      const data = JSON.parse(line.slice(6));
-                                                      if (data.type === 'partial' || data.type === 'done') {
-                                                        generatedCode = data.code;
-                                                        setBlueprintEditedCode(generatedCode);
-                                                      }
-                                                    } catch {}
-                                                  }
-                                                }
-                                                
-                                                setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: 'Created from Figma ✓' }]);
-                                              } catch (error) {
-                                                setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: 'Failed to process image' }]);
-                                              }
-                                              setIsEditingBlueprint(false);
+                                              setBlueprintContextImage(base64);
                                             };
                                             reader.readAsDataURL(file);
                                             break;
                                           }
                                         }
                                       }}
-                                      placeholder="Describe or paste Figma (Ctrl+V)..."
-                                      className="w-full pl-10 pr-4 py-3 text-sm bg-zinc-800/50 border border-zinc-700/50 rounded-xl text-white placeholder-zinc-500 focus:border-zinc-500/50 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 transition-all"
+                                      placeholder={blueprintContextImage ? "Describe what this component should do..." : "Describe changes or paste image..."}
+                                      className={cn(
+                                        "w-full pr-4 py-3 text-sm bg-zinc-800/50 border border-zinc-700/50 rounded-xl text-white placeholder-zinc-500 focus:border-zinc-500/50 focus:outline-none focus:ring-2 focus:ring-zinc-500/20 transition-all",
+                                        blueprintContextImage ? "pl-[72px]" : "pl-10"
+                                      )}
                                       disabled={isEditingBlueprint}
                                       autoFocus
                                     />
@@ -21073,9 +21231,52 @@ module.exports = {
                                     onClick={async () => {
                                       if (!blueprintChatInput.trim() || isEditingBlueprint) return;
                                       const userMessage = blueprintChatInput.trim();
+                                      const contextImage = blueprintContextImage;
                                       setBlueprintChatInput("");
-                                      setBlueprintChatHistory(prev => [...prev, { role: 'user', content: userMessage }]);
+                                      setBlueprintContextImage(null);
+                                      setBlueprintChatHistory(prev => [...prev, { role: 'user', content: contextImage ? `🖼️ ${userMessage}` : userMessage }]);
                                       setIsEditingBlueprint(true);
+                                      
+                                      // If we have context image, use vision API
+                                      if (contextImage) {
+                                        try {
+                                          const response = await fetch('/api/blueprint/vision', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                              imageBase64: contextImage,
+                                              componentName: selectedComp.name,
+                                              additionalInstructions: userMessage
+                                            })
+                                          });
+                                          
+                                          if (!response.ok) throw new Error('Vision API failed');
+                                          
+                                          const reader2 = response.body?.getReader();
+                                          const decoder = new TextDecoder();
+                                          
+                                          while (reader2) {
+                                            const { done, value } = await reader2.read();
+                                            if (done) break;
+                                            const text = decoder.decode(value);
+                                            const lines = text.split('\n').filter(l => l.startsWith('data: '));
+                                            for (const line of lines) {
+                                              try {
+                                                const data = JSON.parse(line.slice(6));
+                                                if (data.type === 'partial' || data.type === 'done') {
+                                                  setBlueprintEditedCode(data.code);
+                                                }
+                                              } catch {}
+                                            }
+                                          }
+                                          
+                                          setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: 'Applied ✓' }]);
+                                        } catch (error) {
+                                          setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: 'Failed to process image' }]);
+                                        }
+                                        setIsEditingBlueprint(false);
+                                        return;
+                                      }
                                       
                                       const currentCode = blueprintEditedCode || selectedComp.code || '';
                                       await streamBlueprintEdit(
@@ -21112,12 +21313,8 @@ module.exports = {
                                   </button>
                                 </div>
                                 
-                                {/* Quick Actions + Paste hint */}
+                                {/* Quick Actions */}
                                 <div className="mt-2 flex items-center gap-1.5 overflow-x-auto pb-1">
-                                  <span className="flex-shrink-0 px-2 py-1 text-[10px] bg-zinc-800/50 text-zinc-500 rounded border border-zinc-700/50">
-                                    <kbd className="font-mono">Ctrl+V</kbd> paste Figma
-                                  </span>
-                                  <div className="w-px h-4 bg-zinc-700/50" />
                                   {['Make it red', 'Add icon', 'Add button', 'Make bigger', 'Add shadow'].map(action => (
                                     <button
                                       key={action}

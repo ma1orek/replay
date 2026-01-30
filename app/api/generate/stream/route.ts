@@ -1,7 +1,12 @@
 import { NextRequest } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { REPLAY_SYSTEM_PROMPT } from "@/lib/prompts/system-prompt";
-// Enterprise prompt REMOVED - only system-prompt.ts is used!
+// Agentic Vision - The Sandwich Architecture
+import { 
+  runParallelSurveyor, 
+  validateMeasurements,
+  formatSurveyorDataForPrompt 
+} from "@/lib/agentic-vision";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -294,21 +299,74 @@ export async function POST(request: NextRequest) {
       ]);
     };
 
-    console.log("[stream] DIRECT VISION PIPELINE - Gemini 3 Pro sees video and codes!");
+    console.log("[stream] DIRECT VISION PIPELINE v2.0 - With Agentic Vision Surveyor!");
     const startTime = Date.now();
     const encoder = new TextEncoder();
+    
+    // Check if Surveyor is enabled (can be passed in body)
+    const useSurveyor = body.useSurveyor !== false; // Default: enabled
     
     const stream = new ReadableStream({
       async start(controller) {
         try {
           // ════════════════════════════════════════════════════════════════
-          // SINGLE PHASE: Gemini 3 Pro LOOKS at video and generates code!
-          // NO JSON extraction, NO intermediate steps - PURE VISION!
+          // PHASE 0: THE SURVEYOR - Measure layout with Agentic Vision
+          // "Measure twice, cut once"
+          // ════════════════════════════════════════════════════════════════
+          let surveyorPromptData = '';
+          
+          if (useSurveyor) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+              type: "status", 
+              phase: "surveying",
+              message: "📐 Surveyor measuring layout with Agentic Vision...",
+              progress: 5
+            })}\n\n`));
+            
+            try {
+              console.log("[stream] Running Surveyor before code generation...");
+              const surveyorResult = await withTimeout(
+                runParallelSurveyor(videoBase64, mimeType),
+                45000, // 45s timeout for Surveyor
+                "Surveyor Measurement"
+              );
+              
+              if (surveyorResult.success && surveyorResult.measurements) {
+                const measurements = validateMeasurements(surveyorResult.measurements);
+                surveyorPromptData = formatSurveyorDataForPrompt(measurements);
+                
+                console.log("[stream] Surveyor SUCCESS! Confidence:", Math.round(measurements.confidence * 100) + "%");
+                
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+                  type: "status", 
+                  phase: "surveyed",
+                  message: `✅ Layout measured: ${measurements.spacing.sidebarWidth} sidebar, ${measurements.spacing.cardPadding} padding`,
+                  progress: 8,
+                  surveyorData: {
+                    confidence: measurements.confidence,
+                    spacing: measurements.spacing,
+                    colors: measurements.colors
+                  }
+                })}\n\n`));
+              } else {
+                console.warn("[stream] Surveyor returned no measurements");
+              }
+            } catch (surveyorError: any) {
+              console.warn("[stream] Surveyor failed (non-fatal):", surveyorError?.message);
+              // Continue without Surveyor data
+            }
+          }
+          
+          // ════════════════════════════════════════════════════════════════
+          // MAIN PHASE: Gemini 3 Pro LOOKS at video and generates code!
+          // Now enhanced with Surveyor measurements if available
           // ════════════════════════════════════════════════════════════════
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
             type: "status", 
             phase: "generating",
-            message: "👀 Gemini 3 Pro analyzing video and generating code...",
+            message: surveyorPromptData 
+              ? "👀 Generating code with pixel-perfect measurements..."
+              : "👀 Gemini 3 Pro analyzing video and generating code...",
             progress: 10
           })}\n\n`));
           
@@ -316,6 +374,12 @@ export async function POST(request: NextRequest) {
           
           // Build prompt - ONLY system-prompt.ts (no enterprise presets!)
           let prompt = REPLAY_SYSTEM_PROMPT;
+          
+          // Inject Surveyor measurements if available
+          if (surveyorPromptData) {
+            prompt += surveyorPromptData;
+            console.log("[stream] Injected Surveyor measurements into prompt");
+          }
           
           // Add user's style directive if provided (simple text, no enterprise stuff)
           if (styleDirective && styleDirective.trim()) {
