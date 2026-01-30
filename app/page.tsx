@@ -1501,6 +1501,47 @@ const jsxToHtml = (jsxCode: string): string => {
   let html = jsxCode;
   
   // ═══════════════════════════════════════════════════════════════════════════
+  // STRIP JSX/REACT BOILERPLATE - Extract only the JSX content
+  // ═══════════════════════════════════════════════════════════════════════════
+  
+  // Remove leading comments like "// Next.js App Router Page // ..."
+  html = html.replace(/^(\/\/[^\n]*\n?)+/gm, '');
+  
+  // Remove "use client" directive
+  html = html.replace(/^['"]use client['"];\s*/m, '');
+  
+  // Remove import statements
+  html = html.replace(/^import\s+[^;]+;\s*/gm, '');
+  
+  // Extract content from "export default function ...() { return (...) }"
+  // Match the return statement and extract JSX inside
+  const returnMatch = html.match(/return\s*\(\s*([\s\S]*)\s*\)\s*;?\s*\}?\s*$/);
+  if (returnMatch && returnMatch[1]) {
+    html = returnMatch[1].trim();
+    // Remove trailing );}
+    html = html.replace(/\s*\)\s*;?\s*\}?\s*$/, '');
+  } else {
+    // Try to find JSX starting with < after function declaration
+    const jsxStartMatch = html.match(/(?:function\s+\w+\s*\([^)]*\)\s*\{[\s\S]*?return\s*\()?\s*(<[\s\S]+)/);
+    if (jsxStartMatch && jsxStartMatch[1]) {
+      html = jsxStartMatch[1].trim();
+      // Clean up any trailing function closure
+      html = html.replace(/\s*\)\s*;?\s*\}?\s*$/, '');
+    }
+  }
+  
+  // Remove function declarations that might still be at the start
+  html = html.replace(/^(export\s+)?(default\s+)?function\s+\w+\s*\([^)]*\)\s*\{\s*/m, '');
+  html = html.replace(/^const\s+\w+\s*=\s*\([^)]*\)\s*=>\s*\{?\s*/m, '');
+  html = html.replace(/^const\s+\w+\s*=\s*\(\)\s*=>\s*\(?\s*/m, '');
+  
+  // Remove any "// Mock state" or similar comments
+  html = html.replace(/\/\/[^\n]*\n/g, '');
+  
+  // Remove const declarations (state, variables)
+  html = html.replace(/const\s+\w+\s*=\s*[^;]+;\s*/g, '');
+  
+  // ═══════════════════════════════════════════════════════════════════════════
   // FIX INCOMPLETE/BROKEN CSS CLASSES (common AI generation errors)
   // ═══════════════════════════════════════════════════════════════════════════
   
