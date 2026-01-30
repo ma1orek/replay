@@ -22764,6 +22764,7 @@ module.exports = {
                     if (comment) {
                       // Add comment to chat messages for now (simple implementation)
                       setChatMessages(prev => [...prev, { 
+                        id: `comment-${Date.now()}`,
                         role: 'user', 
                         content: `💬 Comment: ${comment}`,
                         timestamp: Date.now()
