@@ -20253,7 +20253,7 @@ module.exports = {
 
             {/* Blueprints - Infinite Canvas with Draggable Components */}
             {viewMode === "blueprints" && (
-              <div className="flex-1 overflow-hidden relative flex flex-col bg-[#111111]">
+              <div className="flex-1 relative flex flex-col bg-[#111111]" style={{ overflow: 'clip' }}>
                 {/* Show loader when processing */}
                 {(isProcessing || isStreamingCode || isGeneratingBlueprintsComponent) ? (
                   <div className="w-full h-full flex items-center justify-center">
@@ -20266,11 +20266,12 @@ module.exports = {
                     <div 
                       ref={blueprintsCanvasRef}
                       className={cn(
-                        "flex-1 overflow-hidden relative",
+                        "flex-1 relative",
                         draggingComponent ? "cursor-grabbing" : isBlueprintsPanning ? "cursor-grabbing" : "cursor-default",
                         blueprintsBackground === "light" ? "bg-zinc-100" : "bg-[#111111]"
                       )}
                       style={{ 
+                        overflow: 'clip', // Use clip instead of hidden - allows handles to be visible at component edges
                         backgroundImage: blueprintsBackground === "light"
                           ? `radial-gradient(circle, rgba(0,0,0,0.05) 1px, transparent 1px)`
                           : `radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px)`,
