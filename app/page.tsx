@@ -14604,14 +14604,14 @@ ${publishCode}
                             <div className="flex items-start gap-2.5 mb-2.5 pb-2.5 border-b border-white/[0.06]">
                               <Video className="w-4 h-4 text-[var(--accent-orange)] flex-shrink-0 mt-0.5" />
                               <div>
-                                <p className="text-[11px] text-white font-medium mb-0.5">Video Input</p>
+                                <p className="text-[11px] text-white font-medium mb-0.5">Video input</p>
                                 <p className="text-[10px] text-white/50">Reconstruct UI, motion & behavior.</p>
                               </div>
                             </div>
                             <div className="flex items-start gap-2.5">
-                              <ImageIcon className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                              <ImageIcon className="w-4 h-4 text-[var(--accent-orange)] flex-shrink-0 mt-0.5" />
                               <div>
-                                <p className="text-[11px] text-white font-medium mb-0.5">Image Input</p>
+                                <p className="text-[11px] text-white font-medium mb-0.5">Image input</p>
                                 <p className="text-[10px] text-white/50">Reconstruct UI, structure & tokens.</p>
                               </div>
                             </div>
@@ -14663,7 +14663,7 @@ ${publishCode}
                             </span>
                           </div>
                           <span className="text-[9px] text-white/25">
-                            Drop video for logic or image for layout
+                            Drop video or image
                           </span>
                         </button>
                       </>
@@ -14837,14 +14837,14 @@ ${publishCode}
                         <div className="flex items-start gap-2.5 mb-2.5 pb-2.5 border-b border-white/[0.06]">
                           <Video className="w-4 h-4 text-[var(--accent-orange)] flex-shrink-0 mt-0.5" />
                           <div>
-                            <p className="text-[11px] text-white font-medium mb-0.5">Video Input</p>
+                            <p className="text-[11px] text-white font-medium mb-0.5">Video input</p>
                             <p className="text-[10px] text-white/50">Reconstruct UI, motion & behavior.</p>
                           </div>
                         </div>
                         <div className="flex items-start gap-2.5">
-                          <ImageIcon className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                          <ImageIcon className="w-4 h-4 text-[var(--accent-orange)] flex-shrink-0 mt-0.5" />
                           <div>
-                            <p className="text-[11px] text-white font-medium mb-0.5">Image Input</p>
+                            <p className="text-[11px] text-white font-medium mb-0.5">Image input</p>
                             <p className="text-[10px] text-white/50">Reconstruct UI, structure & tokens.</p>
                           </div>
                         </div>
@@ -14902,7 +14902,7 @@ ${publishCode}
                         </span>
                       </div>
                       <span className="text-[9px] text-white/25">
-                        Drop video for logic or image for layout
+                        Drop video or image
                       </span>
                     </button>
                   </>
