@@ -2295,18 +2295,19 @@ const InteractiveReactPreview = ({
       color: ${textColor}; 
       font-family: system-ui, -apple-system, sans-serif;
       width: ${isFullWidth ? '100%' : 'fit-content'};
-      min-width: ${isFullWidth ? '100%' : '200px'};
+      min-width: ${isFullWidth ? '900px' : 'auto'};
       max-width: 100%;
     }
     #root { 
       width: ${isFullWidth ? '100%' : 'fit-content'};
-      min-width: ${isFullWidth ? '100%' : '200px'};
+      min-width: ${isFullWidth ? '900px' : 'auto'};
       max-width: 100%;
     }
-    /* Full-width sections */
+    /* Full-width sections - like Storybook */
     ${isFullWidth ? `
     header, footer, nav, section, main, .container, .wrapper, .hero, .footer, .header {
       width: 100% !important;
+      min-width: 900px !important;
       max-width: 100% !important;
     }
     ` : ''}
@@ -2639,9 +2640,10 @@ const InteractiveReactPreview = ({
         srcDoc={iframeDoc}
         className="border-0"
         style={{ 
-          // Hug content - use actual reported size, no artificial minimums
+          // Full-width components (product sections) get wide layout like Storybook
+          // Small components hug their content
           width: isFullWidth ? '100%' : (iframeWidth > 0 ? `${iframeWidth}px` : 'auto'),
-          minWidth: isFullWidth ? '100%' : 'auto',
+          minWidth: isFullWidth ? '900px' : 'auto',
           maxWidth: '100%',
           height: iframeHeight > 0 ? `${iframeHeight}px` : 'auto', 
           minHeight: isFullWidth ? '200px' : 'auto',
