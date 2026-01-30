@@ -2353,6 +2353,71 @@ const InteractiveReactPreview = ({
       opacity: 1 !important;
       visibility: visible !important;
     }
+    
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* GRADIENT ORBS & ANIMATED BACKGROUNDS - Make them look like glowing blurs   */
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    .gradient-orb, [class*="gradient-orb"], [class*="glow-"], [class*="blur-orb"],
+    [class*="bg-gradient"][class*="rounded-full"], [class*="animate-pulse"][class*="rounded-full"] {
+      border-radius: 50% !important;
+      filter: blur(60px) !important;
+      opacity: 0.6 !important;
+      animation: float-orb 8s ease-in-out infinite !important;
+    }
+    
+    /* Specific gradient orb positioning helpers */
+    .gradient-orb {
+      position: absolute !important;
+      pointer-events: none !important;
+    }
+    
+    /* Floating animation for orbs */
+    @keyframes float-orb {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(10px, -15px) scale(1.05); }
+      50% { transform: translate(-5px, 10px) scale(0.95); }
+      75% { transform: translate(-10px, -5px) scale(1.02); }
+    }
+    
+    /* Pulsing glow effect */
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.4; filter: blur(60px); }
+      50% { opacity: 0.7; filter: blur(80px); }
+    }
+    
+    /* Hero backgrounds with animated gradients */
+    [class*="bg-gradient-to"], .hero-gradient, .gradient-bg {
+      background-size: 200% 200% !important;
+      animation: gradient-shift 15s ease infinite !important;
+    }
+    
+    @keyframes gradient-shift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    
+    /* Shimmer/skeleton loading animations */
+    .animate-shimmer, [class*="shimmer"], .skeleton {
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent) !important;
+      background-size: 200% 100% !important;
+      animation: shimmer 2s infinite !important;
+    }
+    
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    
+    /* Breathing/pulse animations for elements */
+    .animate-breathe, [class*="breathe"] {
+      animation: breathe 4s ease-in-out infinite !important;
+    }
+    
+    @keyframes breathe {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.02); opacity: 0.9; }
+    }
   </style>
   <script>
     tailwind.config = {
