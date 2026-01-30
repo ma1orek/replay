@@ -254,9 +254,10 @@ export async function GET(
   const typedProject = project as Project;
   const showBadge = !typedProject.hide_badge;
   
-  // Escape title and description for HTML
-  const safeTitle = typedProject.title.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  // Escape description for HTML (title not used in browser tab)
   const safeDescription = (typedProject.description || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  // Use simple title for SEO only, not displayed in browser tab
+  const seoTitle = typedProject.title.replace(/</g, "&lt;").replace(/>/g, "&gt;");
   
   // Visibility fix CSS - forces all elements visible (AI generates opacity:0 for GSAP animations)
   const visibilityFixCss = `
@@ -449,18 +450,17 @@ export async function GET(
     // This handles React/Babel code that MUST keep all scripts intact!
     // ═══════════════════════════════════════════════════════════════════════════
     
-    // Inject SEO meta tags into <head>
+    // Inject SEO meta tags into <head> (no title in browser tab - cleaner look)
     const seoMeta = `
-  <title>${safeTitle}</title>
   <meta name="description" content="${safeDescription}">
-  <meta property="og:title" content="${safeTitle}">
+  <meta property="og:title" content="${seoTitle}">
   <meta property="og:description" content="${safeDescription}">
   <meta property="og:url" content="https://www.replay.build/p/${typedProject.slug}">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Replay">
   ${typedProject.thumbnail_url ? `<meta property="og:image" content="${typedProject.thumbnail_url}">` : ''}
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${safeTitle}">
+  <meta name="twitter:title" content="${seoTitle}">
   <meta name="twitter:description" content="${safeDescription}">
   ${typedProject.thumbnail_url ? `<meta name="twitter:image" content="${typedProject.thumbnail_url}">` : ''}
   <link rel="canonical" href="https://www.replay.build/p/${typedProject.slug}">`;
@@ -520,11 +520,10 @@ export async function GET(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${safeTitle}</title>
   <meta name="description" content="${safeDescription}">
   
   <!-- Open Graph / Social -->
-  <meta property="og:title" content="${safeTitle}">
+  <meta property="og:title" content="${seoTitle}">
   <meta property="og:description" content="${safeDescription}">
   <meta property="og:url" content="https://www.replay.build/p/${typedProject.slug}">
   <meta property="og:type" content="website">
@@ -533,7 +532,7 @@ export async function GET(
   
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${safeTitle}">
+  <meta name="twitter:title" content="${seoTitle}">
   <meta name="twitter:description" content="${safeDescription}">
   ${typedProject.thumbnail_url ? `<meta name="twitter:image" content="${typedProject.thumbnail_url}">` : ''}
   
