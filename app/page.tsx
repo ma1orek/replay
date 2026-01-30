@@ -22818,11 +22818,14 @@ module.exports = {
       {/* Mobile Code Panel - Static */}
       {mobilePanel === "code" && !showHistoryMode && !showMobileMenu && (
           <div className="fixed inset-x-0 bottom-[72px] top-0 z-30 md:hidden bg-[#111111] flex flex-col">
-            {/* Unified Mobile Header */}
+            {/* Unified Mobile Header with Close button */}
             <div className="flex items-center gap-2 px-3 py-2.5 border-b border-zinc-800 flex-shrink-0 bg-zinc-900 backdrop-blur-xl">
-              <a href="/" className="flex-shrink-0 p-1.5 -ml-1.5">
-                <LogoIcon className="w-7 h-7" color="white" />
-              </a>
+              <button 
+                onClick={() => setMobilePanel("preview")} 
+                className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center -ml-1"
+              >
+                <X className="w-5 h-5 text-zinc-400" />
+              </button>
               <input
                 type="text"
                 value={generationTitle}
@@ -23015,11 +23018,14 @@ module.exports = {
       {/* Mobile Flow Panel - Static */}
       {mobilePanel === "flow" && !showHistoryMode && !showMobileMenu && (
           <div className="fixed inset-x-0 bottom-[72px] top-0 z-30 md:hidden bg-[#111111] flex flex-col">
-            {/* Unified Mobile Header */}
+            {/* Unified Mobile Header with Close button */}
             <div className="flex items-center gap-2 px-3 py-2.5 border-b border-zinc-800 flex-shrink-0 bg-zinc-900 backdrop-blur-xl">
-              <a href="/" className="flex-shrink-0 p-1.5 -ml-1.5">
-                <LogoIcon className="w-7 h-7" color="white" />
-              </a>
+              <button 
+                onClick={() => setMobilePanel("preview")} 
+                className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center -ml-1"
+              >
+                <X className="w-5 h-5 text-zinc-400" />
+              </button>
               <input
                 type="text"
                 value={generationTitle}
@@ -23218,11 +23224,14 @@ module.exports = {
       {/* Mobile Design Panel - Static */}
       {mobilePanel === "design" && !showHistoryMode && !showMobileMenu && (
           <div className="fixed inset-x-0 bottom-[72px] top-0 z-30 md:hidden bg-[#111111] flex flex-col">
-            {/* Unified Mobile Header */}
+            {/* Unified Mobile Header with Close button */}
             <div className="flex items-center gap-2 px-3 py-2.5 border-b border-zinc-800 flex-shrink-0 bg-zinc-900 backdrop-blur-xl">
-              <a href="/" className="flex-shrink-0 p-1.5 -ml-1.5">
-                <LogoIcon className="w-7 h-7" color="white" />
-              </a>
+              <button 
+                onClick={() => setMobilePanel("preview")} 
+                className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center -ml-1"
+              >
+                <X className="w-5 h-5 text-zinc-400" />
+              </button>
               <input
                 type="text"
                 value={generationTitle}
@@ -23342,11 +23351,14 @@ module.exports = {
       {/* Mobile Chat Panel - Static */}
       {mobilePanel === "chat" && generatedCode && !showHistoryMode && !showMobileMenu && (
           <div className="fixed inset-x-0 bottom-[72px] top-0 z-30 md:hidden bg-[#111111] flex flex-col">
-            {/* Combined Header - Logo, Project Name, Actions, Avatar in one row */}
+            {/* Combined Header with Close button */}
             <div className="flex items-center gap-2 px-3 py-2.5 border-b border-zinc-800 flex-shrink-0 bg-zinc-900 backdrop-blur-xl">
-              <a href="/" className="flex-shrink-0 p-1.5 -ml-1.5">
-                <LogoIcon className="w-7 h-7" color="white" />
-              </a>
+              <button 
+                onClick={() => setMobilePanel("preview")} 
+                className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center -ml-1"
+              >
+                <X className="w-5 h-5 text-zinc-400" />
+              </button>
               <input
                 type="text"
                 value={generationTitle}
