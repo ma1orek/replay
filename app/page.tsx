@@ -18257,47 +18257,39 @@ export default function GeneratedPage() {
                                     ))}
                                   </div>
                                   
-                                  {/* Design Principles */}
-                                  <div>
-                                    <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
-                                      <Target className="w-5 h-5 text-zinc-400" /> Design Principles
-                                    </h2>
-                                    <div className="grid grid-cols-3 gap-4">
-                                      <div className={cn("p-4 rounded-xl border", libraryBackground === "light" ? "bg-white border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
-                                        <h3 className={cn("font-semibold mb-2 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>
-                                          <Eye className="w-4 h-4 text-zinc-400" /> Accessibility First
-                                        </h3>
-                                        <ul className={cn("text-xs space-y-1", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
-                                          <li>• WCAG 2.1 AA compliance</li>
-                                          <li>• Keyboard navigation</li>
-                                          <li>• Screen reader support</li>
-                                          <li>• High contrast modes</li>
-                                        </ul>
+                                  {/* Design Principles - from libraryData */}
+                                  {(() => {
+                                    const principles = (libraryData as any)?.overview?.principles || [
+                                      { title: "Accessibility", items: ["WCAG compliance", "Keyboard nav", "Screen readers", "High contrast"] },
+                                      { title: "Consistency", items: ["Unified language", "Standard interactions", "Cohesive typography", "Consistent spacing"] },
+                                      { title: "Developer Experience", items: ["TypeScript ready", "Clear docs", "Live examples", "Modern tooling"] }
+                                    ];
+                                    const icons: Record<string, any> = { "Accessibility": Eye, "Consistency": Palette, "Developer Experience": Code };
+                                    return (
+                                      <div>
+                                        <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
+                                          <Target className="w-5 h-5 text-zinc-400" /> Design Principles
+                                        </h2>
+                                        <div className="grid grid-cols-3 gap-4">
+                                          {principles.map((p: any, i: number) => {
+                                            const IconComp = icons[p.title] || Eye;
+                                            return (
+                                              <div key={i} className={cn("p-4 rounded-xl border", libraryBackground === "light" ? "bg-white border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
+                                                <h3 className={cn("font-semibold mb-2 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>
+                                                  <IconComp className="w-4 h-4 text-zinc-400" /> {p.title}
+                                                </h3>
+                                                <ul className={cn("text-xs space-y-1", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
+                                                  {(p.items || []).map((item: string, j: number) => (
+                                                    <li key={j}>• {item}</li>
+                                                  ))}
+                                                </ul>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
                                       </div>
-                                      <div className={cn("p-4 rounded-xl border", libraryBackground === "light" ? "bg-white border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
-                                        <h3 className={cn("font-semibold mb-2 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>
-                                          <Palette className="w-4 h-4 text-zinc-400" /> Consistency
-                                        </h3>
-                                        <ul className={cn("text-xs space-y-1", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
-                                          <li>• Unified visual language</li>
-                                          <li>• Standardized interactions</li>
-                                          <li>• Cohesive typography</li>
-                                          <li>• Consistent spacing</li>
-                                        </ul>
-                                      </div>
-                                      <div className={cn("p-4 rounded-xl border", libraryBackground === "light" ? "bg-white border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
-                                        <h3 className={cn("font-semibold mb-2 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>
-                                          <Code className="w-4 h-4 text-zinc-400" /> Developer Experience
-                                        </h3>
-                                        <ul className={cn("text-xs space-y-1", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
-                                          <li>• TypeScript support</li>
-                                          <li>• Clear documentation</li>
-                                          <li>• Live examples</li>
-                                          <li>• Modern build tools</li>
-                                        </ul>
-                                      </div>
-                                    </div>
-                                  </div>
+                                    );
+                                  })()}
                                   
                                   {/* Quick Links */}
                                   <div>
@@ -18874,30 +18866,35 @@ module.exports = {
                                     </div>
                                   </div>
                                   
-                                  {/* Accessibility Overview - minimal dark style */}
-                                  <div className={cn("rounded-xl border p-5", libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50")}>
-                                    <h3 className={cn("text-sm font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>
-                                      <Eye className="w-4 h-4 text-zinc-500" /> Accessibility Overview
-                                    </h3>
-                                    <div className="grid grid-cols-4 gap-3">
-                                      <div className={cn("p-4 rounded-lg text-center border", libraryBackground === "light" ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
-                                        <div className={cn("text-2xl font-bold mb-1", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>91</div>
-                                        <div className={cn("text-xs font-medium", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Readability Score</div>
+                                  {/* Accessibility Overview - from libraryData.overview.colorStats */}
+                                  {(() => {
+                                    const colorStats = (libraryData as any)?.overview?.colorStats || { readabilityScore: 90, lc75Plus: 25, lc90Plus: 15, minReadable: 35 };
+                                    return (
+                                      <div className={cn("rounded-xl border p-5", libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50")}>
+                                        <h3 className={cn("text-sm font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>
+                                          <Eye className="w-4 h-4 text-zinc-500" /> Accessibility Overview
+                                        </h3>
+                                        <div className="grid grid-cols-4 gap-3">
+                                          <div className={cn("p-4 rounded-lg text-center border", libraryBackground === "light" ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
+                                            <div className={cn("text-2xl font-bold mb-1", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>{colorStats.readabilityScore}</div>
+                                            <div className={cn("text-xs font-medium", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Readability Score</div>
+                                          </div>
+                                          <div className={cn("p-4 rounded-lg text-center border", libraryBackground === "light" ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
+                                            <div className={cn("text-2xl font-bold mb-1", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>{colorStats.lc75Plus}%</div>
+                                            <div className={cn("text-xs font-medium", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Lc 75+</div>
+                                          </div>
+                                          <div className={cn("p-4 rounded-lg text-center border", libraryBackground === "light" ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
+                                            <div className={cn("text-2xl font-bold mb-1", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>{colorStats.lc90Plus}%</div>
+                                            <div className={cn("text-xs font-medium", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Lc 90+</div>
+                                          </div>
+                                          <div className={cn("p-4 rounded-lg text-center border", libraryBackground === "light" ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
+                                            <div className={cn("text-2xl font-bold mb-1", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>{colorStats.minReadable}%</div>
+                                            <div className={cn("text-xs font-medium", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Min. Readable</div>
+                                          </div>
+                                        </div>
                                       </div>
-                                      <div className={cn("p-4 rounded-lg text-center border", libraryBackground === "light" ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
-                                        <div className={cn("text-2xl font-bold mb-1", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>22%</div>
-                                        <div className={cn("text-xs font-medium", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Lc 75+</div>
-                                      </div>
-                                      <div className={cn("p-4 rounded-lg text-center border", libraryBackground === "light" ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
-                                        <div className={cn("text-2xl font-bold mb-1", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>11%</div>
-                                        <div className={cn("text-xs font-medium", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Lc 90+</div>
-                                      </div>
-                                      <div className={cn("p-4 rounded-lg text-center border", libraryBackground === "light" ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900 border-zinc-800")}>
-                                        <div className={cn("text-2xl font-bold mb-1", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>33%</div>
-                                        <div className={cn("text-xs font-medium", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Min. Readable</div>
-                                      </div>
-                                    </div>
-                                  </div>
+                                    );
+                                  })()}
                                   
                                   {/* Semantic Colors - From real tokens (success, warning, error, info) */}
                                   {(() => {

@@ -85,8 +85,19 @@ IMAGE URLs:
     "style": "minimalist | modern | luxury | playful | corporate | tech",
     "theme": "dark | light | mixed",
     "primaryBrand": "#hex (main brand color)",
-    "accessibilityScore": "85-100 (estimate based on contrast)",
-    "componentCount": 0
+    "accessibilityScore": 85,
+    "componentCount": 0,
+    "colorStats": {
+      "readabilityScore": 90,
+      "lc75Plus": 25,
+      "lc90Plus": 15,
+      "minReadable": 35
+    },
+    "principles": [
+      { "title": "Accessibility", "items": ["WCAG compliance", "Keyboard nav", "Screen readers"] },
+      { "title": "Consistency", "items": ["Unified language", "Standard interactions", "Cohesive typography"] },
+      { "title": "Developer Experience", "items": ["TypeScript ready", "Clear docs", "Modern tooling"] }
+    ]
   },
   
   "foundations": {
@@ -337,7 +348,13 @@ function createDefaultStructure() {
       theme: "dark",
       primaryBrand: "#3b82f6",
       accessibilityScore: 90,
-      componentCount: 0
+      componentCount: 0,
+      colorStats: { readabilityScore: 90, lc75Plus: 25, lc90Plus: 15, minReadable: 35 },
+      principles: [
+        { title: "Accessibility", items: ["WCAG compliance", "Keyboard nav", "Screen readers", "High contrast"] },
+        { title: "Consistency", items: ["Unified language", "Standard interactions", "Cohesive typography", "Consistent spacing"] },
+        { title: "Developer Experience", items: ["TypeScript ready", "Clear docs", "Live examples", "Modern tooling"] }
+      ]
     },
     foundations: {
       colors: {},
@@ -373,8 +390,26 @@ function ensureStructure(data: any) {
       theme: "dark",
       primaryBrand: "#3b82f6",
       accessibilityScore: 90,
-      componentCount: 0
+      componentCount: 0,
+      colorStats: { readabilityScore: 90, lc75Plus: 25, lc90Plus: 15, minReadable: 35 },
+      principles: [
+        { title: "Accessibility", items: ["WCAG compliance", "Keyboard nav", "Screen readers", "High contrast"] },
+        { title: "Consistency", items: ["Unified language", "Standard interactions", "Cohesive typography", "Consistent spacing"] },
+        { title: "Developer Experience", items: ["TypeScript ready", "Clear docs", "Live examples", "Modern tooling"] }
+      ]
     };
+  }
+  // Ensure colorStats
+  if (!data.overview.colorStats) {
+    data.overview.colorStats = { readabilityScore: 90, lc75Plus: 25, lc90Plus: 15, minReadable: 35 };
+  }
+  // Ensure principles
+  if (!data.overview.principles || data.overview.principles.length === 0) {
+    data.overview.principles = [
+      { title: "Accessibility", items: ["WCAG compliance", "Keyboard nav", "Screen readers", "High contrast"] },
+      { title: "Consistency", items: ["Unified language", "Standard interactions", "Cohesive typography", "Consistent spacing"] },
+      { title: "Developer Experience", items: ["TypeScript ready", "Clear docs", "Live examples", "Modern tooling"] }
+    ];
   }
   
   if (!data.foundations) {
