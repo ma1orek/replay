@@ -130,9 +130,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No generated component image or HTML provided" }, { status: 400 });
     }
 
-    // Use Gemini 3 Flash for fast vision comparison
+    // Use Gemini 3 Flash for Agentic Vision QA
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.0-flash",
+      model: "gemini-3-flash-preview",
       generationConfig: {
         temperature: 0.1,
         maxOutputTokens: 8192,

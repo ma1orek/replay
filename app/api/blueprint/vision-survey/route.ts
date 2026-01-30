@@ -158,9 +158,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No image provided" }, { status: 400 });
     }
 
-    // Use Gemini 3 Flash for fast vision analysis
+    // Use Gemini 3 Flash for Agentic Vision analysis
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.0-flash",
+      model: "gemini-3-flash-preview",
       generationConfig: {
         temperature: 0.1, // Low temperature for precise, deterministic output
         maxOutputTokens: 4096,
