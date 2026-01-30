@@ -3591,11 +3591,26 @@ function ReplayToolContent() {
   useEffect(() => {
     const handleResize = (e: MessageEvent) => {
       if (e.data?.type === 'resize' && e.data?.id && e.data?.width && e.data?.height) {
+        const compId = `comp-${e.data.id}`;
+        const w = e.data.width;
+        const h = e.data.height;
+        
+        // Update iframe size directly
         const iframe = document.getElementById(`iframe-${e.data.id}`) as HTMLIFrameElement;
         if (iframe) {
-          iframe.style.width = `${e.data.width}px`;
-          iframe.style.height = `${e.data.height}px`;
+          iframe.style.width = `${w}px`;
+          iframe.style.height = `${h}px`;
         }
+        
+        // Also update blueprintSizes state so auto-layout knows actual sizes
+        setBlueprintSizes(prev => {
+          const existing = prev[compId];
+          // Only update if size changed significantly (avoid unnecessary re-renders)
+          if (existing && Math.abs(existing.width - w) < 5 && Math.abs(existing.height - h) < 5) {
+            return prev;
+          }
+          return { ...prev, [compId]: { width: w, height: h } };
+        });
       }
     };
     window.addEventListener('message', handleResize);
@@ -20685,15 +20700,21 @@ new MutationObserver(()=>{fixBrokenImages()}).observe(document.body,{childList:t
                                             } catch(err) {}
                                           }}
                                           style={{ 
-                                            // Full-width for sections/pages, fit-content for cards/buttons
+                                            // Use actual reported size from iframe, or smart defaults based on component type
                                             width: size?.width ? `${size.width}px` : 
                                               ['product', 'section', 'hero', 'footer', 'header', 'page', 'nav'].includes(comp.category?.toLowerCase() || comp.layer?.toLowerCase() || '') 
-                                                ? '100%' : 'fit-content',
+                                                ? '500px' : 'fit-content',
                                             height: size?.height ? `${size.height}px` : 'fit-content',
-                                            minWidth: ['product', 'section', 'hero', 'footer', 'header', 'page'].includes(comp.category?.toLowerCase() || '') ? '400px' : '150px',
-                                            minHeight: '60px',
+                                            minWidth: ['product', 'section', 'hero', 'footer', 'header', 'page'].includes(comp.category?.toLowerCase() || comp.layer?.toLowerCase() || '') 
+                                              ? '450px' 
+                                              : ['patterns', 'card'].includes(comp.category?.toLowerCase() || comp.layer?.toLowerCase() || '') 
+                                                ? '280px' 
+                                                : '180px',
+                                            minHeight: ['product', 'section', 'hero', 'footer', 'header', 'page'].includes(comp.category?.toLowerCase() || comp.layer?.toLowerCase() || '') 
+                                              ? '200px' 
+                                              : '80px',
                                             maxWidth: ['product', 'section', 'hero', 'footer', 'header', 'page'].includes(comp.category?.toLowerCase() || comp.layer?.toLowerCase() || '') 
-                                              ? '100%' : '400px',
+                                              ? '600px' : '450px',
                                             background: 'transparent',
                                             display: 'block'
                                           }}
