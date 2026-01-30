@@ -21445,9 +21445,9 @@ module.exports = {
                                   </button>
                                 </div>
                                 
-                                {/* Quick Actions - context-aware */}
+                                {/* Quick Actions */}
                                 <div className="mt-2 flex items-center gap-1.5 overflow-x-auto pb-1">
-                                  {(selectedComp.isNew 
+                                  {(((selectedComp as any).isNew)
                                     ? ['Line chart', 'Pricing card', 'Login form', 'Hero section', 'Feature grid', 'Stats counter']
                                     : ['Make it red', 'Add icon', 'Add button', 'Make bigger', 'Add shadow', 'Add chart']
                                   ).map(action => (
