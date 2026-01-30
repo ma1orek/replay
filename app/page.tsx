@@ -18064,7 +18064,18 @@ export default function GeneratedPage() {
                             code={selectedComponent.code}
                             background={libraryBackground === "light" ? "light" : "dark"}
                             className="min-h-[300px]"
-                            isFullWidth={['product', 'section', 'hero', 'footer', 'header', 'page', 'nav'].includes(selectedComponent.category?.toLowerCase() || (selectedComponent as any).layer?.toLowerCase() || '')}
+                            isFullWidth={(() => {
+                              const componentName = selectedComponent.name?.toLowerCase() || '';
+                              const componentCategory = selectedComponent.category?.toLowerCase() || (selectedComponent as any).layer?.toLowerCase() || '';
+                              return ['product', 'section', 'hero', 'footer', 'header', 'page', 'nav'].includes(componentCategory) ||
+                                componentName.includes('hero') || 
+                                componentName.includes('section') ||
+                                componentName.includes('navbar') ||
+                                componentName.includes('nav') ||
+                                componentName.includes('header') ||
+                                componentName.includes('footer') ||
+                                componentName.includes('banner');
+                            })()}
                           />
                         </div>
                       </div>
@@ -19552,9 +19563,18 @@ module.exports = {
                                       >
                                       {liveCode ? (() => {
                                         // Check if this is a full-width component (hero, section, product, etc.)
-                                        const isFullWidthComponent = ['product', 'section', 'hero', 'footer', 'header', 'page', 'nav'].includes(
-                                          selectedComponent.category?.toLowerCase() || (selectedComponent as any).layer?.toLowerCase() || ''
-                                        ) || selectedComponent.name?.toLowerCase().includes('hero') || selectedComponent.name?.toLowerCase().includes('section');
+                                        // Also check component NAME for navbar, header, footer - they're full-width regardless of category
+                                        const componentName = selectedComponent.name?.toLowerCase() || '';
+                                        const componentCategory = selectedComponent.category?.toLowerCase() || (selectedComponent as any).layer?.toLowerCase() || '';
+                                        const isFullWidthComponent = 
+                                          ['product', 'section', 'hero', 'footer', 'header', 'page', 'nav'].includes(componentCategory) ||
+                                          componentName.includes('hero') || 
+                                          componentName.includes('section') ||
+                                          componentName.includes('navbar') ||
+                                          componentName.includes('nav') ||
+                                          componentName.includes('header') ||
+                                          componentName.includes('footer') ||
+                                          componentName.includes('banner');
                                         
                                         return (
                                         <div 
