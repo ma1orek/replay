@@ -2294,15 +2294,22 @@ const InteractiveReactPreview = ({
       background: transparent; 
       color: ${textColor}; 
       font-family: system-ui, -apple-system, sans-serif;
-      width: fit-content;
-      min-width: 200px;
+      width: ${isFullWidth ? '100%' : 'fit-content'};
+      min-width: ${isFullWidth ? '100%' : '200px'};
       max-width: 100%;
     }
     #root { 
-      width: fit-content;
-      min-width: 200px;
+      width: ${isFullWidth ? '100%' : 'fit-content'};
+      min-width: ${isFullWidth ? '100%' : '200px'};
       max-width: 100%;
     }
+    /* Full-width sections */
+    ${isFullWidth ? `
+    header, footer, nav, section, main, .container, .wrapper, .hero, .footer, .header {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    ` : ''}
     .error-display {
       background: #fef2f2;
       border: 1px solid #fecaca;
@@ -2594,7 +2601,7 @@ const InteractiveReactPreview = ({
   </script>
 </body>
 </html>`;
-  }, [code, background]);
+  }, [code, background, isFullWidth]);
   
   // Listen for size messages
   useEffect(() => {
