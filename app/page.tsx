@@ -22677,11 +22677,15 @@ module.exports = {
                 </button>
               </div>
             ) : (
-              /* Regular Mobile Header */
+              /* Regular Mobile Header with Close button */
               <div className="flex items-center gap-2 px-3 py-2.5 border-b border-zinc-800 flex-shrink-0 bg-zinc-900 backdrop-blur-xl">
-                <a href="/" className="flex-shrink-0 p-1.5 -ml-1.5">
-                  <LogoIcon className="w-7 h-7" color="white" />
-                </a>
+                {/* Close button */}
+                <button 
+                  onClick={() => setMobilePanel("input")} 
+                  className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center -ml-1"
+                >
+                  <X className="w-5 h-5 text-zinc-400" />
+                </button>
                 <input
                   type="text"
                   value={generationTitle}
@@ -22702,9 +22706,6 @@ module.exports = {
                   </button>
                   <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Your Projects">
                     <History className="w-5 h-5 text-zinc-500" />
-                  </button>
-                  <button onClick={() => setShowProjectSettings(true)} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Settings">
-                    <Settings className="w-5 h-5 text-zinc-500" />
                   </button>
                   <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="px-3 py-2 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-h-[44px] flex items-center justify-center">
                     {user ? (
@@ -22751,6 +22752,42 @@ module.exports = {
                 </div>
               )}
             </div>
+            
+            {/* Mobile Comment Input - Simple feedback input */}
+            {!isDemoMode && previewUrl && (
+              <div className="flex-shrink-0 p-3 border-t border-zinc-800 bg-zinc-900/95 backdrop-blur-xl">
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const input = e.currentTarget.querySelector('input') as HTMLInputElement;
+                    const comment = input?.value?.trim();
+                    if (comment) {
+                      // Add comment to chat messages for now (simple implementation)
+                      setChatMessages(prev => [...prev, { 
+                        role: 'user', 
+                        content: `💬 Comment: ${comment}`,
+                        timestamp: Date.now()
+                      }]);
+                      input.value = '';
+                      showToast("Comment added!", "success");
+                    }
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <input
+                    type="text"
+                    placeholder="Add a comment..."
+                    className="flex-1 px-4 py-3 rounded-xl bg-zinc-800/50 border border-zinc-700/50 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-600"
+                  />
+                  <button 
+                    type="submit"
+                    className="p-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-600 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                  >
+                    <Send className="w-5 h-5 text-zinc-300" />
+                  </button>
+                </form>
+              </div>
+            )}
             
             {/* Demo Mode Bottom Banner */}
             {isDemoMode && previewUrl && (

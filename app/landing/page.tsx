@@ -123,18 +123,18 @@ function HeroSection() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col items-center px-4 pt-28 md:pt-32">
+      <div className="relative z-10 flex flex-col items-center px-4 pt-20 md:pt-32">
         <div className="max-w-5xl mx-auto text-center">
           <AnimatedGroup preset="blur-slide" className="flex flex-col items-center">
             {/* Headline */}
-            <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl leading-[1.05] tracking-tight text-white">
+            <h1 className="font-serif text-4xl sm:text-5xl md:text-5xl lg:text-6xl xl:text-7xl leading-[1.05] tracking-tight text-white">
               <span className="whitespace-nowrap">Modernize without{" "}<span className="italic text-orange-500">rewriting.</span></span>
               <br />
               <span className="whitespace-nowrap">Document without{" "}<span className="italic text-orange-500">archaeology.</span></span>
             </h1>
 
             {/* Subheadline */}
-            <p className="mt-6 text-lg md:text-xl text-zinc-400 max-w-2xl leading-relaxed">
+            <p className="mt-6 text-xl md:text-xl text-zinc-400 max-w-2xl leading-relaxed">
               Replay observes real user workflows in your legacy system and generates 
               documented React components — directly from video.
             </p>
