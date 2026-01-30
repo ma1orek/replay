@@ -42,7 +42,7 @@ export async function runQATester(
   try {
     const ai = getGeminiClient();
     
-    const modelName = config.model || 'gemini-3-flash';
+    const modelName = config.model || 'gemini-3-flash-preview';
     const timeout = config.timeout || 90000; // QA may take longer
     
     console.log('[QA Tester] Starting verification with', modelName);
@@ -150,7 +150,7 @@ Return ONLY: { "ssimScore": 0.XX, "verdict": "pass|needs_fixes|major_issues" }
 - major_issues: < 0.85`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash',
+      model: 'gemini-3-flash-preview',
       contents: [
         {
           role: 'user',

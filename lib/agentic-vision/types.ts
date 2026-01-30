@@ -173,7 +173,7 @@ export interface CodeExecutionPart {
 }
 
 export interface AgenticVisionConfig {
-  /** Model to use (default: gemini-3-flash) */
+  /** Model to use (default: gemini-3-flash-preview) */
   model?: string;
   /** Temperature (default: 0.1 for precise measurements) */
   temperature?: number;

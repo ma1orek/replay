@@ -42,7 +42,7 @@ export async function runSurveyor(
   try {
     const ai = getGeminiClient();
     
-    const modelName = config.model || 'gemini-3-flash';
+    const modelName = config.model || 'gemini-3-flash-preview';
     const timeout = config.timeout || 60000;
     
     console.log('[Surveyor] Starting measurement with', modelName);
@@ -113,7 +113,7 @@ export async function runParallelSurveyor(
   
   try {
     const ai = getGeminiClient();
-    const modelName = config.model || 'gemini-3-flash';
+    const modelName = config.model || 'gemini-3-flash-preview';
     
     console.log('[Surveyor] Starting PARALLEL measurement');
     
