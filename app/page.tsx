@@ -21246,18 +21246,20 @@ module.exports = {
                                   <div className="flex-1 relative">
                                     {/* Context image thumbnail */}
                                     {blueprintContextImage && (
-                                      <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1 z-10">
-                                        <img 
-                                          src={blueprintContextImage} 
-                                          alt="Context" 
-                                          className="w-8 h-8 object-cover rounded border border-zinc-600"
-                                        />
-                                        <button
-                                          onClick={() => setBlueprintContextImage(null)}
-                                          className="w-4 h-4 bg-zinc-700 hover:bg-zinc-600 rounded-full flex items-center justify-center text-zinc-400 hover:text-white"
-                                        >
-                                          <X className="w-3 h-3" />
-                                        </button>
+                                      <div className="absolute left-2 top-1/2 -translate-y-1/2 z-10">
+                                        <div className="relative">
+                                          <img 
+                                            src={blueprintContextImage} 
+                                            alt="Context" 
+                                            className="w-8 h-8 object-cover rounded border border-zinc-600"
+                                          />
+                                          <button
+                                            onClick={() => setBlueprintContextImage(null)}
+                                            className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-zinc-700 hover:bg-red-600 rounded-full flex items-center justify-center text-zinc-400 hover:text-white border border-zinc-600"
+                                          >
+                                            <X className="w-2.5 h-2.5" />
+                                          </button>
+                                        </div>
                                       </div>
                                     )}
                                     <input
