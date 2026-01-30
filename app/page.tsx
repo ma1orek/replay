@@ -2628,7 +2628,7 @@ const InteractiveReactPreview = ({
   }, [onSizeChange]);
 
   return (
-    <div className={cn("relative", isFullWidth ? "w-full" : "inline-flex justify-center w-full", className)}>
+    <div className={cn("relative", isFullWidth ? "w-full" : "inline-block", className)}>
       {error && (
         <div className="absolute top-2 left-2 right-2 z-10 bg-red-500/90 text-white text-xs p-2 rounded">
           {error}
@@ -2639,11 +2639,12 @@ const InteractiveReactPreview = ({
         srcDoc={iframeDoc}
         className="border-0"
         style={{ 
-          width: isFullWidth ? '100%' : (iframeWidth > 200 ? `${iframeWidth}px` : 'fit-content'),
-          minWidth: isFullWidth ? '100%' : '200px',
+          // Hug content - use actual reported size, no artificial minimums
+          width: isFullWidth ? '100%' : (iframeWidth > 0 ? `${iframeWidth}px` : 'auto'),
+          minWidth: isFullWidth ? '100%' : 'auto',
           maxWidth: '100%',
-          height: `${iframeHeight}px`, 
-          minHeight: isFullWidth ? '200px' : '120px',
+          height: iframeHeight > 0 ? `${iframeHeight}px` : 'auto', 
+          minHeight: isFullWidth ? '200px' : 'auto',
           background: 'transparent',
         }}
         sandbox="allow-scripts allow-same-origin"
@@ -19381,28 +19382,28 @@ module.exports = {
                                   
                                   return (
                                     <div className="w-full flex-1"
-                                      style={{ minHeight: '200px' }}
+                                      style={{ minHeight: '100px' }}
                                     >
                                       {/* Viewport container - changes width based on mobile/desktop */}
                                       <div 
                                         className={cn(
-                                          "transition-all duration-300 mx-auto",
+                                          "transition-all duration-300",
                                           libraryViewport === "mobile" 
-                                            ? "w-[375px] border-x border-zinc-700/50 shadow-lg" 
+                                            ? "w-[375px] border-x border-zinc-700/50 shadow-lg mx-auto" 
                                             : "w-full"
                                         )}
                                       >
                                       <div 
-                                        className="p-6 relative transition-transform duration-200"
+                                        className="p-4 relative transition-transform duration-200"
                                         style={{ 
                                           transform: `scale(${libraryZoom / 100})`, 
-                                          transformOrigin: 'top center'
+                                          transformOrigin: 'top left'
                                         }}
                                       >
                                       {liveCode ? (
                                         <div 
                                           className={cn(
-                                            "transition-all duration-300 relative group/measure w-full",
+                                            "transition-all duration-300 relative group/measure inline-block",
                                             showLibraryOutline && "outline outline-1 outline-dashed outline-zinc-500/50"
                                           )}
                                         >
