@@ -20574,12 +20574,21 @@ module.exports = {
                                          comp.name?.toLowerCase().includes('section') || comp.name?.toLowerCase().includes('header');
                                       
                                       return (
-                                      <div className="relative inline-block">
+                                      <div 
+                                        className="relative"
+                                        style={{
+                                          // Use actual detected size, or estimate for fullwidth
+                                          width: size?.width ? `${size.width}px` : (isFullWidthComp ? '900px' : 'auto'),
+                                          height: size?.height ? `${size.height}px` : 'auto',
+                                          minWidth: isFullWidthComp ? '600px' : '80px',
+                                          minHeight: '40px'
+                                        }}
+                                      >
                                         {/* Use same InteractiveReactPreview as Library for identical rendering */}
                                         <InteractiveReactPreview 
                                           code={stableCode}
                                           background="dark"
-                                          className="pointer-events-none"
+                                          className="pointer-events-none w-full h-full"
                                           onSizeChange={(newSize) => {
                                             // Update blueprint sizes for auto-layout
                                             setBlueprintSizes(prev => ({
