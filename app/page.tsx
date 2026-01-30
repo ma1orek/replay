@@ -19269,41 +19269,52 @@ module.exports = {
                                     </p>
                                   </div>
                                   
-                                  {/* AI-Generated Examples */}
-                                  {selectedDoc.content?.examples && selectedDoc.content.examples.length > 0 ? (
-                                    <div>
-                                      <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
-                                        <Code className="w-5 h-5 text-zinc-400" /> Code Examples
-                                      </h2>
-                                      <div className="space-y-6">
-                                        {selectedDoc.content.examples.map((example: any, i: number) => (
-                                          <div key={i} className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
-                                            <div className={cn("px-4 py-3 flex items-center justify-between", libraryBackground === "light" ? "bg-zinc-50 border-b border-zinc-200" : "bg-zinc-900 border-b border-zinc-800")}>
-                                              <div>
-                                                <h3 className={cn("font-semibold text-sm", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{example.title}</h3>
-                                                <p className={cn("text-xs mt-0.5", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{example.description}</p>
+                                  {/* Code Examples - from AI or auto-generated from components */}
+                                  {(() => {
+                                    // Use AI examples if available, otherwise generate from components
+                                    const examples = selectedDoc.content?.examples && selectedDoc.content.examples.length > 0 
+                                      ? selectedDoc.content.examples 
+                                      : libraryData?.components?.slice(0, 4).map((comp: any) => ({
+                                          title: comp.name,
+                                          description: comp.description || `${comp.layer || 'Component'} - ${comp.name}`,
+                                          code: comp.code || `<${comp.name} />`
+                                        }));
+                                    
+                                    return examples && examples.length > 0 ? (
+                                      <div>
+                                        <h2 className={cn("text-xl font-semibold mb-4 flex items-center gap-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
+                                          <Code className="w-5 h-5 text-zinc-400" /> Code Examples
+                                        </h2>
+                                        <div className="space-y-6">
+                                          {examples.map((example: any, i: number) => (
+                                            <div key={i} className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
+                                              <div className={cn("px-4 py-3 flex items-center justify-between", libraryBackground === "light" ? "bg-zinc-50 border-b border-zinc-200" : "bg-zinc-900 border-b border-zinc-800")}>
+                                                <div>
+                                                  <h3 className={cn("font-semibold text-sm", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{example.title}</h3>
+                                                  <p className={cn("text-xs mt-0.5", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{example.description}</p>
+                                                </div>
+                                                <button 
+                                                  onClick={() => navigator.clipboard.writeText((example.code || '').replace(/\\n/g, '\n'))}
+                                                  className="px-3 py-1 text-xs bg-zinc-700 text-white rounded hover:bg-zinc-600"
+                                                >
+                                                  Copy
+                                                </button>
                                               </div>
-                                              <button 
-                                                onClick={() => navigator.clipboard.writeText(example.code.replace(/\\n/g, '\n'))}
-                                                className="px-3 py-1 text-xs bg-zinc-700 text-white rounded hover:bg-zinc-600"
-                                              >
-                                                Copy
-                                              </button>
+                                              <pre className={cn("p-4 text-sm font-mono overflow-x-auto max-h-64", libraryBackground === "light" ? "bg-zinc-50" : "bg-[#0d0d0d]")}>
+                                                <code className={libraryBackground === "light" ? "text-zinc-800" : "text-zinc-300"}>{(example.code || '').replace(/\\n/g, '\n')}</code>
+                                              </pre>
                                             </div>
-                                            <pre className={cn("p-4 text-sm font-mono overflow-x-auto", libraryBackground === "light" ? "bg-zinc-50" : "bg-[#0d0d0d]")}>
-                                              <code className={libraryBackground === "light" ? "text-zinc-800" : "text-zinc-300"}>{example.code.replace(/\\n/g, '\n')}</code>
-                                            </pre>
-                                          </div>
-                                        ))}
+                                          ))}
+                                        </div>
                                       </div>
-                                    </div>
-                                  ) : (
-                                    <div className={cn("p-8 rounded-lg border text-center", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50")}>
-                                      <Code className={cn("w-8 h-8 mx-auto mb-3", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")} />
-                                      <p className={cn("text-sm", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>No code examples extracted yet</p>
-                                      <p className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>Generate Library to extract real code snippets from your components</p>
-                                    </div>
-                                  )}
+                                    ) : (
+                                      <div className={cn("p-8 rounded-lg border text-center", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50")}>
+                                        <Code className={cn("w-8 h-8 mx-auto mb-3", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")} />
+                                        <p className={cn("text-sm", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>No components extracted yet</p>
+                                        <p className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>Generate Library to extract components from your video</p>
+                                      </div>
+                                    );
+                                  })()}
                                   
                                   {/* Atomic Design Categories - from AI */}
                                   {(selectedDoc.content?.atoms || selectedDoc.content?.molecules || selectedDoc.content?.organisms) && (
