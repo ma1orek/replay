@@ -257,7 +257,7 @@ function parseQAResponse(response: any): {
     
   } catch (error: any) {
     console.error('[QA Tester] Parse error:', error?.message);
-    return { verification: null };
+    return { verification: undefined };
   }
 }
 
