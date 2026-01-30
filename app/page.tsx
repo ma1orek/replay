@@ -13355,6 +13355,19 @@ ${publishCode}
                             ) : (
                               <span className="truncate flex-1">{comp.name}</span>
                             )}
+                            {/* Rename button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingComponentName(comp.id);
+                                setEditingNameValue(comp.name);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-zinc-700 text-zinc-500 hover:text-white"
+                              title="Rename"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                            {/* Duplicate button */}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
