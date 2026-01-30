@@ -20593,6 +20593,88 @@ module.exports = {
                                             {/* Simple selection border */}
                                             <div className="absolute inset-0 border-2 border-blue-500 rounded pointer-events-none" />
                                             
+                                            {/* Resize handles - all 4 corners + 4 edges */}
+                                            {/* Corner: top-left */}
+                                            <div 
+                                              data-resize-handle="nw"
+                                              className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-nw-resize z-10 hover:bg-blue-400"
+                                              onMouseDown={(e) => {
+                                                e.stopPropagation();
+                                                setResizingComponent({ id, handle: 'nw' });
+                                                setResizeStart({ x: e.clientX, y: e.clientY, width: size?.width || 100, height: size?.height || 100 });
+                                              }}
+                                            />
+                                            {/* Corner: top-right */}
+                                            <div 
+                                              data-resize-handle="ne"
+                                              className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-ne-resize z-10 hover:bg-blue-400"
+                                              onMouseDown={(e) => {
+                                                e.stopPropagation();
+                                                setResizingComponent({ id, handle: 'ne' });
+                                                setResizeStart({ x: e.clientX, y: e.clientY, width: size?.width || 100, height: size?.height || 100 });
+                                              }}
+                                            />
+                                            {/* Corner: bottom-left */}
+                                            <div 
+                                              data-resize-handle="sw"
+                                              className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-sw-resize z-10 hover:bg-blue-400"
+                                              onMouseDown={(e) => {
+                                                e.stopPropagation();
+                                                setResizingComponent({ id, handle: 'sw' });
+                                                setResizeStart({ x: e.clientX, y: e.clientY, width: size?.width || 100, height: size?.height || 100 });
+                                              }}
+                                            />
+                                            {/* Corner: bottom-right */}
+                                            <div 
+                                              data-resize-handle="se"
+                                              className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-se-resize z-10 hover:bg-blue-400"
+                                              onMouseDown={(e) => {
+                                                e.stopPropagation();
+                                                setResizingComponent({ id, handle: 'se' });
+                                                setResizeStart({ x: e.clientX, y: e.clientY, width: size?.width || 100, height: size?.height || 100 });
+                                              }}
+                                            />
+                                            {/* Edge: top */}
+                                            <div 
+                                              data-resize-handle="n"
+                                              className="absolute -top-1 left-1/2 -translate-x-1/2 w-6 h-2 bg-blue-500 border border-white rounded-sm cursor-n-resize z-10 hover:bg-blue-400"
+                                              onMouseDown={(e) => {
+                                                e.stopPropagation();
+                                                setResizingComponent({ id, handle: 'n' });
+                                                setResizeStart({ x: e.clientX, y: e.clientY, width: size?.width || 100, height: size?.height || 100 });
+                                              }}
+                                            />
+                                            {/* Edge: bottom */}
+                                            <div 
+                                              data-resize-handle="s"
+                                              className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-2 bg-blue-500 border border-white rounded-sm cursor-s-resize z-10 hover:bg-blue-400"
+                                              onMouseDown={(e) => {
+                                                e.stopPropagation();
+                                                setResizingComponent({ id, handle: 's' });
+                                                setResizeStart({ x: e.clientX, y: e.clientY, width: size?.width || 100, height: size?.height || 100 });
+                                              }}
+                                            />
+                                            {/* Edge: left */}
+                                            <div 
+                                              data-resize-handle="w"
+                                              className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-6 bg-blue-500 border border-white rounded-sm cursor-w-resize z-10 hover:bg-blue-400"
+                                              onMouseDown={(e) => {
+                                                e.stopPropagation();
+                                                setResizingComponent({ id, handle: 'w' });
+                                                setResizeStart({ x: e.clientX, y: e.clientY, width: size?.width || 100, height: size?.height || 100 });
+                                              }}
+                                            />
+                                            {/* Edge: right */}
+                                            <div 
+                                              data-resize-handle="e"
+                                              className="absolute top-1/2 -right-1 -translate-y-1/2 w-2 h-6 bg-blue-500 border border-white rounded-sm cursor-e-resize z-10 hover:bg-blue-400"
+                                              onMouseDown={(e) => {
+                                                e.stopPropagation();
+                                                setResizingComponent({ id, handle: 'e' });
+                                                setResizeStart({ x: e.clientX, y: e.clientY, width: size?.width || 100, height: size?.height || 100 });
+                                              }}
+                                            />
+                                            
                                             {/* Dimension labels */}
                                             {(showLibraryOutline || showLibraryRuler) && size && (
                                               <>
