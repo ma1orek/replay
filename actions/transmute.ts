@@ -89,6 +89,11 @@ HOW TO GET THE REAL NAME:
 6. CHART DATA: Estimate data points from axis scales. Charts MUST fill their containers!
 7. LOGO TEXT: Read the EXACT logo text - letter by letter. DO NOT invent.
 8. SIDEBAR TYPE: Identify if sidebar contains MENU ITEMS (icons+labels) or USER LIST (avatars+names).
+9. NEVER USE ZERO AS PLACEHOLDER: If you cannot read a number, estimate a realistic value based on context.
+   - "$0B" is WRONG → estimate "$2.5B" or "$500M"
+   - "0 users" is WRONG → estimate "10,000+ users" or "500K+"
+   - "0%" is WRONG → estimate "25%" or "+12%"
+   ZERO (0) should only appear if the video EXPLICITLY shows zero!
 
 ═══════════════════════════════════════════════════════════════════════════════
 🟢 CONTENT 1:1 — OBOWIĄZKOWE (NIE POMIJAJ, NIE SKRACAJ!)
@@ -353,6 +358,13 @@ Output MUST contain every text from scanData VERBATIM. No paraphrasing, no short
 - If scanData has 7 menu items → output all 7. If a page has 6 sections → render all 6.
 - Do NOT replace real text with "Title", "Description", "Lorem" or summaries.
 Content 1:1 is non-negotiable. Every string from the scan must appear in the output as-is.
+
+🚫 NEVER USE ZERO (0) AS A PLACEHOLDER FOR MISSING DATA!
+- If scanData has a metric but value is missing → estimate realistic value based on context
+- "$0B" → WRONG! Use "$2.5B" or "$500M" instead
+- "0 funded startups" → WRONG! Use "5,000+" or "2,500+" instead  
+- "0% growth" → WRONG! Use "+45%" or "+127%" instead
+- Zero (0) should ONLY appear if the original video explicitly showed zero!
 
 ═══════════════════════════════════════════════════════════════════════════════
 🖼️ STYLE REFERENCE IMAGE - COPY 1:1!
