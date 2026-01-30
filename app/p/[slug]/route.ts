@@ -262,6 +262,19 @@ export async function GET(
   // Visibility fix CSS - forces all elements visible (AI generates opacity:0 for GSAP animations)
   const visibilityFixCss = `
 <style id="visibility-fix">
+  /* FIX: Ensure fixed/sticky headers don't cover content */
+  /* Add padding-top to body when there's a fixed header */
+  body:has(header[class*="fixed"]), 
+  body:has(nav[class*="fixed"]),
+  body:has([class*="fixed"][class*="top"]) {
+    padding-top: 80px;
+  }
+  /* For sticky headers */
+  body:has(header[class*="sticky"]), 
+  body:has(nav[class*="sticky"]) {
+    scroll-padding-top: 80px;
+  }
+  
   /* AGGRESSIVE VISIBILITY FIX - Force ALL elements visible */
   /* This overrides GSAP ScrollTrigger initial states */
   
