@@ -4094,6 +4094,14 @@ function ReplayToolContent() {
     // FIX INVISIBLE ELEMENTS - CSS to force visibility (AI generates opacity:0 for animations)
     const invisibleFixStyles = `
 <style id="invisible-fix">
+  /* FIX: Convert fixed headers to sticky to prevent escaping iframe bounds */
+  header[class*="fixed"], nav[class*="fixed"], 
+  [class*="fixed"][class*="top-0"], [class*="fixed"][class*="top-"],
+  header[style*="position: fixed"], nav[style*="position: fixed"],
+  header[style*="position:fixed"], nav[style*="position:fixed"] {
+    position: sticky !important;
+    top: 0 !important;
+  }
   /* Force all elements visible - fix AI generated fade/slide animations */
   [style*="opacity: 0"], [style*="opacity:0"] { opacity: 1 !important; }
   [style*="visibility: hidden"], [style*="visibility:hidden"] { visibility: visible !important; }
