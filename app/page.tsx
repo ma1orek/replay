@@ -2209,12 +2209,14 @@ const InteractiveReactPreview = ({
   code, 
   background = "dark",
   className = "",
-  onSizeChange
+  onSizeChange,
+  isFullWidth = false
 }: { 
   code: string; 
   background?: "light" | "dark";
   className?: string;
   onSizeChange?: (size: { width: number; height: number }) => void;
+  isFullWidth?: boolean;
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [iframeHeight, setIframeHeight] = useState(200);
@@ -2619,7 +2621,7 @@ const InteractiveReactPreview = ({
   }, [onSizeChange]);
 
   return (
-    <div className={cn("relative inline-flex justify-center w-full", className)}>
+    <div className={cn("relative", isFullWidth ? "w-full" : "inline-flex justify-center w-full", className)}>
       {error && (
         <div className="absolute top-2 left-2 right-2 z-10 bg-red-500/90 text-white text-xs p-2 rounded">
           {error}
@@ -2630,11 +2632,11 @@ const InteractiveReactPreview = ({
         srcDoc={iframeDoc}
         className="border-0"
         style={{ 
-          width: iframeWidth > 200 ? `${iframeWidth}px` : 'fit-content',
-          minWidth: '200px',
+          width: isFullWidth ? '100%' : (iframeWidth > 200 ? `${iframeWidth}px` : 'fit-content'),
+          minWidth: isFullWidth ? '100%' : '200px',
           maxWidth: '100%',
           height: `${iframeHeight}px`, 
-          minHeight: '120px',
+          minHeight: isFullWidth ? '200px' : '120px',
           background: 'transparent',
         }}
         sandbox="allow-scripts allow-same-origin"
@@ -17852,6 +17854,7 @@ export default function GeneratedPage() {
                             code={selectedComponent.code}
                             background={libraryBackground === "light" ? "light" : "dark"}
                             className="min-h-[300px]"
+                            isFullWidth={['product', 'section', 'hero', 'footer', 'header', 'page', 'nav'].includes(selectedComponent.category?.toLowerCase() || selectedComponent.layer?.toLowerCase() || '')}
                           />
                         </div>
                       </div>
@@ -19526,6 +19529,7 @@ module.exports = {
                                             background={libraryBackground === "light" ? "light" : "dark"}
                                             className=""
                                             onSizeChange={setLibraryPreviewSize}
+                                            isFullWidth={['product', 'section', 'hero', 'footer', 'header', 'page', 'nav'].includes(selectedComponent.category?.toLowerCase() || selectedComponent.layer?.toLowerCase() || '')}
                                           />
                                         </div>
                                       ) : (
@@ -20802,11 +20806,15 @@ new MutationObserver(()=>{fixBrokenImages()}).observe(document.body,{childList:t
                                             } catch(err) {}
                                           }}
                                           style={{ 
-                                            width: size?.width ? `${size.width}px` : 'fit-content',
+                                            // Full-width for sections/pages, fit-content for cards/buttons
+                                            width: size?.width ? `${size.width}px` : 
+                                              ['product', 'section', 'hero', 'footer', 'header', 'page', 'nav'].includes(comp.category?.toLowerCase() || comp.layer?.toLowerCase() || '') 
+                                                ? '100%' : 'fit-content',
                                             height: size?.height ? `${size.height}px` : 'fit-content',
-                                            minWidth: '150px',
-                                            minHeight: '80px',
-                                            maxWidth: '600px',
+                                            minWidth: ['product', 'section', 'hero', 'footer', 'header', 'page'].includes(comp.category?.toLowerCase() || '') ? '400px' : '150px',
+                                            minHeight: '60px',
+                                            maxWidth: ['product', 'section', 'hero', 'footer', 'header', 'page'].includes(comp.category?.toLowerCase() || comp.layer?.toLowerCase() || '') 
+                                              ? '100%' : '400px',
                                             background: 'transparent',
                                             display: 'block'
                                           }}
