@@ -4217,13 +4217,14 @@ window.addEventListener('load', function() {
       const tailwindScript = '<script src="https://cdn.tailwindcss.com"></script>';
       const gsapScript = '<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>';
       const alpineScript = '<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>';
+      const lucideScript = '<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>';
       
       if (processedCode.includes('</head>')) {
         // Inject before </head>
-        processedCode = processedCode.replace('</head>', `${tailwindScript}\n${gsapScript}\n${alpineScript}\n${invisibleFixStyles}\n</head>`);
+        processedCode = processedCode.replace('</head>', `${tailwindScript}\n${gsapScript}\n${alpineScript}\n${lucideScript}\n${invisibleFixStyles}\n</head>`);
       } else if (processedCode.includes('<body')) {
         // Inject before <body>
-        processedCode = processedCode.replace(/<body/, `<head>${tailwindScript}\n${gsapScript}\n${alpineScript}${invisibleFixStyles}</head>\n<body`);
+        processedCode = processedCode.replace(/<body/, `<head>${tailwindScript}\n${gsapScript}\n${alpineScript}\n${lucideScript}${invisibleFixStyles}</head>\n<body`);
       } else {
         // Wrap in full HTML structure
         processedCode = `<!DOCTYPE html>
@@ -4234,6 +4235,7 @@ window.addEventListener('load', function() {
   ${tailwindScript}
   ${gsapScript}
   ${alpineScript}
+  ${lucideScript}
   ${invisibleFixStyles}
   <style>* { margin: 0; padding: 0; box-sizing: border-box; }</style>
 </head>
