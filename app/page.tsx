@@ -3179,11 +3179,11 @@ function ReplayToolContent() {
     
     const newPositions: Record<string, { x: number; y: number }> = {};
     
-    // Layout config
-    const GAP = 32; // Gap between components
-    const START_X = 60;
-    const START_Y = 60;
-    const MAX_ROW_WIDTH = 1400; // Max width before wrapping to new row
+    // Layout config - generous spacing for large sections
+    const GAP = 40; // Gap between components
+    const START_X = 40;
+    const START_Y = 40;
+    const MAX_ROW_WIDTH = 2000; // Max width before wrapping - allow large sections side by side
     
     // Get actual or estimated sizes for each component
     const getComponentSize = (comp: any) => {
@@ -3192,28 +3192,37 @@ function ReplayToolContent() {
       if (actualSize?.width && actualSize?.height) {
         return { width: actualSize.width + 32, height: actualSize.height + 60 }; // Add padding for label/border
       }
-      // Estimate based on layer/category
+      // Estimate based on layer/category - REALISTIC sizes for each type
       const layer = (comp.layer || comp.category || '').toLowerCase();
       const name = (comp.name || '').toLowerCase();
       
-      // Full-width components (sections, heroes, footers)
-      if (layer === 'product' || name.includes('hero') || name.includes('section') || name.includes('footer') || name.includes('header')) {
-        return { width: 450, height: 280 };
+      // Full-width sections (hero, footer, header, pricing, features) - typically 1200px+ wide
+      if (layer === 'product' || name.includes('hero') || name.includes('section') || 
+          name.includes('footer') || name.includes('header') || name.includes('pricing') ||
+          name.includes('feature') || name.includes('cta') || name.includes('banner')) {
+        return { width: 900, height: 400 };
       }
-      // Medium components (cards, patterns)
-      if (layer === 'patterns' || name.includes('card') || name.includes('feature') || name.includes('listing')) {
-        return { width: 320, height: 240 };
+      // Medium-large patterns (cards, listings, rows)
+      if (layer === 'patterns' || name.includes('card') || name.includes('listing') || 
+          name.includes('row') || name.includes('item')) {
+        return { width: 400, height: 280 };
       }
-      // Small components (buttons, badges, primitives)
-      if (layer === 'primitives' || name.includes('button') || name.includes('badge') || name.includes('icon')) {
-        return { width: 180, height: 100 };
+      // Medium components (navbar, sidebar, form)
+      if (layer === 'components' || name.includes('nav') || name.includes('form') || 
+          name.includes('modal') || name.includes('sidebar')) {
+        return { width: 350, height: 200 };
+      }
+      // Small primitives (buttons, badges, icons, text, divider)
+      if (layer === 'primitives' || name.includes('button') || name.includes('badge') || 
+          name.includes('icon') || name.includes('text') || name.includes('divider')) {
+        return { width: 200, height: 100 };
       }
       // Default medium
-      return { width: 280, height: 180 };
+      return { width: 320, height: 180 };
     };
     
-    // Group by layer for organized layout
-    const layers = ['primitives', 'components', 'patterns', 'product'];
+    // Group by layer for organized layout - LARGEST FIRST (product -> primitives)
+    const layers = ['product', 'patterns', 'components', 'primitives'];
     const componentsByLayer: Record<string, any[]> = {};
     layers.forEach(l => componentsByLayer[l] = []);
     
@@ -20701,20 +20710,56 @@ new MutationObserver(()=>{fixBrokenImages()}).observe(document.body,{childList:t
                                           }}
                                           style={{ 
                                             // Use actual reported size from iframe, or smart defaults based on component type
-                                            width: size?.width ? `${size.width}px` : 
-                                              ['product', 'section', 'hero', 'footer', 'header', 'page', 'nav'].includes(comp.category?.toLowerCase() || comp.layer?.toLowerCase() || '') 
-                                                ? '500px' : 'fit-content',
+                                            width: size?.width ? `${size.width}px` : (() => {
+                                              const layer = (comp.layer || comp.category || '').toLowerCase();
+                                              const name = (comp.name || '').toLowerCase();
+                                              // Full-width sections need large widths
+                                              if (layer === 'product' || name.includes('hero') || name.includes('section') || 
+                                                  name.includes('footer') || name.includes('header') || name.includes('pricing')) {
+                                                return '850px';
+                                              }
+                                              // Patterns medium-wide
+                                              if (layer === 'patterns' || name.includes('card') || name.includes('listing')) {
+                                                return '380px';
+                                              }
+                                              return 'fit-content';
+                                            })(),
                                             height: size?.height ? `${size.height}px` : 'fit-content',
-                                            minWidth: ['product', 'section', 'hero', 'footer', 'header', 'page'].includes(comp.category?.toLowerCase() || comp.layer?.toLowerCase() || '') 
-                                              ? '450px' 
-                                              : ['patterns', 'card'].includes(comp.category?.toLowerCase() || comp.layer?.toLowerCase() || '') 
-                                                ? '280px' 
-                                                : '180px',
-                                            minHeight: ['product', 'section', 'hero', 'footer', 'header', 'page'].includes(comp.category?.toLowerCase() || comp.layer?.toLowerCase() || '') 
-                                              ? '200px' 
-                                              : '80px',
-                                            maxWidth: ['product', 'section', 'hero', 'footer', 'header', 'page'].includes(comp.category?.toLowerCase() || comp.layer?.toLowerCase() || '') 
-                                              ? '600px' : '450px',
+                                            minWidth: (() => {
+                                              const layer = (comp.layer || comp.category || '').toLowerCase();
+                                              const name = (comp.name || '').toLowerCase();
+                                              if (layer === 'product' || name.includes('hero') || name.includes('section') || 
+                                                  name.includes('footer') || name.includes('header') || name.includes('pricing')) {
+                                                return '700px';
+                                              }
+                                              if (layer === 'patterns' || name.includes('card') || name.includes('listing')) {
+                                                return '320px';
+                                              }
+                                              if (layer === 'components') return '250px';
+                                              return '150px';
+                                            })(),
+                                            minHeight: (() => {
+                                              const layer = (comp.layer || comp.category || '').toLowerCase();
+                                              const name = (comp.name || '').toLowerCase();
+                                              if (layer === 'product' || name.includes('hero') || name.includes('section') || 
+                                                  name.includes('footer') || name.includes('header')) {
+                                                return '300px';
+                                              }
+                                              if (layer === 'patterns' || name.includes('card')) return '180px';
+                                              return '60px';
+                                            })(),
+                                            maxWidth: (() => {
+                                              const layer = (comp.layer || comp.category || '').toLowerCase();
+                                              const name = (comp.name || '').toLowerCase();
+                                              // Sections can be very wide
+                                              if (layer === 'product' || name.includes('hero') || name.includes('section') || 
+                                                  name.includes('footer') || name.includes('header') || name.includes('pricing')) {
+                                                return '1000px';
+                                              }
+                                              if (layer === 'patterns') return '500px';
+                                              if (layer === 'components') return '400px';
+                                              return '350px';
+                                            })(),
                                             background: 'transparent',
                                             display: 'block'
                                           }}
