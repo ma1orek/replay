@@ -2292,13 +2292,14 @@ const InteractiveReactPreview = ({
       background: transparent; 
       color: ${textColor}; 
       font-family: system-ui, -apple-system, sans-serif;
-      width: 100%;
-      min-width: 100%;
-      overflow-x: hidden;
+      width: fit-content;
+      min-width: 200px;
+      max-width: 100%;
     }
     #root { 
-      width: 100%;
-      min-height: 100px;
+      width: fit-content;
+      min-width: 200px;
+      max-width: 100%;
     }
     .error-display {
       background: #fef2f2;
@@ -2618,7 +2619,7 @@ const InteractiveReactPreview = ({
   }, [onSizeChange]);
 
   return (
-    <div className={cn("relative w-full", className)}>
+    <div className={cn("relative inline-flex justify-center w-full", className)}>
       {error && (
         <div className="absolute top-2 left-2 right-2 z-10 bg-red-500/90 text-white text-xs p-2 rounded">
           {error}
@@ -2627,12 +2628,13 @@ const InteractiveReactPreview = ({
       <iframe
         ref={iframeRef}
         srcDoc={iframeDoc}
-        className="border-0 w-full"
+        className="border-0"
         style={{ 
-          width: '100%',
-          minWidth: '100%',
+          width: iframeWidth > 200 ? `${iframeWidth}px` : 'fit-content',
+          minWidth: '200px',
+          maxWidth: '100%',
           height: `${iframeHeight}px`, 
-          minHeight: '150px',
+          minHeight: '120px',
           background: 'transparent',
         }}
         sandbox="allow-scripts allow-same-origin"
@@ -18035,22 +18037,24 @@ export default function GeneratedPage() {
                           c.name === selectedLibraryItem
                         )
                       : null;
-                    // Find doc from libraryData.docs (real generated docs only)
+                    // Find doc from libraryData.docs OR use built-in doc types for foundations
                     const docId = selectedLibraryItem?.replace("doc-", "");
-                    // Map doc types to content sections from libraryData
+                    // Map ALL possible doc IDs to their display config
                     const libData = libraryData as any;
-                    const docTypeMap: Record<string, any> = {
+                    const builtInDocs: Record<string, any> = {
                       "overview": { id: "overview", title: "Overview", type: "overview", content: libData?.overview || {} },
                       "getting-started": { id: "getting-started", title: "Getting Started", type: "getting-started", content: {} },
                       "colors": { id: "colors", title: "Colors", type: "colors", content: {} },
                       "typography": { id: "typography", title: "Typography", type: "typography", content: {} },
                       "spacing": { id: "spacing", title: "Spacing", type: "spacing", content: {} },
+                      "iconography": { id: "iconography", title: "Iconography", type: "iconography", content: {} },
                       "icons": { id: "icons", title: "Icons", type: "icons", content: {} },
                       "components": { id: "components", title: "Components", type: "components", content: {} },
                       "examples": { id: "examples", title: "Examples", type: "examples", content: {} },
                     };
+                    // First try real docs, then fallback to built-in
                     const selectedDoc = selectedLibraryItem?.startsWith("doc-")
-                      ? (libraryData?.docs?.find((d: any) => `doc-${d.id}` === selectedLibraryItem || d.id === docId) || docTypeMap[docId || ""])
+                      ? (libraryData?.docs?.find((d: any) => `doc-${d.id}` === selectedLibraryItem || d.id === docId) || builtInDocs[docId || ""] || null)
                       : null;
                     
                     return (
@@ -20658,7 +20662,7 @@ module.exports = {
                                         .replace(/pollinations\.ai\/prompt\/([^?]+)\?/g, `pollinations.ai/prompt/$1?seed=${comp.id || 'stable'}&`);
                                       
                                       return (
-                                      <div className="relative w-full">
+                                      <div className="relative inline-block">
                                         <iframe
                                           key={`bp-iframe-${comp.id}-${isSelected && blueprintEditedCode ? blueprintEditedCode.slice(0, 50) : 'orig'}`}
                                           srcDoc={`<!DOCTYPE html>
@@ -20798,10 +20802,11 @@ new MutationObserver(()=>{fixBrokenImages()}).observe(document.body,{childList:t
                                             } catch(err) {}
                                           }}
                                           style={{ 
-                                            width: size?.width ? `${size.width}px` : '100%',
-                                            height: size?.height ? `${size.height}px` : 'auto',
-                                            minWidth: '200px',
-                                            minHeight: '100px',
+                                            width: size?.width ? `${size.width}px` : 'fit-content',
+                                            height: size?.height ? `${size.height}px` : 'fit-content',
+                                            minWidth: '150px',
+                                            minHeight: '80px',
+                                            maxWidth: '600px',
                                             background: 'transparent',
                                             display: 'block'
                                           }}
