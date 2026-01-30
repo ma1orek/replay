@@ -2542,11 +2542,11 @@ const InteractiveReactPreview = ({
       });
     };
     
-    // Size reporting
+    // Size reporting - actual content size, no minimums
     const sendSize = () => {
       const root = document.getElementById('root');
-      const height = Math.max(root?.scrollHeight || 100, root?.offsetHeight || 100, 100);
-      const width = Math.max(root?.scrollWidth || 120, root?.offsetWidth || 120, 120);
+      const height = root?.scrollHeight || root?.offsetHeight || 40;
+      const width = root?.scrollWidth || root?.offsetWidth || 40;
       window.parent.postMessage({ type: 'IFRAME_SIZE', height, width }, '*');
     };
     
@@ -20572,7 +20572,7 @@ module.exports = {
                                          comp.name?.toLowerCase().includes('section') || comp.name?.toLowerCase().includes('header');
                                       
                                       return (
-                                      <div className="relative" style={{ minWidth: isFullWidthComp ? '600px' : '150px' }}>
+                                      <div className="relative inline-block">
                                         {/* Use same InteractiveReactPreview as Library for identical rendering */}
                                         <InteractiveReactPreview 
                                           code={stableCode}
