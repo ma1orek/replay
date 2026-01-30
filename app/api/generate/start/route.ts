@@ -50,9 +50,9 @@ export async function POST(request: NextRequest) {
       console.log(`[generate/start] Using pre-uploaded video: ${videoUrl}`);
     } else {
       // FormData with video file - upload to storage first
-      const formData = await request.formData();
+      const formData = await request.formData() as unknown as globalThis.FormData;
       const videoFile = formData.get("video") as File | null;
-      styleDirective = formData.get("styleDirective") as string || styleDirective;
+      styleDirective = (formData.get("styleDirective") as string) || styleDirective;
       
       if (!videoFile) {
         return NextResponse.json({ error: "No video provided" }, { status: 400 });
