@@ -2295,13 +2295,14 @@ const InteractiveReactPreview = ({
       color: ${textColor}; 
       font-family: system-ui, -apple-system, sans-serif;
       width: ${isFullWidth ? '100%' : 'fit-content'};
-      min-width: ${isFullWidth ? '900px' : 'auto'};
+      min-width: ${isFullWidth ? '900px' : 'unset'};
       max-width: 100%;
     }
     #root { 
       width: ${isFullWidth ? '100%' : 'fit-content'};
-      min-width: ${isFullWidth ? '900px' : 'auto'};
+      min-width: ${isFullWidth ? '900px' : 'unset'};
       max-width: 100%;
+      display: ${isFullWidth ? 'block' : 'inline-block'};
     }
     /* Full-width sections - like Storybook */
     ${isFullWidth ? `
@@ -2641,12 +2642,12 @@ const InteractiveReactPreview = ({
         className="border-0"
         style={{ 
           // Full-width components (product sections) get wide layout like Storybook
-          // Small components hug their content
-          width: isFullWidth ? '100%' : (iframeWidth > 0 ? `${iframeWidth}px` : 'auto'),
-          minWidth: isFullWidth ? '900px' : 'auto',
+          // Small components (button, icon, card) hug their actual content - no artificial sizes
+          width: isFullWidth ? '100%' : (iframeWidth > 0 ? `${iframeWidth}px` : 'fit-content'),
+          minWidth: isFullWidth ? '900px' : undefined,
           maxWidth: '100%',
-          height: iframeHeight > 0 ? `${iframeHeight}px` : 'auto', 
-          minHeight: isFullWidth ? '200px' : 'auto',
+          height: iframeHeight > 0 ? `${iframeHeight}px` : 'fit-content', 
+          minHeight: isFullWidth ? '200px' : undefined,
           background: 'transparent',
         }}
         sandbox="allow-scripts allow-same-origin"
@@ -20577,18 +20578,19 @@ module.exports = {
                                       <div 
                                         className="relative"
                                         style={{
-                                          // Use actual detected size, or estimate for fullwidth
-                                          width: size?.width ? `${size.width}px` : (isFullWidthComp ? '900px' : 'auto'),
-                                          height: size?.height ? `${size.height}px` : 'auto',
-                                          minWidth: isFullWidthComp ? '600px' : '80px',
-                                          minHeight: '40px'
+                                          // Small components: hug content (no min-width)
+                                          // Full-width components: need min-width for proper layout
+                                          width: size?.width ? `${size.width}px` : (isFullWidthComp ? '900px' : 'fit-content'),
+                                          height: size?.height ? `${size.height}px` : 'fit-content',
+                                          minWidth: isFullWidthComp ? '600px' : undefined,
+                                          minHeight: isFullWidthComp ? '200px' : undefined
                                         }}
                                       >
                                         {/* Use same InteractiveReactPreview as Library for identical rendering */}
                                         <InteractiveReactPreview 
                                           code={stableCode}
                                           background="dark"
-                                          className="pointer-events-none w-full h-full"
+                                          className="pointer-events-none"
                                           onSizeChange={(newSize) => {
                                             // Update blueprint sizes for auto-layout
                                             setBlueprintSizes(prev => ({
