@@ -14595,13 +14595,25 @@ ${publishCode}
                     {/* Header with INPUT label and action buttons */}
                     <div className="sidebar-label text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3 flex items-center justify-between">
                       <span className="flex items-center gap-2">
-                        <Video className="w-3.5 h-3.5" /> INPUT {flows.length > 0 && <span className="text-white/30">{flows.length}</span>}
+                        <Video className="w-3.5 h-3.5" /> INPUT
                         {/* Info tooltip */}
                         <div className="relative group/inputtip">
                           <Info className="w-3 h-3 text-white/30 hover:text-white/50 cursor-help transition-colors" />
-                          <div className="fixed ml-2 left-auto w-48 p-2 rounded-md bg-zinc-800 border border-zinc-700 shadow-xl opacity-0 invisible group-hover/inputtip:opacity-100 group-hover/inputtip:visible transition-all z-[9999] pointer-events-none" style={{ transform: 'translateY(-50%)' }}>
-                            <p className="text-[10px] text-white/70 mb-1.5"><span className="text-white/90 font-medium">Video</span> — flows, interactions, logic</p>
-                            <p className="text-[10px] text-white/70"><span className="text-white/90 font-medium">Image</span> — layout, colors, typography</p>
+                          <div className="fixed ml-2 left-auto w-56 p-3 rounded-lg bg-zinc-900 border border-zinc-700 shadow-2xl opacity-0 invisible group-hover/inputtip:opacity-100 group-hover/inputtip:visible transition-all z-[9999] pointer-events-none" style={{ transform: 'translateY(-50%)' }}>
+                            <div className="flex items-start gap-2.5 mb-2.5 pb-2.5 border-b border-white/[0.06]">
+                              <Video className="w-4 h-4 text-[var(--accent-orange)] flex-shrink-0 mt-0.5" />
+                              <div>
+                                <p className="text-[11px] text-white font-medium mb-0.5">Video Input</p>
+                                <p className="text-[10px] text-white/50">Reconstruct UI, motion & behavior.</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-2.5">
+                              <ImageIcon className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                              <div>
+                                <p className="text-[11px] text-white font-medium mb-0.5">Image Input</p>
+                                <p className="text-[10px] text-white/50">Reconstruct UI, structure & tokens.</p>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </span>
@@ -14656,30 +14668,45 @@ ${publishCode}
                       </>
                     ) : (
                       <>
-                        {/* Video List */}
+                        {/* Input List - Videos & Images */}
                         <div className="space-y-2">
                           {flows.map((flow) => (
                             <div key={flow.id} className={cn("w-full flex items-center gap-3 p-2.5 rounded-lg cursor-pointer text-left transition-all", selectedFlowId === flow.id ? "bg-zinc-800/70 border border-white/[0.12]" : "bg-zinc-800/50 border border-transparent hover:bg-zinc-800/60 hover:border-white/[0.06]")}>
-                              {/* Thumbnail - clickable to preview */}
+                              {/* Thumbnail - clickable to preview (video or image) */}
                               <button 
-                                onClick={() => flow.videoUrl && setVideoPreviewModal({ open: true, url: flow.videoUrl, name: flow.name })}
+                                onClick={() => {
+                                  if (flow.isImage && flow.videoUrl) {
+                                    // For images, open in new tab or show inline
+                                    window.open(flow.videoUrl, '_blank');
+                                  } else if (flow.videoUrl) {
+                                    setVideoPreviewModal({ open: true, url: flow.videoUrl, name: flow.name });
+                                  }
+                                }}
                                 className="w-12 h-8 rounded overflow-hidden bg-zinc-900 flex-shrink-0 relative group"
-                                title="Click to preview video"
+                                title={flow.isImage ? "Click to view image" : "Click to preview video"}
                               >
                                 {flow.thumbnail ? (
                                   <>
                                     <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" />
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                      <Play className="w-4 h-4 text-white" />
+                                      {flow.isImage ? (
+                                        <ImageIcon className="w-4 h-4 text-white" />
+                                      ) : (
+                                        <Play className="w-4 h-4 text-white" />
+                                      )}
                                     </div>
                                   </>
                                 ) : (
-                                  <Film className="w-4 h-4 text-white/20 mx-auto mt-2" />
+                                  flow.isImage ? (
+                                    <ImageIcon className="w-4 h-4 text-white/20 mx-auto mt-2" />
+                                  ) : (
+                                    <Film className="w-4 h-4 text-white/20 mx-auto mt-2" />
+                                  )
                                 )}
                               </button>
                               <button onClick={() => setSelectedFlowId(flow.id)} className="flex-1 min-w-0 text-left">
                                 <p className="text-[13px] text-white/80 truncate">{flow.name}</p>
-                                <p className="text-[11px] text-white/30">{formatDuration(flow.duration)}</p>
+                                <p className="text-[11px] text-white/30">{flow.isImage ? 'Image' : formatDuration(flow.duration)}</p>
                               </button>
                               <span onClick={(e) => { e.stopPropagation(); setFlows(prev => prev.filter(f => f.id !== flow.id)); }} className="p-1.5 text-white/20 hover:text-red-400 hover:bg-zinc-700/50 rounded transition-colors" role="button" tabIndex={0} aria-label="Remove flow" onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setFlows(prev => prev.filter(f => f.id !== flow.id)); }}}>
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -14801,13 +14828,25 @@ ${publishCode}
                 {/* Header with INPUT label and action buttons */}
                 <div className="sidebar-label text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3 flex items-center justify-between">
                   <span className="flex items-center gap-2">
-                    <Video className="w-3.5 h-3.5" /> INPUT {flows.length > 0 && <span className="text-white/30">{flows.length}</span>}
+                    <Video className="w-3.5 h-3.5" /> INPUT
                     {/* Info tooltip */}
                     <div className="relative group/inputtip2">
                       <Info className="w-3 h-3 text-white/30 hover:text-white/50 cursor-help transition-colors" />
-                      <div className="fixed ml-2 left-auto w-48 p-2 rounded-md bg-zinc-800 border border-zinc-700 shadow-xl opacity-0 invisible group-hover/inputtip2:opacity-100 group-hover/inputtip2:visible transition-all z-[9999] pointer-events-none" style={{ transform: 'translateY(-50%)' }}>
-                        <p className="text-[10px] text-white/70 mb-1.5"><span className="text-white/90 font-medium">Video</span> — flows, interactions, logic</p>
-                        <p className="text-[10px] text-white/70"><span className="text-white/90 font-medium">Image</span> — layout, colors, typography</p>
+                      <div className="fixed ml-2 left-auto w-56 p-3 rounded-lg bg-zinc-900 border border-zinc-700 shadow-2xl opacity-0 invisible group-hover/inputtip2:opacity-100 group-hover/inputtip2:visible transition-all z-[9999] pointer-events-none" style={{ transform: 'translateY(-50%)' }}>
+                        <div className="flex items-start gap-2.5 mb-2.5 pb-2.5 border-b border-white/[0.06]">
+                          <Video className="w-4 h-4 text-[var(--accent-orange)] flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-[11px] text-white font-medium mb-0.5">Video Input</p>
+                            <p className="text-[10px] text-white/50">Reconstruct UI, motion & behavior.</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2.5">
+                          <ImageIcon className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-[11px] text-white font-medium mb-0.5">Image Input</p>
+                            <p className="text-[10px] text-white/50">Reconstruct UI, structure & tokens.</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </span>
