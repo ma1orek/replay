@@ -9295,6 +9295,11 @@ Try these prompts in Cursor or v0:
     setFlows([newFlow]);
     setSelectedFlowId(flowId);
     
+    // Always regenerate thumbnail from video (thumbnailUrl may be stale or missing)
+    if (fullGen.videoUrl) {
+      regenerateThumbnail(flowId, fullGen.videoUrl);
+    }
+    
     // Load real duration from video metadata (fixes 00:00 for WebM)
     const tempV = document.createElement('video');
     tempV.preload = 'metadata';
