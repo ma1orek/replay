@@ -14993,7 +14993,7 @@ ${publishCode}
                       )}
                     >
                       <Plus className="w-3 h-3 text-white/30" />
-                      <span className="text-[10px] text-white/40">+Add</span>
+                      <span className="text-[10px] text-white/40">+ Add</span>
                     </button>
                   </div>
                 )}
