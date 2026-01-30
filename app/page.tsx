@@ -21243,36 +21243,6 @@ module.exports = {
                               {/* AI Input - Main Action Area */}
                               <div className="p-3">
                                 <div className="flex items-center gap-2">
-                                  {/* Upload Image Button - adds as context, doesn't auto-process */}
-                                  <button
-                                    onClick={() => {
-                                      // Trigger file input for image upload - add as context only
-                                      const input = document.createElement('input');
-                                      input.type = 'file';
-                                      input.accept = 'image/*';
-                                      input.onchange = async (e) => {
-                                        const file = (e.target as HTMLInputElement).files?.[0];
-                                        if (!file) return;
-                                        
-                                        // Read and set as context image - don't auto-process
-                                        const reader = new FileReader();
-                                        reader.onload = () => {
-                                          const base64 = reader.result as string;
-                                          setBlueprintContextImage(base64);
-                                          showToast("Image added! Now describe what to create.", "info");
-                                        };
-                                        reader.readAsDataURL(file);
-                                      };
-                                      input.click();
-                                    }}
-                                    disabled={isEditingBlueprint}
-                                    className="p-3 rounded-xl bg-zinc-800/50 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors disabled:opacity-50 group relative"
-                                    title="Upload image"
-                                  >
-                                    <ImageIcon className="w-4 h-4" />
-                                    <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 border border-zinc-700">Upload image</span>
-                                  </button>
-                                  
                                   <div className="flex-1 relative">
                                     {/* Context image thumbnail */}
                                     {blueprintContextImage && (
@@ -21442,6 +21412,34 @@ module.exports = {
                                       autoFocus
                                     />
                                   </div>
+                                  
+                                  {/* Upload Image Button - on right side before send */}
+                                  <button
+                                    onClick={() => {
+                                      const input = document.createElement('input');
+                                      input.type = 'file';
+                                      input.accept = 'image/*';
+                                      input.onchange = async (e) => {
+                                        const file = (e.target as HTMLInputElement).files?.[0];
+                                        if (!file) return;
+                                        const reader = new FileReader();
+                                        reader.onload = () => {
+                                          const base64 = reader.result as string;
+                                          setBlueprintContextImage(base64);
+                                          showToast("Image added! Now describe what to create.", "info");
+                                        };
+                                        reader.readAsDataURL(file);
+                                      };
+                                      input.click();
+                                    }}
+                                    disabled={isEditingBlueprint}
+                                    className="w-10 h-10 rounded-full bg-zinc-800/50 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors disabled:opacity-50 flex items-center justify-center"
+                                    title="Upload image"
+                                  >
+                                    <ImageIcon className="w-4 h-4" />
+                                  </button>
+                                  
+                                  {/* Send Button - circular */}
                                   <button
                                     onClick={async () => {
                                       if (!blueprintChatInput.trim() || isEditingBlueprint) return;
@@ -21560,11 +21558,11 @@ module.exports = {
                                     }}
                                     disabled={isEditingBlueprint || !blueprintChatInput.trim()}
                                     className={cn(
-                                      "px-4 py-3 rounded-xl transition-all flex items-center gap-2 font-medium",
+                                      "w-10 h-10 rounded-full transition-all flex items-center justify-center",
                                       isEditingBlueprint 
                                         ? "bg-zinc-700 text-zinc-400 cursor-wait" 
                                         : blueprintChatInput.trim()
-                                          ? "bg-zinc-700 hover:bg-zinc-600 text-white"
+                                          ? "bg-zinc-600 hover:bg-zinc-500 text-white"
                                           : "bg-zinc-800 text-zinc-500"
                                     )}
                                   >

@@ -48,6 +48,7 @@ The code will be rendered in an iframe with Tailwind CSS available.
 - Light theme: Use bg-white, bg-zinc-50, text-zinc-900, text-zinc-500
 - Glassmorphism: Use backdrop-blur, bg-white/10, border-white/20
 - Gradients: Use bg-gradient-to-r, from-X, to-Y
+- **TRANSPARENT BACKGROUND:** If the image has a transparent/checkerboard background (PNG with alpha), DO NOT add any background color to the root container. Leave it transparent (no bg-* class on the outermost element). Only the inner elements should have their own backgrounds if visible in the original.
 
 **COMMON PATTERNS:**
 
