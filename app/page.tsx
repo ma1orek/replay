@@ -2716,14 +2716,14 @@ const InteractiveReactPreview = ({
 
   // Container controls size, iframe fills it at 100% for responsiveness
   // When container is resized, iframe content responds like a real browser window
+  // IMPORTANT: Don't set minWidth - let parent container control width for responsive viewports
   return (
     <div 
       className={cn("relative", isFullWidth ? "w-full" : "inline-block", className)}
       style={{
-        // Container determines size - use reported content size as default
-        // Full-width components (hero, product, sections) need minimum width for proper layout
+        // Container determines size - responsive to parent (mobile/desktop viewport)
         width: isFullWidth ? '100%' : (iframeWidth > 100 ? `${Math.min(iframeWidth, 600)}px` : 'auto'),
-        minWidth: isFullWidth ? '800px' : '100px', // Full-width needs space for responsive content
+        // NO minWidth - allows parent to shrink for mobile viewport
         maxWidth: '100%', // Never exceed container
         // Height adapts to content
         height: iframeHeight > 50 ? `${iframeHeight}px` : 'auto',
