@@ -2656,11 +2656,13 @@ const InteractiveReactPreview = ({
       className={cn("relative", isFullWidth ? "w-full" : "inline-block", className)}
       style={{
         // Container determines size - use reported content size as default
-        width: isFullWidth ? '100%' : (iframeWidth > 100 ? `${iframeWidth}px` : '400px'),
-        minWidth: isFullWidth ? '900px' : '200px',
-        maxWidth: '100%',
-        height: iframeHeight > 50 ? `${iframeHeight}px` : '200px',
-        minHeight: isFullWidth ? '200px' : '100px',
+        // FIX: Don't force width - let content determine natural width, capped by container
+        width: isFullWidth ? '100%' : (iframeWidth > 100 ? `${Math.min(iframeWidth, 600)}px` : 'auto'),
+        minWidth: isFullWidth ? '300px' : '100px', // Reduced from 900px/200px - let content breathe
+        maxWidth: '100%', // Never exceed container
+        // FIX: Height adapts to content
+        height: iframeHeight > 50 ? `${iframeHeight}px` : 'auto',
+        minHeight: '50px', // Minimum for visibility
       }}
     >
       {error && (
@@ -20537,8 +20539,9 @@ module.exports = {
                                   key={id}
                                   className="absolute select-none group"
                                   style={{ 
-                                    left: pos.x, 
-                                    top: pos.y,
+                                    // Use transform instead of left/top for GPU-accelerated movement (prevents lag/ghosting)
+                                    transform: `translate(${pos.x}px, ${pos.y}px)`,
+                                    willChange: isDragging ? 'transform' : 'auto',
                                     zIndex: isDragging || isResizing ? 100 : isSelected ? 50 : 1,
                                     cursor: isDragging ? 'grabbing' : 'grab'
                                   }}
