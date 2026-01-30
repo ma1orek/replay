@@ -4091,6 +4091,17 @@ function ReplayToolContent() {
     // First stabilize any picsum URLs to prevent images from randomly changing
     let processedCode = stabilizePicsumUrls(code);
     
+    // DETECT JSX/React code and convert to HTML
+    // JSX code typically starts with comments, imports, or function declarations
+    const isJsxCode = /^\/\/\s*(Next\.js|React|App|Page|Component)/i.test(processedCode.trim()) ||
+                      /^(import\s|export\s+default\s+function|function\s+\w+Page)/i.test(processedCode.trim()) ||
+                      /^['"]use client['"]/.test(processedCode.trim());
+    
+    if (isJsxCode) {
+      console.log("[Preview] Detected JSX code, converting to HTML...");
+      processedCode = jsxToHtml(processedCode);
+    }
+    
     // FIX INVISIBLE ELEMENTS - CSS to force visibility (AI generates opacity:0 for animations)
     const invisibleFixStyles = `
 <style id="invisible-fix">
