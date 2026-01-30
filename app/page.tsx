@@ -13355,19 +13355,22 @@ ${publishCode}
                             ) : (
                               <span className="truncate flex-1">{comp.name}</span>
                             )}
-                            {/* Rename button */}
+                            {/* Rename button - visible on hover OR when selected */}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setEditingComponentName(comp.id);
                                 setEditingNameValue(comp.name);
                               }}
-                              className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-zinc-700 text-zinc-500 hover:text-white"
+                              className={cn(
+                                "p-0.5 rounded hover:bg-zinc-700 text-zinc-500 hover:text-white transition-opacity",
+                                selectedBlueprintComponent === `comp-${comp.id}` ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                              )}
                               title="Rename"
                             >
                               <Pencil className="w-3 h-3" />
                             </button>
-                            {/* Duplicate button */}
+                            {/* Duplicate button - visible on hover OR when selected */}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -13379,7 +13382,10 @@ ${publishCode}
                                   components: [...(prev?.components || []), newComp]
                                 }));
                               }}
-                              className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-zinc-700 text-zinc-500 hover:text-white"
+                              className={cn(
+                                "p-0.5 rounded hover:bg-zinc-700 text-zinc-500 hover:text-white transition-opacity",
+                                selectedBlueprintComponent === `comp-${comp.id}` ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                              )}
                               title="Duplicate"
                             >
                               <Copy className="w-3 h-3" />
@@ -13802,12 +13808,71 @@ ${publishCode}
                                           selectedLibraryItem === `comp-${comp.id}` ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300"
                                         )}
                                         onClick={() => {
-                                          setSelectedLibraryItem(`comp-${comp.id}`);
-                                          setLibraryPropsOverride({});
+                                          if (editingComponentName !== comp.id) {
+                                            setSelectedLibraryItem(`comp-${comp.id}`);
+                                            setLibraryPropsOverride({});
+                                          }
+                                        }}
+                                        onDoubleClick={() => {
+                                          setEditingComponentName(comp.id);
+                                          setEditingNameValue(comp.name);
                                         }}
                                       >
                                         <span className={layer.color}>{layer.icon}</span>
-                                        <span className="truncate flex-1 text-left">{comp.name}</span>
+                                        {editingComponentName === comp.id ? (
+                                          <input
+                                            type="text"
+                                            value={editingNameValue}
+                                            onChange={(e) => setEditingNameValue(e.target.value)}
+                                            onBlur={() => {
+                                              if (editingNameValue.trim()) {
+                                                setLibraryData((prev: any) => ({
+                                                  ...prev,
+                                                  components: prev?.components?.map((c: any) => 
+                                                    c.id === comp.id ? { ...c, name: editingNameValue.trim() } : c
+                                                  ) || []
+                                                }));
+                                              }
+                                              setEditingComponentName(null);
+                                            }}
+                                            onKeyDown={(e) => {
+                                              if (e.key === 'Enter') {
+                                                if (editingNameValue.trim()) {
+                                                  setLibraryData((prev: any) => ({
+                                                    ...prev,
+                                                    components: prev?.components?.map((c: any) => 
+                                                      c.id === comp.id ? { ...c, name: editingNameValue.trim() } : c
+                                                    ) || []
+                                                  }));
+                                                }
+                                                setEditingComponentName(null);
+                                              } else if (e.key === 'Escape') {
+                                                setEditingComponentName(null);
+                                              }
+                                            }}
+                                            className="flex-1 bg-zinc-700 border border-zinc-600 rounded px-1.5 py-0.5 text-[11px] text-white focus:outline-none focus:border-emerald-500"
+                                            autoFocus
+                                            onClick={(e) => e.stopPropagation()}
+                                          />
+                                        ) : (
+                                          <span className="truncate flex-1 text-left">{comp.name}</span>
+                                        )}
+                                        {/* Rename button */}
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEditingComponentName(comp.id);
+                                            setEditingNameValue(comp.name);
+                                          }}
+                                          className={cn(
+                                            "p-0.5 hover:bg-zinc-700 rounded transition-opacity",
+                                            selectedLibraryItem === `comp-${comp.id}` ? "opacity-100" : "opacity-0 group-hover/comp:opacity-100"
+                                          )}
+                                          title="Rename"
+                                        >
+                                          <Pencil className="w-3 h-3" />
+                                        </button>
+                                        {/* Delete button */}
                                         <button
                                           onClick={(e) => {
                                             e.stopPropagation();
@@ -13822,7 +13887,10 @@ ${publishCode}
                                               }
                                             }
                                           }}
-                                          className="opacity-0 group-hover/comp:opacity-100 p-0.5 hover:bg-zinc-700 rounded transition-opacity"
+                                          className={cn(
+                                            "p-0.5 hover:bg-zinc-700 rounded transition-opacity",
+                                            selectedLibraryItem === `comp-${comp.id}` ? "opacity-100" : "opacity-0 group-hover/comp:opacity-100"
+                                          )}
                                           title="Delete component"
                                         >
                                           <X className="w-3 h-3" />
