@@ -3173,70 +3173,94 @@ function ReplayToolContent() {
   const [isDraggingOverCanvas, setIsDraggingOverCanvas] = useState(false);
   const visionFileInputRef = useRef<HTMLInputElement>(null);
   
-  // Auto layout function for Blueprints - SIMPLE GRID (no category grouping)
+  // Auto layout function for Blueprints - SMART GRID that prevents overlap
   const autoLayoutBlueprints = useCallback(() => {
     if (!libraryData?.components || libraryData.components.length === 0) return;
     
     const newPositions: Record<string, { x: number; y: number }> = {};
     
-    // Simple grid layout - all components together
-    const GAP_X = 40; // Horizontal gap between components
-    const GAP_Y = 40; // Vertical gap between components
+    // Layout config
+    const GAP = 32; // Gap between components
     const START_X = 60;
     const START_Y = 60;
-    const NUM_COLUMNS = 4; // 4 columns for good distribution
-    const COLUMN_WIDTH = 320; // Standard width per column
+    const MAX_ROW_WIDTH = 1400; // Max width before wrapping to new row
     
-    // Track column heights for masonry effect
-    const columnHeights = Array(NUM_COLUMNS).fill(0);
+    // Get actual or estimated sizes for each component
+    const getComponentSize = (comp: any) => {
+      const id = `comp-${comp.id}`;
+      const actualSize = blueprintSizes[id];
+      if (actualSize?.width && actualSize?.height) {
+        return { width: actualSize.width + 32, height: actualSize.height + 60 }; // Add padding for label/border
+      }
+      // Estimate based on layer/category
+      const layer = (comp.layer || comp.category || '').toLowerCase();
+      const name = (comp.name || '').toLowerCase();
+      
+      // Full-width components (sections, heroes, footers)
+      if (layer === 'product' || name.includes('hero') || name.includes('section') || name.includes('footer') || name.includes('header')) {
+        return { width: 450, height: 280 };
+      }
+      // Medium components (cards, patterns)
+      if (layer === 'patterns' || name.includes('card') || name.includes('feature') || name.includes('listing')) {
+        return { width: 320, height: 240 };
+      }
+      // Small components (buttons, badges, primitives)
+      if (layer === 'primitives' || name.includes('button') || name.includes('badge') || name.includes('icon')) {
+        return { width: 180, height: 100 };
+      }
+      // Default medium
+      return { width: 280, height: 180 };
+    };
     
-    // Sort components by category for visual grouping but place in same grid
-    const sortedComponents = [...libraryData.components].sort((a: any, b: any) => {
-      const catA = a.category || 'zzz';
-      const catB = b.category || 'zzz';
-      return catA.localeCompare(catB);
+    // Group by layer for organized layout
+    const layers = ['primitives', 'components', 'patterns', 'product'];
+    const componentsByLayer: Record<string, any[]> = {};
+    layers.forEach(l => componentsByLayer[l] = []);
+    
+    libraryData.components.forEach((comp: any) => {
+      const layer = (comp.layer || 'components').toLowerCase();
+      if (componentsByLayer[layer]) {
+        componentsByLayer[layer].push(comp);
+      } else {
+        componentsByLayer.components.push(comp);
+      }
     });
     
-    sortedComponents.forEach((comp: any) => {
-      const id = `comp-${comp.id}`;
+    // Layout each layer in rows, wrapping when exceeding MAX_ROW_WIDTH
+    let currentY = START_Y;
+    
+    layers.forEach(layer => {
+      const comps = componentsByLayer[layer];
+      if (comps.length === 0) return;
       
-      // Estimate component height based on type/name
-      let estimatedHeight = 200;
-      const name = (comp.name || '').toLowerCase();
-      if (name.includes('navbar') || name.includes('navigation') || name.includes('sidebar')) estimatedHeight = 100;
-      else if (name.includes('hero') || name.includes('section')) estimatedHeight = 300;
-      else if (name.includes('card')) estimatedHeight = 280;
-      else if (name.includes('form') || name.includes('contact')) estimatedHeight = 350;
-      else if (name.includes('pricing')) estimatedHeight = 400;
-      else if (name.includes('button') || name.includes('badge')) estimatedHeight = 80;
-      else if (name.includes('banner') || name.includes('marquee')) estimatedHeight = 100;
-      else if (name.includes('stat') || name.includes('counter')) estimatedHeight = 150;
-      else if (name.includes('testimonial')) estimatedHeight = 250;
-      else if (name.includes('team') || name.includes('member')) estimatedHeight = 300;
-      else if (name.includes('feature')) estimatedHeight = 220;
+      let currentX = START_X;
+      let rowMaxHeight = 0;
       
-      // Find shortest column
-      let shortestCol = 0;
-      for (let i = 1; i < NUM_COLUMNS; i++) {
-        if (columnHeights[i] < columnHeights[shortestCol]) {
-          shortestCol = i;
+      comps.forEach((comp: any) => {
+        const id = `comp-${comp.id}`;
+        const size = getComponentSize(comp);
+        
+        // Wrap to next row if exceeding max width
+        if (currentX + size.width > MAX_ROW_WIDTH && currentX > START_X) {
+          currentX = START_X;
+          currentY += rowMaxHeight + GAP;
+          rowMaxHeight = 0;
         }
-      }
+        
+        newPositions[id] = { x: currentX, y: currentY };
+        currentX += size.width + GAP;
+        rowMaxHeight = Math.max(rowMaxHeight, size.height);
+      });
       
-      newPositions[id] = { 
-        x: START_X + shortestCol * (COLUMN_WIDTH + GAP_X), 
-        y: START_Y + columnHeights[shortestCol]
-      };
-      
-      // Update column height
-      columnHeights[shortestCol] += estimatedHeight + GAP_Y;
+      // Move to next section
+      currentY += rowMaxHeight + GAP * 2;
     });
     
     setBlueprintPositions(newPositions);
-    // Reset zoom to fit and center
+    // Reset zoom to fit
     setBlueprintsZoom(100);
     setBlueprintsOffset({ x: 0, y: 0 });
-  }, [libraryData?.components]);
+  }, [libraryData?.components, blueprintSizes]);
 
   // Vision Import - Convert image/screenshot OR description to component code
   const processVisionImport = useCallback(async (imageBase64: string | null, description?: string) => {
@@ -13357,7 +13381,7 @@ ${publishCode}
                           {librarySectionsExpanded.docs ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                           <FileText className="w-3 h-3" />
                           DOCS
-                          <span className="text-zinc-600 ml-auto">{libraryData.docs?.length || 6}</span>
+                          <span className="text-zinc-600 ml-auto">{(libraryData.docs || []).filter((d: any) => !['colors', 'typography', 'iconography', 'icons', 'spacing'].includes(d.id)).length || 3}</span>
                         </button>
                         {/* Regenerate Docs Button */}
                         <button
@@ -13386,7 +13410,11 @@ ${publishCode}
                           ) : (libraryData.docs?.length > 0 ? libraryData.docs : [
                             { id: "overview", title: "Overview", type: "overview" },
                             { id: "getting-started", title: "Getting Started", type: "getting-started" },
-                          ]).map((doc: any) => (
+                            { id: "examples", title: "Examples", type: "examples" },
+                          ])
+                          // Filter out Colors/Typography/Iconography - they're already in FOUNDATIONS
+                          .filter((doc: any) => !['colors', 'typography', 'iconography', 'icons', 'spacing'].includes(doc.id))
+                          .map((doc: any) => (
                             <button
                               key={doc.id}
                               onClick={() => setSelectedLibraryItem(`doc-${doc.id}`)}
@@ -19500,21 +19528,25 @@ module.exports = {
                                       {liveCode ? (
                                         <div 
                                           className={cn(
-                                            "transition-all duration-300 relative group/measure w-full",
+                                            "transition-all duration-300 relative group/measure inline-block",
                                             showLibraryOutline && "outline outline-1 outline-dashed outline-zinc-500/50"
                                           )}
+                                          style={{ 
+                                            width: libraryPreviewSize.width > 0 ? `${libraryPreviewSize.width}px` : 'auto',
+                                            minWidth: '120px'
+                                          }}
                                         >
                                           {/* Storybook-like measurement overlay */}
                                           {(showLibraryOutline || showLibraryRuler) && (
                                             <>
                                               {/* Top dimension - width */}
-                                              <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex items-center gap-1 transition-opacity">
+                                              <div className="absolute -top-6 left-0 right-0 flex justify-center items-center gap-1 transition-opacity">
                                                 <span className="px-1.5 py-0.5 text-[9px] font-mono font-medium text-zinc-400 bg-zinc-800 rounded border border-zinc-700">
                                                   {libraryPreviewSize.width > 0 ? `${libraryPreviewSize.width}px` : 'Hug'}
                                                 </span>
                                               </div>
                                               {/* Left dimension - height */}
-                                              <div className="absolute -left-6 top-1/2 -translate-y-1/2 flex items-center gap-1 transition-opacity">
+                                              <div className="absolute -left-8 top-0 bottom-0 flex items-center gap-1 transition-opacity">
                                                 <span className="px-1.5 py-0.5 text-[9px] font-mono font-medium text-zinc-400 bg-zinc-800 rounded border border-zinc-700" style={{writingMode: 'vertical-rl', transform: 'rotate(180deg)'}}>
                                                   {libraryPreviewSize.height > 0 ? `${libraryPreviewSize.height}px` : 'Hug'}
                                                 </span>
