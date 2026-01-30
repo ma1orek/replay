@@ -15768,8 +15768,8 @@ ${publishCode}
                   </div>
                 ) : previewUrl ? (
                   <>
-                    {/* Iframe container */}
-                    <div className={cn("flex-1 flex items-center justify-center bg-[#111111] relative", isMobilePreview && "py-4")} style={{ overscrollBehavior: 'contain' }}>
+                    {/* Iframe container - isolated to prevent fixed elements from escaping */}
+                    <div className={cn("flex-1 flex items-center justify-center bg-[#111111] relative overflow-hidden", isMobilePreview && "py-4")} style={{ overscrollBehavior: 'contain', isolation: 'isolate', contain: 'layout paint' }}>
                       <iframe 
                         key={previewUrl}
                         ref={previewIframeRef}
@@ -15790,7 +15790,13 @@ ${publishCode}
                           isPointAndEdit && "cursor-crosshair",
                           isEditing && "opacity-50"
                         )} 
-                        style={{ overscrollBehavior: 'contain', backgroundColor: '#0a0a0a' }}
+                        style={{ 
+                          overscrollBehavior: 'contain', 
+                          backgroundColor: '#0a0a0a',
+                          isolation: 'isolate',
+                          contain: 'strict',
+                          overflow: 'auto'
+                        }}
                         title="Preview" 
                         sandbox="allow-scripts allow-same-origin"
                         referrerPolicy="no-referrer" 
