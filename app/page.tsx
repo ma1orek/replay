@@ -3559,6 +3559,27 @@ function ReplayToolContent() {
     }
   }, [visionImportComponentName, visionImportInstructions, blueprintsZoom, blueprintsOffset, showToast]);
 
+  // Helper: Fit component in view after generation
+  const fitComponentInView = useCallback((componentId: string) => {
+    setTimeout(() => {
+      const rect = blueprintsCanvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      
+      const pos = blueprintPositions[componentId];
+      const size = blueprintSizes[componentId] || { width: 400, height: 300 };
+      if (!pos) return;
+      
+      // Calculate offset to center the component
+      const targetZoom = 100; // Reset to 100% for visibility
+      const scale = targetZoom / 100;
+      const offsetX = rect.width / 2 - (pos.x + size.width / 2) * scale;
+      const offsetY = rect.height / 2 - (pos.y + size.height / 2) * scale;
+      
+      setBlueprintsZoom(targetZoom);
+      setBlueprintsOffset({ x: offsetX, y: offsetY });
+    }, 100);
+  }, [blueprintPositions, blueprintSizes]);
+
   // Handle paste event for Vision import (Ctrl+V on Blueprint canvas)
   const handleBlueprintPaste = useCallback(async (e: ClipboardEvent) => {
     if (viewMode !== 'blueprints') return;
@@ -20711,7 +20732,9 @@ module.exports = {
                                   className="absolute select-none group"
                                   style={{ 
                                     // Use transform instead of left/top for GPU-accelerated movement (prevents lag/ghosting)
-                                    transform: `translate(${pos.x}px, ${pos.y}px)`,
+                                    // Add padding for resize handles to be visible outside component
+                                    transform: `translate(${pos.x - 8}px, ${pos.y - 8}px)`,
+                                    padding: '8px',
                                     willChange: isDragging ? 'transform' : 'auto',
                                     zIndex: isDragging || isResizing ? 100 : isSelected ? 50 : 1,
                                     cursor: isDragging ? 'grabbing' : 'grab'
@@ -20869,11 +20892,11 @@ module.exports = {
                                             {/* Simple selection border - HIGH z-index to be on top */}
                                             <div className="absolute inset-0 border-2 border-blue-500 rounded pointer-events-none z-[1000]" />
                                             
-                                            {/* Resize handles - all 4 corners + 4 edges - HIGH z-index */}
+                                            {/* Resize handles - all 4 corners + 4 edges - LARGE & VISIBLE */}
                                             {/* Corner: top-left */}
                                             <div 
                                               data-resize-handle="nw"
-                                              className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-nw-resize z-[2001] hover:bg-blue-400"
+                                              className="absolute -top-2 -left-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-sm cursor-nw-resize z-[2001] hover:bg-blue-400 shadow-lg"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'nw' });
@@ -20890,7 +20913,7 @@ module.exports = {
                                             {/* Corner: top-right */}
                                             <div 
                                               data-resize-handle="ne"
-                                              className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-ne-resize z-[2001] hover:bg-blue-400"
+                                              className="absolute -top-2 -right-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-sm cursor-ne-resize z-[2001] hover:bg-blue-400 shadow-lg"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'ne' });
@@ -20906,7 +20929,7 @@ module.exports = {
                                             {/* Corner: bottom-left */}
                                             <div 
                                               data-resize-handle="sw"
-                                              className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-sw-resize z-[2001] hover:bg-blue-400"
+                                              className="absolute -bottom-2 -left-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-sm cursor-sw-resize z-[2001] hover:bg-blue-400 shadow-lg"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'sw' });
@@ -20922,7 +20945,7 @@ module.exports = {
                                             {/* Corner: bottom-right */}
                                             <div 
                                               data-resize-handle="se"
-                                              className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-se-resize z-[2001] hover:bg-blue-400"
+                                              className="absolute -bottom-2 -right-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-sm cursor-se-resize z-[2001] hover:bg-blue-400 shadow-lg"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'se' });
@@ -20938,7 +20961,7 @@ module.exports = {
                                             {/* Edge: top */}
                                             <div 
                                               data-resize-handle="n"
-                                              className="absolute -top-1 left-1/2 -translate-x-1/2 w-6 h-2 bg-blue-500 border border-white rounded-sm cursor-n-resize z-[2001] hover:bg-blue-400"
+                                              className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-8 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-n-resize z-[2001] hover:bg-blue-400 shadow-lg"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'n' });
@@ -20954,7 +20977,7 @@ module.exports = {
                                             {/* Edge: bottom */}
                                             <div 
                                               data-resize-handle="s"
-                                              className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-2 bg-blue-500 border border-white rounded-sm cursor-s-resize z-[2001] hover:bg-blue-400"
+                                              className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-8 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-s-resize z-[2001] hover:bg-blue-400 shadow-lg"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 's' });
@@ -20970,7 +20993,7 @@ module.exports = {
                                             {/* Edge: left */}
                                             <div 
                                               data-resize-handle="w"
-                                              className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-6 bg-blue-500 border border-white rounded-sm cursor-w-resize z-[2001] hover:bg-blue-400"
+                                              className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-3 h-8 bg-blue-500 border-2 border-white rounded-sm cursor-w-resize z-[2001] hover:bg-blue-400 shadow-lg"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'w' });
@@ -20986,7 +21009,7 @@ module.exports = {
                                             {/* Edge: right */}
                                             <div 
                                               data-resize-handle="e"
-                                              className="absolute top-1/2 -right-1 -translate-y-1/2 w-2 h-6 bg-blue-500 border border-white rounded-sm cursor-e-resize z-[2001] hover:bg-blue-400"
+                                              className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-3 h-8 bg-blue-500 border-2 border-white rounded-sm cursor-e-resize z-[2001] hover:bg-blue-400 shadow-lg"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'e' });
