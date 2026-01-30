@@ -21337,7 +21337,7 @@ module.exports = {
                                                 body: JSON.stringify({ imageBase64: contextImage })
                                               });
                                               
-                                              let surveyData = null;
+                                              let surveyData: any = null;
                                               if (surveyResponse.ok) {
                                                 const surveyResult = await surveyResponse.json();
                                                 if (surveyResult.success && surveyResult.hardData) {
@@ -21345,7 +21345,7 @@ module.exports = {
                                                   setBlueprintSurveyData(surveyData);
                                                   setBlueprintChatHistory(prev => [...prev, { 
                                                     role: 'ai', 
-                                                    content: `📋 Extracted: ${surveyData.componentType || 'Component'} (${surveyData.theme || 'dark'} theme, ${surveyData.style || 'minimal'} style)` 
+                                                    content: `📋 Extracted: ${surveyData?.componentType || 'Component'} (${surveyData?.theme || 'dark'} theme, ${surveyData?.style || 'minimal'} style)` 
                                                   }]);
                                                 }
                                               }
@@ -21485,7 +21485,7 @@ module.exports = {
                                             body: JSON.stringify({ imageBase64: contextImage })
                                           });
                                           
-                                          let surveyData = null;
+                                          let surveyData: any = null;
                                           if (surveyResponse.ok) {
                                             const surveyResult = await surveyResponse.json();
                                             if (surveyResult.success && surveyResult.hardData) {
@@ -21493,7 +21493,7 @@ module.exports = {
                                               setBlueprintSurveyData(surveyData);
                                               setBlueprintChatHistory(prev => [...prev, { 
                                                 role: 'ai', 
-                                                content: `📋 Extracted: ${surveyData.componentType || 'Component'} (${surveyData.theme || 'dark'} theme, ${surveyData.style || 'minimal'} style)` 
+                                                content: `📋 Extracted: ${surveyData?.componentType || 'Component'} (${surveyData?.theme || 'dark'} theme, ${surveyData?.style || 'minimal'} style)` 
                                               }]);
                                             }
                                           }
