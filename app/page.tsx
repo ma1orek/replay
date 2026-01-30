@@ -19508,10 +19508,18 @@ module.exports = {
                                           transformOrigin: 'top left'
                                         }}
                                       >
-                                      {liveCode ? (
+                                      {liveCode ? (() => {
+                                        // Check if this is a full-width component (hero, section, product, etc.)
+                                        const isFullWidthComponent = ['product', 'section', 'hero', 'footer', 'header', 'page', 'nav'].includes(
+                                          selectedComponent.category?.toLowerCase() || (selectedComponent as any).layer?.toLowerCase() || ''
+                                        ) || selectedComponent.name?.toLowerCase().includes('hero') || selectedComponent.name?.toLowerCase().includes('section');
+                                        
+                                        return (
                                         <div 
                                           className={cn(
-                                            "transition-all duration-300 relative group/measure inline-block",
+                                            "transition-all duration-300 relative group/measure",
+                                            // Full-width components get w-full, others get inline-block
+                                            isFullWidthComponent ? "w-full" : "inline-block",
                                             showLibraryOutline && "outline outline-1 outline-dashed outline-zinc-500/50"
                                           )}
                                         >
@@ -19537,10 +19545,11 @@ module.exports = {
                                             background={libraryBackground === "light" ? "light" : "dark"}
                                             className=""
                                             onSizeChange={setLibraryPreviewSize}
-                                            isFullWidth={['product', 'section', 'hero', 'footer', 'header', 'page', 'nav'].includes(selectedComponent.category?.toLowerCase() || (selectedComponent as any).layer?.toLowerCase() || '')}
+                                            isFullWidth={isFullWidthComponent}
                                           />
                                         </div>
-                                      ) : (
+                                        );
+                                      })() : (
                                         <div className="px-6 py-3 rounded-lg font-medium bg-blue-600 text-white inline-block">
                                           {selectedComponent.name}
                                         </div>
