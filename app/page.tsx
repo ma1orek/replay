@@ -18130,11 +18130,6 @@ export default function GeneratedPage() {
                                         {(libraryData as any)?.overview?.description || selectedDoc.content?.projectContext || selectedDoc.content?.description || "Component library extracted from UI"}
                                       </p>
                                     </div>
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <span className="px-3 py-1 text-xs rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
-                                        {(libraryData as any)?.overview?.theme || selectedDoc.content?.themeType || "dark"} theme
-                                      </span>
-                                    </div>
                                   </div>
                                   
                                   {/* Stats Cards - Atomic Design Breakdown */}
