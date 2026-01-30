@@ -3295,6 +3295,9 @@ function ReplayToolContent() {
   const [blueprintChatHistory, setBlueprintChatHistory] = useState<{role: 'user' | 'ai', content: string}[]>([]);
   const [isEditingBlueprint, setIsEditingBlueprint] = useState(false);
   const [blueprintContextImage, setBlueprintContextImage] = useState<string | null>(null); // Base64 image for context
+  const [blueprintSurveyData, setBlueprintSurveyData] = useState<any>(null); // Hard data from Agentic Vision Surveyor
+  const [blueprintQaReport, setBlueprintQaReport] = useState<any>(null); // QA report comparing reference vs generated
+  const [isSurveyingBlueprint, setIsSurveyingBlueprint] = useState(false); // Loading state for surveyor
   const [showJsonView, setShowJsonView] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [generatePromptInput, setGeneratePromptInput] = useState("");
@@ -21321,16 +21324,63 @@ module.exports = {
                                           setBlueprintChatHistory(prev => [...prev, { role: 'user', content: contextImage ? `🖼️ ${userMessage}` : userMessage }]);
                                           setIsEditingBlueprint(true);
                                           
-                                          // If we have context image, use vision API
+                                          // If we have context image, use Agentic Vision: Surveyor → Generator flow
                                           if (contextImage) {
                                             try {
+                                              // STEP 1: SURVEYOR - Extract hard data from image
+                                              setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: '🔍 Analyzing image with Agentic Vision...' }]);
+                                              setIsSurveyingBlueprint(true);
+                                              
+                                              const surveyResponse = await fetch('/api/blueprint/vision-survey', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ imageBase64: contextImage })
+                                              });
+                                              
+                                              let surveyData = null;
+                                              if (surveyResponse.ok) {
+                                                const surveyResult = await surveyResponse.json();
+                                                if (surveyResult.success && surveyResult.hardData) {
+                                                  surveyData = surveyResult.hardData;
+                                                  setBlueprintSurveyData(surveyData);
+                                                  setBlueprintChatHistory(prev => [...prev, { 
+                                                    role: 'ai', 
+                                                    content: `📋 Extracted: ${surveyData.componentType || 'Component'} (${surveyData.theme || 'dark'} theme, ${surveyData.style || 'minimal'} style)` 
+                                                  }]);
+                                                }
+                                              }
+                                              setIsSurveyingBlueprint(false);
+                                              
+                                              // STEP 2: GENERATOR - Create component with hard data constraints
+                                              setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: '⚡ Generating component...' }]);
+                                              
+                                              // Build enhanced instructions with hard data
+                                              let enhancedInstructions = userMessage;
+                                              if (surveyData) {
+                                                enhancedInstructions += `\n\n**MANDATORY HARD DATA FROM VISUAL ANALYSIS:**\n`;
+                                                if (surveyData.colors) {
+                                                  enhancedInstructions += `- Background: ${surveyData.colors.background}\n`;
+                                                  enhancedInstructions += `- Text: ${surveyData.colors.text}\n`;
+                                                  enhancedInstructions += `- Accent: ${surveyData.colors.accent}\n`;
+                                                }
+                                                if (surveyData.tailwindClasses?.container) {
+                                                  enhancedInstructions += `- Container classes: ${surveyData.tailwindClasses.container}\n`;
+                                                }
+                                                if (surveyData.content) {
+                                                  if (surveyData.content.headline) enhancedInstructions += `- Headline: "${surveyData.content.headline}"\n`;
+                                                  if (surveyData.content.description) enhancedInstructions += `- Description: "${surveyData.content.description}"\n`;
+                                                  if (surveyData.content.buttonText) enhancedInstructions += `- Button text: "${surveyData.content.buttonText}"\n`;
+                                                }
+                                                enhancedInstructions += `\nYou MUST use these exact values - they are deterministic constraints from visual analysis.`;
+                                              }
+                                              
                                               const response = await fetch('/api/blueprint/vision', {
                                                 method: 'POST',
                                                 headers: { 'Content-Type': 'application/json' },
                                                 body: JSON.stringify({
                                                   imageBase64: contextImage,
                                                   componentName: selectedComp.name,
-                                                  additionalInstructions: userMessage
+                                                  additionalInstructions: enhancedInstructions
                                                 })
                                               });
                                               
@@ -21354,9 +21404,10 @@ module.exports = {
                                                 }
                                               }
                                               
-                                              setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: 'Applied ✓' }]);
+                                              setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: '✓ Component generated with Agentic Vision!' }]);
                                             } catch (error) {
                                               setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: 'Failed to process image' }]);
+                                              setIsSurveyingBlueprint(false);
                                             }
                                             setIsEditingBlueprint(false);
                                             return;
@@ -21421,16 +21472,63 @@ module.exports = {
                                       setBlueprintChatHistory(prev => [...prev, { role: 'user', content: contextImage ? `🖼️ ${userMessage}` : userMessage }]);
                                       setIsEditingBlueprint(true);
                                       
-                                      // If we have context image, use vision API
+                                      // If we have context image, use Agentic Vision: Surveyor → Generator flow
                                       if (contextImage) {
                                         try {
+                                          // STEP 1: SURVEYOR - Extract hard data from image
+                                          setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: '🔍 Analyzing image with Agentic Vision...' }]);
+                                          setIsSurveyingBlueprint(true);
+                                          
+                                          const surveyResponse = await fetch('/api/blueprint/vision-survey', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ imageBase64: contextImage })
+                                          });
+                                          
+                                          let surveyData = null;
+                                          if (surveyResponse.ok) {
+                                            const surveyResult = await surveyResponse.json();
+                                            if (surveyResult.success && surveyResult.hardData) {
+                                              surveyData = surveyResult.hardData;
+                                              setBlueprintSurveyData(surveyData);
+                                              setBlueprintChatHistory(prev => [...prev, { 
+                                                role: 'ai', 
+                                                content: `📋 Extracted: ${surveyData.componentType || 'Component'} (${surveyData.theme || 'dark'} theme, ${surveyData.style || 'minimal'} style)` 
+                                              }]);
+                                            }
+                                          }
+                                          setIsSurveyingBlueprint(false);
+                                          
+                                          // STEP 2: GENERATOR - Create component with hard data constraints
+                                          setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: '⚡ Generating component...' }]);
+                                          
+                                          // Build enhanced instructions with hard data
+                                          let enhancedInstructions = userMessage;
+                                          if (surveyData) {
+                                            enhancedInstructions += `\n\n**MANDATORY HARD DATA FROM VISUAL ANALYSIS:**\n`;
+                                            if (surveyData.colors) {
+                                              enhancedInstructions += `- Background: ${surveyData.colors.background}\n`;
+                                              enhancedInstructions += `- Text: ${surveyData.colors.text}\n`;
+                                              enhancedInstructions += `- Accent: ${surveyData.colors.accent}\n`;
+                                            }
+                                            if (surveyData.tailwindClasses?.container) {
+                                              enhancedInstructions += `- Container classes: ${surveyData.tailwindClasses.container}\n`;
+                                            }
+                                            if (surveyData.content) {
+                                              if (surveyData.content.headline) enhancedInstructions += `- Headline: "${surveyData.content.headline}"\n`;
+                                              if (surveyData.content.description) enhancedInstructions += `- Description: "${surveyData.content.description}"\n`;
+                                              if (surveyData.content.buttonText) enhancedInstructions += `- Button text: "${surveyData.content.buttonText}"\n`;
+                                            }
+                                            enhancedInstructions += `\nYou MUST use these exact values - they are deterministic constraints from visual analysis.`;
+                                          }
+                                          
                                           const response = await fetch('/api/blueprint/vision', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({
                                               imageBase64: contextImage,
                                               componentName: selectedComp.name,
-                                              additionalInstructions: userMessage
+                                              additionalInstructions: enhancedInstructions
                                             })
                                           });
                                           
@@ -21454,9 +21552,10 @@ module.exports = {
                                             }
                                           }
                                           
-                                          setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: 'Applied ✓' }]);
+                                          setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: '✓ Component generated with Agentic Vision!' }]);
                                         } catch (error) {
                                           setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: 'Failed to process image' }]);
+                                          setIsSurveyingBlueprint(false);
                                         }
                                         setIsEditingBlueprint(false);
                                         return;
