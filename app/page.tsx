@@ -17854,7 +17854,7 @@ export default function GeneratedPage() {
                             code={selectedComponent.code}
                             background={libraryBackground === "light" ? "light" : "dark"}
                             className="min-h-[300px]"
-                            isFullWidth={['product', 'section', 'hero', 'footer', 'header', 'page', 'nav'].includes(selectedComponent.category?.toLowerCase() || selectedComponent.layer?.toLowerCase() || '')}
+                            isFullWidth={['product', 'section', 'hero', 'footer', 'header', 'page', 'nav'].includes(selectedComponent.category?.toLowerCase() || (selectedComponent as any).layer?.toLowerCase() || '')}
                           />
                         </div>
                       </div>
@@ -19529,7 +19529,7 @@ module.exports = {
                                             background={libraryBackground === "light" ? "light" : "dark"}
                                             className=""
                                             onSizeChange={setLibraryPreviewSize}
-                                            isFullWidth={['product', 'section', 'hero', 'footer', 'header', 'page', 'nav'].includes(selectedComponent.category?.toLowerCase() || selectedComponent.layer?.toLowerCase() || '')}
+                                            isFullWidth={['product', 'section', 'hero', 'footer', 'header', 'page', 'nav'].includes(selectedComponent.category?.toLowerCase() || (selectedComponent as any).layer?.toLowerCase() || '')}
                                           />
                                         </div>
                                       ) : (
