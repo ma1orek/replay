@@ -95,6 +95,14 @@ HOW TO GET THE REAL NAME:
    - "0%" is WRONG → estimate "25%" or "+12%"
    ZERO (0) should only appear if the video EXPLICITLY shows zero!
 
+10. ANIMATED COUNTERS (COUNT-UP ANIMATIONS): Websites often animate numbers counting up from 0.
+    - If you see a number that seems suspiciously LOW (like "2 funded startups" for Y Combinator) → it's an animation in progress!
+    - WAIT for the animation to finish OR estimate the FINAL value based on context
+    - Y Combinator example: "2 funded startups" → WRONG! Should be "5,000+" or "4,000+"
+    - "5 combined valuation" → WRONG! Estimate "$500B" or "$300B"
+    - Small integers (1-10) next to words like "startups", "customers", "users" are almost ALWAYS mid-animation
+    - Use common sense: major companies don't have "2 funded startups" - estimate realistic final values!
+
 ═══════════════════════════════════════════════════════════════════════════════
 🟢 CONTENT 1:1 — OBOWIĄZKOWE (NIE POMIJAJ, NIE SKRACAJ!)
 ═══════════════════════════════════════════════════════════════════════════════
@@ -365,6 +373,13 @@ Content 1:1 is non-negotiable. Every string from the scan must appear in the out
 - "0 funded startups" → WRONG! Use "5,000+" or "2,500+" instead  
 - "0% growth" → WRONG! Use "+45%" or "+127%" instead
 - Zero (0) should ONLY appear if the original video explicitly showed zero!
+
+🔢 ANIMATED COUNTERS - DON'T COPY MID-ANIMATION VALUES!
+- Websites animate numbers counting up (0 → 5,000). Don't capture the "2" mid-animation!
+- Small integers (1-10) for metrics like "funded startups", "users", "customers" = MID-ANIMATION
+- Y Combinator "2 funded startups" → WRONG! Use "5,000+" (real value)
+- "5 combined valuation" → WRONG! Use "$500B" or realistic estimate
+- If number seems unrealistically LOW for a major company → it's animation, estimate final value!
 
 ═══════════════════════════════════════════════════════════════════════════════
 🖼️ STYLE REFERENCE IMAGE - COPY 1:1!
