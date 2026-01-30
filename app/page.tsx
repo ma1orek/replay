@@ -19395,20 +19395,9 @@ module.exports = {
                                       {liveCode ? (
                                         <div 
                                           className={cn(
-                                            "transition-all duration-300 relative group/measure",
-                                            ['product', 'section', 'hero', 'footer', 'header', 'page', 'nav'].includes(selectedComponent.category?.toLowerCase() || (selectedComponent as any).layer?.toLowerCase() || '')
-                                              ? "w-full" 
-                                              : "inline-block",
+                                            "transition-all duration-300 relative group/measure w-full",
                                             showLibraryOutline && "outline outline-1 outline-dashed outline-zinc-500/50"
                                           )}
-                                          style={{ 
-                                            width: ['product', 'section', 'hero', 'footer', 'header', 'page', 'nav'].includes(selectedComponent.category?.toLowerCase() || (selectedComponent as any).layer?.toLowerCase() || '')
-                                              ? '100%'
-                                              : (libraryPreviewSize.width > 0 ? `${libraryPreviewSize.width}px` : 'auto'),
-                                            minWidth: ['product', 'section', 'hero', 'footer', 'header', 'page', 'nav'].includes(selectedComponent.category?.toLowerCase() || (selectedComponent as any).layer?.toLowerCase() || '')
-                                              ? '600px'
-                                              : '120px'
-                                          }}
                                         >
                                           {/* Storybook-like measurement overlay */}
                                           {(showLibraryOutline || showLibraryRuler) && (
@@ -20568,223 +20557,49 @@ module.exports = {
                                         .replace(/pravatar\.cc\/(\d+)(?:\?img=\d+)?$/g, `pravatar.cc/$1?img=${Math.abs(comp.id?.charCodeAt(0) || 1) % 70 + 1}`)
                                         .replace(/pollinations\.ai\/prompt\/([^?]+)\?/g, `pollinations.ai/prompt/$1?seed=${comp.id || 'stable'}&`);
                                       
+                                      // Determine if this is a full-width component
+                                      const isFullWidthComp = ['product', 'section', 'hero', 'footer', 'header', 'page', 'nav'].includes(
+                                        comp.category?.toLowerCase() || comp.layer?.toLowerCase() || ''
+                                      ) || comp.name?.toLowerCase().includes('hero') || comp.name?.toLowerCase().includes('footer') || 
+                                         comp.name?.toLowerCase().includes('section') || comp.name?.toLowerCase().includes('header');
+                                      
                                       return (
-                                      <div className="relative inline-block">
-                                        <iframe
-                                          key={`bp-iframe-${comp.id}-${isSelected && blueprintEditedCode ? blueprintEditedCode.slice(0, 50) : 'orig'}`}
-                                          srcDoc={`<!DOCTYPE html>
-<html><head>
-<meta charset="utf-8">
-<meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; img-src * data: blob: https:;">
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-*{margin:0;padding:0;box-sizing:border-box;scrollbar-width:none;-ms-overflow-style:none}
-html,body{font-family:Inter,system-ui,sans-serif;background:transparent;overflow:hidden!important;width:100%!important;height:100%!important}
-body{display:flex;flex-direction:column;padding:0;width:100%!important}
-#root{display:flex;flex-direction:column;width:100%}
-/* RESPONSIVE: All containers stretch to fill iframe width */
-body>*,#root>*{width:100%!important;max-width:100%!important;flex-shrink:0}
-/* Full-width sections */
-header,footer,nav,section,article,main,.container,.wrapper,.hero,.footer,.header,.section,.pricing,.cta,.banner{width:100%!important;max-width:100%!important}
-/* Flex containers */
-.flex{flex-wrap:wrap}
-/* Grid responsive */
-.grid{width:100%}
-@media(max-width:640px){.grid{grid-template-columns:1fr!important}.md\\:grid-cols-2,.md\\:grid-cols-3,.md\\:grid-cols-4,.lg\\:grid-cols-2,.lg\\:grid-cols-3,.lg\\:grid-cols-4{grid-template-columns:1fr!important}}
-/* Hide scrollbars */
-*::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
-/* Images responsive */
-img{max-width:100%!important;height:auto!important;display:block;object-fit:cover}
-img[src=""]{display:none}
-img:not([src]){display:none}
-video{max-width:100%;border-radius:inherit}
-/* Text wrap */
-p,h1,h2,h3,h4,h5,h6,span,a{word-wrap:break-word;overflow-wrap:break-word}
-/* Padding responsive */
-@media(max-width:400px){.px-6,.px-8,.px-10,.px-12{padding-left:1rem!important;padding-right:1rem!important}.py-16,.py-20,.py-24{padding-top:2rem!important;padding-bottom:2rem!important}}
-/* FIX: Make uninitialized Lucide icons invisible (not display:none to preserve layout) */
-i[data-lucide]:empty{opacity:0!important;width:1em;height:1em}
-i[data-lucide]:not(:has(svg)){opacity:0!important;width:1em;height:1em}
-/* Style initialized Lucide icons - make visible */
-i[data-lucide]:has(svg){opacity:1!important}
-i[data-lucide] svg{width:inherit;height:inherit;stroke:currentColor;fill:none}
-/* Only hide icon wrappers that are truly broken (not whole sections) */
-.lucide:empty,.lucide-icon:empty{opacity:0;width:1em;height:1em}
-</style>
-<script>
-function autoResize(){
-  const body=document.body;
-  // Report natural content size - hug to actual content
-  const w=Math.max(body.scrollWidth,body.offsetWidth,100);
-  const h=body.scrollHeight||body.offsetHeight||24;
-  parent.postMessage({type:'resize',id:'${comp.id}',width:w,height:h},'*');
-}
-// Handle parent iframe resize - content should adapt
-function handleParentResize(){
-  // Force reflow for responsive CSS
-  document.body.style.width='100%';
-  document.body.offsetHeight; // Force reflow
-  setTimeout(autoResize,50);
-}
-// Listen for resize from parent
-window.addEventListener('message',e=>{
-  if(e.data?.type==='PARENT_RESIZE'){handleParentResize()}
-});
-function initIcons(){
-  if(typeof lucide!=='undefined'){
-    try{lucide.createIcons()}catch(e){}
-  }
-}
-window.onload=()=>{
-  initIcons();
-  autoResize();
-  setTimeout(()=>{initIcons();autoResize()},100);
-  setTimeout(()=>{initIcons();autoResize()},500);
-  setTimeout(()=>{initIcons();autoResize()},1000);
-};
-// Observe body for changes
-new ResizeObserver(()=>{setTimeout(autoResize,10)}).observe(document.body);
-// Fix broken images - replace with Unsplash placeholders (same as Library)
-const fixBrokenImages = () => {
-  document.querySelectorAll('img').forEach((img, index) => {
-    if (img.dataset.fixed) return;
-    const src = img.getAttribute('src') || '';
-    const isBroken = !src || src === '' || 
-      src.startsWith('/') || src.startsWith('./') || src.startsWith('../') ||
-      src.includes('placeholder') || src.includes('example.com') ||
-      src.includes('undefined') || src.includes('null');
-    if (isBroken) {
-      const alt = (img.getAttribute('alt') || '').toLowerCase();
-      const className = (img.className || '').toLowerCase();
-      let query = 'abstract';
-      if (alt.includes('avatar') || alt.includes('profile') || className.includes('avatar') || className.includes('rounded-full')) {
-        query = 'portrait,face';
-      } else if (alt.includes('blog') || alt.includes('cover') || alt.includes('hero')) {
-        query = 'technology,minimal';
-      } else if (alt.includes('product')) {
-        query = 'product,minimal';
-      }
-      const photos = ['1618005182384-a83a8bd57fbe', '1557683316-973673baf926', '1579546929518-9e396f3cc809', '1558591710-4b4a1ae0f04d', '1557804506-669a67965ba0'];
-      img.src = 'https://images.unsplash.com/photo-' + photos[index % 5] + '?w=400&h=300&fit=crop&auto=format';
-      img.dataset.fixed = 'true';
-    }
-    img.onerror = function() {
-      if (!this.dataset.errorFixed) {
-        const photos = ['1618005182384-a83a8bd57fbe', '1557683316-973673baf926', '1579546929518-9e396f3cc809'];
-        this.src = 'https://images.unsplash.com/photo-' + photos[Math.floor(Math.random() * 3)] + '?w=400&h=300&fit=crop&auto=format';
-        this.dataset.errorFixed = 'true';
-      }
-    };
-    if(!img.complete){img.onload=autoResize}
-  });
-};
-// Run fixes
-setTimeout(fixBrokenImages, 100);
-setTimeout(fixBrokenImages, 500);
-setTimeout(fixBrokenImages, 1500);
-// Also observe mutations
-new MutationObserver(()=>{fixBrokenImages()}).observe(document.body,{childList:true,subtree:true});
-</script>
-</head><body>${jsxToHtml(stableCode)}</body></html>`}
-                                          className="border-0 pointer-events-none"
-                                          scrolling="no"
-                                          loading="eager"
-                                          id={`iframe-${comp.id}`}
-                                          onLoad={(e) => {
-                                            const iframe = e.target as HTMLIFrameElement;
-                                            // Only auto-size if user hasn't set a custom size
-                                            const customSize = blueprintSizes[id];
-                                            if (customSize?.width || customSize?.height) return;
-                                            try {
-                                              const doc = iframe.contentDocument || iframe.contentWindow?.document;
-                                              if (doc?.body) {
-                                                const w = doc.body.scrollWidth;
-                                                const h = doc.body.scrollHeight;
-                                                iframe.style.width = w + 'px';
-                                                iframe.style.height = h + 'px';
-                                              }
-                                            } catch(err) {}
+                                      <div className="relative" style={{ minWidth: isFullWidthComp ? '600px' : '150px' }}>
+                                        {/* Use same InteractiveReactPreview as Library for identical rendering */}
+                                        <InteractiveReactPreview 
+                                          code={stableCode}
+                                          background="dark"
+                                          className="pointer-events-none"
+                                          onSizeChange={(newSize) => {
+                                            // Update blueprint sizes for auto-layout
+                                            setBlueprintSizes(prev => ({
+                                              ...prev,
+                                              [id]: newSize
+                                            }));
                                           }}
-                                          style={{ 
-                                            // Use actual reported size from iframe, or smart defaults based on component type
-                                            width: size?.width ? `${size.width}px` : (() => {
-                                              const layer = (comp.layer || comp.category || '').toLowerCase();
-                                              const name = (comp.name || '').toLowerCase();
-                                              // Full-width sections need large widths
-                                              if (layer === 'product' || name.includes('hero') || name.includes('section') || 
-                                                  name.includes('footer') || name.includes('header') || name.includes('pricing')) {
-                                                return '850px';
-                                              }
-                                              // Patterns medium-wide
-                                              if (layer === 'patterns' || name.includes('card') || name.includes('listing')) {
-                                                return '380px';
-                                              }
-                                              return 'fit-content';
-                                            })(),
-                                            height: size?.height ? `${size.height}px` : 'fit-content',
-                                            minWidth: (() => {
-                                              const layer = (comp.layer || comp.category || '').toLowerCase();
-                                              const name = (comp.name || '').toLowerCase();
-                                              if (layer === 'product' || name.includes('hero') || name.includes('section') || 
-                                                  name.includes('footer') || name.includes('header') || name.includes('pricing')) {
-                                                return '700px';
-                                              }
-                                              if (layer === 'patterns' || name.includes('card') || name.includes('listing')) {
-                                                return '320px';
-                                              }
-                                              if (layer === 'components') return '250px';
-                                              return '150px';
-                                            })(),
-                                            minHeight: (() => {
-                                              const layer = (comp.layer || comp.category || '').toLowerCase();
-                                              const name = (comp.name || '').toLowerCase();
-                                              if (layer === 'product' || name.includes('hero') || name.includes('section') || 
-                                                  name.includes('footer') || name.includes('header')) {
-                                                return '300px';
-                                              }
-                                              if (layer === 'patterns' || name.includes('card')) return '180px';
-                                              return '60px';
-                                            })(),
-                                            maxWidth: (() => {
-                                              const layer = (comp.layer || comp.category || '').toLowerCase();
-                                              const name = (comp.name || '').toLowerCase();
-                                              // Sections can be very wide
-                                              if (layer === 'product' || name.includes('hero') || name.includes('section') || 
-                                                  name.includes('footer') || name.includes('header') || name.includes('pricing')) {
-                                                return '1000px';
-                                              }
-                                              if (layer === 'patterns') return '500px';
-                                              if (layer === 'components') return '400px';
-                                              return '350px';
-                                            })(),
-                                            background: 'transparent',
-                                            display: 'block'
-                                          }}
-                                          sandbox="allow-scripts allow-same-origin"
-                                          referrerPolicy="no-referrer"
+                                          isFullWidth={isFullWidthComp}
                                         />
                                         {/* Selection indicator - minimal, clean like Library */}
                                         {isSelected && (
                                           <>
                                             {/* Simple selection border */}
-                                            <div className="absolute inset-0 border-2 border-zinc-500 rounded pointer-events-none" />
+                                            <div className="absolute inset-0 border-2 border-blue-500 rounded pointer-events-none" />
                                             
-                                            {/* Single resize handle - bottom right corner only */}
-                                            <div
-                                              data-resize-handle="se"
-                                              className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize z-20 flex items-center justify-center"
-                                              onMouseDown={(e) => {
-                                                e.stopPropagation();
-                                                const iframe = document.getElementById(`iframe-${comp.id}`) as HTMLIFrameElement;
-                                                setResizingComponent({ id, handle: 'se' });
-                                                setResizeStart({ x: e.clientX, y: e.clientY, width: iframe?.offsetWidth || 200, height: iframe?.offsetHeight || 100 });
-                                              }}
-                                            >
-                                              <div className="w-2 h-2 bg-zinc-400 rounded-sm" />
-                                            </div>
+                                            {/* Dimension labels */}
+                                            {(showLibraryOutline || showLibraryRuler) && size && (
+                                              <>
+                                                <div className="absolute -top-5 left-0 right-0 flex justify-center">
+                                                  <span className="px-1.5 py-0.5 text-[9px] font-mono text-zinc-400 bg-zinc-800 rounded border border-zinc-700">
+                                                    {size.width}px
+                                                  </span>
+                                                </div>
+                                                <div className="absolute -left-6 top-0 bottom-0 flex items-center">
+                                                  <span className="px-1.5 py-0.5 text-[9px] font-mono text-zinc-400 bg-zinc-800 rounded border border-zinc-700" style={{writingMode: 'vertical-rl', transform: 'rotate(180deg)'}}>
+                                                    {size.height}px
+                                                  </span>
+                                                </div>
+                                              </>
+                                            )}
                                           </>
                                         )}
                                       </div>
