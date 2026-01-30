@@ -18417,7 +18417,7 @@ export default function GeneratedPage() {
                               )}
                               
                               {/* ═══════════════════════════════════════════════════════════════════════════════ */}
-                              {/* COMPONENTS GALLERY PAGE - SupaColors Style */}
+                              {/* COMPONENTS GALLERY PAGE - Real components from libraryData */}
                               {/* ═══════════════════════════════════════════════════════════════════════════════ */}
                               {selectedDoc.type === "components" && (
                                 <div className="space-y-8">
@@ -18426,7 +18426,7 @@ export default function GeneratedPage() {
                                     <div>
                                       <h1 className={cn("text-3xl font-bold mb-2", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>Components</h1>
                                       <p className={cn("text-sm", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
-                                        Live previews of all UI components with variants and states
+                                        All extracted components organized by layer
                                       </p>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -18434,228 +18434,65 @@ export default function GeneratedPage() {
                                     </div>
                                   </div>
                                   
-                                  {/* Buttons Section */}
-                                  <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50")}>
-                                    <div className={cn("px-5 py-4 border-b", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900")}>
-                                      <h3 className={cn("font-semibold", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>Buttons</h3>
-                                      <p className={cn("text-xs mt-0.5", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Interactive button components with multiple variants</p>
-                                    </div>
-                                    <div className="p-6">
-                                      <div className="grid grid-cols-3 gap-8">
-                                        {/* Flat Buttons */}
-                                        <div>
-                                          <div className={cn("text-[10px] uppercase tracking-wider mb-4 font-medium", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Buttons · Flat</div>
-                                          <div className="space-y-3">
-                                            <button className="w-full px-4 py-2.5 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">Default</button>
-                                            <button className={cn("w-full px-4 py-2.5 text-sm font-medium rounded-lg border transition-colors", libraryBackground === "light" ? "border-zinc-300 text-zinc-700 hover:bg-zinc-50" : "border-zinc-600 text-zinc-300 hover:bg-zinc-800")}>Outline</button>
-                                            <button className="w-full px-4 py-2.5 text-sm font-medium rounded-lg text-blue-500 hover:bg-blue-500/10 transition-colors">Ghost</button>
-                                            <button className="w-full px-4 py-2.5 bg-zinc-600 text-zinc-400 text-sm font-medium rounded-lg cursor-not-allowed opacity-50">Disabled</button>
+                                  {/* Components by Layer */}
+                                  {(() => {
+                                    const layers = [
+                                      { id: 'primitives', name: 'Primitives', color: 'blue', desc: 'Basic building blocks' },
+                                      { id: 'components', name: 'Components', color: 'emerald', desc: 'Composite elements' },
+                                      { id: 'patterns', name: 'Patterns', color: 'amber', desc: 'Reusable patterns' },
+                                      { id: 'product', name: 'Product', color: 'rose', desc: 'Business-specific' },
+                                    ];
+                                    const compsByLayer: Record<string, any[]> = {};
+                                    layers.forEach(l => compsByLayer[l.id] = []);
+                                    (libraryData?.components || []).forEach((comp: any) => {
+                                      const layer = (comp.layer || 'components').toLowerCase();
+                                      if (compsByLayer[layer]) compsByLayer[layer].push(comp);
+                                      else compsByLayer.components.push(comp);
+                                    });
+                                    
+                                    return layers.map(layer => {
+                                      const comps = compsByLayer[layer.id];
+                                      if (comps.length === 0) return null;
+                                      return (
+                                        <div key={layer.id} className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50")}>
+                                          <div className={cn("px-5 py-4 border-b", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900")}>
+                                            <h3 className={cn("font-semibold flex items-center gap-2", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>
+                                              <span className={`w-2 h-2 rounded-full bg-${layer.color}-500`} />
+                                              {layer.name}
+                                              <span className="text-xs font-normal text-zinc-500">({comps.length})</span>
+                                            </h3>
+                                            <p className={cn("text-xs mt-0.5", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{layer.desc}</p>
+                                          </div>
+                                          <div className="p-4">
+                                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                                              {comps.map((comp: any) => (
+                                                <button
+                                                  key={comp.id}
+                                                  onClick={() => setSelectedLibraryItem(`comp-${comp.id}`)}
+                                                  className={cn(
+                                                    "p-4 rounded-lg border text-left transition-all hover:border-blue-500/50",
+                                                    libraryBackground === "light" ? "border-zinc-200 bg-zinc-50 hover:bg-zinc-100" : "border-zinc-700 bg-zinc-800/50 hover:bg-zinc-800"
+                                                  )}
+                                                >
+                                                  <div className={cn("font-medium text-sm mb-1", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>{comp.name}</div>
+                                                  <div className={cn("text-xs line-clamp-2", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>{comp.description || 'No description'}</div>
+                                                </button>
+                                              ))}
+                                            </div>
                                           </div>
                                         </div>
-                                        {/* Depth Buttons */}
-                                        <div>
-                                          <div className={cn("text-[10px] uppercase tracking-wider mb-4 font-medium", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Buttons · Depth</div>
-                                          <div className="space-y-3">
-                                            <button className="w-full px-4 py-2.5 bg-gradient-to-b from-blue-400 to-blue-600 text-white text-sm font-medium rounded-lg shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all">Default</button>
-                                            <button className="w-full px-4 py-2.5 bg-gradient-to-b from-blue-500 to-blue-700 text-white text-sm font-medium rounded-lg shadow-lg shadow-blue-500/30">Hover</button>
-                                            <button className="w-full px-4 py-2.5 bg-gradient-to-b from-blue-600 to-blue-800 text-white text-sm font-medium rounded-lg shadow-inner">Active</button>
-                                            <button className="w-full px-4 py-2.5 bg-gradient-to-b from-zinc-500 to-zinc-600 text-zinc-400 text-sm font-medium rounded-lg cursor-not-allowed opacity-50">Disabled</button>
-                                          </div>
-                                        </div>
-                                        {/* Button Sizes */}
-                                        <div>
-                                          <div className={cn("text-[10px] uppercase tracking-wider mb-4 font-medium", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Button Sizes</div>
-                                          <div className="space-y-3">
-                                            <button className="w-full px-3 py-1.5 bg-blue-500 text-white text-xs font-medium rounded-md hover:bg-blue-600 transition-colors">Small</button>
-                                            <button className="w-full px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">Default</button>
-                                            <button className="w-full px-5 py-2.5 bg-blue-500 text-white text-base font-medium rounded-lg hover:bg-blue-600 transition-colors">Large</button>
-                                            <button className="w-full px-6 py-3 bg-blue-500 text-white text-lg font-medium rounded-xl hover:bg-blue-600 transition-colors">Extra Large</button>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
+                                      );
+                                    });
+                                  })()}
                                   
-                                  {/* Form Elements Section */}
-                                  <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50")}>
-                                    <div className={cn("px-5 py-4 border-b", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900")}>
-                                      <h3 className={cn("font-semibold", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>Form Elements</h3>
-                                      <p className={cn("text-xs mt-0.5", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Input fields, selects, checkboxes and radio buttons</p>
+                                  {/* Empty state */}
+                                  {(!libraryData?.components || libraryData.components.length === 0) && (
+                                    <div className={cn("p-12 rounded-xl border text-center", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50")}>
+                                      <Layers className={cn("w-10 h-10 mx-auto mb-4", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")} />
+                                      <p className={cn("text-sm mb-1", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>No components extracted yet</p>
+                                      <p className={cn("text-xs", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Generate Library to extract components from your video</p>
                                     </div>
-                                    <div className="p-6">
-                                      <div className="grid grid-cols-3 gap-8">
-                                        {/* Inputs */}
-                                        <div>
-                                          <div className={cn("text-[10px] uppercase tracking-wider mb-4 font-medium", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Text Inputs</div>
-                                          <div className="space-y-3">
-                                            <div>
-                                              <label className={cn("text-xs block mb-1.5", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Default</label>
-                                              <input type="text" placeholder="Enter text..." className={cn("w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all", libraryBackground === "light" ? "border-zinc-300 bg-white text-zinc-900" : "border-zinc-700 bg-zinc-800 text-white")} />
-                                            </div>
-                                            <div>
-                                              <label className={cn("text-xs block mb-1.5", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>With Icon</label>
-                                              <div className="relative">
-                                                <Search className={cn("absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-500")} />
-                                                <input type="text" placeholder="Search..." className={cn("w-full pl-9 pr-3 py-2 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all", libraryBackground === "light" ? "border-zinc-300 bg-white text-zinc-900" : "border-zinc-700 bg-zinc-800 text-white")} />
-                                              </div>
-                                            </div>
-                                            <div>
-                                              <label className={cn("text-xs block mb-1.5 text-red-500")}>Error State</label>
-                                              <input type="text" placeholder="Invalid input" className="w-full px-3 py-2 text-sm rounded-lg border-2 border-red-500 bg-red-500/5 text-white focus:ring-2 focus:ring-red-500 outline-none" />
-                                            </div>
-                                          </div>
-                                        </div>
-                                        {/* Selects & Textareas */}
-                                        <div>
-                                          <div className={cn("text-[10px] uppercase tracking-wider mb-4 font-medium", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Select & Textarea</div>
-                                          <div className="space-y-3">
-                                            <div>
-                                              <label className={cn("text-xs block mb-1.5", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Select</label>
-                                              <select className={cn("w-full px-3 py-2 text-sm rounded-lg border outline-none", libraryBackground === "light" ? "border-zinc-300 bg-white text-zinc-900" : "border-zinc-700 bg-zinc-800 text-white")}>
-                                                <option>Option One</option>
-                                                <option>Option Two</option>
-                                                <option>Option Three</option>
-                                              </select>
-                                            </div>
-                                            <div>
-                                              <label className={cn("text-xs block mb-1.5", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Textarea</label>
-                                              <textarea placeholder="Enter description..." rows={3} className={cn("w-full px-3 py-2 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none", libraryBackground === "light" ? "border-zinc-300 bg-white text-zinc-900" : "border-zinc-700 bg-zinc-800 text-white")} />
-                                            </div>
-                                          </div>
-                                        </div>
-                                        {/* Checkboxes & Radios */}
-                                        <div>
-                                          <div className={cn("text-[10px] uppercase tracking-wider mb-4 font-medium", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Checkboxes & Radios</div>
-                                          <div className="space-y-3">
-                                            <div className="flex items-center gap-2">
-                                              <input type="checkbox" id="cb1" className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500" defaultChecked />
-                                              <label htmlFor="cb1" className={cn("text-sm", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>Checked</label>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                              <input type="checkbox" id="cb2" className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500" />
-                                              <label htmlFor="cb2" className={cn("text-sm", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>Unchecked</label>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                              <input type="radio" name="radio" id="r1" className="w-4 h-4 border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500" defaultChecked />
-                                              <label htmlFor="r1" className={cn("text-sm", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>Option A</label>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                              <input type="radio" name="radio" id="r2" className="w-4 h-4 border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500" />
-                                              <label htmlFor="r2" className={cn("text-sm", libraryBackground === "light" ? "text-zinc-700" : "text-zinc-300")}>Option B</label>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  
-                                  {/* Progress & Alerts Section */}
-                                  <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50")}>
-                                    <div className={cn("px-5 py-4 border-b", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900")}>
-                                      <h3 className={cn("font-semibold", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>Feedback Components</h3>
-                                      <p className={cn("text-xs mt-0.5", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Progress bars, alerts, and notification components</p>
-                                    </div>
-                                    <div className="p-6">
-                                      <div className="grid grid-cols-2 gap-8">
-                                        {/* Progress Bars */}
-                                        <div>
-                                          <div className={cn("text-[10px] uppercase tracking-wider mb-4 font-medium", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Progress</div>
-                                          <div className="space-y-4">
-                                            <div>
-                                              <div className="flex justify-between text-xs mb-1.5">
-                                                <span className={libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400"}>Downloads</span>
-                                                <span className={libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500"}>75%</span>
-                                              </div>
-                                              <div className={cn("h-2 rounded-full overflow-hidden", libraryBackground === "light" ? "bg-zinc-200" : "bg-zinc-700")}>
-                                                <div className="h-full w-[75%] bg-blue-500 rounded-full" />
-                                              </div>
-                                            </div>
-                                            <div>
-                                              <div className="flex justify-between text-xs mb-1.5">
-                                                <span className={libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400"}>Uploads</span>
-                                                <span className={libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500"}>45%</span>
-                                              </div>
-                                              <div className={cn("h-2 rounded-full overflow-hidden", libraryBackground === "light" ? "bg-zinc-200" : "bg-zinc-700")}>
-                                                <div className="h-full w-[45%] bg-emerald-500 rounded-full" />
-                                              </div>
-                                            </div>
-                                            <div>
-                                              <div className="flex justify-between text-xs mb-1.5">
-                                                <span className={libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400"}>Storage</span>
-                                                <span className={libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500"}>90%</span>
-                                              </div>
-                                              <div className={cn("h-2 rounded-full overflow-hidden", libraryBackground === "light" ? "bg-zinc-200" : "bg-zinc-700")}>
-                                                <div className="h-full w-[90%] bg-amber-500 rounded-full" />
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </div>
-                                        {/* Alerts */}
-                                        <div>
-                                          <div className={cn("text-[10px] uppercase tracking-wider mb-4 font-medium", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Alerts</div>
-                                          <div className="space-y-3">
-                                            <div className={cn("px-4 py-3 rounded-lg border flex items-start gap-3", libraryBackground === "light" ? "bg-blue-50 border-blue-200" : "bg-blue-500/10 border-blue-500/20")}>
-                                              <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                                              <div>
-                                                <div className={cn("text-sm font-medium", libraryBackground === "light" ? "text-blue-800" : "text-blue-400")}>Information</div>
-                                                <div className={cn("text-xs", libraryBackground === "light" ? "text-blue-600" : "text-blue-400/70")}>This is an informational alert.</div>
-                                              </div>
-                                            </div>
-                                            <div className={cn("px-4 py-3 rounded-lg border flex items-start gap-3", libraryBackground === "light" ? "bg-emerald-50 border-emerald-200" : "bg-emerald-500/10 border-emerald-500/20")}>
-                                              <Check className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                                              <div>
-                                                <div className={cn("text-sm font-medium", libraryBackground === "light" ? "text-emerald-800" : "text-emerald-400")}>Success</div>
-                                                <div className={cn("text-xs", libraryBackground === "light" ? "text-emerald-600" : "text-emerald-400/70")}>Operation completed successfully.</div>
-                                              </div>
-                                            </div>
-                                            <div className={cn("px-4 py-3 rounded-lg border flex items-start gap-3", libraryBackground === "light" ? "bg-amber-50 border-amber-200" : "bg-amber-500/10 border-amber-500/20")}>
-                                              <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                                              <div>
-                                                <div className={cn("text-sm font-medium", libraryBackground === "light" ? "text-amber-800" : "text-amber-400")}>Warning</div>
-                                                <div className={cn("text-xs", libraryBackground === "light" ? "text-amber-600" : "text-amber-400/70")}>Please review before continuing.</div>
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  
-                                  {/* Stats Cards Section */}
-                                  <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50")}>
-                                    <div className={cn("px-5 py-4 border-b", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900")}>
-                                      <h3 className={cn("font-semibold", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>Stats & Cards</h3>
-                                      <p className={cn("text-xs mt-0.5", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Data visualization cards and metric displays</p>
-                                    </div>
-                                    <div className="p-6">
-                                      <div className="grid grid-cols-3 gap-4">
-                                        <div className={cn("p-5 rounded-xl border", libraryBackground === "light" ? "bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200" : "bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500/20")}>
-                                          <div className="flex items-center justify-between mb-2">
-                                            <span className={cn("text-xs font-medium", libraryBackground === "light" ? "text-blue-600" : "text-blue-400")}>Total Revenue</span>
-                                            <span className="text-xs text-emerald-500">↑ +12.5%</span>
-                                          </div>
-                                          <div className={cn("text-2xl font-bold", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>$1,250.00</div>
-                                          <div className={cn("text-[10px] mt-1", libraryBackground === "light" ? "text-blue-600" : "text-blue-400")}>Trending up this month</div>
-                                        </div>
-                                        <div className={cn("p-5 rounded-xl border", libraryBackground === "light" ? "bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200" : "bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/20")}>
-                                          <div className="flex items-center justify-between mb-2">
-                                            <span className={cn("text-xs font-medium", libraryBackground === "light" ? "text-amber-600" : "text-amber-400")}>New Customers</span>
-                                            <span className="text-xs text-red-500">↓ -20%</span>
-                                          </div>
-                                          <div className={cn("text-2xl font-bold", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>1,234</div>
-                                          <div className={cn("text-[10px] mt-1", libraryBackground === "light" ? "text-amber-600" : "text-amber-400")}>Down 20% this period</div>
-                                        </div>
-                                        <div className={cn("p-5 rounded-xl border", libraryBackground === "light" ? "bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200" : "bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border-emerald-500/20")}>
-                                          <div className="flex items-center justify-between mb-2">
-                                            <span className={cn("text-xs font-medium", libraryBackground === "light" ? "text-emerald-600" : "text-emerald-400")}>Active Accounts</span>
-                                            <span className="text-xs text-emerald-500">↑ +12.6%</span>
-                                          </div>
-                                          <div className={cn("text-2xl font-bold", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>45,678</div>
-                                          <div className={cn("text-[10px] mt-1", libraryBackground === "light" ? "text-emerald-600" : "text-emerald-400")}>Strong user retention</div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
+                                  )}
                                 </div>
                               )}
                               
@@ -19534,12 +19371,19 @@ module.exports = {
                                       {liveCode ? (
                                         <div 
                                           className={cn(
-                                            "transition-all duration-300 relative group/measure inline-block",
+                                            "transition-all duration-300 relative group/measure",
+                                            ['product', 'section', 'hero', 'footer', 'header', 'page', 'nav'].includes(selectedComponent.category?.toLowerCase() || (selectedComponent as any).layer?.toLowerCase() || '')
+                                              ? "w-full" 
+                                              : "inline-block",
                                             showLibraryOutline && "outline outline-1 outline-dashed outline-zinc-500/50"
                                           )}
                                           style={{ 
-                                            width: libraryPreviewSize.width > 0 ? `${libraryPreviewSize.width}px` : 'auto',
-                                            minWidth: '120px'
+                                            width: ['product', 'section', 'hero', 'footer', 'header', 'page', 'nav'].includes(selectedComponent.category?.toLowerCase() || (selectedComponent as any).layer?.toLowerCase() || '')
+                                              ? '100%'
+                                              : (libraryPreviewSize.width > 0 ? `${libraryPreviewSize.width}px` : 'auto'),
+                                            minWidth: ['product', 'section', 'hero', 'footer', 'header', 'page', 'nav'].includes(selectedComponent.category?.toLowerCase() || (selectedComponent as any).layer?.toLowerCase() || '')
+                                              ? '600px'
+                                              : '120px'
                                           }}
                                         >
                                           {/* Storybook-like measurement overlay */}
