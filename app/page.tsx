@@ -20837,7 +20837,7 @@ module.exports = {
                                             {/* Corner: top-left */}
                                             <div 
                                               data-resize-handle="nw"
-                                              className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-nw-resize z-[1001] hover:bg-blue-400"
+                                              className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-nw-resize z-[2001] hover:bg-blue-400"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'nw' });
@@ -20854,7 +20854,7 @@ module.exports = {
                                             {/* Corner: top-right */}
                                             <div 
                                               data-resize-handle="ne"
-                                              className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-ne-resize z-[1001] hover:bg-blue-400"
+                                              className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-ne-resize z-[2001] hover:bg-blue-400"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'ne' });
@@ -20870,7 +20870,7 @@ module.exports = {
                                             {/* Corner: bottom-left */}
                                             <div 
                                               data-resize-handle="sw"
-                                              className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-sw-resize z-[1001] hover:bg-blue-400"
+                                              className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-sw-resize z-[2001] hover:bg-blue-400"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'sw' });
@@ -20886,7 +20886,7 @@ module.exports = {
                                             {/* Corner: bottom-right */}
                                             <div 
                                               data-resize-handle="se"
-                                              className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-se-resize z-[1001] hover:bg-blue-400"
+                                              className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-se-resize z-[2001] hover:bg-blue-400"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'se' });
@@ -20902,7 +20902,7 @@ module.exports = {
                                             {/* Edge: top */}
                                             <div 
                                               data-resize-handle="n"
-                                              className="absolute -top-1 left-1/2 -translate-x-1/2 w-6 h-2 bg-blue-500 border border-white rounded-sm cursor-n-resize z-[1001] hover:bg-blue-400"
+                                              className="absolute -top-1 left-1/2 -translate-x-1/2 w-6 h-2 bg-blue-500 border border-white rounded-sm cursor-n-resize z-[2001] hover:bg-blue-400"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'n' });
@@ -20918,7 +20918,7 @@ module.exports = {
                                             {/* Edge: bottom */}
                                             <div 
                                               data-resize-handle="s"
-                                              className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-2 bg-blue-500 border border-white rounded-sm cursor-s-resize z-[1001] hover:bg-blue-400"
+                                              className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-2 bg-blue-500 border border-white rounded-sm cursor-s-resize z-[2001] hover:bg-blue-400"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 's' });
@@ -20934,7 +20934,7 @@ module.exports = {
                                             {/* Edge: left */}
                                             <div 
                                               data-resize-handle="w"
-                                              className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-6 bg-blue-500 border border-white rounded-sm cursor-w-resize z-[1001] hover:bg-blue-400"
+                                              className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-6 bg-blue-500 border border-white rounded-sm cursor-w-resize z-[2001] hover:bg-blue-400"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'w' });
@@ -20950,7 +20950,7 @@ module.exports = {
                                             {/* Edge: right */}
                                             <div 
                                               data-resize-handle="e"
-                                              className="absolute top-1/2 -right-1 -translate-y-1/2 w-2 h-6 bg-blue-500 border border-white rounded-sm cursor-e-resize z-[1001] hover:bg-blue-400"
+                                              className="absolute top-1/2 -right-1 -translate-y-1/2 w-2 h-6 bg-blue-500 border border-white rounded-sm cursor-e-resize z-[2001] hover:bg-blue-400"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'e' });
@@ -20964,21 +20964,7 @@ module.exports = {
                                               }}
                                             />
                                             
-                                            {/* Dimension labels */}
-                                            {(showLibraryOutline || showLibraryRuler) && size && (
-                                              <>
-                                                <div className="absolute -top-5 left-0 right-0 flex justify-center">
-                                                  <span className="px-1.5 py-0.5 text-[9px] font-mono text-zinc-400 bg-zinc-800 rounded border border-zinc-700">
-                                                    {size.width}px
-                                                  </span>
-                                                </div>
-                                                <div className="absolute -left-6 top-0 bottom-0 flex items-center">
-                                                  <span className="px-1.5 py-0.5 text-[9px] font-mono text-zinc-400 bg-zinc-800 rounded border border-zinc-700" style={{writingMode: 'vertical-rl', transform: 'rotate(180deg)'}}>
-                                                    {size.height}px
-                                                  </span>
-                                                </div>
-                                              </>
-                                            )}
+                                            {/* Dimension labels removed from blueprints - only in Library */}
                                           </>
                                         )}
                                       </div>
@@ -21040,7 +21026,7 @@ module.exports = {
                                               );
                                             }
                                           }}
-                                          placeholder="e.g. Pricing card with gradient border..."
+                                          placeholder="e.g. Line chart, Pricing card, Login form..."
                                           className="flex-1 px-3 py-2 text-xs bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
                                           disabled={isEditingBlueprint}
                                           autoFocus
@@ -21138,7 +21124,52 @@ module.exports = {
                               {/* Selected Component Header */}
                               <div className="px-4 py-2.5 border-b border-zinc-800/50 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                  <span className="text-sm font-medium text-white">{selectedComp.name}</span>
+                                  {editingComponentName === compId ? (
+                                    <input
+                                      type="text"
+                                      value={editingNameValue}
+                                      onChange={(e) => setEditingNameValue(e.target.value)}
+                                      onBlur={() => {
+                                        if (editingNameValue.trim()) {
+                                          setLibraryData((prev: any) => ({
+                                            ...prev,
+                                            components: prev?.components?.map((c: any) => 
+                                              c.id === compId ? { ...c, name: editingNameValue.trim() } : c
+                                            ) || []
+                                          }));
+                                        }
+                                        setEditingComponentName(null);
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          if (editingNameValue.trim()) {
+                                            setLibraryData((prev: any) => ({
+                                              ...prev,
+                                              components: prev?.components?.map((c: any) => 
+                                                c.id === compId ? { ...c, name: editingNameValue.trim() } : c
+                                              ) || []
+                                            }));
+                                          }
+                                          setEditingComponentName(null);
+                                        } else if (e.key === 'Escape') {
+                                          setEditingComponentName(null);
+                                        }
+                                      }}
+                                      className="text-sm font-medium text-white bg-zinc-800 border border-zinc-600 rounded px-2 py-0.5 focus:outline-none focus:border-zinc-500"
+                                      autoFocus
+                                    />
+                                  ) : (
+                                    <span 
+                                      className="text-sm font-medium text-white cursor-pointer hover:text-zinc-300 transition-colors"
+                                      onDoubleClick={() => {
+                                        setEditingComponentName(compId);
+                                        setEditingNameValue(selectedComp.name);
+                                      }}
+                                      title="Double-click to rename"
+                                    >
+                                      {selectedComp.name}
+                                    </span>
+                                  )}
                                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 uppercase">
                                     {blueprintStatuses[compId] || 'draft'}
                                   </span>
@@ -21176,10 +21207,10 @@ module.exports = {
                               {/* AI Input - Main Action Area */}
                               <div className="p-3">
                                 <div className="flex items-center gap-2">
-                                  {/* Upload Image Button */}
+                                  {/* Upload Image Button - adds as context, doesn't auto-process */}
                                   <button
                                     onClick={() => {
-                                      // Trigger file input for image upload
+                                      // Trigger file input for image upload - add as context only
                                       const input = document.createElement('input');
                                       input.type = 'file';
                                       input.accept = 'image/*';
@@ -21187,51 +21218,12 @@ module.exports = {
                                         const file = (e.target as HTMLInputElement).files?.[0];
                                         if (!file) return;
                                         
-                                        setIsEditingBlueprint(true);
-                                        setBlueprintChatHistory(prev => [...prev, { role: 'user', content: '📷 Uploading image...' }]);
-                                        
+                                        // Read and set as context image - don't auto-process
                                         const reader = new FileReader();
-                                        reader.onload = async () => {
+                                        reader.onload = () => {
                                           const base64 = reader.result as string;
-                                          try {
-                                            // Call vision API to generate code from image
-                                            const response = await fetch('/api/blueprint/vision', {
-                                              method: 'POST',
-                                              headers: { 'Content-Type': 'application/json' },
-                                              body: JSON.stringify({
-                                                imageBase64: base64,
-                                                componentName: selectedComp.name,
-                                                additionalInstructions: 'Rebuild this component from the image'
-                                              })
-                                            });
-                                            
-                                            if (!response.ok) throw new Error('Vision API failed');
-                                            
-                                            const reader2 = response.body?.getReader();
-                                            const decoder = new TextDecoder();
-                                            let generatedCode = '';
-                                            
-                                            while (reader2) {
-                                              const { done, value } = await reader2.read();
-                                              if (done) break;
-                                              const text = decoder.decode(value);
-                                              const lines = text.split('\n').filter(l => l.startsWith('data: '));
-                                              for (const line of lines) {
-                                                try {
-                                                  const data = JSON.parse(line.slice(6));
-                                                  if (data.type === 'partial' || data.type === 'done') {
-                                                    generatedCode = data.code;
-                                                    setBlueprintEditedCode(generatedCode);
-                                                  }
-                                                } catch {}
-                                              }
-                                            }
-                                            
-                                            setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: 'Created from image ✓' }]);
-                                          } catch (error) {
-                                            setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: 'Failed to process image' }]);
-                                          }
-                                          setIsEditingBlueprint(false);
+                                          setBlueprintContextImage(base64);
+                                          showToast("Image added! Now describe what to create.", "info");
                                         };
                                         reader.readAsDataURL(file);
                                       };
@@ -21453,9 +21445,12 @@ module.exports = {
                                   </button>
                                 </div>
                                 
-                                {/* Quick Actions */}
+                                {/* Quick Actions - context-aware */}
                                 <div className="mt-2 flex items-center gap-1.5 overflow-x-auto pb-1">
-                                  {['Make it red', 'Add icon', 'Add button', 'Make bigger', 'Add shadow'].map(action => (
+                                  {(comp.isNew 
+                                    ? ['Line chart', 'Pricing card', 'Login form', 'Hero section', 'Feature grid', 'Stats counter']
+                                    : ['Make it red', 'Add icon', 'Add button', 'Make bigger', 'Add shadow', 'Add chart']
+                                  ).map(action => (
                                     <button
                                       key={action}
                                       onClick={() => setBlueprintChatInput(action)}
