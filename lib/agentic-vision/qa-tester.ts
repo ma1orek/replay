@@ -189,7 +189,7 @@ Return ONLY: { "ssimScore": 0.XX, "verdict": "pass|needs_fixes|major_issues" }
  * Parse the QA Tester response
  */
 function parseQAResponse(response: any): {
-  verification: VerificationReport | null;
+  verification: VerificationReport | undefined;
   codeExecuted?: string;
 } {
   try {

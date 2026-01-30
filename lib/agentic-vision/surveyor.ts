@@ -215,7 +215,7 @@ export async function runParallelSurveyor(
  * Parse the response from Gemini Code Execution
  */
 function parseCodeExecutionResponse(response: any): {
-  measurements: LayoutMeasurements | null;
+  measurements: LayoutMeasurements | undefined;
   codeExecuted?: string;
 } {
   try {
