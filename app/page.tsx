@@ -2721,13 +2721,13 @@ const InteractiveReactPreview = ({
       className={cn("relative", isFullWidth ? "w-full" : "inline-block", className)}
       style={{
         // Container determines size - use reported content size as default
-        // FIX: Don't force width - let content determine natural width, capped by container
+        // Full-width components (hero, product, sections) need minimum width for proper layout
         width: isFullWidth ? '100%' : (iframeWidth > 100 ? `${Math.min(iframeWidth, 600)}px` : 'auto'),
-        minWidth: isFullWidth ? '300px' : '100px', // Reduced from 900px/200px - let content breathe
+        minWidth: isFullWidth ? '800px' : '100px', // Full-width needs space for responsive content
         maxWidth: '100%', // Never exceed container
-        // FIX: Height adapts to content
+        // Height adapts to content
         height: iframeHeight > 50 ? `${iframeHeight}px` : 'auto',
-        minHeight: '50px', // Minimum for visibility
+        minHeight: isFullWidth ? '200px' : '50px', // Full-width sections need more height
       }}
     >
       {error && (
