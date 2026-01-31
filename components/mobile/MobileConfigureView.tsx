@@ -99,7 +99,6 @@ export default function MobileConfigureView({
     recorder.onstop = () => {
       if (chunksRef.current.length > 0) {
         const blob = new Blob(chunksRef.current, { type: mime });
-        // Use "New Project" as default - AI will generate proper name after generation
         onVideoCapture(blob, "New Project");
       }
       stopCamera();
@@ -125,11 +124,10 @@ export default function MobileConfigureView({
   
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
   
-  // Auto-start camera when coming from landing page with ?camera=true
+  // Auto-start camera
   useEffect(() => {
     if (autoStartCamera && !hasAutoStarted.current && !videoBlob) {
       hasAutoStarted.current = true;
-      // Small delay to ensure component is mounted
       setTimeout(() => {
         startCamera();
       }, 100);
@@ -151,17 +149,35 @@ export default function MobileConfigureView({
         
         <div className="absolute bottom-0 left-0 right-0 pb-10 pt-16 bg-gradient-to-t from-black/90 to-transparent">
           <div className="flex items-center justify-center gap-10">
-            <button onClick={stopCamera} className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center">
+            <button 
+              onPointerUp={(e) => {
+                e.preventDefault();
+                stopCamera();
+              }}
+              className="w-14 h-14 rounded-full bg-zinc-800 flex items-center justify-center touch-manipulation active:scale-95"
+            >
               <X className="w-6 h-6 text-white" />
             </button>
             
             {isRecording ? (
-              <button onClick={stopRecording} className="w-20 h-20 rounded-full bg-red-600 flex items-center justify-center">
+              <button 
+                onPointerUp={(e) => {
+                  e.preventDefault();
+                  stopRecording();
+                }}
+                className="w-20 h-20 rounded-full bg-red-600 flex items-center justify-center touch-manipulation active:scale-95"
+              >
                 <div className="w-8 h-8 rounded-sm bg-white" />
               </button>
             ) : (
-              <button onClick={startRecording} className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center">
-                <div className="w-14 h-14 rounded-full bg-[#FF6E3C]" />
+              <button 
+                onPointerUp={(e) => {
+                  e.preventDefault();
+                  startRecording();
+                }}
+                className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center touch-manipulation active:scale-95"
+              >
+                <div className="w-14 h-14 rounded-full bg-white" />
               </button>
             )}
             
@@ -173,16 +189,16 @@ export default function MobileConfigureView({
   }
   
   return (
-    <div className="flex-1 overflow-y-auto p-4 pb-36">
+    <div className="flex-1 overflow-y-auto p-4 pb-36 bg-[#0a0a0a]">
       {/* Video Box */}
       <div className="mb-6">
-        <label className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3 block">
+        <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3 block">
           Input Video
         </label>
         
         {videoUrl ? (
-          // Filled state - either from blob or loaded from history
-          <div className="relative rounded-2xl overflow-hidden bg-white/5 border border-white/10">
+          // Filled state
+          <div className="relative rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800">
             <video
               ref={previewVideoRef}
               src={videoUrl}
@@ -193,52 +209,62 @@ export default function MobileConfigureView({
               autoPlay
             />
             {videoBlob && (
-              // Only show remove button for new recordings, not loaded projects
               <button
-                onClick={onRemoveVideo}
-                className="absolute top-3 right-3 p-2 rounded-full bg-black/60 backdrop-blur-sm text-white/80"
+                onPointerUp={(e) => {
+                  e.preventDefault();
+                  onRemoveVideo();
+                }}
+                className="absolute top-3 right-3 p-2 rounded-full bg-black/60 backdrop-blur-sm text-zinc-400 touch-manipulation active:scale-95"
               >
                 <X className="w-4 h-4" />
               </button>
             )}
             {!videoBlob && (
-              // Show indicator for loaded project video
-              <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white/70 text-xs font-medium">
+              <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-zinc-400 text-xs font-medium">
                 Original Input
               </div>
             )}
             <button
-              onClick={() => fileInputRef.current?.click()}
-              className="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm text-white/80 text-xs"
+              onPointerUp={(e) => {
+                e.preventDefault();
+                fileInputRef.current?.click();
+              }}
+              className="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-800 backdrop-blur-sm text-zinc-300 text-xs touch-manipulation active:scale-95"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               Replace
             </button>
           </div>
         ) : (
-          // Empty state - tap to record/upload
-          <div className="rounded-2xl border-2 border-dashed border-white/10 bg-white/[0.02] overflow-hidden">
+          // Empty state
+          <div className="rounded-2xl border-2 border-dashed border-zinc-800 bg-zinc-900/50 overflow-hidden">
             <div className="flex">
               <button
-                onClick={startCamera}
-                className="flex-1 flex flex-col items-center justify-center py-10 active:bg-white/5 border-r border-white/10"
+                onPointerUp={(e) => {
+                  e.preventDefault();
+                  startCamera();
+                }}
+                className="flex-1 flex flex-col items-center justify-center py-10 active:bg-zinc-800/50 border-r border-zinc-800 touch-manipulation"
               >
-                <div className="w-14 h-14 rounded-2xl bg-[#FF6E3C]/10 flex items-center justify-center mb-3">
-                  <Camera className="w-7 h-7 text-[#FF6E3C]" />
+                <div className="w-14 h-14 rounded-2xl bg-zinc-800 flex items-center justify-center mb-3">
+                  <Camera className="w-7 h-7 text-zinc-400" />
                 </div>
-                <span className="text-white/80 font-medium text-sm">Record</span>
-                <span className="text-white/30 text-xs mt-1">Record any video</span>
+                <span className="text-zinc-300 font-medium text-sm">Record</span>
+                <span className="text-zinc-600 text-xs mt-1 text-center px-2">Products, screens, sketches</span>
               </button>
               
               <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex-1 flex flex-col items-center justify-center py-10 active:bg-white/5"
+                onPointerUp={(e) => {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }}
+                className="flex-1 flex flex-col items-center justify-center py-10 active:bg-zinc-800/50 touch-manipulation"
               >
-                <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center mb-3">
-                  <Upload className="w-7 h-7 text-white/60" />
+                <div className="w-14 h-14 rounded-2xl bg-zinc-800 flex items-center justify-center mb-3">
+                  <Upload className="w-7 h-7 text-zinc-400" />
                 </div>
-                <span className="text-white/80 font-medium text-sm">Upload</span>
-                <span className="text-white/30 text-xs mt-1">Screen recording</span>
+                <span className="text-zinc-300 font-medium text-sm">Upload</span>
+                <span className="text-zinc-600 text-xs mt-1 text-center px-2">Videos, photos, mockups</span>
               </button>
             </div>
           </div>
@@ -247,22 +273,22 @@ export default function MobileConfigureView({
       
       {/* Context */}
       <div className="mb-6">
-        <label className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3 block">
-          Context <span className="text-white/20">(optional)</span>
+        <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3 block">
+          Context <span className="text-zinc-600">(optional)</span>
         </label>
         <textarea
           value={context}
           onChange={(e) => onContextChange(e.target.value)}
           placeholder="E.g., Make the buttons rounded, use blue accent color..."
-          className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/25 text-sm resize-none focus:outline-none focus:border-[#FF6E3C]/50"
+          className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-white placeholder:text-zinc-600 text-sm resize-none focus:outline-none focus:border-zinc-700"
           rows={3}
         />
       </div>
       
-      {/* Style - using StyleInjector from desktop */}
+      {/* Style */}
       <div className="mb-8">
-        <label className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3 block">
-          Style <span className="text-white/20">(optional)</span>
+        <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3 block">
+          Style <span className="text-zinc-600">(optional)</span>
         </label>
         <StyleInjector
           value={style}
@@ -273,17 +299,22 @@ export default function MobileConfigureView({
       
       {/* Reconstruct button */}
       <button
-        onClick={onReconstruct}
+        onPointerUp={(e) => {
+          e.preventDefault();
+          if ((videoBlob || isLoadedProject) && !isProcessing) {
+            onReconstruct();
+          }
+        }}
         disabled={(!videoBlob && !isLoadedProject) || isProcessing}
-        className={`w-full py-4 rounded-xl font-bold text-base ${
+        className={`w-full py-4 rounded-xl font-bold text-base touch-manipulation active:scale-[0.98] transition-transform ${
           (videoBlob || isLoadedProject) && !isProcessing
-            ? "bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white"
-            : "bg-white/10 text-white/30 cursor-not-allowed"
+            ? "bg-white text-black"
+            : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
         }`}
       >
         {isProcessing ? (
           <span className="flex items-center justify-center gap-2">
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-zinc-500 border-t-white rounded-full animate-spin" />
             Processing...
           </span>
         ) : (

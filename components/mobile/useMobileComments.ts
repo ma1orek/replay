@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useSelf, useStorage, useMutation, useBroadcastEvent } from "@/liveblocks.config";
 import type { StoredComment } from "@/liveblocks.config";
 
@@ -33,8 +33,6 @@ export function useMobileComments() {
       ? allCommentsRaw 
       : (allCommentsRaw as any).toImmutable?.() || [];
     
-    // Get all comments (not filtered by tab) for mobile viewing
-    // Comments from mobile-mirror tab are specifically for mobile
     return arr.map((c: StoredComment) => ({
       id: c.id,
       x: c.x,
@@ -58,7 +56,7 @@ export function useMobileComments() {
   const addComment = useCallback((data: { x: number; y: number; text: string }) => {
     const authorId = self?.id || `mobile-guest-${Date.now()}`;
     const authorName = self?.info?.name || "Mobile User";
-    const authorColor = self?.info?.color || "#FF6E3C";
+    const authorColor = self?.info?.color || "#888888";
     const authorAvatar = self?.info?.avatar;
 
     const newComment: StoredComment = {
@@ -86,7 +84,7 @@ export function useMobileComments() {
   const userInfo = useMemo(() => ({
     name: self?.info?.name || "Mobile User",
     avatar: self?.info?.avatar,
-    color: self?.info?.color || "#FF6E3C",
+    color: self?.info?.color || "#888888",
   }), [self]);
 
   return {
@@ -94,5 +92,32 @@ export function useMobileComments() {
     addComment,
     userInfo,
     isConnected: !!self,
+  };
+}
+
+// Simple version without Liveblocks - for when not in RoomProvider
+export function useMobileCommentsSimple() {
+  const [localComments, setLocalComments] = useState<MobileComment[]>([]);
+  
+  const addComment = useCallback((data: { x: number; y: number; text: string }) => {
+    const newComment: MobileComment = {
+      id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      x: data.x,
+      y: data.y,
+      text: data.text,
+      authorName: "You",
+      authorColor: "#888888",
+      timestamp: Date.now(),
+      resolved: false,
+    };
+    setLocalComments(prev => [...prev, newComment]);
+    return newComment;
+  }, []);
+
+  return {
+    comments: localComments,
+    addComment,
+    userInfo: { name: "You", avatar: undefined, color: "#888888" },
+    isConnected: false,
   };
 }

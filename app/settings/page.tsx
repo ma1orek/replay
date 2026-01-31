@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense, useState, useEffect, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense, useState, useEffect, useRef, useCallback } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
@@ -26,6 +26,8 @@ import {
   Sparkles,
   FolderOpen,
   ChevronRight,
+  Menu,
+  Trash2,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/context";
 import { useCredits, PLAN_LIMITS, CREDIT_COSTS } from "@/lib/credits/context";
@@ -35,6 +37,15 @@ import Avatar from "@/components/Avatar";
 import AuthModal from "@/components/modals/AuthModal";
 // Removed DitheringShader - using solid background
 import { cn } from "@/lib/utils";
+
+interface Project {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at?: string;
+  thumbnail_url?: string;
+  status?: string;
+}
 
 // Loading fallback
 function SettingsLoading() {
@@ -99,11 +110,15 @@ const TOPUPS = [
 
 function SettingsContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "account");
   const [isCheckingOut, setIsCheckingOut] = useState<string | null>(null);
   const [testMessage, setTestMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isManagingSubscription, setIsManagingSubscription] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  
+  // Mobile menu state
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Profile states
   const [isEditingName, setIsEditingName] = useState(false);
@@ -116,10 +131,62 @@ function SettingsContent() {
   const [soundOnComplete, setSoundOnComplete] = useState(true);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   
+  // Projects state
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  const [projectsError, setProjectsError] = useState<string | null>(null);
+  const [projectSearch, setProjectSearch] = useState("");
+  const [deletingProject, setDeletingProject] = useState<string | null>(null);
+  
   const { user, signOut } = useAuth();
   const { wallet, membership, totalCredits, isLoading, refreshCredits } = useCredits();
   const { profile, updateProfile, uploadAvatar } = useProfile();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  
+  // Fetch projects
+  const fetchProjects = useCallback(async () => {
+    if (!user) return;
+    setIsLoadingProjects(true);
+    setProjectsError(null);
+    try {
+      const response = await fetch("/api/generations?minimal=true&limit=100");
+      if (!response.ok) throw new Error("Failed to fetch projects");
+      const data = await response.json();
+      setProjects(data.generations || []);
+    } catch (error) {
+      console.error("Failed to fetch projects:", error);
+      setProjectsError("Failed to load projects");
+    } finally {
+      setIsLoadingProjects(false);
+    }
+  }, [user]);
+  
+  // Delete project
+  const handleDeleteProject = async (projectId: string) => {
+    if (!confirm("Are you sure you want to delete this project?")) return;
+    setDeletingProject(projectId);
+    try {
+      const response = await fetch(`/api/generations?id=${projectId}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("Failed to delete");
+      setProjects(prev => prev.filter(p => p.id !== projectId));
+    } catch (error) {
+      console.error("Failed to delete:", error);
+    } finally {
+      setDeletingProject(null);
+    }
+  };
+  
+  // Load projects when tab changes
+  useEffect(() => {
+    if (activeTab === "projects" && user) {
+      fetchProjects();
+    }
+  }, [activeTab, user, fetchProjects]);
+  
+  // Filter projects by search
+  const filteredProjects = projects.filter(p => 
+    p.name?.toLowerCase().includes(projectSearch.toLowerCase())
+  );
 
   useEffect(() => {
     const tab = searchParams.get("tab");
@@ -219,9 +286,78 @@ function SettingsContent() {
   const planLimits = PLAN_LIMITS[currentPlan];
 
   return (
-    <div className="min-h-screen bg-[#111111] flex">
-      {/* Left Sidebar */}
-      <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[#141414] border-r border-zinc-800/50 z-20 flex flex-col">
+    <div className="min-h-screen bg-[#111111] flex flex-col md:flex-row">
+      {/* Mobile Header */}
+      <header className="md:hidden fixed top-0 left-0 right-0 z-30 bg-[#141414] border-b border-zinc-800/50">
+        <div className="flex items-center justify-between px-4 h-14">
+          <Link 
+            href="/tool" 
+            className="flex items-center gap-2 text-sm text-zinc-400"
+          >
+            <ChevronRight className="w-4 h-4 rotate-180" />
+            <span>Back</span>
+          </Link>
+          <span className="text-sm font-medium text-zinc-200">Settings</span>
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 rounded-lg hover:bg-zinc-800"
+          >
+            {mobileMenuOpen ? (
+              <X className="w-5 h-5 text-zinc-400" />
+            ) : (
+              <Menu className="w-5 h-5 text-zinc-400" />
+            )}
+          </button>
+        </div>
+        
+        {/* Mobile Menu Dropdown */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="border-t border-zinc-800/50 bg-[#141414] overflow-hidden"
+            >
+              <nav className="p-2">
+                {SIDEBAR_ITEMS.map((item, i) => {
+                  if (item.type === "section") {
+                    return (
+                      <div key={i} className="px-3 py-2 mt-2 first:mt-0">
+                        <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">
+                          {item.label}
+                        </span>
+                      </div>
+                    );
+                  }
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setActiveTab(item.id!);
+                        setMobileMenuOpen(false);
+                      }}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all",
+                        activeTab === item.id 
+                          ? "bg-zinc-800 text-zinc-100" 
+                          : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50"
+                      )}
+                    >
+                      {Icon && <Icon className="w-4 h-4" />}
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </nav>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </header>
+      
+      {/* Desktop Left Sidebar - hidden on mobile */}
+      <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-64 bg-[#141414] border-r border-zinc-800/50 z-20 flex-col">
         {/* Back Link */}
         <div className="p-4 border-b border-zinc-800/50">
           <Link 
@@ -291,7 +427,7 @@ function SettingsContent() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 ml-64 relative z-10">
+      <main className="flex-1 md:ml-64 relative z-10 pt-14 md:pt-0">
         <div className="max-w-4xl mx-auto px-8 py-12">
           {/* Status Messages */}
           <AnimatePresence>
@@ -832,18 +968,30 @@ function SettingsContent() {
           {/* === PROJECTS TAB === */}
           {activeTab === "projects" && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
                   <h1 className="text-2xl font-semibold text-zinc-100 mb-1">Your Projects</h1>
-                  <p className="text-sm text-zinc-500">All your generated UI projects</p>
+                  <p className="text-sm text-zinc-500">
+                    {projects.length > 0 ? `${projects.length} projects` : "All your generated UI projects"}
+                  </p>
                 </div>
-                <Link
-                  href="/tool"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-sm font-medium transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  Create new
-                </Link>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={fetchProjects}
+                    disabled={isLoadingProjects}
+                    className="p-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 transition-colors"
+                    title="Refresh"
+                  >
+                    <RotateCcw className={cn("w-4 h-4", isLoadingProjects && "animate-spin")} />
+                  </button>
+                  <Link
+                    href="/tool"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-sm font-medium transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span className="hidden sm:inline">Create new</span>
+                  </Link>
+                </div>
               </div>
 
               {/* Search */}
@@ -851,6 +999,8 @@ function SettingsContent() {
                 <input
                   type="text"
                   placeholder="Search projects..."
+                  value={projectSearch}
+                  onChange={(e) => setProjectSearch(e.target.value)}
                   className="w-full h-11 pl-10 pr-4 rounded-xl bg-[#141414] border border-zinc-800 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-600"
                 />
                 <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -858,19 +1008,119 @@ function SettingsContent() {
                 </svg>
               </div>
 
-              {/* Projects List - Empty State */}
-              <div className="bg-[#141414]/80 backdrop-blur border border-zinc-800/50 rounded-2xl p-12 text-center">
-                <FolderOpen className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-                <p className="text-zinc-400 mb-2">No projects yet</p>
-                <p className="text-zinc-500 text-sm mb-4">Create your first project by recording a screen</p>
-                <Link
-                  href="/tool"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm font-medium transition-colors"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Go to tool
-                </Link>
-              </div>
+              {/* Loading State */}
+              {isLoadingProjects && (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
+                </div>
+              )}
+
+              {/* Error State */}
+              {projectsError && !isLoadingProjects && (
+                <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 text-center">
+                  <p className="text-red-400 mb-3">{projectsError}</p>
+                  <button
+                    onClick={fetchProjects}
+                    className="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm"
+                  >
+                    Try again
+                  </button>
+                </div>
+              )}
+
+              {/* Projects List */}
+              {!isLoadingProjects && !projectsError && filteredProjects.length > 0 && (
+                <div className="grid gap-3">
+                  {filteredProjects.map((project) => (
+                    <div
+                      key={project.id}
+                      className="bg-[#141414]/80 backdrop-blur border border-zinc-800/50 rounded-xl p-4 hover:border-zinc-700 transition-colors group"
+                    >
+                      <div className="flex items-center gap-4">
+                        {/* Thumbnail */}
+                        <div className="w-16 h-12 rounded-lg bg-zinc-800 overflow-hidden flex-shrink-0">
+                          {project.thumbnail_url ? (
+                            <img 
+                              src={project.thumbnail_url} 
+                              alt={project.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <FolderOpen className="w-5 h-5 text-zinc-600" />
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-medium text-zinc-200 truncate">
+                            {project.name || "Untitled Project"}
+                          </h3>
+                          <p className="text-xs text-zinc-500">
+                            {new Date(project.created_at).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric"
+                            })}
+                          </p>
+                        </div>
+                        
+                        {/* Actions */}
+                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Link
+                            href={`/tool?project=${project.id}`}
+                            className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs text-zinc-300 transition-colors"
+                          >
+                            Open
+                          </Link>
+                          <button
+                            onClick={() => handleDeleteProject(project.id)}
+                            disabled={deletingProject === project.id}
+                            className="p-1.5 rounded-lg bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 transition-colors"
+                          >
+                            {deletingProject === project.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Empty State */}
+              {!isLoadingProjects && !projectsError && filteredProjects.length === 0 && (
+                <div className="bg-[#141414]/80 backdrop-blur border border-zinc-800/50 rounded-2xl p-12 text-center">
+                  <FolderOpen className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
+                  {projectSearch ? (
+                    <>
+                      <p className="text-zinc-400 mb-2">No projects matching "{projectSearch}"</p>
+                      <button
+                        onClick={() => setProjectSearch("")}
+                        className="text-zinc-500 text-sm hover:text-zinc-300"
+                      >
+                        Clear search
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-zinc-400 mb-2">No projects yet</p>
+                      <p className="text-zinc-500 text-sm mb-4">Create your first project by recording a screen</p>
+                      <Link
+                        href="/tool"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm font-medium transition-colors"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        Go to tool
+                      </Link>
+                    </>
+                  )}
+                </div>
+              )}
             </motion.div>
           )}
         </div>

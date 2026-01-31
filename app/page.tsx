@@ -2451,6 +2451,12 @@ const InteractiveReactPreview = ({
       100% { background-position: 200% 0; }
     }
     
+    @keyframes scaleUp {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.02); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    
     /* Breathing/pulse animations for elements */
     .animate-breathe, [class*="breathe"] {
       animation: breathe 4s ease-in-out infinite !important;
@@ -2459,6 +2465,32 @@ const InteractiveReactPreview = ({
     @keyframes breathe {
       0%, 100% { transform: scale(1); opacity: 1; }
       50% { transform: scale(1.02); opacity: 0.9; }
+    }
+    
+    /* Custom scrollbar for preview panel */
+    .custom-scrollbar::-webkit-scrollbar {
+      display: block !important;
+      width: 8px;
+      height: 8px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(39, 39, 42, 0.5);
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(82, 82, 91, 0.8);
+      border-radius: 4px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(113, 113, 122, 0.9);
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+    .custom-scrollbar {
+      scrollbar-width: thin !important;
+      scrollbar-color: rgba(82, 82, 91, 0.8) rgba(39, 39, 42, 0.5) !important;
     }
   </style>
   <script>
@@ -3294,6 +3326,8 @@ function ReplayToolContent() {
   const [blueprintChatInput, setBlueprintChatInput] = useState("");
   const [blueprintChatHistory, setBlueprintChatHistory] = useState<{role: 'user' | 'ai', content: string}[]>([]);
   const [isEditingBlueprint, setIsEditingBlueprint] = useState(false);
+  const [generatingBlueprintId, setGeneratingBlueprintId] = useState<string | null>(null); // Which component is being generated
+  const [recentlyGeneratedId, setRecentlyGeneratedId] = useState<string | null>(null); // For scale animation after generation
   const [blueprintContextImage, setBlueprintContextImage] = useState<string | null>(null); // Base64 image for context
   const [blueprintSurveyData, setBlueprintSurveyData] = useState<any>(null); // Hard data from Agentic Vision Surveyor
   const [blueprintQaReport, setBlueprintQaReport] = useState<any>(null); // QA report comparing reference vs generated
@@ -5155,7 +5189,7 @@ Explore the tabs above:
 • Code - Generated source code
 • Flow - Screen navigation map
 • Design - Extracted design tokens
-• Blueprints - Component library
+• Editor - Component library
 
 Ready to generate from your own videos? Upgrade to Pro to start creating your own projects!`,
             timestamp: Date.now()
@@ -6660,8 +6694,18 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
       }
       
       // Add DETECTED nodes (not seen but in navigation) - shown in "Detected (Not Visited)" section
-      for (let i = 0; i < possiblePages.length; i++) {
-        const page = possiblePages[i];
+      // Filter out placeholder names (containing {}) and duplicates
+      const filteredPossiblePages = possiblePages.filter((page: any) => {
+        const name = page.title || page.name || page.id || '';
+        // Skip placeholders like {video.headline}, {list.headline}
+        if (name.includes('{') || name.includes('}')) return false;
+        // Skip very short names
+        if (name.length < 3) return false;
+        return true;
+      });
+      
+      for (let i = 0; i < filteredPossiblePages.length; i++) {
+        const page = filteredPossiblePages[i];
         await addNode({
           id: page.id || `possible-${i}`,
           name: page.title || page.name || page.id,
@@ -6679,14 +6723,18 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
         const navItems = scanData.ui.navigation.sidebar.items;
         const existingPageIds = new Set(scanData.pages.map((p: any) => (p.id || '').toLowerCase()));
         
-        let extraIndex = possiblePages.length;
+        let extraIndex = filteredPossiblePages.length;
         for (const item of navItems) {
-          const itemId = (item.label || item.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+          const itemName = item.label || item.name || '';
+          // Skip placeholders like {video.headline}
+          if (itemName.includes('{') || itemName.includes('}')) continue;
+          
+          const itemId = itemName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
           if (itemId && itemId.length > 2 && !existingPageIds.has(itemId)) {
             existingPageIds.add(itemId);
             await addNode({
               id: itemId,
-              name: item.label || item.name,
+              name: itemName,
               type: 'view',
               status: 'detected',
               description: `Navigation item - not visited in video`,
@@ -6711,16 +6759,20 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
           });
         }
         
-        let headerIndex = possiblePages.length + (scanData?.ui?.navigation?.sidebar?.items?.length || 0);
+        let headerIndex = filteredPossiblePages.length + (scanData?.ui?.navigation?.sidebar?.items?.length || 0);
         for (const item of headerItems) {
-          const itemId = (item.label || item.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+          const itemName = item.label || item.name || '';
+          // Skip placeholders like {video.headline}
+          if (itemName.includes('{') || itemName.includes('}')) continue;
+          
+          const itemId = itemName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
           // Skip common buttons
           const skipWords = ['login', 'signup', 'sign-up', 'apply', 'search', 'menu', 'get-started'];
           if (itemId && itemId.length > 2 && !existingPageIds.has(itemId) && !skipWords.includes(itemId)) {
             existingPageIds.add(itemId);
             await addNode({
               id: itemId,
-              name: item.label || item.name,
+              name: itemName,
               type: 'view',
               status: 'detected',
               description: `Header link - not visited in video`,
@@ -8311,8 +8363,8 @@ Try these prompts in Cursor or v0:
     });
   }, [displayedCode, selectedFlowPage, viewMode, createPreviewUrl, injectPageSelection]);
 
-  const FLOW_NODE_WIDTH = 220;
-  const FLOW_PREVIEW_HEIGHT = 120;
+  const FLOW_NODE_WIDTH = 180;
+  const FLOW_PREVIEW_HEIGHT = 90;
   
   const getFlowNodeHeight = useCallback((node: ProductFlowNode) => {
     // Use displayedCode (not editableCode) - Code tab file selection shouldn't affect Flow
@@ -8333,9 +8385,9 @@ Try these prompts in Cursor or v0:
     const detected = flowNodes.filter(n => n.status === "detected");
     const possible = flowNodes.filter(n => n.status === "possible");
     
-    const nodeWidth = 240;
-    const nodeHeight = 180;
-    const gapX = 40;
+    const nodeWidth = 180;
+    const nodeHeight = 150;
+    const gapX = 30;
     const gapY = 60;
     const cols = 5;
     const startX = 100;
@@ -12193,20 +12245,9 @@ ${publishCode}
   }
 
   // ====== MOBILE HARD FORK ======
-  // Mobile uses server-side async processing (like Bolt/Lovable)
-  // User can lock screen - generation continues on server
-  // EXCEPTION: Stay in desktop view if:
-  // - ?projects=true is in URL
-  // - showHistoryMode is active (checked synchronously in useState initializer)
-  // - We have an active/loaded project (generatedCode or activeGeneration)
-  const hasActiveProject = !!generatedCode || !!activeGeneration;
-  const shouldShowMobileLayout = isMobile === true && 
-    searchParams.get('projects') !== 'true' && 
-    !showHistoryMode && 
-    !hasActiveProject;
-  
-  // Mobile users see Replay Companion App
-  if (shouldShowMobileLayout) {
+  // Mobile ALWAYS uses MobileLayout - no exceptions
+  // This prevents PC overlays from showing on mobile
+  if (isMobile === true) {
     // Wrapper to convert simple save data to GenerationRecord format
     const handleMobileSave = async (data: { title: string; code: string; videoUrl?: string }) => {
       const genRecord: GenerationRecord = {
@@ -12237,7 +12278,6 @@ ${publishCode}
         onOpenCreditsModal={() => setShowOutOfCreditsModal(true)}
         onCreditsRefresh={refreshCredits}
         onSaveGeneration={handleMobileSave}
-        onOpenHistory={() => setShowHistoryMode(true)}
       />
     );
   }
@@ -13353,43 +13393,97 @@ ${publishCode}
                                 onClick={(e) => e.stopPropagation()}
                               />
                             ) : (
-                              <span className="truncate flex-1">{comp.name}</span>
+                              <span 
+                                className="truncate flex-1 cursor-text"
+                                onClick={(e) => {
+                                  // Single click on name to edit when already selected
+                                  if (selectedBlueprintComponent === `comp-${comp.id}`) {
+                                    e.stopPropagation();
+                                    setEditingComponentName(comp.id);
+                                    setEditingNameValue(comp.name);
+                                  }
+                                }}
+                              >
+                                {comp.name}
+                              </span>
                             )}
-                            {/* Rename button - visible on hover OR when selected */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingComponentName(comp.id);
-                                setEditingNameValue(comp.name);
-                              }}
-                              className={cn(
-                                "p-0.5 rounded hover:bg-zinc-700 text-zinc-500 hover:text-white transition-opacity",
-                                selectedBlueprintComponent === `comp-${comp.id}` ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                              )}
-                              title="Rename"
-                            >
-                              <Pencil className="w-3 h-3" />
-                            </button>
-                            {/* Duplicate button - visible on hover OR when selected */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Duplicate
-                                const newId = `${comp.id}-copy-${Date.now()}`;
-                                const newComp = { ...comp, id: newId, name: `${comp.name} (Copy)` };
-                                setLibraryData((prev: any) => ({
-                                  ...prev,
-                                  components: [...(prev?.components || []), newComp]
-                                }));
-                              }}
-                              className={cn(
-                                "p-0.5 rounded hover:bg-zinc-700 text-zinc-500 hover:text-white transition-opacity",
-                                selectedBlueprintComponent === `comp-${comp.id}` ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                              )}
-                              title="Duplicate"
-                            >
-                              <Copy className="w-3 h-3" />
-                            </button>
+                            {/* 3-dot menu - ALWAYS visible when selected */}
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Toggle dropdown
+                                  const menu = e.currentTarget.nextElementSibling as HTMLElement;
+                                  if (menu) {
+                                    menu.classList.toggle('hidden');
+                                    // Close on click outside
+                                    const closeMenu = (ev: MouseEvent) => {
+                                      if (!menu.contains(ev.target as Node) && ev.target !== e.currentTarget) {
+                                        menu.classList.add('hidden');
+                                        document.removeEventListener('click', closeMenu);
+                                      }
+                                    };
+                                    setTimeout(() => document.addEventListener('click', closeMenu), 0);
+                                  }
+                                }}
+                                className={cn(
+                                  "p-1 rounded hover:bg-zinc-700 text-zinc-400 hover:text-white transition-all",
+                                  selectedBlueprintComponent === `comp-${comp.id}` 
+                                    ? "opacity-100" 
+                                    : "opacity-0 group-hover:opacity-100"
+                                )}
+                                title="Options"
+                              >
+                                <MoreVertical className="w-3.5 h-3.5" />
+                              </button>
+                              {/* Dropdown menu */}
+                              <div className="hidden absolute right-0 top-full mt-1 z-50 w-32 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl py-1">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingComponentName(comp.id);
+                                    setEditingNameValue(comp.name);
+                                    (e.currentTarget.parentElement as HTMLElement)?.classList.add('hidden');
+                                  }}
+                                  className="w-full px-3 py-1.5 text-left text-xs text-zinc-300 hover:bg-zinc-700 flex items-center gap-2"
+                                >
+                                  <Pencil className="w-3 h-3" /> Rename
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const newId = `${comp.id}-copy-${Date.now()}`;
+                                    const newComp = { ...comp, id: newId, name: `${comp.name} (Copy)` };
+                                    setLibraryData((prev: any) => ({
+                                      ...prev,
+                                      components: [...(prev?.components || []), newComp]
+                                    }));
+                                    (e.currentTarget.parentElement as HTMLElement)?.classList.add('hidden');
+                                  }}
+                                  className="w-full px-3 py-1.5 text-left text-xs text-zinc-300 hover:bg-zinc-700 flex items-center gap-2"
+                                >
+                                  <Copy className="w-3 h-3" /> Duplicate
+                                </button>
+                                <div className="border-t border-zinc-700 my-1" />
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Delete component
+                                    setLibraryData((prev: any) => ({
+                                      ...prev,
+                                      components: prev?.components?.filter((c: any) => c.id !== comp.id) || []
+                                    }));
+                                    if (selectedBlueprintComponent === `comp-${comp.id}`) {
+                                      setSelectedBlueprintComponent(null);
+                                    }
+                                    (e.currentTarget.parentElement as HTMLElement)?.classList.add('hidden');
+                                  }}
+                                  className="w-full px-3 py-1.5 text-left text-xs text-red-400 hover:bg-red-500/20 flex items-center gap-2"
+                                >
+                                  <Trash2 className="w-3 h-3" /> Delete
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -14262,7 +14356,46 @@ ${publishCode}
                     className="flex-1 overflow-y-auto px-3 py-3 space-y-3 custom-scrollbar"
                     style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
                   >
-                    {chatMessages.map((msg) => (
+                    {chatMessages.length === 0 && !isEditing ? (
+                      /* STARTER PROMPTS - when chat is empty */
+                      <div className="flex flex-col h-full">
+                        <div className="flex-1 flex flex-col items-center justify-center text-center px-2">
+                          <LogoIcon className="w-8 h-8 mb-3" color="var(--accent-orange)" />
+                          <h3 className="text-sm font-medium text-zinc-300 mb-2">What can I do for you?</h3>
+                          <ul className="text-[11px] text-zinc-500 space-y-1 mb-4">
+                            <li>Edit styles, colors & layout</li>
+                            <li>Add new sections & components</li>
+                            <li>Create new pages</li>
+                            <li>Fix bugs & improve design</li>
+                          </ul>
+                        </div>
+                        
+                        <div className="flex-shrink-0">
+                          <div className="flex flex-wrap gap-1.5">
+                            {[
+                              "Dark theme",
+                              "Rounded buttons",
+                              "Hover animations",
+                              "Contact form",
+                              "About page",
+                              "Pricing page",
+                              "Footer section",
+                              "Hero redesign"
+                            ].map((prompt) => (
+                              <button
+                                key={prompt}
+                                onClick={() => setChatInput(prompt)}
+                                className="px-2.5 py-1 text-[10px] rounded-full bg-zinc-800/60 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200 border border-white/[0.04] transition-all"
+                              >
+                                {prompt}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Chat messages */
+                      chatMessages.map((msg) => (
                       <motion.div 
                         key={msg.id} 
                         initial={{ opacity: 0, y: 8 }}
@@ -14347,7 +14480,8 @@ ${publishCode}
                           </div>
                         )}
                       </motion.div>
-                    ))}
+                      ))
+                    )}
                     
                     {/* AI Response Indicator - Clean and minimal */}
                     {isEditing && (
@@ -14820,14 +14954,14 @@ ${publishCode}
                               isDragging && "text-[var(--accent-orange)]"
                             )} />
                             <span className={cn(
-                              "text-[12px] text-white/40 font-medium",
+                              "text-[11px] text-white/40 font-medium",
                               isDragging && "text-[var(--accent-orange)]"
                             )}>
-                              {isDragging ? "Drop here" : "Upload Source"}
+                              {isDragging ? "Drop here" : "Drop video or image to reconstruct"}
                             </span>
                           </div>
                           <span className="text-[9px] text-white/25">
-                            Drop video or image
+                            or click to browse
                           </span>
                         </button>
                       </>
@@ -15059,14 +15193,14 @@ ${publishCode}
                           isDragging && "text-[var(--accent-orange)]"
                         )} />
                         <span className={cn(
-                          "text-[12px] text-white/40 font-medium",
+                          "text-[11px] text-white/40 font-medium",
                           isDragging && "text-[var(--accent-orange)]"
                         )}>
-                          {isDragging ? "Drop here" : "Upload Source"}
+                          {isDragging ? "Drop here" : "Drop video or image to reconstruct"}
                         </span>
                       </div>
                       <span className="text-[9px] text-white/25">
-                        Drop video or image
+                        or click to browse
                       </span>
                     </button>
                   </>
@@ -15100,7 +15234,7 @@ ${publishCode}
                       )}
                     >
                       <Plus className="w-3 h-3 text-white/30" />
-                      <span className="text-[10px] text-white/40">+ Add</span>
+                      <span className="text-[10px] text-white/40">Add</span>
                     </button>
                   </div>
                 )}
@@ -15494,7 +15628,7 @@ ${publishCode}
               {[
                 { id: "preview", icon: Eye, label: "Preview" },
                 { id: "library", icon: Library, label: "Library" },
-                { id: "blueprints", icon: Map, label: "Blueprints" },
+                { id: "blueprints", icon: Pencil, label: "Editor" },
                 { id: "flow", icon: GitBranch, label: "Flow" },
                 { id: "code", icon: Code, label: "Code" },
               ].map((tab) => (
@@ -16769,9 +16903,9 @@ export default function GeneratedPage() {
                               key={node.id}
                               className={cn(
                                 "absolute select-none group/flownode flex flex-col",
-                                "rounded-2xl overflow-hidden",
+                                "rounded-lg overflow-hidden",
                                 isDragging ? "cursor-grabbing z-50 scale-[1.02]" : "cursor-grab transition-shadow duration-200",
-                                selectedFlowNode === node.id && "ring-2 ring-[var(--accent-orange)]/60 ring-offset-2 ring-offset-black/80"
+                                selectedFlowNode === node.id && "ring-1 ring-[var(--accent-orange)]/50 ring-offset-1 ring-offset-black/80"
                               )}
                               style={{ 
                                 left: node.x, 
@@ -16779,18 +16913,18 @@ export default function GeneratedPage() {
                                 width: nodeWidth,
                                 minHeight: totalHeight,
                                 opacity: isPossible ? 0.55 : isDetected ? 0.85 : 1,
-                                // 3-tier border styles - muted colors
-                                background: 'rgba(15,15,17,0.95)',
+                                // Minimal border styles
+                                background: 'rgba(18,18,20,0.9)',
                                 border: isObserved 
-                                  ? '2px solid rgba(113, 113, 122, 0.5)' // zinc solid
+                                  ? '1px solid rgba(113, 113, 122, 0.4)' // zinc solid
                                   : isAdded
-                                  ? '2px solid rgba(59, 130, 246, 0.4)' // blue solid
+                                  ? '1px solid rgba(59, 130, 246, 0.3)' // blue solid
                                   : isDetected
-                                  ? '2px dashed rgba(113, 113, 122, 0.3)' // zinc dashed
-                                  : '2px dotted rgba(255,255,255,0.1)', // gray dotted
+                                  ? '1px dashed rgba(113, 113, 122, 0.25)' // zinc dashed
+                                  : '1px dotted rgba(255,255,255,0.08)', // gray dotted
                                 boxShadow: isDragging
-                                  ? '0 20px 40px -12px rgba(0,0,0,0.5)'
-                                  : '0 4px 20px -4px rgba(0,0,0,0.3)'
+                                  ? '0 12px 24px -8px rgba(0,0,0,0.4)'
+                                  : '0 2px 8px -2px rgba(0,0,0,0.2)'
                               }}
                               onMouseDown={(e) => {
                                 // Don't start drag if clicking buttons
@@ -16828,46 +16962,44 @@ export default function GeneratedPage() {
                               )}
                               
                               {/* Node header with status badge */}
-                              <div className="p-3">
+                              <div className="p-2">
                                 {/* Top row: Icon + Name + Status Badge */}
-                                <div className="flex items-center gap-2 mb-1.5">
-                                  {/* Icon - perfectly centered */}
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  {/* Icon - compact */}
                                   <div className={cn(
-                                    "w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0",
+                                    "w-5 h-5 rounded flex items-center justify-center flex-shrink-0",
                                     isObserved ? "bg-zinc-700/30 text-zinc-300" 
                                     : isAdded ? "bg-blue-500/10 text-blue-400"
                                     : isDetected ? "bg-zinc-700/20 text-zinc-400"
                                     : "bg-zinc-800/50 text-zinc-500"
                                   )}>
-                                    <Icon className="w-3.5 h-3.5" />
+                                    <Icon className="w-3 h-3" />
                                   </div>
                                   {/* Name - takes available space */}
-                                  <div className="flex-1 min-w-0 pr-1">
+                                  <div className="flex-1 min-w-0">
                                     <span className={cn(
-                                      "text-[11px] font-medium block leading-tight line-clamp-2", 
+                                      "text-[10px] font-medium block leading-tight line-clamp-1", 
                                       isPossible ? "text-zinc-500 italic" : "text-zinc-200"
                                     )} title={node.name}>{node.name}</span>
                                   </div>
-                                  {/* Status Badge - 3-tier visual system - muted */}
+                                  {/* Status Badge - minimal */}
                                   <span className={cn(
-                                    "text-[8px] px-1.5 py-0.5 rounded capitalize font-medium flex-shrink-0",
+                                    "text-[7px] px-1 py-0.5 rounded capitalize font-medium flex-shrink-0",
                                     isObserved 
-                                      ? "bg-zinc-700/40 text-zinc-300 border border-zinc-600/40" 
+                                      ? "bg-zinc-700/40 text-zinc-400" 
                                       : isAdded
-                                      ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                                      ? "bg-blue-500/20 text-blue-400"
                                       : isDetected
-                                      ? "bg-zinc-700/30 text-zinc-400 border border-zinc-600/30 border-dashed"
-                                      : isInferred
-                                      ? "bg-zinc-700/20 text-zinc-500 border border-zinc-600/20 border-dotted"
-                                      : "bg-zinc-800 text-zinc-500 border border-zinc-700/30 border-dotted"
+                                      ? "bg-zinc-700/30 text-zinc-500"
+                                      : "bg-zinc-800 text-zinc-600"
                                   )}>
-                                    {isObserved ? "Observed" : isAdded ? "Generated" : isDetected ? "Detected" : isInferred ? "Inferred" : "Possible"}
+                                    {isObserved ? "Observed" : isAdded ? "Generated" : isDetected ? "Detected" : "Possible"}
                                   </span>
                                 </div>
                                 
                                 {/* Description */}
                                 {node.description && (
-                                  <p className="text-[10px] text-zinc-500 leading-snug line-clamp-2 mb-2">
+                                  <p className="text-[9px] text-zinc-500 leading-snug line-clamp-2">
                                     {node.description}
                                   </p>
                                 )}
@@ -16903,34 +17035,34 @@ export default function GeneratedPage() {
                                 </AnimatePresence>
                               </div>
                               
-                              {/* Action buttons - glass style */}
-                              <div className="flex items-center gap-1.5 px-3 pb-3">
+                              {/* Action buttons - minimal */}
+                              <div className="flex items-center gap-1 px-2 pb-1.5 pt-1">
                                 {hasCode ? (
                                   <>
                                     <button
-                                      className="flow-node-btn flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-medium bg-zinc-800/90 hover:bg-zinc-800 text-white transition-colors"
+                                      className="flow-node-btn flex-1 flex items-center justify-center gap-0.5 py-1 rounded text-[9px] font-medium bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 transition-colors"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleFlowNodeCodeFocus(node.id, "preview");
                                       }}
                                     >
-                                      <Eye className="w-3 h-3" />
+                                      <Eye className="w-2.5 h-2.5" />
                                       Preview
                                     </button>
                                     <button
-                                      className="flow-node-btn flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-medium bg-white/10 hover:bg-white/15 text-zinc-400 transition-colors"
+                                      className="flow-node-btn flex-1 flex items-center justify-center gap-0.5 py-1 rounded text-[9px] font-medium bg-zinc-800/50 hover:bg-zinc-700 text-zinc-400 transition-colors"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleFlowNodeCodeFocus(node.id, "code");
                                       }}
                                     >
-                                      <Code className="w-3 h-3" />
+                                      <Code className="w-2.5 h-2.5" />
                                       Code
                                     </button>
                                   </>
                                 ) : isDetected ? (
                                   <button
-                                    className="flow-node-btn flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-medium bg-zinc-700 hover:bg-zinc-600 text-white transition-colors"
+                                    className="flow-node-btn flex-1 flex items-center justify-center gap-0.5 py-1 rounded text-[9px] font-medium bg-zinc-700 hover:bg-zinc-600 text-zinc-300 transition-colors"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       if (isDemoMode) {
@@ -16949,12 +17081,12 @@ export default function GeneratedPage() {
                                     }}
                                     disabled={isEditing}
                                   >
-                                    <Plus className="w-3 h-3" />
+                                    <Plus className="w-2.5 h-2.5" />
                                     Reconstruct
                                   </button>
                                 ) : (
                                   <button
-                                    className="flow-node-btn flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-medium bg-zinc-800/50 hover:bg-white/10 text-zinc-500 transition-colors"
+                                    className="flow-node-btn flex-1 flex items-center justify-center gap-0.5 py-1 rounded text-[9px] font-medium bg-zinc-800/50 hover:bg-zinc-700 text-zinc-500 transition-colors"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       if (isDemoMode) {
@@ -19490,9 +19622,17 @@ module.exports = {
                                                   Copy
                                                 </button>
                                               </div>
-                                              <pre className={cn("p-4 text-sm font-mono overflow-x-auto max-h-64", libraryBackground === "light" ? "bg-zinc-50" : "bg-[#0d0d0d]")}>
-                                                <code className={libraryBackground === "light" ? "text-zinc-800" : "text-zinc-300"}>{(example.code || '').replace(/\\n/g, '\n')}</code>
-                                              </pre>
+                                              <Highlight theme={themes.nightOwl} code={(example.code || '').replace(/\\n/g, '\n')} language="tsx">
+                                                {({ style, tokens, getLineProps, getTokenProps }) => (
+                                                  <pre className="p-4 text-sm overflow-x-auto max-h-64" style={{ ...style, background: libraryBackground === "light" ? "#fafafa" : "#0d0d0d", fontFamily: "'JetBrains Mono', monospace" }}>
+                                                    {tokens.map((line, i) => (
+                                                      <div key={i} {...getLineProps({ line })}>
+                                                        {line.map((token, key) => <span key={key} {...getTokenProps({ token })} />)}
+                                                      </div>
+                                                    ))}
+                                                  </pre>
+                                                )}
+                                              </Highlight>
                                             </div>
                                           ))}
                                         </div>
@@ -19707,8 +19847,9 @@ module.exports = {
                                   );
                                   
                                   return (
-                                    <div className="w-full flex-1"
-                                      style={{ minHeight: '100px' }}
+                                    <div 
+                                      className="w-full flex-1 overflow-auto custom-scrollbar"
+                                      style={{ minHeight: '100px', maxHeight: 'calc(100vh - 280px)' }}
                                     >
                                       {/* Viewport container - changes width based on mobile/desktop */}
                                       <div 
@@ -20775,30 +20916,10 @@ module.exports = {
                         {/* Empty state */}
                         {(!libraryData || !libraryData.components || libraryData.components.length === 0) ? (
                           <div className="absolute inset-0 flex items-center justify-center bg-[#111111]">
-                            <EmptyState icon="logo" title="Component Blueprints" subtitle="Generate from video to visualize and edit your component architecture." />
+                            <EmptyState icon="logo" title="Component Editor" subtitle="Generate from video to visualize and edit your component architecture." />
                           </div>
                         ) : (
                           <>
-                            {/* Category Labels - above each column */}
-                            {(() => {
-                              const categories = new Set(libraryData.components.map((c: any) => c.category || 'other'));
-                              let labelX = 60;
-                              const CATEGORY_WIDTH = 720; // Match masonry layout (2 columns + gap)
-                              return Array.from(categories).map((cat, i) => {
-                                const x = labelX;
-                                labelX += CATEGORY_WIDTH + 80;
-                                return (
-                                  <div 
-                                    key={`label-${cat}`}
-                                    className="absolute text-[11px] font-semibold uppercase tracking-widest text-zinc-600/50 select-none"
-                                    style={{ left: x, top: 50 }}
-                                  >
-                                    {cat as string}
-                                  </div>
-                                );
-                              });
-                            })()}
-                            
                             {/* Draggable Components - FIGMA STYLE: just component + small name */}
                             {libraryData.components.map((comp: any) => {
                               const id = `comp-${comp.id}`;
@@ -20807,11 +20928,16 @@ module.exports = {
                               const isSelected = selectedBlueprintComponent === id;
                               const isDragging = draggingComponent === id;
                               const isResizing = resizingComponent?.id === id;
+                              const isGenerating = generatingBlueprintId === comp.id || (isEditingBlueprint && selectedBlueprintComponent === id);
+                              const isRecentlyGenerated = recentlyGeneratedId === comp.id;
                               
                               return (
                                 <div
                                   key={id}
-                                  className="absolute select-none group"
+                                  className={cn(
+                                    "absolute select-none group",
+                                    isRecentlyGenerated && "animate-[scaleUp_0.5s_ease-out]"
+                                  )}
                                   style={{ 
                                     // Use transform instead of left/top for GPU-accelerated movement (prevents lag/ghosting)
                                     // Add padding for resize handles to be visible outside component
@@ -20948,7 +21074,7 @@ module.exports = {
                                         }}
                                       >
                                         {/* Content wrapper with overflow hidden */}
-                                        <div className="w-full h-full overflow-hidden rounded">
+                                        <div className="w-full h-full overflow-hidden rounded relative">
                                           {/* Use same InteractiveReactPreview as Library for identical rendering */}
                                           {/* Iframe fills this container 100% - so resizing container = responsive content */}
                                           <InteractiveReactPreview 
@@ -20967,6 +21093,19 @@ module.exports = {
                                             }}
                                             isFullWidth={isFullWidthComp}
                                           />
+                                          
+                                          {/* Shimmer overlay during generation */}
+                                          {isGenerating && (
+                                            <div className="absolute inset-0 z-50 flex items-center justify-center bg-zinc-900/80 backdrop-blur-sm rounded overflow-hidden">
+                                              {/* Animated gradient shimmer */}
+                                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[shimmer_2s_infinite]" 
+                                                   style={{ backgroundSize: '200% 100%' }} />
+                                              <div className="relative flex flex-col items-center gap-3">
+                                                <div className="w-8 h-8 border-2 border-zinc-600 border-t-emerald-500 rounded-full animate-spin" />
+                                                <span className="text-xs text-zinc-400 font-medium">Generating...</span>
+                                              </div>
+                                            </div>
+                                          )}
                                         </div>
                                         {/* Selection indicator - OUTSIDE overflow:hidden wrapper for visible handles */}
                                         {isSelected && (
@@ -20974,11 +21113,11 @@ module.exports = {
                                             {/* Simple selection border - HIGH z-index to be on top */}
                                             <div className="absolute inset-0 border-2 border-blue-500 rounded pointer-events-none z-[1000]" />
                                             
-                                            {/* Resize handles - all 4 corners + 4 edges - LARGE & VISIBLE */}
+                                            {/* Resize handles - all 4 corners + 4 edges - BIGGER for visibility */}
                                             {/* Corner: top-left */}
                                             <div 
                                               data-resize-handle="nw"
-                                              className="absolute -top-3 -left-3 w-5 h-5 bg-blue-500 border-2 border-white rounded cursor-nw-resize z-[2001] hover:bg-blue-400 shadow-lg"
+                                              className="absolute -top-4 -left-4 w-7 h-7 bg-blue-500 border-[3px] border-white rounded-md cursor-nw-resize z-[2001] hover:bg-blue-400 shadow-xl hover:scale-110 transition-transform"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'nw' });
@@ -20995,7 +21134,7 @@ module.exports = {
                                             {/* Corner: top-right */}
                                             <div 
                                               data-resize-handle="ne"
-                                              className="absolute -top-3 -right-3 w-5 h-5 bg-blue-500 border-2 border-white rounded cursor-ne-resize z-[2001] hover:bg-blue-400 shadow-lg"
+                                              className="absolute -top-4 -right-4 w-7 h-7 bg-blue-500 border-[3px] border-white rounded-md cursor-ne-resize z-[2001] hover:bg-blue-400 shadow-xl hover:scale-110 transition-transform"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'ne' });
@@ -21011,7 +21150,7 @@ module.exports = {
                                             {/* Corner: bottom-left */}
                                             <div 
                                               data-resize-handle="sw"
-                                              className="absolute -bottom-3 -left-3 w-5 h-5 bg-blue-500 border-2 border-white rounded cursor-sw-resize z-[2001] hover:bg-blue-400 shadow-lg"
+                                              className="absolute -bottom-4 -left-4 w-7 h-7 bg-blue-500 border-[3px] border-white rounded-md cursor-sw-resize z-[2001] hover:bg-blue-400 shadow-xl hover:scale-110 transition-transform"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'sw' });
@@ -21027,7 +21166,7 @@ module.exports = {
                                             {/* Corner: bottom-right */}
                                             <div 
                                               data-resize-handle="se"
-                                              className="absolute -bottom-3 -right-3 w-5 h-5 bg-blue-500 border-2 border-white rounded cursor-se-resize z-[2001] hover:bg-blue-400 shadow-lg"
+                                              className="absolute -bottom-4 -right-4 w-7 h-7 bg-blue-500 border-[3px] border-white rounded-md cursor-se-resize z-[2001] hover:bg-blue-400 shadow-xl hover:scale-110 transition-transform"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'se' });
@@ -21043,7 +21182,7 @@ module.exports = {
                                             {/* Edge: top */}
                                             <div 
                                               data-resize-handle="n"
-                                              className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-10 h-4 bg-blue-500 border-2 border-white rounded cursor-n-resize z-[2001] hover:bg-blue-400 shadow-lg"
+                                              className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-5 bg-blue-500 border-[3px] border-white rounded-md cursor-n-resize z-[2001] hover:bg-blue-400 shadow-xl hover:scale-110 transition-transform"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'n' });
@@ -21059,7 +21198,7 @@ module.exports = {
                                             {/* Edge: bottom */}
                                             <div 
                                               data-resize-handle="s"
-                                              className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-10 h-4 bg-blue-500 border-2 border-white rounded cursor-s-resize z-[2001] hover:bg-blue-400 shadow-lg"
+                                              className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-12 h-5 bg-blue-500 border-[3px] border-white rounded-md cursor-s-resize z-[2001] hover:bg-blue-400 shadow-xl hover:scale-110 transition-transform"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 's' });
@@ -21075,7 +21214,7 @@ module.exports = {
                                             {/* Edge: left */}
                                             <div 
                                               data-resize-handle="w"
-                                              className="absolute top-1/2 -left-2.5 -translate-y-1/2 w-4 h-10 bg-blue-500 border-2 border-white rounded cursor-w-resize z-[2001] hover:bg-blue-400 shadow-lg"
+                                              className="absolute top-1/2 -left-3 -translate-y-1/2 w-5 h-12 bg-blue-500 border-[3px] border-white rounded-md cursor-w-resize z-[2001] hover:bg-blue-400 shadow-xl hover:scale-110 transition-transform"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'w' });
@@ -21091,7 +21230,7 @@ module.exports = {
                                             {/* Edge: right */}
                                             <div 
                                               data-resize-handle="e"
-                                              className="absolute top-1/2 -right-2.5 -translate-y-1/2 w-4 h-10 bg-blue-500 border-2 border-white rounded cursor-e-resize z-[2001] hover:bg-blue-400 shadow-lg"
+                                              className="absolute top-1/2 -right-3 -translate-y-1/2 w-5 h-12 bg-blue-500 border-[3px] border-white rounded-md cursor-e-resize z-[2001] hover:bg-blue-400 shadow-xl hover:scale-110 transition-transform"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'e' });
@@ -21135,6 +21274,7 @@ module.exports = {
                                               const userMessage = generatePromptInput.trim();
                                               setGeneratePromptInput("");
                                               setIsEditingBlueprint(true);
+                                              setGeneratingBlueprintId(comp.id); // Start shimmer animation
                                               
                                               await streamBlueprintEdit(
                                                 '<div className="p-4 bg-zinc-800 rounded-lg text-white">New Component</div>',
@@ -21158,12 +21298,16 @@ module.exports = {
                                                     ) || []
                                                   }));
                                                   setIsEditingBlueprint(false);
+                                                  setGeneratingBlueprintId(null);
+                                                  setRecentlyGeneratedId(comp.id); // Trigger scale animation
+                                                  setTimeout(() => setRecentlyGeneratedId(null), 600); // Clear after animation
                                                   showToast("Component created!", "success");
                                                   // Auto-fit to show full component
                                                   fitComponentInView(id);
                                                 },
                                                 (error) => {
                                                   setIsEditingBlueprint(false);
+                                                  setGeneratingBlueprintId(null);
                                                   showToast(`Error: ${error}`, "error");
                                                 }
                                               );
@@ -21183,6 +21327,7 @@ module.exports = {
                                             const userMessage = generatePromptInput.trim();
                                             setGeneratePromptInput("");
                                             setIsEditingBlueprint(true);
+                                            setGeneratingBlueprintId(comp.id); // Start shimmer animation
                                             
                                             await streamBlueprintEdit(
                                               '<div className="p-4 bg-zinc-800 rounded-lg text-white">New Component</div>',
@@ -21204,12 +21349,16 @@ module.exports = {
                                                   ) || []
                                                 }));
                                                 setIsEditingBlueprint(false);
+                                                setGeneratingBlueprintId(null);
+                                                setRecentlyGeneratedId(comp.id); // Trigger scale animation
+                                                setTimeout(() => setRecentlyGeneratedId(null), 600);
                                                 showToast("Component created!", "success");
                                                 // Auto-fit to show full component
                                                 fitComponentInView(id);
                                               },
                                               (error) => {
                                                 setIsEditingBlueprint(false);
+                                                setGeneratingBlueprintId(null);
                                                 showToast(`Error: ${error}`, "error");
                                               }
                                             );
@@ -24166,6 +24315,73 @@ module.exports = {
         </motion.div>
       )}
       
+      {/* Delete Project Modal - Confirmation before deleting generation */}
+      {showDeleteModal && deleteTargetId && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => {
+            setShowDeleteModal(false);
+            setDeleteTargetId(null);
+          }}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            className="bg-zinc-900 border border-zinc-700/50 rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-5 py-4 border-b border-zinc-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center">
+                  <Trash2 className="w-5 h-5 text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-white">Delete Project</h3>
+                  <p className="text-xs text-zinc-500">This action cannot be undone</p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Content */}
+            <div className="px-5 py-4">
+              <p className="text-sm text-zinc-400">
+                Are you sure you want to delete <span className="text-white font-medium">"{deleteTargetTitle}"</span>?
+              </p>
+              <p className="text-xs text-zinc-600 mt-2">
+                The project and all its versions will be permanently removed.
+              </p>
+            </div>
+            
+            {/* Actions */}
+            <div className="px-5 py-4 bg-zinc-900/50 border-t border-zinc-800 flex items-center justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteTargetId(null);
+                }}
+                className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (deleteTargetId) {
+                    deleteGeneration(deleteTargetId);
+                  }
+                }}
+                className="px-4 py-2 text-sm font-medium bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
       
       {/* New Component Modal - Clean tool-matching style */}
       {showVisionImportModal && (

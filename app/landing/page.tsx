@@ -104,7 +104,7 @@ function HeroSection() {
   }, []);
 
   return (
-    <section className="relative h-screen max-h-[1080px] flex flex-col overflow-hidden bg-[#09090b]">
+    <section className="relative min-h-screen md:h-screen md:max-h-[1080px] flex flex-col overflow-hidden bg-[#09090b]">
       {/* Shader Background - Dark */}
       <div className="absolute inset-0 z-0">
         <DitheringShader
@@ -122,32 +122,31 @@ function HeroSection() {
         <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/80 via-zinc-950/60 to-zinc-950" />
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 flex flex-col items-center px-4 pt-20 md:pt-32">
+      {/* Content - centered on mobile */}
+      <div className="relative z-10 flex flex-col items-center justify-center flex-1 px-6 py-20 md:py-0 md:pt-32 md:flex-initial">
         <div className="max-w-5xl mx-auto text-center">
           <AnimatedGroup preset="blur-slide" className="flex flex-col items-center">
-            {/* Headline */}
-            <h1 className="font-serif text-4xl sm:text-5xl md:text-5xl lg:text-6xl xl:text-7xl leading-[1.05] tracking-tight text-white">
-              <span className="whitespace-nowrap">Modernize without{" "}<span className="italic text-orange-500">rewriting.</span></span>
-              <br />
-              <span className="whitespace-nowrap">Document without{" "}<span className="italic text-orange-500">archaeology.</span></span>
+            {/* Headline - better text wrapping on mobile */}
+            <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl leading-[1.1] tracking-tight text-white">
+              <span className="block sm:whitespace-nowrap">Modernize without{" "}<span className="italic text-orange-500">rewriting.</span></span>
+              <span className="block sm:whitespace-nowrap mt-1 sm:mt-0">Document without{" "}<span className="italic text-orange-500">archaeology.</span></span>
             </h1>
 
-            {/* Subheadline */}
-            <p className="mt-6 text-xl md:text-xl text-zinc-400 max-w-2xl leading-relaxed">
-              Replay observes real user workflows in your legacy system and generates 
-              documented React components — directly from video.
+            {/* Subheadline - better padding on mobile */}
+            <p className="mt-6 md:mt-8 text-base sm:text-lg md:text-xl text-zinc-400 max-w-2xl leading-relaxed px-2">
+              Years of technical debt, gone in minutes — Replay captures real workflows 
+              and rebuilds your UI and documentation from video.
             </p>
 
-            {/* CTAs */}
-            <div className="mt-10 flex flex-col sm:flex-row gap-4">
-              <Button size="lg" asChild className="group bg-white text-zinc-900 border-2 border-white hover:bg-zinc-100 h-12 px-8 rounded-full text-base ring-1 ring-white/50">
+            {/* CTAs - better spacing on mobile */}
+            <div className="mt-8 md:mt-10 flex flex-col gap-3 w-full max-w-xs sm:max-w-none sm:flex-row sm:gap-4">
+              <Button size="lg" asChild className="group bg-white text-zinc-900 border-2 border-white hover:bg-zinc-100 h-12 px-8 rounded-full text-base ring-1 ring-white/50 w-full sm:w-auto">
                 <Link href="/contact">
                   Book a pilot
                   <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </Button>
-              <Button size="lg" asChild className="bg-transparent text-white border border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600 h-12 px-8 rounded-full text-base">
+              <Button size="lg" asChild className="bg-transparent text-white border border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600 h-12 px-8 rounded-full text-base w-full sm:w-auto">
                 <Link href="https://www.replay.build/tool?project=flow_1769444036799_r8hrcxyx2">
                   Explore Live Sandbox
                   <ArrowRight className="ml-2 w-4 h-4" />
@@ -158,8 +157,8 @@ function HeroSection() {
         </div>
       </div>
 
-      {/* Hero Visual - No Border/Stroke/Shadow */}
-      <div className="relative z-10 flex-1 flex items-start justify-center px-4 mt-12">
+      {/* Hero Visual - HIDDEN on mobile, shown on md+ */}
+      <div className="relative z-10 hidden md:flex flex-1 items-start justify-center px-4 mt-12">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}

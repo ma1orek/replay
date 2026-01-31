@@ -21,7 +21,6 @@ interface MobileLayoutProps {
   onOpenCreditsModal?: () => void;
   onCreditsRefresh?: () => void;
   onSaveGeneration?: (data: { title: string; code: string; videoUrl?: string }) => void;
-  onOpenHistory?: () => void;
 }
 
 const STORAGE_KEY_NAME = "replay_mobile_pending_name";
@@ -41,7 +40,7 @@ const openVideoDB = (): Promise<IDBDatabase> => {
   });
 };
 
-export default function MobileLayout({ user, isPro, plan, credits, creditsLoading, onLogin, onOpenCreditsModal, onCreditsRefresh, onSaveGeneration, onOpenHistory }: MobileLayoutProps) {
+export default function MobileLayout({ user, isPro, plan, credits, creditsLoading, onLogin, onOpenCreditsModal, onCreditsRefresh, onSaveGeneration }: MobileLayoutProps) {
   const searchParams = useSearchParams();
   const autoStartCamera = searchParams?.get("camera") === "true";
   
@@ -403,7 +402,7 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
   const showPreview = mainTab === "preview" || (mainTab === "capture" && (hasGenerated || isProcessing));
 
   return (
-    <div className="fixed inset-0 bg-[#050505] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-[#0a0a0a] flex flex-col overflow-hidden">
       {/* Header */}
       {showHeader && (
         <MobileHeader
@@ -416,7 +415,6 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
           onBack={handleBack}
           onLogin={onLogin}
           onOpenCreditsModal={onOpenCreditsModal}
-          onOpenHistory={onOpenHistory}
         />
       )}
       
@@ -457,6 +455,17 @@ export default function MobileLayout({ user, isPro, plan, credits, creditsLoadin
               onPublish={handlePublish}
               publishedUrl={publishedUrl}
               isPublishing={isPublishing}
+              onCodeUpdate={(newCode) => {
+                setGeneratedCode(newCode);
+                const blob = new Blob([newCode], { type: "text/html" });
+                if (previewUrl) URL.revokeObjectURL(previewUrl);
+                setPreviewUrl(URL.createObjectURL(blob));
+              }}
+              onClose={() => {
+                // Go back to projects feed
+                handleRemoveVideo();
+                setMainTab("feed");
+              }}
             />
           </MobileLiveCollaboration>
         )}

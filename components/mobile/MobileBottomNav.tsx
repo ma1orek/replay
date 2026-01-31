@@ -8,7 +8,7 @@ interface MobileBottomNavProps {
   activeTab: MobileTab;
   onChange: (tab: MobileTab) => void;
   disabled?: boolean;
-  hasPreview?: boolean; // When true, show Preview instead of New
+  hasPreview?: boolean;
 }
 
 export default function MobileBottomNav({
@@ -38,9 +38,12 @@ export default function MobileBottomNav({
           return (
             <button
               key={tab.id}
-              onClick={() => !disabled && onChange(tab.id)}
+              onPointerUp={(e) => {
+                e.preventDefault();
+                if (!disabled) onChange(tab.id);
+              }}
               disabled={disabled}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 h-full transition-colors ${
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 h-full transition-colors touch-manipulation active:scale-95 ${
                 disabled ? "opacity-30" : ""
               }`}
             >

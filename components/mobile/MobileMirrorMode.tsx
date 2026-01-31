@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
-import { X, MessageCircle, Check, AlertCircle } from "lucide-react";
-import CommentBubble from "./CommentBubble";
+import { useState, useRef, useCallback } from "react";
+import { ChevronLeft, MessageCircle, Send, Monitor, Share2, Check, Loader2, Copy } from "lucide-react";
 
 interface CommentPin {
   id: string;
@@ -24,6 +23,10 @@ interface MobileMirrorModeProps {
   comments?: CommentPin[];
   userName?: string;
   userAvatar?: string;
+  onCodeUpdate?: (newCode: string) => void;
+  onPublish?: () => Promise<string | null>;
+  publishedUrl?: string | null;
+  isPublishing?: boolean;
 }
 
 export default function MobileMirrorMode({
@@ -36,155 +39,99 @@ export default function MobileMirrorMode({
   comments = [],
   userName = "You",
   userAvatar,
+  onCodeUpdate,
+  onPublish,
+  publishedUrl,
+  isPublishing = false,
 }: MobileMirrorModeProps) {
-  const [commentPosition, setCommentPosition] = useState<{ x: number; y: number } | null>(null);
-  const [showApprovalModal, setShowApprovalModal] = useState(false);
-  const [approvalNote, setApprovalNote] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [approvalStatus, setApprovalStatus] = useState<"pending" | "approved" | "changes_requested">("pending");
+  const [showCommentInput, setShowCommentInput] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [showPCBanner, setShowPCBanner] = useState(false);
+  const [showShareSuccess, setShowShareSuccess] = useState(false);
+  const [localPublishedUrl, setLocalPublishedUrl] = useState<string | null>(publishedUrl || null);
+  const [isLocalPublishing, setIsLocalPublishing] = useState(false);
   
-  const pressTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch current approval status
-  useEffect(() => {
-    if (!projectId) return;
+  // Handle comment submit
+  const handleCommentSubmit = useCallback(() => {
+    if (!commentText.trim() || !onAddComment) return;
     
-    fetch(`/api/projects/approve?projectId=${projectId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.status) {
-          setApprovalStatus(data.status);
+    onAddComment({
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2,
+      text: commentText.trim(),
+    });
+    
+    setCommentText("");
+    setShowCommentInput(false);
+  }, [commentText, onAddComment]);
+
+  // Handle share/publish
+  const handleShare = useCallback(async () => {
+    if (localPublishedUrl) {
+      // Already published - copy link with share API or clipboard
+      try {
+        if (navigator.share) {
+          await navigator.share({
+            title: projectName || "My Replay Project",
+            text: "Check out my UI I created with Replay!",
+            url: localPublishedUrl,
+          });
+        } else {
+          await navigator.clipboard.writeText(localPublishedUrl);
+          setShowShareSuccess(true);
+          setTimeout(() => setShowShareSuccess(false), 2500);
         }
-      })
-      .catch(() => {});
-  }, [projectId]);
-
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
-
-    // Start long-press timer for comments
-    pressTimerRef.current = setTimeout(() => {
-      if (navigator.vibrate) {
-        navigator.vibrate(50);
+      } catch (error) {
+        // If share was cancelled, just copy to clipboard
+        await navigator.clipboard.writeText(localPublishedUrl);
+        setShowShareSuccess(true);
+        setTimeout(() => setShowShareSuccess(false), 2500);
       }
-      setCommentPosition({ x: touch.clientX, y: touch.clientY });
-      touchStartRef.current = null;
-    }, 600);
-  }, []);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!touchStartRef.current) return;
-
-    const touch = e.touches[0];
-    const dx = Math.abs(touch.clientX - touchStartRef.current.x);
-    const dy = Math.abs(touch.clientY - touchStartRef.current.y);
-
-    if (dx > 10 || dy > 10) {
-      if (pressTimerRef.current) {
-        clearTimeout(pressTimerRef.current);
-        pressTimerRef.current = null;
-      }
-      touchStartRef.current = null;
+      return;
     }
-  }, []);
-
-  const handleTouchEnd = useCallback(() => {
-    if (pressTimerRef.current) {
-      clearTimeout(pressTimerRef.current);
-      pressTimerRef.current = null;
-    }
-    touchStartRef.current = null;
-  }, []);
-
-  const handleCommentSubmit = useCallback((text: string) => {
-    if (commentPosition && onAddComment) {
-      onAddComment({
-        x: commentPosition.x,
-        y: commentPosition.y,
-        text,
-      });
-    }
-    setCommentPosition(null);
-  }, [commentPosition, onAddComment]);
-
-  const handleApprove = async () => {
-    if (!projectId) return;
-    setIsSubmitting(true);
     
+    if (!onPublish) return;
+    
+    setIsLocalPublishing(true);
     try {
-      const response = await fetch("/api/projects/approve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          projectId,
-          action: "approve",
-          comment: approvalNote || undefined,
-        }),
-      });
-      
-      if (response.ok) {
-        setApprovalStatus("approved");
-        setShowApprovalModal(false);
-        setApprovalNote("");
+      const url = await onPublish();
+      if (url) {
+        setLocalPublishedUrl(url);
+        // Try native share, fallback to clipboard
+        try {
+          if (navigator.share) {
+            await navigator.share({
+              title: projectName || "My Replay Project",
+              text: "Check out my UI I created with Replay!",
+              url: url,
+            });
+          } else {
+            await navigator.clipboard.writeText(url);
+            setShowShareSuccess(true);
+            setTimeout(() => setShowShareSuccess(false), 2500);
+          }
+        } catch {
+          await navigator.clipboard.writeText(url);
+          setShowShareSuccess(true);
+          setTimeout(() => setShowShareSuccess(false), 2500);
+        }
       }
-    } catch {}
-    
-    setIsSubmitting(false);
-  };
-
-  const handleRequestChanges = async () => {
-    if (!projectId || !approvalNote.trim()) return;
-    setIsSubmitting(true);
-    
-    try {
-      const response = await fetch("/api/projects/approve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          projectId,
-          action: "request_changes",
-          comment: approvalNote,
-        }),
-      });
-      
-      if (response.ok) {
-        setApprovalStatus("changes_requested");
-        setShowApprovalModal(false);
-        setApprovalNote("");
-      }
-    } catch {}
-    
-    setIsSubmitting(false);
-  };
+    } catch (error) {
+      console.error("Publish error:", error);
+    } finally {
+      setIsLocalPublishing(false);
+    }
+  }, [localPublishedUrl, onPublish, projectName]);
 
   return (
     <div className="fixed inset-0 bg-black z-50 flex flex-col">
-      {/* Always visible close button */}
-      <button
-        onClick={onClose}
-        className="absolute top-4 left-4 z-50 w-10 h-10 rounded-full bg-black/60 backdrop-blur flex items-center justify-center border border-white/10"
-      >
-        <X className="w-5 h-5 text-white" />
-      </button>
-
-      {/* Project name badge */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur border border-white/10">
-        <span className="text-white/80 text-xs font-medium truncate max-w-[150px] block">
-          {projectName}
-        </span>
-      </div>
-
-      {/* Fullscreen iframe */}
+      {/* Fullscreen iframe - takes whole screen */}
       <div
         ref={containerRef}
         className="flex-1 relative bg-white"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
       >
         {previewUrl ? (
           <iframe
@@ -206,108 +153,202 @@ export default function MobileMirrorMode({
           />
         ) : null}
 
-        {/* Comment pins */}
+        {/* Comment pins overlay */}
         {comments.map((comment) => (
           <div
             key={comment.id}
-            className="absolute w-6 h-6 -ml-3 -mt-3 z-10"
+            className="absolute w-6 h-6 -ml-3 -mt-3 z-10 pointer-events-none"
             style={{ left: comment.x, top: comment.y }}
           >
-            <div className="w-6 h-6 rounded-full bg-white border-2 border-zinc-300 shadow-lg flex items-center justify-center">
-              <MessageCircle className="w-3 h-3 text-zinc-600" />
+            <div className="w-6 h-6 rounded-full bg-blue-500 border-2 border-white shadow-lg flex items-center justify-center">
+              <MessageCircle className="w-3 h-3 text-white" />
             </div>
           </div>
         ))}
       </div>
 
-      {/* Bottom bar with approval */}
-      <div className="bg-[#0a0a0a] border-t border-zinc-800/50 px-4 py-3 flex items-center gap-3">
-        {/* Long press hint */}
-        <div className="flex-1 flex items-center gap-2 text-zinc-500 text-xs">
-          <MessageCircle className="w-4 h-4" />
-          <span>Long press to comment</span>
-        </div>
-
-        {/* Approval button */}
-        {projectId && (
+      {/* Bottom sticky bar - Back left, actions right */}
+      <div 
+        className="fixed bottom-0 left-0 right-0 z-[60] flex items-center justify-between px-4 py-3 bg-zinc-950/95 backdrop-blur-lg border-t border-zinc-800/50"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
+      >
+        {/* Left - Back button */}
+        <button
+          onPointerUp={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onClose();
+          }}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-800/80 border border-zinc-700/50 touch-manipulation active:scale-95 transition-transform"
+        >
+          <ChevronLeft className="w-5 h-5 text-white" />
+          <span className="text-sm font-medium text-zinc-200">Back</span>
+        </button>
+        
+        {/* Right - Comment, Share, Monitor */}
+        <div className="flex items-center gap-2">
+          {/* Comment */}
           <button
-            onClick={() => setShowApprovalModal(true)}
-            className={`px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors ${
-              approvalStatus === "approved"
-                ? "bg-emerald-500/20 text-emerald-400"
-                : approvalStatus === "changes_requested"
-                ? "bg-amber-500/20 text-amber-400"
-                : "bg-white text-black hover:bg-zinc-200"
-            }`}
+            onPointerUp={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowCommentInput(true);
+            }}
+            className="w-11 h-11 rounded-xl bg-zinc-800/80 border border-zinc-700/50 flex items-center justify-center touch-manipulation active:scale-95 transition-transform"
           >
-            {approvalStatus === "approved" ? (
-              <>
-                <Check className="w-4 h-4" />
-                Approved
-              </>
-            ) : approvalStatus === "changes_requested" ? (
-              <>
-                <AlertCircle className="w-4 h-4" />
-                Changes
-              </>
+            <MessageCircle className="w-5 h-5 text-zinc-300" />
+          </button>
+          
+          {/* Share */}
+          <button
+            onPointerUp={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleShare();
+            }}
+            disabled={isLocalPublishing || isPublishing}
+            className="w-11 h-11 rounded-xl bg-zinc-800/80 border border-zinc-700/50 flex items-center justify-center touch-manipulation active:scale-95 transition-transform disabled:opacity-50"
+          >
+            {isLocalPublishing || isPublishing ? (
+              <Loader2 className="w-5 h-5 text-zinc-300 animate-spin" />
+            ) : showShareSuccess ? (
+              <Check className="w-5 h-5 text-emerald-400" />
             ) : (
-              "Review"
+              <Share2 className="w-5 h-5 text-zinc-300" />
             )}
           </button>
-        )}
+          
+          {/* Desktop features */}
+          <button
+            onPointerUp={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowPCBanner(true);
+            }}
+            className="w-11 h-11 rounded-xl bg-zinc-800/80 border border-zinc-700/50 flex items-center justify-center touch-manipulation active:scale-95 transition-transform"
+          >
+            <Monitor className="w-5 h-5 text-zinc-300" />
+          </button>
+        </div>
       </div>
-
-      {/* Safe area */}
-      <div className="h-[env(safe-area-inset-bottom)] bg-[#0a0a0a]" />
-
-      {/* Comment bubble overlay */}
-      {commentPosition && (
-        <CommentBubble
-          position={commentPosition}
-          onSubmit={handleCommentSubmit}
-          onClose={() => setCommentPosition(null)}
-          authorName={userName}
-          authorAvatar={userAvatar}
-        />
+      
+      {/* Share success toast */}
+      {showShareSuccess && (
+        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[70] px-4 py-2.5 rounded-full bg-emerald-500/90 backdrop-blur-sm text-white text-sm font-medium flex items-center gap-2 shadow-lg">
+          <Copy className="w-4 h-4" />
+          Link copied!
+        </div>
       )}
 
-      {/* Approval Modal */}
-      {showApprovalModal && (
+      {/* Comment Input Modal */}
+      {showCommentInput && (
         <div
-          className="fixed inset-0 z-[60] flex items-end justify-center bg-black/80"
-          onClick={() => setShowApprovalModal(false)}
+          className="fixed inset-0 z-[70] flex items-end justify-center bg-black/60 backdrop-blur-sm"
+          onPointerUp={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowCommentInput(false);
+              setCommentText("");
+            }
+          }}
         >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full bg-[#111] rounded-t-2xl border-t border-zinc-800 p-5 pb-8"
-          >
-            <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mb-5" />
+          <div className="w-full bg-zinc-900 rounded-t-2xl border-t border-zinc-800 p-4 pb-8">
+            <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mb-4" />
             
-            <h3 className="text-lg font-semibold text-white mb-4">
-              Review Project
-            </h3>
+            <div className="flex items-center gap-2 mb-3">
+              {userAvatar ? (
+                <img src={userAvatar} alt="" className="w-8 h-8 rounded-full" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center">
+                  <span className="text-sm text-zinc-400 font-medium">
+                    {userName.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              )}
+              <span className="text-sm text-zinc-400">{userName}</span>
+            </div>
             
             <textarea
-              value={approvalNote}
-              onChange={(e) => setApprovalNote(e.target.value)}
-              placeholder="Add a note (optional for approve, required for changes)"
-              className="w-full h-24 px-4 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-white text-sm placeholder:text-zinc-600 resize-none focus:outline-none focus:border-zinc-700"
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              placeholder="Add a comment..."
+              className="w-full h-24 px-4 py-3 rounded-xl bg-zinc-800 border border-zinc-700 text-white text-sm placeholder:text-zinc-600 resize-none focus:outline-none focus:border-zinc-600"
+              autoFocus
             />
             
-            <div className="flex gap-3 mt-4">
+            <button
+              onPointerUp={(e) => {
+                e.preventDefault();
+                handleCommentSubmit();
+              }}
+              disabled={!commentText.trim()}
+              className="w-full mt-3 py-3 rounded-xl bg-white text-black font-medium text-sm disabled:opacity-30 touch-manipulation active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+            >
+              <Send className="w-4 h-4" />
+              Post Comment
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* PC Features Banner */}
+      {showPCBanner && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          onPointerUp={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowPCBanner(false);
+            }
+          }}
+        >
+          <div className="w-full max-w-sm bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
+            <div className="p-5 border-b border-zinc-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center">
+                  <Monitor className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-white">Full Editor on Desktop</h3>
+                  <p className="text-xs text-zinc-500">More features available on PC</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-5 space-y-3">
+              <div className="flex items-center gap-3 text-sm text-zinc-300">
+                <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                Design System generation
+              </div>
+              <div className="flex items-center gap-3 text-sm text-zinc-300">
+                <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                Component Blueprints workshop
+              </div>
+              <div className="flex items-center gap-3 text-sm text-zinc-300">
+                <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                Product Flow visualization
+              </div>
+              <div className="flex items-center gap-3 text-sm text-zinc-300">
+                <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                Code editor with AI
+              </div>
+              <div className="flex items-center gap-3 text-sm text-zinc-300">
+                <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                Documentation export
+              </div>
+              <div className="flex items-center gap-3 text-sm text-zinc-300">
+                <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                Real-time collaboration
+              </div>
+            </div>
+            
+            <div className="p-4 bg-zinc-950/50 border-t border-zinc-800">
               <button
-                onClick={handleRequestChanges}
-                disabled={isSubmitting || !approvalNote.trim()}
-                className="flex-1 py-3 rounded-xl bg-zinc-800 text-white font-medium text-sm disabled:opacity-30 transition-colors hover:bg-zinc-700"
+                onPointerUp={(e) => {
+                  e.preventDefault();
+                  setShowPCBanner(false);
+                }}
+                className="w-full py-3 rounded-xl bg-zinc-800 text-white font-medium text-sm touch-manipulation active:scale-[0.98] transition-transform"
               >
-                Request Changes
-              </button>
-              <button
-                onClick={handleApprove}
-                disabled={isSubmitting}
-                className="flex-1 py-3 rounded-xl bg-white text-black font-medium text-sm disabled:opacity-50 transition-colors hover:bg-zinc-200"
-              >
-                {isSubmitting ? "..." : "Approve"}
+                Got it
               </button>
             </div>
           </div>

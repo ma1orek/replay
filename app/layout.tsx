@@ -23,25 +23,25 @@ export const metadata: Metadata = {
     apple: "/favicon-32x32.png",
   },
   openGraph: {
-    title: "Legacy Spaghetti → Modern Design System.",
-    description: "Don't spend months documenting old apps. Replay extracts a complete, scalable frontend architecture from simple screen recordings.",
+    title: "Modernize without rewriting. Document without archaeology.",
+    description: "Replay reconstructs working UI from video recordings. Transform legacy software into production-ready React code with Design System and Component Library.",
     url: "https://replay.build/",
     type: "website",
     siteName: "Replay.build",
     images: [
       {
-        url: "https://replay.build/images/og-mud-vs-luxury.jpg",
+        url: "https://replay.build/imgg.png",
         width: 1200,
         height: 630,
-        alt: "Replay - Legacy Modernization",
+        alt: "Replay - Modernize without rewriting. Document without archaeology.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Modernize Legacy Systems Instantly | Replay",
-    description: "Turn black-box legacy apps into a living React Design System. No workshops, just extraction.",
-    images: ["https://replay.build/images/og-mud-vs-luxury.jpg"],
+    title: "Modernize without rewriting | Replay",
+    description: "Replay reconstructs working UI from video recordings. Transform legacy software into production-ready React code.",
+    images: ["https://replay.build/imgg.png"],
   },
   appleWebApp: {
     capable: true,

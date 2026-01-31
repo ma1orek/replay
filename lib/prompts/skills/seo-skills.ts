@@ -208,7 +208,7 @@ export const SCHEMA_MARKUP_SKILL = `
   },
   "datePublished": "2026-01-28T00:00:00Z",
   "dateModified": "2026-01-28T00:00:00Z",
-  "image": "https://replay.build/og-image.png",
+  "image": "https://replay.build/imgg.png",
   "mainEntityOfPage": {
     "@type": "WebPage",
     "@id": "https://replay.build/blog/article-slug"

@@ -1,7 +1,7 @@
 "use client";
 
 import MobilePreviewView from "./MobilePreviewView";
-import { useMobileComments } from "./useMobileComments";
+import { useMobileComments, useMobileCommentsSimple } from "./useMobileComments";
 
 interface MobilePreviewWithCommentsProps {
   previewUrl: string | null;
@@ -14,9 +14,12 @@ interface MobilePreviewWithCommentsProps {
   onPublish: () => Promise<string | null>;
   publishedUrl: string | null;
   isPublishing: boolean;
+  onCodeUpdate?: (newCode: string) => void;
+  onClose?: () => void;
 }
 
-export default function MobilePreviewWithComments(props: MobilePreviewWithCommentsProps) {
+// Wrapper that uses Liveblocks comments (must be inside RoomProvider)
+function WithLiveblocksComments(props: MobilePreviewWithCommentsProps) {
   const { comments, addComment, userInfo, isConnected } = useMobileComments();
 
   return (
@@ -26,6 +29,36 @@ export default function MobilePreviewWithComments(props: MobilePreviewWithCommen
       comments={comments}
       userName={userInfo.name}
       userAvatar={userInfo.avatar}
+      onCodeUpdate={props.onCodeUpdate}
     />
   );
+}
+
+// Wrapper that uses local comments (no Liveblocks needed)
+function WithLocalComments(props: MobilePreviewWithCommentsProps) {
+  const { comments, addComment, userInfo } = useMobileCommentsSimple();
+
+  return (
+    <MobilePreviewView
+      {...props}
+      onAddComment={addComment}
+      comments={comments}
+      userName={userInfo.name}
+      userAvatar={userInfo.avatar}
+      onCodeUpdate={props.onCodeUpdate}
+    />
+  );
+}
+
+export default function MobilePreviewWithComments(props: MobilePreviewWithCommentsProps) {
+  // projectId determines if we're inside RoomProvider (set by MobileLiveCollaboration)
+  // Only use Liveblocks hooks when projectId exists and is truthy
+  const hasRoomProvider = !!props.projectId && props.projectId.length > 0;
+  
+  if (hasRoomProvider) {
+    return <WithLiveblocksComments {...props} />;
+  }
+  
+  // No RoomProvider - use simple local comments
+  return <WithLocalComments {...props} />;
 }

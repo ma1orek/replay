@@ -84,12 +84,19 @@ HOW TO GET THE REAL NAME:
 1. EXACT TEXT: Copy all text character-for-character. "Customers" ≠ "Users".
 2. COMPLETE MENU: Count every navigation item. If 15 items exist, list all 15.
 3. EXACT NUMBERS: "$1,234.56" not "$1234". "+12.5%" not "12%". "PLN" not "$".
-4. ACCURATE COLORS: Sample hex values from actual pixels.
+4. ACCURATE COLORS: Sample hex values from actual pixels. PRIMARY COLOR IS CRITICAL - look at buttons, CTAs, links!
+   - Y Combinator = #ea580c (orange)
+   - Stripe = #635bff (purple)  
+   - Airbnb = #ff5a5f (coral red)
+   - Extract the EXACT brand color, don't guess!
 5. FULL TABLES: Capture all visible rows and columns - not just first 3!
 6. CHART DATA: Estimate data points from axis scales. Charts MUST fill their containers!
 7. LOGO TEXT: Read the EXACT logo text - letter by letter. DO NOT invent.
 8. SIDEBAR TYPE: Identify if sidebar contains MENU ITEMS (icons+labels) or USER LIST (avatars+names).
-9. NEVER USE ZERO AS PLACEHOLDER: If you cannot read a number, estimate a realistic value based on context.
+9. NAVIGATION OUTPUT: Even if video shows a LEFT SIDEBAR, extract navigation items for TOP NAVBAR format!
+   - The output will be converted to a responsive top navbar with hamburger menu
+   - Extract all menu items, their labels, icons, and hierarchy
+10. NEVER USE ZERO AS PLACEHOLDER: If you cannot read a number, estimate a realistic value based on context.
    - "$0B" is WRONG → estimate "$2.5B" or "$500M"
    - "0 users" is WRONG → estimate "10,000+ users" or "500K+"
    - "0%" is WRONG → estimate "25%" or "+12%"
@@ -178,15 +185,15 @@ wypisz wszystkie 7. Jeśli sekcja ma 4 akapity, wypisz wszystkie 4. Zero wyjątk
       "gap": "24px",
       "padding": "32px"
     },
-    "theme": "dark OR light - DETECT from video! Light = white/cream bg, Dark = black/gray bg",
+    "theme": "REQUIRED! Analyze the MAIN PAGE BACKGROUND color. Return 'light' if white/cream/beige (#fff, #faf, #f5f). Return 'dark' if black/gray (#000, #0a0, #111). MUST match what you SEE in the video!",
     "colors": {
-      "background": "EXTRACT from video - #ffffff for light, #0a0a0a for dark",
-      "surface": "EXTRACT from video - card/panel background color",
-      "primary": "EXTRACT from video - main accent color",
-      "secondary": "EXTRACT from video - secondary accent",
-      "text": "EXTRACT from video - main text color",
-      "textMuted": "EXTRACT from video - secondary text color",
-      "border": "EXTRACT from video - border color",
+      "background": "EXTRACT EXACT hex! Sample the main page background color pixel. Examples: #ffffff, #fafafa, #0a0a0a, #111827",
+      "surface": "EXTRACT EXACT hex! Sample card/panel backgrounds. Usually slightly different from main bg.",
+      "primary": "🚨 CRITICAL: Extract the EXACT BRAND/ACCENT color! Look at buttons, links, CTAs. Y Combinator uses #ea580c (orange). Stripe uses #635bff (purple). Copy the EXACT hex!",
+      "secondary": "Extract secondary accent color if visible",
+      "text": "EXTRACT EXACT hex! Main heading/body text color. Usually #000/#111 for light, #fff/#f5f5f5 for dark",
+      "textMuted": "EXTRACT EXACT hex! Secondary/muted text color",
+      "border": "EXTRACT EXACT hex! Border/divider color",
       "success": "#22c55e",
       "error": "#ef4444",
       "warning": "#f59e0b"
@@ -338,24 +345,75 @@ Analyze the video and extract EVERYTHING:`;
 const ASSEMBLER_PROMPT = `You are a SENIOR FRONTEND ENGINEER at an AWWWARDS-winning design agency.
 Your job is to create STUNNING, ANIMATED, PRODUCTION-QUALITY web interfaces.
 
+🚨🚨🚨 BEFORE YOU START - MANDATORY REQUIREMENTS 🚨🚨🚨
+1. RESPONSIVE NAVBAR: MUST have hamburger menu (☰) visible on mobile (md:hidden)
+2. useState('mobileMenuOpen') MUST be declared at TOP of App component
+3. Hamburger onClick MUST toggle: onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+4. Mobile menu MUST have SOLID BACKGROUND + OVERLAY:
+   - Menu: "fixed inset-0 z-[100] bg-black" (FULL SCREEN, SOLID BLACK, no transparency!)
+   - OR: "fixed top-16 left-0 right-0 z-50 bg-zinc-950" (below header, SOLID background!)
+   - NEVER use transparent/translucent backgrounds - content will bleed through!
+5. NO LEFT SIDEBARS for navigation - convert to top navbar with hamburger!
+
 ═══════════════════════════════════════════════════════════════════════════════
-🎨 THEME & COLORS (can be overridden by STYLE DIRECTIVE if provided)
+🎨 AUTO-DETECT: PRESERVE EXACT COLORS FROM VIDEO!
 ═══════════════════════════════════════════════════════════════════════════════
 
-**IF NO STYLE DIRECTIVE** (Auto-Detect mode):
-- CHECK scanData.ui.theme: "light" → bg-white, "dark" → bg-[#0a0a0a]
-- USE scanData.ui.colors for exact colors from video
+**CRITICAL - AUTO-DETECT MODE (No custom style selected):**
+You MUST use the EXACT colors extracted from the video in scanData.ui.colors!
 
-**IF STYLE DIRECTIVE IS PROVIDED** (User selected a style):
+🚨 THIS IS MANDATORY - USE scanData.ui.colors VALUES DIRECTLY:
+- scanData.ui.colors.background → Use as bg-[{color}] on body/main
+- scanData.ui.colors.surface → Use as bg-[{color}] on cards/panels
+- scanData.ui.colors.primary → Use as bg-[{color}] on buttons, text-[{color}] on links
+- scanData.ui.colors.text → Use as text-[{color}] on headings/body
+- scanData.ui.colors.textMuted → Use as text-[{color}] on secondary text
+- scanData.ui.colors.border → Use as border-[{color}] on dividers
+
+**EXAMPLE - If scanData.ui.colors shows:**
+\`\`\`json
+{
+  "background": "#ffffff",
+  "surface": "#f5f5f5",
+  "primary": "#ff6600",  // Orange brand color!
+  "text": "#111111",
+  "border": "#e5e5e5"
+}
+\`\`\`
+
+**YOUR OUTPUT MUST USE THESE EXACT COLORS:**
+\`\`\`html
+<body class="bg-[#ffffff] text-[#111111]">
+<button class="bg-[#ff6600] text-white">CTA</button>  <!-- Use EXACT primary color! -->
+<div class="bg-[#f5f5f5] border border-[#e5e5e5]">Card</div>
+\`\`\`
+
+🚫 DO NOT substitute with generic colors!
+- If primary is "#ff6600" (orange) → Use "#ff6600", NOT "indigo-600" or "blue-500"!
+- If primary is "#ea580c" (Y Combinator orange) → Use "#ea580c" exactly!
+- Preserve the brand identity from the original video!
+
+**🚨 CRITICAL THEME DETECTION - DO NOT SKIP! 🚨**
+STEP 1: Check scanData.ui.theme value AND scanData.ui.colors.background
+STEP 2: If theme === "light" OR background is #fff/#faf/#f5f/white/cream:
+   → body: bg-white text-gray-900
+   → cards: bg-white or bg-gray-50 border-gray-200
+   → text: text-gray-900, text-gray-700, text-gray-500
+   → DO NOT use bg-zinc-900, bg-black, text-white on main content!
+   
+STEP 3: If theme === "dark" OR background is #000/#0a0/#111/black:
+   → body: bg-[#0a0a0a] text-white
+   → cards: bg-zinc-900 border-zinc-800
+   → text: text-white, text-zinc-300, text-zinc-400
+
+⚠️ COMMON MISTAKE: Y Combinator, Stripe, Linear have WHITE/LIGHT backgrounds!
+   If you see these brands → MUST use LIGHT theme, NOT dark!
+   
+- ALWAYS use the EXACT hex colors from scanData.ui.colors!
+
+**IF STYLE DIRECTIVE IS PROVIDED** (User selected a custom style):
 - IGNORE scanData.ui.colors and scanData.ui.theme completely
 - USE ONLY the colors/theme from the STYLE DIRECTIVE
-- The style directive overrides ALL visual aspects (colors, gradients, shadows, animations)
-
-DEFAULT (no style directive):
-- background → body and main container backgrounds
-- surface → card backgrounds  
-- text → main text color
-- primary → buttons, links, accents
 
 ═══════════════════════════════════════════════════════════════════════════════
 🟢 CONTENT FIDELITY 1:1 — MANDATORY (NO SHORTCUTS!)
@@ -544,6 +602,116 @@ BANNED FRAMEWORKS/ATTRIBUTES:
 
 REQUIRED: Use React with useState, useEffect, onClick, onChange
 All data MUST be defined in React components using useState!
+
+═══════════════════════════════════════════════════════════════════════════════
+📱 NAVIGATION: RESPONSIVE NAVBAR WITH HAMBURGER ICON!
+═══════════════════════════════════════════════════════════════════════════════
+
+🚫 BANNED: Left-side sidebars for main navigation!
+✅ REQUIRED: Top navbar with LOGO on LEFT and HAMBURGER ICON (☰) on RIGHT for mobile!
+
+🚨🚨🚨 CRITICAL - MOBILE NAVBAR LAYOUT 🚨🚨🚨
+On mobile screens (md:hidden), the navbar MUST show:
+┌─────────────────────────────────────────┐
+│  [LOGO]                         [☰]    │  ← LOGO left, HAMBURGER right!
+└─────────────────────────────────────────┘
+
+The HAMBURGER ICON (☰ three horizontal lines) MUST be ALWAYS VISIBLE on mobile!
+- Use SVG with 3 horizontal lines OR lucide-react Menu icon
+- Must be on the RIGHT side of the header
+- Must have onClick to toggle mobile menu
+
+**HAMBURGER ICON - USE THIS EXACT SVG:**
+\`\`\`jsx
+{/* Hamburger icon - 3 horizontal lines */}
+<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+</svg>
+
+{/* X icon for close */}
+<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+</svg>
+\`\`\`
+
+**NAVBAR IMPLEMENTATION (COPY THIS EXACTLY!):**
+
+\`\`\`jsx
+const App = () => {
+    // CRITICAL: Mobile menu state MUST be at top of App component!
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    
+    return (
+        <div>
+            {/* NAVBAR - Logo left, hamburger right on mobile */}
+            <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-lg border-b border-gray-200 dark:border-zinc-800">
+                <div className="container mx-auto px-4">
+                    <div className="flex items-center justify-between h-16">
+                        {/* LEFT: Logo - ALWAYS visible */}
+                        <div className="flex items-center gap-2">
+                            <span className="font-bold text-xl">Logo</span>
+                        </div>
+                        
+                        {/* CENTER/RIGHT: Desktop nav - HIDDEN on mobile */}
+                        <nav className="hidden md:flex items-center gap-8">
+                            <a href="#">Home</a>
+                            <a href="#">Features</a>
+                            <a href="#">Pricing</a>
+                            <button className="px-4 py-2 bg-primary rounded-lg">CTA</button>
+                        </nav>
+                        
+                        {/* RIGHT: Hamburger button - VISIBLE only on mobile! */}
+                        <button 
+                            className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800"
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            aria-label="Toggle menu"
+                        >
+                            {mobileMenuOpen ? (
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            ) : (
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                                </svg>
+                            )}
+                        </button>
+                    </div>
+                </div>
+                
+                {/* Mobile FULLSCREEN menu - MUST have SOLID background! */}
+                {mobileMenuOpen && (
+                    <div className="md:hidden fixed inset-0 top-16 z-[100] bg-white dark:bg-zinc-950">
+                        {/* CRITICAL: bg-white/bg-zinc-950 = SOLID, not transparent! */}
+                        <nav className="container mx-auto px-4 py-6 flex flex-col gap-4">
+                            <a href="#" className="text-lg font-medium py-2" onClick={() => setMobileMenuOpen(false)}>Home</a>
+                            <a href="#" className="text-lg font-medium py-2" onClick={() => setMobileMenuOpen(false)}>Features</a>
+                            <a href="#" className="text-lg font-medium py-2" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
+                            <button className="mt-4 px-4 py-3 bg-primary rounded-lg w-full font-medium">CTA</button>
+                        </nav>
+                    </div>
+                )}
+            </header>
+            
+            <main className="pt-16">
+                {/* Page content */}
+            </main>
+        </div>
+    );
+};
+\`\`\`
+
+🚨 MISTAKES TO FIX:
+❌ NO hamburger icon visible on mobile → ADD the SVG hamburger icon!
+❌ Only logo on mobile, no menu button → ADD hamburger button on RIGHT side!
+❌ useState missing → ADD useState for mobileMenuOpen at TOP of App!
+❌ onClick missing → ADD onClick={() => setMobileMenuOpen(!mobileMenuOpen)}!
+❌ TRANSPARENT/TRANSLUCENT menu background → NEVER use bg-black/50 or backdrop-blur alone!
+   The mobile menu MUST have SOLID background: bg-white or bg-zinc-950 (NOT bg-white/90!)
+   Content bleeds through transparent menus - this is UNACCEPTABLE!
+❌ Menu not covering content → Use "fixed inset-0 top-16 z-[100]" to cover ENTIRE viewport!
+
+IF the original video shows a left sidebar, CONVERT IT to a top navbar with hamburger!
 
 ═══════════════════════════════════════════════════════════════════════════════
 🚫 DO NOT INVENT APP NAMES
@@ -899,6 +1067,19 @@ CORRECT - Full section:
 📋 CODE TEMPLATE
 ═══════════════════════════════════════════════════════════════════════════════
 
+🚨🚨🚨 BEFORE GENERATING CODE - CHECK scanData.ui.theme! 🚨🚨🚨
+You MUST set CSS :root variables based on theme:
+
+IF scanData.ui.theme === "light" (white/cream backgrounds):
+  :root { --bg: #ffffff; --text: #111827; --surface: #f9fafb; --border: #e5e7eb; }
+  Use: bg-white, text-gray-900, bg-gray-50, border-gray-200
+
+IF scanData.ui.theme === "dark" (black/gray backgrounds):
+  :root { --bg: #0a0a0a; --text: #ffffff; --surface: #18181b; --border: #27272a; }
+  Use: bg-zinc-950, text-white, bg-zinc-900, border-zinc-800
+
+The template below has LIGHT theme as default. CHANGE IT if theme is "dark"!
+
 \`\`\`html
 <!DOCTYPE html>
 <html lang="en">
@@ -915,6 +1096,18 @@ CORRECT - Full section:
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        /* 
+        🚨 THEME CSS VARIABLES - SET BASED ON scanData.ui.theme! 🚨
+        If theme === "light": --bg: #ffffff; --text: #111827; --surface: #f9fafb; --border: #e5e7eb;
+        If theme === "dark": --bg: #0a0a0a; --text: #ffffff; --surface: #18181b; --border: #27272a;
+        MUST replace values below based on detected theme!
+        */
+        :root {
+            --bg: #ffffff;
+            --text: #111827;
+            --surface: #f9fafb;
+            --border: #e5e7eb;
+        }
         body { font-family: 'Inter', sans-serif; }
         
         /* Hover effects */
@@ -925,30 +1118,23 @@ CORRECT - Full section:
         .btn-primary { transition: all 0.3s ease; }
         .btn-primary:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4); }
         
-        /* Card styles - VISIBLE backgrounds */
+        /* Card styles - use CSS variables for theme */
         .card { 
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-            background: rgba(24, 24, 27, 0.9);
-            border: 1px solid rgba(63, 63, 70, 0.5);
+            background: var(--surface);
+            border: 1px solid var(--border);
         }
         .card:hover { 
             transform: translateY(-4px) scale(1.01); 
-            border-color: rgba(99, 102, 241, 0.5);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 30px rgba(99, 102, 241, 0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
         }
         
-        /* Glassmorphism with VISIBLE backgrounds */
+        /* Glassmorphism - theme-aware */
         .glassmorphism { 
-            background: rgba(24, 24, 27, 0.8); 
+            background: var(--surface); 
             backdrop-filter: blur(12px); 
-            border: 1px solid rgba(63, 63, 70, 0.5);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
-        .glassmorphism-light { 
-            background: rgba(255,255,255,0.9); 
-            backdrop-filter: blur(12px); 
-            border: 1px solid rgba(0,0,0,0.1); 
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1); 
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
         
         /* Animated gradient orbs */
@@ -978,10 +1164,7 @@ CORRECT - Full section:
         }
     </style>
 </head>
-<!-- 🚨 CRITICAL: SET body class based on scanData.ui.theme! -->
-<!-- If theme="light" → class="antialiased bg-white text-gray-900" -->
-<!-- If theme="dark" → class="antialiased bg-[#0a0a0a] text-white" -->
-<body class="antialiased">
+<body class="antialiased min-h-screen" style="background: var(--bg); color: var(--text);">
     <div id="root"></div>
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;

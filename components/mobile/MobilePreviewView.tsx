@@ -32,6 +32,11 @@ interface MobilePreviewViewProps {
   }>;
   userName?: string;
   userAvatar?: string;
+  onCodeUpdate?: (newCode: string) => void;
+  onPublish?: () => Promise<string | null>;
+  publishedUrl?: string | null;
+  isPublishing?: boolean;
+  onClose?: () => void;
 }
 
 export default function MobilePreviewView({
@@ -46,6 +51,11 @@ export default function MobilePreviewView({
   comments = [],
   userName = "You",
   userAvatar,
+  onCodeUpdate,
+  onPublish,
+  publishedUrl,
+  isPublishing,
+  onClose,
 }: MobilePreviewViewProps) {
   const [currentMessage, setCurrentMessage] = useState(STREAMING_MESSAGES[0]);
   const [isMessageTransitioning, setIsMessageTransitioning] = useState(false);
@@ -124,11 +134,15 @@ export default function MobilePreviewView({
       previewCode={previewCode || null}
       projectName={projectName}
       projectId={projectId}
-      onClose={() => {}} // No-op, handled by bottom nav
+      onClose={onClose || (() => {})}
       onAddComment={onAddComment}
       comments={comments}
       userName={userName}
       userAvatar={userAvatar}
+      onCodeUpdate={onCodeUpdate}
+      onPublish={onPublish}
+      publishedUrl={publishedUrl}
+      isPublishing={isPublishing}
     />
   );
 }

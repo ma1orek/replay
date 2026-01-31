@@ -2,11 +2,11 @@
 
 <div align="center">
 
-![Replay Logo](public/og-image.png)
+![Replay - Modernize without rewriting](public/imgg.png)
 
-### **Video to Design System. Instantly.**
+### **Modernize without rewriting. Document without archaeology.**
 
-Turn any screen recording into a complete design system with components, documentation, and interactive blueprints.
+Replay reconstructs working UI from video recordings. Transform legacy software into production-ready React code with Design System and Component Library.
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-replay.build-FF6E3C?style=for-the-badge)](https://replay.build)
 [![Documentation](https://img.shields.io/badge/Docs-replay.build%2Fdocs-blue?style=for-the-badge)](https://replay.build/docs)
@@ -19,13 +19,13 @@ Turn any screen recording into a complete design system with components, documen
 
 ## ✨ What is Replay?
 
-Replay is an AI-powered design system generator. Upload a screen recording of any app or website, and Replay will:
+Replay reconstructs production-ready UI from video recordings. No manual documentation, no reverse-engineering. Upload a screen recording of any legacy app and Replay will:
 
-1. **Extract Components** — Detect UI patterns and generate a component library
-2. **Create Documentation** — Auto-generate Storybook-style docs with props, variants, and usage examples
-3. **Build Blueprints** — Visual canvas to arrange and edit components with AI
-4. **Generate Flow Maps** — Visualize page navigation and user flows
-5. **One-Click Publish** — Deploy your design system to the web instantly
+1. **Reconstruct UI** — AI analyzes video and generates pixel-perfect React code
+2. **Extract Design System** — Colors, typography, spacing tokens from the actual interface
+3. **Build Component Library** — Storybook-style docs with controls, variants, and usage examples
+4. **Visualize Flows** — See detected pages and navigation patterns
+5. **One-Click Publish** — Deploy working UI to the web instantly
 
 ---
 
@@ -190,7 +190,7 @@ replay/
 │   ├── prompts/             # AI system prompts
 │   └── utils.ts             # Helpers
 └── public/
-    └── og-image.png         # Social preview
+    └── imgg.png             # Social preview (OG image)
 ```
 
 ---

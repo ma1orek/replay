@@ -2,16 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { 
-  RefreshCw, 
+  Search,
   Clock, 
-  CheckCircle2, 
-  AlertCircle, 
   Loader2,
-  Play,
-  ChevronRight,
-  Filter,
-  Sparkles
+  Trash2,
+  ChevronDown
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Project {
   id: string;
@@ -20,61 +17,37 @@ interface Project {
   status: "running" | "complete" | "failed";
   videoUrl?: string;
   publishedSlug?: string;
-  approvalStatus?: "in_review" | "approved" | "changes_requested";
-  lastActivityBy?: string;
-  lastActivityType?: string;
+  styleDirective?: string;
+  versions?: Array<{
+    id: string;
+    label: string;
+    timestamp: number;
+  }>;
 }
 
 interface MobileProjectFeedProps {
   onSelectProject: (project: Project) => void;
-  onRefresh?: () => void;
+  onDeleteProject?: (id: string) => void;
 }
-
-const STATUS_CONFIG = {
-  approved: {
-    color: "bg-emerald-500",
-    textColor: "text-emerald-400",
-    label: "Approved",
-    icon: CheckCircle2,
-  },
-  in_review: {
-    color: "bg-amber-500",
-    textColor: "text-amber-400",
-    label: "In Review",
-    icon: Clock,
-  },
-  changes_requested: {
-    color: "bg-red-500",
-    textColor: "text-red-400",
-    label: "Changes Requested",
-    icon: AlertCircle,
-  },
-};
-
-type FilterType = "all" | "in_review" | "approved" | "changes_requested";
 
 export default function MobileProjectFeed({ 
   onSelectProject,
-  onRefresh 
+  onDeleteProject,
 }: MobileProjectFeedProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<FilterType>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [expandedVersions, setExpandedVersions] = useState<string | null>(null);
 
   // Fetch projects from API
-  const fetchProjects = useCallback(async (showRefreshIndicator = false) => {
+  const fetchProjects = useCallback(async () => {
     try {
-      if (showRefreshIndicator) {
-        setIsRefreshing(true);
-      }
-      
       const response = await fetch("/api/generations?minimal=true&limit=50");
       
       if (!response.ok) {
         if (response.status === 401) {
-          setError("Please log in to see your projects");
+          setError("Sign in to see your projects");
           return;
         }
         throw new Error("Failed to fetch projects");
@@ -83,7 +56,6 @@ export default function MobileProjectFeed({
       const data = await response.json();
       
       if (data.success && data.generations) {
-        // Transform to Project format with mock approval status for now
         const transformed: Project[] = data.generations.map((gen: any) => ({
           id: gen.id,
           title: gen.title || "Untitled Project",
@@ -91,10 +63,8 @@ export default function MobileProjectFeed({
           status: gen.status,
           videoUrl: gen.videoUrl,
           publishedSlug: gen.publishedSlug,
-          // Mock approval status based on existing status for demo
-          approvalStatus: gen.status === "complete" 
-            ? (gen.publishedSlug ? "approved" : "in_review")
-            : "in_review",
+          styleDirective: gen.styleDirective,
+          versions: gen.versions || [],
         }));
         
         setProjects(transformed);
@@ -105,47 +75,46 @@ export default function MobileProjectFeed({
       setError(err.message || "Failed to load projects");
     } finally {
       setIsLoading(false);
-      setIsRefreshing(false);
     }
   }, []);
 
-  // Initial fetch
   useEffect(() => {
     fetchProjects();
   }, [fetchProjects]);
 
-  // Pull to refresh
-  const handleRefresh = useCallback(() => {
-    fetchProjects(true);
-    onRefresh?.();
-  }, [fetchProjects, onRefresh]);
+  // Filter by search
+  const filteredProjects = projects
+    .filter(p => !searchQuery || p.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => b.timestamp - a.timestamp);
 
-  // Format relative time
-  const formatRelativeTime = (timestamp: number) => {
-    const diff = Date.now() - timestamp;
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
+  // Handle delete
+  const handleDelete = useCallback(async (e: React.MouseEvent, projectId: string) => {
+    e.stopPropagation();
+    e.preventDefault();
     
-    if (minutes < 1) return "just now";
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
-    return new Date(timestamp).toLocaleDateString();
-  };
-
-  // Filter projects
-  const filteredProjects = filter === "all" 
-    ? projects 
-    : projects.filter(p => p.approvalStatus === filter);
+    if (!confirm("Delete this project?")) return;
+    
+    try {
+      const response = await fetch(`/api/generations?id=${projectId}`, {
+        method: "DELETE",
+      });
+      
+      if (response.ok) {
+        setProjects(prev => prev.filter(p => p.id !== projectId));
+        onDeleteProject?.(projectId);
+      }
+    } catch (err) {
+      console.error("Delete error:", err);
+    }
+  }, [onDeleteProject]);
 
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-black">
+      <div className="flex-1 flex items-center justify-center bg-[#111]">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 text-[#FF6E3C] animate-spin" />
-          <p className="text-white/50 text-sm">Loading projects...</p>
+          <Loader2 className="w-8 h-8 text-zinc-400 animate-spin" />
+          <p className="text-zinc-500 text-sm">Loading projects...</p>
         </div>
       </div>
     );
@@ -154,13 +123,16 @@ export default function MobileProjectFeed({
   // Error state
   if (error) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-black p-6">
+      <div className="flex-1 flex items-center justify-center bg-[#111] p-6">
         <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
-          <p className="text-white/70 mb-4">{error}</p>
+          <p className="text-zinc-400 mb-4">{error}</p>
           <button
-            onClick={() => fetchProjects()}
-            className="px-4 py-2 bg-white/10 rounded-lg text-white text-sm"
+            onPointerUp={(e) => {
+              e.preventDefault();
+              setIsLoading(true);
+              fetchProjects();
+            }}
+            className="px-4 py-2 bg-zinc-800 rounded-lg text-zinc-300 text-sm touch-manipulation active:scale-95"
           >
             Try Again
           </button>
@@ -172,11 +144,16 @@ export default function MobileProjectFeed({
   // Empty state
   if (projects.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-black p-6">
+      <div className="flex-1 flex items-center justify-center bg-[#111] p-6">
         <div className="text-center">
-          <Sparkles className="w-12 h-12 text-[#FF6E3C]/50 mx-auto mb-3" />
-          <h3 className="text-white font-medium mb-2">No projects yet</h3>
-          <p className="text-white/50 text-sm">
+          <div className="w-16 h-16 mx-auto mb-4 opacity-30">
+            <svg viewBox="0 0 82 109" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M68.099 37.2285C78.1678 43.042 78.168 57.5753 68.099 63.3887L29.5092 85.668C15.6602 93.6633 0.510418 77.4704 9.40857 64.1836L17.4017 52.248C18.1877 51.0745 18.1876 49.5427 17.4017 48.3691L9.40857 36.4336C0.509989 23.1467 15.6602 6.95306 29.5092 14.9482L68.099 37.2285Z" stroke="currentColor" strokeWidth="8" strokeLinejoin="round" className="text-zinc-600"/>
+              <rect x="34.054" y="98.6841" width="48.6555" height="11.6182" rx="5.80909" transform="rotate(-30 34.054 98.6841)" fill="currentColor" className="text-zinc-600"/>
+            </svg>
+          </div>
+          <h3 className="text-zinc-300 font-medium mb-2">No projects yet</h3>
+          <p className="text-zinc-600 text-sm">
             Record or upload a video to create your first project
           </p>
         </div>
@@ -185,96 +162,117 @@ export default function MobileProjectFeed({
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-black overflow-hidden">
-      {/* Header with filter */}
-      <div className="px-4 py-3 border-b border-white/10">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold text-white">Projects</h2>
-          <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="p-2 rounded-full bg-white/5 text-white/50 hover:bg-white/10"
-          >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
-          </button>
-        </div>
-
-        {/* Filter tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-          {[
-            { key: "all", label: "All" },
-            { key: "in_review", label: "In Review" },
-            { key: "approved", label: "Approved" },
-            { key: "changes_requested", label: "Changes" },
-          ].map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setFilter(key as FilterType)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-                filter === key
-                  ? "bg-[#FF6E3C] text-white"
-                  : "bg-white/5 text-white/50"
-              }`}
-            >
-              {label}
-              {key !== "all" && (
-                <span className="ml-1 opacity-60">
-                  ({projects.filter(p => p.approvalStatus === key).length})
-                </span>
-              )}
-            </button>
-          ))}
+    <div className="flex-1 flex flex-col bg-[#111] overflow-hidden">
+      {/* Search */}
+      <div className="p-4 border-b border-zinc-800 flex-shrink-0">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search projects..."
+            className="w-full pl-10 pr-4 py-3 rounded-xl bg-zinc-800/50 border border-zinc-800 text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-700"
+          />
         </div>
       </div>
 
-      {/* Project list */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Project List */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {filteredProjects.length === 0 ? (
-          <div className="flex items-center justify-center h-40 text-white/30 text-sm">
-            No projects match this filter
+          <div className="text-center py-12 text-zinc-600 text-sm">
+            No projects match your search
           </div>
         ) : (
-          <div className="divide-y divide-white/5">
-            {filteredProjects.map((project) => {
-              const statusConfig = STATUS_CONFIG[project.approvalStatus || "in_review"];
-              const StatusIcon = statusConfig.icon;
-
-              return (
+          filteredProjects.map((project) => (
+            <div 
+              key={project.id}
+              className="relative p-3 pr-10 rounded-xl bg-zinc-800/50 border border-zinc-800 hover:bg-zinc-800/70 transition-colors"
+              onPointerUp={(e) => {
+                e.preventDefault();
+                if (expandedVersions === project.id) return;
+                onSelectProject(project);
+              }}
+            >
+              {/* Title & timestamp */}
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-sm font-medium text-zinc-200 truncate flex-1">
+                  {project.title}
+                </p>
+                {project.status === "running" && (
+                  <Loader2 className="w-3.5 h-3.5 text-zinc-400 animate-spin flex-shrink-0" />
+                )}
+              </div>
+              
+              <p className="text-[10px] text-zinc-600">
+                {new Date(project.timestamp).toLocaleDateString()} • {new Date(project.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </p>
+              
+              {/* Style info */}
+              <div className="mt-1">
+                <p className="text-[10px] text-zinc-500 truncate">
+                  <span className="text-zinc-600">Style:</span> {project.styleDirective?.split('.')[0]?.split('⚠️')[0]?.trim() || "Auto-Detect"}
+                </p>
+              </div>
+              
+              {/* Version toggle */}
+              {project.versions && project.versions.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-zinc-800">
+                  <button
+                    onPointerUp={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setExpandedVersions(expandedVersions === project.id ? null : project.id);
+                    }}
+                    className="flex items-center gap-2 text-[10px] text-zinc-500 hover:text-zinc-400 transition-colors touch-manipulation"
+                  >
+                    <Clock className="w-3 h-3" />
+                    <span>{project.versions.length + 1} version{project.versions.length >= 1 ? 's' : ''}</span>
+                    <ChevronDown className={`w-3 h-3 transition-transform ${expandedVersions === project.id ? "rotate-180" : ""}`} />
+                  </button>
+                  
+                  <AnimatePresence>
+                    {expandedVersions === project.id && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mt-2 ml-1 space-y-1 overflow-hidden"
+                      >
+                        <div className="relative pl-3 border-l border-zinc-700">
+                          {project.versions.slice().reverse().map((version, idx) => (
+                            <div key={version.id} className="relative py-1.5">
+                              <div className={`absolute -left-[7px] top-2.5 w-2.5 h-2.5 rounded-full border-2 ${
+                                idx === 0 
+                                  ? "bg-zinc-800 border-white" 
+                                  : "bg-[#111] border-zinc-600"
+                              }`} />
+                              <div className="pl-2">
+                                <p className="text-[10px] text-zinc-500 truncate">{version.label}</p>
+                                <p className="text-[8px] text-zinc-600">
+                                  {new Date(version.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+              
+              {/* Delete button */}
+              <div className="absolute top-3 right-3">
                 <button
-                  key={project.id}
-                  onClick={() => onSelectProject(project)}
-                  className="w-full px-4 py-4 flex items-center gap-4 hover:bg-white/5 active:bg-white/10 transition-colors text-left"
+                  onPointerUp={(e) => handleDelete(e as any, project.id)}
+                  className="p-1.5 rounded-lg bg-zinc-800/50 hover:bg-red-500/20 text-zinc-600 hover:text-red-400 transition-colors touch-manipulation active:scale-95"
                 >
-                  {/* Status indicator */}
-                  <div className={`w-2.5 h-2.5 rounded-full ${statusConfig.color} flex-shrink-0`} />
-
-                  {/* Project info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-white font-medium truncate">
-                        {project.title}
-                      </h3>
-                      {project.status === "running" && (
-                        <Loader2 className="w-3 h-3 text-[#FF6E3C] animate-spin flex-shrink-0" />
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className={`text-xs ${statusConfig.textColor}`}>
-                        {statusConfig.label}
-                      </span>
-                      <span className="text-white/30 text-xs">•</span>
-                      <span className="text-white/30 text-xs">
-                        {formatRelativeTime(project.timestamp)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Arrow */}
-                  <ChevronRight className="w-5 h-5 text-white/20 flex-shrink-0" />
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
-              );
-            })}
-          </div>
+              </div>
+            </div>
+          ))
         )}
       </div>
     </div>
