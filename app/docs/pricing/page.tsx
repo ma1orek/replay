@@ -22,6 +22,25 @@ export default function PricingPage() {
         </p>
       </div>
 
+      {/* Video Showcase */}
+      <div className="relative rounded-2xl overflow-hidden border border-zinc-700 bg-zinc-900/50">
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/80 via-transparent to-transparent pointer-events-none z-10" />
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full aspect-video object-cover"
+        >
+          <source src="https://auth.replay.build/storage/v1/object/public/f/ReplayShowcaseDemo.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute bottom-4 left-4 z-20">
+          <span className="px-3 py-1 text-xs font-medium bg-white/10 backdrop-blur-sm rounded-full text-white/80 border border-white/20">
+            Video → UI in seconds
+          </span>
+        </div>
+      </div>
+
       {/* How Credits Work */}
       <div className="space-y-4">
         <h2 className="text-2xl font-semibold text-white">How Credits Work</h2>
