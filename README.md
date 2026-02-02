@@ -11,7 +11,7 @@ Replay reconstructs working UI from video recordings. Transform legacy software 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-replay.build-FF6E3C?style=for-the-badge)](https://replay.build)
 [![Documentation](https://img.shields.io/badge/Docs-replay.build%2Fdocs-blue?style=for-the-badge)](https://replay.build/docs)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
-[![Gemini AI](https://img.shields.io/badge/Gemini-AI-4285F4?style=for-the-badge&logo=google)](https://ai.google.dev)
+[![Gemini AI](https://img.shields.io/badge/Gemini_3-AI-4285F4?style=for-the-badge&logo=google)](https://ai.google.dev)
 
 </div>
 
@@ -26,6 +26,36 @@ Replay reconstructs production-ready UI from video recordings. No manual documen
 3. **Build Component Library** — Storybook-style docs with controls, variants, and usage examples
 4. **Visualize Flows** — See detected pages and navigation patterns
 5. **One-Click Publish** — Deploy working UI to the web instantly
+
+---
+
+## 🤖 AI Architecture: The Sandwich Model
+
+Replay uses a sophisticated multi-model AI pipeline we call the **"Sandwich Architecture"**:
+
+### 🔍 Phase 1: Surveyor (Gemini 3 Flash)
+**"Measure twice, cut once"**
+- Extracts precise layout measurements from video frames
+- Detects grid systems, spacing patterns, color palettes
+- Identifies navigation type (sidebar, top menu, tabs)
+- Uses code execution for pixel-accurate measurements
+- Outputs structured JSON with hard data, not guesses
+
+### ⚡ Phase 2: Generator (Gemini 3 Pro)
+**Main code generation**
+- Receives Surveyor measurements as context
+- Generates production-ready React + Tailwind code
+- Preserves exact colors, typography, and layouts
+- Creates interactive components with working navigation
+- Outputs complete single-file React application
+
+### ✅ Phase 3: QA Tester (Gemini 3 Flash)
+**Visual verification**
+- Compares generated UI against original video frames
+- Calculates SSIM (Structural Similarity Index)
+- Identifies diff regions requiring fixes
+- Provides auto-fix suggestions for mismatches
+- Ensures pixel-perfect output
 
 ---
 
@@ -52,6 +82,7 @@ Interactive visualization of app structure:
 - Detected pages and navigation paths
 - Click nodes to preview pages
 - See relationships between screens
+- Path Structure showing components per page
 - Export as documentation
 
 ### 🔗 Database Integration
@@ -70,12 +101,14 @@ Deploy instantly to `replay.build/p/your-project`
 | Layer | Technology |
 |-------|------------|
 | **Framework** | Next.js 14 (App Router) |
-| **Styling** | Tailwind CSS |
-| **AI** | Google Gemini 2.0 Flash |
+| **Styling** | Tailwind CSS 3.4 |
+| **AI Models** | Google Gemini 3 Pro (generation) |
+| **AI Vision** | Google Gemini 3 Flash (Agentic Vision) |
 | **Database** | Supabase (PostgreSQL) |
 | **Auth** | Supabase Auth (Google OAuth) |
 | **Payments** | Stripe |
 | **Hosting** | Vercel |
+| **Realtime** | Liveblocks (collaboration) |
 | **Icons** | Lucide React |
 | **Color Picker** | @uiw/react-color |
 
@@ -86,7 +119,7 @@ Deploy instantly to `replay.build/p/your-project`
 | Plan | Price | Credits/Month | Best For |
 |------|-------|---------------|----------|
 | **Free** | $0 | 75 (one-time) | Try it out |
-| **Pro** | $25/mo | 1,500 | Creators & designers |
+| **Pro** | $149/mo | 1,500 | Creators & designers |
 | **Enterprise** | Custom | Unlimited | Teams & agencies |
 
 **Credit Costs:**
@@ -107,7 +140,7 @@ Deploy instantly to `replay.build/p/your-project`
 - Node.js 18+
 - Supabase account
 - Stripe account  
-- Google AI Studio API key (Gemini)
+- Google AI Studio API key (Gemini 3)
 
 #### 1. Clone & Install
 
@@ -137,7 +170,7 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 STRIPE_PRO_PRICE_ID_MONTHLY=price_...
 STRIPE_PRO_PRICE_ID_YEARLY=price_...
 
-# Gemini AI
+# Gemini AI (Gemini 3 Pro & Flash)
 GEMINI_API_KEY=your_gemini_api_key
 
 # App URL
@@ -173,6 +206,10 @@ replay/
 │   │   │   ├── library/     # Component extraction
 │   │   │   ├── blueprints/  # Blueprint AI editing
 │   │   │   └── stream/      # Streaming generation
+│   │   ├── blueprint/       # Agentic Vision endpoints
+│   │   │   ├── vision/      # Surveyor (measurements)
+│   │   │   ├── vision-qa/   # QA Tester (verification)
+│   │   │   └── edit/        # AI component editing
 │   │   ├── credits/         # Credit management
 │   │   ├── publish/         # Deployment endpoint
 │   │   └── stripe/          # Payment webhooks
@@ -186,6 +223,8 @@ replay/
 │   │   └── ...
 │   └── modals/              # Auth, credits modals
 ├── lib/
+│   ├── agentic-vision/      # Sandwich Architecture prompts
+│   │   └── prompts.ts       # Surveyor, Generator, QA instructions
 │   ├── supabase/            # Database clients
 │   ├── prompts/             # AI system prompts
 │   └── utils.ts             # Helpers
@@ -216,6 +255,8 @@ replay/
 - [x] One-click publish
 - [x] Supabase integration
 - [x] Version history
+- [x] Agentic Vision (Sandwich Architecture)
+- [x] Gemini 3 Pro & Flash integration
 - [ ] Figma plugin export
 - [ ] Team collaboration
 - [ ] API access
@@ -258,10 +299,11 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 - [Next.js](https://nextjs.org) — React framework
 - [Supabase](https://supabase.com) — Database & Auth
-- [Google Gemini](https://ai.google.dev) — AI generation
+- [Google Gemini 3](https://ai.google.dev) — AI generation (Pro & Flash models)
 - [Tailwind CSS](https://tailwindcss.com) — Styling
 - [Lucide](https://lucide.dev) — Icons
 - [Vercel](https://vercel.com) — Hosting
+- [Liveblocks](https://liveblocks.io) — Realtime collaboration
 
 ---
 
