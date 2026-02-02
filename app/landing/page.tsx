@@ -166,15 +166,17 @@ function HeroSection() {
           transition={{ delay: 0.6, duration: 0.7 }}
           className="w-full max-w-6xl"
         >
-          <div className="relative overflow-hidden">
-            <Image 
-              src="/hero-bg.png" 
-              alt="Replay Platform" 
-              width={1200}
-              height={675}
-              className="w-full h-auto"
-              priority
-            />
+          <div className="relative overflow-hidden rounded-2xl border border-zinc-700/50 bg-zinc-900/50 shadow-2xl shadow-black/50">
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/60 via-transparent to-transparent pointer-events-none z-10" />
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full aspect-video object-cover"
+            >
+              <source src="https://auth.replay.build/storage/v1/object/public/f/ReplayShowcaseDemo.mp4" type="video/mp4" />
+            </video>
           </div>
         </motion.div>
       </div>
