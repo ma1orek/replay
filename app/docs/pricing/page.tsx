@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CreditCard, Check, Zap, Building, Star } from "lucide-react";
+import { CreditCard, Check, Zap, Building, Star, Users } from "lucide-react";
 
 export default function PricingPage() {
   return (
@@ -46,7 +46,7 @@ export default function PricingPage() {
       {/* Plans */}
       <div className="space-y-4">
         <h2 className="text-2xl font-semibold text-white">Plans</h2>
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Sandbox */}
           <div className="p-6 rounded-xl bg-zinc-800/50 border border-zinc-700">
             <div className="mb-4">
@@ -118,6 +118,43 @@ export default function PricingPage() {
               </li>
             </ul>
             <Link href="/pricing" className="block w-full py-2 rounded-lg bg-white text-black text-sm font-medium text-center hover:bg-zinc-200 transition-colors">
+              View Plans
+            </Link>
+          </div>
+
+          {/* Agency */}
+          <div className="p-6 rounded-xl bg-zinc-800/50 border border-zinc-700">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <Users className="w-4 h-4 text-zinc-400" />
+                Agency
+              </h3>
+              <p className="text-sm text-zinc-500">For teams</p>
+            </div>
+            <div className="mb-4">
+              <span className="text-4xl font-bold text-white">$499</span>
+              <span className="text-zinc-500">/mo</span>
+            </div>
+            <p className="text-xs text-zinc-500 mb-4">15,000 credits/month (~100 generations)</p>
+            <ul className="space-y-2 text-sm text-zinc-400 mb-6">
+              <li className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-zinc-300" />
+                <span>Everything in Pro</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-zinc-300" />
+                <span>5 team members</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-zinc-300" />
+                <span>Shared Design System</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-zinc-300" />
+                <span>Priority GPU + API</span>
+              </li>
+            </ul>
+            <Link href="/pricing" className="block w-full py-2 rounded-lg bg-zinc-700 text-white text-sm text-center hover:bg-zinc-600 transition-colors">
               View Plans
             </Link>
           </div>

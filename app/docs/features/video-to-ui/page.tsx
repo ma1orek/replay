@@ -203,7 +203,7 @@ export default function HomePage() {
         <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
           <div className="flex items-center justify-between">
             <span className="text-white">Video to UI Generation</span>
-            <span className="font-mono text-zinc-300">75 credits</span>
+            <span className="font-mono text-zinc-300">~150 credits</span>
           </div>
         </div>
       </div>

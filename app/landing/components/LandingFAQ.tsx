@@ -16,7 +16,7 @@ const faqs = [
   },
   { 
     q: "How many credits does a generation cost?", 
-    a: "Each video-to-code generation costs 75 credits. AI edits and refinements cost 25 credits each. Free accounts get 100 credits/month (~1 generation). Pro accounts get 1,500-225,000 credits/month depending on tier. You can also buy credits anytime." 
+    a: "Each video-to-code generation costs ~150 credits. AI edits cost ~10 credits each. Pro accounts get 3,000 credits/month (~20 generations). Agency accounts get 15,000 credits/month. You can also buy credit top-ups anytime." 
   },
   { 
     q: "Can I really upload a video of a physical object?",

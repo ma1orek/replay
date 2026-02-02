@@ -123,7 +123,7 @@ export default function TermsPage() {
             <ul className="space-y-2 text-white/60 mb-4">
               <li className="flex items-start gap-3">
                 <span className="text-[#FF6E3C] mt-1">•</span>
-                <span>Credits are consumed per generation (75 credits) or AI edit (25 credits)</span>
+                <span>Credits are consumed per generation (~150 credits) or AI edit (~10 credits)</span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="text-[#FF6E3C] mt-1">•</span>

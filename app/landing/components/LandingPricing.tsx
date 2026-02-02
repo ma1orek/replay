@@ -383,7 +383,7 @@ export default function LandingPricing() {
                     <div className="space-y-2.5 mb-6">
                       {[
                         "Everything in Maker, plus:",
-                        `~${Math.floor(selectedTier.credits / 75)} generations`,
+                        `~${Math.floor(selectedTier.credits / 150)} generations`,
                         "Private projects",
                         "Credits roll over",
                         "Priority support",

@@ -118,14 +118,14 @@ Deploy instantly to `replay.build/p/your-project`
 
 | Plan | Price | Credits/Month | Best For |
 |------|-------|---------------|----------|
-| **Free** | $0 | 75 (one-time) | Try it out |
-| **Pro** | $149/mo | 1,500 | Creators & designers |
-| **Enterprise** | Custom | Unlimited | Teams & agencies |
+| **Sandbox** | $0 | 0 (demo only) | Explore the app |
+| **Pro** | $149/mo | 3,000 | Freelancers |
+| **Agency** | $499/mo | 15,000 | Teams (5 members) |
+| **Enterprise** | Custom | Custom | Banks & enterprise |
 
 **Credit Costs:**
-- 🎬 Video generation: **75 credits**
-- ✨ AI component edit: **3 credits**
-- 📚 Library extraction: **10 credits**
+- 🎬 Video generation: **~150 credits**
+- ✨ AI edit: **~10 credits**
 
 ---
 
