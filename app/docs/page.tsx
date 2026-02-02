@@ -4,7 +4,7 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Documentation - Replay",
-  description: "Learn how to use Replay to turn video recordings into complete design systems with components, documentation, and interactive blueprints.",
+  description: "Learn how to use Replay to turn video recordings into complete design systems with components, documentation, and visual editing.",
 };
 
 export default function DocsPage() {
@@ -21,7 +21,7 @@ export default function DocsPage() {
         </h1>
         <p className="text-xl text-zinc-400 max-w-2xl">
           Turn any screen recording into a complete design system. Extract components, 
-          generate documentation, and build interactive blueprints with AI.
+          generate documentation, and edit components visually with AI.
         </p>
       </div>
 
@@ -96,7 +96,7 @@ export default function DocsPage() {
             },
             {
               icon: LayoutGrid,
-              title: "Blueprints Editor",
+              title: "Editor",
               description: "Visual canvas to arrange components, edit with AI, and build layouts interactively.",
               href: "/docs/features/blueprints",
             },
@@ -192,7 +192,7 @@ export default function DocsPage() {
           <div className="p-6 rounded-xl bg-zinc-800/50 border border-zinc-700">
             <div className="flex items-center gap-3 mb-3">
               <LayoutGrid className="w-5 h-5 text-zinc-400" />
-              <h3 className="font-semibold text-white">Blueprints</h3>
+              <h3 className="font-semibold text-white">Editor</h3>
             </div>
             <p className="text-sm text-zinc-400">
               Visual canvas for component composition. Drag, resize, and edit components with AI assistance.

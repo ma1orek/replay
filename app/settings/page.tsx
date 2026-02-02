@@ -40,11 +40,11 @@ import { cn } from "@/lib/utils";
 
 interface Project {
   id: string;
-  name: string;
-  created_at: string;
-  updated_at?: string;
-  thumbnail_url?: string;
+  title: string;
+  timestamp: number;
   status?: string;
+  videoUrl?: string;
+  publishedSlug?: string;
 }
 
 // Loading fallback
@@ -185,7 +185,7 @@ function SettingsContent() {
   
   // Filter projects by search
   const filteredProjects = projects.filter(p => 
-    p.name?.toLowerCase().includes(projectSearch.toLowerCase())
+    p.title?.toLowerCase().includes(projectSearch.toLowerCase())
   );
 
   useEffect(() => {
@@ -1032,52 +1032,48 @@ function SettingsContent() {
               {!isLoadingProjects && !projectsError && filteredProjects.length > 0 && (
                 <div className="grid gap-3">
                   {filteredProjects.map((project) => (
-                    <div
+                    <Link
                       key={project.id}
-                      className="bg-[#141414]/80 backdrop-blur border border-zinc-800/50 rounded-xl p-4 hover:border-zinc-700 transition-colors group"
+                      href={`/tool?project=${project.id}`}
+                      className="block bg-[#141414]/80 backdrop-blur border border-zinc-800/50 rounded-xl p-4 hover:border-zinc-700 hover:bg-zinc-800/30 transition-colors group"
                     >
                       <div className="flex items-center gap-4">
-                        {/* Thumbnail */}
-                        <div className="w-16 h-12 rounded-lg bg-zinc-800 overflow-hidden flex-shrink-0">
-                          {project.thumbnail_url ? (
-                            <img 
-                              src={project.thumbnail_url} 
-                              alt={project.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <FolderOpen className="w-5 h-5 text-zinc-600" />
-                            </div>
-                          )}
+                        {/* Icon */}
+                        <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                          <FolderOpen className="w-5 h-5 text-zinc-500" />
                         </div>
                         
                         {/* Info */}
                         <div className="flex-1 min-w-0">
                           <h3 className="text-sm font-medium text-zinc-200 truncate">
-                            {project.name || "Untitled Project"}
+                            {project.title || "Untitled Project"}
                           </h3>
-                          <p className="text-xs text-zinc-500">
-                            {new Date(project.created_at).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric"
-                            })}
-                          </p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <p className="text-xs text-zinc-500">
+                              {new Date(project.timestamp).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric"
+                              })}
+                            </p>
+                            {project.publishedSlug && (
+                              <span className="px-1.5 py-0.5 text-[10px] bg-emerald-500/20 text-emerald-400 rounded">
+                                Published
+                              </span>
+                            )}
+                          </div>
                         </div>
                         
                         {/* Actions */}
                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Link
-                            href={`/tool?project=${project.id}`}
-                            className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs text-zinc-300 transition-colors"
-                          >
-                            Open
-                          </Link>
                           <button
-                            onClick={() => handleDeleteProject(project.id)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDeleteProject(project.id);
+                            }}
                             disabled={deletingProject === project.id}
-                            className="p-1.5 rounded-lg bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 transition-colors"
+                            className="p-2 rounded-lg bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 transition-colors"
                           >
                             {deletingProject === project.id ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
@@ -1087,7 +1083,7 @@ function SettingsContent() {
                           </button>
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}

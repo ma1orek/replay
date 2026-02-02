@@ -20,7 +20,7 @@ const TAB_LABELS: Record<string, string> = {
   preview: "Preview",
   code: "Code",
   flow: "Flow",
-  blueprints: "Blueprints",
+  blueprints: "Editor",
   library: "Library",
 };
 

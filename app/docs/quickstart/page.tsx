@@ -145,11 +145,11 @@ export default function QuickstartPage() {
             <div className="w-8 h-8 rounded-full bg-zinc-700 text-white font-bold flex items-center justify-center text-sm">
               5
             </div>
-            <h2 className="text-xl font-semibold text-white">Edit in Blueprints</h2>
+            <h2 className="text-xl font-semibold text-white">Edit in Editor</h2>
           </div>
           <div className="ml-11 space-y-3">
             <p className="text-zinc-400">
-              Use the <strong className="text-white">Blueprints</strong> tab to visually arrange 
+              Use the <strong className="text-white">Editor</strong> tab to visually arrange 
               and edit components with AI:
             </p>
             <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
@@ -213,7 +213,7 @@ export default function QuickstartPage() {
           >
             <div className="flex items-center gap-3">
               <LayoutGrid className="w-5 h-5 text-zinc-400" />
-              <span className="font-medium text-white">Learn Blueprints</span>
+              <span className="font-medium text-white">Learn Editor</span>
               <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-white group-hover:translate-x-1 transition-all ml-auto" />
             </div>
           </Link>

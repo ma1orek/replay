@@ -167,7 +167,7 @@ export default function LibraryPage() {
           >
             <div className="flex items-center gap-3">
               <BookOpen className="w-5 h-5 text-zinc-400" />
-              <span className="font-medium text-white">Edit in Blueprints</span>
+              <span className="font-medium text-white">Edit in Editor</span>
               <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-white group-hover:translate-x-1 transition-all ml-auto" />
             </div>
           </Link>

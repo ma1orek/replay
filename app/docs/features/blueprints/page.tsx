@@ -3,8 +3,8 @@ import { LayoutGrid, Move, Maximize2, Sparkles, Check, X, ArrowRight, BookOpen }
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Blueprints Editor - Replay Docs",
-  description: "Learn about Replay's visual Blueprints editor for arranging and editing components with AI assistance.",
+  title: "Editor - Replay Docs",
+  description: "Learn about Replay's visual Editor for arranging and editing components with AI assistance.",
 };
 
 export default function BlueprintsPage() {
@@ -17,9 +17,9 @@ export default function BlueprintsPage() {
           <span>/</span>
           <Link href="/docs/features" className="hover:text-white transition-colors">Features</Link>
           <span>/</span>
-          <span className="text-white">Blueprints</span>
+          <span className="text-white">Editor</span>
         </div>
-        <h1 className="text-4xl font-bold text-white">Blueprints Editor</h1>
+        <h1 className="text-4xl font-bold text-white">Editor</h1>
         <p className="text-xl text-zinc-400">
           Visual canvas for component composition and AI-powered editing.
         </p>
@@ -29,7 +29,7 @@ export default function BlueprintsPage() {
       <div className="space-y-4">
         <h2 className="text-2xl font-semibold text-white">Overview</h2>
         <p className="text-zinc-400 leading-relaxed">
-          Blueprints is a visual canvas where you can arrange components, resize them, 
+          The Editor is a visual canvas where you can arrange components, resize them, 
           and use AI to make changes. It's designed for designers who prefer visual editing 
           over code manipulation.
         </p>
@@ -153,7 +153,7 @@ export default function BlueprintsPage() {
 
       {/* Toolbar */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-white">Blueprints Toolbar</h2>
+        <h2 className="text-2xl font-semibold text-white">Editor Toolbar</h2>
         <p className="text-zinc-400">
           The toolbar at the top provides canvas tools:
         </p>

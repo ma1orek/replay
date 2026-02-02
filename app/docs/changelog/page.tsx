@@ -3,6 +3,37 @@ import { Clock, Sparkles, Bug, ArrowUp, Bell } from "lucide-react";
 
 const changelog = [
   {
+    date: "February 2, 2026",
+    version: "2.1.0",
+    changes: [
+      {
+        type: "feature",
+        title: "Sandbox Demo Mode",
+        description: "New users can explore a full demo project without signing up. Experience Flow Map, Library, and Editor in read-only mode."
+      },
+      {
+        type: "feature",
+        title: "Agency Plan ($499/mo)",
+        description: "New Agency tier with 15,000 credits/month, 5 team members, shared Design System, and priority GPU access."
+      },
+      {
+        type: "feature",
+        title: "Gemini 3 Agentic Vision",
+        description: "Upgraded AI pipeline using Gemini 3 Pro for generation and Gemini 3 Flash for Surveyor measurements and QA testing."
+      },
+      {
+        type: "improvement",
+        title: "Blueprints renamed to Editor",
+        description: "Visual component editor is now simply called 'Editor' for clarity."
+      },
+      {
+        type: "improvement",
+        title: "Updated Pricing & Docs",
+        description: "Aligned all documentation with current pricing: ~150 credits/generation, ~10 credits/edit."
+      },
+    ]
+  },
+  {
     date: "January 26, 2026",
     version: "2.0.0",
     changes: [
@@ -13,7 +44,7 @@ const changelog = [
       },
       {
         type: "feature",
-        title: "Blueprints Visual Editor",
+        title: "Visual Editor",
         description: "Visual canvas for component composition. Drag, resize, and edit components with AI assistance."
       },
       {

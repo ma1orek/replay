@@ -43,7 +43,7 @@ const navigation = [
     items: [
       { title: "Video to UI", href: "/docs/features/video-to-ui", icon: Video },
       { title: "Component Library", href: "/docs/features/library", icon: BookOpen },
-      { title: "Blueprints Editor", href: "/docs/features/blueprints", icon: LayoutGrid },
+      { title: "Editor", href: "/docs/features/blueprints", icon: LayoutGrid },
       { title: "Flow Map", href: "/docs/features/flow-map", icon: GitBranch },
       { title: "Edit with AI", href: "/docs/features/edit-with-ai", icon: Edit3 },
       { title: "Design System", href: "/docs/features/design-system", icon: Palette },

@@ -69,7 +69,7 @@ A Storybook-like interface for your extracted components:
 - **Accessibility** — WCAG compliance checks
 - **Usage** — Copy-paste code snippets
 
-### 🎨 Blueprints
+### 🎨 Editor
 Visual canvas for component composition:
 - Drag & drop components on canvas
 - Resize and position freely
@@ -248,7 +248,7 @@ replay/
 
 - [x] Video to UI generation
 - [x] Component Library with Controls
-- [x] Blueprints visual editor
+- [x] Visual Editor (formerly Blueprints)
 - [x] Flow Map visualization
 - [x] AI editing with chat interface
 - [x] Color picker with contrast ratio
@@ -270,7 +270,7 @@ Full documentation at **[replay.build/docs](https://replay.build/docs)**
 
 - [Quickstart Guide](https://replay.build/docs/quickstart)
 - [Component Library](https://replay.build/docs/features/library)
-- [Blueprints Editor](https://replay.build/docs/features/blueprints)
+- [Editor](https://replay.build/docs/features/blueprints)
 - [Flow Map](https://replay.build/docs/features/flow-map)
 - [AI Editing](https://replay.build/docs/features/edit-with-ai)
 - [Publishing](https://replay.build/docs/features/publish)
