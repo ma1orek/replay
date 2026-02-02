@@ -83,7 +83,9 @@ const TechGrid = () => (
 
 function HeroSection() {
   const ref = useRef(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [dimensions, setDimensions] = useState({ width: 1200, height: 800 });
+  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -103,6 +105,33 @@ function HeroSection() {
       return () => window.removeEventListener("resize", handleResize);
     }
   }, []);
+
+  // Force autoplay on mount
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.muted = true;
+      video.play().then(() => {
+        setIsPlaying(true);
+      }).catch(() => {
+        // Autoplay blocked, show play button
+        setIsPlaying(false);
+      });
+    }
+  }, []);
+
+  const togglePlay = () => {
+    const video = videoRef.current;
+    if (video) {
+      if (video.paused) {
+        video.play();
+        setIsPlaying(true);
+      } else {
+        video.pause();
+        setIsPlaying(false);
+      }
+    }
+  };
 
   return (
     <section className="relative min-h-screen flex flex-col bg-[#09090b]">
@@ -167,27 +196,38 @@ function HeroSection() {
           className="w-full max-w-6xl mx-auto px-4"
         >
           <div className="relative overflow-hidden rounded-t-xl border-t border-x border-zinc-700/50 bg-zinc-900/30">
-            {/* Play Button Overlay */}
-            <a 
-              href="https://auth.replay.build/storage/v1/object/public/f/ReplayShowcaseDemo.mp4"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="absolute inset-0 z-20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300 bg-black/40 backdrop-blur-sm group cursor-pointer"
+            {/* Play/Pause Button Overlay */}
+            <button 
+              onClick={togglePlay}
+              className={cn(
+                "absolute inset-0 z-20 flex items-center justify-center transition-opacity duration-300 bg-black/30 cursor-pointer",
+                isPlaying ? "opacity-0 hover:opacity-100" : "opacity-100"
+              )}
             >
               <div className="flex items-center gap-3 px-6 py-3 rounded-full bg-white/10 border border-white/20 backdrop-blur-md hover:bg-white/20 transition-colors">
-                <Play className="w-5 h-5 text-white fill-white" />
-                <span className="text-white text-sm font-medium">Watch Demo</span>
+                {isPlaying ? (
+                  <>
+                    <div className="w-5 h-5 flex items-center justify-center gap-1">
+                      <div className="w-1.5 h-4 bg-white rounded-sm" />
+                      <div className="w-1.5 h-4 bg-white rounded-sm" />
+                    </div>
+                    <span className="text-white text-sm font-medium">Pause</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-5 h-5 text-white fill-white" />
+                    <span className="text-white text-sm font-medium">Watch Demo</span>
+                  </>
+                )}
               </div>
-            </a>
+            </button>
             <video
-              autoPlay
+              ref={videoRef}
               loop
               muted
               playsInline
               preload="auto"
               className="w-full aspect-video object-cover"
-              // @ts-ignore
-              webkit-playsinline="true"
             >
               <source src="https://auth.replay.build/storage/v1/object/public/f/ReplayShowcaseDemo.mp4" type="video/mp4" />
             </video>
