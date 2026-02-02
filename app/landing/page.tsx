@@ -105,7 +105,7 @@ function HeroSection() {
   }, []);
 
   return (
-    <section className="relative min-h-screen md:h-screen md:max-h-[1080px] flex flex-col overflow-hidden bg-[#09090b]">
+    <section className="relative min-h-screen flex flex-col bg-[#09090b]">
       {/* Shader Background - Dark */}
       <div className="absolute inset-0 z-0">
         <DitheringShader
@@ -159,29 +159,41 @@ function HeroSection() {
       </div>
 
       {/* Hero Visual - HIDDEN on mobile, shown on md+ */}
-      <div className="relative z-10 hidden md:flex flex-1 items-start justify-center px-4 mt-12">
+      <div className="relative z-10 hidden md:block mt-12 pb-0">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.7 }}
-          className="w-full max-w-6xl"
+          className="w-full max-w-6xl mx-auto px-4"
         >
-          <div className="relative overflow-hidden rounded-2xl border border-zinc-700/50 bg-zinc-900/50 shadow-2xl shadow-black/50">
-            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/60 via-transparent to-transparent pointer-events-none z-10" />
+          <div className="relative overflow-hidden rounded-t-xl border-t border-x border-zinc-700/50 bg-zinc-900/30">
+            {/* Play Button Overlay */}
+            <a 
+              href="https://auth.replay.build/storage/v1/object/public/f/ReplayShowcaseDemo.mp4"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="absolute inset-0 z-20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300 bg-black/40 backdrop-blur-sm group cursor-pointer"
+            >
+              <div className="flex items-center gap-3 px-6 py-3 rounded-full bg-white/10 border border-white/20 backdrop-blur-md hover:bg-white/20 transition-colors">
+                <Play className="w-5 h-5 text-white fill-white" />
+                <span className="text-white text-sm font-medium">Watch Demo</span>
+              </div>
+            </a>
             <video
               autoPlay
               loop
               muted
               playsInline
+              preload="auto"
               className="w-full aspect-video object-cover"
+              // @ts-ignore
+              webkit-playsinline="true"
             >
               <source src="https://auth.replay.build/storage/v1/object/public/f/ReplayShowcaseDemo.mp4" type="video/mp4" />
             </video>
           </div>
         </motion.div>
       </div>
-
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-zinc-950 to-transparent" />
     </section>
   );
 }
