@@ -171,17 +171,18 @@ Analyze the image and execute measurement code:`;
 // PHASE 1 VARIANTS: Parallel execution for speed
 // ============================================================================
 
-export const SURVEYOR_COLORS_PROMPT = `You are a COLOR SURVEYOR. Extract exact colors from this UI image.
+export const SURVEYOR_COLORS_PROMPT = `You are a COLOR SURVEYOR. Extract exact colors AND detect theme from this UI image.
 
 Write Python code to:
 1. Load the image with PIL
-2. Sample pixels from key areas:
+2. FIRST: Detect if theme is LIGHT or DARK by checking background brightness
+3. Sample pixels from key areas:
    - Background (center area, avoid text)
    - Surface/Card background (if cards exist)
    - Primary accent color (buttons, links)
    - Text colors (headings, body)
    - Border colors (dividers, card edges)
-3. Return hex values
+4. Return hex values AND theme
 
 Use this sampling technique:
 \`\`\`python
@@ -198,12 +199,32 @@ def sample_area(img_array, x, y, size=5):
     avg = region.mean(axis=(0,1)).astype(int)
     return f"#{avg[0]:02x}{avg[1]:02x}{avg[2]:02x}"
 
-# Sample background (center-right area, avoiding sidebar)
-background = sample_area(img_array, int(w*0.7), int(h*0.5))
+def get_brightness(hex_color):
+    """Calculate perceived brightness (0-255)"""
+    r = int(hex_color[1:3], 16)
+    g = int(hex_color[3:5], 16)
+    b = int(hex_color[5:7], 16)
+    return (r * 299 + g * 587 + b * 114) / 1000
+
+# Sample background from multiple points and average
+bg_samples = []
+for x_ratio in [0.5, 0.6, 0.7, 0.8]:
+    for y_ratio in [0.3, 0.5, 0.7]:
+        bg_samples.append(sample_area(img_array, int(w*x_ratio), int(h*y_ratio)))
+
+# Get most common background color
+from collections import Counter
+background = Counter(bg_samples).most_common(1)[0][0]
+
+# Detect theme based on background brightness
+bg_brightness = get_brightness(background)
+theme = "light" if bg_brightness > 127 else "dark"
+print(f"Detected theme: {theme} (brightness: {bg_brightness})")
 \`\`\`
 
 Return JSON only:
 {
+  "theme": "dark|light",
   "colors": {
     "background": "#hex",
     "surface": "#hex", 
@@ -212,24 +233,27 @@ Return JSON only:
     "textMuted": "#hex",
     "border": "#hex"
   },
+  "brightness": 0-255,
   "samples": [
     {"location": "background-center", "hex": "#hex", "x": 0.7, "y": 0.5}
   ]
 }`;
 
-export const SURVEYOR_SPACING_PROMPT = `You are a SPACING SURVEYOR. Measure exact pixel distances in this UI.
+export const SURVEYOR_SPACING_PROMPT = `You are a SPACING SURVEYOR. Measure exact pixel distances AND detect layout structure in this UI.
 
 Write Python code to:
 1. Detect major UI regions (sidebar, navbar, content area)
 2. Use edge detection to find component boundaries
 3. Measure pixel distances between elements
+4. CRITICAL: Detect LAYOUT TYPE - is navigation on LEFT (sidebar) or TOP (horizontal navbar)?
 
 Key measurements needed:
-- Sidebar width (if exists)
-- Navbar height (if exists)
+- Sidebar width (if exists on LEFT side)
+- Navbar height (if exists on TOP)
 - Content padding (from edge to first element)
 - Card padding (internal spacing)
 - Gap between cards/sections
+- LAYOUT TYPE: "sidebar-left" or "topnav" or "both"
 
 Use this technique:
 \`\`\`python
@@ -239,22 +263,42 @@ from scipy import ndimage
 
 img = Image.open(io.BytesIO(image_data)).convert('L')
 img_array = np.array(img)
+h, w = img_array.shape
 
 # Detect edges
 edges = ndimage.sobel(img_array)
 
-# Find vertical lines (for sidebar detection)
+# Find vertical lines (for sidebar detection on LEFT)
 vertical_profile = edges.sum(axis=0)
-# Peaks indicate major vertical divisions
+# Check if there's a strong vertical line in first 20% of width (sidebar)
+left_region = vertical_profile[:int(w*0.2)]
+has_sidebar = left_region.max() > vertical_profile.mean() * 2
 
-# Find horizontal lines (for navbar detection)  
+# Find horizontal lines (for navbar detection on TOP)  
 horizontal_profile = edges.sum(axis=1)
-# First significant peak = navbar bottom
+# Check if there's a strong horizontal line in first 10% of height (topnav)
+top_region = horizontal_profile[:int(h*0.1)]
+has_topnav = top_region.max() > horizontal_profile.mean() * 2
+
+# Determine layout type
+if has_sidebar and not has_topnav:
+    layout_type = "sidebar-left"
+elif has_topnav and not has_sidebar:
+    layout_type = "topnav"
+elif has_sidebar and has_topnav:
+    layout_type = "both"
+else:
+    layout_type = "minimal"
+
+print(f"Layout type: {layout_type}")
 \`\`\`
 
 Return JSON only:
 {
   "imageDimensions": { "width": 1920, "height": 1080 },
+  "layoutType": "sidebar-left|topnav|both|minimal",
+  "hasSidebar": true|false,
+  "hasTopNav": true|false,
   "spacing": {
     "sidebarWidth": "256px",
     "navHeight": "64px",
@@ -379,12 +423,38 @@ Analyze both images and report differences:`;
 export function formatSurveyorDataForPrompt(measurements: any): string {
   if (!measurements) return '';
   
+  // Detect theme from colors if not explicitly set
+  const bgColor = measurements.colors?.background || '';
+  let detectedTheme = measurements.theme || 'dark';
+  if (bgColor && !measurements.theme) {
+    // Calculate brightness from hex
+    const r = parseInt(bgColor.slice(1, 3), 16) || 0;
+    const g = parseInt(bgColor.slice(3, 5), 16) || 0;
+    const b = parseInt(bgColor.slice(5, 7), 16) || 0;
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    detectedTheme = brightness > 127 ? 'light' : 'dark';
+  }
+  
   return `
 ═══════════════════════════════════════════════════════════════════════════════
 🎯 HARD LAYOUT SPECS FROM SURVEYOR (USE THESE EXACT VALUES!)
 ═══════════════════════════════════════════════════════════════════════════════
 
 These measurements were computed by analyzing actual pixels. DO NOT GUESS.
+
+**🎨 DETECTED THEME: ${detectedTheme.toUpperCase()}**
+${detectedTheme === 'light' 
+  ? '⚠️ This is a LIGHT theme UI - use light backgrounds, dark text!'
+  : '⚠️ This is a DARK theme UI - use dark backgrounds, light text!'}
+
+**📐 DETECTED LAYOUT: ${measurements.layoutType?.toUpperCase() || 'UNKNOWN'}**
+${measurements.hasSidebar ? '✅ HAS LEFT SIDEBAR - MUST include a left sidebar navigation!' : ''}
+${measurements.hasTopNav ? '✅ HAS TOP NAVBAR - MUST include a horizontal top navigation!' : ''}
+${!measurements.hasSidebar && !measurements.hasTopNav ? '⚠️ Minimal layout detected - no prominent navigation' : ''}
+
+⚠️ CRITICAL: PRESERVE THE EXACT LAYOUT STRUCTURE!
+${measurements.hasSidebar ? '- DO NOT convert sidebar to top navigation!' : ''}
+${measurements.hasTopNav && !measurements.hasSidebar ? '- DO NOT add a sidebar if original has only top nav!' : ''}
 
 **SPACING (Measured in pixels):**
 - Sidebar width: ${measurements.spacing?.sidebarWidth || 'N/A'}
@@ -398,13 +468,50 @@ These measurements were computed by analyzing actual pixels. DO NOT GUESS.
 - Columns: ${measurements.grid?.columns || 'auto'}
 - Gap: ${measurements.grid?.gap || 'N/A'}
 
-**COLORS (Sampled from actual pixels):**
-- Background: ${measurements.colors?.background || '#0f172a'}
-- Surface/Cards: ${measurements.colors?.surface || '#1e293b'}
+**🔲 CARD/ELEMENT ALIGNMENT (CRITICAL - MANDATORY!):**
+⚠️⚠️⚠️ ALL cards, stat boxes, KPI tiles in a ROW MUST have EQUAL HEIGHT! ⚠️⚠️⚠️
+
+MANDATORY RULES FOR CARD ROWS:
+1. ALWAYS use \`grid grid-cols-N items-stretch\` for card containers
+2. EVERY card div MUST have \`h-full\` class
+3. Card content wrapper MUST use \`flex flex-col h-full\`
+4. NEVER let adjacent cards have different heights!
+5. If cards have different content lengths, use \`flex-grow\` on main content
+
+CORRECT PATTERN (USE THIS EXACTLY):
+\`\`\`jsx
+{/* Stats row - MUST use items-stretch + h-full */}
+<div className="grid grid-cols-3 gap-6 items-stretch">
+  <div className="bg-white rounded-xl p-6 h-full flex flex-col">
+    <span className="text-sm text-gray-500">Total Exposure</span>
+    <span className="text-2xl font-bold mt-auto">$14,412,474</span>
+  </div>
+  <div className="bg-white rounded-xl p-6 h-full flex flex-col">
+    <span className="text-sm text-gray-500">Open Cases</span>
+    <span className="text-2xl font-bold mt-auto">1232</span>
+  </div>
+  <div className="bg-white rounded-xl p-6 h-full flex flex-col">
+    <span className="text-sm text-gray-500">Avg Cycle Time</span>
+    <span className="text-2xl font-bold mt-auto">14 Days</span>
+  </div>
+</div>
+\`\`\`
+
+WRONG (NEVER DO THIS):
+\`\`\`jsx
+{/* BAD - no items-stretch, no h-full */}
+<div className="grid grid-cols-3 gap-6">
+  <div className="bg-white rounded-xl p-6">...</div>
+</div>
+\`\`\`
+
+**COLORS (Sampled from actual pixels - MUST USE THESE!):**
+- Background: ${measurements.colors?.background || (detectedTheme === 'light' ? '#ffffff' : '#0f172a')}
+- Surface/Cards: ${measurements.colors?.surface || (detectedTheme === 'light' ? '#f8fafc' : '#1e293b')}
 - Primary accent: ${measurements.colors?.primary || '#6366f1'}
-- Text: ${measurements.colors?.text || '#ffffff'}
-- Text muted: ${measurements.colors?.textMuted || '#94a3b8'}
-- Border: ${measurements.colors?.border || '#334155'}
+- Text: ${measurements.colors?.text || (detectedTheme === 'light' ? '#1e293b' : '#ffffff')}
+- Text muted: ${measurements.colors?.textMuted || (detectedTheme === 'light' ? '#64748b' : '#94a3b8')}
+- Border: ${measurements.colors?.border || (detectedTheme === 'light' ? '#e2e8f0' : '#334155')}
 
 **TYPOGRAPHY:**
 - H1: ${measurements.typography?.h1 || '48px'}
@@ -421,8 +528,9 @@ ${measurements.components?.map((c: any) =>
 
 CRITICAL: Use these EXACT values in your code. Example:
 - If cardPadding is "24px", use: p-[24px] or padding: 24px
-- If background is "#0f172a", use: bg-[#0f172a]
+- If background is "${measurements.colors?.background || '#ffffff'}", use: bg-[${measurements.colors?.background || '#ffffff'}]
 - Do NOT use approximate Tailwind classes like p-4 or p-6
+- PRESERVE THE ${detectedTheme.toUpperCase()} THEME - do not convert to ${detectedTheme === 'light' ? 'dark' : 'light'}!
 
 ═══════════════════════════════════════════════════════════════════════════════
 `;

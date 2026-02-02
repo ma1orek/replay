@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from "framer-motion";
 import {
   ArrowRight,
@@ -147,7 +148,7 @@ function HeroSection() {
                 </Link>
               </Button>
               <Button size="lg" asChild className="bg-transparent text-white border border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600 h-12 px-8 rounded-full text-base w-full sm:w-auto">
-                <Link href="https://www.replay.build/tool?project=flow_1769444036799_r8hrcxyx2">
+                <Link href="https://www.replay.build/tool?project=flow_1769991250167_jr2x4utrt">
                   Explore Live Sandbox
                   <ArrowRight className="ml-2 w-4 h-4" />
                 </Link>
@@ -166,10 +167,13 @@ function HeroSection() {
           className="w-full max-w-6xl"
         >
           <div className="relative overflow-hidden">
-            <img 
+            <Image 
               src="/hero-bg.png" 
               alt="Replay Platform" 
+              width={1200}
+              height={675}
               className="w-full h-auto"
+              priority
             />
           </div>
         </motion.div>
@@ -742,7 +746,7 @@ function BentoFeaturesSection() {
                 </p>
               </div>
               <div className="md:w-2/3 relative rounded border border-zinc-800 overflow-hidden group">
-                <img src="/recon.png" alt="Reconstruction" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
+                <Image src="/recon.png" alt="Reconstruction" width={800} height={450} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
               </div>
             </div>
           </BentoCard>
@@ -754,7 +758,7 @@ function BentoFeaturesSection() {
             </p>
             
             <div className="relative w-full h-[300px] rounded border border-zinc-800 overflow-hidden group">
-              <img src="/lib.png" alt="Library" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
+              <Image src="/lib.png" alt="Library" fill className="object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
             </div>
           </BentoCard>
 
@@ -765,7 +769,7 @@ function BentoFeaturesSection() {
             </p>
             
             <div className="relative w-full h-[300px] rounded border border-zinc-800 overflow-hidden group">
-              <img src="/flow.png" alt="Flow Map" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
+              <Image src="/flow.png" alt="Flow Map" fill className="object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
             </div>
           </BentoCard>
 
@@ -776,7 +780,7 @@ function BentoFeaturesSection() {
             </p>
             
             <div className="relative w-full h-32 rounded border border-zinc-800 overflow-hidden group">
-              <img src="/blue.png" alt="Blueprints" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
+              <Image src="/blue.png" alt="Blueprints" fill className="object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
             </div>
           </BentoCard>
 
@@ -787,7 +791,7 @@ function BentoFeaturesSection() {
             </p>
             
             <div className="relative w-full h-32 rounded border border-zinc-800 overflow-hidden">
-              <img src="/multi-1.png" alt="Multiplayer" className="w-full h-full object-cover opacity-60" />
+              <Image src="/multi-1.png" alt="Multiplayer" fill className="object-cover opacity-60" />
               
               {/* Animated Cursors */}
               <motion.div 
@@ -832,7 +836,7 @@ function BentoFeaturesSection() {
             </p>
             
             <div className="relative w-full h-32 rounded border border-zinc-800 overflow-hidden group">
-              <img src="/code.png" alt="Code" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
+              <Image src="/code.png" alt="Code" fill className="object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
             </div>
           </BentoCard>
 
@@ -852,7 +856,7 @@ function BentoFeaturesSection() {
             </Link>
           </Button>
           <Button size="lg" variant="ghost" asChild className="h-11 px-6 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-900 border border-transparent hover:border-zinc-800">
-            <Link href="https://www.replay.build/tool?project=flow_1769444036799_r8hrcxyx2" className="flex items-center gap-2">
+            <Link href="https://www.replay.build/tool?project=flow_1769991250167_jr2x4utrt" className="flex items-center gap-2">
               Try Demo
               <ArrowRight className="w-4 h-4" />
             </Link>

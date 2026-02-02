@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 
 // GLSL utility functions
 const declarePI = `
@@ -341,8 +341,18 @@ export function DitheringShader({
   const glRef = useRef<WebGL2RenderingContext | null>(null)
   const uniformLocationsRef = useRef<Record<string, WebGLUniformLocation | null>>({})
   const startTimeRef = useRef<number>(Date.now())
+  const [isMounted, setIsMounted] = useState(false)
+
+  // Track mounting state to prevent SSR issues
+  useEffect(() => {
+    setIsMounted(true)
+    return () => setIsMounted(false)
+  }, [])
 
   useEffect(() => {
+    // Only run WebGL on client side after mount
+    if (!isMounted) return
+    
     const canvas = canvasRef.current
     if (!canvas) return
 
@@ -431,7 +441,23 @@ export function DitheringShader({
         glRef.current.deleteProgram(programRef.current)
       }
     }
-  }, [width, height, colorBack, colorFront, shape, type, pxSize, speed])
+  }, [isMounted, width, height, colorBack, colorFront, shape, type, pxSize, speed])
+
+  // SSR fallback - render placeholder with background color until mounted
+  if (!isMounted) {
+    return (
+      <div
+        className={className}
+        style={{
+          position: "relative",
+          width,
+          height,
+          backgroundColor: colorBack,
+          ...style,
+        }}
+      />
+    )
+  }
 
   return (
     <div

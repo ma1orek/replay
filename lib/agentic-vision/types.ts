@@ -25,6 +25,18 @@ export interface LayoutMeasurements {
     height: number;
   };
   
+  /** Detected theme - light or dark */
+  theme?: 'light' | 'dark';
+  
+  /** Detected layout type */
+  layoutType?: 'sidebar-left' | 'topnav' | 'both' | 'minimal';
+  
+  /** Has left sidebar navigation */
+  hasSidebar?: boolean;
+  
+  /** Has top horizontal navigation */
+  hasTopNav?: boolean;
+  
   /** Grid structure detection */
   grid: {
     columns: number;

@@ -2790,18 +2790,18 @@ const InteractiveReactPreview = ({
 
   // Container controls size, iframe fills it at 100% for responsiveness
   // When container is resized, iframe content responds like a real browser window
-  // IMPORTANT: Don't set minWidth - let parent container control width for responsive viewports
   return (
     <div 
-      className={cn("relative", isFullWidth ? "w-full" : "inline-block", className)}
+      className={cn("relative", isFullWidth ? "w-full" : "", className)}
       style={{
-        // Container determines size - responsive to parent (mobile/desktop viewport)
-        width: isFullWidth ? '100%' : (iframeWidth > 100 ? `${Math.min(iframeWidth, 600)}px` : 'auto'),
-        // NO minWidth - allows parent to shrink for mobile viewport
+        // Full-width components: fill 100% of parent container
+        // Regular components: use content width from iframe, with min 300px
+        width: isFullWidth ? '100%' : (iframeWidth > 100 ? `${iframeWidth}px` : '100%'),
+        minWidth: isFullWidth ? undefined : '300px', // Min width for regular components
         maxWidth: '100%', // Never exceed container
-        // Height adapts to content
+        // Height: use reported height but allow shrinking, no fixed minHeight that causes empty space
         height: iframeHeight > 50 ? `${iframeHeight}px` : 'auto',
-        minHeight: isFullWidth ? '200px' : '50px', // Full-width sections need more height
+        minHeight: '50px', // Small minimum to prevent collapse
       }}
     >
       {error && (
@@ -2946,11 +2946,12 @@ function ReplayToolContent() {
     "flow_1767827812458_823lpezg8", // dashboard - UBOLD Premium Admin
     "flow_1767826711350_55giwb69y", // yc - Y Combinator
     "flow_1767812494307_4c540djzy", // landing - Flooks
-    "flow_1769444036799_r8hrcxyx2", // showcase - Enterprise Dashboard
+    "flow_1769444036799_r8hrcxyx2", // showcase - Enterprise Dashboard (old)
+    "flow_1769991250167_jr2x4utrt", // showcase - Enterprise Claims Manager v1.4
   ]), []);
   
   // Demo showcase project (the main one for landing page)
-  const SHOWCASE_PROJECT_ID = "flow_1769444036799_r8hrcxyx2";
+  const SHOWCASE_PROJECT_ID = "flow_1769991250167_jr2x4utrt";
   
   const [flows, setFlows] = useState<FlowItem[]>([]);
   const hasRestoredFlowsRef = useRef(false);
@@ -3246,7 +3247,7 @@ function ReplayToolContent() {
   const [flowBuilding, setFlowBuilding] = useState(false);
   const [selectedFlowNode, setSelectedFlowNode] = useState<string | null>(null);
   const [hasAutoLayouted, setHasAutoLayouted] = useState(false);
-  const [showStructureInFlow, setShowStructureInFlow] = useState(false); // Toggle to show components under nodes
+  const [showStructureInFlow, setShowStructureInFlow] = useState(true); // Toggle to show components under nodes - default ON
   const [showPossiblePaths, setShowPossiblePaths] = useState(false); // Toggle to show/hide possible paths in Flow - default OFF to show only observed
   const [showPreviewsInFlow, setShowPreviewsInFlow] = useState(true); // Always show iframe previews in flow nodes by default
   const [showBusinessProcess, setShowBusinessProcess] = useState(false); // Toggle Business Process Architecture panel
@@ -3345,6 +3346,22 @@ function ReplayToolContent() {
   const [selectedBlueprintComponent, setSelectedBlueprintComponent] = useState<string | null>(null);
   const [resizingComponent, setResizingComponent] = useState<{ id: string; handle: string } | null>(null);
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0, posX: 0, posY: 0 });
+  
+  // Global mouseup listener for resize - ensures resize works even if mouse leaves canvas
+  useEffect(() => {
+    if (!resizingComponent) return;
+    
+    const handleGlobalMouseUp = () => {
+      if (resizingComponent) {
+        setManuallyResizedComponents(prev => new Set([...prev, resizingComponent.id]));
+      }
+      setResizingComponent(null);
+    };
+    
+    document.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => document.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, [resizingComponent]);
+  
   const [editingComponentName, setEditingComponentName] = useState<string | null>(null); // For inline name editing
   const [editingNameValue, setEditingNameValue] = useState("");
   
@@ -5000,6 +5017,10 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
           if (previewUrl) URL.revokeObjectURL(previewUrl);
           setPreviewUrl(createPreviewUrl(gen.output_code));
           console.log("[Project URL] Preview URL created");
+          
+          // CRITICAL: Switch to preview mode so user sees the UI
+          setViewMode("preview");
+          console.log("[Project URL] Project fully loaded and displayed");
         }
         
         const loadedTitle = gen.title || "Untitled Project";
@@ -5167,7 +5188,7 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
         }
         
         // For showcase demo project, add welcome message explaining what this is
-        if (projectId === "flow_1769444036799_r8hrcxyx2") {
+        if (projectId === "flow_1769991250167_jr2x4utrt" || projectId === "flow_1769444036799_r8hrcxyx2") {
           const showcaseWelcome = {
             id: "showcase-welcome",
             role: "assistant" as const,
@@ -5176,7 +5197,7 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
 This is a fully functional showcase demonstrating Replay's capabilities.
 
 What you're seeing:
-This entire dashboard was automatically generated from a screen recording. Replay analyzed the video and produced complete production-ready output.
+This Enterprise Claims Manager was automatically generated from a screen recording. Replay analyzed the video and produced complete production-ready output.
 
 What was generated:
 • Complete UI Code (React + Tailwind)
@@ -5185,11 +5206,11 @@ What was generated:
 • Design System tokens (colors, typography, spacing)
 
 Explore the tabs above:
-• Preview - Live rendered UI
+• Preview - Live rendered UI with working navigation
 • Code - Generated source code
 • Flow - Screen navigation map
 • Design - Extracted design tokens
-• Editor - Component library
+• Library - Component library
 
 Ready to generate from your own videos? Upgrade to Pro to start creating your own projects!`,
             timestamp: Date.now()
@@ -5214,6 +5235,26 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
     
     loadProjectFromUrl();
   }, [searchParams, hasLoadedFromUrl, activeGeneration?.id, generatedCode, showToast]);
+
+  // FALLBACK: If we have code but no preview URL, create it (with delay to avoid race conditions)
+  // This fixes black screen after refresh
+  useEffect(() => {
+    if (generatedCode && generatedCode.length > 50 && !previewUrl && !isStreamingCode) {
+      // Wait 200ms to let other processes (like restoreVersion setTimeout) complete first
+      const timer = setTimeout(() => {
+        // Double-check preview still doesn't exist
+        if (!previewUrl) {
+          console.log('[Preview Fallback] Code exists but no preview after delay, creating...');
+          const newUrl = createPreviewUrl(generatedCode);
+          setPreviewUrl(newUrl);
+          if (viewMode === "input") {
+            setViewMode("preview");
+          }
+        }
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [generatedCode, previewUrl, isStreamingCode, createPreviewUrl, viewMode]);
 
   // When new code arrives, either stream it or mark as pending
   useEffect(() => {
@@ -5326,20 +5367,7 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
         }
         
         // Quick cache: load minimal index from localStorage for instant History display
-        const cachedIndex = localStorage.getItem("replay_generation_index");
-        if (cachedIndex) {
-          try {
-            const index = JSON.parse(cachedIndex);
-            // Set minimal generations for History list while Supabase loads
-            // Sort by timestamp (newest first) before setting
-            const sorted = index
-              .map((g: any) => ({ ...g, code: '' }))
-              .sort((a: any, b: any) => b.timestamp - a.timestamp);
-            setGenerations(sorted);
-          } catch (e) {
-            // Ignore cache parse errors
-          }
-        }
+        // NOTE: Cache is user-specific, loaded after we know user ID (see separate useEffect)
         
         // Load saved code from localStorage ONLY if it's a recent refresh (< 2 min)
         // This prevents old projects from loading when user visits /tool fresh
@@ -5467,11 +5495,17 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
     
     // Debounce save by 500ms
     chatSaveTimeoutRef.current = setTimeout(() => {
+      const updatedGen = { ...activeGeneration, chatMessages };
       setGenerations(prev => prev.map(g => 
-        g.id === activeGeneration.id ? { ...g, chatMessages } : g
+        g.id === activeGeneration.id ? updatedGen : g
       ));
       lastSavedChatRef.current = currentChatHash;
       localStorage.setItem("replay_sidebar_mode", sidebarMode);
+      
+      // CRITICAL: Also save to Supabase so chat history persists
+      if (user) {
+        saveGenerationToSupabase(updatedGen);
+      }
     }, 500);
     
     return () => {
@@ -5669,18 +5703,24 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
       }
       
       // SECONDARY: Save ONLY index to localStorage (cache for quick History list)
-      try {
-        const historyIndex = generations.slice(-100).map(gen => ({
-          id: gen.id,
-          title: gen.title,
-          timestamp: gen.timestamp,
-          status: gen.status,
-          thumbnailUrl: gen.thumbnailUrl?.substring(0, 200) || '',
-        }));
-        localStorage.setItem("replay_generation_index", JSON.stringify(historyIndex));
-      } catch (e) {
-        // Ignore localStorage errors - Supabase is primary
-        console.log("localStorage cache skipped (quota)");
+      // Use user-specific key to prevent cross-account data leakage
+      if (user?.id) {
+        try {
+          const historyIndex = generations.slice(-100).map(gen => ({
+            id: gen.id,
+            title: gen.title,
+            timestamp: gen.timestamp,
+            status: gen.status,
+            thumbnailUrl: gen.thumbnailUrl?.substring(0, 200) || '',
+          }));
+          const cacheKey = `replay_generation_index_${user.id}`;
+          localStorage.setItem(cacheKey, JSON.stringify(historyIndex));
+          // Clear old non-user-specific cache
+          localStorage.removeItem("replay_generation_index");
+        } catch (e) {
+          // Ignore localStorage errors - Supabase is primary
+          console.log("localStorage cache skipped (quota)");
+        }
       }
     }, 2000);
     
@@ -5690,6 +5730,31 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
       }
     };
   }, [generations, hasLoadedFromStorage, user]);
+  
+  // Load user-specific cache from localStorage after user is known
+  useEffect(() => {
+    if (!user?.id || !hasLoadedFromStorage) return;
+    
+    try {
+      const cacheKey = `replay_generation_index_${user.id}`;
+      const cachedIndex = localStorage.getItem(cacheKey);
+      if (cachedIndex) {
+        const index = JSON.parse(cachedIndex);
+        // Only use cache if generations list is empty (before Supabase loads)
+        if (generations.length === 0) {
+          const sorted = index
+            .map((g: any) => ({ ...g, code: '' }))
+            .sort((a: any, b: any) => b.timestamp - a.timestamp);
+          setGenerations(sorted);
+          console.log("[Cache] Loaded", sorted.length, "projects from user-specific cache");
+        }
+      }
+      // Clear old non-user-specific cache (legacy cleanup)
+      localStorage.removeItem("replay_generation_index");
+    } catch (e) {
+      console.log("[Cache] Error loading cache:", e);
+    }
+  }, [user?.id, hasLoadedFromStorage]); // Note: NOT including generations to avoid loop
   
   // Fetch lock to prevent multiple simultaneous requests
   const isFetchingRef = useRef(false);
@@ -8370,10 +8435,10 @@ Try these prompts in Cursor or v0:
     // Use displayedCode (not editableCode) - Code tab file selection shouldn't affect Flow
     const hasPreview = showPreviewsInFlow && displayedCode && (node.status === "observed" || node.status === "added");
     const baseHeight = hasPreview ? FLOW_PREVIEW_HEIGHT : 0;
-    const descriptionHeight = node.description ? 30 : 0;
+    const descriptionHeight = node.description ? 24 : 0;
     const structureRows = node.components?.length ? Math.ceil(node.components.length / 2) : 0;
-    const structureHeight = showStructureInFlow ? (structureRows > 0 ? structureRows * 20 + 28 : 14) : 0;
-    const contentHeight = 80 + descriptionHeight + structureHeight;
+    const structureHeight = showStructureInFlow ? (structureRows > 0 ? structureRows * 18 + 24 : 12) : 0;
+    const contentHeight = 58 + descriptionHeight + structureHeight; // Reduced from 80
     return baseHeight + contentHeight;
   }, [showPreviewsInFlow, displayedCode, showStructureInFlow, FLOW_PREVIEW_HEIGHT]);
 
@@ -9202,24 +9267,23 @@ Try these prompts in Cursor or v0:
       styleInfo: styleInfo ? { ...styleInfo } : null,
     };
     
-    setGenerations(prev => prev.map(gen => {
-      if (gen.id === activeGeneration.id) {
-        const existingVersions = gen.versions || [];
-        // Keep last 20 versions max
-        const updatedVersions = [...existingVersions, newVersion].slice(-20);
-        return { ...gen, versions: updatedVersions };
-      }
-      return gen;
-    }));
+    // Calculate updated versions ONCE
+    const existingVersions = activeGeneration.versions || [];
+    const updatedVersions = [...existingVersions, newVersion].slice(-20);
+    const updatedGen = { ...activeGeneration, versions: updatedVersions };
     
-    // Also update active generation
-    setActiveGeneration(prev => {
-      if (!prev) return prev;
-      const existingVersions = prev.versions || [];
-      const updatedVersions = [...existingVersions, newVersion].slice(-20);
-      return { ...prev, versions: updatedVersions };
-    });
-  }, [activeGeneration, generatedCode, flowNodes, flowEdges, styleInfo]);
+    // Update both states
+    setGenerations(prev => prev.map(gen => 
+      gen.id === activeGeneration.id ? updatedGen : gen
+    ));
+    setActiveGeneration(updatedGen);
+    
+    // CRITICAL: Save to Supabase OUTSIDE of setState
+    if (user) {
+      console.log('[saveVersion] Saving to Supabase, versions count:', updatedVersions.length);
+      saveGenerationToSupabase(updatedGen);
+    }
+  }, [activeGeneration, generatedCode, flowNodes, flowEdges, styleInfo, user, saveGenerationToSupabase]);
   
   // Restore to a specific version
   const restoreVersion = useCallback((genId: string, version: GenerationVersion) => {
@@ -9256,16 +9320,50 @@ Try these prompts in Cursor or v0:
     setFlowEdges(version.flowEdges || []);
     if (version.styleInfo) setStyleInfo(version.styleInfo);
     
-    // Update preview
+    // CRITICAL: Also update activeGeneration so UI reflects the change
+    setActiveGeneration(prev => {
+      if (!prev || prev.id !== genId) return prev;
+      return {
+        ...prev,
+        code: version.code,
+        flowNodes: version.flowNodes || prev.flowNodes,
+        flowEdges: version.flowEdges || prev.flowEdges,
+        styleInfo: version.styleInfo || prev.styleInfo,
+      };
+    });
+    
+    // Also update in generations list
+    const updatedGen = {
+      ...(generations.find(g => g.id === genId) || gen),
+      code: version.code,
+      flowNodes: version.flowNodes || gen.flowNodes,
+      flowEdges: version.flowEdges || gen.flowEdges,
+      styleInfo: version.styleInfo || gen.styleInfo,
+    };
+    
+    setGenerations(prev => prev.map(g => g.id === genId ? updatedGen : g));
+    
+    // Save restored version to Supabase OUTSIDE of setState
+    if (user) {
+      console.log('[restoreVersion] Saving to Supabase');
+      saveGenerationToSupabase(updatedGen);
+    }
+    
+    // Update preview - revoke old URL and create new one immediately
     console.log('[restoreVersion] Creating preview URL...');
+    if (previewUrl) {
+      try { URL.revokeObjectURL(previewUrl); } catch {}
+    }
     const newPreviewUrl = createPreviewUrl(version.code);
     console.log('[restoreVersion] New preview URL:', newPreviewUrl?.substring(0, 50));
     setPreviewUrl(newPreviewUrl);
     
+    // Switch to preview mode to show the restored version
+    setViewMode("preview");
     showToast(`Restored to: ${version.label}`, "success");
     setExpandedVersions(null);
     console.log('[restoreVersion] Complete!');
-  }, [generations, activeGeneration, generatedCode, saveVersion, createPreviewUrl, showToast]);
+  }, [generations, activeGeneration, generatedCode, saveVersion, createPreviewUrl, showToast, user, saveGenerationToSupabase]);
   
   const duplicateGeneration = async (gen: GenerationRecord) => {
     setHistoryMenuOpen(null);
@@ -9318,6 +9416,7 @@ Try these prompts in Cursor or v0:
     }
     
     // Create NEW project (Untitled) so it appears in list
+    // IMPORTANT: Use empty styleDirective for fresh Auto-Detect, not copied from original!
     const newGenId = generateId();
     const newGen: GenerationRecord = {
       id: newGenId,
@@ -9326,7 +9425,7 @@ Try these prompts in Cursor or v0:
       timestamp: Date.now(),
       status: "complete",
       code: "",
-      styleDirective: fullGen.styleDirective || "",
+      styleDirective: "", // Empty = fresh Auto-Detect, NOT copied from original project
       refinements: "",
       flowNodes: [],
       flowEdges: [],
@@ -9353,6 +9452,8 @@ Try these prompts in Cursor or v0:
     setRefinements("");
     setGenerationComplete(false);
     setChatMessages([]);
+    setStyleDirective(""); // Reset to Auto-Detect for fresh generation
+    setStyleReferenceImage(null);
     
     const flowId = `flow_${Date.now()}`;
     const newFlow: FlowItem = {
@@ -11490,6 +11591,21 @@ Try these prompts in Cursor or v0:
         console.log('[handleEdit] ALL DONE - showing toast');
         showToast("Changes applied!", "success");
         
+        // CRITICAL: Save edited code to Supabase immediately!
+        // The useEffect won't trigger because generationComplete check
+        if (activeGeneration && user) {
+          const editedGen: GenerationRecord = {
+            ...activeGeneration,
+            code: result.code,
+            flowNodes: flowNodes,
+            flowEdges: flowEdges,
+            styleInfo: styleInfo,
+            status: "complete",
+          };
+          console.log('[handleEdit] Saving edited code to Supabase...');
+          saveGenerationToSupabase(editedGen);
+        }
+        
         // Add response to chat explaining what was done
         const responseMsg = analyzeCodeChanges(editableCode, result.code, editInput);
         setChatMessages(prev => [...prev, 
@@ -11769,7 +11885,11 @@ Try these prompts in Cursor or v0:
 </head>
 <body class="antialiased bg-[#0a0a0a] text-white">
   <div id="root"></div>
-  <script type="text/babel">
+  <script>
+    // Make React hooks globally available
+    const { useState, useEffect, useRef, useCallback, useMemo, useContext, useReducer, useLayoutEffect, Fragment } = React;
+  </script>
+  <script type="text/babel" data-presets="react">
 ${publishCode}
   </script>
 </body>
@@ -12860,7 +12980,7 @@ ${publishCode}
                             // Reset published URL state to match the loaded generation
                             setPublishedUrl(genToLoad.publishedSlug ? `https://www.replay.build/p/${genToLoad.publishedSlug}` : null);
                             setShowPublishModal(false);
-                            if (genToLoad.code) {
+                            if (genToLoad.code && genToLoad.code.length > 50) {
                               setGeneratedCode(genToLoad.code);
                               setDisplayedCode(genToLoad.code);
                               setEditableCode(genToLoad.code);
@@ -12868,6 +12988,15 @@ ${publishCode}
                               // CRITICAL: Set these to show Replay AI / Input tabs
                               setGenerationComplete(true);
                               setSidebarMode("chat");
+                            } else {
+                              // Project has no code yet - reset to input mode
+                              setGeneratedCode(null);
+                              setDisplayedCode("");
+                              setEditableCode("");
+                              setPreviewUrl(null);
+                              setGenerationComplete(false);
+                              setSidebarMode("config");
+                              setViewMode("input");
                             }
                             if (genToLoad.flowNodes) setFlowNodes(genToLoad.flowNodes);
                             if (genToLoad.flowEdges) setFlowEdges(genToLoad.flowEdges);
@@ -13180,8 +13309,31 @@ ${publishCode}
                                           <span className="text-[8px] text-zinc-300/60 uppercase">Current</span>
                                         ) : (
                                           <button
-                                            onClick={(e) => {
+                                            onClick={async (e) => {
                                               e.stopPropagation();
+                                              // Check if version has code
+                                              if (!version.code || version.code.length < 50) {
+                                                // Try to find version in activeGeneration (may have newer data)
+                                                if (activeGeneration?.id === gen.id) {
+                                                  const freshVersion = (activeGeneration.versions || []).find(v => v.id === version.id);
+                                                  if (freshVersion?.code && freshVersion.code.length >= 50) {
+                                                    restoreVersion(gen.id, freshVersion);
+                                                    return;
+                                                  }
+                                                }
+                                                // Load full data from server
+                                                showToast("Loading version data...", "info");
+                                                const fullGen = await loadFullGeneration(gen.id);
+                                                if (fullGen) {
+                                                  const freshVersion = (fullGen.versions || []).find(v => v.id === version.id);
+                                                  if (freshVersion?.code && freshVersion.code.length >= 50) {
+                                                    restoreVersion(gen.id, freshVersion);
+                                                    return;
+                                                  }
+                                                }
+                                                showToast("Version data not available", "error");
+                                                return;
+                                              }
                                               restoreVersion(gen.id, version);
                                             }}
                                             className="opacity-0 group-hover/version:opacity-100 p-1 rounded hover:bg-white/10 transition-all"
@@ -13211,17 +13363,53 @@ ${publishCode}
                                         <span className="text-[8px] text-zinc-300/60 uppercase">Current</span>
                                       ) : (
                                         <button
-                                          onClick={(e) => {
+                                          onClick={async (e) => {
                                             e.stopPropagation();
-                                            // Restore to initial generation - remove all versions from current code
+                                            // Restore to initial generation
+                                            // Use activeGeneration code if same project (already loaded), otherwise load it
+                                            let codeToRestore = gen.code;
+                                            let flowNodesToRestore = gen.flowNodes;
+                                            let flowEdgesToRestore = gen.flowEdges;
+                                            let styleInfoToRestore = gen.styleInfo;
+                                            
+                                            if (!codeToRestore || codeToRestore.length < 50) {
+                                              // Try to use activeGeneration if it's the same project
+                                              if (activeGeneration?.id === gen.id && activeGeneration.code) {
+                                                // Find initial version in versions array
+                                                const initialVersion = (activeGeneration.versions || []).find(v => v.label === 'Initial generation');
+                                                if (initialVersion?.code) {
+                                                  codeToRestore = initialVersion.code;
+                                                  flowNodesToRestore = initialVersion.flowNodes;
+                                                  flowEdgesToRestore = initialVersion.flowEdges;
+                                                  styleInfoToRestore = initialVersion.styleInfo;
+                                                } else {
+                                                  // No initial version saved, but we have active code - this shouldn't restore
+                                                  showToast("Initial version not saved - cannot restore", "error");
+                                                  return;
+                                                }
+                                              } else {
+                                                // Load full data from server
+                                                showToast("Loading version data...", "info");
+                                                const fullGen = await loadFullGeneration(gen.id);
+                                                if (!fullGen?.code) {
+                                                  showToast("Failed to load version data", "error");
+                                                  return;
+                                                }
+                                                codeToRestore = fullGen.code;
+                                                flowNodesToRestore = fullGen.flowNodes;
+                                                flowEdgesToRestore = fullGen.flowEdges;
+                                                styleInfoToRestore = fullGen.styleInfo;
+                                              }
+                                            }
+                                            
                                             restoreVersion(gen.id, { 
                                               id: 'initial', 
                                               timestamp: gen.timestamp, 
                                               label: 'Initial generation',
-                                              code: gen.code || '',
-                                              flowNodes: gen.flowNodes,
-                                              flowEdges: gen.flowEdges,
-                                              styleInfo: gen.styleInfo
+                                              code: codeToRestore || '',
+                                              flowNodes: flowNodesToRestore,
+                                              flowEdges: flowEdgesToRestore,
+                                              styleInfo: styleInfoToRestore
                                             });
                                           }}
                                           className="opacity-0 group-hover/version:opacity-100 p-1 rounded hover:bg-white/10 transition-all"
@@ -13270,33 +13458,36 @@ ${publishCode}
               <div className="flex-shrink-0 px-3 py-2 border-b border-zinc-800 relative z-50 overflow-visible">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Layers</span>
-                  <button 
-                    onClick={() => {
-                      // Create new component with default name - no prompt
-                      const newId = `new-${Date.now()}`;
-                      const defaultName = "New Component";
-                      const newComp = {
-                        id: newId,
-                        name: defaultName,
-                        category: 'custom',
-                        code: `<div className="p-6 bg-white rounded-xl shadow-lg border border-zinc-200"><h3 className="text-lg font-semibold text-zinc-900">${defaultName}</h3></div>`,
-                        props: [],
-                        variants: []
-                      };
-                      setLibraryData((prev: any) => ({
-                        ...prev,
-                        components: [...(prev?.components || []), newComp]
-                      }));
-                      setSelectedBlueprintComponent(`comp-${newId}`);
-                      // Start inline editing immediately
-                      setEditingComponentName(newId);
-                      setEditingNameValue(defaultName);
-                    }}
-                    className="p-1 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white group relative"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span className="absolute -top-9 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[9999] border border-zinc-700/50 shadow-lg">Add component</span>
-                  </button>
+                  {/* Hide add component button for demo projects */}
+                  {!DEMO_PROJECT_IDS.has(activeGeneration?.id || '') && (
+                    <button 
+                      onClick={() => {
+                        // Create new component with default name - no prompt
+                        const newId = `new-${Date.now()}`;
+                        const defaultName = "New Component";
+                        const newComp = {
+                          id: newId,
+                          name: defaultName,
+                          category: 'custom',
+                          code: `<div className="p-6 bg-white rounded-xl shadow-lg border border-zinc-200"><h3 className="text-lg font-semibold text-zinc-900">${defaultName}</h3></div>`,
+                          props: [],
+                          variants: []
+                        };
+                        setLibraryData((prev: any) => ({
+                          ...prev,
+                          components: [...(prev?.components || []), newComp]
+                        }));
+                        setSelectedBlueprintComponent(`comp-${newId}`);
+                        // Start inline editing immediately
+                        setEditingComponentName(newId);
+                        setEditingNameValue(defaultName);
+                      }}
+                      className="p-1 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white group relative"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span className="absolute -top-9 left-1/2 -translate-x-1/2 px-2 py-1 bg-zinc-800 text-[10px] text-zinc-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[9999] border border-zinc-700/50 shadow-lg">Add component</span>
+                    </button>
+                  )}
                 </div>
               </div>
               {/* Search */}
@@ -14984,7 +15175,7 @@ ${publishCode}
                                 className="w-12 h-8 rounded overflow-hidden bg-zinc-900 flex-shrink-0 relative group"
                                 title={flow.isImage ? "Click to view image" : "Click to preview video"}
                               >
-                                {flow.thumbnail ? (
+                                {flow.thumbnail && flow.thumbnail.length > 100 ? (
                                   <>
                                     <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" />
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -14993,6 +15184,22 @@ ${publishCode}
                                       ) : (
                                         <Play className="w-4 h-4 text-white" />
                                       )}
+                                    </div>
+                                  </>
+                                ) : flow.videoUrl && !flow.isImage ? (
+                                  <>
+                                    <video 
+                                      src={flow.videoUrl} 
+                                      className="w-full h-full object-cover" 
+                                      muted 
+                                      preload="metadata"
+                                      onLoadedData={(e) => {
+                                        const v = e.currentTarget;
+                                        v.currentTime = Math.min(0.5, v.duration * 0.1);
+                                      }}
+                                    />
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                      <Play className="w-4 h-4 text-white" />
                                     </div>
                                   </>
                                 ) : (
@@ -15209,7 +15416,13 @@ ${publishCode}
                     {flows.map((flow) => (
                       <button key={flow.id} onClick={() => setSelectedFlowId(flow.id)} className={cn("flow-item w-full flex items-center gap-2.5 p-2 cursor-pointer group text-left rounded-lg", selectedFlowId === flow.id ? "bg-white/[0.03] border border-white/[0.08]" : "hover:bg-white/[0.02]")} aria-label={`Select flow ${flow.name}`}>
                         <div className="w-12 h-7 rounded overflow-hidden bg-zinc-800/50 flex-shrink-0 flex items-center justify-center">
-                          {flow.thumbnail ? <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" /> : <Film className="w-3 h-3 text-white/20" />}
+                          {flow.thumbnail && flow.thumbnail.length > 100 ? (
+                            <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" />
+                          ) : flow.videoUrl ? (
+                            <video src={flow.videoUrl} className="w-full h-full object-cover" muted preload="metadata" onLoadedData={(e) => { e.currentTarget.currentTime = 0.5; }} />
+                          ) : (
+                            <Film className="w-3 h-3 text-white/20" />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-[11px] font-medium text-white/70 truncate">{flow.name}</p>
@@ -16774,14 +16987,14 @@ export default function GeneratedPage() {
                           style={{ left: 0, top: 0, width: "100%", height: "100%", overflow: "visible" }}
                         >
                           <defs>
-                            <marker id="flow-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-                              <polygon points="0 0, 8 3, 0 6" fill="rgba(255, 255, 255, 0.5)" />
+                            <marker id="flow-arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+                              <polygon points="0 0, 10 4, 0 8" fill="rgba(255, 255, 255, 0.6)" />
                             </marker>
-                            <marker id="flow-arrow-thick" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                              <polygon points="0 0, 10 3.5, 0 7" fill="rgba(255, 255, 255, 0.6)" />
+                            <marker id="flow-arrow-thick" markerWidth="12" markerHeight="9" refX="11" refY="4.5" orient="auto">
+                              <polygon points="0 0, 12 4.5, 0 9" fill="rgba(255, 255, 255, 0.7)" />
                             </marker>
-                            <marker id="flow-arrow-gated" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-                              <polygon points="0 0, 8 3, 0 6" fill="rgba(255, 255, 255, 0.4)" />
+                            <marker id="flow-arrow-gated" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+                              <polygon points="0 0, 10 4, 0 8" fill="rgba(255, 255, 255, 0.5)" />
                             </marker>
                           </defs>
                           {flowEdges
@@ -16806,15 +17019,15 @@ export default function GeneratedPage() {
                             // DASHED = gated, hover (detected but not confirmed)
                             // DOTTED = possible (AI inferred)
                             const edgeStyles: Record<string, { stroke: string; width: number; dash?: string; marker: string; labelBg: string }> = {
-                              // SOLID lines - observed in video
-                              navigation: { stroke: "rgba(255, 255, 255, 0.45)", width: 2, marker: "url(#flow-arrow-thick)", labelBg: "rgba(10, 10, 10, 0.9)" },
-                              action: { stroke: "rgba(255, 255, 255, 0.35)", width: 1.5, marker: "url(#flow-arrow)", labelBg: "rgba(10, 10, 10, 0.9)" },
-                              scroll: { stroke: "rgba(255, 255, 255, 0.25)", width: 1.5, marker: "url(#flow-arrow)", labelBg: "rgba(10, 10, 10, 0.9)" },
+                              // SOLID lines - observed in video - thicker and more visible
+                              navigation: { stroke: "rgba(255, 255, 255, 0.55)", width: 2.5, marker: "url(#flow-arrow-thick)", labelBg: "rgba(10, 10, 10, 0.95)" },
+                              action: { stroke: "rgba(255, 255, 255, 0.45)", width: 2, marker: "url(#flow-arrow)", labelBg: "rgba(10, 10, 10, 0.95)" },
+                              scroll: { stroke: "rgba(255, 255, 255, 0.35)", width: 2, marker: "url(#flow-arrow)", labelBg: "rgba(10, 10, 10, 0.95)" },
                               // DASHED lines - detected but not visited
-                              gated: { stroke: "rgba(255, 255, 255, 0.3)", width: 1.5, dash: "5 3", marker: "url(#flow-arrow-gated)", labelBg: "rgba(10, 10, 10, 0.9)" },
-                              hover: { stroke: "rgba(255, 255, 255, 0.25)", width: 1.5, dash: "6 4", marker: "url(#flow-arrow-gated)", labelBg: "rgba(20, 20, 20, 0.9)" },
+                              gated: { stroke: "rgba(255, 255, 255, 0.4)", width: 2, dash: "5 3", marker: "url(#flow-arrow-gated)", labelBg: "rgba(10, 10, 10, 0.95)" },
+                              hover: { stroke: "rgba(255, 255, 255, 0.35)", width: 2, dash: "6 4", marker: "url(#flow-arrow-gated)", labelBg: "rgba(20, 20, 20, 0.95)" },
                               // DOTTED lines - AI inferred
-                              possible: { stroke: "rgba(255, 255, 255, 0.12)", width: 1, dash: "3 3", marker: "url(#flow-arrow-gated)", labelBg: "rgba(20, 20, 20, 0.8)" }
+                              possible: { stroke: "rgba(255, 255, 255, 0.2)", width: 1.5, dash: "3 3", marker: "url(#flow-arrow-gated)", labelBg: "rgba(20, 20, 20, 0.9)" }
                             };
                             const style = edgeStyles[edge.type] || edgeStyles.action;
                             const isPossible = edge.type === "possible";
@@ -16829,29 +17042,29 @@ export default function GeneratedPage() {
                                   fill="none"
                                   markerEnd={style.marker}
                                 />
-                                {/* Label */}
+                                {/* Label - smaller and more subtle */}
                                 <rect 
-                                  x={midX - 45} 
-                                  y={midY - 9} 
-                                  width="90" 
-                                  height="18" 
-                                  rx="9" 
+                                  x={midX - 36} 
+                                  y={midY - 7} 
+                                  width="72" 
+                                  height="14" 
+                                  rx="7" 
                                   fill={style.labelBg}
-                                  stroke={isPossible ? "rgba(255, 255, 255, 0.05)" : "rgba(255, 255, 255, 0.1)"}
+                                  stroke={isPossible ? "rgba(255, 255, 255, 0.05)" : "rgba(255, 255, 255, 0.12)"}
                                   strokeWidth="1"
                                   strokeDasharray={isPossible ? "3 2" : undefined}
                                 />
                                 {edge.type === "gated" && (
-                                  <text x={midX - 32} y={midY + 3} fill="rgba(255, 255, 255, 0.4)" fontSize="9">🔒</text>
+                                  <text x={midX - 26} y={midY + 2.5} fill="rgba(255, 255, 255, 0.4)" fontSize="8">🔒</text>
                                 )}
                                 {isPossible && (
-                                  <text x={midX - 32} y={midY + 3} fill="rgba(255, 255, 255, 0.25)" fontSize="8">○</text>
+                                  <text x={midX - 26} y={midY + 2.5} fill="rgba(255, 255, 255, 0.25)" fontSize="7">○</text>
                                 )}
                                 <text 
                                   x={edge.type === "gated" || isPossible ? midX + 4 : midX} 
-                                  y={midY + 3} 
-                                  fill={isPossible ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.5)"} 
-                                  fontSize="9" 
+                                  y={midY + 2.5} 
+                                  fill={isPossible ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.6)"} 
+                                  fontSize="8" 
                                   textAnchor="middle" 
                                   className="font-medium"
                                   fontStyle={isPossible ? "italic" : "normal"}
@@ -16890,9 +17103,9 @@ export default function GeneratedPage() {
                           const nodeWidth = FLOW_NODE_WIDTH;
                           const previewHeight = hasPreview ? FLOW_PREVIEW_HEIGHT : 0;
                           
-                          // Dynamic height calculation
+                          // Dynamic height calculation - matches getFlowNodeHeight
                           const baseHeight = hasPreview ? FLOW_PREVIEW_HEIGHT : 0;
-                          const contentHeight = 80 + (node.description ? 20 : 0) + (showStructureInFlow && node.components?.length ? Math.ceil(node.components.length / 2) * 20 + 28 : 0);
+                          const contentHeight = 58 + (node.description ? 24 : 0) + (showStructureInFlow && node.components?.length ? Math.ceil(node.components.length / 2) * 18 + 24 : 0);
                           const totalHeight = getFlowNodeHeight(node) || (baseHeight + contentHeight);
                           
                           // Each iframe gets its own isolated preview code with unique key
@@ -16962,7 +17175,7 @@ export default function GeneratedPage() {
                               )}
                               
                               {/* Node header with status badge */}
-                              <div className="p-2">
+                              <div className="p-1.5">
                                 {/* Top row: Icon + Name + Status Badge */}
                                 <div className="flex items-center gap-1.5 mb-1">
                                   {/* Icon - compact */}
@@ -17036,7 +17249,7 @@ export default function GeneratedPage() {
                               </div>
                               
                               {/* Action buttons - minimal */}
-                              <div className="flex items-center gap-1 px-2 pb-1.5 pt-1">
+                              <div className="flex items-center gap-1 px-2 pb-1 pt-0.5">
                                 {hasCode ? (
                                   <>
                                     <button
@@ -19848,8 +20061,8 @@ module.exports = {
                                   
                                   return (
                                     <div 
-                                      className="w-full flex-1 overflow-auto custom-scrollbar"
-                                      style={{ minHeight: '100px', maxHeight: 'calc(100vh - 280px)' }}
+                                      className="w-full overflow-auto custom-scrollbar"
+                                      style={{ minHeight: '80px' }}
                                     >
                                       {/* Viewport container - changes width based on mobile/desktop */}
                                       <div 
@@ -19885,9 +20098,7 @@ module.exports = {
                                         return (
                                         <div 
                                           className={cn(
-                                            "transition-all duration-300 relative group/measure",
-                                            // Full-width components get w-full, others get inline-block
-                                            isFullWidthComponent ? "w-full" : "inline-block",
+                                            "transition-all duration-300 relative group/measure w-full",
                                             showLibraryOutline && "outline outline-1 outline-dashed outline-zinc-500/50"
                                           )}
                                         >
@@ -19944,7 +20155,7 @@ module.exports = {
                                   
                                   return (
                                     <div className={cn(
-                                      "border-t max-w-full overflow-hidden",
+                                      "border-t max-w-full",
                                       libraryBackground === "light" ? "border-zinc-200 bg-[#1e1e1e]" : "border-zinc-800 bg-[#0d0d0d]"
                                     )}>
                                       {/* Usage Code */}
@@ -20510,6 +20721,9 @@ module.exports = {
                       }}
                       onDoubleClick={(e) => {
                         // Create new component at click position - no prompt, inline editing
+                        // DISABLED for demo projects
+                        if (DEMO_PROJECT_IDS.has(activeGeneration?.id || '')) return;
+                        
                         if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('canvas-content')) {
                           const rect = blueprintsCanvasRef.current?.getBoundingClientRect();
                           if (!rect) return;
@@ -20640,13 +20854,11 @@ module.exports = {
                         setIsBlueprintsPanning(false);
                       }}
                       onMouseLeave={() => {
-                        // Mark component as manually resized so iframe auto-size doesn't override
-                        if (resizingComponent) {
-                          setManuallyResizedComponents(prev => new Set([...prev, resizingComponent.id]));
-                        }
+                        // DON'T reset resizingComponent on leave - user might be resizing outside canvas
+                        // Only reset dragging and panning
                         setDraggingComponent(null);
-                        setResizingComponent(null);
                         setIsBlueprintsPanning(false);
+                        // Keep resizingComponent active - will be reset on mouseUp anywhere
                       }}
                       onWheel={(e) => {
                         e.preventDefault();
@@ -20751,58 +20963,61 @@ module.exports = {
                         {/* Spacer to push New Component button to right */}
                         <div className="flex-1" />
                         
-                        {/* + New Component - Creates component instantly on canvas */}
-                        <button 
-                          onClick={() => {
-                            // Create new component instantly on canvas
-                            const newId = `new_${Date.now()}`;
-                            const newComponent = {
-                              id: newId,
-                              name: "New Component",
-                              code: '<div className="p-4 bg-zinc-800 rounded-xl text-white text-center min-w-[120px]"><p className="text-sm font-medium">New Component</p></div>',
-                              category: "CUSTOM",
-                              description: "New custom component"
-                            };
-                            
-                            // Add to library
-                            setLibraryData((prev: any) => ({
-                              ...prev,
-                              components: [...(prev?.components || []), newComponent]
-                            }));
-                            
-                            // Calculate center position on canvas
-                            const canvasEl = blueprintsCanvasRef.current;
-                            let centerX = 400, centerY = 300;
-                            if (canvasEl) {
-                              const rect = canvasEl.getBoundingClientRect();
-                              centerX = (-blueprintsOffset.x + rect.width / 2) / (blueprintsZoom / 100);
-                              centerY = (-blueprintsOffset.y + rect.height / 2) / (blueprintsZoom / 100);
-                            }
-                            
-                            // Set position for new component
-                            setBlueprintPositions(prev => ({
-                              ...prev,
-                              [`comp-${newId}`]: { x: centerX - 100, y: centerY - 50 }
-                            }));
-                            
-                            // Select the new component to show edit bar
-                            setSelectedBlueprintComponent(`comp-${newId}`);
-                            setBlueprintEditedCode(null);
-                            setBlueprintChatHistory([]);
-                            
-                            // Mark as draft
-                            setBlueprintStatuses(prev => ({ ...prev, [newId]: 'draft' }));
-                          }}
-                          className={cn(
-                            "px-4 py-2 rounded-lg transition-all duration-150 group relative flex items-center gap-2",
-                            "bg-white/10 hover:bg-white/15",
-                            "border border-white/20 hover:border-white/30",
-                            "text-white font-medium"
-                          )}
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span className="text-[12px]">New Component</span>
-                        </button>
+                        {/* + New Component - Creates component instantly on canvas (hidden for demo) */}
+                        {!DEMO_PROJECT_IDS.has(activeGeneration?.id || '') && (
+                          <button 
+                            onClick={() => {
+                              // Create new component instantly on canvas
+                              const newId = `new_${Date.now()}`;
+                              const newComponent = {
+                                id: newId,
+                                name: "New Component",
+                                code: '<div className="p-4 bg-zinc-800 rounded-xl text-white text-center min-w-[200px] min-h-[80px] flex items-center justify-center"><p className="text-sm font-medium text-zinc-400">New Component</p></div>',
+                                category: "CUSTOM",
+                                description: "New custom component",
+                                isNew: true // Flag for inline AI input
+                              };
+                              
+                              // Add to library
+                              setLibraryData((prev: any) => ({
+                                ...prev,
+                                components: [...(prev?.components || []), newComponent]
+                              }));
+                              
+                              // Calculate center position on canvas
+                              const canvasEl = blueprintsCanvasRef.current;
+                              let centerX = 400, centerY = 300;
+                              if (canvasEl) {
+                                const rect = canvasEl.getBoundingClientRect();
+                                centerX = (-blueprintsOffset.x + rect.width / 2) / (blueprintsZoom / 100);
+                                centerY = (-blueprintsOffset.y + rect.height / 2) / (blueprintsZoom / 100);
+                              }
+                              
+                              // Set position for new component
+                              setBlueprintPositions(prev => ({
+                                ...prev,
+                                [`comp-${newId}`]: { x: centerX - 100, y: centerY - 50 }
+                              }));
+                              
+                              // Select the new component to show edit bar
+                              setSelectedBlueprintComponent(`comp-${newId}`);
+                              setBlueprintEditedCode(null);
+                              setBlueprintChatHistory([]);
+                              
+                              // Mark as draft
+                              setBlueprintStatuses(prev => ({ ...prev, [newId]: 'draft' }));
+                            }}
+                            className={cn(
+                              "px-4 py-2 rounded-lg transition-all duration-150 group relative flex items-center gap-2",
+                              "bg-white/10 hover:bg-white/15",
+                              "border border-white/20 hover:border-white/30",
+                              "text-white font-medium"
+                            )}
+                          >
+                            <Plus className="w-4 h-4" />
+                            <span className="text-[12px]">New Component</span>
+                          </button>
+                        )}
                         <input 
                           ref={visionFileInputRef}
                           type="file"
@@ -21056,21 +21271,35 @@ module.exports = {
                                         .replace(/pollinations\.ai\/prompt\/([^?]+)\?/g, `pollinations.ai/prompt/$1?seed=${comp.id || 'stable'}&`);
                                       
                                       // Determine if this is a full-width component
-                                      const isFullWidthComp = ['product', 'section', 'hero', 'footer', 'header', 'page', 'nav'].includes(
+                                      // Check name, category, and code for full-width indicators
+                                      const nameLower = comp.name?.toLowerCase() || '';
+                                      const codeLower = stableCode?.toLowerCase() || '';
+                                      const isFullWidthComp = ['product', 'section', 'hero', 'footer', 'header', 'page', 'nav', 'landing', 'banner'].includes(
                                         comp.category?.toLowerCase() || comp.layer?.toLowerCase() || ''
-                                      ) || comp.name?.toLowerCase().includes('hero') || comp.name?.toLowerCase().includes('footer') || 
-                                         comp.name?.toLowerCase().includes('section') || comp.name?.toLowerCase().includes('header');
+                                      ) || nameLower.includes('hero') || nameLower.includes('footer') || 
+                                         nameLower.includes('section') || nameLower.includes('header') ||
+                                         nameLower.includes('landing') || nameLower.includes('banner') ||
+                                         // Also detect by code patterns - if it has full viewport styling
+                                         codeLower.includes('min-h-screen') || codeLower.includes('h-screen') ||
+                                         codeLower.includes('w-full') && (codeLower.includes('100vh') || codeLower.includes('min-h-['));
+                                      
+                                      // During generation OR new component: force fixed compact size
+                                      const isGeneratingThis = isGenerating;
+                                      const isNewUngenerated = comp.isNew && !isGeneratingThis;
+                                      const needsFixedSize = isGeneratingThis || isNewUngenerated;
                                       
                                       return (
                                       <div 
                                         className="relative"
                                         data-component-container={id}
                                         style={{
-                                          // Manual size when user resized, otherwise auto from content
-                                          width: size?.width ? `${size.width}px` : (isFullWidthComp ? '900px' : 'auto'),
-                                          minWidth: isFullWidthComp ? '400px' : '200px',
-                                          height: size?.height ? `${size.height}px` : 'auto',
-                                          minHeight: '100px',
+                                          // New/Generating: fixed compact size. Generated: auto from content or manual
+                                          width: needsFixedSize ? '300px' : (size?.width ? `${size.width}px` : (isFullWidthComp ? '100%' : 'auto')),
+                                          minWidth: needsFixedSize ? '200px' : '200px',
+                                          height: needsFixedSize ? '120px' : (size?.height ? `${size.height}px` : 'auto'),
+                                          minHeight: needsFixedSize ? '100px' : '50px', // Small minimum, content determines actual height
+                                          maxHeight: needsFixedSize ? '150px' : undefined,
+                                          overflow: needsFixedSize ? 'hidden' : undefined,
                                         }}
                                       >
                                         {/* Content wrapper with overflow hidden */}
@@ -21083,12 +21312,20 @@ module.exports = {
                                             className="pointer-events-none w-full h-full"
                                             componentId={comp.id}
                                             onSizeChange={(newSize) => {
-                                              // Update size when content reports its natural size (for initial layout)
-                                              if (!size) {
-                                                setBlueprintSizes(prev => ({
-                                                  ...prev,
-                                                  [id]: { width: newSize.width, height: newSize.height }
-                                                }));
+                                              // Always update size from content UNLESS manually resized
+                                              // This ensures new content auto-fits after generation
+                                              if (!manuallyResizedComponents.has(id)) {
+                                                setBlueprintSizes(prev => {
+                                                  const existing = prev[id];
+                                                  // Only update if size changed significantly
+                                                  if (existing && Math.abs(existing.width - newSize.width) < 10 && Math.abs(existing.height - newSize.height) < 10) {
+                                                    return prev;
+                                                  }
+                                                  return {
+                                                    ...prev,
+                                                    [id]: { width: newSize.width, height: newSize.height }
+                                                  };
+                                                });
                                               }
                                             }}
                                             isFullWidth={isFullWidthComp}
@@ -21111,13 +21348,13 @@ module.exports = {
                                         {isSelected && (
                                           <>
                                             {/* Simple selection border - HIGH z-index to be on top */}
-                                            <div className="absolute inset-0 border-2 border-blue-500 rounded pointer-events-none z-[1000]" />
+                                            <div className="absolute inset-0 border-2 border-blue-500 rounded pointer-events-none z-[9998]" />
                                             
                                             {/* Resize handles - all 4 corners + 4 edges - BIGGER for visibility */}
                                             {/* Corner: top-left */}
                                             <div 
                                               data-resize-handle="nw"
-                                              className="absolute -top-4 -left-4 w-7 h-7 bg-blue-500 border-[3px] border-white rounded-md cursor-nw-resize z-[2001] hover:bg-blue-400 shadow-xl hover:scale-110 transition-transform"
+                                              className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-nw-resize z-[9999] hover:bg-blue-400 shadow-lg hover:scale-125 transition-transform"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'nw' });
@@ -21134,7 +21371,7 @@ module.exports = {
                                             {/* Corner: top-right */}
                                             <div 
                                               data-resize-handle="ne"
-                                              className="absolute -top-4 -right-4 w-7 h-7 bg-blue-500 border-[3px] border-white rounded-md cursor-ne-resize z-[2001] hover:bg-blue-400 shadow-xl hover:scale-110 transition-transform"
+                                              className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-ne-resize z-[9999] hover:bg-blue-400 shadow-lg hover:scale-125 transition-transform"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'ne' });
@@ -21150,7 +21387,7 @@ module.exports = {
                                             {/* Corner: bottom-left */}
                                             <div 
                                               data-resize-handle="sw"
-                                              className="absolute -bottom-4 -left-4 w-7 h-7 bg-blue-500 border-[3px] border-white rounded-md cursor-sw-resize z-[2001] hover:bg-blue-400 shadow-xl hover:scale-110 transition-transform"
+                                              className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-sw-resize z-[9999] hover:bg-blue-400 shadow-lg hover:scale-125 transition-transform"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'sw' });
@@ -21166,7 +21403,7 @@ module.exports = {
                                             {/* Corner: bottom-right */}
                                             <div 
                                               data-resize-handle="se"
-                                              className="absolute -bottom-4 -right-4 w-7 h-7 bg-blue-500 border-[3px] border-white rounded-md cursor-se-resize z-[2001] hover:bg-blue-400 shadow-xl hover:scale-110 transition-transform"
+                                              className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-se-resize z-[9999] hover:bg-blue-400 shadow-lg hover:scale-125 transition-transform"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'se' });
@@ -21182,7 +21419,7 @@ module.exports = {
                                             {/* Edge: top */}
                                             <div 
                                               data-resize-handle="n"
-                                              className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-5 bg-blue-500 border-[3px] border-white rounded-md cursor-n-resize z-[2001] hover:bg-blue-400 shadow-xl hover:scale-110 transition-transform"
+                                              className="absolute -top-1 left-1/2 -translate-x-1/2 w-6 h-2 bg-blue-500 border border-white rounded-sm cursor-n-resize z-[9999] hover:bg-blue-400 shadow-lg hover:scale-110 transition-transform"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'n' });
@@ -21198,7 +21435,7 @@ module.exports = {
                                             {/* Edge: bottom */}
                                             <div 
                                               data-resize-handle="s"
-                                              className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-12 h-5 bg-blue-500 border-[3px] border-white rounded-md cursor-s-resize z-[2001] hover:bg-blue-400 shadow-xl hover:scale-110 transition-transform"
+                                              className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-2 bg-blue-500 border border-white rounded-sm cursor-s-resize z-[9999] hover:bg-blue-400 shadow-lg hover:scale-110 transition-transform"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 's' });
@@ -21214,7 +21451,7 @@ module.exports = {
                                             {/* Edge: left */}
                                             <div 
                                               data-resize-handle="w"
-                                              className="absolute top-1/2 -left-3 -translate-y-1/2 w-5 h-12 bg-blue-500 border-[3px] border-white rounded-md cursor-w-resize z-[2001] hover:bg-blue-400 shadow-xl hover:scale-110 transition-transform"
+                                              className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-6 bg-blue-500 border border-white rounded-sm cursor-w-resize z-[9999] hover:bg-blue-400 shadow-lg hover:scale-110 transition-transform"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'w' });
@@ -21230,7 +21467,7 @@ module.exports = {
                                             {/* Edge: right */}
                                             <div 
                                               data-resize-handle="e"
-                                              className="absolute top-1/2 -right-3 -translate-y-1/2 w-5 h-12 bg-blue-500 border-[3px] border-white rounded-md cursor-e-resize z-[2001] hover:bg-blue-400 shadow-xl hover:scale-110 transition-transform"
+                                              className="absolute top-1/2 -right-1 -translate-y-1/2 w-2 h-6 bg-blue-500 border border-white rounded-sm cursor-e-resize z-[9999] hover:bg-blue-400 shadow-lg hover:scale-110 transition-transform"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 setResizingComponent({ id, handle: 'e' });
@@ -21255,146 +21492,6 @@ module.exports = {
                                       </div>
                                     )}
                                   </div>
-                                  
-                                  {/* Inline AI Input for new components */}
-                                  {comp.isNew && isSelected && (
-                                    <div className="mt-3 bg-zinc-900/95 border border-zinc-700 rounded-xl p-3 shadow-xl min-w-[300px]">
-                                      <div className="flex items-center gap-2 mb-2">
-                                        <div className="w-2 h-2 rounded-full bg-zinc-500 animate-pulse" />
-                                        <span className="text-[10px] text-zinc-400">Describe your component</span>
-                                      </div>
-                                      <div className="flex gap-2">
-                                        <input
-                                          type="text"
-                                          value={generatePromptInput}
-                                          onChange={(e) => setGeneratePromptInput(e.target.value)}
-                                          onKeyDown={async (e) => {
-                                            if (e.key === 'Enter' && generatePromptInput.trim() && !isEditingBlueprint) {
-                                              e.preventDefault();
-                                              const userMessage = generatePromptInput.trim();
-                                              setGeneratePromptInput("");
-                                              setIsEditingBlueprint(true);
-                                              setGeneratingBlueprintId(comp.id); // Start shimmer animation
-                                              
-                                              await streamBlueprintEdit(
-                                                '<div className="p-4 bg-zinc-800 rounded-lg text-white">New Component</div>',
-                                                comp.name,
-                                                `Create: ${userMessage}`,
-                                                (partialCode) => {
-                                                  // Update component code in real-time
-                                                  setLibraryData((prev: any) => ({
-                                                    ...prev,
-                                                    components: prev?.components?.map((c: any) => 
-                                                      c.id === comp.id ? { ...c, code: partialCode } : c
-                                                    ) || []
-                                                  }));
-                                                },
-                                                (finalCode) => {
-                                                  // Remove isNew flag, set final code
-                                                  setLibraryData((prev: any) => ({
-                                                    ...prev,
-                                                    components: prev?.components?.map((c: any) => 
-                                                      c.id === comp.id ? { ...c, code: finalCode, isNew: false, name: userMessage.slice(0, 30) || comp.name } : c
-                                                    ) || []
-                                                  }));
-                                                  setIsEditingBlueprint(false);
-                                                  setGeneratingBlueprintId(null);
-                                                  setRecentlyGeneratedId(comp.id); // Trigger scale animation
-                                                  setTimeout(() => setRecentlyGeneratedId(null), 600); // Clear after animation
-                                                  showToast("Component created!", "success");
-                                                  // Auto-fit to show full component
-                                                  fitComponentInView(id);
-                                                },
-                                                (error) => {
-                                                  setIsEditingBlueprint(false);
-                                                  setGeneratingBlueprintId(null);
-                                                  showToast(`Error: ${error}`, "error");
-                                                }
-                                              );
-                                            }
-                                          }}
-                                          placeholder="e.g. Line chart, Pricing card, Login form..."
-                                          className="flex-1 px-3 py-2 text-xs bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
-                                          disabled={isEditingBlueprint}
-                                          autoFocus
-                                          onClick={(e) => e.stopPropagation()}
-                                          onMouseDown={(e) => e.stopPropagation()}
-                                        />
-                                        <button
-                                          onClick={async (e) => {
-                                            e.stopPropagation();
-                                            if (!generatePromptInput.trim() || isEditingBlueprint) return;
-                                            const userMessage = generatePromptInput.trim();
-                                            setGeneratePromptInput("");
-                                            setIsEditingBlueprint(true);
-                                            setGeneratingBlueprintId(comp.id); // Start shimmer animation
-                                            
-                                            await streamBlueprintEdit(
-                                              '<div className="p-4 bg-zinc-800 rounded-lg text-white">New Component</div>',
-                                              comp.name,
-                                              `Create: ${userMessage}`,
-                                              (partialCode) => {
-                                                setLibraryData((prev: any) => ({
-                                                  ...prev,
-                                                  components: prev?.components?.map((c: any) => 
-                                                    c.id === comp.id ? { ...c, code: partialCode } : c
-                                                  ) || []
-                                                }));
-                                              },
-                                              (finalCode) => {
-                                                setLibraryData((prev: any) => ({
-                                                  ...prev,
-                                                  components: prev?.components?.map((c: any) => 
-                                                    c.id === comp.id ? { ...c, code: finalCode, isNew: false, name: userMessage.slice(0, 30) || comp.name } : c
-                                                  ) || []
-                                                }));
-                                                setIsEditingBlueprint(false);
-                                                setGeneratingBlueprintId(null);
-                                                setRecentlyGeneratedId(comp.id); // Trigger scale animation
-                                                setTimeout(() => setRecentlyGeneratedId(null), 600);
-                                                showToast("Component created!", "success");
-                                                // Auto-fit to show full component
-                                                fitComponentInView(id);
-                                              },
-                                              (error) => {
-                                                setIsEditingBlueprint(false);
-                                                setGeneratingBlueprintId(null);
-                                                showToast(`Error: ${error}`, "error");
-                                              }
-                                            );
-                                          }}
-                                          disabled={!generatePromptInput.trim() || isEditingBlueprint}
-                                          className={cn(
-                                            "px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 text-xs",
-                                            generatePromptInput.trim() && !isEditingBlueprint
-                                              ? "bg-emerald-600 hover:bg-emerald-500 text-white"
-                                              : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
-                                          )}
-                                          onMouseDown={(e) => e.stopPropagation()}
-                                        >
-                                          {isEditingBlueprint ? (
-                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                          ) : (
-                                            <Sparkles className="w-3.5 h-3.5" />
-                                          )}
-                                          Create
-                                        </button>
-                                      </div>
-                                      {/* Quick suggestions */}
-                                      <div className="flex flex-wrap gap-1 mt-2">
-                                        {["Button", "Card", "Avatar", "Badge", "Input"].map(s => (
-                                          <button
-                                            key={s}
-                                            onClick={(e) => { e.stopPropagation(); setGeneratePromptInput(s); }}
-                                            onMouseDown={(e) => e.stopPropagation()}
-                                            className="px-2 py-0.5 text-[9px] bg-zinc-800 text-zinc-500 rounded hover:bg-zinc-700 hover:text-white"
-                                          >
-                                            {s}
-                                          </button>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
                                 </div>
                               );
                             })}
@@ -21800,19 +21897,46 @@ module.exports = {
                                       }
                                       
                                       const currentCode = blueprintEditedCode || selectedComp.code || '';
+                                      const isNewComp = (selectedComp as any).isNew;
+                                      
+                                      // Reset size if new component so it auto-fits after generation
+                                      if (isNewComp) {
+                                        setGeneratingBlueprintId(selectedComp.id);
+                                        setManuallyResizedComponents(prev => {
+                                          const next = new Set(prev);
+                                          next.delete(`comp-${compId}`);
+                                          return next;
+                                        });
+                                        setBlueprintSizes(prev => {
+                                          const { [`comp-${compId}`]: _, ...rest } = prev;
+                                          return rest;
+                                        });
+                                      }
+                                      
                                       await streamBlueprintEdit(
                                         currentCode,
                                         selectedComp.name,
-                                        userMessage,
+                                        isNewComp ? `Create: ${userMessage}` : userMessage,
                                         (partialCode) => setBlueprintEditedCode(partialCode),
                                         (finalCode) => {
                                           setBlueprintEditedCode(finalCode);
+                                          // Clear isNew flag after generation
+                                          if (isNewComp) {
+                                            setLibraryData((prev: any) => ({
+                                              ...prev,
+                                              components: prev?.components?.map((c: any) => 
+                                                c.id === selectedComp.id ? { ...c, isNew: false } : c
+                                              ) || []
+                                            }));
+                                            setGeneratingBlueprintId(null);
+                                          }
                                           setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: 'Applied ✓' }]);
                                           setIsEditingBlueprint(false);
                                         },
                                         (error) => {
                                           setBlueprintChatHistory(prev => [...prev, { role: 'ai', content: `Error: ${error}` }]);
                                           setIsEditingBlueprint(false);
+                                          if (isNewComp) setGeneratingBlueprintId(null);
                                         }
                                       );
                                     }}
@@ -21861,8 +21985,18 @@ module.exports = {
                                         setLibraryData({
                                           ...libraryData,
                                           components: libraryData.components?.map((c: any) => 
-                                            c.id === compId ? { ...c, code: blueprintEditedCode } : c
+                                            c.id === compId ? { ...c, code: blueprintEditedCode, isNew: false } : c
                                           ) || []
+                                        });
+                                        // Clear size constraints so it auto-fits to new content
+                                        setManuallyResizedComponents(prev => {
+                                          const next = new Set(prev);
+                                          next.delete(`comp-${compId}`);
+                                          return next;
+                                        });
+                                        setBlueprintSizes(prev => {
+                                          const { [`comp-${compId}`]: _, ...rest } = prev;
+                                          return rest;
                                         });
                                         setBlueprintEditedCode(null);
                                         setBlueprintChatHistory([]);
@@ -22709,8 +22843,29 @@ module.exports = {
                                       <span className="text-[8px] text-zinc-300/60 uppercase">Current</span>
                                     ) : (
                                       <button
-                                        onClick={(e) => {
+                                        onClick={async (e) => {
                                           e.stopPropagation();
+                                          // Check if version has code
+                                          if (!version.code || version.code.length < 50) {
+                                            if (activeGeneration?.id === gen.id) {
+                                              const freshVersion = (activeGeneration.versions || []).find(v => v.id === version.id);
+                                              if (freshVersion?.code && freshVersion.code.length >= 50) {
+                                                restoreVersion(gen.id, freshVersion);
+                                                return;
+                                              }
+                                            }
+                                            showToast("Loading version data...", "info");
+                                            const fullGen = await loadFullGeneration(gen.id);
+                                            if (fullGen) {
+                                              const freshVersion = (fullGen.versions || []).find(v => v.id === version.id);
+                                              if (freshVersion?.code && freshVersion.code.length >= 50) {
+                                                restoreVersion(gen.id, freshVersion);
+                                                return;
+                                              }
+                                            }
+                                            showToast("Version data not available", "error");
+                                            return;
+                                          }
                                           restoreVersion(gen.id, version);
                                         }}
                                         className="p-1.5 rounded bg-zinc-800/50 hover:bg-white/10 transition-all"
@@ -22740,16 +22895,49 @@ module.exports = {
                                     <span className="text-[8px] text-zinc-300/60 uppercase">Current</span>
                                   ) : (
                                     <button
-                                      onClick={(e) => {
+                                      onClick={async (e) => {
                                         e.stopPropagation();
+                                        // Restore to initial generation
+                                        let codeToRestore = gen.code;
+                                        let flowNodesToRestore = gen.flowNodes;
+                                        let flowEdgesToRestore = gen.flowEdges;
+                                        let styleInfoToRestore = gen.styleInfo;
+                                        
+                                        if (!codeToRestore || codeToRestore.length < 50) {
+                                          // Try to use activeGeneration if it's the same project
+                                          if (activeGeneration?.id === gen.id && activeGeneration.code) {
+                                            const initialVersion = (activeGeneration.versions || []).find(v => v.label === 'Initial generation');
+                                            if (initialVersion?.code) {
+                                              codeToRestore = initialVersion.code;
+                                              flowNodesToRestore = initialVersion.flowNodes;
+                                              flowEdgesToRestore = initialVersion.flowEdges;
+                                              styleInfoToRestore = initialVersion.styleInfo;
+                                            } else {
+                                              showToast("Initial version not saved - cannot restore", "error");
+                                              return;
+                                            }
+                                          } else {
+                                            showToast("Loading version data...", "info");
+                                            const fullGen = await loadFullGeneration(gen.id);
+                                            if (!fullGen?.code) {
+                                              showToast("Failed to load version data", "error");
+                                              return;
+                                            }
+                                            codeToRestore = fullGen.code;
+                                            flowNodesToRestore = fullGen.flowNodes;
+                                            flowEdgesToRestore = fullGen.flowEdges;
+                                            styleInfoToRestore = fullGen.styleInfo;
+                                          }
+                                        }
+                                        
                                         restoreVersion(gen.id, { 
                                           id: 'initial', 
                                           timestamp: gen.timestamp, 
                                           label: 'Initial generation',
-                                          code: gen.code || '',
-                                          flowNodes: gen.flowNodes,
-                                          flowEdges: gen.flowEdges,
-                                          styleInfo: gen.styleInfo
+                                          code: codeToRestore || '',
+                                          flowNodes: flowNodesToRestore,
+                                          flowEdges: flowEdgesToRestore,
+                                          styleInfo: styleInfoToRestore
                                         });
                                       }}
                                       className="p-1.5 rounded bg-zinc-800/50 hover:bg-white/10 transition-all"
@@ -22888,7 +23076,13 @@ module.exports = {
                       )}
                     >
                       <div className="w-16 h-10 rounded-lg overflow-hidden bg-zinc-800/50 flex-shrink-0 flex items-center justify-center">
-                        {flow.thumbnail ? <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" /> : <Film className="w-4 h-4 text-white/20" />}
+                        {flow.thumbnail && flow.thumbnail.length > 100 ? (
+                          <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" />
+                        ) : flow.videoUrl ? (
+                          <video src={flow.videoUrl} className="w-full h-full object-cover" muted preload="metadata" onLoadedData={(e) => { e.currentTarget.currentTime = 0.5; }} />
+                        ) : (
+                          <Film className="w-4 h-4 text-white/20" />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-zinc-200 truncate">{flow.name}</p>
@@ -23952,8 +24146,14 @@ module.exports = {
                   <div className="space-y-1.5 max-h-[120px] overflow-auto">
                     {flows.map((flow) => (
                       <button key={flow.id} onClick={() => setSelectedFlowId(flow.id)} className={cn("w-full flex items-center gap-2 p-2 rounded-lg cursor-pointer text-left", selectedFlowId === flow.id ? "bg-zinc-800/10 border border-zinc-700" : "bg-zinc-800/50 hover:bg-zinc-800/50")} aria-label={`Select flow ${flow.name}`}>
-                        <div className="w-10 h-6 rounded overflow-hidden bg-zinc-800/50 flex-shrink-0">
-                          {flow.thumbnail ? <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" /> : <Film className="w-3 h-3 text-white/20 mx-auto mt-1.5" />}
+                        <div className="w-10 h-6 rounded overflow-hidden bg-zinc-800/50 flex-shrink-0 flex items-center justify-center">
+                          {flow.thumbnail && flow.thumbnail.length > 100 ? (
+                            <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" />
+                          ) : flow.videoUrl ? (
+                            <video src={flow.videoUrl} className="w-full h-full object-cover" muted preload="metadata" onLoadedData={(e) => { e.currentTarget.currentTime = 0.5; }} />
+                          ) : (
+                            <Film className="w-3 h-3 text-white/20" />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs text-zinc-400 truncate">{flow.name}</p>

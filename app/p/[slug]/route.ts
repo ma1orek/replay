@@ -121,27 +121,60 @@ function jsxToHtml(code: string): string {
     }
   }
   
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HANDLE JSX/REACT CODE FORMAT: export default function ComponentName() { return (...) }
+  // ═══════════════════════════════════════════════════════════════════════════
+  
+  // Check if this is JSX/React code (starts with comments, imports, or function)
+  const isJsxCode = /^\/\/|^['"]use client|^import\s|^export\s+default|^function\s+\w+Page/i.test(html.trim());
+  
+  if (isJsxCode) {
+    // Remove leading comments
+    html = html.replace(/^(\/\/[^\n]*\n?)+/gm, '');
+    
+    // Remove "use client" directive
+    html = html.replace(/^['"]use client['"];\s*/m, '');
+    
+    // Remove import statements
+    html = html.replace(/^import\s+[^;]+;\s*/gm, '');
+    
+    // Extract content from "export default function ...() { return (...) }"
+    const returnMatch = html.match(/return\s*\(\s*([\s\S]*)\s*\)\s*;?\s*\}?\s*$/);
+    if (returnMatch && returnMatch[1]) {
+      html = returnMatch[1].trim();
+      // Remove trailing );}
+      html = html.replace(/\s*\)\s*;?\s*\}?\s*$/, '');
+    } else {
+      // Try to find JSX starting with < after function declaration
+      const jsxStartMatch = html.match(/(?:function\s+\w+\s*\([^)]*\)\s*\{[\s\S]*?return\s*\()?\s*(<[\s\S]+)/);
+      if (jsxStartMatch && jsxStartMatch[1]) {
+        html = jsxStartMatch[1].trim();
+        html = html.replace(/\s*\)\s*;?\s*\}?\s*$/, '');
+      }
+    }
+    
+    // Remove function declarations
+    html = html.replace(/^(export\s+)?(default\s+)?function\s+\w+\s*\([^)]*\)\s*\{\s*/m, '');
+    html = html.replace(/^const\s+\w+\s*=\s*\([^)]*\)\s*=>\s*\{?\s*/m, '');
+    
+    // Remove const declarations (state, variables)
+    html = html.replace(/const\s+\[?\w+[^\n]*\n/g, '');
+    html = html.replace(/\/\/[^\n]*\n/g, '');
+  }
+  
   // CRITICAL FIX: Find the first COMPLETE HTML opening tag
-  // Must start with < followed by valid tag name (not in middle of attribute)
-  // Pattern: < at start of line or after whitespace, followed by tag name
   const validTags = 'div|section|main|header|footer|nav|aside|article|body|html|span|p|h[1-6]|ul|ol|li|a|button|form|input|img|table|thead|tbody|tr|td|th|figure|figcaption|blockquote|pre|code|label|select|option|textarea';
   
-  // Look for opening tag that's NOT inside an attribute value
-  // The tag must be preceded by start of string, newline, or whitespace (not letters/dots)
   const tagPattern = new RegExp(`(?:^|[\\s\\n>])(<(?:${validTags})(?:\\s|>|$))`, 'i');
   const match = html.match(tagPattern);
   
   if (match && match.index !== undefined) {
-    // Find actual position of the < character
     const fullMatch = match[0];
     const tagStart = match[1];
     const offset = fullMatch.indexOf(tagStart);
     const startIndex = match.index + offset;
-    
-    // Take everything from this tag onwards
     html = html.slice(startIndex);
   } else {
-    // Fallback: just find first < followed by valid tag
     const fallbackMatch = html.match(new RegExp(`<(${validTags})[\\s>]`, 'i'));
     if (fallbackMatch && fallbackMatch.index !== undefined) {
       html = html.slice(fallbackMatch.index);
@@ -158,7 +191,7 @@ function jsxToHtml(code: string): string {
   // Convert className to class
   html = html.replace(/className=/g, 'class=');
   
-  // Convert JSX self-closing tags to proper HTML (but keep self-closing for void elements)
+  // Convert JSX self-closing tags to proper HTML
   const voidElements = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'];
   html = html.replace(/<([a-z][a-zA-Z0-9]*)\s+([^>]*?)\s*\/>/gi, (match, tag, attrs) => {
     if (voidElements.includes(tag.toLowerCase())) {
@@ -192,13 +225,10 @@ function jsxToHtml(code: string): string {
   });
   
   // FINAL CLEANUP: Remove any garbage text before first < tag
-  // This catches cases where broken attributes leak through
   const firstRealTag = html.indexOf('<');
   if (firstRealTag > 0) {
-    // Check if text before < is just whitespace or garbage
     const beforeTag = html.slice(0, firstRealTag);
     if (!/^\s*$/.test(beforeTag)) {
-      // There's non-whitespace garbage before the tag - remove it
       html = html.slice(firstRealTag);
     }
   }
@@ -270,14 +300,13 @@ export async function GET(
   [style*="visibility: hidden"], [style*="visibility:hidden"] { visibility: visible !important; }
   [style*="translate"] { opacity: 1 !important; }
   
-  /* Target animation classes */
+  /* Target animation classes - only fix opacity/visibility, NOT transform (breaks layout) */
   .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .slide-left, .slide-right,
   .scale-up, .rotate-in, .blur-fade, .animate-fade,
-  [class*="fade-"], [class*="slide-"], [class*="stagger-"], [class*="animate-"],
+  [class*="fade-"], [class*="slide-"], [class*="stagger-"],
   [class*="gsap"], [class*="scroll"] {
     opacity: 1 !important;
     visibility: visible !important;
-    transform: none !important;
   }
   
   /* Target stagger containers and their children */
@@ -292,7 +321,6 @@ export async function GET(
   [data-scroll], [data-gsap], [data-animate] {
     opacity: 1 !important;
     visibility: visible !important;
-    transform: none !important;
   }
   
   /* Ensure ALL grid/flex children are visible */
@@ -312,11 +340,10 @@ export async function GET(
     visibility: visible !important;
   }
   
-  /* Fix transform-based hiding */
-  [style*="translateY(-"], [style*="translateX(-"],
-  [style*="translateY(100"], [style*="translateX(100"],
-  [style*="scale(0"] {
-    transform: none !important;
+  /* Fix transform-based hiding - only for elements hidden off-screen */
+  [style*="translateY(-100"], [style*="translateX(-100"],
+  [style*="translateY(100%"], [style*="translateX(100%"],
+  [style*="scale(0)"] {
     opacity: 1 !important;
   }
 </style>
@@ -485,6 +512,21 @@ export async function GET(
       code = code.replace('<body', `${visibilityFixCss}\n<body`);
     }
     
+    // CRITICAL: Add data-presets="react" to Babel scripts that don't have it
+    // This fixes "Unexpected token" errors on const/let
+    if (code.includes('<script type="text/babel">') && !code.includes('data-presets="react"')) {
+      code = code.replace(/<script type="text\/babel">/g, '<script type="text/babel" data-presets="react">');
+    }
+    
+    // CRITICAL: Inject React hooks globals right after React loads
+    // This fixes "useRef is not defined" errors
+    const reactHooksScript = `<script>if(typeof React!=='undefined'){window.useState=React.useState;window.useEffect=React.useEffect;window.useRef=React.useRef;window.useCallback=React.useCallback;window.useMemo=React.useMemo;window.useContext=React.useContext;window.useReducer=React.useReducer;window.useLayoutEffect=React.useLayoutEffect;window.Fragment=React.Fragment;}</script>`;
+    
+    // Inject after babel.min.js script (right before </head>)
+    if (code.includes('</head>')) {
+      code = code.replace('</head>', `${reactHooksScript}\n</head>`);
+    }
+    
     // Inject badge before </body>
     if (badgeHtml) {
       if (code.includes('</body>')) {
@@ -551,6 +593,11 @@ export async function GET(
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   
+  <!-- Make React hooks globally available for Babel scripts -->
+  <script>
+    const { useState, useEffect, useRef, useCallback, useMemo, useContext, useReducer, useLayoutEffect } = React;
+  </script>
+  
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   
@@ -589,7 +636,10 @@ ${badgeHtml}
   return new NextResponse(fullHtml, {
     headers: {
       "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+      // NO CACHE - ensures updates are immediately visible after republishing
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0",
     },
   });
 }

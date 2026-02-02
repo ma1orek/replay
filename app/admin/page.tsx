@@ -58,12 +58,15 @@ interface Stats {
   totalCreditsUsed: number;
   totalTokensUsed: number;
   estimatedCostUSD: number;
+  estimatedCostPLN: number;
+  costPerGeneration: number;
+  generationsWithTokenTracking: number;
+  avgTokensPerGeneration: number;
   activeToday: number;
   avgGenerationsPerUser: number;
   topStyles: { style: string; count: number }[];
   generationsPerDay: { date: string; count: number }[];
   proUsers: number;
-  // makerUsers removed - only PRO subscriptions available
 }
 
 interface FeedbackData {
@@ -99,10 +102,9 @@ interface BlogPost {
   published_at: string | null;
 }
 
-// Gemini API cost estimation (based on actual usage)
-// gemini-3-pro: Higher token costs for video analysis + code generation
-// Average video generation: ~$0.40 per generation (video processing + output)
-const ESTIMATED_COST_PER_GENERATION_USD = 0.40; // $0.40 per generation
+// Gemini API cost estimation (based on actual Google AI Studio billing)
+// gemini-3-pro: ~$304 / 500 generations = $0.61 per generation
+const ESTIMATED_COST_PER_GENERATION_USD = 0.61;
 const USD_TO_PLN = 4.05;
 
 export default function AdminPage() {
@@ -614,7 +616,7 @@ export default function AdminPage() {
           />
           <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a0a]/90 via-[#0a0a0a]/70 to-[#0a0a0a]/90" />
         </div>
-        <div className="relative z-10 animate-spin w-8 h-8 border-2 border-[#FF6E3C] border-t-transparent rounded-full" />
+        <div className="relative z-10 animate-spin w-8 h-8 border-2 border-zinc-500 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -647,16 +649,16 @@ export default function AdminPage() {
         >
           {/* Logo */}
           <div className="flex items-center justify-center gap-3 mb-8">
-            <svg className="w-10 h-10 text-[#FF6E3C]" viewBox="0 0 82 109" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg className="w-10 h-10 text-white" viewBox="0 0 82 109" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M68.099 37.2285C78.1678 43.042 78.168 57.5753 68.099 63.3887L29.5092 85.668C15.6602 93.6633 0.510418 77.4704 9.40857 64.1836L17.4017 52.248C18.1877 51.0745 18.1876 49.5427 17.4017 48.3691L9.40857 36.4336C0.509989 23.1467 15.6602 6.95306 29.5092 14.9482L68.099 37.2285Z" stroke="currentColor" strokeWidth="11.6182" strokeLinejoin="round"/>
               <rect x="34.054" y="98.6841" width="48.6555" height="11.6182" rx="5.80909" transform="rotate(-30 34.054 98.6841)" fill="currentColor"/>
             </svg>
             <span className="text-2xl font-bold text-white">Admin</span>
           </div>
 
-          <div className="bg-[#111] border border-white/10 rounded-2xl p-8">
+          <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-8">
             <div className="flex items-center gap-2 mb-6">
-              <Shield className="w-5 h-5 text-[#FF6E3C]" />
+              <Shield className="w-5 h-5 text-zinc-400" />
               <h1 className="text-xl font-semibold text-white">Admin Access</h1>
             </div>
 
@@ -667,7 +669,7 @@ export default function AdminPage() {
                   type="email"
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-black/50 border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-[#FF6E3C]/50"
+                  className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600"
                   placeholder="admin@replay.build"
                   required
                 />
@@ -680,7 +682,7 @@ export default function AdminPage() {
                     type={showPassword ? "text" : "password"}
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
-                    className="w-full px-4 py-3 bg-black/50 border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-[#FF6E3C]/50 pr-12"
+                    className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600 pr-12"
                     placeholder="••••••••"
                     required
                   />
@@ -704,7 +706,7 @@ export default function AdminPage() {
               <button
                 type="submit"
                 disabled={loginLoading}
-                className="w-full py-3 bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white font-medium rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full py-3 bg-white text-black font-medium rounded-xl hover:bg-zinc-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loginLoading ? (
                   <><Loader2 className="w-4 h-4 animate-spin" /> Signing in...</>
@@ -798,7 +800,7 @@ export default function AdminPage() {
               className={cn(
                 "w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-all",
                 activeTab === tab.id 
-                  ? "bg-zinc-800/60 text-zinc-100 border-l-2 border-orange-500" 
+                  ? "bg-zinc-800/60 text-white border-l-2 border-white" 
                   : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/30 border-l-2 border-transparent"
               )}
             >
@@ -811,8 +813,8 @@ export default function AdminPage() {
         {/* Actions at bottom */}
         <div className="p-4 border-t border-zinc-800/50 space-y-2">
           <Link
-            href="/tool"
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 rounded-xl text-sm text-orange-500 transition-colors"
+            href="/"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-zinc-700 rounded-xl text-sm text-zinc-300 transition-colors"
           >
             <Play className="w-4 h-4" />
             Go to Tool
@@ -924,81 +926,73 @@ export default function AdminPage() {
             </div>
 
             {/* API Costs Section */}
-            <div className="bg-[#111] border border-white/10 rounded-xl p-6">
-              <h3 className="text-sm font-medium text-white/70 mb-4 flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-[#FF6E3C]" />
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+              <h3 className="text-sm font-medium text-zinc-300 mb-4 flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-zinc-400" />
                 Gemini API Costs
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-black/30 rounded-xl p-4 border border-white/5">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700/50">
                   <div className="flex items-center gap-2 mb-2">
-                    <Cpu className="w-4 h-4 text-blue-400" />
-                    <span className="text-xs text-white/50">Total Tokens</span>
+                    <DollarSign className="w-4 h-4 text-zinc-400" />
+                    <span className="text-xs text-zinc-500">Est. Total Cost</span>
                   </div>
-                  <p className="text-2xl font-bold text-white">
-                    {stats?.totalTokensUsed ? `${(stats.totalTokensUsed / 1000).toFixed(1)}K` : "N/A"}
+                  <p className="text-2xl font-semibold text-white">
+                    ${stats?.estimatedCostUSD?.toFixed(2) || "0.00"}
                   </p>
-                  <p className="text-xs text-white/30 mt-1">
-                    Tracked from generations
+                  <p className="text-xs text-zinc-500 mt-1">
+                    ~{stats?.estimatedCostPLN?.toFixed(0) || "0"} PLN
                   </p>
                 </div>
-                <div className="bg-black/30 rounded-xl p-4 border border-white/5">
+                <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700/50">
                   <div className="flex items-center gap-2 mb-2">
-                    <TrendingUp className="w-4 h-4 text-green-400" />
-                    <span className="text-xs text-white/50">Est. Total Cost</span>
+                    <Activity className="w-4 h-4 text-zinc-400" />
+                    <span className="text-xs text-zinc-500">Cost/Generation</span>
                   </div>
-                  <p className="text-2xl font-bold text-white">
-                    ${stats?.estimatedCostUSD?.toFixed(2) || ((stats?.totalGenerations || generations.length) * ESTIMATED_COST_PER_GENERATION_USD).toFixed(2)}
+                  <p className="text-2xl font-semibold text-white">
+                    ${stats?.costPerGeneration?.toFixed(2) || "0.61"}
                   </p>
-                  <p className="text-xs text-white/30 mt-1">
-                    ~{((stats?.estimatedCostUSD || (stats?.totalGenerations || generations.length) * ESTIMATED_COST_PER_GENERATION_USD) * USD_TO_PLN).toFixed(2)} PLN
+                  <p className="text-xs text-zinc-500 mt-1">
+                    ~{((stats?.costPerGeneration || 0.61) * 4.05).toFixed(2)} PLN
                   </p>
                 </div>
-                <div className="bg-black/30 rounded-xl p-4 border border-white/5">
+                <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700/50">
                   <div className="flex items-center gap-2 mb-2">
-                    <Activity className="w-4 h-4 text-purple-400" />
-                    <span className="text-xs text-white/50">Avg Tokens/Gen</span>
+                    <Cpu className="w-4 h-4 text-zinc-400" />
+                    <span className="text-xs text-zinc-500">Total Tokens</span>
                   </div>
-                  <p className="text-2xl font-bold text-white">
-                    {stats?.totalGenerations && stats?.totalTokensUsed 
-                      ? `${Math.round(stats.totalTokensUsed / stats.totalGenerations / 1000)}K` 
+                  <p className="text-2xl font-semibold text-white">
+                    {stats?.totalTokensUsed ? `${(stats.totalTokensUsed / 1000000).toFixed(1)}M` : "N/A"}
+                  </p>
+                  <p className="text-xs text-zinc-500 mt-1">
+                    {stats?.generationsWithTokenTracking || 0} tracked
+                  </p>
+                </div>
+                <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700/50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="w-4 h-4 text-zinc-400" />
+                    <span className="text-xs text-zinc-500">Avg Tokens/Gen</span>
+                  </div>
+                  <p className="text-2xl font-semibold text-white">
+                    {stats?.avgTokensPerGeneration 
+                      ? `${Math.round(stats.avgTokensPerGeneration / 1000)}K` 
                       : "~50K"}
                   </p>
-                  <p className="text-xs text-white/30 mt-1">Per generation</p>
+                  <p className="text-xs text-zinc-500 mt-1">Per generation</p>
                 </div>
               </div>
               
-              {/* Cost per generation breakdown */}
-              <div className="mt-4 p-3 bg-black/20 rounded-lg border border-white/5">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-white/40">Cost per generation</span>
-                  <span className="text-xs font-medium text-white/80">
-                    ~${stats?.totalGenerations && stats?.estimatedCostUSD 
-                      ? (stats.estimatedCostUSD / stats.totalGenerations).toFixed(3) 
-                      : ESTIMATED_COST_PER_GENERATION_USD.toFixed(3)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-white/40">Cost per generation (PLN)</span>
-                  <span className="text-xs font-medium text-white/80">
-                    ~{((stats?.totalGenerations && stats?.estimatedCostUSD 
-                      ? (stats.estimatedCostUSD / stats.totalGenerations) 
-                      : ESTIMATED_COST_PER_GENERATION_USD) * USD_TO_PLN).toFixed(2)} zł
-                  </span>
-                </div>
-              </div>
-              
-              <p className="text-[10px] text-white/20 mt-4">
-                * Estimates based on gemini-3-pro pricing. Actual costs may vary. Check Google Cloud Console for exact billing.
+              <p className="text-[10px] text-zinc-600 mt-4">
+                * Cost based on $0.61/generation (Gemini 3 Pro). Verify in Google Cloud Console.
               </p>
             </div>
 
             {/* Charts Row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Generations Chart */}
-              <div className="bg-[#111] border border-white/10 rounded-xl p-6">
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
                 <h3 className="text-sm font-medium text-white/70 mb-4 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-[#FF6E3C]" />
+                  <TrendingUp className="w-4 h-4 text-zinc-400" />
                   Generations (Last 7 Days)
                 </h3>
                 <div className="h-48 flex items-end gap-2">
@@ -1008,7 +1002,7 @@ export default function AdminPage() {
                     return (
                       <div key={i} className="flex-1 flex flex-col items-center gap-2">
                         <div 
-                          className="w-full bg-gradient-to-t from-[#FF6E3C] to-[#FF8F5C] rounded-t-lg transition-all"
+                          className="w-full bg-zinc-600 rounded-t-lg transition-all"
                           style={{ height: `${height}%`, minHeight: day.count > 0 ? "8px" : "2px" }}
                         />
                         <span className="text-[10px] text-white/30">{day.date.split("-")[2]}</span>
@@ -1019,9 +1013,9 @@ export default function AdminPage() {
               </div>
 
               {/* Top Styles */}
-              <div className="bg-[#111] border border-white/10 rounded-xl p-6">
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
                 <h3 className="text-sm font-medium text-white/70 mb-4 flex items-center gap-2">
-                  <Palette className="w-4 h-4 text-[#FF6E3C]" />
+                  <Palette className="w-4 h-4 text-zinc-400" />
                   Popular Styles
                 </h3>
                 <div className="space-y-3">
@@ -1031,7 +1025,7 @@ export default function AdminPage() {
                       <div className="flex items-center gap-2">
                         <div className="w-24 h-2 bg-white/5 rounded-full overflow-hidden">
                           <div 
-                            className="h-full bg-[#FF6E3C] rounded-full"
+                            className="h-full bg-zinc-500 rounded-full"
                             style={{ width: `${(style.count / (stats?.topStyles?.[0]?.count || 1)) * 100}%` }}
                           />
                         </div>
@@ -1044,9 +1038,9 @@ export default function AdminPage() {
             </div>
 
             {/* Recent Activity */}
-            <div className="bg-[#111] border border-white/10 rounded-xl p-6">
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
               <h3 className="text-sm font-medium text-white/70 mb-4 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-[#FF6E3C]" />
+                <Clock className="w-4 h-4 text-[#71717a]" />
                 Recent Generations
               </h3>
               <div className="space-y-2">
@@ -1054,7 +1048,7 @@ export default function AdminPage() {
                   <div key={gen.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
-                        <Video className="w-4 h-4 text-[#FF6E3C]" />
+                        <Video className="w-4 h-4 text-[#71717a]" />
                       </div>
                       <div>
                         <p className="text-sm text-white/70">{gen.user_email || "Unknown user"}</p>
@@ -1083,16 +1077,16 @@ export default function AdminPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search users by email or ID..."
-                className="w-full pl-12 pr-4 py-3 bg-[#111] border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-[#FF6E3C]/50"
+                className="w-full pl-12 pr-4 py-3 bg-zinc-900/50 border border-zinc-800 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-[#71717a]/50"
               />
             </div>
 
             {/* Users Table */}
-            <div className="bg-[#111] border border-white/10 rounded-xl overflow-hidden">
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-white/10">
+                    <tr className="border-b border-zinc-800">
                       <th className="text-left px-4 py-3 text-xs text-white/50 font-medium">User</th>
                       <th className="text-left px-4 py-3 text-xs text-white/50 font-medium">Membership</th>
                       <th className="text-left px-4 py-3 text-xs text-white/50 font-medium">Credits</th>
@@ -1114,7 +1108,7 @@ export default function AdminPage() {
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FF6E3C] to-[#FF8F5C] flex items-center justify-center text-white text-xs font-medium">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#71717a] to-[#52525b] flex items-center justify-center text-white text-xs font-medium">
                               {user.email?.[0]?.toUpperCase() || "?"}
                             </div>
                             <div>
@@ -1132,7 +1126,7 @@ export default function AdminPage() {
                             className={cn(
                               "text-xs px-2 py-1 rounded-full transition-colors cursor-pointer hover:opacity-80",
                               user.membership === "pro" 
-                                ? "bg-[#FF6E3C]/20 text-[#FF6E3C] hover:bg-[#FF6E3C]/30" 
+                                ? "bg-[#71717a]/20 text-[#71717a] hover:bg-[#71717a]/30" 
                                 : false
                                   ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
                                   : "bg-white/5 text-white/50 hover:bg-white/10"
@@ -1153,7 +1147,7 @@ export default function AdminPage() {
                           >
                             <span className="text-white/70">{user.credits_free || 0}</span>
                             <span className="text-white/30"> + </span>
-                            <span className="text-[#FF6E3C]">{user.credits_purchased || 0}</span>
+                            <span className="text-[#71717a]">{user.credits_purchased || 0}</span>
                           </button>
                         </td>
                         <td className="px-4 py-3">
@@ -1178,7 +1172,7 @@ export default function AdminPage() {
                               e.stopPropagation();
                               fixUserCredits(user.email);
                             }}
-                            className="text-xs px-2 py-1 rounded bg-[#FF6E3C]/20 text-[#FF6E3C] hover:bg-[#FF6E3C]/30 transition-colors"
+                            className="text-xs px-2 py-1 rounded bg-[#71717a]/20 text-[#71717a] hover:bg-[#71717a]/30 transition-colors"
                           >
                             Fix Credits
                           </button>
@@ -1210,13 +1204,13 @@ export default function AdminPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by user email..."
-                  className="w-full pl-12 pr-4 py-3 bg-[#111] border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-[#FF6E3C]/50"
+                  className="w-full pl-12 pr-4 py-3 bg-zinc-900/50 border border-zinc-800 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-[#71717a]/50"
                 />
               </div>
               {selectedUser && (
                 <button
                   onClick={() => setSelectedUser(null)}
-                  className="px-4 py-3 bg-[#FF6E3C]/10 border border-[#FF6E3C]/20 rounded-xl text-[#FF6E3C] text-sm flex items-center gap-2"
+                  className="px-4 py-3 bg-[#71717a]/10 border border-[#71717a]/20 rounded-xl text-[#71717a] text-sm flex items-center gap-2"
                 >
                   <Filter className="w-4 h-4" />
                   Clear filter
@@ -1227,11 +1221,11 @@ export default function AdminPage() {
             {/* Generations Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredGenerations.map(gen => (
-                <div key={gen.id} className="bg-[#111] border border-white/10 rounded-xl p-4 hover:border-white/20 transition-colors">
+                <div key={gen.id} className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 hover:border-white/20 transition-colors">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center">
-                        <Code className="w-4 h-4 text-[#FF6E3C]" />
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#71717a]/20 to-[#52525b]/10 flex items-center justify-center">
+                        <Code className="w-4 h-4 text-[#71717a]" />
                       </div>
                       <div>
                         <p className="text-xs text-white/50">{gen.user_email || "Unknown"}</p>
@@ -1267,7 +1261,7 @@ export default function AdminPage() {
                     </div>
                     <div className="flex justify-between text-xs">
                       <span className="text-white/40">Credits</span>
-                      <span className="text-[#FF6E3C]">{gen.credits_used}</span>
+                      <span className="text-[#71717a]">{gen.credits_used}</span>
                     </div>
                     <div className="flex justify-between text-xs">
                       <span className="text-white/40">Date</span>
@@ -1279,7 +1273,7 @@ export default function AdminPage() {
                   {gen.code && (
                     <button
                       onClick={() => setPreviewGeneration(gen)}
-                      className="w-full mt-3 flex items-center justify-center gap-2 py-2 rounded-lg bg-[#FF6E3C]/20 text-[#FF6E3C] hover:bg-[#FF6E3C]/30 transition-colors text-xs font-medium"
+                      className="w-full mt-3 flex items-center justify-center gap-2 py-2 rounded-lg bg-[#71717a]/20 text-[#71717a] hover:bg-[#71717a]/30 transition-colors text-xs font-medium"
                     >
                       <Eye className="w-3.5 h-3.5" />
                       View Preview
@@ -1290,7 +1284,7 @@ export default function AdminPage() {
             </div>
 
             {filteredGenerations.length === 0 && (
-              <div className="py-12 text-center text-white/30 bg-[#111] border border-white/10 rounded-xl">
+              <div className="py-12 text-center text-white/30 bg-zinc-900/50 border border-zinc-800 rounded-xl">
                 No generations found
               </div>
             )}
@@ -1302,7 +1296,7 @@ export default function AdminPage() {
           <div className="space-y-6">
             {/* Feedback Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-[#111] border border-white/10 rounded-xl p-6">
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center">
                     <MessageSquare className="w-5 h-5 text-blue-400" />
@@ -1311,7 +1305,7 @@ export default function AdminPage() {
                 <p className="text-2xl font-bold text-white">{feedbackStats?.total || 0}</p>
                 <p className="text-xs text-white/50 mt-1">Total Responses</p>
               </div>
-              <div className="bg-[#111] border border-white/10 rounded-xl p-6">
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center">
                     <ThumbsUp className="w-5 h-5 text-emerald-400" />
@@ -1320,7 +1314,7 @@ export default function AdminPage() {
                 <p className="text-2xl font-bold text-emerald-400">{feedbackStats?.yes || 0}</p>
                 <p className="text-xs text-white/50 mt-1">Yes (Matched)</p>
               </div>
-              <div className="bg-[#111] border border-white/10 rounded-xl p-6">
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-500/20 to-yellow-600/10 flex items-center justify-center">
                     <Meh className="w-5 h-5 text-yellow-400" />
@@ -1329,7 +1323,7 @@ export default function AdminPage() {
                 <p className="text-2xl font-bold text-yellow-400">{feedbackStats?.kinda || 0}</p>
                 <p className="text-xs text-white/50 mt-1">Kinda</p>
               </div>
-              <div className="bg-[#111] border border-white/10 rounded-xl p-6">
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500/20 to-red-600/10 flex items-center justify-center">
                     <ThumbsDown className="w-5 h-5 text-red-400" />
@@ -1342,7 +1336,7 @@ export default function AdminPage() {
 
             {/* Satisfaction Rate */}
             {feedbackStats && feedbackStats.total > 0 && (
-              <div className="bg-[#111] border border-white/10 rounded-xl p-6">
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
                 <h3 className="text-sm font-medium text-white/70 mb-4">Satisfaction Rate</h3>
                 <div className="flex items-center gap-4">
                   <div className="flex-1 h-4 bg-white/5 rounded-full overflow-hidden flex">
@@ -1381,10 +1375,10 @@ export default function AdminPage() {
             )}
 
             {/* Feedback List */}
-            <div className="bg-[#111] border border-white/10 rounded-xl">
-              <div className="p-4 border-b border-white/10">
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl">
+              <div className="p-4 border-b border-zinc-800">
                 <h3 className="text-sm font-medium text-white/70 flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-[#FF6E3C]" />
+                  <MessageSquare className="w-4 h-4 text-[#71717a]" />
                   All Feedback ({feedback.length})
                 </h3>
               </div>
@@ -1465,10 +1459,10 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
         {activeTab === "content" && (
           <div className="space-y-6">
             {/* Generator Form */}
-            <div className="bg-[#111] border border-white/10 rounded-xl p-6">
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-[#FF6E3C]" />
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#71717a]/20 to-[#52525b]/10 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-[#71717a]" />
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold text-white">Replay Content Engine</h2>
@@ -1480,13 +1474,13 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                 {/* Left - Mode Toggle & Input */}
                 <div className="space-y-4">
                   {/* Mode Toggle */}
-                  <div className="flex items-center gap-2 p-1 bg-black/30 rounded-xl border border-white/10">
+                  <div className="flex items-center gap-2 p-1 bg-black/30 rounded-xl border border-zinc-800">
                     <button
                       onClick={() => setAutoMode(true)}
                       className={cn(
                         "flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2",
                         autoMode 
-                          ? "bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white" 
+                          ? "bg-gradient-to-r from-[#71717a] to-[#52525b] text-white" 
                           : "text-white/50 hover:text-white/70"
                       )}
                     >
@@ -1498,7 +1492,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                       className={cn(
                         "flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2",
                         !autoMode 
-                          ? "bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white" 
+                          ? "bg-gradient-to-r from-[#71717a] to-[#52525b] text-white" 
                           : "text-white/50 hover:text-white/70"
                       )}
                     >
@@ -1509,9 +1503,9 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
 
                   {/* Auto Mode - Just Number Input */}
                   {autoMode ? (
-                    <div className="p-5 bg-gradient-to-br from-[#FF6E3C]/10 to-transparent border border-[#FF6E3C]/20 rounded-xl">
+                    <div className="p-5 bg-gradient-to-br from-[#71717a]/10 to-transparent border border-[#71717a]/20 rounded-xl">
                       <div className="flex items-center gap-3 mb-4">
-                        <Zap className="w-5 h-5 text-[#FF6E3C]" />
+                        <Zap className="w-5 h-5 text-[#71717a]" />
                         <div>
                           <p className="text-sm font-medium text-white">AI picks enterprise modernization topics</p>
                           <p className="text-xs text-white/50">Technical debt, legacy rewrites, ROI, industry-specific</p>
@@ -1524,7 +1518,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                           min={1}
                           value={autoCount}
                           onChange={(e) => setAutoCount(Math.max(1, parseInt(e.target.value) || 1))}
-                          className="w-24 px-4 py-3 bg-black/50 border border-white/20 rounded-xl text-white text-lg font-bold text-center focus:outline-none focus:border-[#FF6E3C]/50"
+                          className="w-24 px-4 py-3 bg-black/50 border border-white/20 rounded-xl text-white text-lg font-bold text-center focus:outline-none focus:border-[#71717a]/50"
                         />
                         <label className="text-sm text-white/70">articles</label>
                       </div>
@@ -1543,7 +1537,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                         onChange={(e) => setGenerateTitles(e.target.value)}
                         placeholder="Why 70% of Legacy Rewrites Fail (And What Actually Works)&#10;The Hidden Cost of Technical Debt: $3.6 Trillion Problem&#10;COBOL to React: Modernizing Financial Services Legacy Systems"
                         rows={6}
-                        className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50 resize-none"
+                        className="w-full px-4 py-3 bg-black/30 border border-zinc-800 rounded-xl text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#71717a]/50 resize-none"
                       />
                       <p className="text-[10px] text-white/40 mt-1">
                         {generateTitles.split('\n').filter(t => t.trim()).length} titles
@@ -1560,7 +1554,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                       value={generateKeyword}
                       onChange={(e) => setGenerateKeyword(e.target.value)}
                       placeholder="legacy modernization, technical debt, enterprise rewrite"
-                      className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50"
+                      className="w-full px-4 py-3 bg-black/30 border border-zinc-800 rounded-xl text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#71717a]/50"
                     />
                   </div>
                 </div>
@@ -1584,8 +1578,8 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                           className={cn(
                             "p-3 rounded-xl border text-left transition-all",
                             generateTone === tone.id
-                              ? "border-[#FF6E3C]/50 bg-[#FF6E3C]/10"
-                              : "border-white/10 bg-black/20 hover:border-white/20"
+                              ? "border-[#71717a]/50 bg-[#71717a]/10"
+                              : "border-zinc-800 bg-black/20 hover:border-white/20"
                           )}
                         >
                           <p className="text-sm font-medium text-white">{tone.label}</p>
@@ -1604,7 +1598,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                       onChange={(e) => setGenerateTakeaways(e.target.value)}
                       placeholder="Include ROI statistics (70% time savings)&#10;Mention regulated industries (HIPAA, SOC2)&#10;Compare with traditional rewrites"
                       rows={3}
-                      className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#FF6E3C]/50 resize-none"
+                      className="w-full px-4 py-3 bg-black/30 border border-zinc-800 rounded-xl text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#71717a]/50 resize-none"
                     />
                   </div>
                 </div>
@@ -1618,7 +1612,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                 <button
                   onClick={handleGenerateArticles}
                   disabled={isGenerating || (!autoMode && !generateTitles.trim())}
-                  className="px-6 py-3 bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white font-medium rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+                  className="px-6 py-3 bg-gradient-to-r from-[#71717a] to-[#52525b] text-white font-medium rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
                 >
                   {isGenerating ? (
                     <><Loader2 className="w-4 h-4 animate-spin" /> 
@@ -1636,7 +1630,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                   <div className="flex-1 min-w-0">
                     <div className="h-2 bg-black/30 rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] transition-all duration-300"
+                        className="h-full bg-gradient-to-r from-[#71717a] to-[#52525b] transition-all duration-300"
                         style={{ width: `${(generationProgress.current / generationProgress.total) * 100}%` }}
                       />
                     </div>
@@ -1649,7 +1643,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
 
               {/* Generation Results */}
               {generateResults.length > 0 && (
-                <div className="mt-6 p-4 bg-black/30 rounded-xl border border-white/10">
+                <div className="mt-6 p-4 bg-black/30 rounded-xl border border-zinc-800">
                   <h3 className="text-sm font-medium text-white mb-3">Generation Results</h3>
                   <div className="space-y-3">
                     {generateResults.map((result, i) => (
@@ -1672,7 +1666,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                                 <a
                                   href={`/blog/${result.slug}`}
                                   target="_blank"
-                                  className="text-[#FF6E3C] text-xs hover:underline flex-shrink-0"
+                                  className="text-[#71717a] text-xs hover:underline flex-shrink-0"
                                 >
                                   View →
                                 </a>
@@ -1693,7 +1687,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                                 href={`/blog/${result.slug}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="px-2 py-1 text-xs bg-[#FF6E3C]/20 text-[#FF6E3C] rounded hover:bg-[#FF6E3C]/30 transition-colors flex items-center gap-1"
+                                className="px-2 py-1 text-xs bg-[#71717a]/20 text-[#71717a] rounded hover:bg-[#71717a]/30 transition-colors flex items-center gap-1"
                               >
                                 <ExternalLink className="w-3 h-3" /> View
                               </a>
@@ -1734,10 +1728,10 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
             </div>
 
             {/* Blog Posts List */}
-            <div className="bg-[#111] border border-white/10 rounded-xl">
-              <div className="p-4 border-b border-white/10 flex items-center justify-between">
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl">
+              <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
                 <h3 className="text-sm font-medium text-white/70 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-[#FF6E3C]" />
+                  <FileText className="w-4 h-4 text-[#71717a]" />
                   Generated Articles ({blogTotal} total{blogFilter !== 'all' ? `, showing ${blogPosts.length}` : ''})
                 </h3>
                 <div className="flex items-center gap-2">
@@ -1748,7 +1742,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                       className={cn(
                         "px-3 py-1.5 text-xs rounded-lg transition-colors capitalize",
                         blogFilter === status
-                          ? "bg-[#FF6E3C]/20 text-[#FF6E3C]"
+                          ? "bg-[#71717a]/20 text-[#71717a]"
                           : "bg-white/5 text-white/50 hover:text-white/70"
                       )}
                     >
@@ -1851,10 +1845,10 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-[#0a0a0a] border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+              className="bg-[#0a0a0a] border border-zinc-800 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between p-4 border-b border-white/10">
+              <div className="flex items-center justify-between p-4 border-b border-zinc-800">
                 <div>
                   <h3 className="text-lg font-semibold text-white">{editingPost.title}</h3>
                   <p className="text-xs text-white/50">/{editingPost.slug} • {editingPost.read_time_minutes} min • SEO: {editingPost.seo_score}/100</p>
@@ -1864,11 +1858,11 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                 </button>
               </div>
               <div className="flex-1 overflow-auto p-4">
-                <pre className="text-sm text-white/70 whitespace-pre-wrap font-mono bg-black/30 p-4 rounded-xl border border-white/10">
+                <pre className="text-sm text-white/70 whitespace-pre-wrap font-mono bg-black/30 p-4 rounded-xl border border-zinc-800">
                   {editingPost.content}
                 </pre>
               </div>
-              <div className="p-4 border-t border-white/10 flex items-center justify-between">
+              <div className="p-4 border-t border-zinc-800 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className={cn(
                     "text-xs px-3 py-1 rounded-full capitalize",
@@ -1916,11 +1910,11 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
             className="fixed inset-0 bg-black z-50 flex flex-col"
           >
             {/* Header - Responsive */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between px-4 py-3 border-b border-white/10 bg-[#0a0a0a] gap-3">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between px-4 py-3 border-b border-zinc-800 bg-[#0a0a0a] gap-3">
               <div className="flex items-center justify-between lg:justify-start gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF6E3C]/20 to-[#FF8F5C]/10 flex items-center justify-center shrink-0">
-                    <Code className="w-4 h-4 text-[#FF6E3C]" />
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#71717a]/20 to-[#52525b]/10 flex items-center justify-center shrink-0">
+                    <Code className="w-4 h-4 text-[#71717a]" />
                   </div>
                   <div className="min-w-0">
                     <h3 className="text-base font-semibold text-white truncate">{previewGeneration.title || "Generation Preview"}</h3>
@@ -1957,7 +1951,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                       className={cn(
                         "px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all whitespace-nowrap",
                         previewTab === tab.id
-                          ? "bg-[#FF6E3C] text-white"
+                          ? "bg-[#71717a] text-white"
                           : "text-white/50 hover:text-white/70 hover:bg-white/5"
                       )}
                     >
@@ -2050,7 +2044,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                           href={previewGeneration.video_url} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#FF6E3C]/20 text-[#FF6E3C] hover:bg-[#FF6E3C]/30 transition-colors text-sm"
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#71717a]/20 text-[#71717a] hover:bg-[#71717a]/30 transition-colors text-sm"
                         >
                           <ExternalLink className="w-4 h-4" />
                           Open in New Tab
@@ -2075,7 +2069,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                   <div className="max-w-6xl mx-auto">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <Code className="w-5 h-5 text-[#FF6E3C]" />
+                        <Code className="w-5 h-5 text-[#71717a]" />
                         <span className="text-white/70 text-sm">
                           Generated HTML • {previewGeneration.code?.length.toLocaleString() || 0} characters
                         </span>
@@ -2093,7 +2087,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                         Copy Code
                       </button>
                     </div>
-                    <pre className="p-6 bg-black/50 rounded-xl border border-white/10 text-sm text-white/70 font-mono whitespace-pre-wrap overflow-x-auto">
+                    <pre className="p-6 bg-black/50 rounded-xl border border-zinc-800 text-sm text-white/70 font-mono whitespace-pre-wrap overflow-x-auto">
                       {previewGeneration.code || "No code available"}
                     </pre>
                   </div>
@@ -2105,7 +2099,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                 <div className="w-full h-full overflow-auto bg-[#0a0a0a] p-8">
                   <div className="max-w-4xl mx-auto">
                     <div className="flex items-center gap-3 mb-6">
-                      <Palette className="w-5 h-5 text-[#FF6E3C]" />
+                      <Palette className="w-5 h-5 text-[#71717a]" />
                       <h3 className="text-lg font-semibold text-white">Design System</h3>
                     </div>
                     
@@ -2127,10 +2121,10 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                         <div className="space-y-8">
                           {/* Style Preset Banner */}
                           {(ds?.styleName || ds?.stylePreset) && (
-                            <div className="bg-gradient-to-r from-[#FF6E3C]/20 to-[#FF8F5C]/10 rounded-2xl p-6 border border-[#FF6E3C]/30">
+                            <div className="bg-gradient-to-r from-[#71717a]/20 to-[#52525b]/10 rounded-2xl p-6 border border-[#71717a]/30">
                               <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 rounded-xl bg-[#FF6E3C]/30 flex items-center justify-center">
-                                  <Sparkles className="w-6 h-6 text-[#FF6E3C]" />
+                                <div className="w-12 h-12 rounded-xl bg-[#71717a]/30 flex items-center justify-center">
+                                  <Sparkles className="w-6 h-6 text-[#71717a]" />
                                 </div>
                                 <div>
                                   <h4 className="text-lg font-semibold text-white">{ds?.styleName || ds?.stylePreset}</h4>
@@ -2141,7 +2135,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                           )}
                           
                           {/* Colors */}
-                          <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                          <div className="bg-white/5 rounded-2xl p-6 border border-zinc-800">
                             <h4 className="text-sm font-medium text-white/70 mb-4">
                               {ds?.colors?.length ? "Design Colors" : "Extracted Colors"}
                             </h4>
@@ -2156,7 +2150,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                                   className="group"
                                 >
                                   <div 
-                                    className="w-full aspect-square rounded-xl border border-white/10 mb-2 group-hover:scale-105 transition-transform"
+                                    className="w-full aspect-square rounded-xl border border-zinc-800 mb-2 group-hover:scale-105 transition-transform"
                                     style={{ backgroundColor: color }}
                                   />
                                   <span className="text-[10px] text-white/40 font-mono">{color}</span>
@@ -2168,7 +2162,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                           </div>
                           
                           {/* Typography */}
-                          <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                          <div className="bg-white/5 rounded-2xl p-6 border border-zinc-800">
                             <h4 className="text-sm font-medium text-white/70 mb-4">Typography</h4>
                             {fonts.length > 0 ? (
                               <div className="space-y-3">
@@ -2193,7 +2187,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                           </div>
                           
                           {/* Generation Info */}
-                          <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                          <div className="bg-white/5 rounded-2xl p-6 border border-zinc-800">
                             <h4 className="text-sm font-medium text-white/70 mb-4">Generation Info</h4>
                             <div className="grid grid-cols-2 gap-4">
                               <div className="p-3 bg-black/30 rounded-lg">
@@ -2202,7 +2196,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                               </div>
                               <div className="p-3 bg-black/30 rounded-lg">
                                 <span className="text-xs text-white/40">Credits Used</span>
-                                <p className="text-[#FF6E3C] mt-1">{previewGeneration.credits_used}</p>
+                                <p className="text-[#71717a] mt-1">{previewGeneration.credits_used}</p>
                               </div>
                               <div className="p-3 bg-black/30 rounded-lg">
                                 <span className="text-xs text-white/40">Status</span>
@@ -2228,7 +2222,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                 <div className="w-full h-full overflow-auto bg-[#0a0a0a] p-8">
                   <div className="max-w-5xl mx-auto">
                     <div className="flex items-center gap-3 mb-6">
-                      <GitBranch className="w-5 h-5 text-[#FF6E3C]" />
+                      <GitBranch className="w-5 h-5 text-[#71717a]" />
                       <h3 className="text-lg font-semibold text-white">Flow Map</h3>
                     </div>
                     
@@ -2252,9 +2246,9 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                         <div className="space-y-6">
                           {/* Visual Flow Diagram */}
                           {hasStoredFlow && (
-                            <div className="bg-gradient-to-br from-[#FF6E3C]/10 to-transparent rounded-2xl p-6 border border-[#FF6E3C]/20">
+                            <div className="bg-gradient-to-br from-[#71717a]/10 to-transparent rounded-2xl p-6 border border-[#71717a]/20">
                               <h4 className="text-sm font-medium text-white/70 mb-4 flex items-center gap-2">
-                                <Layers className="w-4 h-4 text-[#FF6E3C]" />
+                                <Layers className="w-4 h-4 text-[#71717a]" />
                                 Stored Flow Architecture
                               </h4>
                               <div className="relative">
@@ -2268,7 +2262,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                                       <div className={cn(
                                         "px-4 py-3 rounded-xl border text-center min-w-[120px]",
                                         node.type === "screen" || node.type === "page"
-                                          ? "bg-[#FF6E3C]/20 border-[#FF6E3C]/50 text-white"
+                                          ? "bg-[#71717a]/20 border-[#71717a]/50 text-white"
                                           : "bg-white/5 border-white/20 text-white/70"
                                       )}>
                                         <span className="text-xs text-white/40 block mb-1">
@@ -2297,7 +2291,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                           )}
                           
                           {/* Page Sections */}
-                          <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                          <div className="bg-white/5 rounded-2xl p-6 border border-zinc-800">
                             <h4 className="text-sm font-medium text-white/70 mb-4">
                               {hasStoredFlow ? "HTML Sections" : "Detected Sections"}
                             </h4>
@@ -2305,7 +2299,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                               <div className="grid grid-cols-2 gap-3">
                                 {uniqueSections.map((section, i) => (
                                   <div key={i} className="flex items-center gap-3 p-3 bg-black/30 rounded-lg">
-                                    <div className="w-8 h-8 rounded-lg bg-[#FF6E3C]/20 flex items-center justify-center text-[#FF6E3C] text-sm font-bold shrink-0">
+                                    <div className="w-8 h-8 rounded-lg bg-[#71717a]/20 flex items-center justify-center text-[#71717a] text-sm font-bold shrink-0">
                                       {i + 1}
                                     </div>
                                     <div className="flex-1 flex items-center justify-between min-w-0">
@@ -2325,7 +2319,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                           </div>
                           
                           {/* Navigation Links */}
-                          <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                          <div className="bg-white/5 rounded-2xl p-6 border border-zinc-800">
                             <h4 className="text-sm font-medium text-white/70 mb-4">Navigation Links</h4>
                             {links.length > 0 ? (
                               <div className="flex flex-wrap gap-2">
@@ -2344,17 +2338,17 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                           </div>
                           
                           {/* Structure Analysis */}
-                          <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                          <div className="bg-white/5 rounded-2xl p-6 border border-zinc-800">
                             <h4 className="text-sm font-medium text-white/70 mb-4">Structure Analysis</h4>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                               {hasStoredFlow && (
                                 <>
-                                  <div className="p-4 bg-[#FF6E3C]/10 rounded-lg text-center border border-[#FF6E3C]/20">
-                                    <p className="text-2xl font-bold text-[#FF6E3C]">{flowNodes.length}</p>
+                                  <div className="p-4 bg-[#71717a]/10 rounded-lg text-center border border-[#71717a]/20">
+                                    <p className="text-2xl font-bold text-[#71717a]">{flowNodes.length}</p>
                                     <p className="text-xs text-white/40 mt-1">Flow Nodes</p>
                                   </div>
-                                  <div className="p-4 bg-[#FF6E3C]/10 rounded-lg text-center border border-[#FF6E3C]/20">
-                                    <p className="text-2xl font-bold text-[#FF6E3C]">{flowEdges.length}</p>
+                                  <div className="p-4 bg-[#71717a]/10 rounded-lg text-center border border-[#71717a]/20">
+                                    <p className="text-2xl font-bold text-[#71717a]">{flowEdges.length}</p>
                                     <p className="text-xs text-white/40 mt-1">Connections</p>
                                   </div>
                                 </>
@@ -2390,11 +2384,11 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
             </div>
             
             {/* Footer with meta info */}
-            <div className="px-4 py-2 border-t border-white/10 bg-[#0a0a0a] flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/50">
+            <div className="px-4 py-2 border-t border-zinc-800 bg-[#0a0a0a] flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/50">
               <span>ID: <span className="text-white/70 font-mono">{previewGeneration.id.slice(0, 8)}...</span></span>
               <span className="hidden sm:inline">Style: <span className="text-white/70">{previewGeneration.style_directive || "Auto"}</span></span>
               <span>Status: <span className={previewGeneration.status === "complete" ? "text-green-400" : "text-yellow-400"}>{previewGeneration.status}</span></span>
-              <span>Credits: <span className="text-[#FF6E3C]">{previewGeneration.credits_used}</span></span>
+              <span>Credits: <span className="text-[#71717a]">{previewGeneration.credits_used}</span></span>
               <span className="hidden sm:inline">Duration: <span className="text-white/70">{previewGeneration.video_duration || "N/A"}s</span></span>
             </div>
           </motion.div>
@@ -2416,10 +2410,10 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md bg-[#111] border border-white/10 rounded-2xl overflow-hidden"
+              className="w-full max-w-md bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden"
             >
               {/* Modal Header */}
-              <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+              <div className="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-white">Set User Plan</h3>
                   <p className="text-sm text-white/50">{planModalUser.email}</p>
@@ -2442,14 +2436,14 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                       className={cn(
                         "w-full px-4 py-3 rounded-xl text-left transition-all flex items-center justify-between",
                         selectedPlanIndex === idx
-                          ? "bg-[#FF6E3C]/20 border border-[#FF6E3C]/50"
-                          : "bg-white/5 border border-white/10 hover:bg-white/10"
+                          ? "bg-[#71717a]/20 border border-[#71717a]/50"
+                          : "bg-white/5 border border-zinc-800 hover:bg-white/10"
                       )}
                     >
                       <div>
                         <p className={cn(
                           "font-medium",
-                          selectedPlanIndex === idx ? "text-[#FF6E3C]" : "text-white"
+                          selectedPlanIndex === idx ? "text-[#71717a]" : "text-white"
                         )}>
                           {tier.label}
                         </p>
@@ -2458,7 +2452,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                         </p>
                       </div>
                       {selectedPlanIndex === idx && (
-                        <div className="w-6 h-6 rounded-full bg-[#FF6E3C] flex items-center justify-center">
+                        <div className="w-6 h-6 rounded-full bg-[#71717a] flex items-center justify-center">
                           <Check className="w-4 h-4 text-white" />
                         </div>
                       )}
@@ -2468,7 +2462,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
               </div>
               
               {/* Modal Footer */}
-              <div className="px-6 py-4 border-t border-white/10 flex items-center justify-end gap-3">
+              <div className="px-6 py-4 border-t border-zinc-800 flex items-center justify-end gap-3">
                 <button
                   onClick={() => setPlanModalOpen(false)}
                   disabled={isUpdatingPlan}
@@ -2479,7 +2473,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                 <button
                   onClick={applySelectedPlan}
                   disabled={isUpdatingPlan}
-                  className="px-5 py-2.5 rounded-xl text-sm font-medium bg-[#FF6E3C] text-white hover:bg-[#FF8F5C] transition-colors disabled:opacity-50 flex items-center gap-2"
+                  className="px-5 py-2.5 rounded-xl text-sm font-medium bg-[#71717a] text-white hover:bg-[#52525b] transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
                   {isUpdatingPlan ? (
                     <>
@@ -2506,7 +2500,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
             initial={{ opacity: 0, y: 50, x: "-50%" }}
             animate={{ opacity: 1, y: 0, x: "-50%" }}
             exit={{ opacity: 0, y: 50, x: "-50%" }}
-            className="fixed bottom-6 left-1/2 z-50 px-5 py-3 bg-[#111] border border-white/10 rounded-xl shadow-xl flex items-center gap-3"
+            className="fixed bottom-6 left-1/2 z-50 px-5 py-3 bg-zinc-900/50 border border-zinc-800 rounded-xl shadow-xl flex items-center gap-3"
           >
             {toastMessage.startsWith("✅") ? (
               <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
@@ -2539,26 +2533,26 @@ function StatCard({ title, value, icon: Icon, color }: {
   color: "blue" | "green" | "yellow" | "purple" | "orange" | "cyan" | "pink" | "gray"
 }) {
   const colors = {
-    blue: "from-blue-500/20 to-blue-600/10 text-blue-400",
-    green: "from-green-500/20 to-green-600/10 text-green-400",
-    yellow: "from-yellow-500/20 to-yellow-600/10 text-yellow-400",
-    purple: "from-purple-500/20 to-purple-600/10 text-purple-400",
-    orange: "from-orange-500/20 to-orange-600/10 text-orange-400",
-    cyan: "from-cyan-500/20 to-cyan-600/10 text-cyan-400",
-    pink: "from-pink-500/20 to-pink-600/10 text-pink-400",
-    gray: "from-gray-500/20 to-gray-600/10 text-gray-400",
+    blue: "bg-zinc-800 text-zinc-300",
+    green: "bg-zinc-800 text-zinc-300",
+    yellow: "bg-zinc-800 text-zinc-300",
+    purple: "bg-zinc-800 text-zinc-300",
+    orange: "bg-zinc-800 text-zinc-300",
+    cyan: "bg-zinc-800 text-zinc-300",
+    pink: "bg-zinc-800 text-zinc-300",
+    gray: "bg-zinc-800 text-zinc-300",
   };
 
   return (
-    <div className="bg-[#111] border border-white/10 rounded-xl p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className={cn("w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center", colors[color])}>
-          <Icon className="w-5 h-5" />
+    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5">
+      <div className="flex items-center justify-between mb-3">
+        <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center", colors[color])}>
+          <Icon className="w-4 h-4" />
         </div>
-        <ArrowUpRight className="w-4 h-4 text-white/20" />
+        <ArrowUpRight className="w-4 h-4 text-zinc-600" />
       </div>
-      <p className="text-2xl font-bold text-white">{value.toLocaleString()}</p>
-      <p className="text-xs text-white/50 mt-1">{title}</p>
+      <p className="text-2xl font-semibold text-white">{value.toLocaleString()}</p>
+      <p className="text-xs text-zinc-500 mt-1">{title}</p>
     </div>
   );
 }

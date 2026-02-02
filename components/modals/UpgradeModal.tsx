@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Loader2, Zap } from "lucide-react";
-import { useAuth } from "@/lib/auth/context";
-import AuthModal from "./AuthModal";
+import { X, Zap } from "lucide-react";
 import FocusLock from "react-focus-lock";
 
 interface UpgradeModalProps {
@@ -40,14 +38,8 @@ const featureMessages = {
   },
 };
 
-// Stripe Price ID - Pro $149/mo
-const PRO_SUBSCRIPTION_PRICE_ID = "price_1SotMYAxch1s4iBGLZZ7ATBs";
-
 export default function UpgradeModal({ isOpen, onClose, feature = "general" }: UpgradeModalProps) {
   const featureInfo = featureMessages[feature];
-  const { user } = useAuth();
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -55,45 +47,6 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
       closeButtonRef.current.focus();
     }
   }, [isOpen]);
-
-  const handleCheckout = async () => {
-    if (!user) {
-      setShowAuthModal(true);
-      return;
-    }
-
-    setIsCheckingOut(true);
-    try {
-      const res = await fetch("/api/billing/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "subscription",
-          priceId: PRO_SUBSCRIPTION_PRICE_ID,
-          tierId: "pro",
-          credits: 3000,
-          interval: "monthly"
-        }),
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else if (data.error) {
-        console.error("Checkout error:", data.error);
-        alert("Failed to start checkout: " + data.error);
-      }
-    } catch (error) {
-      console.error("Checkout error:", error);
-      alert("Failed to start checkout. Please try again.");
-    } finally {
-      setIsCheckingOut(false);
-    }
-  };
-
-  const handleAuthSuccess = () => {
-    setShowAuthModal(false);
-    setTimeout(() => handleCheckout(), 100);
-  };
 
   return (
     <AnimatePresence>
@@ -162,40 +115,22 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
                   </div>
 
                   {/* CTA */}
-                  <button
-                    onClick={handleCheckout}
-                    disabled={isCheckingOut}
-                    className="w-full py-3 rounded-lg bg-white text-black text-sm font-medium hover:bg-zinc-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  <a
+                    href="/pricing"
+                    className="w-full py-3 rounded-lg bg-white text-black text-sm font-medium hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2"
                   >
-                    {isCheckingOut ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <Zap className="w-4 h-4" />
-                        Get Pro
-                      </>
-                    )}
-                  </button>
+                    <Zap className="w-4 h-4" />
+                    Check Pricing
+                  </a>
 
                   <p className="text-center text-[11px] text-zinc-600 mt-3">
-                    Cancel anytime. Secure payment via Stripe.
+                    View all plans and choose the best for you.
                   </p>
                 </div>
               </div>
             </FocusLock>
           </motion.div>
 
-          {/* Auth Modal */}
-          <AuthModal
-            isOpen={showAuthModal}
-            onClose={() => setShowAuthModal(false)}
-            onSuccess={handleAuthSuccess}
-            title="Sign in to continue"
-            description="You need to be signed in to make a purchase."
-          />
         </>
       )}
     </AnimatePresence>

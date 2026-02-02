@@ -488,6 +488,18 @@ SPACING:
 - Gap in grids: gap-6 to gap-8
 - Generous whitespace = premium feel
 
+⚠️ CARD ROW ALIGNMENT (MANDATORY!):
+When creating rows of cards/stat boxes/KPI tiles:
+- ALWAYS use: grid grid-cols-N items-stretch gap-6
+- EVERY card MUST have: h-full flex flex-col
+- Cards in same row MUST have IDENTICAL heights!
+Example:
+<div className="grid grid-cols-3 items-stretch gap-6">
+  <div className="bg-surface rounded-xl p-6 h-full flex flex-col">...</div>
+  <div className="bg-surface rounded-xl p-6 h-full flex flex-col">...</div>
+  <div className="bg-surface rounded-xl p-6 h-full flex flex-col">...</div>
+</div>
+
 SHADOWS:
 - Colored shadows, not gray: shadow-indigo-500/20
 - Layered: shadow-xl shadow-indigo-500/10
@@ -522,22 +534,35 @@ If video shows navigation with: Home, About, Services, Contact
 → You MUST create ALL 4 pages with FULL content!
 
 ═══════════════════════════════════════════════════════════════════════════════
-📋 NAVIGATION LINKS → POSSIBLE PAGES METADATA
+📋 NAVIGATION LINKS → POSSIBLE PAGES METADATA (CRITICAL FOR FLOW MAP!)
 ═══════════════════════════════════════════════════════════════════════════════
 
-If you see navigation menu with links to pages NOT shown in video:
-→ DON'T remove them! Add them as METADATA for Flow Map detection.
-
-Add this comment at the END of your HTML (before </body>):
+⚠️ MANDATORY: Add REPLAY_METADATA at END of HTML (before </body>):
 
 <!-- REPLAY_METADATA
 {
-  "possiblePages": ["About", "Services", "Pricing", "Contact", "Blog"],
-  "detectedNavLinks": ["Home", "About", "Services", "Pricing", "Contact"],
-  "implementedPages": ["Home"],
-  "suggestedNextPages": ["About", "Services"]
+  "implementedPages": ["Home", "Claims Repository", "My Tasks", "Reports & Analytics", "User Management", "System Config", "Audit Logs"],
+  "detectedNavLinks": ["Home", "Claims Repository", "My Tasks", "Reports & Analytics", "User Management", "System Config", "Audit Logs"],
+  "possiblePages": [],
+  "suggestedNextPages": []
 }
 -->
+
+⚠️⚠️⚠️ CRITICAL RULES FOR implementedPages:
+1. List EVERY page/screen you created with x-show or currentPage state
+2. If video shows user clicking 6 sidebar items → implementedPages MUST have 6+ items!
+3. Each sidebar menu item that user VISITED in video = implementedPages entry
+4. NEVER put visited pages in "possiblePages" - they are IMPLEMENTED!
+
+EXAMPLE - User visited these pages in video:
+- Clicked "Claims Repository" → implementedPages includes "Claims Repository"
+- Clicked "My Tasks" → implementedPages includes "My Tasks"  
+- Clicked "Reports" → implementedPages includes "Reports"
+- Clicked "Settings" → implementedPages includes "Settings"
+
+RESULT MUST BE:
+"implementedPages": ["Home", "Claims Repository", "My Tasks", "Reports", "Settings"]
+NOT: "implementedPages": ["Home"] ← WRONG! Missing visited pages!
 
 ═══════════════════════════════════════════════════════════════════════════════
 🎬 ACTION-REACTION MAPPING (Video Intelligence)
@@ -571,46 +596,16 @@ CRITICAL: Watch for PHYSICAL INTERACTIONS in the video:
 EVIDENCE TRACKING - Add to REPLAY_METADATA:
 <!-- REPLAY_METADATA
 {
-  "flowNodes": [
-    {
-      "id": "home",
-      "name": "Home",
-      "status": "observed",
-      "videoTimestamp": 0,
-      "videoDuration": 5.2,
-      "urlChange": true
-    },
-    {
-      "id": "pricing",
-      "name": "Pricing", 
-      "status": "detected",
-      "source": "nav-link-hover",
-      "confidence": "high"
-    },
-    {
-      "id": "checkout",
-      "name": "Checkout",
-      "status": "inferred",
-      "reason": "e-commerce pattern suggests checkout flow",
-      "confidence": "medium"
-    }
-  ],
-  "flowEdges": [
-    {
-      "from": "home",
-      "to": "pricing",
-      "type": "hover",
-      "videoTimestamp": 3.5,
-      "note": "User hovered over Pricing link but did not click"
-    }
-  ],
-  "loadingStates": ["after-form-submit", "product-list-load"],
-  "possiblePages": ["About", "Services", "Pricing", "Contact", "Blog"],
-  "detectedNavLinks": ["Home", "About", "Services", "Pricing", "Contact"],
-  "implementedPages": ["Home"],
-  "suggestedNextPages": ["About", "Services"]
+  "implementedPages": ["Home", "Dashboard", "Users", "Settings", "Reports"],
+  "detectedNavLinks": ["Home", "Dashboard", "Users", "Settings", "Reports", "Help"],
+  "possiblePages": ["Help"],
+  "suggestedNextPages": ["Help"]
 }
 -->
+
+⚠️ RULE: If user clicked/visited a sidebar item in video = it goes in implementedPages!
+- implementedPages = screens you built with x-show (VISITED in video)
+- possiblePages = navigation items user did NOT click (only seen in menu)
 
 This helps users know what pages they can generate next!
 The Flow Map will show these as "Possible pages to generate".

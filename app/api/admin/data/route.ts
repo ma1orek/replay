@@ -84,17 +84,36 @@ export async function GET(request: NextRequest) {
     }
     console.log("Found wallets:", wallets?.length || 0);
 
-    // Fetch all generations
-    const { data: generations, error: genError } = await supabase
-      .from("generations")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(500);
+    // Fetch ALL generations (no limit) - paginate if needed
+    let allGenerations: any[] = [];
+    let genPage = 0;
+    const genPerPage = 1000;
+    
+    while (true) {
+      const { data: genBatch, error: genError } = await supabase
+        .from("generations")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .range(genPage * genPerPage, (genPage + 1) * genPerPage - 1);
 
-    if (genError) {
-      console.error("Error fetching generations:", genError);
+      if (genError) {
+        console.error("Error fetching generations page", genPage, ":", genError);
+        break;
+      }
+      
+      const batch = genBatch || [];
+      allGenerations = [...allGenerations, ...batch];
+      
+      console.log(`[Admin] Fetched generations page ${genPage}: ${batch.length} (total: ${allGenerations.length})`);
+      
+      if (batch.length < genPerPage) {
+        break;
+      }
+      genPage++;
     }
-    console.log("Found generations:", generations?.length || 0);
+    
+    const generations = allGenerations;
+    console.log("[Admin] Total generations found:", generations.length);
 
     // Map users with auth data, memberships, and wallets
     const mappedUsers = authUsers.map((authUser: any) => {
@@ -142,7 +161,7 @@ export async function GET(request: NextRequest) {
 
     console.log("Mapped generations:", mappedGenerations.length);
     
-    // Calculate total tokens used
+    // Calculate total tokens used (from tracked generations)
     const totalTokensUsed = mappedGenerations.reduce((sum: number, g: any) => {
       if (g.token_usage?.totalTokens) {
         return sum + g.token_usage.totalTokens;
@@ -150,9 +169,14 @@ export async function GET(request: NextRequest) {
       return sum;
     }, 0);
     
-    // Estimate cost (Gemini 3 Pro: ~$1.25 per 1M input tokens, ~$5 per 1M output tokens)
-    // Simplified: ~$3 per 1M tokens average
-    const estimatedCostUSD = (totalTokensUsed / 1000000) * 3;
+    // Count generations with token tracking
+    const generationsWithTokens = mappedGenerations.filter((g: any) => g.token_usage?.totalTokens).length;
+    
+    // REAL COST ESTIMATION based on Google AI Studio billing data:
+    // ~$0.61 per generation average (video processing + code generation with Gemini 3 Pro)
+    // This is calculated from actual billing: ~$304 / 500 generations = $0.61
+    const COST_PER_GENERATION_USD = 0.61;
+    const estimatedCostUSD = mappedGenerations.length * COST_PER_GENERATION_USD;
 
     // Calculate stats
     const totalCreditsUsed = mappedGenerations.reduce((sum: number, g: any) => sum + (g.credits_used || 0), 0);
@@ -189,12 +213,25 @@ export async function GET(request: NextRequest) {
       generationsPerDay.push({ date: dateStr, count });
     }
 
+    // Calculate PLN cost (1 USD = ~4.05 PLN)
+    const USD_TO_PLN = 4.05;
+    const estimatedCostPLN = estimatedCostUSD * USD_TO_PLN;
+    
+    // Average tokens per generation (for those with tracking)
+    const avgTokensPerGen = generationsWithTokens > 0 
+      ? Math.round(totalTokensUsed / generationsWithTokens) 
+      : 50000; // Default estimate ~50K tokens per generation
+    
     const stats = {
       totalUsers: mappedUsers.length,
       totalGenerations: mappedGenerations.length,
       totalCreditsUsed,
       totalTokensUsed,
       estimatedCostUSD: Math.round(estimatedCostUSD * 100) / 100,
+      estimatedCostPLN: Math.round(estimatedCostPLN * 100) / 100,
+      costPerGeneration: COST_PER_GENERATION_USD,
+      generationsWithTokenTracking: generationsWithTokens,
+      avgTokensPerGeneration: avgTokensPerGen,
       activeToday,
       avgGenerationsPerUser: mappedUsers.length > 0 
         ? Math.round(mappedGenerations.length / mappedUsers.length * 10) / 10 
@@ -202,7 +239,6 @@ export async function GET(request: NextRequest) {
       topStyles,
       generationsPerDay,
       proUsers: mappedUsers.filter((u: any) => u.membership === "pro").length,
-      // Maker removed - only PRO subscriptions available
     };
 
     return NextResponse.json({
