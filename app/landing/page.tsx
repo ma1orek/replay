@@ -33,7 +33,9 @@ import {
   Plus,
   Lock,
   FileText,
-  Database
+  Database,
+  Volume2,
+  VolumeX
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AnimatedGroup } from "@/components/ui/animated-group";
@@ -86,6 +88,7 @@ function HeroSection() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [dimensions, setDimensions] = useState({ width: 1200, height: 800 });
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false); // Default: sound ON
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -106,30 +109,26 @@ function HeroSection() {
     }
   }, []);
 
-  // Force autoplay on mount
-  useEffect(() => {
-    const video = videoRef.current;
-    if (video) {
-      video.muted = true;
-      video.play().then(() => {
-        setIsPlaying(true);
-      }).catch(() => {
-        // Autoplay blocked, show play button
-        setIsPlaying(false);
-      });
-    }
-  }, []);
-
   const togglePlay = () => {
     const video = videoRef.current;
     if (video) {
       if (video.paused) {
+        video.muted = isMuted;
         video.play();
         setIsPlaying(true);
       } else {
         video.pause();
         setIsPlaying(false);
       }
+    }
+  };
+
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const video = videoRef.current;
+    if (video) {
+      video.muted = !isMuted;
+      setIsMuted(!isMuted);
     }
   };
 
@@ -221,10 +220,25 @@ function HeroSection() {
                 )}
               </div>
             </button>
+            
+            {/* Sound Toggle Button - bottom right */}
+            {isPlaying && (
+              <button
+                onClick={toggleMute}
+                className="absolute bottom-3 right-3 z-30 p-2 rounded-full bg-black/50 border border-white/20 backdrop-blur-sm hover:bg-black/70 transition-colors"
+                title={isMuted ? "Unmute" : "Mute"}
+              >
+                {isMuted ? (
+                  <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                ) : (
+                  <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                )}
+              </button>
+            )}
+            
             <video
               ref={videoRef}
               loop
-              muted
               playsInline
               preload="auto"
               className="w-full aspect-video object-cover"
