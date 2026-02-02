@@ -107,7 +107,7 @@ export default function LandingPricing() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
   const [isAnnual, setIsAnnual] = useState(false); // Default to monthly
-  const [selectedTierIndex, setSelectedTierIndex] = useState(0); // Default to $25 tier (index 0)
+  const [selectedTierIndex, setSelectedTierIndex] = useState(2); // Default to $100 tier (index 2) - most popular
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState<string | null>(null);

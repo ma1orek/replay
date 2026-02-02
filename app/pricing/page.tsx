@@ -44,7 +44,7 @@ const TechGrid = () => (
 // ═══════════════════════════════════════════════════════════════
 
 export default function PricingPage() {
-  const DEMO_PROJECT_URL = "https://www.replay.build/tool?project=flow_1769444036799_r8hrcxyx2";
+  const DEMO_PROJECT_URL = "https://www.replay.build/tool?project=flow_1769991250167_jr2x4utrt";
   const { user } = useAuth();
   const [loadingPlan, setLoadingPlan] = React.useState<string | null>(null);
   

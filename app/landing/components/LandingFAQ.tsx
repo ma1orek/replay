@@ -44,7 +44,7 @@ const faqs = [
   },
   { 
     q: "What's the difference between plans?", 
-    a: "Free: 100 credits/month (~1 gen), preview only. Maker ($9 one-time): 300 credits (~4 gens), Full Access & Export, credits never expire. Pro ($25/month): 1,500 credits (~20 gens), private projects, credits roll over, priority support." 
+    a: "Sandbox: Free demo access (read-only). Pro ($149/month): 3,000 credits (~20 gens), unlimited projects, full code export. Agency ($499/month): 15,000 credits (~100 gens), 5 team members, priority GPU. Enterprise: Custom pricing with on-premise deployment." 
   },
   { 
     q: "Can I cancel my subscription anytime?", 
