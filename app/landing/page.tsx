@@ -187,13 +187,13 @@ function HeroSection() {
         </div>
       </div>
 
-      {/* Hero Visual - HIDDEN on mobile, shown on md+ */}
-      <div className="relative z-10 hidden md:block mt-12 pb-0">
+      {/* Hero Visual - visible on all devices */}
+      <div className="relative z-10 mt-8 md:mt-12 pb-0">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.7 }}
-          className="w-full max-w-6xl mx-auto px-4"
+          className="w-full max-w-6xl mx-auto px-2 sm:px-4"
         >
           <div className="relative overflow-hidden rounded-t-xl border-t border-x border-zinc-700/50 bg-zinc-900/30">
             {/* Play/Pause Button Overlay */}
@@ -204,19 +204,19 @@ function HeroSection() {
                 isPlaying ? "opacity-0 hover:opacity-100" : "opacity-100"
               )}
             >
-              <div className="flex items-center gap-3 px-6 py-3 rounded-full bg-white/10 border border-white/20 backdrop-blur-md hover:bg-white/20 transition-colors">
+              <div className="flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 sm:py-3 rounded-full bg-white/10 border border-white/20 backdrop-blur-md hover:bg-white/20 transition-colors">
                 {isPlaying ? (
                   <>
-                    <div className="w-5 h-5 flex items-center justify-center gap-1">
-                      <div className="w-1.5 h-4 bg-white rounded-sm" />
-                      <div className="w-1.5 h-4 bg-white rounded-sm" />
+                    <div className="w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center gap-1">
+                      <div className="w-1 sm:w-1.5 h-3 sm:h-4 bg-white rounded-sm" />
+                      <div className="w-1 sm:w-1.5 h-3 sm:h-4 bg-white rounded-sm" />
                     </div>
-                    <span className="text-white text-sm font-medium">Pause</span>
+                    <span className="text-white text-xs sm:text-sm font-medium">Pause</span>
                   </>
                 ) : (
                   <>
-                    <Play className="w-5 h-5 text-white fill-white" />
-                    <span className="text-white text-sm font-medium">Watch Demo</span>
+                    <Play className="w-4 h-4 sm:w-5 sm:h-5 text-white fill-white" />
+                    <span className="text-white text-xs sm:text-sm font-medium">Watch Demo</span>
                   </>
                 )}
               </div>
