@@ -29,21 +29,16 @@ export default function PricingPage() {
           Replay uses a <strong className="text-white">credit-based system</strong>. Each action costs credits. 
           Your monthly credits reset each billing cycle, and unused credits roll over to the next month.
         </p>
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-2 gap-4">
           <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
-            <div className="text-3xl font-bold text-white mb-1">75</div>
+            <div className="text-3xl font-bold text-white mb-1">~150</div>
             <p className="text-sm text-zinc-400">credits per generation</p>
             <p className="text-xs text-zinc-500 mt-1">Video to UI conversion</p>
           </div>
           <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
-            <div className="text-3xl font-bold text-white mb-1">3</div>
+            <div className="text-3xl font-bold text-white mb-1">~10</div>
             <p className="text-sm text-zinc-400">credits per AI edit</p>
             <p className="text-xs text-zinc-500 mt-1">Refine and iterate</p>
-          </div>
-          <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
-            <div className="text-3xl font-bold text-white mb-1">10</div>
-            <p className="text-sm text-zinc-400">credits per extraction</p>
-            <p className="text-xs text-zinc-500 mt-1">Library component extraction</p>
           </div>
         </div>
       </div>
@@ -99,7 +94,7 @@ export default function PricingPage() {
               <span className="text-4xl font-bold text-white">$149</span>
               <span className="text-zinc-500">/mo</span>
             </div>
-            <p className="text-xs text-zinc-500 mb-4">1,500 credits/month (~20 generations)</p>
+            <p className="text-xs text-zinc-500 mb-4">3,000 credits/month (~20 generations)</p>
             <ul className="space-y-2 text-sm text-zinc-400 mb-6">
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-zinc-300" />
@@ -176,18 +171,18 @@ export default function PricingPage() {
         <div className="grid md:grid-cols-3 gap-4">
           <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700 text-center">
             <div className="text-2xl font-bold text-white mb-1">$20</div>
-            <p className="text-sm text-zinc-400">750 credits</p>
-            <p className="text-xs text-zinc-500 mt-1">~10 generations</p>
+            <p className="text-sm text-zinc-400">900 credits</p>
+            <p className="text-xs text-zinc-500 mt-1">~6 generations</p>
           </div>
           <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700 text-center">
             <div className="text-2xl font-bold text-white mb-1">$50</div>
-            <p className="text-sm text-zinc-400">2,000 credits</p>
-            <p className="text-xs text-zinc-500 mt-1">~26 generations</p>
+            <p className="text-sm text-zinc-400">2,400 credits</p>
+            <p className="text-xs text-zinc-500 mt-1">~16 generations</p>
           </div>
           <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700 text-center">
             <div className="text-2xl font-bold text-white mb-1">$100</div>
-            <p className="text-sm text-zinc-400">4,500 credits</p>
-            <p className="text-xs text-zinc-500 mt-1">~60 generations</p>
+            <p className="text-sm text-zinc-400">5,250 credits</p>
+            <p className="text-xs text-zinc-500 mt-1">~35 generations</p>
           </div>
         </div>
       </div>
@@ -206,7 +201,7 @@ export default function PricingPage() {
           </div>
           <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
             <h4 className="font-medium text-white mb-1">How many generations can I do?</h4>
-            <p className="text-sm text-zinc-400">Each video-to-UI generation costs 75 credits. Pro plan ($149/mo, 1,500 credits) gives you ~20 generations per month.</p>
+            <p className="text-sm text-zinc-400">Each video-to-UI generation costs ~150 credits. Pro plan ($149/mo, 3,000 credits) gives you ~20 generations. Agency plan ($499/mo, 15,000 credits) gives you ~100 generations.</p>
           </div>
           <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
             <h4 className="font-medium text-white mb-1">What payment methods do you accept?</h4>
@@ -214,7 +209,7 @@ export default function PricingPage() {
           </div>
           <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
             <h4 className="font-medium text-white mb-1">Do AI edits cost credits?</h4>
-            <p className="text-sm text-zinc-400">Yes, each AI edit costs 3 credits. Library component extraction costs 10 credits. This is much cheaper than generations so you can iterate freely.</p>
+            <p className="text-sm text-zinc-400">Yes, each AI edit/refine costs ~10 credits. This is much cheaper than generations so you can iterate freely.</p>
           </div>
         </div>
       </div>
