@@ -35,7 +35,9 @@ import {
   FileText,
   Database,
   Volume2,
-  VolumeX
+  VolumeX,
+  Maximize,
+  Pause
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AnimatedGroup } from "@/components/ui/animated-group";
@@ -86,9 +88,12 @@ const TechGrid = () => (
 function HeroSection() {
   const ref = useRef(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const videoContainerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 1200, height: 800 });
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false); // Default: sound ON
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -107,6 +112,26 @@ function HeroSection() {
       window.addEventListener("resize", handleResize);
       return () => window.removeEventListener("resize", handleResize);
     }
+  }, []);
+
+  // Update time as video plays
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleTimeUpdate = () => setCurrentTime(video.currentTime);
+    const handleLoadedMetadata = () => setDuration(video.duration);
+    const handleEnded = () => setIsPlaying(false);
+
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    video.addEventListener('ended', handleEnded);
+
+    return () => {
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      video.removeEventListener('ended', handleEnded);
+    };
   }, []);
 
   const togglePlay = () => {
@@ -131,6 +156,36 @@ function HeroSection() {
       setIsMuted(!isMuted);
     }
   };
+
+  const toggleFullscreen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const container = videoContainerRef.current;
+    if (!container) return;
+
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      container.requestFullscreen();
+    }
+  };
+
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    const video = videoRef.current;
+    if (!video || !duration) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percentage = clickX / rect.width;
+    video.currentTime = percentage * duration;
+  };
+
+  const formatTime = (time: number) => {
+    const mins = Math.floor(time / 60);
+    const secs = Math.floor(time % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
     <section className="relative min-h-screen flex flex-col bg-[#09090b]">
@@ -194,7 +249,7 @@ function HeroSection() {
           transition={{ delay: 0.6, duration: 0.7 }}
           className="w-full max-w-6xl mx-auto px-2 sm:px-4"
         >
-          <div className="relative overflow-hidden rounded-t-xl border-t border-x border-zinc-700/50 bg-zinc-900/30">
+          <div ref={videoContainerRef} className="relative overflow-hidden rounded-t-xl border-t border-x border-zinc-700/50 bg-zinc-900/30">
             {/* Play/Pause Button Overlay */}
             <button 
               onClick={togglePlay}
@@ -206,10 +261,7 @@ function HeroSection() {
               <div className="flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 sm:py-3 rounded-full bg-white/10 border border-white/20 backdrop-blur-md hover:bg-white/20 transition-colors">
                 {isPlaying ? (
                   <>
-                    <div className="w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center gap-1">
-                      <div className="w-1 sm:w-1.5 h-3 sm:h-4 bg-white rounded-sm" />
-                      <div className="w-1 sm:w-1.5 h-3 sm:h-4 bg-white rounded-sm" />
-                    </div>
+                    <Pause className="w-4 h-4 sm:w-5 sm:h-5 text-white fill-white" />
                     <span className="text-white text-xs sm:text-sm font-medium">Pause</span>
                   </>
                 ) : (
@@ -221,20 +273,54 @@ function HeroSection() {
               </div>
             </button>
             
-            {/* Sound Toggle Button - bottom right */}
-            {isPlaying && (
-              <button
-                onClick={toggleMute}
-                className="absolute bottom-3 right-3 z-30 p-2 rounded-full bg-black/50 border border-white/20 backdrop-blur-sm hover:bg-black/70 transition-colors"
-                title={isMuted ? "Unmute" : "Mute"}
+            {/* Bottom Controls Bar */}
+            <div className={cn(
+              "absolute bottom-0 left-0 right-0 z-30 transition-opacity duration-300",
+              isPlaying ? "opacity-100" : "opacity-0 pointer-events-none"
+            )}>
+              {/* Timeline Progress Bar */}
+              <div 
+                className="h-1 bg-white/20 cursor-pointer group"
+                onClick={handleSeek}
               >
-                {isMuted ? (
-                  <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                ) : (
-                  <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                )}
-              </button>
-            )}
+                <div 
+                  className="h-full bg-orange-500 transition-all duration-100 relative"
+                  style={{ width: `${progress}%` }}
+                >
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              </div>
+              
+              {/* Controls Row */}
+              <div className="flex items-center justify-between px-3 py-2 bg-gradient-to-t from-black/80 to-transparent">
+                {/* Left: Fullscreen + Time */}
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={toggleFullscreen}
+                    className="p-1.5 rounded-full hover:bg-white/20 transition-colors"
+                    title="Fullscreen"
+                  >
+                    <Maximize className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                  </button>
+                  <span className="text-xs text-white/70 font-mono">
+                    {formatTime(currentTime)} / {formatTime(duration)}
+                  </span>
+                </div>
+                
+                {/* Right: Sound Toggle */}
+                <button
+                  onClick={toggleMute}
+                  className="p-1.5 rounded-full hover:bg-white/20 transition-colors"
+                  title={isMuted ? "Unmute" : "Mute"}
+                >
+                  {isMuted ? (
+                    <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                  ) : (
+                    <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                  )}
+                </button>
+              </div>
+            </div>
             
             <video
               ref={videoRef}
