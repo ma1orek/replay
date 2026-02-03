@@ -129,7 +129,7 @@ export default function AdminPage() {
   const [feedback, setFeedback] = useState<FeedbackData[]>([]);
   const [feedbackStats, setFeedbackStats] = useState<FeedbackStats | null>(null);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "users" | "generations" | "feedback" | "content">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "generations" | "feedback" | "content" | "viral">("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [dataLoading, setDataLoading] = useState(false);
@@ -152,6 +152,25 @@ export default function AdminPage() {
   const [autoCount, setAutoCount] = useState(10); // Number of articles to auto-generate
   const [showMobileSidebar, setShowMobileSidebar] = useState(false); // Mobile sidebar state
   const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0, currentTitle: "" });
+  
+  // Viral Post Generator state
+  const [viralContext, setViralContext] = useState("");
+  const [viralCategory, setViralCategory] = useState<"arrogant" | "numbers" | "contrarian" | "philosophy">("arrogant");
+  const [viralTone, setViralTone] = useState<"aggressive" | "data-driven" | "philosophical" | "meme">("aggressive");
+  const [viralAssetUrl, setViralAssetUrl] = useState("");
+  const [isGeneratingViral, setIsGeneratingViral] = useState(false);
+  const [viralResults, setViralResults] = useState<{
+    posts: Array<{
+      content: string;
+      viralScore: number;
+      hooks: string[];
+      callToAction: string;
+      charCount: number;
+    }>;
+    altText: string | null;
+    bestPick: number;
+  } | null>(null);
+  const [copiedPostIndex, setCopiedPostIndex] = useState<number | null>(null);
   
   // Toast message for styled alerts
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -790,6 +809,7 @@ export default function AdminPage() {
             { id: "generations", label: "Generations", icon: Code },
             { id: "feedback", label: "Feedback", icon: MessageSquare },
             { id: "content", label: "Content", icon: FileText },
+            { id: "viral", label: "Viral", icon: Zap },
           ].map(tab => (
             <button
               key={tab.id}
@@ -1826,6 +1846,275 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                   ))
                 )}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Viral Tab - X Post Generator */}
+        {activeTab === "viral" && (
+          <div className="space-y-6">
+            {/* Generator Form */}
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 rounded-lg bg-gradient-to-br from-[#1DA1F2]/20 to-[#1DA1F2]/5 border border-[#1DA1F2]/20">
+                  <Zap className="w-5 h-5 text-[#1DA1F2]" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-white">Viral Post Generator</h2>
+                  <p className="text-xs text-white/50">Tibo-style posts for X - generate 3 viral variations</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* Context Input */}
+                <div>
+                  <label className="block text-sm font-medium text-white/70 mb-2">
+                    Context <span className="text-white/30">(what happened today?)</span>
+                  </label>
+                  <textarea
+                    value={viralContext}
+                    onChange={(e) => setViralContext(e.target.value)}
+                    placeholder="Got YC interview invite, fixed the RECITATION bug, shipped new feature..."
+                    className="w-full px-4 py-3 bg-black/30 border border-zinc-800 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-[#1DA1F2]/50 resize-none"
+                    rows={3}
+                  />
+                </div>
+
+                {/* Category & Tone Selection */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Category */}
+                  <div>
+                    <label className="block text-sm font-medium text-white/70 mb-2">Category</label>
+                    <select
+                      value={viralCategory}
+                      onChange={(e) => setViralCategory(e.target.value as any)}
+                      className="w-full px-4 py-3 bg-black/30 border border-zinc-800 rounded-xl text-white focus:outline-none focus:border-[#1DA1F2]/50 appearance-none cursor-pointer"
+                    >
+                      <option value="arrogant">🏆 Arrogant Builder - Speed flex</option>
+                      <option value="numbers">📊 Numbers Flex - Data/traction</option>
+                      <option value="contrarian">🔥 Contrarian Take - Challenge status quo</option>
+                      <option value="philosophy">💭 Philosophy - Founder wisdom</option>
+                    </select>
+                  </div>
+
+                  {/* Tone */}
+                  <div>
+                    <label className="block text-sm font-medium text-white/70 mb-2">Tone</label>
+                    <select
+                      value={viralTone}
+                      onChange={(e) => setViralTone(e.target.value as any)}
+                      className="w-full px-4 py-3 bg-black/30 border border-zinc-800 rounded-xl text-white focus:outline-none focus:border-[#1DA1F2]/50 appearance-none cursor-pointer"
+                    >
+                      <option value="aggressive">⚡ Aggressive - Bold & direct</option>
+                      <option value="data-driven">📈 Data-Driven - Numbers first</option>
+                      <option value="philosophical">🧠 Philosophical - Reflective</option>
+                      <option value="meme">😏 Meme - Witty & internet-native</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Asset URL (optional) */}
+                <div>
+                  <label className="block text-sm font-medium text-white/70 mb-2">
+                    Asset URL <span className="text-white/30">(optional - image/video link)</span>
+                  </label>
+                  <input
+                    type="url"
+                    value={viralAssetUrl}
+                    onChange={(e) => setViralAssetUrl(e.target.value)}
+                    placeholder="https://... (optional)"
+                    className="w-full px-4 py-3 bg-black/30 border border-zinc-800 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-[#1DA1F2]/50"
+                  />
+                </div>
+
+                {/* Generate Button */}
+                <button
+                  onClick={async () => {
+                    if (!viralContext.trim()) {
+                      setToastMessage("Enter some context first!");
+                      return;
+                    }
+                    setIsGeneratingViral(true);
+                    setViralResults(null);
+                    try {
+                      const res = await fetch("/api/admin/generate-viral", {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                          Authorization: `Bearer ${adminToken}`,
+                        },
+                        body: JSON.stringify({
+                          context: viralContext,
+                          category: viralCategory,
+                          tone: viralTone,
+                          assetUrl: viralAssetUrl || undefined,
+                        }),
+                      });
+                      const data = await res.json();
+                      if (data.error) {
+                        setToastMessage(`Error: ${data.error}`);
+                      } else {
+                        setViralResults(data);
+                      }
+                    } catch (err: any) {
+                      setToastMessage(`Error: ${err.message}`);
+                    } finally {
+                      setIsGeneratingViral(false);
+                    }
+                  }}
+                  disabled={isGeneratingViral || !viralContext.trim()}
+                  className="w-full py-3 bg-gradient-to-r from-[#1DA1F2] to-[#1DA1F2]/80 text-white font-semibold rounded-xl hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isGeneratingViral ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Generating 3 viral posts...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-4 h-4" />
+                      Generate 3 Viral Posts
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Results */}
+            {viralResults && (
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-white/70 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-[#1DA1F2]" />
+                  Generated Posts
+                  <span className="text-white/30">- Best pick highlighted</span>
+                </h3>
+
+                {viralResults.posts.map((post, index) => (
+                  <div
+                    key={index}
+                    className={cn(
+                      "bg-zinc-900/50 border rounded-xl p-5 transition-all",
+                      index === viralResults.bestPick
+                        ? "border-[#1DA1F2]/50 ring-1 ring-[#1DA1F2]/20"
+                        : "border-zinc-800 hover:border-zinc-700"
+                    )}
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-white">
+                          Post #{index + 1}
+                        </span>
+                        {index === viralResults.bestPick && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#1DA1F2]/20 text-[#1DA1F2] font-medium">
+                            ⭐ BEST PICK
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-white/40">
+                          {post.charCount} chars
+                        </span>
+                        <div className={cn(
+                          "flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg",
+                          post.viralScore >= 80 ? "bg-emerald-500/20 text-emerald-400" :
+                          post.viralScore >= 60 ? "bg-yellow-500/20 text-yellow-400" :
+                          "bg-red-500/20 text-red-400"
+                        )}>
+                          <TrendingUp className="w-3 h-3" />
+                          {post.viralScore}/100
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Post Content */}
+                    <div className="bg-black/30 rounded-xl p-4 border border-zinc-800 mb-3">
+                      <pre className="text-sm text-white whitespace-pre-wrap font-sans leading-relaxed">
+                        {post.content}
+                      </pre>
+                    </div>
+
+                    {/* Hooks & CTA */}
+                    <div className="flex flex-wrap items-center gap-2 mb-4">
+                      {post.hooks.slice(0, 2).map((hook, i) => (
+                        <span key={i} className="text-[10px] px-2 py-1 bg-white/5 rounded-lg text-white/50 truncate max-w-[200px]">
+                          Hook: {hook}
+                        </span>
+                      ))}
+                      <span className="text-[10px] px-2 py-1 bg-[#1DA1F2]/10 rounded-lg text-[#1DA1F2]/70">
+                        CTA: {post.callToAction}
+                      </span>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(post.content);
+                          setCopiedPostIndex(index);
+                          setTimeout(() => setCopiedPostIndex(null), 2000);
+                        }}
+                        className="flex-1 py-2 bg-white/10 text-white/70 rounded-lg text-sm font-medium hover:bg-white/20 transition-colors flex items-center justify-center gap-2"
+                      >
+                        {copiedPostIndex === index ? (
+                          <>
+                            <Check className="w-4 h-4 text-emerald-400" />
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-4 h-4" />
+                            Copy
+                          </>
+                        )}
+                      </button>
+                      <a
+                        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.content)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 py-2 bg-[#1DA1F2]/20 text-[#1DA1F2] rounded-lg text-sm font-medium hover:bg-[#1DA1F2]/30 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        Post to X
+                      </a>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Alt Text if asset was provided */}
+                {viralResults.altText && (
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-medium text-white/70">Generated Alt Text</span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(viralResults.altText!);
+                          setToastMessage("Alt text copied!");
+                        }}
+                        className="p-1 hover:bg-white/10 rounded"
+                      >
+                        <Copy className="w-3 h-3 text-white/40" />
+                      </button>
+                    </div>
+                    <p className="text-sm text-white/50">{viralResults.altText}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Tips Section */}
+            <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-xl p-4">
+              <h4 className="text-sm font-medium text-white/60 mb-3 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#1DA1F2]/50" />
+                Tibo-Style Tips
+              </h4>
+              <ul className="space-y-2 text-xs text-white/40">
+                <li>• <span className="text-white/60">Numbers win</span> - "4 minutes" beats "quickly"</li>
+                <li>• <span className="text-white/60">Short lines</span> - Break after every 1-2 sentences</li>
+                <li>• <span className="text-white/60">Hook first</span> - Controversial take or metric in line 1</li>
+                <li>• <span className="text-white/60">No corporate speak</span> - Never "excited to announce"</li>
+                <li>• <span className="text-white/60">End strong</span> - "Building X in public" or a question</li>
+              </ul>
             </div>
           </div>
         )}
