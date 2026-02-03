@@ -12594,6 +12594,22 @@ ${publishCode}
         feature={upgradeFeature}
       />
       
+      {/* Project Settings Modal for Supabase Wire */}
+      <ProjectSettingsModal
+        isOpen={showProjectSettings}
+        onClose={() => setShowProjectSettings(false)}
+        project={{
+          id: activeGeneration?.id || flows[0]?.id || "default",
+          name: generationTitle || "Untitled Project",
+          createdAt: activeGeneration?.createdAt,
+        }}
+        onRename={(id, newName) => {
+          setGenerationTitle(newName);
+          // Update in generations list too
+          setGenerations(prev => prev.map(g => g.id === id ? { ...g, title: newName } : g));
+        }}
+      />
+      
       {/* Hidden file input for video upload */}
       <input 
         type="file" 
