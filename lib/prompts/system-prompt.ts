@@ -607,6 +607,20 @@ EVIDENCE TRACKING - Add to REPLAY_METADATA:
 - implementedPages = screens you built with x-show (VISITED in video)
 - possiblePages = navigation items user did NOT click (only seen in menu)
 
+⚠️⚠️⚠️ CRITICAL: possiblePages and detectedNavLinks MUST be REAL navigation text!
+- GOOD: ["About", "Companies", "Find a Co-Founder", "Library", "SAFE", "Resources"]
+- BAD: ["{features.headline}", "{content.headline}", "{hero.title}"] ← NEVER USE PLACEHOLDERS!
+- NEVER include template variables like {xxx} or {xxx.yyy}
+- ONLY use EXACT TEXT visible in navigation menu/header/sidebar
+
+VALIDATION RULES for page names:
+1. Must be EXACT text from the video's navigation (About, Products, Settings, etc.)
+2. Must be 2-50 characters
+3. Must start with a letter (A-Z, a-z, or international letters)
+4. NO template placeholders: {anything}, [anything], {{anything}}
+5. NO code patterns: .headline, .title, variable.property
+6. NO special characters: < > = [ ] ` $ @ # % ^ & * ( ) _ + = | \\ : " ; ' ? /
+
 This helps users know what pages they can generate next!
 The Flow Map will show these as "Possible pages to generate".
 

@@ -487,12 +487,36 @@ Wrap in \`\`\`html blocks.`;
               const metadata = JSON.parse(metadataMatch[1]);
               console.log("[stream] Extracted REPLAY_METADATA:", metadata);
               
+              // Validation function for page names - filters out placeholders and invalid names
+              const isValidPageName = (name: string): boolean => {
+                if (!name || typeof name !== 'string') return false;
+                const trimmed = name.trim();
+                // Must be 2-50 characters
+                if (trimmed.length < 2 || trimmed.length > 50) return false;
+                // No template placeholders like {xxx} or {xxx.yyy}
+                if (/\{.*\}/.test(trimmed)) return false;
+                // No code patterns like .headline, .title, etc.
+                if (/^\.[a-z]+$/i.test(trimmed)) return false;
+                // Must start with a letter (allow unicode for international names)
+                if (!/^[A-Za-zÀ-ÿĄĘŁŃÓŚŹŻąęłńóśźż]/.test(trimmed)) return false;
+                // No HTML/code characters
+                if (/[<>=\[\]`$]/.test(trimmed)) return false;
+                // Skip common non-page elements
+                const skipWords = ['apply', 'login', 'logout', 'sign up', 'signup', 'sign in', 'signin', 'search', 'menu', 'get started', 'download', 'submit', 'send'];
+                if (skipWords.includes(trimmed.toLowerCase())) return false;
+                return true;
+              };
+              
               // Build scanData.pages from metadata
               const pages: any[] = [];
               
               // Add implemented pages (seen in video)
               if (metadata.implementedPages) {
                 metadata.implementedPages.forEach((pageName: string, i: number) => {
+                  if (!isValidPageName(pageName)) {
+                    console.log("[stream] Skipping invalid implementedPage:", pageName);
+                    return;
+                  }
                   pages.push({
                     id: pageName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
                     title: pageName,
@@ -508,6 +532,10 @@ Wrap in \`\`\`html blocks.`;
               // Add possible pages (from nav but not shown)
               if (metadata.possiblePages) {
                 metadata.possiblePages.forEach((pageName: string) => {
+                  if (!isValidPageName(pageName)) {
+                    console.log("[stream] Skipping invalid possiblePage:", pageName);
+                    return;
+                  }
                   const pageId = pageName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
                   // Skip if already in implemented pages
                   if (!pages.some(p => p.id === pageId)) {
@@ -527,6 +555,10 @@ Wrap in \`\`\`html blocks.`;
               // Add detected nav links as possible pages
               if (metadata.detectedNavLinks) {
                 metadata.detectedNavLinks.forEach((linkName: string) => {
+                  if (!isValidPageName(linkName)) {
+                    console.log("[stream] Skipping invalid navLink:", linkName);
+                    return;
+                  }
                   const pageId = linkName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
                   if (!pages.some(p => p.id === pageId)) {
                     pages.push({

@@ -6708,8 +6708,42 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
     setFlowNodes([]);
     setFlowEdges([]);
     
+    // ═══════════════════════════════════════════════════════════════════════════
+    // VALIDATION: Comprehensive page name validation to filter placeholders
+    // ═══════════════════════════════════════════════════════════════════════════
+    const isValidPageName = (name: string): boolean => {
+      if (!name || typeof name !== 'string') return false;
+      const trimmed = name.trim();
+      // Must be 2-50 characters
+      if (trimmed.length < 2 || trimmed.length > 50) return false;
+      // No template placeholders like {xxx} or {xxx.yyy}
+      if (/\{.*\}/.test(trimmed)) return false;
+      // No code-like patterns: .headline, .title, variable.property
+      if (/\.[a-z]+/i.test(trimmed)) return false;
+      // Must start with a letter (allow unicode for international names)
+      if (!/^[A-Za-zÀ-ÿĄĘŁŃÓŚŹŻąęłńóśźż]/.test(trimmed)) return false;
+      // No HTML/code/special characters
+      if (/[<>=\[\]`$@#%^&*()_+=|\\:";'?/]/.test(trimmed)) return false;
+      // Skip common non-page elements (buttons, actions)
+      const skipWords = [
+        'apply', 'login', 'logout', 'sign up', 'signup', 'sign in', 'signin', 
+        'search', 'menu', 'get started', 'download', 'submit', 'send', 'close',
+        'cancel', 'ok', 'yes', 'no', 'save', 'delete', 'edit', 'view', 'more',
+        'back', 'next', 'previous', 'continue', 'skip', 'done', 'finish'
+      ];
+      if (skipWords.includes(trimmed.toLowerCase())) return false;
+      // No purely numeric or single-word generic names
+      if (/^\d+$/.test(trimmed)) return false;
+      return true;
+    };
+    
     const addNode = async (node: ProductFlowNode) => {
       await new Promise(r => setTimeout(r, 30));
+      // Validate node name before adding
+      if (!isValidPageName(node.name)) {
+        console.log('[addNode] Skipping invalid name:', node.name);
+        return;
+      }
       // Prevent duplicates - check by id AND name (normalized)
       setFlowNodes(prev => {
         const normalizedName = node.name.toLowerCase().trim();
@@ -6737,13 +6771,42 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
     if (scanData?.pages && Array.isArray(scanData.pages) && scanData.pages.length > 0) {
       console.log('[buildFlowLive] Using scanData.pages:', scanData.pages.length, 'pages');
       
-      // Separate pages by seenInVideo status
-      const observedPages = scanData.pages.filter((p: any) => p.seenInVideo === true || p.isDefault);
-      const possiblePages = scanData.pages.filter((p: any) => p.seenInVideo === false && !p.isDefault);
+      // ═══════════════════════════════════════════════════════════════════════════
+      // IMPORTANT: Cross-check scanData with actual code content
+      // A page that was "detected" but now has x-show content = NOW OBSERVED
+      // This handles the case when user reconstructs a page via edit
+      // ═══════════════════════════════════════════════════════════════════════════
+      
+      // Helper: Check if a page has actual content in the code
+      const pageHasContentInCode = (pageName: string): boolean => {
+        const normalizedName = pageName.toLowerCase().replace(/[^a-z0-9]+/g, '');
+        // Check for Alpine.js x-show with this page name
+        const xShowPatterns = [
+          new RegExp(`x-show\\s*=\\s*["']\\s*(?:page|currentPage)\\s*===?\\s*['"]${normalizedName}['"]`, 'i'),
+          new RegExp(`x-show\\s*=\\s*["']\\s*(?:page|currentPage)\\s*===?\\s*['"]${pageName}['"]`, 'i'),
+          // Also check with spaces/dashes normalized
+          new RegExp(`x-show\\s*=\\s*["']\\s*(?:page|currentPage)\\s*===?\\s*['"][^'"]*${normalizedName}[^'"]*['"]`, 'i'),
+        ];
+        return xShowPatterns.some(pattern => pattern.test(code));
+      };
+      
+      // Separate pages - use code content as source of truth for "observed" status
+      const observedPages = scanData.pages.filter((p: any) => {
+        const name = p.title || p.name || p.id || '';
+        if (!isValidPageName(name)) return false;
+        // Page is observed if: originally seen in video OR now has content in code (was reconstructed)
+        return p.seenInVideo === true || p.isDefault || pageHasContentInCode(name);
+      });
+      const possiblePages = scanData.pages.filter((p: any) => {
+        const name = p.title || p.name || p.id || '';
+        if (!isValidPageName(name)) return false;
+        // Page is possible only if NOT in video AND NOT has content in code
+        return p.seenInVideo === false && !p.isDefault && !pageHasContentInCode(name);
+      });
       
       console.log('[buildFlowLive] Observed:', observedPages.length, 'Possible:', possiblePages.length);
       
-      // Add OBSERVED nodes first
+      // Add OBSERVED nodes first (pages that were shown and generated from video)
       for (let i = 0; i < observedPages.length; i++) {
         const page = observedPages[i];
         await addNode({
@@ -6758,24 +6821,14 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
         });
       }
       
-      // Add DETECTED nodes (not seen but in navigation) - shown in "Detected (Not Visited)" section
-      // Filter out placeholder names (containing {}) and duplicates
-      const filteredPossiblePages = possiblePages.filter((page: any) => {
-        const name = page.title || page.name || page.id || '';
-        // Skip placeholders like {video.headline}, {list.headline}
-        if (name.includes('{') || name.includes('}')) return false;
-        // Skip very short names
-        if (name.length < 3) return false;
-        return true;
-      });
-      
-      for (let i = 0; i < filteredPossiblePages.length; i++) {
-        const page = filteredPossiblePages[i];
+      // Add DETECTED nodes (visible in navigation but not clicked/visited)
+      for (let i = 0; i < possiblePages.length; i++) {
+        const page = possiblePages[i];
         await addNode({
           id: page.id || `possible-${i}`,
           name: page.title || page.name || page.id,
           type: 'view',
-          status: 'detected', // Changed from 'possible' to 'detected' to show in proper section
+          status: 'detected',
           description: page.description || `Present in navigation, not shown in video`,
           x: 100 + (i % 3) * 300,
           y: 400 + Math.floor(i / 3) * 220,
@@ -6788,14 +6841,14 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
         const navItems = scanData.ui.navigation.sidebar.items;
         const existingPageIds = new Set(scanData.pages.map((p: any) => (p.id || '').toLowerCase()));
         
-        let extraIndex = filteredPossiblePages.length;
+        let extraIndex = possiblePages.length;
         for (const item of navItems) {
           const itemName = item.label || item.name || '';
-          // Skip placeholders like {video.headline}
-          if (itemName.includes('{') || itemName.includes('}')) continue;
+          // Validate using comprehensive function
+          if (!isValidPageName(itemName)) continue;
           
           const itemId = itemName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-          if (itemId && itemId.length > 2 && !existingPageIds.has(itemId)) {
+          if (itemId && !existingPageIds.has(itemId)) {
             existingPageIds.add(itemId);
             await addNode({
               id: itemId,
@@ -6824,16 +6877,14 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
           });
         }
         
-        let headerIndex = filteredPossiblePages.length + (scanData?.ui?.navigation?.sidebar?.items?.length || 0);
+        let headerIndex = possiblePages.length + (scanData?.ui?.navigation?.sidebar?.items?.length || 0);
         for (const item of headerItems) {
           const itemName = item.label || item.name || '';
-          // Skip placeholders like {video.headline}
-          if (itemName.includes('{') || itemName.includes('}')) continue;
+          // Validate using comprehensive function
+          if (!isValidPageName(itemName)) continue;
           
           const itemId = itemName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-          // Skip common buttons
-          const skipWords = ['login', 'signup', 'sign-up', 'apply', 'search', 'menu', 'get-started'];
-          if (itemId && itemId.length > 2 && !existingPageIds.has(itemId) && !skipWords.includes(itemId)) {
+          if (itemId && !existingPageIds.has(itemId)) {
             existingPageIds.add(itemId);
             await addNode({
               id: itemId,
@@ -6897,8 +6948,8 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
     let m;
     while ((m = linkRegex.exec(code)) !== null) {
       const text = m[1].trim().replace(/\s+/g, ' ');
-      // Filter: must start with letter, no code, reasonable length
-      if (text.length > 1 && text.length < 30 && /^[A-Za-zĄĘŁŃÓŚŹŻąęłńóśźż]/.test(text) && !/[<>=\{\}]/.test(text)) {
+      // Use comprehensive validation
+      if (isValidPageName(text)) {
         navNames.add(text);
       }
     }
@@ -6920,7 +6971,7 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
         let linkMatch;
         while ((linkMatch = innerLinkRegex.exec(area)) !== null) {
           const text = linkMatch[1].trim();
-          if (text.length > 1 && /^[A-Za-zĄĘŁŃÓŚŹŻ]/.test(text)) {
+          if (isValidPageName(text)) {
             navNames.add(text);
           }
         }
@@ -6928,7 +6979,7 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
         const btnRegex = /<button[^>]*>([^<]{2,20})<\/button>/gi;
         while ((linkMatch = btnRegex.exec(area)) !== null) {
           const text = linkMatch[1].trim();
-          if (text.length > 1 && /^[A-Za-zĄĘŁŃÓŚŹŻ]/.test(text)) {
+          if (isValidPageName(text)) {
             navNames.add(text);
           }
         }
@@ -6939,26 +6990,13 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
     const navContextRegex = /(?:href|@click)[^>]*>([A-Za-zĄĘŁŃÓŚŹŻąęłńóśźż][A-Za-z0-9ĄĘŁŃÓŚŹŻąęłńóśźż\s]{1,25})</gi;
     while ((m = navContextRegex.exec(code)) !== null) {
       const text = m[1].trim();
-      if (text.length > 1 && text.length < 25) {
+      if (isValidPageName(text)) {
         navNames.add(text);
       }
     }
     
-    // Filter out common non-page words
-    const excludeWords = new Set([
-      'apply', 'submit', 'send', 'search', 'login', 'logout', 'log in', 'sign up', 
-      'sign in', 'wyloguj', 'zaloguj', 'cancel', 'ok', 'save', 'close', 'back', 
-      'next', 'prev', 'more', 'less', 'see all', 'view all', 'expand', 'collapse',
-      'add', 'edit', 'delete', 'remove', 'update', 'create', 'new', 'copy', 'share',
-      'download', 'upload', 'help', 'menu', 'toggle', 'show', 'hide', 'get started',
-      'learn more', 'read more', 'contact us', 'buy now', 'shop now', 'subscribe',
-      'click', 'tap', 'press', 'select', 'choose', 'home', 'y', 'x', 'icon'
-    ]);
-    
-    const filteredNavNames = Array.from(navNames).filter(name => {
-      const lower = name.toLowerCase();
-      return !excludeWords.has(lower) && name.length > 2;
-    });
+    // Final filter using comprehensive validation (double-check all entries)
+    const filteredNavNames = Array.from(navNames).filter(name => isValidPageName(name));
     
     console.log('[buildFlowLive] Found nav names (aggressive):', filteredNavNames);
     
