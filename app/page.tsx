@@ -12601,7 +12601,6 @@ ${publishCode}
         project={{
           id: activeGeneration?.id || flows[0]?.id || "default",
           name: generationTitle || "Untitled Project",
-          createdAt: activeGeneration?.createdAt,
         }}
         onRename={(id, newName) => {
           setGenerationTitle(newName);
