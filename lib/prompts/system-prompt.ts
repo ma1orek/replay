@@ -617,9 +617,9 @@ VALIDATION RULES for page names:
 1. Must be EXACT text from the video's navigation (About, Products, Settings, etc.)
 2. Must be 2-50 characters
 3. Must start with a letter (A-Z, a-z, or international letters)
-4. NO template placeholders: {anything}, [anything], {{anything}}
-5. NO code patterns: .headline, .title, variable.property
-6. NO special characters: < > = [ ] ` $ @ # % ^ & * ( ) _ + = | \\ : " ; ' ? /
+4. NO template placeholders like curly braces or brackets
+5. NO code patterns like .headline or .title
+6. NO special characters or symbols
 
 This helps users know what pages they can generate next!
 The Flow Map will show these as "Possible pages to generate".
