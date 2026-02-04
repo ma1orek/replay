@@ -21859,14 +21859,20 @@ module.exports = {
                                               className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-nw-resize z-[9999] hover:bg-blue-400 shadow-lg hover:scale-125 transition-transform"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
-                                                setResizingComponent({ id, handle: 'nw' });
-                                                // Get actual size from DOM for accurate resize
+                                                // Get actual size from DOM FIRST - before setting resizing state
                                                 const container = (e.currentTarget as HTMLElement).closest('[data-component-container]');
                                                 const rect = container?.getBoundingClientRect();
                                                 const scale = blueprintsZoom / 100;
                                                 const actualWidth = rect ? rect.width / scale : (size?.width || 200);
                                                 const actualHeight = rect ? rect.height / scale : (size?.height || 200);
                                                 const currentPos = blueprintPositions[id] || pos;
+                                                // CRITICAL: Update blueprintSizes with displayed size BEFORE triggering re-render
+                                                // This prevents "jump" from capped to uncapped size
+                                                setBlueprintSizes(prev => ({
+                                                  ...prev,
+                                                  [id]: { width: actualWidth, height: actualHeight }
+                                                }));
+                                                setResizingComponent({ id, handle: 'nw' });
                                                 setResizeStart({ x: e.clientX, y: e.clientY, width: actualWidth, height: actualHeight, posX: currentPos.x, posY: currentPos.y });
                                               }}
                                             />
@@ -21876,13 +21882,17 @@ module.exports = {
                                               className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-ne-resize z-[9999] hover:bg-blue-400 shadow-lg hover:scale-125 transition-transform"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
-                                                setResizingComponent({ id, handle: 'ne' });
                                                 const container = (e.currentTarget as HTMLElement).closest('[data-component-container]');
                                                 const rect = container?.getBoundingClientRect();
                                                 const scale = blueprintsZoom / 100;
                                                 const actualWidth = rect ? rect.width / scale : (size?.width || 200);
                                                 const actualHeight = rect ? rect.height / scale : (size?.height || 200);
                                                 const currentPos = blueprintPositions[id] || pos;
+                                                setBlueprintSizes(prev => ({
+                                                  ...prev,
+                                                  [id]: { width: actualWidth, height: actualHeight }
+                                                }));
+                                                setResizingComponent({ id, handle: 'ne' });
                                                 setResizeStart({ x: e.clientX, y: e.clientY, width: actualWidth, height: actualHeight, posX: currentPos.x, posY: currentPos.y });
                                               }}
                                             />
@@ -21892,13 +21902,17 @@ module.exports = {
                                               className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-sw-resize z-[9999] hover:bg-blue-400 shadow-lg hover:scale-125 transition-transform"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
-                                                setResizingComponent({ id, handle: 'sw' });
                                                 const container = (e.currentTarget as HTMLElement).closest('[data-component-container]');
                                                 const rect = container?.getBoundingClientRect();
                                                 const scale = blueprintsZoom / 100;
                                                 const actualWidth = rect ? rect.width / scale : (size?.width || 200);
                                                 const actualHeight = rect ? rect.height / scale : (size?.height || 200);
                                                 const currentPos = blueprintPositions[id] || pos;
+                                                setBlueprintSizes(prev => ({
+                                                  ...prev,
+                                                  [id]: { width: actualWidth, height: actualHeight }
+                                                }));
+                                                setResizingComponent({ id, handle: 'sw' });
                                                 setResizeStart({ x: e.clientX, y: e.clientY, width: actualWidth, height: actualHeight, posX: currentPos.x, posY: currentPos.y });
                                               }}
                                             />
@@ -21908,13 +21922,17 @@ module.exports = {
                                               className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded-sm cursor-se-resize z-[9999] hover:bg-blue-400 shadow-lg hover:scale-125 transition-transform"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
-                                                setResizingComponent({ id, handle: 'se' });
                                                 const container = (e.currentTarget as HTMLElement).closest('[data-component-container]');
                                                 const rect = container?.getBoundingClientRect();
                                                 const scale = blueprintsZoom / 100;
                                                 const actualWidth = rect ? rect.width / scale : (size?.width || 200);
                                                 const actualHeight = rect ? rect.height / scale : (size?.height || 200);
                                                 const currentPos = blueprintPositions[id] || pos;
+                                                setBlueprintSizes(prev => ({
+                                                  ...prev,
+                                                  [id]: { width: actualWidth, height: actualHeight }
+                                                }));
+                                                setResizingComponent({ id, handle: 'se' });
                                                 setResizeStart({ x: e.clientX, y: e.clientY, width: actualWidth, height: actualHeight, posX: currentPos.x, posY: currentPos.y });
                                               }}
                                             />
@@ -21924,13 +21942,17 @@ module.exports = {
                                               className="absolute -top-1 left-1/2 -translate-x-1/2 w-6 h-2 bg-blue-500 border border-white rounded-sm cursor-n-resize z-[9999] hover:bg-blue-400 shadow-lg hover:scale-110 transition-transform"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
-                                                setResizingComponent({ id, handle: 'n' });
                                                 const container = (e.currentTarget as HTMLElement).closest('[data-component-container]');
                                                 const rect = container?.getBoundingClientRect();
                                                 const scale = blueprintsZoom / 100;
                                                 const actualWidth = rect ? rect.width / scale : (size?.width || 200);
                                                 const actualHeight = rect ? rect.height / scale : (size?.height || 200);
                                                 const currentPos = blueprintPositions[id] || pos;
+                                                setBlueprintSizes(prev => ({
+                                                  ...prev,
+                                                  [id]: { width: actualWidth, height: actualHeight }
+                                                }));
+                                                setResizingComponent({ id, handle: 'n' });
                                                 setResizeStart({ x: e.clientX, y: e.clientY, width: actualWidth, height: actualHeight, posX: currentPos.x, posY: currentPos.y });
                                               }}
                                             />
@@ -21940,13 +21962,17 @@ module.exports = {
                                               className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-2 bg-blue-500 border border-white rounded-sm cursor-s-resize z-[9999] hover:bg-blue-400 shadow-lg hover:scale-110 transition-transform"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
-                                                setResizingComponent({ id, handle: 's' });
                                                 const container = (e.currentTarget as HTMLElement).closest('[data-component-container]');
                                                 const rect = container?.getBoundingClientRect();
                                                 const scale = blueprintsZoom / 100;
                                                 const actualWidth = rect ? rect.width / scale : (size?.width || 200);
                                                 const actualHeight = rect ? rect.height / scale : (size?.height || 200);
                                                 const currentPos = blueprintPositions[id] || pos;
+                                                setBlueprintSizes(prev => ({
+                                                  ...prev,
+                                                  [id]: { width: actualWidth, height: actualHeight }
+                                                }));
+                                                setResizingComponent({ id, handle: 's' });
                                                 setResizeStart({ x: e.clientX, y: e.clientY, width: actualWidth, height: actualHeight, posX: currentPos.x, posY: currentPos.y });
                                               }}
                                             />
@@ -21956,13 +21982,17 @@ module.exports = {
                                               className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-6 bg-blue-500 border border-white rounded-sm cursor-w-resize z-[9999] hover:bg-blue-400 shadow-lg hover:scale-110 transition-transform"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
-                                                setResizingComponent({ id, handle: 'w' });
                                                 const container = (e.currentTarget as HTMLElement).closest('[data-component-container]');
                                                 const rect = container?.getBoundingClientRect();
                                                 const scale = blueprintsZoom / 100;
                                                 const actualWidth = rect ? rect.width / scale : (size?.width || 200);
                                                 const actualHeight = rect ? rect.height / scale : (size?.height || 200);
                                                 const currentPos = blueprintPositions[id] || pos;
+                                                setBlueprintSizes(prev => ({
+                                                  ...prev,
+                                                  [id]: { width: actualWidth, height: actualHeight }
+                                                }));
+                                                setResizingComponent({ id, handle: 'w' });
                                                 setResizeStart({ x: e.clientX, y: e.clientY, width: actualWidth, height: actualHeight, posX: currentPos.x, posY: currentPos.y });
                                               }}
                                             />
@@ -21972,13 +22002,17 @@ module.exports = {
                                               className="absolute top-1/2 -right-1 -translate-y-1/2 w-2 h-6 bg-blue-500 border border-white rounded-sm cursor-e-resize z-[9999] hover:bg-blue-400 shadow-lg hover:scale-110 transition-transform"
                                               onMouseDown={(e) => {
                                                 e.stopPropagation();
-                                                setResizingComponent({ id, handle: 'e' });
                                                 const container = (e.currentTarget as HTMLElement).closest('[data-component-container]');
                                                 const rect = container?.getBoundingClientRect();
                                                 const scale = blueprintsZoom / 100;
                                                 const actualWidth = rect ? rect.width / scale : (size?.width || 200);
                                                 const actualHeight = rect ? rect.height / scale : (size?.height || 200);
                                                 const currentPos = blueprintPositions[id] || pos;
+                                                setBlueprintSizes(prev => ({
+                                                  ...prev,
+                                                  [id]: { width: actualWidth, height: actualHeight }
+                                                }));
+                                                setResizingComponent({ id, handle: 'e' });
                                                 setResizeStart({ x: e.clientX, y: e.clientY, width: actualWidth, height: actualHeight, posX: currentPos.x, posY: currentPos.y });
                                               }}
                                             />
