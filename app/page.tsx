@@ -1069,6 +1069,32 @@ const applyPropsToCode = (code: string, props: any[], propsOverride: Record<stri
     // Don't inject global styles - it breaks components with multiple colors
   }
   
+  // Handle className override - add classes to root element
+  if (propsOverride['className'] && typeof propsOverride['className'] === 'string') {
+    const additionalClasses = propsOverride['className'].trim();
+    if (additionalClasses) {
+      // Find first element with className and append
+      modifiedCode = modifiedCode.replace(
+        /className="([^"]*)"/,
+        `className="$1 ${additionalClasses}"`
+      );
+    }
+  }
+  
+  // Handle children override - replace text content in first text-containing element
+  if (propsOverride['children'] && typeof propsOverride['children'] === 'string') {
+    const newChildren = propsOverride['children'];
+    // Find first element with text content and replace it
+    // Match >text< pattern (text between tags)
+    const textMatch = modifiedCode.match(/>([^<>]{2,50})</);
+    if (textMatch) {
+      modifiedCode = modifiedCode.replace(
+        `>${textMatch[1]}<`,
+        `>${newChildren}<`
+      );
+    }
+  }
+  
   return modifiedCode;
 };
 
@@ -2261,6 +2287,7 @@ const InteractiveReactPreview = ({
   background = "dark",
   className = "",
   onSizeChange,
+  onAccessibilityResults,
   isFullWidth = false,
   componentId
 }: { 
@@ -2268,6 +2295,7 @@ const InteractiveReactPreview = ({
   background?: "light" | "dark";
   className?: string;
   onSizeChange?: (size: { width: number; height: number }) => void;
+  onAccessibilityResults?: (results: { violations: any[]; passes: any[]; incomplete: any[] }) => void;
   isFullWidth?: boolean;
   componentId?: string;
 }) => {
@@ -2342,6 +2370,7 @@ const InteractiveReactPreview = ({
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.8.4/axe.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { 
@@ -2768,10 +2797,58 @@ const InteractiveReactPreview = ({
       }
     });
     
+    // Run axe-core accessibility tests and report results
+    const runAccessibilityCheck = () => {
+      if (typeof axe !== 'undefined') {
+        axe.run('#root', {
+          rules: {
+            'color-contrast': { enabled: true },
+            'button-name': { enabled: true },
+            'image-alt': { enabled: true },
+            'label': { enabled: true },
+            'link-name': { enabled: true },
+            'aria-roles': { enabled: true },
+            'aria-required-attr': { enabled: true },
+            'aria-valid-attr-value': { enabled: true },
+            'duplicate-id': { enabled: true },
+            'nested-interactive': { enabled: true },
+            'tabindex': { enabled: true },
+          }
+        }).then(results => {
+          window.parent.postMessage({
+            type: 'ACCESSIBILITY_RESULTS',
+            violations: results.violations.map(v => ({
+              id: v.id,
+              impact: v.impact,
+              description: v.description,
+              help: v.help,
+              helpUrl: v.helpUrl,
+              nodes: v.nodes.map(n => ({ html: n.html, failureSummary: n.failureSummary }))
+            })),
+            passes: results.passes.map(p => ({
+              id: p.id,
+              description: p.description,
+              help: p.help,
+              nodes: p.nodes.map(n => ({ html: n.html }))
+            })),
+            incomplete: results.incomplete.map(i => ({
+              id: i.id,
+              impact: i.impact,
+              description: i.description,
+              help: i.help,
+              nodes: i.nodes.map(n => ({ html: n.html }))
+            }))
+          }, '*');
+        }).catch(err => {
+          console.warn('Axe accessibility check failed:', err);
+        });
+      }
+    };
+    
     // Initial + resize + mutation observer
     setTimeout(() => { forceVisible(); fixBrokenImages(); sendSize(); }, 100);
     setTimeout(() => { forceVisible(); fixBrokenImages(); sendSize(); }, 500);
-    setTimeout(() => { forceVisible(); fixBrokenImages(); sendSize(); }, 1500);
+    setTimeout(() => { forceVisible(); fixBrokenImages(); sendSize(); runAccessibilityCheck(); }, 1500);
     window.addEventListener('resize', sendSize);
     
     const observer = new MutationObserver(() => { forceVisible(); fixBrokenImages(); sendSize(); });
@@ -2806,10 +2883,18 @@ const InteractiveReactPreview = ({
       if (event.data?.type === 'IFRAME_HEIGHT' && typeof event.data.height === 'number') {
         setIframeHeight(Math.min(event.data.height + 20, 800));
       }
+      // Accessibility results from axe-core
+      if (event.data?.type === 'ACCESSIBILITY_RESULTS' && onAccessibilityResults) {
+        onAccessibilityResults({
+          violations: event.data.violations || [],
+          passes: event.data.passes || [],
+          incomplete: event.data.incomplete || []
+        });
+      }
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [onSizeChange]);
+  }, [onSizeChange, onAccessibilityResults]);
 
   // Container controls size, iframe fills it at 100% for responsiveness
   // When container is resized, iframe content responds like a real browser window
@@ -3303,6 +3388,11 @@ function ReplayToolContent() {
   const [libraryVisionMode, setLibraryVisionMode] = useState<"none" | "blur" | "deuteranopia" | "protanopia" | "tritanopia" | "grayscale">("none");
   const [libraryViewport, setLibraryViewport] = useState<"desktop" | "mobile">("desktop");
   const [libraryPreviewSize, setLibraryPreviewSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [accessibilityResults, setAccessibilityResults] = useState<{
+    violations: Array<{ id: string; impact: string; description: string; help: string; helpUrl: string; nodes: Array<{ html: string; failureSummary: string }> }>;
+    passes: Array<{ id: string; description: string; help: string; nodes: Array<{ html: string }> }>;
+    incomplete: Array<{ id: string; impact: string; description: string; help: string; nodes: Array<{ html: string }> }>;
+  } | null>(null);
   const [isLibraryFullscreen, setIsLibraryFullscreen] = useState(false);
   const [libraryPanelCollapsed, setLibraryPanelCollapsed] = useState(false);
   const [isGeneratingLibraryDocs, setIsGeneratingLibraryDocs] = useState(false);
@@ -19931,62 +20021,13 @@ module.exports = {
                                       <div className={cn("rounded-xl border overflow-hidden", libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50")}>
                                         <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-px bg-zinc-800">
                                           {selectedDoc.content.icons.map((icon: string, i: number) => {
-                                            // Map icon names to Lucide components
-                                            const iconMap: Record<string, React.ReactNode> = {
-                                              'Home': <Home className="w-5 h-5" />,
-                                              'Menu': <Menu className="w-5 h-5" />,
-                                              'Search': <Search className="w-5 h-5" />,
-                                              'User': <User className="w-5 h-5" />,
-                                              'Settings': <Settings className="w-5 h-5" />,
-                                              'Plus': <Plus className="w-5 h-5" />,
-                                              'Minus': <Minus className="w-5 h-5" />,
-                                              'Check': <Check className="w-5 h-5" />,
-                                              'X': <X className="w-5 h-5" />,
-                                              'ChevronRight': <ChevronRight className="w-5 h-5" />,
-                                              'ChevronLeft': <ChevronLeft className="w-5 h-5" />,
-                                              'ChevronDown': <ChevronDown className="w-5 h-5" />,
-                                              'ChevronUp': <ChevronUp className="w-5 h-5" />,
-                                              'ArrowRight': <ArrowRight className="w-5 h-5" />,
-                                              'ArrowLeft': <ArrowLeft className="w-5 h-5" />,
-                                              'Mail': <Mail className="w-5 h-5" />,
-                                              'Phone': <Phone className="w-5 h-5" />,
-                                              'Calendar': <Calendar className="w-5 h-5" />,
-                                              'Clock': <Clock className="w-5 h-5" />,
-                                              'Heart': <Heart className="w-5 h-5" />,
-                                              'Star': <Star className="w-5 h-5" />,
-                                              'Bell': <Bell className="w-5 h-5" />,
-                                              'Bookmark': <Bookmark className="w-5 h-5" />,
-                                              'Download': <Download className="w-5 h-5" />,
-                                              'Upload': <Upload className="w-5 h-5" />,
-                                              'Edit': <Edit className="w-5 h-5" />,
-                                              'Trash': <Trash className="w-5 h-5" />,
-                                              'Copy': <Copy className="w-5 h-5" />,
-                                              'Share': <Share className="w-5 h-5" />,
-                                              'Link': <Link2 className="w-5 h-5" />,
-                                              'Eye': <Eye className="w-5 h-5" />,
-                                              'EyeOff': <EyeOff className="w-5 h-5" />,
-                                              'Lock': <Lock className="w-5 h-5" />,
-                                              'Unlock': <Unlock className="w-5 h-5" />,
-                                              'Key': <Key className="w-5 h-5" />,
-                                              'Shield': <Shield className="w-5 h-5" />,
-                                              'AlertCircle': <AlertCircle className="w-5 h-5" />,
-                                              'Info': <Info className="w-5 h-5" />,
-                                              'HelpCircle': <HelpCircle className="w-5 h-5" />,
-                                              'Loader': <Loader2 className="w-5 h-5" />,
-                                              'Play': <Play className="w-5 h-5" />,
-                                              'Pause': <Pause className="w-5 h-5" />,
-                                              'File': <FileText className="w-5 h-5" />,
-                                              'Folder': <Folder className="w-5 h-5" />,
-                                              'Image': <ImageIcon className="w-5 h-5" />,
-                                              'Video': <Film className="w-5 h-5" />,
-                                              'Code': <Code className="w-5 h-5" />,
-                                              'Terminal': <Terminal className="w-5 h-5" />,
-                                              'Globe': <Globe className="w-5 h-5" />,
-                                              'Map': <Map className="w-5 h-5" />,
-                                              'Zap': <Zap className="w-5 h-5" />,
-                                              'Rocket': <Rocket className="w-5 h-5" />,
-                                            };
-                                            const IconComponent = iconMap[icon] || <Box className="w-5 h-5" />;
+                                            // Dynamic Lucide icon lookup - supports any icon name
+                                            // Strip "Icon" prefix if present (AI sometimes returns "IconAnchor" instead of "Anchor")
+                                            const normalizedName = icon.replace(/^Icon/, '');
+                                            
+                                            // Try to get the icon from LucideIcons dynamically
+                                            const LucideIcon = (LucideIcons as any)[normalizedName] || (LucideIcons as any)[icon];
+                                            const IconComponent = LucideIcon ? <LucideIcon className="w-5 h-5" /> : <Box className="w-5 h-5" />;
                                             return (
                                               <div 
                                                 key={i} 
@@ -20368,6 +20409,7 @@ module.exports = {
                                             background={libraryBackground === "light" ? "light" : "dark"}
                                             className=""
                                             onSizeChange={setLibraryPreviewSize}
+                                            onAccessibilityResults={setAccessibilityResults}
                                             isFullWidth={isFullWidthComponent}
                                           />
                                         </div>
@@ -20726,7 +20768,13 @@ module.exports = {
                                                 <td className={cn("px-4 py-2.5 text-xs", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Additional CSS classes</td>
                                                 <td className={cn("px-4 py-2.5 font-mono text-[10px]", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>""</td>
                                                 <td className="px-4 py-2.5">
-                                                  <input type="text" placeholder="e.g. mt-4 p-2" className={cn("rounded px-2 py-1 text-xs border w-32", libraryBackground === "light" ? "bg-white border-zinc-300" : "bg-zinc-800 border-zinc-700 text-zinc-200")} />
+                                                  <input 
+                                                    type="text" 
+                                                    placeholder="e.g. mt-4 p-2" 
+                                                    value={libraryPropsOverride['className'] || ''}
+                                                    onChange={(e) => setLibraryPropsOverride(prev => ({ ...prev, className: e.target.value }))}
+                                                    className={cn("rounded px-2 py-1 text-xs border w-32", libraryBackground === "light" ? "bg-white border-zinc-300" : "bg-zinc-800 border-zinc-700 text-zinc-200")} 
+                                                  />
                                                 </td>
                                               </tr>
                                               <tr className={cn("border-b", libraryBackground === "light" ? "border-zinc-100" : "border-zinc-800/50")}>
@@ -20737,7 +20785,13 @@ module.exports = {
                                                 <td className={cn("px-4 py-2.5 text-xs", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Content inside component</td>
                                                 <td className={cn("px-4 py-2.5 font-mono text-[10px]", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>-</td>
                                                 <td className="px-4 py-2.5">
-                                                  <input type="text" placeholder="Text content..." className={cn("rounded px-2 py-1 text-xs border w-32", libraryBackground === "light" ? "bg-white border-zinc-300" : "bg-zinc-800 border-zinc-700 text-zinc-200")} />
+                                                  <input 
+                                                    type="text" 
+                                                    placeholder="Text content..." 
+                                                    value={libraryPropsOverride['children'] || ''}
+                                                    onChange={(e) => setLibraryPropsOverride(prev => ({ ...prev, children: e.target.value }))}
+                                                    className={cn("rounded px-2 py-1 text-xs border w-32", libraryBackground === "light" ? "bg-white border-zinc-300" : "bg-zinc-800 border-zinc-700 text-zinc-200")} 
+                                                  />
                                                 </td>
                                               </tr>
                                               <tr>
@@ -20801,119 +20855,216 @@ module.exports = {
                                         </div>
                                       )}
                                       
-                                      {/* Accessibility Tab - Real checks */}
+                                      {/* Accessibility Tab - Real axe-core checks */}
                                       {libraryPanel === "accessibility" && (() => {
-                                        // Analyze component code for accessibility
-                                        const code = selectedComponent.code || '';
-                                        const issues: Array<{ type: 'error' | 'warning' | 'info'; message: string }> = [];
-                                        const passed: string[] = [];
+                                        const violations = accessibilityResults?.violations || [];
+                                        const passes = accessibilityResults?.passes || [];
+                                        const incomplete = accessibilityResults?.incomplete || [];
                                         
-                                        // Check for images without alt
-                                        if (/<img[^>]*(?!alt=)[^>]*>/i.test(code) || /<img[^>]*alt=["']["'][^>]*>/i.test(code)) {
-                                          issues.push({ type: 'error', message: 'Images missing alt text' });
-                                        } else if (/<img[^>]*alt=/i.test(code)) {
-                                          passed.push('Images have alt text');
-                                        }
+                                        const criticalViolations = violations.filter(v => v.impact === 'critical');
+                                        const seriousViolations = violations.filter(v => v.impact === 'serious');
+                                        const moderateViolations = violations.filter(v => v.impact === 'moderate');
+                                        const minorViolations = violations.filter(v => v.impact === 'minor');
                                         
-                                        // Check for buttons
-                                        if (/<button[^>]*>[\s]*<\/button>/i.test(code)) {
-                                          issues.push({ type: 'error', message: 'Empty button without label' });
-                                        } else if (/<button/i.test(code)) {
-                                          passed.push('Buttons have content');
-                                        }
+                                        const hasViolations = violations.length > 0;
+                                        const hasCritical = criticalViolations.length > 0;
                                         
-                                        // Check for inputs without labels
-                                        if (/<input[^>]*(?!aria-label)[^>]*>/i.test(code) && !/<label/i.test(code)) {
-                                          issues.push({ type: 'warning', message: 'Form inputs may need labels' });
-                                        } else if (/<input/i.test(code)) {
-                                          passed.push('Inputs appear to have labels');
-                                        }
-                                        
-                                        // Check for focus states
-                                        if (/focus:/i.test(code)) {
-                                          passed.push('Focus states defined');
-                                        } else if (/<button|<a |<input/i.test(code)) {
-                                          issues.push({ type: 'info', message: 'Consider adding focus indicators' });
-                                        }
-                                        
-                                        // Check for semantic HTML
-                                        if (/<main|<nav|<header|<footer|<article|<section|<aside/i.test(code)) {
-                                          passed.push('Uses semantic HTML');
-                                        }
-                                        
-                                        // Check for ARIA
-                                        if (/aria-|role=/i.test(code)) {
-                                          passed.push('Uses ARIA attributes');
-                                        }
-                                        
-                                        // Calculate score
-                                        const errorCount = issues.filter(i => i.type === 'error').length;
-                                        const warningCount = issues.filter(i => i.type === 'warning').length;
-                                        const score = Math.max(0, 100 - (errorCount * 20) - (warningCount * 10));
-                                        
-                                        const hasErrors = errorCount > 0;
-                                        const hasWarnings = warningCount > 0;
+                                        // Impact colors
+                                        const impactColor = (impact: string) => {
+                                          switch (impact) {
+                                            case 'critical': return 'text-red-500 bg-red-500/10 border-red-500/30';
+                                            case 'serious': return 'text-orange-500 bg-orange-500/10 border-orange-500/30';
+                                            case 'moderate': return 'text-amber-500 bg-amber-500/10 border-amber-500/30';
+                                            case 'minor': return 'text-blue-500 bg-blue-500/10 border-blue-500/30';
+                                            default: return 'text-zinc-500 bg-zinc-500/10 border-zinc-500/30';
+                                          }
+                                        };
                                         
                                         return (
-                                        <div className="p-4">
-                                          {/* Score summary */}
-                                          <div className={cn(
-                                            "flex items-center gap-3 p-3 rounded-lg border",
-                                            hasErrors 
-                                              ? (libraryBackground === "light" ? "border-red-200 bg-red-50" : "border-red-900/50 bg-red-950/30")
-                                              : hasWarnings
-                                                ? (libraryBackground === "light" ? "border-amber-200 bg-amber-50" : "border-amber-900/50 bg-amber-950/30")
-                                                : (libraryBackground === "light" ? "border-emerald-200 bg-emerald-50" : "border-emerald-900/50 bg-emerald-950/30")
-                                          )}>
+                                        <div className="p-4 space-y-4">
+                                          {/* Summary counts - Storybook style */}
+                                          <div className="grid grid-cols-3 gap-2">
                                             <div className={cn(
-                                              "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white",
-                                              hasErrors ? "bg-red-500" : hasWarnings ? "bg-amber-500" : "bg-emerald-500"
+                                              "p-3 rounded-lg border text-center",
+                                              violations.length > 0 
+                                                ? (libraryBackground === "light" ? "border-red-200 bg-red-50" : "border-red-900/50 bg-red-950/30")
+                                                : (libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50")
                                             )}>
-                                              {score}
+                                              <div className={cn("text-2xl font-bold", violations.length > 0 ? "text-red-500" : (libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600"))}>
+                                                {violations.length}
+                                              </div>
+                                              <div className={cn("text-[10px] uppercase tracking-wider", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
+                                                Violations
+                                              </div>
                                             </div>
-                                            <div className="flex-1">
-                                              <p className={cn("text-sm font-medium", 
-                                                hasErrors 
-                                                  ? (libraryBackground === "light" ? "text-red-700" : "text-red-400")
-                                                  : hasWarnings
-                                                    ? (libraryBackground === "light" ? "text-amber-700" : "text-amber-400")
-                                                    : (libraryBackground === "light" ? "text-emerald-700" : "text-emerald-400")
-                                              )}>
-                                                {hasErrors ? 'Issues found' : hasWarnings ? 'Some warnings' : 'All checks passed'}
-                                              </p>
-                                              <p className={cn("text-xs", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-500")}>
-                                                {issues.length} issue{issues.length !== 1 ? 's' : ''} • {passed.length} passed
-                                              </p>
+                                            <div className={cn(
+                                              "p-3 rounded-lg border text-center",
+                                              libraryBackground === "light" ? "border-emerald-200 bg-emerald-50" : "border-emerald-900/50 bg-emerald-950/30"
+                                            )}>
+                                              <div className="text-2xl font-bold text-emerald-500">{passes.length}</div>
+                                              <div className={cn("text-[10px] uppercase tracking-wider", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
+                                                Passes
+                                              </div>
+                                            </div>
+                                            <div className={cn(
+                                              "p-3 rounded-lg border text-center",
+                                              libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50"
+                                            )}>
+                                              <div className={cn("text-2xl font-bold", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
+                                                {incomplete.length}
+                                              </div>
+                                              <div className={cn("text-[10px] uppercase tracking-wider", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
+                                                Incomplete
+                                              </div>
                                             </div>
                                           </div>
                                           
-                                          {/* Issues */}
-                                          {issues.length > 0 && (
-                                            <div className="mt-4 space-y-2">
-                                              <p className={cn("text-xs font-medium uppercase tracking-wider mb-2", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Issues</p>
-                                              {issues.map((issue, i) => (
-                                                <div key={i} className={cn("flex items-start gap-2 py-2 border-b", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
-                                                  <span className={cn("text-xs mt-0.5", 
-                                                    issue.type === 'error' ? "text-red-500" : issue.type === 'warning' ? "text-amber-500" : "text-blue-500"
+                                          {/* Violations list */}
+                                          {hasViolations && (
+                                            <div>
+                                              <p className={cn("text-xs font-medium uppercase tracking-wider mb-2", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
+                                                Violations ({violations.length})
+                                              </p>
+                                              <div className="space-y-2">
+                                                {violations.map((violation, i) => (
+                                                  <div key={i} className={cn(
+                                                    "p-3 rounded-lg border",
+                                                    libraryBackground === "light" ? "border-zinc-200 bg-white" : "border-zinc-800 bg-zinc-900/50"
                                                   )}>
-                                                    {issue.type === 'error' ? '✕' : issue.type === 'warning' ? '⚠' : 'ℹ'}
-                                                  </span>
-                                                  <span className={cn("text-xs", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>{issue.message}</span>
-                                                </div>
-                                              ))}
+                                                    <div className="flex items-start gap-2">
+                                                      <span className={cn("px-1.5 py-0.5 text-[10px] font-medium uppercase rounded border", impactColor(violation.impact))}>
+                                                        {violation.impact}
+                                                      </span>
+                                                      <div className="flex-1 min-w-0">
+                                                        <p className={cn("text-xs font-medium", libraryBackground === "light" ? "text-zinc-800" : "text-zinc-200")}>
+                                                          {violation.help}
+                                                        </p>
+                                                        <p className={cn("text-[10px] mt-1", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
+                                                          {violation.description}
+                                                        </p>
+                                                        {violation.nodes.length > 0 && (
+                                                          <div className="mt-2">
+                                                            <p className={cn("text-[10px] font-medium mb-1", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
+                                                              Elements ({violation.nodes.length}):
+                                                            </p>
+                                                            {violation.nodes.slice(0, 3).map((node, j) => (
+                                                              <pre key={j} className={cn(
+                                                                "text-[9px] p-1.5 rounded mt-1 overflow-x-auto",
+                                                                libraryBackground === "light" ? "bg-zinc-100 text-zinc-700" : "bg-zinc-800 text-zinc-300"
+                                                              )}>
+                                                                {node.html.length > 100 ? node.html.slice(0, 100) + '...' : node.html}
+                                                              </pre>
+                                                            ))}
+                                                            {violation.nodes.length > 3 && (
+                                                              <p className={cn("text-[10px] mt-1", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>
+                                                                +{violation.nodes.length - 3} more elements
+                                                              </p>
+                                                            )}
+                                                          </div>
+                                                        )}
+                                                        <a 
+                                                          href={violation.helpUrl} 
+                                                          target="_blank" 
+                                                          rel="noopener noreferrer"
+                                                          className="text-[10px] text-blue-500 hover:underline mt-2 inline-block"
+                                                        >
+                                                          Learn how to fix →
+                                                        </a>
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                              </div>
                                             </div>
                                           )}
                                           
-                                          {/* Passed */}
-                                          {passed.length > 0 && (
-                                            <div className="mt-4 space-y-2">
-                                              <p className={cn("text-xs font-medium uppercase tracking-wider mb-2", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Passed</p>
-                                              {passed.map((item, i) => (
-                                                <div key={i} className={cn("flex items-center gap-2 py-1.5", i < passed.length - 1 && (libraryBackground === "light" ? "border-b border-zinc-200" : "border-b border-zinc-800"))}>
-                                                  <span className="text-xs text-emerald-500">✓</span>
-                                                  <span className={cn("text-xs", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>{item}</span>
-                                                </div>
-                                              ))}
+                                          {/* Passes list - collapsible */}
+                                          {passes.length > 0 && (
+                                            <details className="group">
+                                              <summary className={cn(
+                                                "text-xs font-medium uppercase tracking-wider cursor-pointer flex items-center gap-1",
+                                                libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500"
+                                              )}>
+                                                <ChevronRight className="w-3 h-3 transition-transform group-open:rotate-90" />
+                                                Passes ({passes.length})
+                                              </summary>
+                                              <div className="mt-2 space-y-1">
+                                                {passes.map((pass, i) => (
+                                                  <div key={i} className={cn(
+                                                    "flex items-center gap-2 py-1.5 px-2 rounded",
+                                                    libraryBackground === "light" ? "hover:bg-zinc-50" : "hover:bg-zinc-800/50"
+                                                  )}>
+                                                    <span className="text-xs text-emerald-500">✓</span>
+                                                    <span className={cn("text-xs", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
+                                                      {pass.help}
+                                                    </span>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </details>
+                                          )}
+                                          
+                                          {/* Incomplete checks */}
+                                          {incomplete.length > 0 && (
+                                            <details className="group">
+                                              <summary className={cn(
+                                                "text-xs font-medium uppercase tracking-wider cursor-pointer flex items-center gap-1",
+                                                libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500"
+                                              )}>
+                                                <ChevronRight className="w-3 h-3 transition-transform group-open:rotate-90" />
+                                                Incomplete ({incomplete.length})
+                                              </summary>
+                                              <div className="mt-2 space-y-1">
+                                                {incomplete.map((item, i) => (
+                                                  <div key={i} className={cn(
+                                                    "flex items-start gap-2 py-1.5 px-2 rounded",
+                                                    libraryBackground === "light" ? "hover:bg-zinc-50" : "hover:bg-zinc-800/50"
+                                                  )}>
+                                                    <span className={cn("text-xs mt-0.5", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>?</span>
+                                                    <div>
+                                                      <span className={cn("text-xs", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>
+                                                        {item.help}
+                                                      </span>
+                                                      <p className={cn("text-[10px]", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>
+                                                        Needs manual review
+                                                      </p>
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </details>
+                                          )}
+                                          
+                                          {/* No results yet */}
+                                          {!accessibilityResults && (
+                                            <div className={cn(
+                                              "p-6 rounded-lg border text-center",
+                                              libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50"
+                                            )}>
+                                              <Loader2 className={cn("w-6 h-6 mx-auto mb-2 animate-spin", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")} />
+                                              <p className={cn("text-sm", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>
+                                                Running accessibility checks...
+                                              </p>
+                                            </div>
+                                          )}
+                                          
+                                          {/* All checks passed */}
+                                          {accessibilityResults && !hasViolations && (
+                                            <div className={cn(
+                                              "p-4 rounded-lg border flex items-center gap-3",
+                                              libraryBackground === "light" ? "border-emerald-200 bg-emerald-50" : "border-emerald-900/50 bg-emerald-950/30"
+                                            )}>
+                                              <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
+                                                <Check className="w-5 h-5 text-white" />
+                                              </div>
+                                              <div>
+                                                <p className={cn("text-sm font-medium", libraryBackground === "light" ? "text-emerald-700" : "text-emerald-400")}>
+                                                  All accessibility checks passed!
+                                                </p>
+                                                <p className={cn("text-xs", libraryBackground === "light" ? "text-emerald-600" : "text-emerald-500")}>
+                                                  {passes.length} checks verified by axe-core
+                                                </p>
+                                              </div>
                                             </div>
                                           )}
                                         </div>
@@ -21615,17 +21766,40 @@ module.exports = {
                                       const isNewUngenerated = comp.isNew && !isGeneratingThis;
                                       const needsFixedSize = isGeneratingThis || isNewUngenerated;
                                       
+                                      // Detect component type for smart sizing
+                                      const isSmallPrimitive = ['button', 'badge', 'label', 'icon', 'avatar', 'tag', 'chip'].some(t => nameLower.includes(t));
+                                      const isCard = ['card', 'testimonial', 'feature', 'destination', 'glass'].some(t => nameLower.includes(t));
+                                      
+                                      // Calculate aspect ratio to prevent "pillars" (too tall/narrow)
+                                      const reportedWidth = size?.width || 320;
+                                      const reportedHeight = size?.height || 200;
+                                      const aspectRatio = reportedHeight / reportedWidth;
+                                      const isPillar = aspectRatio > 1.8; // Too tall relative to width
+                                      
+                                      // Smart width: ensure minimum 280px for readability, respect reported size
+                                      const computedWidth = needsFixedSize ? 280 
+                                        : isFullWidthComp ? '100%' 
+                                        : isSmallPrimitive ? Math.max(reportedWidth, 200)
+                                        : isCard ? Math.max(reportedWidth, 320)
+                                        : Math.max(reportedWidth, 280);
+                                      
+                                      // Smart height: cap aspect ratio to prevent pillars
+                                      const maxHeightForAspect = typeof computedWidth === 'number' ? computedWidth * 1.5 : 400;
+                                      const computedHeight = needsFixedSize ? 100
+                                        : isPillar ? Math.min(reportedHeight, maxHeightForAspect, 450)
+                                        : Math.min(reportedHeight, 500);
+                                      
                                       return (
                                       <div 
                                         className="relative"
                                         data-component-container={id}
                                         style={{
-                                          // New/Generating: fixed compact size. Generated: auto-fit from content
-                                          width: needsFixedSize ? '280px' : (size?.width ? `${size.width}px` : (isFullWidthComp ? '100%' : 'fit-content')),
-                                          minWidth: '180px',
-                                          height: needsFixedSize ? '100px' : (size?.height ? `${size.height}px` : 'fit-content'),
+                                          // Smart sizing: prevent pillars, ensure readability
+                                          width: typeof computedWidth === 'string' ? computedWidth : `${computedWidth}px`,
+                                          minWidth: isSmallPrimitive ? '160px' : '280px',
+                                          height: `${computedHeight}px`,
                                           minHeight: '60px',
-                                          maxHeight: needsFixedSize ? '120px' : '600px', // Limit max to prevent huge cards
+                                          maxHeight: needsFixedSize ? '120px' : '500px',
                                           overflow: 'hidden',
                                         }}
                                       >
