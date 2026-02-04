@@ -21766,30 +21766,31 @@ module.exports = {
                                       const isNewUngenerated = comp.isNew && !isGeneratingThis;
                                       const needsFixedSize = isGeneratingThis || isNewUngenerated;
                                       
-                                      // Check if user manually resized this component - if so, respect their size!
+                                      // Check if user manually resized OR is currently resizing this component
                                       const wasManuallyResized = manuallyResizedComponents.has(id);
+                                      const isCurrentlyResizing = resizingComponent?.id === id;
+                                      const useStoredSize = wasManuallyResized || isCurrentlyResizing;
                                       
-                                      // If manually resized, use stored size directly (no computing/constraints)
-                                      // Otherwise apply smart defaults
+                                      // If resized/resizing, use stored size directly. Otherwise minimal defaults.
                                       let finalWidth: number | string;
                                       let finalHeight: number;
                                       
-                                      if (wasManuallyResized && size) {
-                                        // User resized manually - respect their choice completely
+                                      if (useStoredSize && size) {
+                                        // Use stored size exactly - user is in control
                                         finalWidth = size.width;
                                         finalHeight = size.height;
+                                      } else if (needsFixedSize) {
+                                        // Generating/new - small placeholder
+                                        finalWidth = 200;
+                                        finalHeight = 80;
+                                      } else if (size) {
+                                        // Use iframe-reported size but compact
+                                        finalWidth = isFullWidthComp ? '100%' : Math.min(size.width, 400);
+                                        finalHeight = Math.min(size.height, 300);
                                       } else {
-                                        // Auto-sizing: apply smart defaults
-                                        const isSmallPrimitive = ['button', 'badge', 'label', 'icon', 'avatar', 'tag', 'chip'].some(t => nameLower.includes(t));
-                                        const reportedWidth = size?.width || 320;
-                                        const reportedHeight = size?.height || 200;
-                                        
-                                        finalWidth = needsFixedSize ? 280 
-                                          : isFullWidthComp ? '100%' 
-                                          : isSmallPrimitive ? Math.max(reportedWidth, 160)
-                                          : Math.max(reportedWidth, 200);
-                                        
-                                        finalHeight = needsFixedSize ? 100 : reportedHeight;
+                                        // No size yet - small default
+                                        finalWidth = isFullWidthComp ? '100%' : 250;
+                                        finalHeight = 150;
                                       }
                                       
                                       return (
@@ -21797,11 +21798,9 @@ module.exports = {
                                         className="relative"
                                         data-component-container={id}
                                         style={{
-                                          // CANVAS STYLE: freely resizable, no hard constraints
+                                          // CANVAS: freely resizable
                                           width: typeof finalWidth === 'string' ? finalWidth : `${finalWidth}px`,
                                           height: `${finalHeight}px`,
-                                          minWidth: wasManuallyResized ? undefined : '120px',
-                                          minHeight: wasManuallyResized ? undefined : '40px',
                                           overflow: 'hidden',
                                         }}
                                       >
