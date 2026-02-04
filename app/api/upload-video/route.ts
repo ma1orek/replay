@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     const userId = user?.id || "anon";
     console.log("Uploading for user:", userId);
 
-    const formData = await request.formData();
+    const formData = await request.formData() as unknown as globalThis.FormData;
     const file = formData.get("video") as File;
 
     if (!file) {

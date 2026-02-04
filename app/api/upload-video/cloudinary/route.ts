@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     console.log("=== Cloudinary Server Upload Started ===");
     
     // Get the video file from the request
-    const formData = await request.formData();
+    const formData = await request.formData() as unknown as globalThis.FormData;
     const file = formData.get("file") as File | null;
     
     if (!file) {

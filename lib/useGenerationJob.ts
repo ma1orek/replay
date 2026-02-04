@@ -23,7 +23,7 @@ export function useGenerationJob() {
     message: "",
   });
   
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isPollingRef = useRef(false);
 
   // Save pending job to localStorage

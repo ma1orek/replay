@@ -1054,6 +1054,25 @@ Before output, verify EVERY point:
 □ Consistent spacing using CSS variables
 □ Button variants (.btn-primary, .btn-secondary, .btn-ghost)
 
+🏗️ ENTERPRISE ARCHITECTURE (Critical!):
+□ NO inline component definitions (const Component = ...) inside main page!
+□ ALL components MUST use data-component="ComponentName" attribute for extraction
+□ Page files should ONLY contain layout composition and component usage
+□ Every reusable piece (Navbar, Footer, Card, Button) = separate extractable section
+
+STRUCTURE ENFORCEMENT:
+Mark all components for proper extraction with data-component:
+<header data-component="Header">...</header>
+<nav data-component="Navbar">...</nav>
+<section data-component="HeroSection">...</section>
+<section data-component="FeaturesSection">...</section>
+<footer data-component="Footer">...</footer>
+
+Also mark reusable UI elements:
+<button data-component="Button" data-variant="primary">...</button>
+<div data-component="Card">...</div>
+<div data-component="Badge">...</div>
+
 CODE REVIEW TEST:
 Would a senior React developer accept this code without changes?
 If NO → fix it before outputting!

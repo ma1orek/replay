@@ -57,8 +57,8 @@ export const PLAN_LIMITS: Record<string, { monthlyCredits: number; rolloverCap: 
 
 // Credit costs
 export const CREDIT_COSTS = {
-  VIDEO_GENERATE: 75,
-  AI_EDIT: 25,
+  VIDEO_GENERATE: 150,
+  AI_EDIT: 10,
 };
 
 const CreditsContext = createContext<CreditsContextType | null>(null);

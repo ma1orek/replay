@@ -120,6 +120,7 @@ import {
   Bell,
   Bookmark,
   Share,
+  Share2,
   HelpCircle,
   Terminal
 } from "lucide-react";
@@ -1073,19 +1074,28 @@ const applyPropsToCode = (code: string, props: any[], propsOverride: Record<stri
 
 // Generate live code preview with current prop values
 const generateLiveCode = (componentName: string, props: any[], propsOverride: Record<string, any>): string => {
-  if (!props?.length) return `<${componentName} />`;
+  // Clean component name for import
+  const cleanName = componentName.replace(/[^a-zA-Z0-9]/g, '');
+  const kebabName = componentName.toLowerCase().replace(/([a-z])([A-Z])/g, '$1-$2').replace(/[\s_]+/g, '-').toLowerCase();
   
-  const propsString = props.map((prop: any) => {
+  // Generate import statement
+  const importLine = `import { ${cleanName} } from '@/components/ui/${kebabName}'`;
+  
+  // Generate props
+  const propsString = (props || []).map((prop: any) => {
     const value = propsOverride[prop.name] ?? prop.defaultValue;
     if (value === undefined || value === '') return null;
     if (typeof value === 'boolean') return value ? prop.name : null;
     if (typeof value === 'number') return `${prop.name}={${value}}`;
     return `${prop.name}="${value}"`;
-  }).filter(Boolean).join('\n  ');
+  }).filter(Boolean).join('\n    ');
   
-  if (!propsString) return `<${componentName} />`;
+  // Build usage
+  const usage = propsString 
+    ? `<${cleanName}\n    ${propsString}\n  >\n    {/* content */}\n  </${cleanName}>`
+    : `<${cleanName}>\n    {/* content */}\n  </${cleanName}>`;
   
-  return `<${componentName}\n  ${propsString}\n/>`;
+  return `// Import\n${importLine}\n\n// Usage\n${usage}`;
 };
 
 // ==========================================
@@ -2335,8 +2345,8 @@ const InteractiveReactPreview = ({
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { 
-      background: transparent; 
-      /* Don't set color here - let components define their own text colors via Tailwind */
+      background: ${background === "dark" ? "#18181b" : "#ffffff"}; 
+      color: ${background === "dark" ? "#fafafa" : "#18181b"};
       font-family: system-ui, -apple-system, sans-serif;
       /* Fill iframe viewport - content will be responsive */
       width: 100%;
@@ -2349,7 +2359,20 @@ const InteractiveReactPreview = ({
       width: 100%;
       min-height: 100%;
       overflow: hidden !important;
+      background: inherit;
     }
+    /* Dark mode: convert white backgrounds to dark */
+    ${background === "dark" ? `
+    .bg-white { background-color: #27272a !important; }
+    .bg-gray-50, .bg-zinc-50, .bg-slate-50 { background-color: #1f1f23 !important; }
+    .bg-gray-100, .bg-zinc-100, .bg-slate-100 { background-color: #27272a !important; }
+    .text-gray-900, .text-zinc-900, .text-slate-900 { color: #fafafa !important; }
+    .text-gray-800, .text-zinc-800, .text-slate-800 { color: #e4e4e7 !important; }
+    .text-gray-700, .text-zinc-700, .text-slate-700 { color: #d4d4d8 !important; }
+    .border-gray-200, .border-zinc-200, .border-slate-200 { border-color: #3f3f46 !important; }
+    .border-gray-300, .border-zinc-300, .border-slate-300 { border-color: #52525b !important; }
+    .shadow-lg, .shadow-xl, .shadow-2xl { box-shadow: 0 10px 40px rgba(0,0,0,0.5) !important; }
+    ` : ""}
     /* No scrollbars */
     ::-webkit-scrollbar { display: none !important; }
     * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
@@ -3877,7 +3900,7 @@ function ReplayToolContent() {
   const [historySearch, setHistorySearch] = useState("");
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMoreHistory, setHasMoreHistory] = useState(true);
-  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const HISTORY_PAGE_SIZE = 10;
   
   // Initialize showHistoryMode - default to true so users see their projects first
@@ -3925,6 +3948,8 @@ function ReplayToolContent() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [showPublishModal, setShowPublishModal] = useState(false);
+  
+  // Storybook / Design System state
   
   // Delete confirmation modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -4414,7 +4439,7 @@ ${processedCode}
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const trimBarRef = useRef<HTMLDivElement>(null);
   
@@ -4682,6 +4707,43 @@ ${processedCode}
     streamingCompleteRef.current = false;
     showToast("Generation timed out. Please try again.", "error");
   }, [showToast]);
+  
+  // Reset to new project - clears all state and URL
+  const resetToNewProject = useCallback(() => {
+    // Reset all state
+    setGeneratedCode(null);
+    setDisplayedCode("");
+    setEditableCode("");
+    setPreviewUrl(null);
+    setGenerationComplete(false);
+    setSidebarMode("config");
+    setChatMessages([]);
+    setActiveGeneration(null);
+    setGenerationTitle("Untitled Project");
+    setFlowNodes([]);
+    setFlowEdges([]);
+    setStyleInfo(null);
+    setPublishedUrl(null);
+    setStyleDirective(getDefaultStyleName());
+    setStyleReferenceImage(null);
+    setFlows([]);
+    setSelectedFlowId(null);
+    setSidebarView("detail");
+    setRefinements("");
+    setMobilePanel("input");
+    
+    // Clear localStorage
+    localStorage.removeItem("replay_sidebar_mode");
+    localStorage.removeItem("replay_generated_code");
+    localStorage.removeItem("replay_generation_title");
+    
+    // Clear URL project parameter - go back to clean /tool
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.delete('project');
+    window.history.replaceState({}, '', newUrl.toString());
+    
+    console.log("[New Project] Reset to clean state");
+  }, [getDefaultStyleName]);
   
   // Handle tab visibility change - show pending result, detect stuck generation, OR recover job
   useEffect(() => {
@@ -5471,7 +5533,7 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
   // Using useRef to track the last saved state and debounce saves
   const lastSavedChatRef = useRef<string>("");
   const lastProjectIdRef = useRef<string | null>(null);
-  const chatSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const chatSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // Reset chat ref when switching projects
   useEffect(() => {
@@ -5649,7 +5711,7 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
   
   // Save generation history - PRIMARY: Supabase, SECONDARY: minimal localStorage cache
   const lastSavedGenerationsRef = useRef<string>("");
-  const generationsSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const generationsSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLoadingProjectRef = useRef(false); // Flag to prevent saves during project load
   
   useEffect(() => {
@@ -7932,6 +7994,70 @@ ${page.content}`,
       });
       
       files.push(...componentFiles);
+      
+      // === BARREL FILES FOR CLEAN IMPORTS ===
+      // Generate index.ts files for each component folder
+      
+      // Layout barrel file
+      const layoutComponentNames = files
+        .filter(f => f.path.startsWith('/components/layout/') && f.name !== 'index.ts')
+        .map(f => f.name.replace('.tsx', ''));
+      
+      if (layoutComponentNames.length > 0) {
+        const layoutBarrelContent = `/**
+ * Layout Components Barrel Export
+ * Import: import { Header, Footer } from "@/components/layout"
+ */
+${layoutComponentNames.map(name => `export { ${name} } from './${name}';`).join('\n')}
+`;
+        files.push({
+          path: "/components/layout/index.ts",
+          name: "index.ts",
+          content: layoutBarrelContent,
+          type: "component",
+          language: "ts",
+          lineCount: layoutBarrelContent.split('\n').length
+        });
+      }
+      
+      // Sections barrel file
+      const sectionComponents = files
+        .filter(f => f.path.startsWith('/components/sections/') && f.name !== 'index.ts')
+        .map(f => f.name.replace('.tsx', ''));
+      
+      if (sectionComponents.length > 0) {
+        const sectionsBarrelContent = `/**
+ * Section Components Barrel Export
+ * Import: import { HeroSection, FeaturesSection } from "@/components/sections"
+ */
+${sectionComponents.map(name => `export { ${name} } from './${name}';`).join('\n')}
+`;
+        files.push({
+          path: "/components/sections/index.ts",
+          name: "index.ts",
+          content: sectionsBarrelContent,
+          type: "component",
+          language: "ts",
+          lineCount: sectionsBarrelContent.split('\n').length
+        });
+      }
+      
+      // UI barrel file (for common UI primitives)
+      const uiBarrelContent = `/**
+ * UI Primitives Barrel Export
+ * Import: import { Button, Card, Badge } from "@/components/ui"
+ */
+// This file will contain re-exports of UI primitives
+// Add your component exports here as you create them
+`;
+      files.push({
+        path: "/components/ui/index.ts",
+        name: "index.ts",
+        content: uiBarrelContent,
+        type: "component",
+        language: "ts",
+        lineCount: uiBarrelContent.split('\n').length
+      });
       
       // Add layout wrapper for Next.js App Router
       const layoutContent = `// Next.js App Router Layout
@@ -12055,6 +12181,7 @@ ${publishCode}
           title: generationTitle || "Untitled Project",
           thumbnailDataUrl: null,
           existingSlug,
+          libraryData: libraryData || null,
         }),
       });
       
@@ -12878,30 +13005,7 @@ ${publishCode}
               {/* + Create New Project */}
               <div className="flex-shrink-0 p-3">
                 <button
-                  onClick={() => {
-                    // Create new project
-                    setGeneratedCode(null);
-                    setDisplayedCode("");
-                    setEditableCode("");
-                    setPreviewUrl(null);
-                    setGenerationComplete(false);
-                    setSidebarMode("config");
-                    setChatMessages([]);
-                    setActiveGeneration(null);
-                    setGenerationTitle("Untitled Project");
-                    setFlowNodes([]);
-                    setFlowEdges([]);
-                    setStyleInfo(null);
-                    setPublishedUrl(null);
-                    setStyleDirective(getDefaultStyleName());
-                    setStyleReferenceImage(null);
-                    setFlows([]);
-                    setSelectedFlowId(null);
-                    setSidebarView("detail");
-                    localStorage.removeItem("replay_sidebar_mode");
-                    localStorage.removeItem("replay_generated_code");
-                    localStorage.removeItem("replay_generation_title");
-                  }}
+                  onClick={resetToNewProject}
                   className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md border border-dashed border-zinc-700 text-sm font-medium text-zinc-300 hover:bg-zinc-800/10 hover:border-zinc-700 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
@@ -13762,6 +13866,23 @@ ${publishCode}
                     >
                       <X className="w-3 h-3" />
                     </button>
+                  )}
+                </div>
+                {/* Share Library - public read-only link */}
+                <div className="mt-2">
+                  {activeGeneration?.publishedSlug ? (
+                    <a
+                      href={`https://www.replay.build/p/${activeGeneration.publishedSlug}/library`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-1.5 w-full px-2 py-1.5 text-[10px] font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-md border border-zinc-700/50 transition-colors"
+                    >
+                      <Share2 className="w-3 h-3" /> Share Library
+                    </a>
+                  ) : (
+                    <p className="text-[10px] text-zinc-500 text-center px-1">
+                      Publish project to get a shareable Library link
+                    </p>
                   )}
                 </div>
               </div>
@@ -17697,9 +17818,9 @@ export default function GeneratedPage() {
 
             {/* Design System - Enhanced with Multi-Pass Pipeline outputs */}
             {viewMode === "design" && (
-              <div className="flex-1 overflow-auto p-6 relative">
+              <div className="flex-1 overflow-auto p-6 relative bg-[#111111]">
                 {(isProcessing || isStreamingCode) ? (
-                  <div className="w-full h-full flex items-center justify-center">
+                  <div className="w-full h-full flex items-center justify-center bg-[#111111]">
                     <LoadingState />
                   </div>
                 ) : generatedCode ? (
@@ -19372,6 +19493,80 @@ module.exports = {
                                         >
                                           Export Tailwind
                                         </button>
+                                        <button 
+                                          onClick={() => {
+                                            const tokens = libraryData?.tokens || libraryData?.foundations || {};
+                                            const output = JSON.stringify({
+                                              colors: tokens.colors || {},
+                                              typography: tokens.typography || {},
+                                              spacing: tokens.spacing || {},
+                                              borderRadius: tokens.borderRadius || {},
+                                            }, null, 2);
+                                            
+                                            const blob = new Blob([output], { type: 'application/json' });
+                                            const url = URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = 'design-tokens.json';
+                                            a.click();
+                                            URL.revokeObjectURL(url);
+                                            showToast("JSON exported!", "success");
+                                          }}
+                                          className={cn("px-3 py-1.5 text-xs rounded-lg transition-colors", libraryBackground === "light" ? "bg-zinc-100 text-zinc-600 hover:bg-zinc-200" : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700")}
+                                        >
+                                          Export JSON
+                                        </button>
+                                        <button 
+                                          onClick={() => {
+                                            const tokens = libraryData?.tokens || libraryData?.foundations || {};
+                                            const colors = tokens.colors || {};
+                                            const spacing = tokens.spacing || {};
+                                            
+                                            const lines = ['// Design System Tokens', '// Generated by Replay', ''];
+                                            
+                                            // Colors as SCSS variables
+                                            if (Object.keys(colors).length > 0) {
+                                              lines.push('// Colors');
+                                              Object.entries(colors).forEach(([name, value]) => {
+                                                const val = typeof value === 'string' ? value : (typeof value === 'object' && value !== null ? ((value as any).bg || (value as any).value || '#000') : '#000');
+                                                lines.push(`$color-${name.toLowerCase().replace(/\s+/g, '-')}: ${val};`);
+                                              });
+                                              lines.push('');
+                                              
+                                              // Colors map
+                                              lines.push('$colors: (');
+                                              Object.entries(colors).forEach(([name, value], i, arr) => {
+                                                const val = typeof value === 'string' ? value : (typeof value === 'object' && value !== null ? ((value as any).bg || (value as any).value || '#000') : '#000');
+                                                const comma = i < arr.length - 1 ? ',' : '';
+                                                lines.push(`  "${name.toLowerCase().replace(/\s+/g, '-')}": ${val}${comma}`);
+                                              });
+                                              lines.push(');');
+                                              lines.push('');
+                                            }
+                                            
+                                            // Spacing
+                                            if (Object.keys(spacing).length > 0) {
+                                              lines.push('// Spacing');
+                                              Object.entries(spacing).forEach(([name, value]) => {
+                                                lines.push(`$spacing-${name}: ${value};`);
+                                              });
+                                              lines.push('');
+                                            }
+                                            
+                                            const scss = lines.join('\n');
+                                            const blob = new Blob([scss], { type: 'text/plain' });
+                                            const url = URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = '_tokens.scss';
+                                            a.click();
+                                            URL.revokeObjectURL(url);
+                                            showToast("SCSS exported!", "success");
+                                          }}
+                                          className={cn("px-3 py-1.5 text-xs rounded-lg transition-colors", libraryBackground === "light" ? "bg-zinc-100 text-zinc-600 hover:bg-zinc-200" : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700")}
+                                        >
+                                          Export SCSS
+                                        </button>
                                       </div>
                                     </div>
                                     
@@ -19612,7 +19807,7 @@ module.exports = {
                                         )}
                                       </div>
                                     ) : (
-                                      <p className={cn("text-sm", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>No font information extracted. Generate Library to analyze typography.</p>
+                                      <p className={cn("text-sm italic", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>—</p>
                                     )}
                                   </div>
                                   
@@ -19639,11 +19834,7 @@ module.exports = {
                                         ))}
                                       </div>
                                     ) : (
-                                      <div className={cn("p-8 rounded-lg border text-center", libraryBackground === "light" ? "border-zinc-200 bg-zinc-50" : "border-zinc-800 bg-zinc-900/50")}>
-                                        <Type className={cn("w-8 h-8 mx-auto mb-3", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")} />
-                                        <p className={cn("text-sm", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>No typography scale extracted yet</p>
-                                        <p className={cn("text-xs mt-1", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>Generate Library to analyze font sizes and weights</p>
-                                      </div>
+                                      <p className={cn("text-sm italic", libraryBackground === "light" ? "text-zinc-400" : "text-zinc-600")}>—</p>
                                     )}
                                   </div>
                                   
@@ -20610,41 +20801,124 @@ module.exports = {
                                         </div>
                                       )}
                                       
-                                      {/* Accessibility Tab */}
-                                      {libraryPanel === "accessibility" && (
+                                      {/* Accessibility Tab - Real checks */}
+                                      {libraryPanel === "accessibility" && (() => {
+                                        // Analyze component code for accessibility
+                                        const code = selectedComponent.code || '';
+                                        const issues: Array<{ type: 'error' | 'warning' | 'info'; message: string }> = [];
+                                        const passed: string[] = [];
+                                        
+                                        // Check for images without alt
+                                        if (/<img[^>]*(?!alt=)[^>]*>/i.test(code) || /<img[^>]*alt=["']["'][^>]*>/i.test(code)) {
+                                          issues.push({ type: 'error', message: 'Images missing alt text' });
+                                        } else if (/<img[^>]*alt=/i.test(code)) {
+                                          passed.push('Images have alt text');
+                                        }
+                                        
+                                        // Check for buttons
+                                        if (/<button[^>]*>[\s]*<\/button>/i.test(code)) {
+                                          issues.push({ type: 'error', message: 'Empty button without label' });
+                                        } else if (/<button/i.test(code)) {
+                                          passed.push('Buttons have content');
+                                        }
+                                        
+                                        // Check for inputs without labels
+                                        if (/<input[^>]*(?!aria-label)[^>]*>/i.test(code) && !/<label/i.test(code)) {
+                                          issues.push({ type: 'warning', message: 'Form inputs may need labels' });
+                                        } else if (/<input/i.test(code)) {
+                                          passed.push('Inputs appear to have labels');
+                                        }
+                                        
+                                        // Check for focus states
+                                        if (/focus:/i.test(code)) {
+                                          passed.push('Focus states defined');
+                                        } else if (/<button|<a |<input/i.test(code)) {
+                                          issues.push({ type: 'info', message: 'Consider adding focus indicators' });
+                                        }
+                                        
+                                        // Check for semantic HTML
+                                        if (/<main|<nav|<header|<footer|<article|<section|<aside/i.test(code)) {
+                                          passed.push('Uses semantic HTML');
+                                        }
+                                        
+                                        // Check for ARIA
+                                        if (/aria-|role=/i.test(code)) {
+                                          passed.push('Uses ARIA attributes');
+                                        }
+                                        
+                                        // Calculate score
+                                        const errorCount = issues.filter(i => i.type === 'error').length;
+                                        const warningCount = issues.filter(i => i.type === 'warning').length;
+                                        const score = Math.max(0, 100 - (errorCount * 20) - (warningCount * 10));
+                                        
+                                        const hasErrors = errorCount > 0;
+                                        const hasWarnings = warningCount > 0;
+                                        
+                                        return (
                                         <div className="p-4">
+                                          {/* Score summary */}
                                           <div className={cn(
                                             "flex items-center gap-3 p-3 rounded-lg border",
-                                            libraryBackground === "light" ? "border-emerald-200 bg-emerald-50" : "border-emerald-900/50 bg-emerald-950/30"
+                                            hasErrors 
+                                              ? (libraryBackground === "light" ? "border-red-200 bg-red-50" : "border-red-900/50 bg-red-950/30")
+                                              : hasWarnings
+                                                ? (libraryBackground === "light" ? "border-amber-200 bg-amber-50" : "border-amber-900/50 bg-amber-950/30")
+                                                : (libraryBackground === "light" ? "border-emerald-200 bg-emerald-50" : "border-emerald-900/50 bg-emerald-950/30")
                                           )}>
-                                            <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center">
-                                              <Check className="w-4 h-4 text-white" />
+                                            <div className={cn(
+                                              "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white",
+                                              hasErrors ? "bg-red-500" : hasWarnings ? "bg-amber-500" : "bg-emerald-500"
+                                            )}>
+                                              {score}
                                             </div>
                                             <div className="flex-1">
-                                              <p className={cn("text-sm font-medium", libraryBackground === "light" ? "text-emerald-700" : "text-emerald-400")}>
-                                                Accessibility check passed
+                                              <p className={cn("text-sm font-medium", 
+                                                hasErrors 
+                                                  ? (libraryBackground === "light" ? "text-red-700" : "text-red-400")
+                                                  : hasWarnings
+                                                    ? (libraryBackground === "light" ? "text-amber-700" : "text-amber-400")
+                                                    : (libraryBackground === "light" ? "text-emerald-700" : "text-emerald-400")
+                                              )}>
+                                                {hasErrors ? 'Issues found' : hasWarnings ? 'Some warnings' : 'All checks passed'}
                                               </p>
-                                              <p className={cn("text-xs", libraryBackground === "light" ? "text-emerald-600" : "text-emerald-500")}>
-                                                No violations found
+                                              <p className={cn("text-xs", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-500")}>
+                                                {issues.length} issue{issues.length !== 1 ? 's' : ''} • {passed.length} passed
                                               </p>
                                             </div>
                                           </div>
-                                          <div className="mt-4 space-y-2">
-                                            <div className={cn("flex items-center justify-between py-2 border-b", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
-                                              <span className={cn("text-xs", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>ARIA labels</span>
-                                              <span className="text-xs text-emerald-500">Pass</span>
+                                          
+                                          {/* Issues */}
+                                          {issues.length > 0 && (
+                                            <div className="mt-4 space-y-2">
+                                              <p className={cn("text-xs font-medium uppercase tracking-wider mb-2", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Issues</p>
+                                              {issues.map((issue, i) => (
+                                                <div key={i} className={cn("flex items-start gap-2 py-2 border-b", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
+                                                  <span className={cn("text-xs mt-0.5", 
+                                                    issue.type === 'error' ? "text-red-500" : issue.type === 'warning' ? "text-amber-500" : "text-blue-500"
+                                                  )}>
+                                                    {issue.type === 'error' ? '✕' : issue.type === 'warning' ? '⚠' : 'ℹ'}
+                                                  </span>
+                                                  <span className={cn("text-xs", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>{issue.message}</span>
+                                                </div>
+                                              ))}
                                             </div>
-                                            <div className={cn("flex items-center justify-between py-2 border-b", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
-                                              <span className={cn("text-xs", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Color contrast</span>
-                                              <span className="text-xs text-emerald-500">Pass</span>
+                                          )}
+                                          
+                                          {/* Passed */}
+                                          {passed.length > 0 && (
+                                            <div className="mt-4 space-y-2">
+                                              <p className={cn("text-xs font-medium uppercase tracking-wider mb-2", libraryBackground === "light" ? "text-zinc-500" : "text-zinc-500")}>Passed</p>
+                                              {passed.map((item, i) => (
+                                                <div key={i} className={cn("flex items-center gap-2 py-1.5", i < passed.length - 1 && (libraryBackground === "light" ? "border-b border-zinc-200" : "border-b border-zinc-800"))}>
+                                                  <span className="text-xs text-emerald-500">✓</span>
+                                                  <span className={cn("text-xs", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>{item}</span>
+                                                </div>
+                                              ))}
                                             </div>
-                                            <div className={cn("flex items-center justify-between py-2", libraryBackground === "light" ? "border-zinc-200" : "border-zinc-800")}>
-                                              <span className={cn("text-xs", libraryBackground === "light" ? "text-zinc-600" : "text-zinc-400")}>Keyboard navigation</span>
-                                              <span className="text-xs text-emerald-500">Pass</span>
-                                            </div>
-                                          </div>
+                                          )}
                                         </div>
-                                      )}
+                                        );
+                                      })()}
                                       
                                       {/* Usage Tab - shows where component is used */}
                                       {libraryPanel === "usage" && (
@@ -21346,13 +21620,13 @@ module.exports = {
                                         className="relative"
                                         data-component-container={id}
                                         style={{
-                                          // New/Generating: fixed compact size. Generated: auto from content or manual
-                                          width: needsFixedSize ? '300px' : (size?.width ? `${size.width}px` : (isFullWidthComp ? '100%' : 'auto')),
-                                          minWidth: needsFixedSize ? '200px' : '200px',
-                                          height: needsFixedSize ? '120px' : (size?.height ? `${size.height}px` : 'auto'),
-                                          minHeight: needsFixedSize ? '100px' : '50px', // Small minimum, content determines actual height
-                                          maxHeight: needsFixedSize ? '150px' : undefined,
-                                          overflow: needsFixedSize ? 'hidden' : undefined,
+                                          // New/Generating: fixed compact size. Generated: auto-fit from content
+                                          width: needsFixedSize ? '280px' : (size?.width ? `${size.width}px` : (isFullWidthComp ? '100%' : 'fit-content')),
+                                          minWidth: '180px',
+                                          height: needsFixedSize ? '100px' : (size?.height ? `${size.height}px` : 'fit-content'),
+                                          minHeight: '60px',
+                                          maxHeight: needsFixedSize ? '120px' : '600px', // Limit max to prevent huge cards
+                                          overflow: 'hidden',
                                         }}
                                       >
                                         {/* Content wrapper with overflow hidden */}
@@ -21361,7 +21635,7 @@ module.exports = {
                                           {/* Iframe fills this container 100% - so resizing container = responsive content */}
                                           <InteractiveReactPreview 
                                             code={stableCode}
-                                            background="dark"
+                                            background={blueprintsBackground === "light" ? "light" : "dark"}
                                             className="pointer-events-none w-full h-full"
                                             componentId={comp.id}
                                             onSizeChange={(newSize) => {
@@ -23045,7 +23319,7 @@ module.exports = {
                   placeholder="Untitled"
                 />
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  <button onClick={() => { setGenerationTitle("Untitled Project"); setFlows([]); setRefinements(""); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); setActiveGeneration(null); setGeneratedCode(null); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setChatMessages([]); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New Project">
+                  <button onClick={resetToNewProject} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New Project">
                     <Plus className="w-5 h-5 text-zinc-500" />
                   </button>
                   <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Your Projects">
@@ -23337,7 +23611,7 @@ module.exports = {
                   placeholder="Untitled"
                 />
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
+                  <button onClick={resetToNewProject} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
                     <Plus className="w-5 h-5 text-zinc-500" />
                   </button>
                   <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Your Projects">
@@ -23477,7 +23751,7 @@ module.exports = {
                 placeholder="Untitled"
               />
               <div className="flex items-center gap-1 flex-shrink-0">
-                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
+                <button onClick={resetToNewProject} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
                   <Plus className="w-5 h-5 text-zinc-500" />
                 </button>
                 <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Your Projects">
@@ -23677,7 +23951,7 @@ module.exports = {
                 placeholder="Untitled"
               />
               <div className="flex items-center gap-1 flex-shrink-0">
-                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
+                <button onClick={resetToNewProject} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
                   <Plus className="w-5 h-5 text-zinc-500" />
                 </button>
                 <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Your Projects">
@@ -23883,7 +24157,7 @@ module.exports = {
                 placeholder="Untitled"
               />
               <div className="flex items-center gap-1 flex-shrink-0">
-                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
+                <button onClick={resetToNewProject} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
                   <Plus className="w-5 h-5 text-zinc-500" />
                 </button>
                 <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Your Projects">
@@ -24010,7 +24284,7 @@ module.exports = {
                 placeholder="Untitled"
               />
               <div className="flex items-center gap-1 flex-shrink-0">
-                <button onClick={() => { setChatMessages([]); setActiveGeneration(null); setGeneratedCode(null); setMobilePanel("input"); setGenerationTitle("Untitled Project"); setDisplayedCode(""); setEditableCode(""); setFlowNodes([]); setFlowEdges([]); setStyleInfo(null); setGenerationComplete(false); setPublishedUrl(null); setStyleDirective(getDefaultStyleName()); setStyleReferenceImage(null); localStorage.removeItem("replay_generation_title"); }} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
+                <button onClick={resetToNewProject} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="New">
                   <Plus className="w-5 h-5 text-zinc-500" />
                 </button>
                 <button onClick={() => setShowHistoryMode(true)} className="p-2.5 rounded-xl hover:bg-zinc-800/50 active:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center" title="Your Projects">

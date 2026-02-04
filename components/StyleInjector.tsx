@@ -3907,7 +3907,7 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
     if (isFocused) return;
     const currentText = PLACEHOLDER_EXAMPLES[placeholderIndex];
     let charIndex = 0;
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: ReturnType<typeof setTimeout>;
     
     if (isTyping) {
       const typeChar = () => {

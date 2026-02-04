@@ -35,7 +35,7 @@ function generateDescription(code: string, title: string): string {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { code, title, thumbnailDataUrl, existingSlug } = body;
+    const { code, title, thumbnailDataUrl, existingSlug, libraryData } = body;
 
     if (!code || !title) {
       return NextResponse.json(
@@ -107,6 +107,7 @@ export async function POST(request: NextRequest) {
             title,
             description,
             code,
+            library_data: libraryData || null,
             thumbnail_url: thumbnailUrl || existingRecord.thumbnail_url,
             updated_at: new Date().toISOString(),
           })
@@ -126,6 +127,7 @@ export async function POST(request: NextRequest) {
                 title,
                 description,
                 code,
+                library_data: libraryData || null,
                 thumbnail_url: thumbnailUrl || existingRecord.thumbnail_url,
                 updated_at: new Date().toISOString(),
               })
@@ -171,6 +173,7 @@ export async function POST(request: NextRequest) {
         title,
         description,
         code,
+        library_data: libraryData || null,
         thumbnail_url: thumbnailUrl,
         user_id: user?.id || null,
       })
@@ -190,6 +193,7 @@ export async function POST(request: NextRequest) {
             title,
             description,
             code,
+            library_data: libraryData || null,
             thumbnail_url: thumbnailUrl,
             user_id: user?.id || null,
           })

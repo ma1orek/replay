@@ -6,7 +6,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export async function POST(req: NextRequest) {
   try {
-    const formData = await req.formData();
+    const formData = await req.formData() as unknown as globalThis.FormData;
     const file = formData.get("file") as File;
     const userId = formData.get("userId") as string;
     

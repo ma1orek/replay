@@ -1,0 +1,50 @@
+{/* docs/Introduction.mdx */}
+import { Meta } from '@storybook/blocks';
+
+<Meta title="Introduction" />
+
+# Replay Design System
+
+Welcome to the Replay Design System - a comprehensive collection of reusable UI components built with React, Tailwind CSS, and TypeScript.
+
+## Features
+
+- **Token-based Design**: All colors, spacing, and typography are based on CSS custom properties
+- **Dark Mode First**: Optimized for dark theme with light mode support
+- **Accessible**: Built with accessibility in mind, following WCAG guidelines
+- **TypeScript**: Full type safety with comprehensive JSDoc documentation
+- **Copy-Paste Ready**: Every component can be copied and used independently
+
+## Quick Start
+
+```tsx
+import { Button, Input, Badge } from "@/components/ui";
+
+function MyComponent() {
+  return (
+    <div>
+      <Button variant="orange" icon={<Rocket />}>
+        Get Started
+      </Button>
+      <Input placeholder="Enter your email" />
+      <Badge variant="success">Active</Badge>
+    </div>
+  );
+}
+```
+
+## Design Tokens
+
+Our design system uses semantic tokens that map to descriptive values:
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--accent` | `#ff6e3c` | Primary action color |
+| `--bg-app` | `#111111` | Main background |
+| `--text-primary` | `#fafafa` | Primary text |
+
+## Component Categories
+
+- **Primitives**: Button, Input, Badge, Separator
+- **Layout**: Header, Footer, Navbar, Sidebar
+- **Effects**: Aurora, Beams, Spotlight, Shimmer

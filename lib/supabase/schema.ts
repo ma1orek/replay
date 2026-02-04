@@ -160,8 +160,9 @@ export async function getDatabaseContext(projectId: string): Promise<DatabaseCon
     const tables = foundTables.map(t => t.name);
     const schemaText = foundTables
       .map(t => {
-        const colsText = t.columns.length > 0 
-          ? t.columns.map(c => `  - ${c}`).join('\n')
+        const columns = Array.isArray(t?.columns) ? t.columns : [];
+        const colsText = columns.length > 0
+          ? columns.map((c: string) => `  - ${c}`).join('\n')
           : '  (columns detected at runtime)';
         return `TABLE: ${t.name} (${t.rowCount} rows)\n${colsText}`;
       })

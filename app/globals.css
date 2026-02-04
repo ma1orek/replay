@@ -13,39 +13,74 @@
 
 :root {
   /* ═══════════════════════════════════════════════════════════════ */
-  /* PRO TOOL DESIGN SYSTEM - Linear/Vercel/Cursor Style             */
+  /* DESIGN SYSTEM TOKENS - Enterprise Ready                         */
+  /* Semantic tokens mapped to descriptive values                    */
   /* ═══════════════════════════════════════════════════════════════ */
 
-  /* === BACKGROUNDS (True Dark - NO blue tint) === */
-  --bg-app: #111111;
-  --bg-sidebar: #18181b;
-  --bg-card: #1f1f23;
-  --bg-hover: #18181b;
-  --bg-active: #1f1f23;
-  --bg-input: #0e0e10;
+  /* === PRIMITIVE TOKENS (Descriptive - Tailwind scale) === */
+  --zinc-50: #fafafa;
+  --zinc-100: #f4f4f5;
+  --zinc-200: #e4e4e7;
+  --zinc-300: #d4d4d8;
+  --zinc-400: #a1a1aa;
+  --zinc-500: #71717a;
+  --zinc-600: #52525b;
+  --zinc-700: #3f3f46;
+  --zinc-800: #27272a;
+  --zinc-850: #1f1f23;
+  --zinc-900: #18181b;
+  --zinc-950: #111111;
+  
+  --orange-400: #ff8f5c;
+  --orange-500: #ff6e3c;
+  --orange-600: #ea580c;
+  
+  --red-500: #ef4444;
+  --green-500: #22c55e;
+  --amber-500: #f59e0b;
+  --blue-500: #3b82f6;
 
-  /* === BORDERS === */
+  /* === SEMANTIC TOKENS (Use these in components) === */
+  
+  /* Backgrounds */
+  --bg-app: var(--zinc-950);
+  --bg-sidebar: var(--zinc-900);
+  --bg-card: var(--zinc-850);
+  --bg-hover: var(--zinc-900);
+  --bg-active: var(--zinc-850);
+  --bg-input: #0e0e10;
+  --bg-elevated: var(--zinc-800);
+
+  /* Borders */
   --border-subtle: rgba(255,255,255,0.04);
   --border-default: rgba(255,255,255,0.08);
   --border-strong: rgba(255,255,255,0.12);
+  --border-focus: rgba(255, 110, 60, 0.5);
 
-  /* === TEXT === */
-  --text-primary: #fafafa;
+  /* Text */
+  --text-primary: var(--zinc-50);
   --text-secondary: #888888;
   --text-muted: #555555;
   --text-disabled: #333333;
 
-  /* === ACCENT (Replay Orange) === */
-  --accent: #3f3f46;
-  --accent-hover: #52525b;
-  --accent-glow: rgba(63, 63, 70, 0.15);
+  /* Accent (Primary action color) - Using zinc/gray for neutral design */
+  --accent: var(--zinc-400);
+  --accent-hover: var(--zinc-300);
+  --accent-glow: rgba(161, 161, 170, 0.25);
+  --accent-muted: var(--zinc-700);
+  --accent-muted-hover: var(--zinc-600);
 
-  /* === STATUS === */
-  --success: #22c55e;
-  --error: #ef4444;
-  --warning: #f59e0b;
+  /* Status */
+  --success: var(--green-500);
+  --success-bg: rgba(34, 197, 94, 0.15);
+  --error: var(--red-500);
+  --error-bg: rgba(239, 68, 68, 0.15);
+  --warning: var(--amber-500);
+  --warning-bg: rgba(245, 158, 11, 0.15);
+  --info: var(--blue-500);
+  --info-bg: rgba(59, 130, 246, 0.15);
 
-  /* === SHADCN MAPPINGS === */
+  /* === SHADCN MAPPINGS (Required for shadcn/ui components) === */
   --background: var(--bg-app);
   --foreground: var(--text-primary);
   --card: var(--bg-card);
@@ -63,7 +98,43 @@
   --border: var(--border-default);
   --input: var(--border-subtle);
   --ring: var(--accent);
-  --radius: 8px;
+
+  /* === SPACING TOKENS === */
+  --spacing-xs: 0.25rem;   /* 4px */
+  --spacing-sm: 0.5rem;    /* 8px */
+  --spacing-md: 1rem;      /* 16px */
+  --spacing-lg: 1.5rem;    /* 24px */
+  --spacing-xl: 2rem;      /* 32px */
+  --spacing-2xl: 3rem;     /* 48px */
+
+  /* === BORDER RADIUS TOKENS === */
+  --radius-sm: 0.5rem;     /* 8px */
+  --radius-md: 0.75rem;    /* 12px */
+  --radius-lg: 1rem;       /* 16px */
+  --radius-xl: 1.25rem;    /* 20px */
+  --radius-2xl: 1.5rem;    /* 24px */
+  --radius-full: 9999px;
+  --radius: var(--radius-sm);
+
+  /* === SHADOW TOKENS === */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 40px var(--accent-glow);
+
+  /* === BLUR TOKENS === */
+  --blur-sm: 8px;
+  --blur-md: 16px;
+  --blur-lg: 20px;
+  --blur-xl: 32px;
+
+  /* === TRANSITION TOKENS === */
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 350ms;
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
   /* Legacy compatibility */
   --accent-orange: var(--accent);
@@ -73,6 +144,26 @@
   /* === FONTS === */
   --font-sans: 'Inter', -apple-system, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* === DARK MODE (default) === */
+.dark {
+  color-scheme: dark;
+}
+
+/* === LIGHT MODE (optional) === */
+.light {
+  --bg-app: #ffffff;
+  --bg-sidebar: #fafafa;
+  --bg-card: #f4f4f5;
+  --bg-hover: #e4e4e7;
+  --bg-input: #ffffff;
+  --text-primary: #18181b;
+  --text-secondary: #52525b;
+  --text-muted: #71717a;
+  --border-subtle: rgba(0,0,0,0.04);
+  --border-default: rgba(0,0,0,0.08);
+  --border-strong: rgba(0,0,0,0.12);
 }
 
 * {

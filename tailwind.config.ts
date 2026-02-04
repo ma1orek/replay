@@ -12,7 +12,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // === SHADCN CSS VARIABLE MAPPINGS ===
+        // === SHADCN CSS VARIABLE MAPPINGS (Required) ===
         background: "var(--background)",
         foreground: "var(--foreground)",
         card: {
@@ -39,77 +39,73 @@ const config: Config = {
           DEFAULT: "var(--destructive)",
           foreground: "var(--destructive-foreground)",
         },
+        success: {
+          DEFAULT: "var(--success)",
+          bg: "var(--success-bg)",
+        },
+        warning: {
+          DEFAULT: "var(--warning)",
+          bg: "var(--warning-bg)",
+        },
+        info: {
+          DEFAULT: "var(--info)",
+          bg: "var(--info-bg)",
+        },
         input: "var(--input)",
         ring: "var(--ring)",
         
-        // === PREMIUM DARK THEME ===
-        
-        // Backgrounds - Deep blacks with subtle blue tint
-        surface: {
-          0: "#0a0a0f",      // Deepest - main bg
-          1: "#0f0f18",      // Elevated - gradient bottom
-          2: "#14141e",      // Cards base
-          3: "#1a1a26",      // Cards hover
-          4: "#22222e",      // Elevated cards
-        },
-        
-        // Glass backgrounds (with alpha for backdrop-blur)
-        glass: {
-          card: "rgba(25, 25, 30, 0.6)",
-          "card-hover": "rgba(30, 30, 38, 0.7)",
-          sidebar: "rgba(20, 20, 25, 0.8)",
-          input: "rgba(255, 255, 255, 0.03)",
-          elevated: "rgba(15, 15, 20, 0.9)",
-        },
-        
-        // Accent colors
+        // === SEMANTIC TOKENS (Use CSS variables) ===
         accent: {
-          orange: "#FF6E3C",
-          "orange-hover": "#FF8F5C",
-          "orange-glow": "rgba(255, 110, 60, 0.25)",
-          blue: "#3B82F6",
-          "blue-hover": "#60A5FA",
-          "blue-glow": "rgba(59, 130, 246, 0.2)",
-          purple: "#8B5CF6",
-          "purple-glow": "rgba(139, 92, 246, 0.2)",
+          DEFAULT: "var(--accent)",
+          hover: "var(--accent-hover)",
+          glow: "var(--accent-glow)",
+          muted: "var(--accent-muted)",
+          "muted-hover": "var(--accent-muted-hover)",
         },
         
-        // Borders
+        // Borders via CSS variables
         border: {
           DEFAULT: "var(--border)",
-          subtle: "rgba(255, 255, 255, 0.06)",
-          default: "rgba(255, 255, 255, 0.08)",
-          hover: "rgba(255, 255, 255, 0.12)",
-          focus: "rgba(255, 110, 60, 0.4)",
+          subtle: "var(--border-subtle)",
+          strong: "var(--border-strong)",
+          focus: "var(--border-focus)",
         },
         
-        // Text colors
+        // Text via CSS variables
         text: {
-          primary: "#fafafa",
-          secondary: "rgba(255, 255, 255, 0.7)",
-          muted: "rgba(255, 255, 255, 0.4)",
-          disabled: "rgba(255, 255, 255, 0.25)",
+          primary: "var(--text-primary)",
+          secondary: "var(--text-secondary)",
+          muted: "var(--text-muted)",
+          disabled: "var(--text-disabled)",
         },
         
-        // Status colors
-        status: {
-          success: "#10B981",
-          "success-bg": "rgba(16, 185, 129, 0.15)",
-          error: "#EF4444",
-          "error-bg": "rgba(239, 68, 68, 0.15)",
-          warning: "#F59E0B",
-          "warning-bg": "rgba(245, 158, 11, 0.15)",
-          info: "#3B82F6",
-          "info-bg": "rgba(59, 130, 246, 0.15)",
+        // Backgrounds via CSS variables
+        surface: {
+          app: "var(--bg-app)",
+          sidebar: "var(--bg-sidebar)",
+          card: "var(--bg-card)",
+          hover: "var(--bg-hover)",
+          elevated: "var(--bg-elevated)",
+          input: "var(--bg-input)",
         },
         
-        // Chart colors
+        // === GLASS BACKGROUNDS (with alpha for backdrop-blur) ===
+        glass: {
+          card: "rgba(31, 31, 35, 0.6)",
+          "card-hover": "rgba(39, 39, 42, 0.7)",
+          sidebar: "rgba(24, 24, 27, 0.8)",
+          input: "rgba(255, 255, 255, 0.03)",
+          elevated: "rgba(17, 17, 17, 0.9)",
+        },
+        
+        // === CHART/DATA VISUALIZATION ===
         chart: {
           blue: "#3B82F6",
           orange: "#FF6E3C",
-          green: "#10B981",
+          green: "#22C55E",
           purple: "#8B5CF6",
           cyan: "#06B6D4",
+          red: "#EF4444",
         },
       },
       
