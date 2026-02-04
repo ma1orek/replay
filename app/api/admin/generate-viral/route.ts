@@ -7,6 +7,44 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || process.env.ADMIN_SECRET;
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// CURATED ACCOUNTS TO ENGAGE - Updated list of builders, VCs, YC people
+// ═══════════════════════════════════════════════════════════════════════════════
+const ACCOUNTS_TO_ENGAGE = {
+  // Tier 1: Must engage daily (high influence, relevant to your space)
+  tier1: [
+    { handle: "@taborlechon", name: "Tab", category: "VC/Angel", followers: "150k+", why: "YC Partner, tweets about startups daily", engageHow: "Reply to his founder advice tweets" },
+    { handle: "@garrytan", name: "Garry Tan", category: "VC", followers: "500k+", why: "YC CEO, massive reach", engageHow: "Quote tweet his startup takes" },
+    { handle: "@paulg", name: "Paul Graham", category: "VC/Founder", followers: "1M+", why: "YC founder, essay tweets get huge engagement", engageHow: "Add insights to his threads" },
+    { handle: "@levelsio", name: "Pieter Levels", category: "Indie Hacker", followers: "500k+", why: "Solo founder king, your style inspiration", engageHow: "Reply with your own building updates" },
+    { handle: "@tibo_maker", name: "Tibo", category: "Builder", followers: "200k+", why: "Your content style model", engageHow: "Engage with his product launches" },
+    { handle: "@dhaborb", name: "Daniel Bourke", category: "AI/ML", followers: "100k+", why: "AI content creator, relevant to your tech", engageHow: "Share technical insights" },
+  ],
+  // Tier 2: Engage 3-4x per week (good reach, complementary audience)
+  tier2: [
+    { handle: "@marclouvion", name: "Marc Lou", category: "Indie Hacker", followers: "150k+", why: "Ships fast, similar vibe", engageHow: "Comment on his ship updates" },
+    { handle: "@damaborelk", name: "Damon Chen", category: "Builder", followers: "50k+", why: "Founder content, enterprise angle", engageHow: "Engage on SaaS topics" },
+    { handle: "@johnaparek", name: "John Rush", category: "Indie Hacker", followers: "80k+", why: "SEO & building audience", engageHow: "SEO and growth discussions" },
+    { handle: "@swabornes", name: "Shaan Puri", category: "Podcaster/VC", followers: "300k+", why: "My First Million, startup ideas", engageHow: "React to business ideas" },
+    { handle: "@gregisenberg", name: "Greg Isenberg", category: "Community/Startup", followers: "200k+", why: "Startup ideas, communities", engageHow: "Engage on community building" },
+    { handle: "@JasonLemkin", name: "Jason Lemkin", category: "SaaS VC", followers: "200k+", why: "SaaStr founder, enterprise SaaS", engageHow: "Enterprise/SaaS discussions" },
+  ],
+  // Tier 3: Engage when relevant (niche but valuable)
+  tier3: [
+    { handle: "@ycombinator", name: "Y Combinator", category: "Accelerator", followers: "1M+", why: "YC official, tag when relevant", engageHow: "Reply to batch announcements" },
+    { handle: "@sama", name: "Sam Altman", category: "AI/Tech", followers: "3M+", why: "OpenAI CEO, AI discussions", engageHow: "AI industry takes" },
+    { handle: "@elabornd", name: "Elon Musk", category: "Tech", followers: "150M+", why: "X owner, massive reach", engageHow: "Only if genuinely relevant" },
+    { handle: "@naval", name: "Naval", category: "Philosophy/VC", followers: "2M+", why: "Wisdom tweets, founder mindset", engageHow: "Add to philosophical discussions" },
+    { handle: "@patrick_osh", name: "Patrick Collision", category: "Founder", followers: "400k+", why: "Stripe CEO, payments/fintech", engageHow: "Fintech/enterprise discussions" },
+  ],
+  // Tech Twitter - AI/Dev focused
+  techAI: [
+    { handle: "@karpathy", name: "Andrej Karpathy", category: "AI", followers: "800k+", why: "AI legend, technical credibility", engageHow: "Technical AI discussions" },
+    { handle: "@svpino", name: "Santiago", category: "ML Engineer", followers: "300k+", why: "ML tutorials, AI engineering", engageHow: "AI implementation discussions" },
+    { handle: "@emollick", name: "Ethan Mollick", category: "AI/Academia", followers: "500k+", why: "AI in business/education", engageHow: "AI use cases" },
+  ]
+};
+
 // Verify admin token (base64 encoded email:password)
 function verifyAdminToken(token: string): { valid: boolean; email?: string } {
   try {
@@ -194,6 +232,146 @@ Generate EXACTLY 3 tweet variations. Output as JSON:
 Output ONLY valid JSON. No markdown, no explanation.`;
 }
 
+// Build prompt for generating replies to other people's tweets
+function buildReplyPrompt(): string {
+  return `You are a Twitter/X engagement expert for a solo founder building Replay - a Video-to-Code AI startup.
+
+═══════════════════════════════════════════════════════════════════════════════
+🧠 YOUR PERSONA (Replay Founder)
+═══════════════════════════════════════════════════════════════════════════════
+- Building Video-to-Code AI for Enterprise Legacy Migration
+- Solo founder with AI agents = 10-person team output
+- YC applicant/interview stage
+- Technical but business-savvy
+- Building in public
+
+═══════════════════════════════════════════════════════════════════════════════
+📝 REPLY STRATEGY RULES
+═══════════════════════════════════════════════════════════════════════════════
+
+GOAL: Get noticed, add value, build relationships with influential accounts.
+
+DO:
+1. ADD VALUE - Share insight, data, or experience the author didn't mention
+2. BE SPECIFIC - Reference your actual work ("I built X that does Y")
+3. ASK SMART QUESTIONS - Shows you read and understood their post
+4. SLIGHT FLEX - Mention Replay naturally if relevant (not forced)
+5. SHORT - 1-3 sentences max, punchy
+6. AGREE AND AMPLIFY - If you agree, add supporting evidence
+7. RESPECTFUL CONTRARIAN - If you disagree, explain why with data
+
+DON'T:
+- "Great post!" or generic praise (worthless)
+- "Check out my product" (spammy)
+- Long essays in replies
+- Disagreeing without substance
+- Tagging people randomly
+
+REPLY TYPES:
+1. "Value Add" - Share related insight from your experience
+2. "Question" - Ask thoughtful follow-up question
+3. "Agree + Amplify" - Agree and add supporting data/story
+4. "Contrarian" - Respectfully disagree with reasoning
+5. "Story" - Share brief relevant personal experience
+
+═══════════════════════════════════════════════════════════════════════════════
+📤 OUTPUT FORMAT
+═══════════════════════════════════════════════════════════════════════════════
+
+Generate 3 reply variations. Output as JSON:
+
+{
+  "replies": [
+    {
+      "content": "Reply text here...",
+      "type": "value_add|question|agree_amplify|contrarian|story",
+      "engagementPotential": "high|medium|low",
+      "rationale": "Why this reply works"
+    }
+  ],
+  "bestPick": 0,
+  "shouldMentionReplay": true/false,
+  "suggestedFollowUp": "If they respond, say this..."
+}
+
+Output ONLY valid JSON.`;
+}
+
+// Build prompt for daily engagement plan
+function buildDailyPlanPrompt(): string {
+  return `You are a Twitter/X growth strategist for a solo founder building Replay - a Video-to-Code AI startup.
+
+═══════════════════════════════════════════════════════════════════════════════
+🎯 GOAL: Build Twitter presence to support YC application and attract enterprise leads
+═══════════════════════════════════════════════════════════════════════════════
+
+Today's date context will be provided. Generate a personalized daily engagement plan.
+
+DAILY ENGAGEMENT FRAMEWORK:
+1. MORNING (9-11 AM EST / 15-17 PL): Post original content
+2. MIDDAY: Reply to 5-10 relevant tweets from big accounts
+3. EVENING: Engage with any replies to your posts
+
+═══════════════════════════════════════════════════════════════════════════════
+📤 OUTPUT FORMAT
+═══════════════════════════════════════════════════════════════════════════════
+
+{
+  "date": "Today's date",
+  "theme": "Daily content theme suggestion",
+  "tasks": [
+    {
+      "time": "9:00 AM EST",
+      "action": "POST",
+      "description": "Post about X topic",
+      "priority": "high",
+      "category": "original_content|reply|quote_tweet|engage"
+    }
+  ],
+  "accountsToEngage": [
+    {
+      "handle": "@username",
+      "reason": "Why engage today",
+      "suggestedApproach": "How to engage"
+    }
+  ],
+  "contentIdeas": [
+    "Idea 1 based on current context",
+    "Idea 2"
+  ],
+  "weeklyGoal": "Engagement target for the week",
+  "tip": "One actionable tip for today"
+}
+
+Output ONLY valid JSON.`;
+}
+
+// Build prompt for mention suggestions
+function buildMentionPrompt(): string {
+  return `You are a Twitter/X strategist. Given a tweet draft, suggest who to mention/tag to maximize reach and relevance.
+
+RULES:
+- Only suggest mentions if genuinely relevant
+- Max 2 mentions per tweet (more looks spammy)
+- Prefer accounts likely to engage back
+- Consider: Is this person interested in this topic?
+
+OUTPUT FORMAT:
+{
+  "mentions": [
+    {
+      "handle": "@username",
+      "reason": "Why mention them",
+      "likelihood": "high|medium|low"
+    }
+  ],
+  "shouldMention": true/false,
+  "warning": "Any caution about mentioning"
+}
+
+Output ONLY valid JSON.`;
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Verify admin
@@ -211,20 +389,27 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { 
-      context,           // What happened - "Got YC interview", "Fixed a bug"
-      category = "arrogant", // arrogant, numbers, contrarian, philosophy
-      tone = "aggressive",   // aggressive, data-driven, philosophical, meme
-      assetUrl,          // Optional image/video URL
+      mode = "post",     // "post" | "reply" | "daily-plan" | "mentions"
+      context,           // For post mode: what happened
+      category = "arrogant", 
+      tone = "aggressive",
+      assetUrl,
+      originalTweet,     // For reply mode: the tweet to reply to
+      originalAuthor,    // For reply mode: who wrote it
+      tweetDraft,        // For mentions mode: draft to analyze
+      recentActivity,    // For daily-plan: what you did recently
     } = body;
 
-    if (!context || context.trim().length < 5) {
-      return NextResponse.json({ error: "Context is required (min 5 characters)" }, { status: 400 });
-    }
+    // ═══════════════════════════════════════════════════════════════════════
+    // MODE: GENERATE VIRAL POST
+    // ═══════════════════════════════════════════════════════════════════════
+    if (mode === "post") {
+      if (!context || context.trim().length < 5) {
+        return NextResponse.json({ error: "Context is required (min 5 characters)" }, { status: 400 });
+      }
 
-    // Build prompt
-    const systemPrompt = buildViralPrompt(category, tone);
-    
-    const userPrompt = `Context to turn into viral post:
+      const systemPrompt = buildViralPrompt(category, tone);
+      const userPrompt = `Context to turn into viral post:
 "${context}"
 
 ${assetUrl ? `Asset URL (image/video): ${assetUrl}\nGenerate alt text for this asset.` : 'No asset provided.'}
@@ -233,80 +418,247 @@ Generate 3 viral tweet variations based on this context. Use the ${category} cat
 
 Remember: Short sentences. Specific numbers. Line breaks. Hook first. Under 280 chars each.`;
 
-    // Call Gemini API
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            { role: "user", parts: [{ text: systemPrompt }] },
-            { role: "model", parts: [{ text: "I understand. I'm ready to generate viral Tibo-style posts for Replay. Send me the context." }] },
-            { role: "user", parts: [{ text: userPrompt }] }
-          ],
-          generationConfig: {
-            temperature: 0.9, // Higher for creative variation
-            maxOutputTokens: 2048,
-            topP: 0.95,
-          },
-        }),
-      }
-    );
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              { role: "user", parts: [{ text: systemPrompt }] },
+              { role: "model", parts: [{ text: "I understand. I'm ready to generate viral Tibo-style posts for Replay. Send me the context." }] },
+              { role: "user", parts: [{ text: userPrompt }] }
+            ],
+            generationConfig: { temperature: 0.9, maxOutputTokens: 2048, topP: 0.95 },
+          }),
+        }
+      );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Gemini API error:", errorText);
-      return NextResponse.json({ error: "AI generation failed" }, { status: 500 });
+      if (!response.ok) {
+        return NextResponse.json({ error: "AI generation failed" }, { status: 500 });
+      }
+
+      const data = await response.json();
+      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      
+      let parsed;
+      try {
+        const cleanJson = generatedText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        parsed = JSON.parse(cleanJson);
+      } catch {
+        return NextResponse.json({ error: "Failed to parse AI response", raw: generatedText }, { status: 500 });
+      }
+
+      const postsWithScores = parsed.posts.map((post: { content: string; callToAction?: string }) => ({
+        content: post.content,
+        viralScore: calculateViralScore(post.content),
+        hooks: extractHooks(post.content),
+        callToAction: post.callToAction || "What's your take?",
+        charCount: post.content.length,
+      }));
+
+      let bestPick = 0;
+      let highestScore = 0;
+      postsWithScores.forEach((post: { viralScore: number }, index: number) => {
+        if (post.viralScore > highestScore) {
+          highestScore = post.viralScore;
+          bestPick = index;
+        }
+      });
+
+      return NextResponse.json({
+        mode: "post",
+        posts: postsWithScores,
+        altText: parsed.altText || null,
+        bestPick,
+        category,
+        tone,
+      });
     }
 
-    const data = await response.json();
-    const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    
-    // Parse JSON response
-    let parsed;
-    try {
-      // Clean up potential markdown formatting
-      const cleanJson = generatedText
-        .replace(/```json\n?/g, '')
-        .replace(/```\n?/g, '')
-        .trim();
-      parsed = JSON.parse(cleanJson);
-    } catch (parseError) {
-      console.error("Failed to parse AI response:", generatedText);
-      return NextResponse.json({ 
-        error: "Failed to parse AI response",
-        raw: generatedText 
-      }, { status: 500 });
+    // ═══════════════════════════════════════════════════════════════════════
+    // MODE: GENERATE REPLY
+    // ═══════════════════════════════════════════════════════════════════════
+    if (mode === "reply") {
+      if (!originalTweet || originalTweet.trim().length < 5) {
+        return NextResponse.json({ error: "Original tweet is required" }, { status: 400 });
+      }
+
+      const systemPrompt = buildReplyPrompt();
+      const userPrompt = `Original tweet to reply to:
+Author: ${originalAuthor || "Unknown"}
+Tweet: "${originalTweet}"
+
+Generate 3 smart reply variations that will get noticed and add value.
+Remember: Short, specific, add insight. No generic "great post!" replies.`;
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              { role: "user", parts: [{ text: systemPrompt }] },
+              { role: "model", parts: [{ text: "I understand. I'll generate strategic replies that add value and get noticed. Send me the tweet." }] },
+              { role: "user", parts: [{ text: userPrompt }] }
+            ],
+            generationConfig: { temperature: 0.85, maxOutputTokens: 2048, topP: 0.9 },
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        return NextResponse.json({ error: "AI generation failed" }, { status: 500 });
+      }
+
+      const data = await response.json();
+      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      
+      let parsed;
+      try {
+        const cleanJson = generatedText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        parsed = JSON.parse(cleanJson);
+      } catch {
+        return NextResponse.json({ error: "Failed to parse AI response", raw: generatedText }, { status: 500 });
+      }
+
+      return NextResponse.json({
+        mode: "reply",
+        replies: parsed.replies || [],
+        bestPick: parsed.bestPick || 0,
+        shouldMentionReplay: parsed.shouldMentionReplay || false,
+        suggestedFollowUp: parsed.suggestedFollowUp || null,
+        originalTweet: originalTweet.substring(0, 100),
+      });
     }
 
-    // Calculate viral scores and extract hooks for each post
-    const postsWithScores = parsed.posts.map((post: { content: string; callToAction?: string }, index: number) => ({
-      content: post.content,
-      viralScore: calculateViralScore(post.content),
-      hooks: extractHooks(post.content),
-      callToAction: post.callToAction || "What's your take?",
-      charCount: post.content.length,
-    }));
+    // ═══════════════════════════════════════════════════════════════════════
+    // MODE: DAILY ENGAGEMENT PLAN
+    // ═══════════════════════════════════════════════════════════════════════
+    if (mode === "daily-plan") {
+      const systemPrompt = buildDailyPlanPrompt();
+      const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      
+      const userPrompt = `Generate today's engagement plan.
 
-    // Find the best pick (highest viral score)
-    let bestPick = 0;
-    let highestScore = 0;
-    postsWithScores.forEach((post: { viralScore: number }, index: number) => {
-      if (post.viralScore > highestScore) {
-        highestScore = post.viralScore;
-        bestPick = index;
+Date: ${today}
+Recent activity: ${recentActivity || "Building Replay, shipped new features, preparing for YC"}
+
+Consider:
+- What day of the week it is (engagement varies by day)
+- Current startup narrative (YC application, building in public)
+- Mix of original posts and replies
+
+Suggest specific accounts to engage with today from this curated list:
+${JSON.stringify(ACCOUNTS_TO_ENGAGE.tier1.slice(0, 3), null, 2)}
+
+Generate a complete daily plan.`;
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              { role: "user", parts: [{ text: systemPrompt }] },
+              { role: "model", parts: [{ text: "I understand. I'll create a strategic daily engagement plan. Send me today's context." }] },
+              { role: "user", parts: [{ text: userPrompt }] }
+            ],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 3000, topP: 0.9 },
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        return NextResponse.json({ error: "AI generation failed" }, { status: 500 });
       }
-    });
 
-    return NextResponse.json({
-      posts: postsWithScores,
-      altText: parsed.altText || null,
-      bestPick,
-      category,
-      tone,
-      context: context.substring(0, 100), // Echo back truncated context
-    });
+      const data = await response.json();
+      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      
+      let parsed;
+      try {
+        const cleanJson = generatedText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        parsed = JSON.parse(cleanJson);
+      } catch {
+        return NextResponse.json({ error: "Failed to parse AI response", raw: generatedText }, { status: 500 });
+      }
+
+      return NextResponse.json({
+        mode: "daily-plan",
+        ...parsed,
+        allAccounts: ACCOUNTS_TO_ENGAGE, // Include full account list
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // MODE: MENTION SUGGESTIONS
+    // ═══════════════════════════════════════════════════════════════════════
+    if (mode === "mentions") {
+      if (!tweetDraft || tweetDraft.trim().length < 10) {
+        return NextResponse.json({ error: "Tweet draft is required" }, { status: 400 });
+      }
+
+      const systemPrompt = buildMentionPrompt();
+      const userPrompt = `Tweet draft to analyze:
+"${tweetDraft}"
+
+Available accounts that might be relevant:
+${JSON.stringify([...ACCOUNTS_TO_ENGAGE.tier1, ...ACCOUNTS_TO_ENGAGE.tier2].map(a => ({ handle: a.handle, category: a.category })), null, 2)}
+
+Who should be mentioned in this tweet, if anyone?`;
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              { role: "user", parts: [{ text: systemPrompt }] },
+              { role: "model", parts: [{ text: "I understand. I'll analyze the tweet and suggest relevant mentions. Send me the draft." }] },
+              { role: "user", parts: [{ text: userPrompt }] }
+            ],
+            generationConfig: { temperature: 0.5, maxOutputTokens: 1024, topP: 0.9 },
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        return NextResponse.json({ error: "AI generation failed" }, { status: 500 });
+      }
+
+      const data = await response.json();
+      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      
+      let parsed;
+      try {
+        const cleanJson = generatedText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        parsed = JSON.parse(cleanJson);
+      } catch {
+        return NextResponse.json({ error: "Failed to parse AI response", raw: generatedText }, { status: 500 });
+      }
+
+      return NextResponse.json({
+        mode: "mentions",
+        ...parsed,
+        tweetDraft: tweetDraft.substring(0, 100),
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // MODE: GET ACCOUNTS LIST
+    // ═══════════════════════════════════════════════════════════════════════
+    if (mode === "accounts") {
+      return NextResponse.json({
+        mode: "accounts",
+        accounts: ACCOUNTS_TO_ENGAGE,
+      });
+    }
+
+    return NextResponse.json({ error: "Invalid mode. Use: post, reply, daily-plan, mentions, accounts" }, { status: 400 });
 
   } catch (error: any) {
     console.error("Viral generation error:", error);

@@ -154,6 +154,7 @@ export default function AdminPage() {
   const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0, currentTitle: "" });
   
   // Viral Post Generator state
+  const [viralSubTab, setViralSubTab] = useState<"posts" | "replies" | "daily" | "accounts">("posts");
   const [viralContext, setViralContext] = useState("");
   const [viralCategory, setViralCategory] = useState<"arrogant" | "numbers" | "contrarian" | "philosophy">("arrogant");
   const [viralTone, setViralTone] = useState<"aggressive" | "data-driven" | "philosophical" | "meme">("aggressive");
@@ -171,6 +172,37 @@ export default function AdminPage() {
     bestPick: number;
   } | null>(null);
   const [copiedPostIndex, setCopiedPostIndex] = useState<number | null>(null);
+  
+  // Reply Generator state
+  const [replyOriginalTweet, setReplyOriginalTweet] = useState("");
+  const [replyOriginalAuthor, setReplyOriginalAuthor] = useState("");
+  const [isGeneratingReply, setIsGeneratingReply] = useState(false);
+  const [replyResults, setReplyResults] = useState<{
+    replies: Array<{
+      content: string;
+      type: string;
+      engagementPotential: string;
+      rationale: string;
+    }>;
+    bestPick: number;
+    suggestedFollowUp: string | null;
+  } | null>(null);
+  
+  // Daily Plan state
+  const [dailyPlanActivity, setDailyPlanActivity] = useState("");
+  const [isGeneratingDailyPlan, setIsGeneratingDailyPlan] = useState(false);
+  const [dailyPlan, setDailyPlan] = useState<{
+    date: string;
+    theme: string;
+    tasks: Array<{ time: string; action: string; description: string; priority: string }>;
+    accountsToEngage: Array<{ handle: string; reason: string; suggestedApproach: string }>;
+    contentIdeas: string[];
+    tip: string;
+  } | null>(null);
+  
+  // Accounts list state
+  const [accountsList, setAccountsList] = useState<any>(null);
+  const [accountsFilter, setAccountsFilter] = useState<"all" | "tier1" | "tier2" | "tier3" | "techAI">("all");
   
   // Toast message for styled alerts
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -1850,272 +1882,491 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
           </div>
         )}
 
-        {/* Viral Tab - X Post Generator */}
+        {/* Viral Tab - X Growth Manager */}
         {activeTab === "viral" && (
           <div className="space-y-6">
-            {/* Generator Form */}
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
-              <div className="flex items-center gap-3 mb-6">
+            {/* Header with Sub-tabs */}
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
+              <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 rounded-lg bg-gradient-to-br from-[#1DA1F2]/20 to-[#1DA1F2]/5 border border-[#1DA1F2]/20">
                   <Zap className="w-5 h-5 text-[#1DA1F2]" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-white">Viral Post Generator</h2>
-                  <p className="text-xs text-white/50">Tibo-style posts for X - generate 3 viral variations</p>
+                  <h2 className="text-lg font-semibold text-white">X Growth Manager</h2>
+                  <p className="text-xs text-white/50">AI-powered posts, replies, and engagement strategy</p>
                 </div>
               </div>
-
-              <div className="space-y-4">
-                {/* Context Input */}
-                <div>
-                  <label className="block text-sm font-medium text-white/70 mb-2">
-                    Context <span className="text-white/30">(what happened today?)</span>
-                  </label>
-                  <textarea
-                    value={viralContext}
-                    onChange={(e) => setViralContext(e.target.value)}
-                    placeholder="Got YC interview invite, fixed the RECITATION bug, shipped new feature..."
-                    className="w-full px-4 py-3 bg-black/30 border border-zinc-800 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-[#1DA1F2]/50 resize-none"
-                    rows={3}
-                  />
-                </div>
-
-                {/* Category & Tone Selection */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Category */}
-                  <div>
-                    <label className="block text-sm font-medium text-white/70 mb-2">Category</label>
-                    <select
-                      value={viralCategory}
-                      onChange={(e) => setViralCategory(e.target.value as any)}
-                      className="w-full px-4 py-3 bg-black/30 border border-zinc-800 rounded-xl text-white focus:outline-none focus:border-[#1DA1F2]/50 appearance-none cursor-pointer"
-                    >
-                      <option value="arrogant">🏆 Arrogant Builder - Speed flex</option>
-                      <option value="numbers">📊 Numbers Flex - Data/traction</option>
-                      <option value="contrarian">🔥 Contrarian Take - Challenge status quo</option>
-                      <option value="philosophy">💭 Philosophy - Founder wisdom</option>
-                    </select>
-                  </div>
-
-                  {/* Tone */}
-                  <div>
-                    <label className="block text-sm font-medium text-white/70 mb-2">Tone</label>
-                    <select
-                      value={viralTone}
-                      onChange={(e) => setViralTone(e.target.value as any)}
-                      className="w-full px-4 py-3 bg-black/30 border border-zinc-800 rounded-xl text-white focus:outline-none focus:border-[#1DA1F2]/50 appearance-none cursor-pointer"
-                    >
-                      <option value="aggressive">⚡ Aggressive - Bold & direct</option>
-                      <option value="data-driven">📈 Data-Driven - Numbers first</option>
-                      <option value="philosophical">🧠 Philosophical - Reflective</option>
-                      <option value="meme">😏 Meme - Witty & internet-native</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Asset URL (optional) */}
-                <div>
-                  <label className="block text-sm font-medium text-white/70 mb-2">
-                    Asset URL <span className="text-white/30">(optional - image/video link)</span>
-                  </label>
-                  <input
-                    type="url"
-                    value={viralAssetUrl}
-                    onChange={(e) => setViralAssetUrl(e.target.value)}
-                    placeholder="https://... (optional)"
-                    className="w-full px-4 py-3 bg-black/30 border border-zinc-800 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-[#1DA1F2]/50"
-                  />
-                </div>
-
-                {/* Generate Button */}
-                <button
-                  onClick={async () => {
-                    if (!viralContext.trim()) {
-                      setToastMessage("Enter some context first!");
-                      return;
-                    }
-                    setIsGeneratingViral(true);
-                    setViralResults(null);
-                    try {
-                      const res = await fetch("/api/admin/generate-viral", {
-                        method: "POST",
-                        headers: {
-                          "Content-Type": "application/json",
-                          Authorization: `Bearer ${adminToken}`,
-                        },
-                        body: JSON.stringify({
-                          context: viralContext,
-                          category: viralCategory,
-                          tone: viralTone,
-                          assetUrl: viralAssetUrl || undefined,
-                        }),
-                      });
-                      const data = await res.json();
-                      if (data.error) {
-                        setToastMessage(`Error: ${data.error}`);
-                      } else {
-                        setViralResults(data);
-                      }
-                    } catch (err: any) {
-                      setToastMessage(`Error: ${err.message}`);
-                    } finally {
-                      setIsGeneratingViral(false);
-                    }
-                  }}
-                  disabled={isGeneratingViral || !viralContext.trim()}
-                  className="w-full py-3 bg-gradient-to-r from-[#1DA1F2] to-[#1DA1F2]/80 text-white font-semibold rounded-xl hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isGeneratingViral ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Generating 3 viral posts...
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="w-4 h-4" />
-                      Generate 3 Viral Posts
-                    </>
-                  )}
-                </button>
+              
+              {/* Sub-tabs */}
+              <div className="flex gap-2 flex-wrap">
+                {[
+                  { id: "posts", label: "Create Posts", icon: "✍️" },
+                  { id: "replies", label: "Reply Generator", icon: "💬" },
+                  { id: "daily", label: "Daily Plan", icon: "📅" },
+                  { id: "accounts", label: "Who to Engage", icon: "👥" },
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setViralSubTab(tab.id as any)}
+                    className={cn(
+                      "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2",
+                      viralSubTab === tab.id
+                        ? "bg-[#1DA1F2] text-white"
+                        : "bg-white/5 text-white/50 hover:text-white hover:bg-white/10"
+                    )}
+                  >
+                    <span>{tab.icon}</span>
+                    {tab.label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Results */}
-            {viralResults && (
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-white/70 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-[#1DA1F2]" />
-                  Generated Posts
-                  <span className="text-white/30">- Best pick highlighted</span>
-                </h3>
+            {/* ═══════════════════════════════════════════════════════════════════ */}
+            {/* SUB-TAB: CREATE POSTS */}
+            {/* ═══════════════════════════════════════════════════════════════════ */}
+            {viralSubTab === "posts" && (
+              <div className="space-y-6">
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-white/70 mb-2">
+                        Context <span className="text-white/30">(what happened today?)</span>
+                      </label>
+                      <textarea
+                        value={viralContext}
+                        onChange={(e) => setViralContext(e.target.value)}
+                        placeholder="Got YC interview invite, fixed the RECITATION bug, shipped new feature..."
+                        className="w-full px-4 py-3 bg-black/30 border border-zinc-800 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-[#1DA1F2]/50 resize-none"
+                        rows={3}
+                      />
+                    </div>
 
-                {viralResults.posts.map((post, index) => (
-                  <div
-                    key={index}
-                    className={cn(
-                      "bg-zinc-900/50 border rounded-xl p-5 transition-all",
-                      index === viralResults.bestPick
-                        ? "border-[#1DA1F2]/50 ring-1 ring-[#1DA1F2]/20"
-                        : "border-zinc-800 hover:border-zinc-700"
-                    )}
-                  >
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-white">
-                          Post #{index + 1}
-                        </span>
-                        {index === viralResults.bestPick && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#1DA1F2]/20 text-[#1DA1F2] font-medium">
-                            ⭐ BEST PICK
-                          </span>
-                        )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-white/70 mb-2">Category</label>
+                        <select
+                          value={viralCategory}
+                          onChange={(e) => setViralCategory(e.target.value as any)}
+                          className="w-full px-4 py-3 bg-black/30 border border-zinc-800 rounded-xl text-white focus:outline-none focus:border-[#1DA1F2]/50"
+                        >
+                          <option value="arrogant">🏆 Arrogant Builder</option>
+                          <option value="numbers">📊 Numbers Flex</option>
+                          <option value="contrarian">🔥 Contrarian Take</option>
+                          <option value="philosophy">💭 Philosophy</option>
+                        </select>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-white/40">
-                          {post.charCount} chars
-                        </span>
-                        <div className={cn(
-                          "flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg",
-                          post.viralScore >= 80 ? "bg-emerald-500/20 text-emerald-400" :
-                          post.viralScore >= 60 ? "bg-yellow-500/20 text-yellow-400" :
-                          "bg-red-500/20 text-red-400"
-                        )}>
-                          <TrendingUp className="w-3 h-3" />
-                          {post.viralScore}/100
+                      <div>
+                        <label className="block text-sm font-medium text-white/70 mb-2">Tone</label>
+                        <select
+                          value={viralTone}
+                          onChange={(e) => setViralTone(e.target.value as any)}
+                          className="w-full px-4 py-3 bg-black/30 border border-zinc-800 rounded-xl text-white focus:outline-none focus:border-[#1DA1F2]/50"
+                        >
+                          <option value="aggressive">⚡ Aggressive</option>
+                          <option value="data-driven">📈 Data-Driven</option>
+                          <option value="philosophical">🧠 Philosophical</option>
+                          <option value="meme">😏 Meme</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={async () => {
+                        if (!viralContext.trim()) { setToastMessage("Enter context first!"); return; }
+                        setIsGeneratingViral(true);
+                        setViralResults(null);
+                        try {
+                          const res = await fetch("/api/admin/generate-viral", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", Authorization: `Bearer ${adminToken}` },
+                            body: JSON.stringify({ mode: "post", context: viralContext, category: viralCategory, tone: viralTone }),
+                          });
+                          const data = await res.json();
+                          if (data.error) setToastMessage(`Error: ${data.error}`);
+                          else setViralResults(data);
+                        } catch (err: any) { setToastMessage(`Error: ${err.message}`); }
+                        finally { setIsGeneratingViral(false); }
+                      }}
+                      disabled={isGeneratingViral || !viralContext.trim()}
+                      className="w-full py-3 bg-gradient-to-r from-[#1DA1F2] to-[#1DA1F2]/80 text-white font-semibold rounded-xl hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {isGeneratingViral ? <><Loader2 className="w-4 h-4 animate-spin" />Generating...</> : <><Zap className="w-4 h-4" />Generate 3 Posts</>}
+                    </button>
+                  </div>
+                </div>
+
+                {viralResults && (
+                  <div className="space-y-4">
+                    {viralResults.posts.map((post, index) => (
+                      <div key={index} className={cn("bg-zinc-900/50 border rounded-xl p-5", index === viralResults.bestPick ? "border-[#1DA1F2]/50 ring-1 ring-[#1DA1F2]/20" : "border-zinc-800")}>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-white">Post #{index + 1}</span>
+                            {index === viralResults.bestPick && <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#1DA1F2]/20 text-[#1DA1F2]">⭐ BEST</span>}
+                          </div>
+                          <div className={cn("text-xs font-medium px-2 py-1 rounded-lg flex items-center gap-1", post.viralScore >= 80 ? "bg-emerald-500/20 text-emerald-400" : post.viralScore >= 60 ? "bg-yellow-500/20 text-yellow-400" : "bg-red-500/20 text-red-400")}>
+                            <TrendingUp className="w-3 h-3" />{post.viralScore}/100
+                          </div>
+                        </div>
+                        <div className="bg-black/30 rounded-xl p-4 border border-zinc-800 mb-3">
+                          <pre className="text-sm text-white whitespace-pre-wrap font-sans">{post.content}</pre>
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => { navigator.clipboard.writeText(post.content); setCopiedPostIndex(index); setTimeout(() => setCopiedPostIndex(null), 2000); }} className="flex-1 py-2 bg-white/10 text-white/70 rounded-lg text-sm hover:bg-white/20 flex items-center justify-center gap-2">
+                            {copiedPostIndex === index ? <><Check className="w-4 h-4 text-emerald-400" />Copied!</> : <><Copy className="w-4 h-4" />Copy</>}
+                          </button>
+                          <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.content)}`} target="_blank" rel="noopener noreferrer" className="flex-1 py-2 bg-[#1DA1F2]/20 text-[#1DA1F2] rounded-lg text-sm hover:bg-[#1DA1F2]/30 flex items-center justify-center gap-2">
+                            <ExternalLink className="w-4 h-4" />Post to X
+                          </a>
                         </div>
                       </div>
-                    </div>
-
-                    {/* Post Content */}
-                    <div className="bg-black/30 rounded-xl p-4 border border-zinc-800 mb-3">
-                      <pre className="text-sm text-white whitespace-pre-wrap font-sans leading-relaxed">
-                        {post.content}
-                      </pre>
-                    </div>
-
-                    {/* Hooks & CTA */}
-                    <div className="flex flex-wrap items-center gap-2 mb-4">
-                      {post.hooks.slice(0, 2).map((hook, i) => (
-                        <span key={i} className="text-[10px] px-2 py-1 bg-white/5 rounded-lg text-white/50 truncate max-w-[200px]">
-                          Hook: {hook}
-                        </span>
-                      ))}
-                      <span className="text-[10px] px-2 py-1 bg-[#1DA1F2]/10 rounded-lg text-[#1DA1F2]/70">
-                        CTA: {post.callToAction}
-                      </span>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(post.content);
-                          setCopiedPostIndex(index);
-                          setTimeout(() => setCopiedPostIndex(null), 2000);
-                        }}
-                        className="flex-1 py-2 bg-white/10 text-white/70 rounded-lg text-sm font-medium hover:bg-white/20 transition-colors flex items-center justify-center gap-2"
-                      >
-                        {copiedPostIndex === index ? (
-                          <>
-                            <Check className="w-4 h-4 text-emerald-400" />
-                            Copied!
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-4 h-4" />
-                            Copy
-                          </>
-                        )}
-                      </button>
-                      <a
-                        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.content)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 py-2 bg-[#1DA1F2]/20 text-[#1DA1F2] rounded-lg text-sm font-medium hover:bg-[#1DA1F2]/30 transition-colors flex items-center justify-center gap-2"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                        Post to X
-                      </a>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Alt Text if asset was provided */}
-                {viralResults.altText && (
-                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-medium text-white/70">Generated Alt Text</span>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(viralResults.altText!);
-                          setToastMessage("Alt text copied!");
-                        }}
-                        className="p-1 hover:bg-white/10 rounded"
-                      >
-                        <Copy className="w-3 h-3 text-white/40" />
-                      </button>
-                    </div>
-                    <p className="text-sm text-white/50">{viralResults.altText}</p>
+                    ))}
                   </div>
                 )}
               </div>
             )}
 
-            {/* Tips Section */}
-            <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-xl p-4">
-              <h4 className="text-sm font-medium text-white/60 mb-3 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#1DA1F2]/50" />
-                Tibo-Style Tips
-              </h4>
-              <ul className="space-y-2 text-xs text-white/40">
-                <li>• <span className="text-white/60">Numbers win</span> - "4 minutes" beats "quickly"</li>
-                <li>• <span className="text-white/60">Short lines</span> - Break after every 1-2 sentences</li>
-                <li>• <span className="text-white/60">Hook first</span> - Controversial take or metric in line 1</li>
-                <li>• <span className="text-white/60">No corporate speak</span> - Never "excited to announce"</li>
-                <li>• <span className="text-white/60">End strong</span> - "Building X in public" or a question</li>
-              </ul>
-            </div>
+            {/* ═══════════════════════════════════════════════════════════════════ */}
+            {/* SUB-TAB: REPLY GENERATOR */}
+            {/* ═══════════════════════════════════════════════════════════════════ */}
+            {viralSubTab === "replies" && (
+              <div className="space-y-6">
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+                  <h3 className="text-sm font-medium text-white mb-4 flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-[#1DA1F2]" />
+                    Generate Smart Replies
+                  </h3>
+                  <p className="text-xs text-white/50 mb-4">Paste a tweet you want to reply to. AI will generate strategic replies that add value and get noticed.</p>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-white/70 mb-2">Author (optional)</label>
+                      <input
+                        type="text"
+                        value={replyOriginalAuthor}
+                        onChange={(e) => setReplyOriginalAuthor(e.target.value)}
+                        placeholder="@username"
+                        className="w-full px-4 py-3 bg-black/30 border border-zinc-800 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-[#1DA1F2]/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-white/70 mb-2">Original Tweet</label>
+                      <textarea
+                        value={replyOriginalTweet}
+                        onChange={(e) => setReplyOriginalTweet(e.target.value)}
+                        placeholder="Paste the tweet you want to reply to..."
+                        className="w-full px-4 py-3 bg-black/30 border border-zinc-800 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-[#1DA1F2]/50 resize-none"
+                        rows={4}
+                      />
+                    </div>
+                    <button
+                      onClick={async () => {
+                        if (!replyOriginalTweet.trim()) { setToastMessage("Paste a tweet first!"); return; }
+                        setIsGeneratingReply(true);
+                        setReplyResults(null);
+                        try {
+                          const res = await fetch("/api/admin/generate-viral", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", Authorization: `Bearer ${adminToken}` },
+                            body: JSON.stringify({ mode: "reply", originalTweet: replyOriginalTweet, originalAuthor: replyOriginalAuthor }),
+                          });
+                          const data = await res.json();
+                          if (data.error) setToastMessage(`Error: ${data.error}`);
+                          else setReplyResults(data);
+                        } catch (err: any) { setToastMessage(`Error: ${err.message}`); }
+                        finally { setIsGeneratingReply(false); }
+                      }}
+                      disabled={isGeneratingReply || !replyOriginalTweet.trim()}
+                      className="w-full py-3 bg-gradient-to-r from-[#1DA1F2] to-[#1DA1F2]/80 text-white font-semibold rounded-xl hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {isGeneratingReply ? <><Loader2 className="w-4 h-4 animate-spin" />Generating replies...</> : <><MessageSquare className="w-4 h-4" />Generate 3 Replies</>}
+                    </button>
+                  </div>
+                </div>
+
+                {replyResults && (
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium text-white/70">Generated Replies</h3>
+                    {replyResults.replies.map((reply, index) => (
+                      <div key={index} className={cn("bg-zinc-900/50 border rounded-xl p-5", index === replyResults.bestPick ? "border-emerald-500/50 ring-1 ring-emerald-500/20" : "border-zinc-800")}>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-white">Reply #{index + 1}</span>
+                            {index === replyResults.bestPick && <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">⭐ BEST</span>}
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/50">{reply.type}</span>
+                          </div>
+                          <span className={cn("text-xs px-2 py-1 rounded-lg", reply.engagementPotential === "high" ? "bg-emerald-500/20 text-emerald-400" : reply.engagementPotential === "medium" ? "bg-yellow-500/20 text-yellow-400" : "bg-white/10 text-white/50")}>
+                            {reply.engagementPotential} potential
+                          </span>
+                        </div>
+                        <div className="bg-black/30 rounded-xl p-4 border border-zinc-800 mb-3">
+                          <p className="text-sm text-white">{reply.content}</p>
+                        </div>
+                        <p className="text-xs text-white/40 mb-3">💡 {reply.rationale}</p>
+                        <div className="flex gap-2">
+                          <button onClick={() => { navigator.clipboard.writeText(reply.content); setToastMessage("Reply copied!"); }} className="flex-1 py-2 bg-white/10 text-white/70 rounded-lg text-sm hover:bg-white/20 flex items-center justify-center gap-2">
+                            <Copy className="w-4 h-4" />Copy
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {replyResults.suggestedFollowUp && (
+                      <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-xl p-4">
+                        <p className="text-xs text-white/50">💬 If they respond, follow up with: <span className="text-white/70">{replyResults.suggestedFollowUp}</span></p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ═══════════════════════════════════════════════════════════════════ */}
+            {/* SUB-TAB: DAILY PLAN */}
+            {/* ═══════════════════════════════════════════════════════════════════ */}
+            {viralSubTab === "daily" && (
+              <div className="space-y-6">
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+                  <h3 className="text-sm font-medium text-white mb-4 flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-[#1DA1F2]" />
+                    Generate Today's Engagement Plan
+                  </h3>
+                  <p className="text-xs text-white/50 mb-4">AI will create a personalized daily strategy - what to post, who to engage with, and when.</p>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-white/70 mb-2">Recent Activity (optional)</label>
+                      <textarea
+                        value={dailyPlanActivity}
+                        onChange={(e) => setDailyPlanActivity(e.target.value)}
+                        placeholder="What did you work on recently? Any wins to share?"
+                        className="w-full px-4 py-3 bg-black/30 border border-zinc-800 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-[#1DA1F2]/50 resize-none"
+                        rows={2}
+                      />
+                    </div>
+                    <button
+                      onClick={async () => {
+                        setIsGeneratingDailyPlan(true);
+                        setDailyPlan(null);
+                        try {
+                          const res = await fetch("/api/admin/generate-viral", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", Authorization: `Bearer ${adminToken}` },
+                            body: JSON.stringify({ mode: "daily-plan", recentActivity: dailyPlanActivity }),
+                          });
+                          const data = await res.json();
+                          if (data.error) setToastMessage(`Error: ${data.error}`);
+                          else setDailyPlan(data);
+                        } catch (err: any) { setToastMessage(`Error: ${err.message}`); }
+                        finally { setIsGeneratingDailyPlan(false); }
+                      }}
+                      disabled={isGeneratingDailyPlan}
+                      className="w-full py-3 bg-gradient-to-r from-[#1DA1F2] to-[#1DA1F2]/80 text-white font-semibold rounded-xl hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {isGeneratingDailyPlan ? <><Loader2 className="w-4 h-4 animate-spin" />Creating plan...</> : <><Calendar className="w-4 h-4" />Generate Today's Plan</>}
+                    </button>
+                  </div>
+                </div>
+
+                {dailyPlan && (
+                  <div className="space-y-4">
+                    <div className="bg-gradient-to-br from-[#1DA1F2]/10 to-transparent border border-[#1DA1F2]/20 rounded-xl p-5">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-lg font-semibold text-white">{dailyPlan.date}</h3>
+                        <span className="text-xs px-3 py-1 bg-[#1DA1F2]/20 text-[#1DA1F2] rounded-full">{dailyPlan.theme}</span>
+                      </div>
+                      <p className="text-sm text-white/70">💡 Tip: {dailyPlan.tip}</p>
+                    </div>
+
+                    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5">
+                      <h4 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-white/50" />
+                        Today's Tasks
+                      </h4>
+                      <div className="space-y-3">
+                        {dailyPlan.tasks.map((task, i) => (
+                          <div key={i} className="flex items-start gap-3 p-3 bg-black/20 rounded-lg">
+                            <span className={cn("text-xs px-2 py-1 rounded", task.priority === "high" ? "bg-red-500/20 text-red-400" : task.priority === "medium" ? "bg-yellow-500/20 text-yellow-400" : "bg-white/10 text-white/50")}>
+                              {task.time}
+                            </span>
+                            <div>
+                              <span className="text-xs px-2 py-0.5 rounded bg-white/10 text-white/50 mr-2">{task.action}</span>
+                              <p className="text-sm text-white/70 mt-1">{task.description}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {dailyPlan.accountsToEngage && dailyPlan.accountsToEngage.length > 0 && (
+                      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5">
+                        <h4 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
+                          <Users className="w-4 h-4 text-white/50" />
+                          Engage These Accounts Today
+                        </h4>
+                        <div className="space-y-2">
+                          {dailyPlan.accountsToEngage.map((acc, i) => (
+                            <div key={i} className="flex items-center justify-between p-3 bg-black/20 rounded-lg">
+                              <div>
+                                <a href={`https://twitter.com/${acc.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="text-[#1DA1F2] hover:underline font-medium">{acc.handle}</a>
+                                <p className="text-xs text-white/50">{acc.reason}</p>
+                              </div>
+                              <span className="text-xs text-white/40">{acc.suggestedApproach}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {dailyPlan.contentIdeas && dailyPlan.contentIdeas.length > 0 && (
+                      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5">
+                        <h4 className="text-sm font-medium text-white mb-3">💡 Content Ideas for Today</h4>
+                        <ul className="space-y-2">
+                          {dailyPlan.contentIdeas.map((idea, i) => (
+                            <li key={i} className="text-sm text-white/70 flex items-start gap-2">
+                              <span className="text-[#1DA1F2]">•</span>
+                              {idea}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ═══════════════════════════════════════════════════════════════════ */}
+            {/* SUB-TAB: ACCOUNTS TO ENGAGE */}
+            {/* ═══════════════════════════════════════════════════════════════════ */}
+            {viralSubTab === "accounts" && (
+              <div className="space-y-6">
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+                  <h3 className="text-sm font-medium text-white mb-2 flex items-center gap-2">
+                    <Users className="w-4 h-4 text-[#1DA1F2]" />
+                    Curated Accounts to Engage
+                  </h3>
+                  <p className="text-xs text-white/50 mb-4">These are VCs, founders, and builders who align with your narrative. Engage strategically!</p>
+                  
+                  <div className="flex gap-2 flex-wrap mb-4">
+                    {["all", "tier1", "tier2", "tier3", "techAI"].map(filter => (
+                      <button
+                        key={filter}
+                        onClick={() => setAccountsFilter(filter as any)}
+                        className={cn("px-3 py-1.5 text-xs rounded-lg transition-colors", accountsFilter === filter ? "bg-[#1DA1F2]/20 text-[#1DA1F2]" : "bg-white/5 text-white/50 hover:text-white")}
+                      >
+                        {filter === "all" ? "All" : filter === "tier1" ? "🔥 Daily (Tier 1)" : filter === "tier2" ? "📊 Weekly (Tier 2)" : filter === "tier3" ? "🎯 When Relevant" : "🤖 AI/Tech"}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch("/api/admin/generate-viral", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json", Authorization: `Bearer ${adminToken}` },
+                          body: JSON.stringify({ mode: "accounts" }),
+                        });
+                        const data = await res.json();
+                        if (data.accounts) setAccountsList(data.accounts);
+                      } catch (err: any) { setToastMessage(`Error: ${err.message}`); }
+                    }}
+                    className="w-full py-2 bg-white/10 text-white/70 rounded-lg text-sm hover:bg-white/20 flex items-center justify-center gap-2 mb-4"
+                  >
+                    <Download className="w-4 h-4" />
+                    Load Account List
+                  </button>
+                </div>
+
+                {accountsList && (
+                  <div className="space-y-4">
+                    {(accountsFilter === "all" || accountsFilter === "tier1") && accountsList.tier1 && (
+                      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5">
+                        <h4 className="text-sm font-medium text-white mb-3 flex items-center gap-2">🔥 Tier 1 - Engage Daily</h4>
+                        <div className="grid gap-3">
+                          {accountsList.tier1.map((acc: any, i: number) => (
+                            <div key={i} className="p-3 bg-black/20 rounded-lg flex items-start justify-between">
+                              <div>
+                                <a href={`https://twitter.com/${acc.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="text-[#1DA1F2] hover:underline font-medium">{acc.handle}</a>
+                                <span className="text-xs text-white/40 ml-2">{acc.name}</span>
+                                <p className="text-xs text-white/50 mt-1">{acc.why}</p>
+                                <p className="text-xs text-emerald-400/70 mt-1">→ {acc.engageHow}</p>
+                              </div>
+                              <span className="text-[10px] px-2 py-1 bg-white/10 rounded text-white/40">{acc.followers}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {(accountsFilter === "all" || accountsFilter === "tier2") && accountsList.tier2 && (
+                      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5">
+                        <h4 className="text-sm font-medium text-white mb-3 flex items-center gap-2">📊 Tier 2 - Engage 3-4x/Week</h4>
+                        <div className="grid gap-3">
+                          {accountsList.tier2.map((acc: any, i: number) => (
+                            <div key={i} className="p-3 bg-black/20 rounded-lg flex items-start justify-between">
+                              <div>
+                                <a href={`https://twitter.com/${acc.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="text-[#1DA1F2] hover:underline font-medium">{acc.handle}</a>
+                                <span className="text-xs text-white/40 ml-2">{acc.name}</span>
+                                <p className="text-xs text-white/50 mt-1">{acc.why}</p>
+                              </div>
+                              <span className="text-[10px] px-2 py-1 bg-white/10 rounded text-white/40">{acc.followers}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {(accountsFilter === "all" || accountsFilter === "tier3") && accountsList.tier3 && (
+                      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5">
+                        <h4 className="text-sm font-medium text-white mb-3 flex items-center gap-2">🎯 Tier 3 - When Relevant</h4>
+                        <div className="grid gap-3">
+                          {accountsList.tier3.map((acc: any, i: number) => (
+                            <div key={i} className="p-3 bg-black/20 rounded-lg flex items-start justify-between">
+                              <div>
+                                <a href={`https://twitter.com/${acc.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="text-[#1DA1F2] hover:underline font-medium">{acc.handle}</a>
+                                <span className="text-xs text-white/40 ml-2">{acc.name}</span>
+                                <p className="text-xs text-white/50 mt-1">{acc.why}</p>
+                              </div>
+                              <span className="text-[10px] px-2 py-1 bg-white/10 rounded text-white/40">{acc.followers}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {(accountsFilter === "all" || accountsFilter === "techAI") && accountsList.techAI && (
+                      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5">
+                        <h4 className="text-sm font-medium text-white mb-3 flex items-center gap-2">🤖 AI/Tech Twitter</h4>
+                        <div className="grid gap-3">
+                          {accountsList.techAI.map((acc: any, i: number) => (
+                            <div key={i} className="p-3 bg-black/20 rounded-lg flex items-start justify-between">
+                              <div>
+                                <a href={`https://twitter.com/${acc.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="text-[#1DA1F2] hover:underline font-medium">{acc.handle}</a>
+                                <span className="text-xs text-white/40 ml-2">{acc.name}</span>
+                                <p className="text-xs text-white/50 mt-1">{acc.why}</p>
+                              </div>
+                              <span className="text-[10px] px-2 py-1 bg-white/10 rounded text-white/40">{acc.followers}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-xl p-4">
+                  <h4 className="text-sm font-medium text-white/60 mb-2">🎯 Engagement Strategy</h4>
+                  <ul className="space-y-1 text-xs text-white/40">
+                    <li>• <span className="text-white/60">Tier 1</span> - Reply to their tweets daily, they'll start recognizing you</li>
+                    <li>• <span className="text-white/60">Tier 2</span> - Engage when they post relevant content</li>
+                    <li>• <span className="text-white/60">Tier 3</span> - Only tag when genuinely relevant (they have huge audiences)</li>
+                    <li>• <span className="text-white/60">Add value</span> - Never "great post!", always add insight</li>
+                  </ul>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
