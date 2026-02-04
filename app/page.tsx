@@ -21766,40 +21766,42 @@ module.exports = {
                                       const isNewUngenerated = comp.isNew && !isGeneratingThis;
                                       const needsFixedSize = isGeneratingThis || isNewUngenerated;
                                       
-                                      // Detect component type for smart sizing
-                                      const isSmallPrimitive = ['button', 'badge', 'label', 'icon', 'avatar', 'tag', 'chip'].some(t => nameLower.includes(t));
-                                      const isCard = ['card', 'testimonial', 'feature', 'destination', 'glass'].some(t => nameLower.includes(t));
+                                      // Check if user manually resized this component - if so, respect their size!
+                                      const wasManuallyResized = manuallyResizedComponents.has(id);
                                       
-                                      // Calculate aspect ratio to prevent "pillars" (too tall/narrow)
-                                      const reportedWidth = size?.width || 320;
-                                      const reportedHeight = size?.height || 200;
-                                      const aspectRatio = reportedHeight / reportedWidth;
-                                      const isPillar = aspectRatio > 1.8; // Too tall relative to width
+                                      // If manually resized, use stored size directly (no computing/constraints)
+                                      // Otherwise apply smart defaults
+                                      let finalWidth: number | string;
+                                      let finalHeight: number;
                                       
-                                      // Smart width: ensure minimum 280px for readability, respect reported size
-                                      const computedWidth = needsFixedSize ? 280 
-                                        : isFullWidthComp ? '100%' 
-                                        : isSmallPrimitive ? Math.max(reportedWidth, 200)
-                                        : isCard ? Math.max(reportedWidth, 320)
-                                        : Math.max(reportedWidth, 280);
-                                      
-                                      // Smart height: cap aspect ratio to prevent pillars
-                                      const maxHeightForAspect = typeof computedWidth === 'number' ? computedWidth * 1.5 : 400;
-                                      const computedHeight = needsFixedSize ? 100
-                                        : isPillar ? Math.min(reportedHeight, maxHeightForAspect, 450)
-                                        : Math.min(reportedHeight, 500);
+                                      if (wasManuallyResized && size) {
+                                        // User resized manually - respect their choice completely
+                                        finalWidth = size.width;
+                                        finalHeight = size.height;
+                                      } else {
+                                        // Auto-sizing: apply smart defaults
+                                        const isSmallPrimitive = ['button', 'badge', 'label', 'icon', 'avatar', 'tag', 'chip'].some(t => nameLower.includes(t));
+                                        const reportedWidth = size?.width || 320;
+                                        const reportedHeight = size?.height || 200;
+                                        
+                                        finalWidth = needsFixedSize ? 280 
+                                          : isFullWidthComp ? '100%' 
+                                          : isSmallPrimitive ? Math.max(reportedWidth, 160)
+                                          : Math.max(reportedWidth, 200);
+                                        
+                                        finalHeight = needsFixedSize ? 100 : reportedHeight;
+                                      }
                                       
                                       return (
                                       <div 
                                         className="relative"
                                         data-component-container={id}
                                         style={{
-                                          // Smart sizing: prevent pillars, ensure readability
-                                          width: typeof computedWidth === 'string' ? computedWidth : `${computedWidth}px`,
-                                          minWidth: isSmallPrimitive ? '160px' : '280px',
-                                          height: `${computedHeight}px`,
-                                          minHeight: '60px',
-                                          maxHeight: needsFixedSize ? '120px' : '500px',
+                                          // CANVAS STYLE: freely resizable, no hard constraints
+                                          width: typeof finalWidth === 'string' ? finalWidth : `${finalWidth}px`,
+                                          height: `${finalHeight}px`,
+                                          minWidth: wasManuallyResized ? undefined : '120px',
+                                          minHeight: wasManuallyResized ? undefined : '40px',
                                           overflow: 'hidden',
                                         }}
                                       >
