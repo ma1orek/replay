@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
-import { DitheringShader } from "@/components/ui/dithering-shader";
+// DitheringShader removed for performance - heavy WebGL shader was causing lag
 
 interface UserData {
   id: string;
@@ -206,17 +206,6 @@ export default function AdminPage() {
   
   // Toast message for styled alerts
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [dimensions, setDimensions] = useState({ width: 1920, height: 1080 });
-
-  // Update dimensions on mount
-  useEffect(() => {
-    const updateDimensions = () => {
-      setDimensions({ width: window.innerWidth * 2, height: window.innerHeight * 2 });
-    };
-    updateDimensions();
-    window.addEventListener('resize', updateDimensions);
-    return () => window.removeEventListener('resize', updateDimensions);
-  }, []);
 
   // Auto-dismiss toast after 4 seconds
   useEffect(() => {
@@ -652,21 +641,7 @@ export default function AdminPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center relative">
-        <div className="absolute inset-0 z-0">
-          <DitheringShader
-            width={dimensions.width}
-            height={dimensions.height}
-            shape="wave"
-            type="8x8"
-            colorBack="#0a0a0a"
-            colorFront="#111111"
-            pxSize={4}
-            speed={0.2}
-            className="w-full h-full"
-            style={{ width: "100%", height: "100%" }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a0a]/90 via-[#0a0a0a]/70 to-[#0a0a0a]/90" />
-        </div>
+        <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#0a0a0a] via-[#111111] to-[#0a0a0a]" />
         <div className="relative z-10 animate-spin w-8 h-8 border-2 border-zinc-500 border-t-transparent rounded-full" />
       </div>
     );
@@ -676,22 +651,8 @@ export default function AdminPage() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4 relative overflow-hidden">
-        {/* Dithering Shader Background */}
-        <div className="absolute inset-0 z-0">
-          <DitheringShader
-            width={dimensions.width}
-            height={dimensions.height}
-            shape="wave"
-            type="8x8"
-            colorBack="#0a0a0a"
-            colorFront="#111111"
-            pxSize={4}
-            speed={0.2}
-            className="w-full h-full"
-            style={{ width: "100%", height: "100%" }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a0a]/90 via-[#0a0a0a]/70 to-[#0a0a0a]/90" />
-        </div>
+        {/* Simple gradient background */}
+        <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#0a0a0a] via-[#111111] to-[#0a0a0a]" />
         
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -779,22 +740,8 @@ export default function AdminPage() {
   // Admin Dashboard
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex">
-      {/* Dithering Shader Background */}
-      <div className="fixed inset-0 z-0">
-        <DitheringShader
-          width={dimensions.width}
-          height={dimensions.height}
-          shape="wave"
-          type="8x8"
-          colorBack="#0a0a0a"
-          colorFront="#111111"
-          pxSize={4}
-          speed={0.2}
-          className="w-full h-full"
-          style={{ width: "100%", height: "100%" }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a0a]/90 via-[#0a0a0a]/70 to-[#0a0a0a]/90" />
-      </div>
+      {/* Simple gradient background - removed heavy DitheringShader for performance */}
+      <div className="fixed inset-0 z-0 bg-gradient-to-br from-[#0a0a0a] via-[#111111] to-[#0a0a0a]" />
 
       {/* Mobile Menu Overlay */}
       <AnimatePresence>
