@@ -3953,10 +3953,10 @@ function ReplayToolContent() {
         }
         
         // ONLY update blueprintSizes if component hasn't been manually resized
-        // This prevents iframe auto-size from overwriting user's manual resize
+        // AND is not currently being resized (prevents "jump" on first click)
         setBlueprintSizes(prev => {
-          // Skip if manually resized
-          if (manuallyResizedComponents.has(compId)) {
+          // Skip if manually resized OR currently being resized
+          if (manuallyResizedComponents.has(compId) || resizingComponent?.id === compId) {
             return prev;
           }
           const existing = prev[compId];
@@ -3970,7 +3970,7 @@ function ReplayToolContent() {
     };
     window.addEventListener('message', handleResize);
     return () => window.removeEventListener('message', handleResize);
-  }, [manuallyResizedComponents]);
+  }, [manuallyResizedComponents, resizingComponent]);
   
   const [isGeneratingLibrary, setIsGeneratingLibrary] = useState(false);
   
@@ -21814,9 +21814,10 @@ module.exports = {
                                             className="pointer-events-none w-full h-full"
                                             componentId={comp.id}
                                             onSizeChange={(newSize) => {
-                                              // Always update size from content UNLESS manually resized
-                                              // This ensures new content auto-fits after generation
-                                              if (!manuallyResizedComponents.has(id)) {
+                                              // Always update size from content UNLESS manually resized OR currently resizing
+                                              // This ensures new content auto-fits after generation but doesn't override resize
+                                              const isBeingResized = resizingComponent?.id === id;
+                                              if (!manuallyResizedComponents.has(id) && !isBeingResized) {
                                                 setBlueprintSizes(prev => {
                                                   const existing = prev[id];
                                                   // Only update if size changed significantly
