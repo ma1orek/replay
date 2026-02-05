@@ -380,45 +380,68 @@ function extractNameFromUrl(url: string): string | null {
   }
 }
 
+/**
+ * Categorize component layer following the Storybook source structure.
+ * Respects the original Storybook category path (e.g. "Components/Inputs/Button")
+ * and maps to the 6-layer system: foundations, primitives, elements, components, patterns, product.
+ */
 function categorizeLayer(category: string, componentName?: string): string {
   const catLower = category.toLowerCase();
   const nameLower = (componentName || "").toLowerCase();
   
-  // Check category first
-  if (catLower.includes("foundation") || catLower.includes("token") || catLower.includes("color") || catLower.includes("typography")) {
-    return "foundations";
-  }
+  // 1. FOUNDATIONS - tokens, colors, typography, spacing, icons
+  if (catLower.includes("foundation") || catLower.includes("token")) return "foundations";
+  if (catLower.includes("color") && !catLower.includes("component")) return "foundations";
+  if (catLower.includes("typography") && !nameLower.includes("component")) return "foundations";
+  if (catLower.includes("spacing") || catLower.includes("breakpoint") || catLower.includes("shadow")) return "foundations";
   
-  // PRIMITIVES - basic atomic elements (check both category AND name)
-  const primitivePatterns = ["icon", "text", "box", "stack", "divider", "spacer", "heading", "label", "paragraph"];
-  if (catLower.includes("primitive") || primitivePatterns.some(p => nameLower === p || nameLower.includes(p))) {
-    return "primitives";
-  }
+  // 2. PRIMITIVES / LAYOUT - structural building blocks
+  if (catLower.includes("layout")) return "primitives";
+  if (catLower.includes("primitive")) return "primitives";
+  const layoutNames = ["box", "stack", "container", "grid", "grid item", "divider", "spacer"];
+  if (layoutNames.some(p => nameLower === p || nameLower === p.replace(" ", ""))) return "primitives";
   
-  // ELEMENTS - simple interactive components
-  const elementPatterns = ["button", "input", "badge", "checkbox", "radio", "select", "switch", "toggle", "link", "tag", "chip", "avatar", "tooltip", "loader", "spinner", "skeleton"];
-  if (catLower.includes("element") || elementPatterns.some(p => nameLower === p || nameLower.includes(p))) {
-    return "elements";
-  }
+  // 3. ELEMENTS - simple atomic components (Inputs category from Storybook)
+  if (catLower.includes("input") || catLower.includes("form")) return "elements";
+  const inputNames = ["button", "checkbox", "radio", "radio group", "select", "select field", "select field item", 
+    "switch", "toggle", "text field", "textfield", "text area", "textarea", "date field", "file field", 
+    "search field", "search", "link", "checkbox group"];
+  if (inputNames.some(p => nameLower === p || nameLower === p.replace(" ", ""))) return "elements";
   
-  // PATTERNS - complex reusable patterns
-  const patternPatterns = ["card", "list", "table", "form", "modal", "dialog", "dropdown", "menu", "nav", "sidebar", "header", "footer", "grid", "carousel", "accordion", "tabs", "pagination"];
-  if (catLower.includes("pattern") || catLower.includes("template") || catLower.includes("page") || patternPatterns.some(p => nameLower === p || nameLower.includes(p))) {
-    return "patterns";
-  }
+  // 4. COMPONENTS - composite components (Data Display, Feedback, Navigation, Surfaces)
+  if (catLower.includes("data display") || catLower.includes("data-display")) return "components";
+  if (catLower.includes("feedback")) return "components";
+  if (catLower.includes("navigation")) return "components";
+  if (catLower.includes("surface") || catLower.includes("overlay")) return "components";
   
-  // PRODUCT - business-specific components (hero, pricing, testimonial, feature sections)
-  const productPatterns = ["hero", "pricing", "testimonial", "feature", "cta", "banner", "section", "landing", "dashboard", "stats", "chart", "widget"];
-  if (catLower.includes("product") || catLower.includes("section") || catLower.includes("layout") || productPatterns.some(p => nameLower.includes(p))) {
-    return "product";
-  }
+  // Map specific component names to "components" layer
+  const componentNames = ["table", "carousel", "carousel item", "tooltip", "modal", "dialog", 
+    "result dialog", "result toast", "bottom sheet", "breadcrumb", "breadcrumbs", "tabs", 
+    "tab", "pagination", "menu", "dropdown", "accordion", "badge", "status tag", 
+    "skeleton", "trend", "icon", "avatar", "typography", "card"];
+  if (componentNames.some(p => nameLower === p || nameLower === p.replace(" ", ""))) return "components";
   
+  // Table sub-components stay with components
+  if (nameLower.startsWith("table ") || nameLower.startsWith("table")) return "components";
+  
+  // 5. PATTERNS - complex reusable patterns, templates
+  if (catLower.includes("pattern") || catLower.includes("template")) return "patterns";
+  
+  // 6. PRODUCT - business-specific components
+  if (catLower.includes("product") || catLower.includes("page") || catLower.includes("section")) return "product";
+  const productNames = ["hero", "hero banner", "banner", "banner box", "feature box", "feature", 
+    "product box", "product carousel", "category box", "simple summary box", "simple summary box action",
+    "landing", "dashboard", "pricing", "testimonial", "cta"];
+  if (productNames.some(p => nameLower === p || nameLower === p.replace(" ", ""))) return "product";
+  
+  // Default: use "components" for anything unrecognized
   return "components";
 }
 
 /**
- * Generate a component SPECIFICATION - not fake code but a meaningful description
- * that the AI can actually use to generate proper designs using this component.
+ * Generate component code with:
+ * 1. JSDoc spec (for AI context) - description, variants, props, category
+ * 2. Renderable JSX (for preview) - actual visual component
  */
 function generateComponentSpec(
   name: string, 
@@ -437,29 +460,233 @@ function generateComponentSpec(
   const catParts = opts.category.split("/").filter(Boolean);
   const categoryPath = catParts.join(" > ");
   const pkg = opts.packageName ? `@${opts.dsName.toLowerCase().replace(/\s+/g, "-")}/${opts.packageName}` : undefined;
-  
-  // Infer props from component name and category
   const props = inferComponentProps(name, opts.layer, opts.category);
   const propsStr = props.map(p => `${p.name}: ${p.type}${p.description ? ` // ${p.description}` : ""}`).join("\n *   ");
-  
-  // Build a rich JSDoc + component spec
   const description = opts.description || describeComponent(name, opts.layer, categoryPath);
+  
+  // Get renderable JSX for the preview
+  const jsx = getComponentJSX(name, opts.layer, variantsStr);
   
   return `/**
  * ${name} - ${categoryPath || opts.layer} Component
  * ${description}
  *${pkg ? `\n * Package: ${pkg}` : ""}
  * Layer: ${opts.layer}
+ * Category: ${categoryPath}
  * Variants: ${variantsStr}
  *
  * Props:
  *   ${propsStr || "className: string"}
  */
-function ${pascalName}({ ${props.map(p => p.name).join(", ")} }) {
-  // This is a Design System component from ${opts.dsName}
-  // Use <${pascalName} /> in generated code to reference this component
-  return null; // Actual implementation lives in the design system package
+function ${pascalName}() {
+  return (
+    ${jsx}
+  );
 }`;
+}
+
+/** Generate renderable JSX for component previews */
+function getComponentJSX(name: string, layer: string, variantsStr: string): string {
+  const n = name.toLowerCase();
+  
+  // === INPUTS / ELEMENTS ===
+  if (n.includes("button")) return `<div className="flex flex-wrap gap-2">
+      <button className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">${name}</button>
+      <button className="px-4 py-2 border border-blue-600 text-blue-400 font-medium rounded-lg">Outlined</button>
+      <button className="px-4 py-2 bg-zinc-700 text-zinc-400 font-medium rounded-lg opacity-50" disabled>Disabled</button>
+    </div>`;
+  if (n.includes("text field") || n.includes("textfield") || (n.includes("input") && !n.includes("search"))) return `<div className="space-y-1 w-64">
+      <label className="text-xs font-medium text-zinc-400">${name}</label>
+      <input type="text" placeholder="Enter value..." className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-white placeholder-zinc-500 focus:border-blue-500 focus:outline-none" />
+    </div>`;
+  if (n.includes("text area") || n.includes("textarea")) return `<div className="space-y-1 w-64">
+      <label className="text-xs font-medium text-zinc-400">${name}</label>
+      <textarea rows="3" placeholder="Enter text..." className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-white placeholder-zinc-500 resize-none"></textarea>
+    </div>`;
+  if (n === "checkbox" || n === "checkbox group") return `<div className="space-y-2">
+      <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" defaultChecked className="w-4 h-4 rounded border-zinc-600 accent-blue-600" /><span className="text-sm text-zinc-300">Option A (checked)</span></label>
+      <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="w-4 h-4 rounded border-zinc-600 accent-blue-600" /><span className="text-sm text-zinc-300">Option B</span></label>
+      <label className="flex items-center gap-2 cursor-pointer opacity-50"><input type="checkbox" disabled className="w-4 h-4 rounded border-zinc-600" /><span className="text-sm text-zinc-400">Disabled</span></label>
+    </div>`;
+  if (n === "radio" || n === "radio group") return `<div className="space-y-2">
+      <label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="preview" defaultChecked className="w-4 h-4 accent-blue-600" /><span className="text-sm text-zinc-300">Option 1</span></label>
+      <label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="preview" className="w-4 h-4 accent-blue-600" /><span className="text-sm text-zinc-300">Option 2</span></label>
+    </div>`;
+  if (n.includes("switch") || n.includes("toggle")) return `<div className="flex items-center gap-3">
+      <button className="relative w-11 h-6 bg-blue-600 rounded-full"><span className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></span></button>
+      <span className="text-sm text-zinc-300">Enabled</span>
+    </div>`;
+  if (n.includes("select field item")) return `<div className="px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-700 rounded cursor-pointer">Select option item</div>`;
+  if (n.includes("select")) return `<div className="space-y-1 w-64">
+      <label className="text-xs font-medium text-zinc-400">${name}</label>
+      <select className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-white appearance-none">
+        <option>Option 1</option><option>Option 2</option><option>Option 3</option>
+      </select>
+    </div>`;
+  if (n.includes("search")) return `<div className="relative w-64">
+      <input type="text" placeholder="Search..." className="w-full pl-9 pr-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-white text-sm placeholder-zinc-500" />
+      <svg className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+    </div>`;
+  if (n.includes("date") && n.includes("field")) return `<div className="space-y-1 w-64">
+      <label className="text-xs font-medium text-zinc-400">Date Field</label>
+      <input type="date" className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-white" />
+    </div>`;
+  if (n.includes("file") && n.includes("field")) return `<div className="w-64 p-4 border-2 border-dashed border-zinc-600 rounded-lg text-center">
+      <p className="text-sm text-zinc-400">Drop files here or click to upload</p>
+      <p className="text-xs text-zinc-500 mt-1">PDF, PNG, JPG up to 10MB</p>
+    </div>`;
+  if (n === "link") return `<a href="#" className="text-blue-400 hover:text-blue-300 underline text-sm">${name}</a>`;
+  
+  // === NAVIGATION ===
+  if (n.includes("breadcrumb")) return `<nav className="flex items-center gap-2 text-sm">
+      <a href="#" className="text-blue-400 hover:text-blue-300">Home</a>
+      <span className="text-zinc-600">/</span>
+      <a href="#" className="text-blue-400 hover:text-blue-300">Products</a>
+      <span className="text-zinc-600">/</span>
+      <span className="text-zinc-400">Current Page</span>
+    </nav>`;
+  if (n.includes("tab") && !n.includes("table")) return `<div className="flex border-b border-zinc-700">
+      <button className="px-4 py-2 text-sm text-blue-400 border-b-2 border-blue-400 font-medium">Tab 1</button>
+      <button className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-300">Tab 2</button>
+      <button className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-300">Tab 3</button>
+    </div>`;
+  
+  // === DATA DISPLAY ===
+  if (n === "table") return `<div className="border border-zinc-700 rounded-lg overflow-hidden w-80">
+      <table className="w-full">
+        <thead className="bg-zinc-800"><tr>
+          <th className="px-3 py-2 text-left text-xs font-medium text-zinc-400">Name</th>
+          <th className="px-3 py-2 text-left text-xs font-medium text-zinc-400">Status</th>
+          <th className="px-3 py-2 text-right text-xs font-medium text-zinc-400">Value</th>
+        </tr></thead>
+        <tbody>
+          <tr className="border-t border-zinc-700"><td className="px-3 py-2 text-sm text-white">Item A</td><td className="px-3 py-2"><span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">Active</span></td><td className="px-3 py-2 text-sm text-zinc-300 text-right">$42.00</td></tr>
+          <tr className="border-t border-zinc-700"><td className="px-3 py-2 text-sm text-white">Item B</td><td className="px-3 py-2"><span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400">Pending</span></td><td className="px-3 py-2 text-sm text-zinc-300 text-right">$18.50</td></tr>
+        </tbody>
+      </table>
+    </div>`;
+  if (n.startsWith("table ") && n !== "table") return `<div className="px-3 py-2 bg-zinc-800/50 border border-zinc-700 rounded text-xs text-zinc-400">${name} <span className="text-zinc-500">(sub-component of Table)</span></div>`;
+  if (n.includes("carousel item")) return `<div className="flex-shrink-0 w-48 h-32 bg-zinc-800 border border-zinc-700 rounded-lg flex items-center justify-center text-zinc-400 text-sm">Carousel Item</div>`;
+  if (n.includes("product carousel")) return `<div className="flex gap-3 overflow-hidden w-full">
+      <div className="flex-shrink-0 w-48 p-3 bg-zinc-800 border border-zinc-700 rounded-lg"><div className="w-full h-20 bg-zinc-700 rounded mb-2"></div><p className="text-xs text-white font-medium">Product A</p><p className="text-xs text-zinc-400">$29.99</p></div>
+      <div className="flex-shrink-0 w-48 p-3 bg-zinc-800 border border-zinc-700 rounded-lg"><div className="w-full h-20 bg-zinc-700 rounded mb-2"></div><p className="text-xs text-white font-medium">Product B</p><p className="text-xs text-zinc-400">$49.99</p></div>
+    </div>`;
+  if (n.includes("carousel")) return `<div className="flex gap-3 overflow-hidden w-80">
+      <div className="flex-shrink-0 w-48 h-32 bg-zinc-800 border border-zinc-700 rounded-lg flex items-center justify-center text-zinc-400 text-xs">Slide 1</div>
+      <div className="flex-shrink-0 w-48 h-32 bg-zinc-800 border border-zinc-700 rounded-lg flex items-center justify-center text-zinc-400 text-xs">Slide 2</div>
+    </div>`;
+  if (n.includes("tooltip")) return `<div className="relative inline-block">
+      <span className="text-sm text-zinc-300 border-b border-dashed border-zinc-500 cursor-help">Hover me</span>
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-zinc-700 text-white text-xs rounded-lg whitespace-nowrap shadow-lg">Tooltip content</div>
+    </div>`;
+  if (n.includes("status tag") || n.includes("badge")) return `<div className="flex gap-2 flex-wrap">
+      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">Active</span>
+      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">Pending</span>
+      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30">Error</span>
+    </div>`;
+  if (n.includes("trend")) return `<div className="flex items-center gap-2">
+      <span className="text-green-400 text-sm font-medium flex items-center gap-1"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 15l7-7 7 7" /></svg>12.5%</span>
+      <span className="text-xs text-zinc-500">vs last month</span>
+    </div>`;
+  if (n.includes("skeleton")) return `<div className="space-y-3 w-64 animate-pulse">
+      <div className="h-4 bg-zinc-700 rounded w-3/4"></div>
+      <div className="h-4 bg-zinc-700 rounded w-full"></div>
+      <div className="h-4 bg-zinc-700 rounded w-1/2"></div>
+    </div>`;
+  if (n === "icon" || n === "icons") return `<div className="flex gap-3 text-zinc-400">
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+    </div>`;
+  if (n.includes("typography")) return `<div className="space-y-2">
+      <h1 className="text-2xl font-bold text-white">Heading 1</h1>
+      <h2 className="text-xl font-semibold text-white">Heading 2</h2>
+      <h3 className="text-lg font-medium text-white">Heading 3</h3>
+      <p className="text-sm text-zinc-400">Body text paragraph</p>
+      <p className="text-xs text-zinc-500">Caption / small text</p>
+    </div>`;
+  
+  // === FEEDBACK ===
+  if (n.includes("modal")) return `<div className="p-4 bg-zinc-800 border border-zinc-700 rounded-xl w-72 shadow-xl">
+      <h3 className="text-base font-semibold text-white mb-2">Modal Title</h3>
+      <p className="text-zinc-400 text-sm mb-4">Modal content goes here.</p>
+      <div className="flex gap-2 justify-end">
+        <button className="px-3 py-1.5 text-zinc-400 text-sm rounded-lg hover:bg-zinc-700">Cancel</button>
+        <button className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg">Confirm</button>
+      </div>
+    </div>`;
+  if (n.includes("result dialog")) return `<div className="p-4 bg-zinc-800 border border-zinc-700 rounded-xl w-64 text-center">
+      <div className="w-10 h-10 mx-auto mb-3 bg-green-500/20 rounded-full flex items-center justify-center"><svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg></div>
+      <h3 className="text-white font-medium mb-1">Success!</h3>
+      <p className="text-zinc-400 text-xs">Operation completed.</p>
+    </div>`;
+  if (n.includes("result toast") || n.includes("toast")) return `<div className="flex items-center gap-3 px-4 py-3 bg-green-900/30 border border-green-700/50 rounded-lg w-72">
+      <svg className="w-5 h-5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+      <span className="text-sm text-green-300">Success notification</span>
+    </div>`;
+  if (n.includes("bottom sheet")) return `<div className="w-72 bg-zinc-800 border border-zinc-700 rounded-t-xl p-4">
+      <div className="w-8 h-1 bg-zinc-600 rounded-full mx-auto mb-3"></div>
+      <h3 className="text-white font-medium text-sm mb-2">Bottom Sheet</h3>
+      <p className="text-zinc-400 text-xs">Sheet content panel</p>
+    </div>`;
+  
+  // === PRODUCT / CONTENT ===
+  if (n.includes("feature box")) return `<div className="p-5 bg-zinc-800 border border-zinc-700 rounded-xl w-64">
+      <div className="w-full h-24 bg-zinc-700 rounded-lg mb-3"></div>
+      <h3 className="text-sm font-semibold text-white mb-1">Feature Title</h3>
+      <p className="text-xs text-zinc-400 mb-3">Feature description with supporting text.</p>
+      <button className="text-xs text-blue-400 font-medium">Learn More →</button>
+    </div>`;
+  if (n.includes("product box")) return `<div className="p-4 bg-zinc-800 border border-zinc-700 rounded-xl w-56">
+      <div className="w-full h-28 bg-zinc-700 rounded-lg mb-3 flex items-center justify-center text-zinc-500 text-xs">Product Image</div>
+      <h4 className="text-sm font-medium text-white mb-0.5">Product Name</h4>
+      <p className="text-xs text-zinc-400 mb-1">Short description</p>
+      <span className="text-xs text-zinc-500">$49.99</span>
+    </div>`;
+  if (n.includes("hero banner") || n === "hero") return `<section className="py-8 px-6 bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 text-center rounded-xl">
+      <h1 className="text-2xl font-bold text-white mb-2">Hero Banner</h1>
+      <p className="text-zinc-400 text-sm mb-4 max-w-sm mx-auto">Hero section with headline, subtitle and CTA</p>
+      <button className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg">Get Started</button>
+    </section>`;
+  if (n.includes("banner box") || n === "banner") return `<div className="p-4 bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-lg flex items-center justify-between">
+      <span className="text-white font-medium text-sm">Promotional Banner</span>
+      <button className="px-3 py-1 bg-blue-600/30 text-blue-300 text-xs rounded">Learn More</button>
+    </div>`;
+  if (n.includes("category box") || n.includes("category")) return `<div className="p-4 bg-zinc-800 border border-zinc-700 rounded-xl w-48">
+      <div className="w-full h-20 bg-zinc-700 rounded-lg mb-2"></div>
+      <h4 className="text-sm font-medium text-white">Category Name</h4>
+      <p className="text-xs text-zinc-500">12 items</p>
+    </div>`;
+  if (n.includes("simple summary")) return `<div className="p-4 bg-zinc-800 border border-zinc-700 rounded-xl w-64">
+      <h4 className="text-sm font-medium text-white mb-3">Summary</h4>
+      <div className="space-y-2">
+        <div className="flex justify-between text-xs"><span className="text-zinc-400">Subtotal</span><span className="text-white">$129.00</span></div>
+        <div className="flex justify-between text-xs"><span className="text-zinc-400">Shipping</span><span className="text-white">$5.99</span></div>
+        <div className="border-t border-zinc-700 pt-2 flex justify-between text-sm"><span className="text-white font-medium">Total</span><span className="text-white font-medium">$134.99</span></div>
+      </div>
+    </div>`;
+  
+  // === LAYOUT ===
+  if (n === "container") return `<div className="p-4 border-2 border-dashed border-zinc-600 rounded-lg w-72"><p className="text-xs text-zinc-500 text-center">Container (max-width constrained)</p></div>`;
+  if (n.includes("grid item")) return `<div className="p-3 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-400 text-center">Grid Item</div>`;
+  if (n.includes("grid")) return `<div className="grid grid-cols-3 gap-2 w-64">
+      <div className="p-3 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-400 text-center">1</div>
+      <div className="p-3 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-400 text-center">2</div>
+      <div className="p-3 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-400 text-center">3</div>
+    </div>`;
+  
+  // === FALLBACK ===
+  return `<div className="p-4 bg-zinc-800 border border-zinc-700 rounded-lg">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 bg-zinc-700 rounded-lg flex items-center justify-center">
+          <span className="text-xs text-zinc-400 font-medium">${name.charAt(0)}</span>
+        </div>
+        <div>
+          <div className="text-white font-medium text-sm">${name}</div>
+          <div className="text-zinc-500 text-xs">${variantsStr}</div>
+        </div>
+      </div>
+    </div>`;
 }
 
 /** Infer likely props for a component based on its name and type */
