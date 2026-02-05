@@ -12,6 +12,14 @@ import {
   LayoutMeasurements 
 } from "@/lib/agentic-vision";
 
+// Design System Context for AI prompts
+import { 
+  getDesignSystemPromptContext,
+  detectNewComponentsFromCode,
+  getDesignSystemComponents
+} from "@/lib/prompts/design-system-context";
+import type { LocalComponent } from "@/types/design-system";
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // MULTI-PASS PIPELINE v3.0 (Server Action Version)
 // NEW: Phase 0: SURVEYOR - Measure layout with Agentic Vision (Code Execution)
@@ -30,6 +38,8 @@ interface TransmuteOptions {
   styleReferenceImage?: { url: string; base64?: string };
   /** Enable Agentic Vision Surveyor for precise measurements (default: true) */
   useSurveyor?: boolean;
+  /** Design System ID to use for component reuse and styling consistency */
+  designSystemId?: string;
 }
 
 interface TransmuteResult {
@@ -39,6 +49,8 @@ interface TransmuteResult {
   scanData?: any;
   /** Agentic Vision measurements from Surveyor */
   surveyorMeasurements?: LayoutMeasurements;
+  /** New components detected that aren't in the Design System */
+  localComponents?: LocalComponent[];
   tokenUsage?: {
     promptTokens: number;
     candidatesTokens: number;
@@ -1443,11 +1455,12 @@ function fixChartReference(code: string): string {
 // ============================================================================
 
 export async function transmuteVideoToCode(options: TransmuteOptions): Promise<TransmuteResult> {
-  const { videoUrl, styleDirective, databaseContext, styleReferenceImage, useSurveyor = true } = options;
+  const { videoUrl, styleDirective, databaseContext, styleReferenceImage, useSurveyor = true, designSystemId } = options;
   
   console.log("[transmute] MULTI-PASS PIPELINE v3.0 - Starting with Agentic Vision...");
   console.log("[transmute] Video URL:", videoUrl?.substring(0, 100));
   console.log("[transmute] Surveyor enabled:", useSurveyor);
+  console.log("[transmute] Design System ID:", designSystemId || "none");
   
   const apiKey = getApiKey();
   if (!apiKey) {
@@ -1633,6 +1646,31 @@ The style directive above defines ALL visual aspects: colors, backgrounds, gradi
       assemblerPrompt += `\n\n**DATABASE CONTEXT:**\n${databaseContext}`;
     }
     
+    // ════════════════════════════════════════════════════════════════
+    // INJECT DESIGN SYSTEM CONTEXT (Component Reuse)
+    // ════════════════════════════════════════════════════════════════
+    let designSystemContext = '';
+    let existingComponentNames: string[] = [];
+    
+    if (designSystemId) {
+      try {
+        console.log("[transmute] Fetching Design System context...");
+        designSystemContext = await getDesignSystemPromptContext(designSystemId);
+        
+        if (designSystemContext) {
+          assemblerPrompt += `\n\n${designSystemContext}`;
+          console.log("[transmute] Injected Design System context into assembler prompt");
+          
+          // Get component names for new component detection later
+          const dsComponents = await getDesignSystemComponents(designSystemId);
+          existingComponentNames = dsComponents.map(c => c.name);
+          console.log("[transmute] Existing DS components:", existingComponentNames.length);
+        }
+      } catch (dsError: any) {
+        console.warn("[transmute] Failed to fetch Design System context (non-fatal):", dsError?.message);
+      }
+    }
+    
     const menuCount = scanData?.ui?.navigation?.sidebar?.items?.length || 0;
     const metricCount = scanData?.data?.metrics?.length || 0;
     const chartCount = scanData?.data?.charts?.length || 0;
@@ -1767,11 +1805,37 @@ Generate the complete HTML file now:`;
       console.log("[transmute] Surveyor confidence:", Math.round(surveyorMeasurements.confidence * 100) + "%");
     }
     
+    // ════════════════════════════════════════════════════════════════
+    // DETECT NEW COMPONENTS (for "Save to Library" feature)
+    // ════════════════════════════════════════════════════════════════
+    let localComponents: LocalComponent[] = [];
+    
+    if (designSystemId) {
+      try {
+        const newComponents = detectNewComponentsFromCode(code, existingComponentNames);
+        localComponents = newComponents.map((nc, idx) => ({
+          id: `local-${Date.now()}-${idx}`,
+          name: nc.name,
+          code: nc.code,
+          layer: 'components', // Default layer
+          isNew: true,
+          savedToLibrary: false,
+        }));
+        
+        if (localComponents.length > 0) {
+          console.log("[transmute] Detected new components:", localComponents.map(c => c.name).join(", "));
+        }
+      } catch (detectError: any) {
+        console.warn("[transmute] Failed to detect new components:", detectError?.message);
+      }
+    }
+    
     return {
       success: true,
       code,
       scanData,
       surveyorMeasurements, // Agentic Vision measurements
+      localComponents, // New components for "Save to Library"
       tokenUsage,
     };
     

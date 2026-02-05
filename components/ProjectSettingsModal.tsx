@@ -18,7 +18,12 @@ import {
   ExternalLink,
   Copy,
   CheckCircle,
+  Palette,
+  Sparkles,
+  Save,
 } from "lucide-react";
+import { DesignSystemSelector } from "@/components/DesignSystemSelector";
+import type { DesignSystemListItem, LocalComponent } from "@/types/design-system";
 import { createClient } from "@supabase/supabase-js";
 import FocusLock from "react-focus-lock";
 
@@ -33,6 +38,14 @@ interface ProjectSettingsModalProps {
   };
   onDelete?: (id: string) => void;
   onRename?: (id: string, newName: string) => void;
+  /** Currently selected design system ID */
+  designSystemId?: string | null;
+  /** Callback when design system selection changes */
+  onDesignSystemChange?: (dsId: string | null) => void;
+  /** Local components from the current project (for Save to Library) */
+  localComponents?: LocalComponent[];
+  /** Callback when a component is saved to library */
+  onSaveToLibrary?: (component: LocalComponent) => void;
 }
 
 interface TableInfo {
@@ -50,6 +63,7 @@ interface SecretsData {
 // Tabs configuration
 const TABS = [
   { id: "general", label: "General", icon: Settings },
+  { id: "design-system", label: "Design System", icon: Palette },
   { id: "secrets", label: "Secrets", icon: Key },
   { id: "database", label: "Database", icon: Database },
   { id: "analytics", label: "Share", icon: ExternalLink },
@@ -94,6 +108,10 @@ export default function ProjectSettingsModal({
   project,
   onDelete,
   onRename,
+  designSystemId,
+  onDesignSystemChange,
+  localComponents = [],
+  onSaveToLibrary,
 }: ProjectSettingsModalProps) {
   const [activeTab, setActiveTab] = useState("general");
   const [projectName, setProjectName] = useState(project.name);
@@ -500,6 +518,110 @@ export default function ProjectSettingsModal({
                         To delete this project, use the History panel
                       </p>
                     </div>
+                  </motion.div>
+                )}
+
+                {/* Design System Tab */}
+                {activeTab === "design-system" && (
+                  <motion.div
+                    key="design-system"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    className="space-y-6"
+                  >
+                    {/* Info Banner */}
+                    <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/20">
+                      <div className="flex items-start gap-3">
+                        <Palette className="w-5 h-5 text-orange-400 mt-0.5" />
+                        <div>
+                          <p className="text-sm text-white/80">
+                            Select a <strong>Design System</strong> to reuse components and maintain consistent styling across projects.
+                          </p>
+                          <p className="text-xs text-white/50 mt-1">
+                            AI will use existing components when generating new code.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Design System Selector */}
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-2">
+                        Active Design System
+                      </label>
+                      <DesignSystemSelector
+                        value={designSystemId || null}
+                        onChange={(dsId) => onDesignSystemChange?.(dsId)}
+                        onCreateNew={() => {
+                          // Could open a create dialog or redirect
+                          window.open('/settings/design-systems', '_blank');
+                        }}
+                        placeholder="Select a Design System"
+                      />
+                    </div>
+
+                    {/* New Components Section */}
+                    {localComponents.length > 0 && (
+                      <div>
+                        <label className="block text-sm font-medium text-white mb-3">
+                          <span className="flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-orange-400" />
+                            New Components from this Project
+                          </span>
+                        </label>
+                        <div className="space-y-2">
+                          {localComponents.filter(lc => lc.isNew && !lc.savedToLibrary).map((comp) => (
+                            <div
+                              key={comp.id}
+                              className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-orange-500/20"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-orange-500/20 text-orange-400">
+                                  NEW
+                                </span>
+                                <span className="text-sm text-white">{comp.name}</span>
+                                <span className="text-xs text-white/40">{comp.layer}</span>
+                              </div>
+                              <button
+                                onClick={() => onSaveToLibrary?.(comp)}
+                                disabled={!designSystemId}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              >
+                                <Save className="w-3 h-3" />
+                                Save to Library
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        {!designSystemId && (
+                          <p className="text-xs text-white/40 mt-2">
+                            Select a Design System above to save components.
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Saved Components */}
+                    {localComponents.filter(lc => lc.savedToLibrary).length > 0 && (
+                      <div>
+                        <label className="block text-sm font-medium text-white/60 mb-3">
+                          Saved to Library
+                        </label>
+                        <div className="space-y-2">
+                          {localComponents.filter(lc => lc.savedToLibrary).map((comp) => (
+                            <div
+                              key={comp.id}
+                              className="flex items-center gap-2 p-3 rounded-xl bg-white/5 border border-emerald-500/20"
+                            >
+                              <CheckCircle className="w-4 h-4 text-emerald-400" />
+                              <span className="text-sm text-white">{comp.name}</span>
+                              <span className="text-xs text-white/40">{comp.layer}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </motion.div>
                 )}
 

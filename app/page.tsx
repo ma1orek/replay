@@ -391,6 +391,9 @@ import UpgradeModal from "@/components/modals/UpgradeModal";
 import AssetsModal from "@/components/modals/AssetsModal";
 import ProjectSettingsModal from "@/components/ProjectSettingsModal";
 import { Toast, useToast } from "@/components/Toast";
+import { DesignSystemSelector, useDesignSystems } from "@/components/DesignSystemSelector";
+import { NewComponentBadge, NewComponentInlineBadge } from "@/components/NewComponentBadge";
+import type { LocalComponent, DesignSystemListItem } from "@/types/design-system";
 import AnimatedLoadingSkeleton from "@/components/ui/animated-loading-skeleton";
 // MobileScanner removed - mobile users now use MobileLayout exclusively
 import Link from "next/link";
@@ -3379,6 +3382,11 @@ function ReplayToolContent() {
   const [libraryNeedsRegeneration, setLibraryNeedsRegeneration] = useState(false);
   const [libraryCodeHash, setLibraryCodeHash] = useState<string | null>(null); // Track which code library was generated from
   const [showLibraryGrid, setShowLibraryGrid] = useState(false);
+  
+  // Design System state
+  const [selectedDesignSystemId, setSelectedDesignSystemId] = useState<string | null>(null);
+  const [localComponents, setLocalComponents] = useState<LocalComponent[]>([]);
+  const { designSystems, refetch: refetchDesignSystems, getDefault: getDefaultDesignSystem } = useDesignSystems();
   // Library sidebar collapse states
   const [librarySectionsExpanded, setLibrarySectionsExpanded] = useState<Record<string, boolean>>({ docs: true, foundations: true, primitives: true, components: true, patterns: true, product: true });
   const [libraryCategoriesExpanded, setLibraryCategoriesExpanded] = useState<Record<string, boolean>>({});
@@ -14404,7 +14412,13 @@ ${publishCode}
                                             onClick={(e) => e.stopPropagation()}
                                           />
                                         ) : (
-                                          <span className="truncate flex-1 text-left">{comp.name}</span>
+                                          <span className="truncate flex-1 text-left flex items-center gap-1.5">
+                                            {comp.name}
+                                            {/* Show NEW badge for local components not yet saved */}
+                                            {localComponents.find(lc => lc.name === comp.name && lc.isNew && !lc.savedToLibrary) && (
+                                              <NewComponentInlineBadge />
+                                            )}
+                                          </span>
                                         )}
                                         {/* Rename button */}
                                         <button
