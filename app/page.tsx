@@ -122,7 +122,8 @@ import {
   Share,
   Share2,
   HelpCircle,
-  Terminal
+  Terminal,
+  Settings2
 } from "lucide-react";
 import * as LucideIcons from 'lucide-react';
 import { cn, generateId, formatDuration, updateProjectAnalytics } from "@/lib/utils";
@@ -391,7 +392,7 @@ import UpgradeModal from "@/components/modals/UpgradeModal";
 import AssetsModal from "@/components/modals/AssetsModal";
 import ProjectSettingsModal from "@/components/ProjectSettingsModal";
 import { Toast, useToast } from "@/components/Toast";
-import { DesignSystemSelector, useDesignSystems } from "@/components/DesignSystemSelector";
+import { DesignSystemSelector, useDesignSystems, ImportLibraryModal } from "@/components/DesignSystemSelector";
 import { NewComponentBadge, NewComponentInlineBadge } from "@/components/NewComponentBadge";
 import type { LocalComponent, DesignSystemListItem } from "@/types/design-system";
 import AnimatedLoadingSkeleton from "@/components/ui/animated-loading-skeleton";
@@ -581,6 +582,9 @@ interface GenerationRecord {
   libraryData?: LibraryData | null;
   // Owner info for access control
   user_id?: string;
+  // Design System (Library) linkage
+  design_system_id?: string | null;
+  designSystemName?: string | null;
 }
 
 // Chat message for Agentic Sidebar
@@ -637,6 +641,8 @@ interface LibraryComponent {
   id: string;
   name: string;                    // "Button"
   category: ComponentCategory;
+  layer?: "foundations" | "primitives" | "elements" | "components" | "patterns" | "product"; // Library layer for grouping
+  source?: "storybook" | "generated" | "manual" | "video"; // Where component came from
   description: string;             // AI generated
   
   // Code
@@ -652,6 +658,7 @@ interface LibraryComponent {
   // Usage tracking (for Blueprints/Library)
   usageCount?: number;             // Number of times component is used
   usageLocations?: string[];       // Where component is used
+  isNew?: boolean;                 // Was created in this generation (not from DS)
   
   // Documentation (AI generated)
   docs: {
@@ -705,6 +712,39 @@ interface LibraryData {
   primitives?: LibraryComponent[];
   patterns?: LibraryComponent[];
   product?: LibraryComponent[];
+}
+
+// Helper function to create LibraryComponent with defaults
+function createLibraryComponent(
+  name: string, 
+  code: string, 
+  category: ComponentCategory = "layout",
+  description?: string,
+  layer?: "foundations" | "primitives" | "elements" | "components" | "patterns" | "product",
+  source?: "storybook" | "generated" | "manual" | "video",
+  isNew?: boolean
+): LibraryComponent {
+  return {
+    id: `comp-${name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
+    name,
+    category,
+    layer: layer || "components", // Default to 'components' layer
+    source: source || "generated", // Default to 'generated'
+    description: description || `${name} component extracted from generated code`,
+    code,
+    usage: `<${name} />`,
+    props: [],
+    variants: [],
+    isNew: isNew || false,
+    docs: {
+      description: description || `Auto-extracted ${name} component`,
+      usage: `Import and use the ${name} component in your layout`,
+      accessibility: "Ensure proper ARIA labels and keyboard navigation",
+      bestPractices: ["Use semantic HTML", "Maintain consistent styling"],
+    },
+    accessibility: [],
+    interactions: [],
+  };
 }
 
 // Library UI state
@@ -3385,10 +3425,12 @@ function ReplayToolContent() {
   
   // Design System state
   const [selectedDesignSystemId, setSelectedDesignSystemId] = useState<string | null>(null);
+  const [showImportLibraryModal, setShowImportLibraryModal] = useState(false);
+  const [isImportingLibrary, setIsImportingLibrary] = useState(false);
   const [localComponents, setLocalComponents] = useState<LocalComponent[]>([]);
   const { designSystems, refetch: refetchDesignSystems, getDefault: getDefaultDesignSystem } = useDesignSystems();
   // Library sidebar collapse states
-  const [librarySectionsExpanded, setLibrarySectionsExpanded] = useState<Record<string, boolean>>({ docs: true, foundations: true, primitives: true, components: true, patterns: true, product: true });
+  const [librarySectionsExpanded, setLibrarySectionsExpanded] = useState<Record<string, boolean>>({ docs: true, foundations: true, primitives: true, elements: true, components: true, patterns: true, product: true });
   const [libraryCategoriesExpanded, setLibraryCategoriesExpanded] = useState<Record<string, boolean>>({});
   const [showLibraryOutline, setShowLibraryOutline] = useState(false);
   const [showLibraryCode, setShowLibraryCode] = useState(false);
@@ -3416,6 +3458,151 @@ function ReplayToolContent() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isLibraryFullscreen]);
+
+  // Load library components when a design system is selected
+  useEffect(() => {
+    if (!selectedDesignSystemId) {
+      // If no design system selected, don't clear library (might have generated components)
+      return;
+    }
+    
+    const loadDesignSystemComponents = async () => {
+      try {
+        console.log("[Library] Loading components from Design System:", selectedDesignSystemId);
+        
+        // Fetch both design system info (for tokens) and components in parallel
+        const [dsResponse, componentsResponse] = await Promise.all([
+          fetch(`/api/design-systems/${selectedDesignSystemId}`),
+          fetch(`/api/design-systems/${selectedDesignSystemId}/components`)
+        ]);
+        
+        // Get design system tokens
+        let dsTokens: any = {};
+        let dsSourceType: string = "manual";
+        if (dsResponse.ok) {
+          const dsData = await dsResponse.json();
+          dsTokens = dsData.designSystem?.tokens || {};
+          dsSourceType = dsData.designSystem?.source_type || "manual";
+          console.log("[Library] Design system source:", dsSourceType, "tokens:", Object.keys(dsTokens));
+        }
+        
+        if (!componentsResponse.ok) {
+          console.error("[Library] Failed to fetch DS components:", componentsResponse.status);
+          return;
+        }
+        
+        const data = await componentsResponse.json();
+        const components = data.components || [];
+        console.log("[Library] Loaded", components.length, "components from selected library");
+        
+        // Map DS layer to ComponentCategory for display grouping
+        const layerToCategory: Record<string, ComponentCategory> = {
+          foundations: "layout",
+          elements: "inputs",
+          primitives: "inputs",
+          components: "layout",
+          patterns: "navigation",
+          templates: "layout",
+          product: "layout",
+        };
+        
+        // Preserve layer as-is from database - DON'T normalize away valid layers!
+        // Valid layers: foundations, primitives, elements, components, patterns, product
+        const preserveLayer = (layer: string): "foundations" | "primitives" | "elements" | "components" | "patterns" | "product" => {
+          const normalized = layer?.toLowerCase() || "components";
+          // Map 'templates' to 'patterns', but keep everything else as-is
+          if (normalized === "templates") return "patterns";
+          // Return exact layer if valid
+          if (["foundations", "primitives", "elements", "components", "patterns", "product"].includes(normalized)) {
+            return normalized as any;
+          }
+          return "components"; // default fallback
+        };
+        
+        // Determine source based on DS source_type
+        const getSource = (): "storybook" | "generated" | "manual" | "video" => {
+          if (dsSourceType === "storybook") return "storybook";
+          if (dsSourceType === "video") return "video";
+          if (dsSourceType === "figma") return "manual";
+          return "manual";
+        };
+        
+        const libraryComponents: LibraryComponent[] = components.map((comp: any) => 
+          createLibraryComponent(
+            comp.name,
+            comp.code || "",
+            layerToCategory[comp.layer] || "layout",
+            comp.docs?.description,
+            preserveLayer(comp.layer),
+            getSource(), // Pass the source
+            false // Not new - comes from DS
+          )
+        );
+        
+        // Get colors from design system tokens first
+        let colors: Record<string, string> = {};
+        
+        // 1. First, use colors from DS tokens (highest priority)
+        if (dsTokens.colors && Object.keys(dsTokens.colors).length > 0) {
+          colors = { ...dsTokens.colors };
+          console.log("[Library] Loaded", Object.keys(colors).length, "colors from DS tokens");
+        }
+        
+        // 2. Also extract colors from component code as fallback
+        components.forEach((comp: any) => {
+          if (comp.code) {
+            // Extract Tailwind colors
+            const colorMatches = comp.code.matchAll(/(?:bg|text|border)-(\w+-\d+)/g);
+            for (const match of colorMatches) {
+              if (!colors[match[1]]) {
+                colors[match[1]] = `var(--color-${match[1]})`;
+              }
+            }
+            // Extract hex colors
+            const hexMatches = comp.code.matchAll(/#([0-9a-fA-F]{6})/g);
+            for (const match of hexMatches) {
+              if (!colors[`hex-${match[1]}`]) {
+                colors[`hex-${match[1]}`] = `#${match[1]}`;
+              }
+            }
+          }
+        });
+        
+        // Get typography from DS tokens
+        const typography = dsTokens.typography || {
+          fontFamily: {},
+          fontSize: {},
+          fontWeight: {},
+          lineHeight: {},
+        };
+        
+        setLibraryData({
+          components: libraryComponents,
+          docs: [],
+          tokens: {
+            colors,
+            spacing: dsTokens.spacing || {},
+            typography,
+            borderRadius: dsTokens.borderRadius || {},
+            shadows: dsTokens.shadows || {},
+          },
+          foundations: {
+            colors,
+            typography,
+            spacing: dsTokens.spacing || {},
+            borderRadius: dsTokens.borderRadius || {},
+            shadows: dsTokens.shadows || {},
+          },
+        });
+        
+        console.log("[Library] Set library data with", libraryComponents.length, "components,", Object.keys(colors).length, "colors, source:", dsSourceType);
+      } catch (err) {
+        console.error("[Library] Error loading DS components:", err);
+      }
+    };
+    
+    loadDesignSystemComponents();
+  }, [selectedDesignSystemId]);
   
   const [blueprintsZoom, setBlueprintsZoom] = useState(100);
   const [blueprintsOffset, setBlueprintsOffset] = useState({ x: 0, y: 0 });
@@ -3547,7 +3734,7 @@ function ReplayToolContent() {
     };
     
     // Group by layer for organized layout - LARGEST FIRST (product -> primitives)
-    const layers = ['product', 'patterns', 'components', 'primitives'];
+    const layers = ['product', 'patterns', 'components', 'elements', 'primitives', 'foundations'];
     const componentsByLayer: Record<string, any[]> = {};
     layers.forEach(l => componentsByLayer[l] = []);
     
@@ -11067,8 +11254,64 @@ Try these prompts in Cursor or v0:
         }
       }
       
+      // Fetch Design System components if a library is selected
+      let dsComponents: any[] = [];
+      let dsComponentsContext = "";
+      if (selectedDesignSystemId) {
+        try {
+          console.log("[Generate] Fetching components from Design System:", selectedDesignSystemId);
+          const dsResponse = await fetch(`/api/design-systems/${selectedDesignSystemId}/components`);
+          if (dsResponse.ok) {
+            const dsData = await dsResponse.json();
+            dsComponents = dsData.components || [];
+            console.log("[Generate] Loaded", dsComponents.length, "components from library");
+            
+            // Build context string with component info
+            if (dsComponents.length > 0) {
+              dsComponentsContext = `\n\n=== DESIGN SYSTEM COMPONENTS (USE THESE FIRST) ===\nYou MUST use these pre-built components from the library when appropriate:\n`;
+              dsComponents.forEach((comp: any) => {
+                dsComponentsContext += `\n[${comp.layer}/${comp.name}] - ${comp.docs?.description || 'No description'}\nCode:\n\`\`\`\n${comp.code}\n\`\`\`\n`;
+              });
+              dsComponentsContext += `\n=== END DESIGN SYSTEM COMPONENTS ===\nUse these components first. Only create new components if functionality is not covered by the library above.`;
+            }
+          }
+        } catch (dsError) {
+          console.error("[Generate] Failed to fetch DS components:", dsError);
+        }
+      }
+      
       // Build style directive with refinements and trim info
-      let fullStyleDirective = styleDirective || "Modern, clean design with smooth animations";
+      // When a Design System is selected, IGNORE styles from video/image and use DS styles only
+      let fullStyleDirective = selectedDesignSystemId 
+        ? `CRITICAL STYLE OVERRIDE - Design System Library Selected:
+
+⚠️ ABSOLUTE RULES - DO NOT VIOLATE:
+1. IGNORE ALL VISUAL STYLES FROM THE VIDEO (colors, fonts, gradients, shadows, border-radius)
+2. ONLY extract from video: LAYOUT structure, CONTENT text, INTERACTIONS (clicks, hovers)
+3. USE ONLY the Design System's color palette - never use colors you see in the video
+4. MATCH the Design System's typography - ignore fonts visible in video
+5. FOLLOW the Design System's spacing and border patterns
+
+✅ WHAT TO EXTRACT FROM VIDEO:
+- Component arrangement and layout structure
+- Text content and labels
+- Interactive behaviors (dropdowns, tabs, modals)
+- Navigation structure
+- Data/content relationships
+
+❌ WHAT TO IGNORE FROM VIDEO (use Design System instead):
+- Background colors
+- Text colors  
+- Button colors
+- Border colors
+- Gradients
+- Shadows
+- Font families
+- Font sizes
+- Border radius values
+
+The Design System components will be provided in DATABASE CONTEXT - USE THEIR STYLES.`
+        : (styleDirective || "Modern, clean design with smooth animations");
       
       // Add refinements if provided
       if ((refinements || "").trim()) {
@@ -11103,6 +11346,10 @@ Try these prompts in Cursor or v0:
       console.log("[Generate] styleReferenceImage URL:", styleReferenceImage?.url?.substring(0, 100));
       console.log("[Generate] styleDirective:", fullStyleDirective.substring(0, 200));
       
+      // CRITICAL: When DS is selected, DO NOT pass styleReferenceImage as it would influence visual styles
+      const effectiveStyleRefImage = selectedDesignSystemId ? undefined : styleReferenceImage;
+      console.log("[Generate] effectiveStyleRefImage:", selectedDesignSystemId ? "DISABLED (DS selected)" : (effectiveStyleRefImage ? "provided" : "none"));
+      
       // Use STREAMING for real-time AI output when we have a video blob
       let result: { success: boolean; code?: string; error?: string; tokenUsage?: any; scanData?: any };
       let videoBlobToUse = flow.videoBlob;
@@ -11136,8 +11383,8 @@ Try these prompts in Cursor or v0:
           result = await transmuteVideoToCode({
             videoUrl,
             styleDirective: fullStyleDirective,
-            databaseContext: databaseContextStr || undefined,
-            styleReferenceImage: styleReferenceImage || undefined,
+            databaseContext: (databaseContextStr + dsComponentsContext) || undefined,
+            styleReferenceImage: effectiveStyleRefImage || undefined,
           });
           console.log("[Generate] Server action completed:", result.success ? "success" : result.error);
         } else {
@@ -11147,8 +11394,8 @@ Try these prompts in Cursor or v0:
             result = await generateWithStreaming(
               videoBlobToUse,
               fullStyleDirective,
-              databaseContextStr || undefined,
-              styleReferenceImage || undefined
+              (databaseContextStr + dsComponentsContext) || undefined,
+              effectiveStyleRefImage || undefined
             );
             
             // If streaming failed for other reasons, fallback to server action
@@ -11158,8 +11405,8 @@ Try these prompts in Cursor or v0:
               result = await transmuteVideoToCode({
                 videoUrl,
                 styleDirective: fullStyleDirective,
-                databaseContext: databaseContextStr || undefined,
-                styleReferenceImage: styleReferenceImage || undefined,
+                databaseContext: (databaseContextStr + dsComponentsContext) || undefined,
+                styleReferenceImage: effectiveStyleRefImage || undefined,
               });
               console.log("[Generate] Server action completed:", result.success ? "success" : result.error);
             }
@@ -11169,8 +11416,8 @@ Try these prompts in Cursor or v0:
             result = await transmuteVideoToCode({
               videoUrl,
               styleDirective: fullStyleDirective,
-              databaseContext: databaseContextStr || undefined,
-              styleReferenceImage: styleReferenceImage || undefined,
+              databaseContext: (databaseContextStr + dsComponentsContext) || undefined,
+              styleReferenceImage: effectiveStyleRefImage || undefined,
             });
             console.log("[Generate] Server action completed:", result.success ? "success" : result.error);
           }
@@ -11181,8 +11428,8 @@ Try these prompts in Cursor or v0:
         result = await transmuteVideoToCode({
           videoUrl,
           styleDirective: fullStyleDirective,
-          databaseContext: databaseContextStr || undefined,
-          styleReferenceImage: styleReferenceImage || undefined,
+          databaseContext: (databaseContextStr + dsComponentsContext) || undefined,
+          styleReferenceImage: effectiveStyleRefImage || undefined,
         });
       }
       
@@ -11279,6 +11526,7 @@ Try these prompts in Cursor or v0:
           tokenUsage: result.tokenUsage, // Store Gemini API token usage
           costCredits: CREDIT_COSTS.VIDEO_GENERATE, // 75 credits per generation
           user_id: user?.id, // Owner of this project for access control
+          design_system_id: selectedDesignSystemId || null, // Link to selected Design System
         };
         setGenerations(prev => [...prev, newGeneration]);
         setActiveGeneration(newGeneration);
@@ -11287,6 +11535,145 @@ Try these prompts in Cursor or v0:
         
         // Immediately save to Supabase for cross-device sync
         saveGenerationToSupabase(newGeneration);
+        
+        // === LIBRARY EXTRACTION ===
+        // Extract components from generated code and merge with DS components
+        if (result.code) {
+          try {
+            console.log("[Library] Starting component extraction from generated code...");
+            
+            // Extract components from generated code using regex patterns
+            const extractedComponents: LibraryComponent[] = [];
+            const code = result.code;
+            
+            // Pattern 1: Find function components - function ComponentName(
+            const funcComponentPattern = /function\s+([A-Z][a-zA-Z0-9]*)\s*\([^)]*\)\s*{([^}]*(?:{[^}]*}[^}]*)*)}/g;
+            let match;
+            while ((match = funcComponentPattern.exec(code)) !== null) {
+              const componentName = match[1];
+              const componentCode = match[0];
+              // Skip common non-component functions
+              if (!['App', 'Main', 'Document', 'Html'].includes(componentName)) {
+                extractedComponents.push(createLibraryComponent(componentName, componentCode, "layout"));
+              }
+            }
+            
+            // Pattern 2: Find const arrow function components - const ComponentName = (
+            const constComponentPattern = /const\s+([A-Z][a-zA-Z0-9]*)\s*=\s*(?:\([^)]*\)|[^=])\s*=>\s*(?:\([^)]*\)|{[^}]*(?:{[^}]*}[^}]*)*}|\([^)]*\))/g;
+            while ((match = constComponentPattern.exec(code)) !== null) {
+              const componentName = match[1];
+              const componentCode = match[0];
+              if (!['App', 'Main', 'Document', 'Html'].includes(componentName)) {
+                // Check if component is not already added
+                if (!extractedComponents.find(c => c.name === componentName)) {
+                  extractedComponents.push(createLibraryComponent(componentName, componentCode, "layout"));
+                }
+              }
+            }
+            
+            // Pattern 3: Find section/element patterns in HTML (navigation sections)
+            const sectionPattern = /<(header|footer|nav|main|aside|section)[^>]*(?:id|class)="([^"]+)"[^>]*>/gi;
+            while ((match = sectionPattern.exec(code)) !== null) {
+              const tagName = match[1];
+              const className = match[2];
+              const cleanName = className.split(/\s+/)[0].replace(/[^a-zA-Z0-9]/g, '') || tagName;
+              const componentName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1) + 'Section';
+              // Map HTML elements to appropriate categories
+              const categoryMap: Record<string, ComponentCategory> = {
+                header: "layout",
+                footer: "layout", 
+                nav: "navigation",
+                main: "layout",
+                aside: "layout",
+                section: "layout",
+              };
+              const elementCategory = categoryMap[tagName.toLowerCase()] || "layout";
+              if (!extractedComponents.find(c => c.name === componentName)) {
+                // Extract surrounding code block
+                const startIdx = Math.max(0, match.index - 50);
+                const endIdx = Math.min(code.length, match.index + 500);
+                const snippetCode = code.slice(startIdx, endIdx);
+                extractedComponents.push(createLibraryComponent(componentName, snippetCode, elementCategory));
+              }
+            }
+            
+            console.log("[Library] Extracted", extractedComponents.length, "components from code");
+            
+            // Merge with existing DS components (if any)
+            const allComponents: LibraryComponent[] = [];
+            
+            // Add DS components first (if library was selected)
+            if (dsComponents.length > 0) {
+              console.log("[Library] Merging", dsComponents.length, "DS components");
+              // Map DS layer to ComponentCategory
+              const layerToCategory: Record<string, ComponentCategory> = {
+                foundations: "layout",
+                elements: "inputs",
+                components: "layout",
+                patterns: "navigation",
+                templates: "layout",
+              };
+              dsComponents.forEach((comp: any) => {
+                const mappedCategory = layerToCategory[comp.layer] || "layout";
+                allComponents.push(createLibraryComponent(
+                  comp.name,
+                  comp.code,
+                  mappedCategory,
+                  comp.docs?.description
+                ));
+              });
+            }
+            
+            // Add newly extracted components (avoiding duplicates by name)
+            const existingNames = new Set(allComponents.map(c => c.name.toLowerCase()));
+            extractedComponents.forEach(comp => {
+              if (!existingNames.has(comp.name.toLowerCase())) {
+                allComponents.push(comp);
+                existingNames.add(comp.name.toLowerCase());
+              }
+            });
+            
+            console.log("[Library] Total components for library:", allComponents.length);
+            
+            // Extract design tokens from code
+            const extractedColors: Record<string, string> = {};
+            // Find Tailwind colors
+            const colorMatches = code.matchAll(/(?:bg|text|border|ring|fill|stroke)-(\w+-\d+)/g);
+            for (const colorMatch of colorMatches) {
+              const colorClass = colorMatch[1];
+              extractedColors[colorClass] = `var(--color-${colorClass.replace('-', '-')})`;
+            }
+            // Find hex colors
+            const hexMatches = code.matchAll(/#([0-9a-fA-F]{3,6})/g);
+            for (const hexMatch of hexMatches) {
+              extractedColors[`custom-${hexMatch[1]}`] = `#${hexMatch[1]}`;
+            }
+            
+            // Build library data
+            if (allComponents.length > 0) {
+              const newLibraryData: LibraryData = {
+                components: allComponents,
+                docs: [],
+                tokens: {
+                  colors: extractedColors,
+                  spacing: {},
+                  typography: {
+                    fontFamily: {},
+                    fontSize: {},
+                    fontWeight: {},
+                    lineHeight: {},
+                  },
+                  borderRadius: {},
+                  shadows: {},
+                },
+              };
+              setLibraryData(newLibraryData);
+              console.log("[Library] Library data set with", allComponents.length, "components");
+            }
+          } catch (extractError) {
+            console.error("[Library] Extraction failed:", extractError);
+          }
+        }
         
         // Also save to localStorage as backup (for refresh before Supabase sync completes)
         try {
@@ -12803,6 +13190,36 @@ ${publishCode}
         description="Your scans and credits are saved to your account."
       />
       
+      {/* Import Library Modal */}
+      <ImportLibraryModal
+        isOpen={showImportLibraryModal}
+        onClose={() => setShowImportLibraryModal(false)}
+        onImport={async (url, name) => {
+          setIsImportingLibrary(true);
+          try {
+            const response = await fetch("/api/design-systems/import", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ url, name }),
+            });
+            
+            if (!response.ok) {
+              const data = await response.json();
+              throw new Error(data.error || "Import failed");
+            }
+            
+            const data = await response.json();
+            // Select the newly imported library
+            setSelectedDesignSystemId(data.designSystem.id);
+            showToast(`Imported ${data.components} components from ${data.designSystem.name}`, "success");
+            // Refetch design systems to update the list
+            refetchDesignSystems();
+          } finally {
+            setIsImportingLibrary(false);
+          }
+        }}
+      />
+      
       {/* Out of Credits Modal for Desktop */}
       <OutOfCreditsModal
         isOpen={showOutOfCreditsModal}
@@ -13492,6 +13909,12 @@ ${publishCode}
                         
                         {/* Latest change or style info */}
                         <div className="mt-1.5 space-y-0.5">
+                          {/* Library/Design System info */}
+                          {gen.designSystemName && (
+                            <p className="text-[10px] text-zinc-500 truncate">
+                              <span className="text-[var(--accent-orange)]/60">Library:</span> {gen.designSystemName}
+                            </p>
+                          )}
                           {(() => {
                             const filteredVersions = (gen.versions || []).filter(v => v.label !== "Initial generation");
                             return filteredVersions.length > 0 ? (
@@ -14004,8 +14427,56 @@ ${publishCode}
                             });
                             const result = await response.json();
                             if (result.success && result.data) {
-                              setLibraryData(result.data);
+                              // MERGE: Keep existing DS components, add new extracted ones
+                              const currentComponents = (libraryData as any)?.components || [];
+                              const existingDsComponents = currentComponents.filter((c: any) => 
+                                c.source === "storybook" || c.source === "manual" || !c.isNew
+                              );
+                              
+                              // Mark new components as generated and isNew
+                              const newComponents = (result.data.components || []).map((comp: any) => ({
+                                ...comp,
+                                source: "generated",
+                                isNew: true,
+                                id: comp.id || `comp-${comp.name?.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                              }));
+                              
+                              // Avoid duplicates by name
+                              const existingNames = new Set(existingDsComponents.map((c: any) => c.name?.toLowerCase()));
+                              const uniqueNewComponents = newComponents.filter((c: any) => 
+                                !existingNames.has(c.name?.toLowerCase())
+                              );
+                              
+                              // Merge: DS components first, then new generated ones
+                              const mergedComponents = [...existingDsComponents, ...uniqueNewComponents];
+                              
+                              // Merge foundations - keep existing, add new tokens
+                              const currentFoundations = (libraryData as any)?.foundations || {};
+                              const mergedFoundations = {
+                                colors: { ...(currentFoundations.colors || {}), ...(result.data.foundations?.colors || {}) },
+                                typography: { ...(currentFoundations.typography || {}), ...(result.data.foundations?.typography || {}) },
+                                spacing: { ...(currentFoundations.spacing || {}), ...(result.data.foundations?.spacing || {}) },
+                                borderRadius: { ...(currentFoundations.borderRadius || {}), ...(result.data.foundations?.borderRadius || {}) },
+                                shadows: { ...(currentFoundations.shadows || {}), ...(result.data.foundations?.shadows || {}) },
+                              };
+                              
+                              const mergedData = {
+                                ...result.data,
+                                components: mergedComponents,
+                                foundations: mergedFoundations,
+                                tokens: {
+                                  colors: mergedFoundations.colors,
+                                  typography: mergedFoundations.typography,
+                                  spacing: mergedFoundations.spacing,
+                                  borderRadius: mergedFoundations.borderRadius,
+                                  shadows: mergedFoundations.shadows,
+                                },
+                              };
+                              
+                              setLibraryData(mergedData);
                               setSelectedLibraryItem("doc-overview");
+                              console.log(`[Library] Merged: ${existingDsComponents.length} existing + ${uniqueNewComponents.length} new = ${mergedComponents.length} total`);
+                              
                               // Update localStorage backup with library data
                               if (activeGeneration?.id) {
                                 try {
@@ -14013,7 +14484,7 @@ ${publishCode}
                                   const existing = localStorage.getItem(localKey);
                                   if (existing) {
                                     const parsed = JSON.parse(existing);
-                                    parsed.libraryData = result.data;
+                                    parsed.libraryData = mergedData;
                                     localStorage.setItem(localKey, JSON.stringify(parsed));
                                   }
                                 } catch (e) {}
@@ -14044,7 +14515,7 @@ ${publishCode}
                   </div>
                 ) : (
                   <div className="space-y-1">
-                    {/* Regenerate Button */}
+                    {/* Extract New Components Button */}
                     {generatedCode && (
                       <button
                         onClick={async () => {
@@ -14057,9 +14528,57 @@ ${publishCode}
                             });
                             const result = await response.json();
                             if (result.success && result.data) {
-                              setLibraryData(result.data);
+                              // MERGE: Keep existing DS components, add new extracted ones
+                              const currentComponents = (libraryData as any)?.components || [];
+                              const existingDsComponents = currentComponents.filter((c: any) => 
+                                c.source === "storybook" || c.source === "manual" || !c.isNew
+                              );
+                              
+                              // Mark new components as generated and isNew
+                              const newComponents = (result.data.components || []).map((comp: any) => ({
+                                ...comp,
+                                source: "generated",
+                                isNew: true,
+                                id: comp.id || `comp-${comp.name?.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                              }));
+                              
+                              // Avoid duplicates by name
+                              const existingNames = new Set(existingDsComponents.map((c: any) => c.name?.toLowerCase()));
+                              const uniqueNewComponents = newComponents.filter((c: any) => 
+                                !existingNames.has(c.name?.toLowerCase())
+                              );
+                              
+                              // Merge: DS components first, then new generated ones
+                              const mergedComponents = [...existingDsComponents, ...uniqueNewComponents];
+                              
+                              // Merge foundations - keep existing, add new tokens
+                              const currentFoundations = (libraryData as any)?.foundations || {};
+                              const mergedFoundations = {
+                                colors: { ...(currentFoundations.colors || {}), ...(result.data.foundations?.colors || {}) },
+                                typography: { ...(currentFoundations.typography || {}), ...(result.data.foundations?.typography || {}) },
+                                spacing: { ...(currentFoundations.spacing || {}), ...(result.data.foundations?.spacing || {}) },
+                                borderRadius: { ...(currentFoundations.borderRadius || {}), ...(result.data.foundations?.borderRadius || {}) },
+                                shadows: { ...(currentFoundations.shadows || {}), ...(result.data.foundations?.shadows || {}) },
+                              };
+                              
+                              const mergedData = {
+                                ...result.data,
+                                components: mergedComponents,
+                                foundations: mergedFoundations,
+                                tokens: {
+                                  colors: mergedFoundations.colors,
+                                  typography: mergedFoundations.typography,
+                                  spacing: mergedFoundations.spacing,
+                                  borderRadius: mergedFoundations.borderRadius,
+                                  shadows: mergedFoundations.shadows,
+                                },
+                              };
+                              
+                              setLibraryData(mergedData);
                               setLibraryCodeHash((editableCode || generatedCode).slice(0, 500) + (editableCode || generatedCode).length);
                               setSelectedLibraryItem("doc-overview");
+                              console.log(`[Library] Merged: ${existingDsComponents.length} existing + ${uniqueNewComponents.length} new = ${mergedComponents.length} total`);
+                              
                               // Update localStorage backup with library data
                               if (activeGeneration?.id) {
                                 try {
@@ -14067,7 +14586,7 @@ ${publishCode}
                                   const existing = localStorage.getItem(localKey);
                                   if (existing) {
                                     const parsed = JSON.parse(existing);
-                                    parsed.libraryData = result.data;
+                                    parsed.libraryData = mergedData;
                                     localStorage.setItem(localKey, JSON.stringify(parsed));
                                   }
                                 } catch (e) {}
@@ -14083,9 +14602,9 @@ ${publishCode}
                         className="w-full mb-2 px-3 py-1.5 text-[10px] border border-zinc-700/50 bg-zinc-800/30 text-zinc-400 rounded-md hover:bg-zinc-800 hover:text-zinc-300 disabled:opacity-50 flex items-center justify-center gap-1.5 transition-colors"
                       >
                         {isGeneratingLibrary ? (
-                          <><Loader2 className="w-3 h-3 animate-spin" />Regenerating...</>
+                          <><Loader2 className="w-3 h-3 animate-spin" />Extracting...</>
                         ) : (
-                          <><RefreshCw className="w-3 h-3" />Regenerate Library</>
+                          <><Plus className="w-3 h-3" />Extract New Components</>
                         )}
                       </button>
                     )}
@@ -14240,6 +14759,7 @@ ${publishCode}
                       const layers = [
                         { id: 'foundations', name: 'Foundations', icon: <Palette className="w-3 h-3" />, color: 'text-violet-400', bgColor: 'bg-violet-500/10', description: 'Design tokens' },
                         { id: 'primitives', name: 'Primitives', icon: <Box className="w-3 h-3" />, color: 'text-blue-400', bgColor: 'bg-blue-500/10', description: 'Atoms' },
+                        { id: 'elements', name: 'Elements', icon: <Square className="w-3 h-3" />, color: 'text-cyan-400', bgColor: 'bg-cyan-500/10', description: 'Basic' },
                         { id: 'components', name: 'Components', icon: <Layers className="w-3 h-3" />, color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', description: 'Molecules' },
                         { id: 'patterns', name: 'Patterns', icon: <Layout className="w-3 h-3" />, color: 'text-amber-400', bgColor: 'bg-amber-500/10', description: 'Recipes' },
                         { id: 'product', name: 'Product', icon: <Rocket className="w-3 h-3" />, color: 'text-rose-400', bgColor: 'bg-rose-500/10', description: 'Business' },
@@ -14249,6 +14769,7 @@ ${publishCode}
                       const componentsByLayer: Record<string, any[]> = {
                         foundations: [],
                         primitives: [],
+                        elements: [],
                         components: [],
                         patterns: [],
                         product: []
@@ -15506,7 +16027,7 @@ ${publishCode}
                   <div className="p-4 border-b border-white/[0.06]">
                     <div className="sidebar-label text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3 flex items-center justify-between">
                       <span className="flex items-center gap-2">
-                        <MousePointer2 className="w-3.5 h-3.5" /> CONTEXT
+                        <Settings2 className="w-3.5 h-3.5" /> CONTEXT
                       </span>
                       <span className="text-[10px] text-white/25 bg-zinc-800/50 px-2 py-0.5 rounded normal-case font-normal">Optional</span>
                     </div>
@@ -15519,17 +16040,30 @@ ${publishCode}
                     />
                   </div>
                   
-                  {/* Design System Section - Creative Only */}
+                  {/* Library Section */}
                   <div className="p-4 border-b border-white/[0.06]">
+                    <DesignSystemSelector
+                      value={selectedDesignSystemId}
+                      onChange={(dsId) => setSelectedDesignSystemId(dsId)}
+                      disabled={isProcessing}
+                      onImportClick={() => setShowImportLibraryModal(true)}
+                      isExternalLoading={isImportingLibrary}
+                      externalLoadingText="Importing from Storybook..."
+                    />
+                  </div>
+                  
+                  {/* Design System Section - Creative Only */}
+                  <div className={cn("p-4 border-b border-white/[0.06]", selectedDesignSystemId && "opacity-50")}>
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="sidebar-label text-[11px] font-semibold text-white/40 uppercase tracking-wider flex items-center gap-2">
                         <Palette className="w-3.5 h-3.5" /> STYLE
+                        {selectedDesignSystemId && <span className="text-[9px] text-zinc-500 normal-case">(using Library)</span>}
                       </span>
                     </div>
                     <StyleInjector 
-                      value={styleDirective} 
+                      value={selectedDesignSystemId ? "" : styleDirective} 
                       onChange={setStyleDirective} 
-                      disabled={isProcessing}
+                      disabled={isProcessing || !!selectedDesignSystemId}
                       referenceImage={styleReferenceImage}
                       onReferenceImageChange={setStyleReferenceImage}
                     />
@@ -15734,7 +16268,7 @@ ${publishCode}
               {/* CONTEXT Section - Same style as Input tab */}
               <div className="p-4 border-b border-white/[0.06]">
                 <div className="sidebar-label text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <Sparkles className="w-3.5 h-3.5" /> CONTEXT
+                  <Settings2 className="w-3.5 h-3.5" /> CONTEXT
                   <span className="text-[10px] text-white/25 bg-zinc-800/50 px-2 py-0.5 rounded normal-case font-normal ml-auto">Optional</span>
                 </div>
                 
@@ -15759,16 +16293,29 @@ ${publishCode}
                 />
               </div>
 
-              {/* STYLE Section - Same style as Input tab */}
+              {/* LIBRARY Section */}
               <div className="p-4 border-b border-white/[0.06]">
+                <DesignSystemSelector
+                  value={selectedDesignSystemId}
+                  onChange={(dsId) => setSelectedDesignSystemId(dsId)}
+                  disabled={isProcessing}
+                  onImportClick={() => setShowImportLibraryModal(true)}
+                  isExternalLoading={isImportingLibrary}
+                  externalLoadingText="Importing from Storybook..."
+                />
+              </div>
+
+              {/* STYLE Section - Same style as Input tab */}
+              <div className={cn("p-4 border-b border-white/[0.06]", selectedDesignSystemId && "opacity-50")}>
                 <div className="sidebar-label text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3 flex items-center gap-2">
                   <Palette className="w-3.5 h-3.5" /> STYLE
+                  {selectedDesignSystemId && <span className="text-[9px] text-zinc-500 normal-case">(using Library)</span>}
                 </div>
                 
                 <StyleInjector 
-                  value={styleDirective} 
+                  value={selectedDesignSystemId ? "" : styleDirective} 
                   onChange={setStyleDirective} 
-                  disabled={isProcessing}
+                  disabled={isProcessing || !!selectedDesignSystemId}
                   referenceImage={styleReferenceImage}
                   onReferenceImageChange={setStyleReferenceImage}
                 />
@@ -20263,14 +20810,21 @@ module.exports = {
                                     <h1 className={cn("text-3xl font-bold", libraryBackground === "light" ? "text-zinc-900" : "text-white")}>
                                       {selectedComponent.name}
                                     </h1>
-                                    {/* Auto-Generated badge */}
+                                    {/* Source badge - show where component came from */}
                                     <span className={cn(
                                       "px-2 py-0.5 text-[10px] font-medium rounded border",
-                                      libraryBackground === "light" 
-                                        ? "bg-zinc-100 text-zinc-500 border-zinc-200" 
-                                        : "bg-zinc-800/60 text-zinc-400 border-zinc-700"
+                                      selectedComponent.source === "storybook" 
+                                        ? (libraryBackground === "light" ? "bg-purple-100 text-purple-600 border-purple-200" : "bg-purple-500/20 text-purple-400 border-purple-500/30")
+                                        : selectedComponent.source === "video"
+                                        ? (libraryBackground === "light" ? "bg-blue-100 text-blue-600 border-blue-200" : "bg-blue-500/20 text-blue-400 border-blue-500/30")
+                                        : selectedComponent.isNew
+                                        ? (libraryBackground === "light" ? "bg-green-100 text-green-600 border-green-200" : "bg-green-500/20 text-green-400 border-green-500/30")
+                                        : (libraryBackground === "light" ? "bg-zinc-100 text-zinc-500 border-zinc-200" : "bg-zinc-800/60 text-zinc-400 border-zinc-700")
                                     )}>
-                                      Auto-Generated
+                                      {selectedComponent.source === "storybook" ? "Imported" 
+                                        : selectedComponent.source === "video" ? "From Video"
+                                        : selectedComponent.isNew ? "New" 
+                                        : "Auto-Generated"}
                                     </span>
                                     {/* Usage count badge */}
                                     {selectedComponent.usageCount && (
@@ -23650,7 +24204,7 @@ module.exports = {
               {/* Context Section - Consistent sizing */}
               <div className="p-4 border-b border-zinc-800 flex-shrink-0">
                 <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="w-4 h-4 text-zinc-500" />
+                  <Settings2 className="w-4 h-4 text-zinc-500" />
                   <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Context</span>
                 </div>
                 <textarea
@@ -23670,19 +24224,32 @@ module.exports = {
                 />
               </div>
 
-              {/* Design System Section - Consistent sizing */}
+              {/* Library Section - Consistent sizing */}
               <div className="p-4 border-b border-zinc-800 flex-shrink-0">
+                <DesignSystemSelector
+                  value={selectedDesignSystemId}
+                  onChange={(dsId) => setSelectedDesignSystemId(dsId)}
+                  disabled={isProcessing}
+                  onImportClick={() => setShowImportLibraryModal(true)}
+                  isExternalLoading={isImportingLibrary}
+                  externalLoadingText="Importing from Storybook..."
+                />
+              </div>
+
+              {/* Design System Section - Consistent sizing */}
+              <div className={cn("p-4 border-b border-zinc-800 flex-shrink-0", selectedDesignSystemId && "opacity-50")}>
                 <div className="flex items-center gap-2 mb-3">
                   <Palette className="w-4 h-4 text-zinc-500" />
                   <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                     Style
                   </span>
+                  {selectedDesignSystemId && <span className="text-[9px] text-zinc-500">(using Library)</span>}
                 </div>
                 
                 <StyleInjector 
-                  value={styleDirective} 
+                  value={selectedDesignSystemId ? "" : styleDirective} 
                   onChange={setStyleDirective} 
-                  disabled={isProcessing}
+                  disabled={isProcessing || !!selectedDesignSystemId}
                   referenceImage={styleReferenceImage}
                   onReferenceImageChange={setStyleReferenceImage}
                 />
@@ -24735,18 +25302,30 @@ module.exports = {
                   />
                 </div>
                 
-                {/* Visual Style */}
+                {/* Library */}
                 <div>
+                  <DesignSystemSelector
+                    value={selectedDesignSystemId}
+                    onChange={(dsId) => setSelectedDesignSystemId(dsId)}
+                    disabled={isProcessing}
+                    onImportClick={() => setShowImportLibraryModal(true)}
+                    isExternalLoading={isImportingLibrary}
+                    externalLoadingText="Importing from Storybook..."
+                  />
+                </div>
+
+                {/* Visual Style */}
+                <div className={cn(selectedDesignSystemId && "opacity-50")}>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
-                      Style
+                      Style {selectedDesignSystemId && <span className="text-zinc-600">(using Library)</span>}
                     </label>
                   </div>
                   
                   <StyleInjector 
-                    value={styleDirective} 
+                    value={selectedDesignSystemId ? "" : styleDirective} 
                     onChange={setStyleDirective} 
-                    disabled={isProcessing}
+                    disabled={isProcessing || !!selectedDesignSystemId}
                     referenceImage={styleReferenceImage}
                     onReferenceImageChange={setStyleReferenceImage}
                   />

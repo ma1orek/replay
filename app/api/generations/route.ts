@@ -38,13 +38,24 @@ export async function GET(request: NextRequest) {
     if (singleId) {
       const { data: gen, error } = await adminSupabase
         .from("generations")
-        .select("id, title, created_at, status, output_code, input_style, input_context, output_architecture, output_design_system, input_video_url, versions, published_slug, library_data, user_id")
+        .select("id, title, created_at, status, output_code, input_style, input_context, output_architecture, output_design_system, input_video_url, versions, published_slug, library_data, user_id, design_system_id")
         .eq("id", singleId)
         .eq("user_id", user.id)
         .single();
 
       if (error || !gen) {
         return NextResponse.json({ error: "Generation not found" }, { status: 404 });
+      }
+
+      // Fetch design system name if linked
+      let designSystemName: string | null = null;
+      if (gen.design_system_id) {
+        const { data: ds } = await adminSupabase
+          .from("design_systems")
+          .select("name")
+          .eq("id", gen.design_system_id)
+          .single();
+        designSystemName = ds?.name || null;
       }
 
       const record = {
@@ -64,6 +75,8 @@ export async function GET(request: NextRequest) {
         publishedSlug: gen.published_slug || null,
         libraryData: gen.library_data || null,
         user_id: gen.user_id, // For access control
+        design_system_id: gen.design_system_id || null,
+        designSystemName,
       };
 
       return NextResponse.json({ success: true, generation: record });
@@ -72,7 +85,7 @@ export async function GET(request: NextRequest) {
     // For history list, fetch essential fields including versions for history timeline
     // versions are needed to show edit history in sidebar
     const selectFields = minimal
-      ? "id, title, input_context, created_at, status, input_video_url, published_slug, input_style, user_id, versions"
+      ? "id, title, input_context, created_at, status, input_video_url, published_slug, input_style, user_id, versions, design_system_id"
       : "*";
 
     // Build query with optional search filter
@@ -96,6 +109,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Fetch design system names for all generations that have one
+    const dsIds = [...new Set((generations || []).map((g: any) => g.design_system_id).filter(Boolean))];
+    const dsNameMap: Record<string, string> = {};
+    if (dsIds.length > 0) {
+      const { data: designSystems } = await adminSupabase
+        .from("design_systems")
+        .select("id, name")
+        .in("id", dsIds);
+      (designSystems || []).forEach((ds: any) => {
+        dsNameMap[ds.id] = ds.name;
+      });
+    }
+
     // Transform to match the frontend GenerationRecord format
     const records = (generations || []).map((gen: any) => {
       if (minimal) {
@@ -111,6 +137,8 @@ export async function GET(request: NextRequest) {
           styleDirective: gen.input_style || '',
           user_id: gen.user_id,
           versions: gen.versions || [], // Include versions for history timeline
+          design_system_id: gen.design_system_id || null,
+          designSystemName: gen.design_system_id ? dsNameMap[gen.design_system_id] || null : null,
         };
       }
       // Full response
@@ -131,6 +159,8 @@ export async function GET(request: NextRequest) {
         publishedSlug: gen.published_slug || null,
         libraryData: gen.library_data || null,
         user_id: gen.user_id, // For access control
+        design_system_id: gen.design_system_id || null,
+        designSystemName: gen.design_system_id ? dsNameMap[gen.design_system_id] || null : null,
       };
     });
 
@@ -184,7 +214,8 @@ export async function POST(request: NextRequest) {
       tokenUsage,
       costCredits,
       publishedSlug,
-      libraryData
+      libraryData,
+      design_system_id
     } = body;
 
     // Use UPSERT to avoid race conditions (duplicate key errors)
@@ -220,7 +251,12 @@ export async function POST(request: NextRequest) {
       upsertData.library_data = libraryData;
     }
     
-    console.log("Upserting generation:", id);
+    // Only add design_system_id if provided
+    if (design_system_id) {
+      upsertData.design_system_id = design_system_id;
+    }
+    
+    console.log("Upserting generation:", id, "with design_system_id:", design_system_id);
     
     let { data, error } = await adminSupabase
       .from("generations")
