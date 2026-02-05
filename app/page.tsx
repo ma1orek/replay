@@ -11267,13 +11267,37 @@ Try these prompts in Cursor or v0:
             dsComponents = dsData.components || [];
             console.log("[Generate] Loaded", dsComponents.length, "components from library");
             
-            // Build context string with component info
+            // Build context string with component SPECIFICATIONS (not raw code)
             if (dsComponents.length > 0) {
-              dsComponentsContext = `\n\n=== DESIGN SYSTEM COMPONENTS (USE THESE FIRST) ===\nYou MUST use these pre-built components from the library when appropriate:\n`;
+              // Group components by layer for organized output
+              const layerGroups: Record<string, any[]> = {};
               dsComponents.forEach((comp: any) => {
-                dsComponentsContext += `\n[${comp.layer}/${comp.name}] - ${comp.docs?.description || 'No description'}\nCode:\n\`\`\`\n${comp.code}\n\`\`\`\n`;
+                const layer = comp.layer || "components";
+                if (!layerGroups[layer]) layerGroups[layer] = [];
+                layerGroups[layer].push(comp);
               });
-              dsComponentsContext += `\n=== END DESIGN SYSTEM COMPONENTS ===\nUse these components first. Only create new components if functionality is not covered by the library above.`;
+              
+              dsComponentsContext = `\n\n=== DESIGN SYSTEM LIBRARY ===\nIMPORTANT: The user has a design system library. You MUST use these components conceptually - match their PURPOSE, STRUCTURE, and VARIANTS when building the UI. Create implementations that follow these component specifications:\n`;
+              
+              Object.entries(layerGroups).forEach(([layer, comps]) => {
+                dsComponentsContext += `\n--- ${layer.toUpperCase()} ---\n`;
+                comps.forEach((comp: any) => {
+                  const variants = comp.variants?.map((v: any) => v.name).filter((n: string) => n !== "Docs").join(", ") || "Default";
+                  const category = comp.category || "";
+                  const description = comp.docs?.description || "";
+                  const usage = comp.docs?.usage || "";
+                  const pkg = comp.docs?.package || "";
+                  
+                  dsComponentsContext += `\n[${category ? category + "/" : ""}${comp.name}]`;
+                  if (description) dsComponentsContext += ` - ${description}`;
+                  dsComponentsContext += `\n  Variants: ${variants}`;
+                  if (pkg) dsComponentsContext += `\n  Package: ${pkg}`;
+                  if (usage) dsComponentsContext += `\n  Use for: ${usage}`;
+                  dsComponentsContext += `\n`;
+                });
+              });
+              
+              dsComponentsContext += `\n=== END DESIGN SYSTEM LIBRARY ===\nWhen generating code, implement components that match the specifications above. Use the same component names, props, and structure. Build real functional implementations with proper styling.`;
             }
           }
         } catch (dsError) {

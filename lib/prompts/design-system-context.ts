@@ -115,15 +115,30 @@ function formatTokensForPrompt(tokens: DesignTokens | null): string {
 }
 
 /**
- * Format component code snippet for prompt (truncated)
+ * Format component as a SPECIFICATION for the AI prompt.
+ * Instead of showing truncated placeholder code, we show the component's
+ * purpose, variants, category, and usage guidance so the AI can build
+ * proper implementations that match the design system.
  */
 function formatComponentSnippet(component: DesignSystemComponent): string {
-  const codePreview = component.code
-    .replace(/\s+/g, ' ')
-    .slice(0, 200)
-    .trim();
+  const variants = component.variants
+    ?.map((v: any) => v.name)
+    .filter((n: string) => n && n !== "Docs")
+    .join(", ") || "Default";
   
-  return `- ${component.name} (${component.layer}${component.category ? `, ${component.category}` : ''}): ${codePreview}...`;
+  const description = component.docs?.description || "";
+  const usage = component.docs?.usage || "";
+  const pkg = (component.docs as any)?.package || "";
+  const category = component.category || "";
+  
+  let line = `- [${component.name}]`;
+  if (description) line += ` ${description}`;
+  line += `\n    Variants: ${variants}`;
+  if (category) line += ` | Category: ${category}`;
+  if (pkg) line += ` | Package: ${pkg}`;
+  if (usage) line += `\n    ${usage}`;
+  
+  return line;
 }
 
 /**
@@ -203,24 +218,12 @@ ${formatTokensForPrompt(ds.tokens)}
 ${componentListText}
 
 **DESIGN SYSTEM RULES:**
-1. **REUSE EXISTING COMPONENTS** - If a component exists in the library above, USE IT instead of creating new code. Reference it by name.
+1. **IMPLEMENT COMPONENTS FROM SPECS** - The components listed above are specifications from the design system. When generating code, create REAL implementations that match the purpose, structure, and variants described. Use the same component names.
 2. **USE EXACT TOKENS** - Apply design tokens as CSS variables: \`var(--color-primary)\`, \`var(--space-4)\`, etc.
-3. **MAINTAIN CONSISTENCY** - Match the visual style of existing components (border radius, shadows, spacing patterns).
-4. **MARK NEW COMPONENTS** - If you MUST create a new component that doesn't exist, mark it with \`data-new-component="true"\` attribute.
-5. **FOLLOW LAYER HIERARCHY** - Compose complex components from simpler ones (primitives → elements → components → patterns).
-
-**EXAMPLE REUSE:**
-If "Button" exists in the library, write:
-\`<button class="...existing button styles from library...">\`
-
-NOT:
-\`<button class="...newly invented styles...">\`
-
-**MARKING NEW COMPONENTS:**
-If creating a new "StatCard" component not in the library:
-\`<div data-new-component="true" data-component="StatCard" class="...">\`
-
-This allows the user to optionally save it to their Design System library.
+3. **MAINTAIN CONSISTENCY** - All generated components should share a cohesive visual style (border radius, shadows, spacing, color palette).
+4. **FOLLOW VARIANT STRUCTURE** - If a component has variants (Primary, Secondary, Disabled etc.), implement support for those variants.
+5. **FOLLOW LAYER HIERARCHY** - Compose complex components from simpler ones (primitives -> elements -> components -> patterns).
+6. **MARK NEW COMPONENTS** - If you create a component that doesn't exist in the library above, mark it with \`data-new-component="true"\` and \`data-component="ComponentName"\` attributes.
 `;
 }
 
