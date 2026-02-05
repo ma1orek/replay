@@ -8,6 +8,7 @@ interface StorybookStory {
   name: string;
   title: string;
   kind?: string;
+  type?: string; // "story" | "docs" | "group" in Storybook v5+
   parameters?: {
     docs?: {
       description?: {
@@ -163,7 +164,13 @@ export async function POST(request: NextRequest) {
         stories: string[]; // Track story names
       }>();
 
-      Object.values(entries).forEach((entry) => {
+      Object.values(entries).forEach((entry: any) => {
+        // Skip docs entries - only import actual stories (type "story" or undefined for backwards compat)
+        if (entry.type === "docs") return;
+        
+        // Skip entries named "Docs" - these are auto-generated documentation pages, not real variants
+        if (entry.name === "Docs") return;
+
         // Extract component name from title (e.g., "Components/Button" -> "Button")
         const title = entry.title || entry.kind || "";
         const parts = title.split("/");
@@ -323,15 +330,23 @@ export async function POST(request: NextRequest) {
 function extractNameFromUrl(url: string): string | null {
   try {
     const hostname = new URL(url).hostname;
+    // Detect if hostname includes "designsystem" or "design-system" to append suffix later
+    const hasDesignSystemPrefix = /designsystem\.|design-system\.|design\./i.test(hostname);
     // Remove common prefixes/suffixes
     const name = hostname
-      .replace(/^(www\.|storybook\.|design\.|designsystem\.)/, "")
+      .replace(/^(www\.|storybook\.|design\.|designsystem\.|design-system\.)/, "")
       .replace(/\.(com|io|dev|org|net)$/, "")
       .replace(/[.-]/g, " ")
       .split(" ")
+      .filter(w => w.length > 0)
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ");
-    return name || null;
+    if (!name) return null;
+    // If the URL was a design system subdomain, append "Design System" for clarity
+    if (hasDesignSystemPrefix) {
+      return `${name} Design System`;
+    }
+    return name;
   } catch {
     return null;
   }

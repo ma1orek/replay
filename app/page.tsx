@@ -3427,6 +3427,7 @@ function ReplayToolContent() {
   const [selectedDesignSystemId, setSelectedDesignSystemId] = useState<string | null>(null);
   const [showImportLibraryModal, setShowImportLibraryModal] = useState(false);
   const [isImportingLibrary, setIsImportingLibrary] = useState(false);
+  const [dsRefreshTrigger, setDsRefreshTrigger] = useState(0);
   const [localComponents, setLocalComponents] = useState<LocalComponent[]>([]);
   const { designSystems, refetch: refetchDesignSystems, getDefault: getDefaultDesignSystem } = useDesignSystems();
   // Library sidebar collapse states
@@ -13214,6 +13215,8 @@ ${publishCode}
             showToast(`Imported ${data.components} components from ${data.designSystem.name}`, "success");
             // Refetch design systems to update the list
             refetchDesignSystems();
+            // Trigger refresh on all DesignSystemSelector instances
+            setDsRefreshTrigger(prev => prev + 1);
           } finally {
             setIsImportingLibrary(false);
           }
@@ -16049,6 +16052,7 @@ ${publishCode}
                       onImportClick={() => setShowImportLibraryModal(true)}
                       isExternalLoading={isImportingLibrary}
                       externalLoadingText="Importing from Storybook..."
+                      refreshTrigger={dsRefreshTrigger}
                     />
                   </div>
                   
@@ -16302,6 +16306,7 @@ ${publishCode}
                   onImportClick={() => setShowImportLibraryModal(true)}
                   isExternalLoading={isImportingLibrary}
                   externalLoadingText="Importing from Storybook..."
+                  refreshTrigger={dsRefreshTrigger}
                 />
               </div>
 
@@ -24233,6 +24238,7 @@ module.exports = {
                   onImportClick={() => setShowImportLibraryModal(true)}
                   isExternalLoading={isImportingLibrary}
                   externalLoadingText="Importing from Storybook..."
+                  refreshTrigger={dsRefreshTrigger}
                 />
               </div>
 
@@ -25311,6 +25317,7 @@ module.exports = {
                     onImportClick={() => setShowImportLibraryModal(true)}
                     isExternalLoading={isImportingLibrary}
                     externalLoadingText="Importing from Storybook..."
+                    refreshTrigger={dsRefreshTrigger}
                   />
                 </div>
 

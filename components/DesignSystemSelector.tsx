@@ -42,6 +42,8 @@ interface DesignSystemSelectorProps {
   isExternalLoading?: boolean;
   /** External loading text */
   externalLoadingText?: string;
+  /** When this value changes, re-fetch design systems */
+  refreshTrigger?: number;
 }
 
 /**
@@ -63,6 +65,7 @@ export function DesignSystemSelector({
   compact = false,
   isExternalLoading = false,
   externalLoadingText = "Loading...",
+  refreshTrigger,
 }: DesignSystemSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -93,6 +96,13 @@ export function DesignSystemSelector({
   useEffect(() => {
     fetchDesignSystems();
   }, [fetchDesignSystems]);
+
+  // Re-fetch when refreshTrigger changes
+  useEffect(() => {
+    if (refreshTrigger !== undefined && refreshTrigger > 0) {
+      fetchDesignSystems();
+    }
+  }, [refreshTrigger, fetchDesignSystems]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -193,21 +203,19 @@ export function DesignSystemSelector({
             className="overflow-hidden w-full max-w-full"
           >
             <div className="border border-zinc-700/50 rounded-xl bg-zinc-800/95 backdrop-blur-xl w-full max-w-full overflow-hidden">
-              {/* Search input - like StyleInjector */}
-              {designSystems.length > 3 && (
-                <div className="p-2 border-b border-white/[0.06]">
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search libraries..."
-                      className="w-full pl-8 pr-3 py-2 text-xs bg-zinc-900/50 border border-zinc-700/30 rounded-lg text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600"
-                    />
-                  </div>
+              {/* Search input - always visible */}
+              <div className="p-2 border-b border-white/[0.06]">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search libraries..."
+                    className="w-full pl-8 pr-3 py-2 text-xs bg-zinc-900/50 border border-zinc-700/30 rounded-lg text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600"
+                  />
                 </div>
-              )}
+              </div>
               
               {/* Auto-create option */}
               <button
@@ -371,6 +379,23 @@ export function ImportLibraryModal({
   const [name, setName] = useState("");
   const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Auto-fill name from URL
+  useEffect(() => {
+    if (url && !name) {
+      try {
+        const hostname = new URL(url).hostname;
+        const extracted = hostname
+          .replace(/^(www\.|storybook\.|design\.|designsystem\.)/, "")
+          .replace(/\.(com|io|dev|org|net)$/, "")
+          .replace(/[.-]/g, " ")
+          .split(" ")
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
+        if (extracted) setName(extracted + " Design System");
+      } catch {}
+    }
+  }, [url]);
 
   const handleImport = async () => {
     if (!url.trim()) {
