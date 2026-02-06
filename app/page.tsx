@@ -3439,6 +3439,25 @@ function ReplayToolContent() {
       componentCount: ds.component_count || 0,
     }));
   }, [designSystems]);
+
+  // Delete an imported Design System
+  const handleDeleteDS = useCallback(async (dsId: string) => {
+    try {
+      const res = await fetch(`/api/design-systems/${dsId}`, { method: "DELETE" });
+      if (res.ok) {
+        console.log("[DS] Deleted design system:", dsId);
+        refetchDesignSystems();
+        // If this DS was selected, clear selection
+        if (styleDirective.includes(dsId)) {
+          setStyleDirective("");
+        }
+      } else {
+        console.error("[DS] Failed to delete:", await res.text());
+      }
+    } catch (err) {
+      console.error("[DS] Delete error:", err);
+    }
+  }, [refetchDesignSystems, styleDirective]);
   
   // Library sidebar collapse states
   const [librarySectionsExpanded, setLibrarySectionsExpanded] = useState<Record<string, boolean>>({ docs: true, foundations: true, primitives: true, elements: true, components: true, patterns: true, product: true });
@@ -11450,113 +11469,11 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
         // Immediately save to Supabase for cross-device sync
         saveGenerationToSupabase(newGeneration);
         
-        // === LIBRARY EXTRACTION ===
-        // Extract components from generated code and merge with DS components
-        if (result.code) {
-          try {
-            console.log("[Library] Starting component extraction from generated code...");
-            
-            // Extract components from generated code using regex patterns
-            const extractedComponents: LibraryComponent[] = [];
-            const code = result.code;
-            
-            // Pattern 1: Find function components - function ComponentName(
-            const funcComponentPattern = /function\s+([A-Z][a-zA-Z0-9]*)\s*\([^)]*\)\s*{([^}]*(?:{[^}]*}[^}]*)*)}/g;
-            let match;
-            while ((match = funcComponentPattern.exec(code)) !== null) {
-              const componentName = match[1];
-              const componentCode = match[0];
-              // Skip common non-component functions
-              if (!['App', 'Main', 'Document', 'Html'].includes(componentName)) {
-                extractedComponents.push(createLibraryComponent(componentName, componentCode, "layout"));
-              }
-            }
-            
-            // Pattern 2: Find const arrow function components - const ComponentName = (
-            const constComponentPattern = /const\s+([A-Z][a-zA-Z0-9]*)\s*=\s*(?:\([^)]*\)|[^=])\s*=>\s*(?:\([^)]*\)|{[^}]*(?:{[^}]*}[^}]*)*}|\([^)]*\))/g;
-            while ((match = constComponentPattern.exec(code)) !== null) {
-              const componentName = match[1];
-              const componentCode = match[0];
-              if (!['App', 'Main', 'Document', 'Html'].includes(componentName)) {
-                // Check if component is not already added
-                if (!extractedComponents.find(c => c.name === componentName)) {
-                  extractedComponents.push(createLibraryComponent(componentName, componentCode, "layout"));
-                }
-              }
-            }
-            
-            // Pattern 3: Find section/element patterns in HTML (navigation sections)
-            const sectionPattern = /<(header|footer|nav|main|aside|section)[^>]*(?:id|class)="([^"]+)"[^>]*>/gi;
-            while ((match = sectionPattern.exec(code)) !== null) {
-              const tagName = match[1];
-              const className = match[2];
-              const cleanName = className.split(/\s+/)[0].replace(/[^a-zA-Z0-9]/g, '') || tagName;
-              const componentName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1) + 'Section';
-              // Map HTML elements to appropriate categories
-              const categoryMap: Record<string, ComponentCategory> = {
-                header: "layout",
-                footer: "layout", 
-                nav: "navigation",
-                main: "layout",
-                aside: "layout",
-                section: "layout",
-              };
-              const elementCategory = categoryMap[tagName.toLowerCase()] || "layout";
-              if (!extractedComponents.find(c => c.name === componentName)) {
-                // Extract surrounding code block
-                const startIdx = Math.max(0, match.index - 50);
-                const endIdx = Math.min(code.length, match.index + 500);
-                const snippetCode = code.slice(startIdx, endIdx);
-                extractedComponents.push(createLibraryComponent(componentName, snippetCode, elementCategory));
-              }
-            }
-            
-            console.log("[Library] Extracted", extractedComponents.length, "components from code");
-            
-            // Use only the extracted components (Library is populated by Extract only)
-            const allComponents: LibraryComponent[] = [...extractedComponents];
-            
-            console.log("[Library] Total components for library:", allComponents.length);
-            
-            // Extract design tokens from code
-            const extractedColors: Record<string, string> = {};
-            // Find Tailwind colors
-            const colorMatches = code.matchAll(/(?:bg|text|border|ring|fill|stroke)-(\w+-\d+)/g);
-            for (const colorMatch of colorMatches) {
-              const colorClass = colorMatch[1];
-              extractedColors[colorClass] = `var(--color-${colorClass.replace('-', '-')})`;
-            }
-            // Find hex colors
-            const hexMatches = code.matchAll(/#([0-9a-fA-F]{3,6})/g);
-            for (const hexMatch of hexMatches) {
-              extractedColors[`custom-${hexMatch[1]}`] = `#${hexMatch[1]}`;
-            }
-            
-            // Build library data
-            if (allComponents.length > 0) {
-              const newLibraryData: LibraryData = {
-                components: allComponents,
-                docs: [],
-                tokens: {
-                  colors: extractedColors,
-                  spacing: {},
-                  typography: {
-                    fontFamily: {},
-                    fontSize: {},
-                    fontWeight: {},
-                    lineHeight: {},
-                  },
-                  borderRadius: {},
-                  shadows: {},
-                },
-              };
-              setLibraryData(newLibraryData);
-              console.log("[Library] Library data set with", allComponents.length, "components");
-            }
-          } catch (extractError) {
-            console.error("[Library] Extraction failed:", extractError);
-          }
-        }
+        // === LIBRARY EXTRACTION - DISABLED (use "Extract New Components" button instead) ===
+        // Components should only appear in Library after user clicks "Extract New Components"
+        // Auto-extraction was showing Icon, Footer, HomePage etc. immediately after generation
+        // which confused users. Now the Library starts empty until explicit extraction.
+        console.log("[Library] Auto-extraction disabled. Use 'Extract New Components' button.");
         
         // Also save to localStorage as backup (for refresh before Supabase sync completes)
         try {
@@ -15908,6 +15825,7 @@ ${publishCode}
                       onReferenceImageChange={setStyleReferenceImage}
                       importedStyles={importedStylesList}
                       onImportClick={() => setShowImportLibraryModal(true)}
+                      onDeleteDS={handleDeleteDS}
                     />
                   </div>
                   
@@ -16149,6 +16067,7 @@ ${publishCode}
                   onReferenceImageChange={setStyleReferenceImage}
                   importedStyles={importedStylesList}
                   onImportClick={() => setShowImportLibraryModal(true)}
+                  onDeleteDS={handleDeleteDS}
                 />
               </div>
 
@@ -24070,6 +23989,7 @@ module.exports = {
                   onReferenceImageChange={setStyleReferenceImage}
                   importedStyles={importedStylesList}
                   onImportClick={() => setShowImportLibraryModal(true)}
+                  onDeleteDS={handleDeleteDS}
                 />
               </div>
 
@@ -25134,6 +25054,7 @@ module.exports = {
                     onReferenceImageChange={setStyleReferenceImage}
                     importedStyles={importedStylesList}
                     onImportClick={() => setShowImportLibraryModal(true)}
+                    onDeleteDS={handleDeleteDS}
                   />
                 </div>
                 

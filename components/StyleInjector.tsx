@@ -4095,54 +4095,55 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
                       {importedStyles
                         .filter(ds => !searchQuery || ds.name.toLowerCase().includes(searchQuery.toLowerCase()))
                         .map(ds => (
-                        <button
+                        <div
                           key={ds.id}
-                          onClick={() => {
-                            onChange(`DS_STYLE::${ds.id}::${ds.name}`);
-                            setIsOpen(false);
-                          }}
                           className={cn(
-                            "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all",
-                            selectedDSId === ds.id
-                              ? "bg-blue-500/15 border border-blue-500/30"
-                              : "hover:bg-white/[0.04] border border-transparent"
+                            "rounded-lg transition-colors",
+                            selectedDSId === ds.id ? "bg-[#FF6E3C]/10 border border-[#FF6E3C]/30" : "hover:bg-white/[0.03] border border-transparent"
                           )}
                         >
-                          <div className="w-7 h-7 rounded-md bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0">
-                            <span className="text-[9px] text-blue-400 font-bold">DS</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <span className="text-xs text-white block truncate">{ds.name}</span>
-                            <span className="text-[10px] text-white/30 block truncate">
-                              {ds.tokenCount ? `${ds.tokenCount} tokens` : ""}
-                              {ds.tokenCount && ds.componentCount ? " · " : ""}
-                              {ds.componentCount ? `${ds.componentCount} components` : ""}
-                              {!ds.tokenCount && !ds.componentCount && ds.source_url ? ds.source_url.replace(/https?:\/\//, '') : ""}
-                            </span>
-                          </div>
-                          {selectedDSId === ds.id && (
-                            <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
-                              <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                          <div className="flex items-center gap-2 p-1.5 cursor-pointer" onClick={() => { onChange(`DS_STYLE::${ds.id}::${ds.name}`); setIsOpen(false); }}>
+                            {/* DS thumbnail - matches StylePreview size */}
+                            <div className="w-8 h-8 rounded-lg border border-white/10 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                              <span className="text-[9px] font-bold text-indigo-400">DS</span>
                             </div>
-                          )}
-                          {onDeleteDS && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (confirm(`Delete "${ds.name}" from imported libraries?`)) {
-                                  onDeleteDS(ds.id);
-                                  if (selectedDSId === ds.id) {
-                                    onChange("");
+                            {/* Name and description - same as StyleItem */}
+                            <div className="flex-1 min-w-0 text-left">
+                              <div className="flex items-center gap-1 justify-start">
+                                <span className={cn("text-xs font-medium text-left", selectedDSId === ds.id ? "text-[#FF6E3C]" : "text-white/80")}>
+                                  {ds.name}
+                                </span>
+                                {selectedDSId === ds.id && (
+                                  <span className="text-[8px] px-1 py-0.5 rounded bg-[#FF6E3C]/20 text-[#FF6E3C]">Active</span>
+                                )}
+                              </div>
+                              <span className="text-[9px] text-white/40 truncate block text-left">
+                                {ds.tokenCount ? `${ds.tokenCount} tokens` : ""}
+                                {ds.tokenCount && ds.componentCount ? " · " : ""}
+                                {ds.componentCount ? `${ds.componentCount} components` : ""}
+                                {!ds.tokenCount && !ds.componentCount && ds.source_url ? ds.source_url.replace(/https?:\/\//, '') : "Imported Design System"}
+                              </span>
+                            </div>
+                            {/* Delete button */}
+                            {onDeleteDS && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (confirm(`Delete "${ds.name}" from imported libraries?`)) {
+                                    onDeleteDS(ds.id);
+                                    if (selectedDSId === ds.id) {
+                                      onChange("");
+                                    }
                                   }
-                                }
-                              }}
-                              className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 text-white/20 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                              title="Delete imported library"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          )}
-                        </button>
+                                }}
+                                className="p-1 rounded transition-colors flex-shrink-0 text-white/20 hover:text-red-400 hover:bg-red-500/10"
+                                title="Delete imported library"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       ))}
                       {onImportClick && (
                         <button

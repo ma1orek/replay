@@ -1688,12 +1688,14 @@ The style directive above defines ALL visual aspects: colors, backgrounds, gradi
       console.log("[transmute] Injected Surveyor measurements into assembler prompt");
     }
     
-    // Color instruction depends on whether custom style is selected
-    const colorInstruction = hasCustomStyle 
-      ? "IGNORE scanData.ui.colors - use STYLE DIRECTIVE colors instead!"
-      : surveyorMeasurements 
-        ? "Use EXACT colors from SURVEYOR MEASUREMENTS above (they are pixel-sampled)!"
-        : "Use colors from scanData.ui.colors.";
+    // Color instruction depends on whether custom style or DS is selected
+    const colorInstruction = isDSStyleDirective
+      ? "USE DESIGN SYSTEM COLORS from the DS style guide above! IGNORE scanData.ui.colors — the DS tokens define ALL colors (primary, background, surface, text, border). Only use scanData.ui.theme to determine light/dark mode."
+      : hasCustomStyle
+        ? "IGNORE scanData.ui.colors - use STYLE DIRECTIVE colors instead!"
+        : surveyorMeasurements
+          ? "Use EXACT colors from SURVEYOR MEASUREMENTS above (they are pixel-sampled)!"
+          : "Use colors from scanData.ui.colors.";
     
     // Spacing instruction - use Surveyor data if available
     const spacingInstruction = surveyorMeasurements
