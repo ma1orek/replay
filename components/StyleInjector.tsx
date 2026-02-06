@@ -4118,10 +4118,15 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
                                 )}
                               </div>
                               <span className="text-[9px] text-white/40 truncate block text-left">
-                                {ds.tokenCount ? `${ds.tokenCount} tokens` : ""}
-                                {ds.tokenCount && ds.componentCount ? " · " : ""}
-                                {ds.componentCount ? `${ds.componentCount} components` : ""}
-                                {!ds.tokenCount && !ds.componentCount && ds.source_url ? ds.source_url.replace(/https?:\/\//, '') : "Imported Design System"}
+                                {ds.componentCount && ds.tokenCount
+                                  ? `${ds.componentCount} components · ${ds.tokenCount} tokens`
+                                  : ds.componentCount
+                                    ? `${ds.componentCount} components`
+                                    : ds.tokenCount
+                                      ? `${ds.tokenCount} tokens`
+                                      : ds.source_url
+                                        ? ds.source_url.replace(/https?:\/\//, '')
+                                        : "Imported Design System"}
                               </span>
                             </div>
                             {/* Delete button */}

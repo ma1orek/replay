@@ -177,20 +177,19 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    // Check if any generations are using this design system
-    const { count: usageCount } = await adminSupabase
+    // Unlink any generations that reference this design system (set to null)
+    await adminSupabase
       .from("generations")
-      .select("id", { count: "exact", head: true })
+      .update({ design_system_id: null })
       .eq("design_system_id", id);
 
-    if (usageCount && usageCount > 0) {
-      return NextResponse.json({ 
-        error: `Cannot delete: ${usageCount} project(s) are using this design system`,
-        usageCount 
-      }, { status: 400 });
-    }
+    // Delete components first (in case CASCADE is not set up)
+    await adminSupabase
+      .from("design_system_components")
+      .delete()
+      .eq("design_system_id", id);
 
-    // Delete (CASCADE will remove components)
+    // Delete the design system
     const { error: deleteError } = await adminSupabase
       .from("design_systems")
       .delete()
