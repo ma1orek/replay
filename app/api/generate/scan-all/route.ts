@@ -304,13 +304,32 @@ THIS IS THE MOST IMPORTANT PASS! You MUST identify ALL unique pages/screens/view
 
 **MINIMUM PAGES:**
 - Video shows 1 screen → 1 page minimum
-- Video shows 2 screens → 2 pages minimum  
+- Video shows 2 screens → 2 pages minimum
 - Video shows 3 screens → 3 pages minimum
 - Navigation has 5 items → 5 pages (some seenInVideo: false)
+
+**MULTI-PAGE DETECTION TECHNIQUE (FRAME-BY-FRAME):**
+- Scan video at 0.5-second intervals looking for CONTENT CHANGES in the main area
+- A page change is: different headline, different data table, different form, different list
+- Watch for: URL bar changes, breadcrumb changes, active sidebar item changes, tab switches
+- Even SUBTLE changes (e.g., sidebar highlight moving from "Home" to "Products") = NEW PAGE
+- Scrolling within same content = SAME page (NOT a new page)
+- Loading/skeleton then content = SAME page (loading state, not new page)
+- Modal/popup overlay = NOT a new page (mark as modal in behavior)
+
+**3-SUBPAGE PATTERN (VERY COMMON):**
+Many recordings show exactly 3 pages (e.g., Home → List → Detail).
+If user navigates to 2nd screen, KEEP WATCHING - there's often a 3rd screen!
+Common 3-page patterns:
+- Landing → Features → Pricing
+- Dashboard → List/Table → Detail/Edit
+- Home → Category → Product
+- Overview → Settings → Profile
 
 **VALIDATION:**
 - pages.length MUST match number of distinct screens + nav items!
 - If result has only 1 page but video shows multiple screens = WRONG!
+- If video is longer than 10 seconds, it LIKELY has multiple pages - look harder!
 
 **CRITICAL INSTRUCTIONS:**
 1. EXACT text transcription - no paraphrasing or translating (CONTENT 1:1 verbatim)

@@ -255,18 +255,27 @@ const Icon = ({ name, className = "w-5 h-5" }) => {
    .card--compact { padding: 1rem; }
    \`\`\`
 
+**LAYOUT BUG PREVENTION (CRITICAL!):**
+□ Cards/boxes use CSS Grid or Flexbox — NEVER inline-block for layout
+□ Each card fills its grid cell (w-full, h-full) — no collapsing to content-width
+□ Sections stack vertically (flex-col) — content does NOT flow inline like text
+□ ALL buttons/links are VISIBLE by default — NEVER opacity:0 or visibility:hidden until hover
+□ Button hover effects ENHANCE appearance — they don't CREATE it from invisible state
+□ Ghost/outline buttons have visible border AND text color before hover
+
 **FINAL CHECKLIST:**
-□ Dark premium theme (zinc-950 background)
-□ Glassmorphism cards (glass class)
+□ Theme matches scanData.ui.theme (light OR dark — respect the video!)
+□ Glassmorphism cards (glass class) — adapted for light/dark theme
 □ GSAP animations on load and scroll
-□ Hover effects on all cards/buttons
+□ Hover effects on all cards/buttons (but buttons VISIBLE before hover!)
 □ Gradient text on main headings
 □ Picsum.photos images (NO pollinations - rate limits!)
-□ Chart.js with dark theme
+□ Chart.js with theme-appropriate colors
 □ All DATA from scanData preserved
 □ STYLE elevated to AWWWARDS level
 □ NO generic AI aesthetics (avoid Inter font, purple gradients)
 □ CSS variables for all colors (design tokens)
+□ No inline-block layout bugs — use Grid/Flexbox for card rows
 
 Generate the complete HTML now, using DATA from SCAN_DATA but with PREMIUM ELEVATED STYLE.`;
 

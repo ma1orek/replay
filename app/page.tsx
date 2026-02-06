@@ -392,7 +392,7 @@ import UpgradeModal from "@/components/modals/UpgradeModal";
 import AssetsModal from "@/components/modals/AssetsModal";
 import ProjectSettingsModal from "@/components/ProjectSettingsModal";
 import { Toast, useToast } from "@/components/Toast";
-import { DesignSystemSelector, useDesignSystems, ImportLibraryModal } from "@/components/DesignSystemSelector";
+import { useDesignSystems, ImportLibraryModal } from "@/components/DesignSystemSelector";
 import { NewComponentBadge, NewComponentInlineBadge } from "@/components/NewComponentBadge";
 import type { LocalComponent, DesignSystemListItem } from "@/types/design-system";
 import AnimatedLoadingSkeleton from "@/components/ui/animated-loading-skeleton";
@@ -3424,12 +3424,22 @@ function ReplayToolContent() {
   const [showLibraryGrid, setShowLibraryGrid] = useState(false);
   
   // Design System state
-  const [selectedDesignSystemId, setSelectedDesignSystemId] = useState<string | null>(null);
   const [showImportLibraryModal, setShowImportLibraryModal] = useState(false);
   const [isImportingLibrary, setIsImportingLibrary] = useState(false);
-  const [dsRefreshTrigger, setDsRefreshTrigger] = useState(0);
   const [localComponents, setLocalComponents] = useState<LocalComponent[]>([]);
   const { designSystems, refetch: refetchDesignSystems, getDefault: getDefaultDesignSystem } = useDesignSystems();
+  
+  // Build imported styles list for StyleInjector from design systems
+  const importedStylesList = useMemo(() => {
+    return (designSystems || []).map((ds: any) => ({
+      id: ds.id,
+      name: ds.name,
+      source_url: ds.source_url,
+      tokenCount: ds.token_count || 0,
+      componentCount: ds.component_count || 0,
+    }));
+  }, [designSystems]);
+  
   // Library sidebar collapse states
   const [librarySectionsExpanded, setLibrarySectionsExpanded] = useState<Record<string, boolean>>({ docs: true, foundations: true, primitives: true, elements: true, components: true, patterns: true, product: true });
   const [libraryCategoriesExpanded, setLibraryCategoriesExpanded] = useState<Record<string, boolean>>({});
@@ -3460,150 +3470,46 @@ function ReplayToolContent() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isLibraryFullscreen]);
 
-  // Load library components when a design system is selected
+  // DS style selection - only load tokens/foundations for display, NOT components
+  // Components should ONLY appear in Library after user clicks "Extract New Components" on generated code
+  const activeDSId = useMemo(() => styleDirective.startsWith("DS_STYLE::") ? styleDirective.split("::")[1] : null, [styleDirective]);
+  
   useEffect(() => {
-    if (!selectedDesignSystemId) {
-      // If no design system selected, don't clear library (might have generated components)
-      return;
-    }
+    if (!activeDSId) return;
     
-    const loadDesignSystemComponents = async () => {
+    const loadDesignSystemTokens = async () => {
       try {
-        console.log("[Library] Loading components from Design System:", selectedDesignSystemId);
+        console.log("[Library] Loading DS tokens only (not components):", activeDSId);
+        const dsResponse = await fetch(`/api/design-systems/${activeDSId}`);
         
-        // Fetch both design system info (for tokens) and components in parallel
-        const [dsResponse, componentsResponse] = await Promise.all([
-          fetch(`/api/design-systems/${selectedDesignSystemId}`),
-          fetch(`/api/design-systems/${selectedDesignSystemId}/components`)
-        ]);
+        if (!dsResponse.ok) return;
         
-        // Get design system tokens
-        let dsTokens: any = {};
-        let dsSourceType: string = "manual";
-        if (dsResponse.ok) {
-          const dsData = await dsResponse.json();
-          dsTokens = dsData.designSystem?.tokens || {};
-          dsSourceType = dsData.designSystem?.source_type || "manual";
-          console.log("[Library] Design system source:", dsSourceType, "tokens:", Object.keys(dsTokens));
-        }
+        const dsData = await dsResponse.json();
+        const dsTokens = dsData.designSystem?.tokens || {};
         
-        if (!componentsResponse.ok) {
-          console.error("[Library] Failed to fetch DS components:", componentsResponse.status);
-          return;
-        }
-        
-        const data = await componentsResponse.json();
-        const components = data.components || [];
-        console.log("[Library] Loaded", components.length, "components from selected library");
-        
-        // Map DS layer to ComponentCategory for display grouping
-        const layerToCategory: Record<string, ComponentCategory> = {
-          foundations: "layout",
-          elements: "inputs",
-          primitives: "inputs",
-          components: "layout",
-          patterns: "navigation",
-          templates: "layout",
-          product: "layout",
-        };
-        
-        // Preserve layer as-is from database - DON'T normalize away valid layers!
-        // Valid layers: foundations, primitives, elements, components, patterns, product
-        const preserveLayer = (layer: string): "foundations" | "primitives" | "elements" | "components" | "patterns" | "product" => {
-          const normalized = layer?.toLowerCase() || "components";
-          // Map 'templates' to 'patterns', but keep everything else as-is
-          if (normalized === "templates") return "patterns";
-          // Return exact layer if valid
-          if (["foundations", "primitives", "elements", "components", "patterns", "product"].includes(normalized)) {
-            return normalized as any;
-          }
-          return "components"; // default fallback
-        };
-        
-        // Determine source based on DS source_type
-        const getSource = (): "storybook" | "generated" | "manual" | "video" => {
-          if (dsSourceType === "storybook") return "storybook";
-          if (dsSourceType === "video") return "video";
-          if (dsSourceType === "figma") return "manual";
-          return "manual";
-        };
-        
-        const libraryComponents: LibraryComponent[] = components.map((comp: any) => 
-          createLibraryComponent(
-            comp.name,
-            comp.code || "",
-            layerToCategory[comp.layer] || "layout",
-            comp.docs?.description,
-            preserveLayer(comp.layer),
-            getSource(), // Pass the source
-            false // Not new - comes from DS
-          )
-        );
-        
-        // Get colors from design system tokens first
         let colors: Record<string, string> = {};
-        
-        // 1. First, use colors from DS tokens (highest priority)
         if (dsTokens.colors && Object.keys(dsTokens.colors).length > 0) {
           colors = { ...dsTokens.colors };
-          console.log("[Library] Loaded", Object.keys(colors).length, "colors from DS tokens");
         }
         
-        // 2. Also extract colors from component code as fallback
-        components.forEach((comp: any) => {
-          if (comp.code) {
-            // Extract Tailwind colors
-            const colorMatches = comp.code.matchAll(/(?:bg|text|border)-(\w+-\d+)/g);
-            for (const match of colorMatches) {
-              if (!colors[match[1]]) {
-                colors[match[1]] = `var(--color-${match[1]})`;
-              }
-            }
-            // Extract hex colors
-            const hexMatches = comp.code.matchAll(/#([0-9a-fA-F]{6})/g);
-            for (const match of hexMatches) {
-              if (!colors[`hex-${match[1]}`]) {
-                colors[`hex-${match[1]}`] = `#${match[1]}`;
-              }
-            }
-          }
-        });
+        const typography = dsTokens.typography || { fontFamily: {}, fontSize: {}, fontWeight: {}, lineHeight: {} };
         
-        // Get typography from DS tokens
-        const typography = dsTokens.typography || {
-          fontFamily: {},
-          fontSize: {},
-          fontWeight: {},
-          lineHeight: {},
-        };
+        // Only set tokens/foundations - NO components (those come from Extract only)
+        setLibraryData(prev => ({
+          components: prev?.components || [],
+          docs: prev?.docs || [],
+          tokens: { colors, spacing: dsTokens.spacing || {}, typography, borderRadius: dsTokens.borderRadius || {}, shadows: dsTokens.shadows || {} },
+          foundations: { colors, typography, spacing: dsTokens.spacing || {}, borderRadius: dsTokens.borderRadius || {}, shadows: dsTokens.shadows || {} },
+        }));
         
-        setLibraryData({
-          components: libraryComponents,
-          docs: [],
-          tokens: {
-            colors,
-            spacing: dsTokens.spacing || {},
-            typography,
-            borderRadius: dsTokens.borderRadius || {},
-            shadows: dsTokens.shadows || {},
-          },
-          foundations: {
-            colors,
-            typography,
-            spacing: dsTokens.spacing || {},
-            borderRadius: dsTokens.borderRadius || {},
-            shadows: dsTokens.shadows || {},
-          },
-        });
-        
-        console.log("[Library] Set library data with", libraryComponents.length, "components,", Object.keys(colors).length, "colors, source:", dsSourceType);
+        console.log("[Library] Set DS tokens only:", Object.keys(colors).length, "colors (0 components - Extract only)");
       } catch (err) {
-        console.error("[Library] Error loading DS components:", err);
+        console.error("[Library] Error loading DS tokens:", err);
       }
     };
     
-    loadDesignSystemComponents();
-  }, [selectedDesignSystemId]);
+    loadDesignSystemTokens();
+  }, [activeDSId]);
   
   const [blueprintsZoom, setBlueprintsZoom] = useState(100);
   const [blueprintsOffset, setBlueprintsOffset] = useState({ x: 0, y: 0 });
@@ -11255,88 +11161,71 @@ Try these prompts in Cursor or v0:
         }
       }
       
-      // Fetch Design System components if a library is selected
-      let dsComponents: any[] = [];
-      let dsComponentsContext = "";
-      if (selectedDesignSystemId) {
-        try {
-          console.log("[Generate] Fetching components from Design System:", selectedDesignSystemId);
-          const dsResponse = await fetch(`/api/design-systems/${selectedDesignSystemId}/components`);
-          if (dsResponse.ok) {
-            const dsData = await dsResponse.json();
-            dsComponents = dsData.components || [];
-            console.log("[Generate] Loaded", dsComponents.length, "components from library");
-            
-            // Build context string with component SPECIFICATIONS (not raw code)
-            if (dsComponents.length > 0) {
-              // Group components by layer for organized output
-              const layerGroups: Record<string, any[]> = {};
-              dsComponents.forEach((comp: any) => {
-                const layer = comp.layer || "components";
-                if (!layerGroups[layer]) layerGroups[layer] = [];
-                layerGroups[layer].push(comp);
-              });
-              
-              dsComponentsContext = `\n\n=== DESIGN SYSTEM LIBRARY ===\nIMPORTANT: The user has a design system library. You MUST use these components conceptually - match their PURPOSE, STRUCTURE, and VARIANTS when building the UI. Create implementations that follow these component specifications:\n`;
-              
-              Object.entries(layerGroups).forEach(([layer, comps]) => {
-                dsComponentsContext += `\n--- ${layer.toUpperCase()} ---\n`;
-                comps.forEach((comp: any) => {
-                  const variants = comp.variants?.map((v: any) => v.name).filter((n: string) => n !== "Docs").join(", ") || "Default";
-                  const category = comp.category || "";
-                  const description = comp.docs?.description || "";
-                  const usage = comp.docs?.usage || "";
-                  const pkg = comp.docs?.package || "";
-                  
-                  dsComponentsContext += `\n[${category ? category + "/" : ""}${comp.name}]`;
-                  if (description) dsComponentsContext += ` - ${description}`;
-                  dsComponentsContext += `\n  Variants: ${variants}`;
-                  if (pkg) dsComponentsContext += `\n  Package: ${pkg}`;
-                  if (usage) dsComponentsContext += `\n  Use for: ${usage}`;
-                  dsComponentsContext += `\n`;
-                });
-              });
-              
-              dsComponentsContext += `\n=== END DESIGN SYSTEM LIBRARY ===\nWhen generating code, implement components that match the specifications above. Use the same component names, props, and structure. Build real functional implementations with proper styling.`;
-            }
-          }
-        } catch (dsError) {
-          console.error("[Generate] Failed to fetch DS components:", dsError);
-        }
-      }
-      
       // Build style directive with refinements and trim info
-      // When a Design System is selected, IGNORE styles from video/image and use DS styles only
-      let fullStyleDirective = selectedDesignSystemId 
-        ? `CRITICAL STYLE OVERRIDE - Design System Library Selected:
+      // When a DS_STYLE:: is selected, fetch DS tokens and build a rich style guide
+      let fullStyleDirective = "";
+      const isDSStyleSelected = styleDirective.startsWith("DS_STYLE::");
+      
+      if (isDSStyleSelected) {
+        const dsId = styleDirective.split("::")[1];
+        const dsName = styleDirective.split("::")[2] || "Design System";
+        console.log("[Generate] DS Style selected:", dsName, dsId);
+        
+        try {
+          // Fetch DS info (tokens) and component specs in parallel
+          const [dsInfoResponse, dsComponentsResponse] = await Promise.all([
+            fetch(`/api/design-systems/${dsId}`),
+            fetch(`/api/design-systems/${dsId}/components`)
+          ]);
+          
+          let tokens: any = {};
+          let dsComponents: any[] = [];
+          
+          if (dsInfoResponse.ok) {
+            const dsInfo = await dsInfoResponse.json();
+            tokens = dsInfo.designSystem?.tokens || {};
+            console.log("[Generate] DS tokens loaded:", Object.keys(tokens));
+          }
+          
+          if (dsComponentsResponse.ok) {
+            const dsData = await dsComponentsResponse.json();
+            dsComponents = dsData.components || [];
+            console.log("[Generate] DS components loaded:", dsComponents.length);
+          }
+          
+          // Build rich style guide from tokens
+          fullStyleDirective = `DESIGN SYSTEM STYLE GUIDE: "${dsName}"
 
-⚠️ ABSOLUTE RULES - DO NOT VIOLATE:
-1. IGNORE ALL VISUAL STYLES FROM THE VIDEO (colors, fonts, gradients, shadows, border-radius)
-2. ONLY extract from video: LAYOUT structure, CONTENT text, INTERACTIONS (clicks, hovers)
-3. USE ONLY the Design System's color palette - never use colors you see in the video
-4. MATCH the Design System's typography - ignore fonts visible in video
-5. FOLLOW the Design System's spacing and border patterns
+=== VISUAL TOKENS ===
+${tokens.colors ? `COLORS:\n${Object.entries(tokens.colors).map(([k, v]) => `  ${k}: ${v}`).join("\n")}` : ""}
+${tokens.fonts ? `\nTYPOGRAPHY:\n${Object.entries(tokens.fonts).map(([k, v]) => `  ${k}: ${v}`).join("\n")}` : ""}
+${tokens.spacing ? `\nSPACING:\n${Object.entries(tokens.spacing).map(([k, v]) => `  ${k}: ${v}`).join("\n")}` : ""}
+${tokens.radii ? `\nBORDER RADIUS:\n${Object.entries(tokens.radii).map(([k, v]) => `  ${k}: ${v}`).join("\n")}` : ""}
+${tokens.shadows ? `\nSHADOWS:\n${Object.entries(tokens.shadows).map(([k, v]) => `  ${k}: ${v}`).join("\n")}` : ""}
 
-✅ WHAT TO EXTRACT FROM VIDEO:
-- Component arrangement and layout structure
-- Text content and labels
-- Interactive behaviors (dropdowns, tabs, modals)
-- Navigation structure
-- Data/content relationships
+=== STYLE RULES ===
+1. USE these tokens as the primary visual language
+2. Extract LAYOUT structure, CONTENT, and INTERACTIONS from the video
+3. Apply Design System colors, typography, spacing to the extracted layout
+4. Match component purposes and naming from the DS when building UI elements
+5. ⚠️ PRESERVE THE DETECTED THEME (light/dark) FROM THE VIDEO!
+   - If the video shows a LIGHT theme (white/cream backgrounds), generate LIGHT theme output using DS colors adapted for light mode
+   - If the video shows a DARK theme (black/dark backgrounds), generate DARK theme output using DS colors for dark mode
+   - The DS tokens define the palette, but the VIDEO defines whether it's light or dark
+   - Check scanData.ui.theme AND scanData.ui.colors.background to determine theme
+   - DO NOT default to dark theme when the video clearly shows light backgrounds!
 
-❌ WHAT TO IGNORE FROM VIDEO (use Design System instead):
-- Background colors
-- Text colors  
-- Button colors
-- Border colors
-- Gradients
-- Shadows
-- Font families
-- Font sizes
-- Border radius values
-
-The Design System components will be provided in DATABASE CONTEXT - USE THEIR STYLES.`
-        : (styleDirective || "Modern, clean design with smooth animations");
+${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0, 30).map((comp: any) => {
+            const variants = comp.variants?.map((v: any) => v.name).filter((n: string) => n !== "Docs").join(", ") || "Default";
+            return `[${comp.name}] ${comp.docs?.description || ""}\n  Variants: ${variants}${comp.docs?.usage ? `\n  Use for: ${comp.docs.usage}` : ""}`;
+          }).join("\n\n")}` : ""}`;
+        } catch (dsError) {
+          console.error("[Generate] Failed to fetch DS data:", dsError);
+          fullStyleDirective = `Design System "${dsName}" style (tokens could not be loaded)`;
+        }
+      } else {
+        fullStyleDirective = styleDirective || "Modern, clean design with smooth animations";
+      }
       
       // Add refinements if provided
       if ((refinements || "").trim()) {
@@ -11371,9 +11260,9 @@ The Design System components will be provided in DATABASE CONTEXT - USE THEIR ST
       console.log("[Generate] styleReferenceImage URL:", styleReferenceImage?.url?.substring(0, 100));
       console.log("[Generate] styleDirective:", fullStyleDirective.substring(0, 200));
       
-      // CRITICAL: When DS is selected, DO NOT pass styleReferenceImage as it would influence visual styles
-      const effectiveStyleRefImage = selectedDesignSystemId ? undefined : styleReferenceImage;
-      console.log("[Generate] effectiveStyleRefImage:", selectedDesignSystemId ? "DISABLED (DS selected)" : (effectiveStyleRefImage ? "provided" : "none"));
+      // When DS style is selected, don't pass style reference image (DS tokens define the style)
+      const effectiveStyleRefImage = isDSStyleSelected ? undefined : styleReferenceImage;
+      console.log("[Generate] effectiveStyleRefImage:", isDSStyleSelected ? "DISABLED (DS style)" : (effectiveStyleRefImage ? "provided" : "none"));
       
       // Use STREAMING for real-time AI output when we have a video blob
       let result: { success: boolean; code?: string; error?: string; tokenUsage?: any; scanData?: any };
@@ -11408,7 +11297,7 @@ The Design System components will be provided in DATABASE CONTEXT - USE THEIR ST
           result = await transmuteVideoToCode({
             videoUrl,
             styleDirective: fullStyleDirective,
-            databaseContext: (databaseContextStr + dsComponentsContext) || undefined,
+            databaseContext: databaseContextStr || undefined,
             styleReferenceImage: effectiveStyleRefImage || undefined,
           });
           console.log("[Generate] Server action completed:", result.success ? "success" : result.error);
@@ -11419,7 +11308,7 @@ The Design System components will be provided in DATABASE CONTEXT - USE THEIR ST
             result = await generateWithStreaming(
               videoBlobToUse,
               fullStyleDirective,
-              (databaseContextStr + dsComponentsContext) || undefined,
+              databaseContextStr || undefined,
               effectiveStyleRefImage || undefined
             );
             
@@ -11430,7 +11319,7 @@ The Design System components will be provided in DATABASE CONTEXT - USE THEIR ST
               result = await transmuteVideoToCode({
                 videoUrl,
                 styleDirective: fullStyleDirective,
-                databaseContext: (databaseContextStr + dsComponentsContext) || undefined,
+                databaseContext: databaseContextStr || undefined,
                 styleReferenceImage: effectiveStyleRefImage || undefined,
               });
               console.log("[Generate] Server action completed:", result.success ? "success" : result.error);
@@ -11441,7 +11330,7 @@ The Design System components will be provided in DATABASE CONTEXT - USE THEIR ST
             result = await transmuteVideoToCode({
               videoUrl,
               styleDirective: fullStyleDirective,
-              databaseContext: (databaseContextStr + dsComponentsContext) || undefined,
+              databaseContext: databaseContextStr || undefined,
               styleReferenceImage: effectiveStyleRefImage || undefined,
             });
             console.log("[Generate] Server action completed:", result.success ? "success" : result.error);
@@ -11453,7 +11342,7 @@ The Design System components will be provided in DATABASE CONTEXT - USE THEIR ST
         result = await transmuteVideoToCode({
           videoUrl,
           styleDirective: fullStyleDirective,
-          databaseContext: (databaseContextStr + dsComponentsContext) || undefined,
+          databaseContext: databaseContextStr || undefined,
           styleReferenceImage: effectiveStyleRefImage || undefined,
         });
       }
@@ -11551,7 +11440,7 @@ The Design System components will be provided in DATABASE CONTEXT - USE THEIR ST
           tokenUsage: result.tokenUsage, // Store Gemini API token usage
           costCredits: CREDIT_COSTS.VIDEO_GENERATE, // 75 credits per generation
           user_id: user?.id, // Owner of this project for access control
-          design_system_id: selectedDesignSystemId || null, // Link to selected Design System
+          design_system_id: isDSStyleSelected ? styleDirective.split("::")[1] : null, // Link to selected Design System
         };
         setGenerations(prev => [...prev, newGeneration]);
         setActiveGeneration(newGeneration);
@@ -11624,39 +11513,8 @@ The Design System components will be provided in DATABASE CONTEXT - USE THEIR ST
             
             console.log("[Library] Extracted", extractedComponents.length, "components from code");
             
-            // Merge with existing DS components (if any)
-            const allComponents: LibraryComponent[] = [];
-            
-            // Add DS components first (if library was selected)
-            if (dsComponents.length > 0) {
-              console.log("[Library] Merging", dsComponents.length, "DS components");
-              // Map DS layer to ComponentCategory
-              const layerToCategory: Record<string, ComponentCategory> = {
-                foundations: "layout",
-                elements: "inputs",
-                components: "layout",
-                patterns: "navigation",
-                templates: "layout",
-              };
-              dsComponents.forEach((comp: any) => {
-                const mappedCategory = layerToCategory[comp.layer] || "layout";
-                allComponents.push(createLibraryComponent(
-                  comp.name,
-                  comp.code,
-                  mappedCategory,
-                  comp.docs?.description
-                ));
-              });
-            }
-            
-            // Add newly extracted components (avoiding duplicates by name)
-            const existingNames = new Set(allComponents.map(c => c.name.toLowerCase()));
-            extractedComponents.forEach(comp => {
-              if (!existingNames.has(comp.name.toLowerCase())) {
-                allComponents.push(comp);
-                existingNames.add(comp.name.toLowerCase());
-              }
-            });
+            // Use only the extracted components (Library is populated by Extract only)
+            const allComponents: LibraryComponent[] = [...extractedComponents];
             
             console.log("[Library] Total components for library:", allComponents.length);
             
@@ -13234,13 +13092,11 @@ ${publishCode}
             }
             
             const data = await response.json();
-            // Select the newly imported library
-            setSelectedDesignSystemId(data.designSystem.id);
-            showToast(`Imported ${data.components} components from ${data.designSystem.name}`, "success");
-            // Refetch design systems to update the list
+            // Auto-select the imported DS as the active style
+            setStyleDirective(`DS_STYLE::${data.designSystem.id}::${data.designSystem.name}`);
+            showToast(`Imported "${data.designSystem.name}" as style reference (${data.components} component specs)`, "success");
+            // Refetch design systems to update the styles list
             refetchDesignSystems();
-            // Trigger refresh on all DesignSystemSelector instances
-            setDsRefreshTrigger(prev => prev + 1);
           } finally {
             setIsImportingLibrary(false);
           }
@@ -14454,13 +14310,7 @@ ${publishCode}
                             });
                             const result = await response.json();
                             if (result.success && result.data) {
-                              // MERGE: Keep existing DS components, add new extracted ones
-                              const currentComponents = (libraryData as any)?.components || [];
-                              const existingDsComponents = currentComponents.filter((c: any) => 
-                                c.source === "storybook" || c.source === "manual" || !c.isNew
-                              );
-                              
-                              // Mark new components as generated and isNew
+                              // Extract only - replace components with freshly extracted ones
                               const newComponents = (result.data.components || []).map((comp: any) => ({
                                 ...comp,
                                 source: "generated",
@@ -14468,16 +14318,7 @@ ${publishCode}
                                 id: comp.id || `comp-${comp.name?.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                               }));
                               
-                              // Avoid duplicates by name
-                              const existingNames = new Set(existingDsComponents.map((c: any) => c.name?.toLowerCase()));
-                              const uniqueNewComponents = newComponents.filter((c: any) => 
-                                !existingNames.has(c.name?.toLowerCase())
-                              );
-                              
-                              // Merge: DS components first, then new generated ones
-                              const mergedComponents = [...existingDsComponents, ...uniqueNewComponents];
-                              
-                              // Merge foundations - keep existing, add new tokens
+                              // Keep DS tokens if present, merge with extracted foundations
                               const currentFoundations = (libraryData as any)?.foundations || {};
                               const mergedFoundations = {
                                 colors: { ...(currentFoundations.colors || {}), ...(result.data.foundations?.colors || {}) },
@@ -14487,9 +14328,9 @@ ${publishCode}
                                 shadows: { ...(currentFoundations.shadows || {}), ...(result.data.foundations?.shadows || {}) },
                               };
                               
-                              const mergedData = {
+                              const extractedData = {
                                 ...result.data,
-                                components: mergedComponents,
+                                components: newComponents,
                                 foundations: mergedFoundations,
                                 tokens: {
                                   colors: mergedFoundations.colors,
@@ -14500,9 +14341,9 @@ ${publishCode}
                                 },
                               };
                               
-                              setLibraryData(mergedData);
+                              setLibraryData(extractedData);
                               setSelectedLibraryItem("doc-overview");
-                              console.log(`[Library] Merged: ${existingDsComponents.length} existing + ${uniqueNewComponents.length} new = ${mergedComponents.length} total`);
+                              console.log(`[Library] Extracted: ${newComponents.length} components from code`);
                               
                               // Update localStorage backup with library data
                               if (activeGeneration?.id) {
@@ -14511,7 +14352,7 @@ ${publishCode}
                                   const existing = localStorage.getItem(localKey);
                                   if (existing) {
                                     const parsed = JSON.parse(existing);
-                                    parsed.libraryData = mergedData;
+                                    parsed.libraryData = extractedData;
                                     localStorage.setItem(localKey, JSON.stringify(parsed));
                                   }
                                 } catch (e) {}
@@ -14555,13 +14396,7 @@ ${publishCode}
                             });
                             const result = await response.json();
                             if (result.success && result.data) {
-                              // MERGE: Keep existing DS components, add new extracted ones
-                              const currentComponents = (libraryData as any)?.components || [];
-                              const existingDsComponents = currentComponents.filter((c: any) => 
-                                c.source === "storybook" || c.source === "manual" || !c.isNew
-                              );
-                              
-                              // Mark new components as generated and isNew
+                              // Extract only - replace components with freshly extracted ones
                               const newComponents = (result.data.components || []).map((comp: any) => ({
                                 ...comp,
                                 source: "generated",
@@ -14569,16 +14404,7 @@ ${publishCode}
                                 id: comp.id || `comp-${comp.name?.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                               }));
                               
-                              // Avoid duplicates by name
-                              const existingNames = new Set(existingDsComponents.map((c: any) => c.name?.toLowerCase()));
-                              const uniqueNewComponents = newComponents.filter((c: any) => 
-                                !existingNames.has(c.name?.toLowerCase())
-                              );
-                              
-                              // Merge: DS components first, then new generated ones
-                              const mergedComponents = [...existingDsComponents, ...uniqueNewComponents];
-                              
-                              // Merge foundations - keep existing, add new tokens
+                              // Keep DS tokens if present, merge with extracted foundations
                               const currentFoundations = (libraryData as any)?.foundations || {};
                               const mergedFoundations = {
                                 colors: { ...(currentFoundations.colors || {}), ...(result.data.foundations?.colors || {}) },
@@ -14588,9 +14414,9 @@ ${publishCode}
                                 shadows: { ...(currentFoundations.shadows || {}), ...(result.data.foundations?.shadows || {}) },
                               };
                               
-                              const mergedData = {
+                              const extractedData = {
                                 ...result.data,
-                                components: mergedComponents,
+                                components: newComponents,
                                 foundations: mergedFoundations,
                                 tokens: {
                                   colors: mergedFoundations.colors,
@@ -14601,10 +14427,10 @@ ${publishCode}
                                 },
                               };
                               
-                              setLibraryData(mergedData);
+                              setLibraryData(extractedData);
                               setLibraryCodeHash((editableCode || generatedCode).slice(0, 500) + (editableCode || generatedCode).length);
                               setSelectedLibraryItem("doc-overview");
-                              console.log(`[Library] Merged: ${existingDsComponents.length} existing + ${uniqueNewComponents.length} new = ${mergedComponents.length} total`);
+                              console.log(`[Library] Extracted: ${newComponents.length} components from code`);
                               
                               // Update localStorage backup with library data
                               if (activeGeneration?.id) {
@@ -14613,7 +14439,7 @@ ${publishCode}
                                   const existing = localStorage.getItem(localKey);
                                   if (existing) {
                                     const parsed = JSON.parse(existing);
-                                    parsed.libraryData = mergedData;
+                                    parsed.libraryData = extractedData;
                                     localStorage.setItem(localKey, JSON.stringify(parsed));
                                   }
                                 } catch (e) {}
@@ -14784,10 +14610,10 @@ ${publishCode}
                     {/* Layer config */}
                     {(() => {
                       const layers = [
-                        { id: 'foundations', name: 'Foundations', icon: <Palette className="w-3 h-3" />, color: 'text-violet-400', bgColor: 'bg-violet-500/10', description: 'Design tokens' },
-                        { id: 'primitives', name: 'Primitives', icon: <Box className="w-3 h-3" />, color: 'text-blue-400', bgColor: 'bg-blue-500/10', description: 'Atoms' },
-                        { id: 'elements', name: 'Elements', icon: <Square className="w-3 h-3" />, color: 'text-cyan-400', bgColor: 'bg-cyan-500/10', description: 'Basic' },
-                        { id: 'components', name: 'Components', icon: <Layers className="w-3 h-3" />, color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', description: 'Molecules' },
+                        { id: 'foundations', name: 'Layout', icon: <Palette className="w-3 h-3" />, color: 'text-violet-400', bgColor: 'bg-violet-500/10', description: 'Design tokens' },
+                        { id: 'primitives', name: 'Inputs', icon: <Box className="w-3 h-3" />, color: 'text-blue-400', bgColor: 'bg-blue-500/10', description: 'Form controls' },
+                        { id: 'elements', name: 'Components', icon: <Square className="w-3 h-3" />, color: 'text-cyan-400', bgColor: 'bg-cyan-500/10', description: 'UI elements' },
+                        { id: 'components', name: 'Components', icon: <Layers className="w-3 h-3" />, color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', description: 'Composites' },
                         { id: 'patterns', name: 'Patterns', icon: <Layout className="w-3 h-3" />, color: 'text-amber-400', bgColor: 'bg-amber-500/10', description: 'Recipes' },
                         { id: 'product', name: 'Product', icon: <Rocket className="w-3 h-3" />, color: 'text-rose-400', bgColor: 'bg-rose-500/10', description: 'Business' },
                       ];
@@ -16067,33 +15893,21 @@ ${publishCode}
                     />
                   </div>
                   
-                  {/* Library Section */}
+                  {/* Style Section */}
                   <div className="p-4 border-b border-white/[0.06]">
-                    <DesignSystemSelector
-                      value={selectedDesignSystemId}
-                      onChange={(dsId) => setSelectedDesignSystemId(dsId)}
-                      disabled={isProcessing}
-                      onImportClick={() => setShowImportLibraryModal(true)}
-                      isExternalLoading={isImportingLibrary}
-                      externalLoadingText="Importing from Storybook..."
-                      refreshTrigger={dsRefreshTrigger}
-                    />
-                  </div>
-                  
-                  {/* Design System Section - Creative Only */}
-                  <div className={cn("p-4 border-b border-white/[0.06]", selectedDesignSystemId && "opacity-50")}>
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="sidebar-label text-[11px] font-semibold text-white/40 uppercase tracking-wider flex items-center gap-2">
                         <Palette className="w-3.5 h-3.5" /> STYLE
-                        {selectedDesignSystemId && <span className="text-[9px] text-zinc-500 normal-case">(using Library)</span>}
                       </span>
                     </div>
                     <StyleInjector 
-                      value={selectedDesignSystemId ? "" : styleDirective} 
+                      value={styleDirective} 
                       onChange={setStyleDirective} 
-                      disabled={isProcessing || !!selectedDesignSystemId}
+                      disabled={isProcessing}
                       referenceImage={styleReferenceImage}
                       onReferenceImageChange={setStyleReferenceImage}
+                      importedStyles={importedStylesList}
+                      onImportClick={() => setShowImportLibraryModal(true)}
                     />
                   </div>
                   
@@ -16321,32 +16135,20 @@ ${publishCode}
                 />
               </div>
 
-              {/* LIBRARY Section */}
+              {/* STYLE Section */}
               <div className="p-4 border-b border-white/[0.06]">
-                <DesignSystemSelector
-                  value={selectedDesignSystemId}
-                  onChange={(dsId) => setSelectedDesignSystemId(dsId)}
-                  disabled={isProcessing}
-                  onImportClick={() => setShowImportLibraryModal(true)}
-                  isExternalLoading={isImportingLibrary}
-                  externalLoadingText="Importing from Storybook..."
-                  refreshTrigger={dsRefreshTrigger}
-                />
-              </div>
-
-              {/* STYLE Section - Same style as Input tab */}
-              <div className={cn("p-4 border-b border-white/[0.06]", selectedDesignSystemId && "opacity-50")}>
                 <div className="sidebar-label text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3 flex items-center gap-2">
                   <Palette className="w-3.5 h-3.5" /> STYLE
-                  {selectedDesignSystemId && <span className="text-[9px] text-zinc-500 normal-case">(using Library)</span>}
                 </div>
                 
                 <StyleInjector 
-                  value={selectedDesignSystemId ? "" : styleDirective} 
+                  value={styleDirective} 
                   onChange={setStyleDirective} 
-                  disabled={isProcessing || !!selectedDesignSystemId}
+                  disabled={isProcessing}
                   referenceImage={styleReferenceImage}
                   onReferenceImageChange={setStyleReferenceImage}
+                  importedStyles={importedStylesList}
+                  onImportClick={() => setShowImportLibraryModal(true)}
                 />
               </div>
 
@@ -19994,9 +19796,9 @@ export default function GeneratedPage() {
                                   {/* Components by Layer */}
                                   {(() => {
                                     const layers = [
-                                      { id: 'primitives', name: 'Primitives', color: 'blue', desc: 'Basic building blocks' },
-                                      { id: 'components', name: 'Components', color: 'emerald', desc: 'Composite elements' },
-                                      { id: 'patterns', name: 'Patterns', color: 'amber', desc: 'Reusable patterns' },
+                                      { id: 'primitives', name: 'Inputs', color: 'blue', desc: 'Form controls' },
+                                      { id: 'components', name: 'Components', color: 'emerald', desc: 'UI elements' },
+                                      { id: 'patterns', name: 'Patterns', color: 'amber', desc: 'Reusable recipes' },
                                       { id: 'product', name: 'Product', color: 'rose', desc: 'Business-specific' },
                                     ];
                                     const compsByLayer: Record<string, any[]> = {};
@@ -24253,35 +24055,21 @@ module.exports = {
                 />
               </div>
 
-              {/* Library Section - Consistent sizing */}
+              {/* Style Section - Consistent sizing */}
               <div className="p-4 border-b border-zinc-800 flex-shrink-0">
-                <DesignSystemSelector
-                  value={selectedDesignSystemId}
-                  onChange={(dsId) => setSelectedDesignSystemId(dsId)}
-                  disabled={isProcessing}
-                  onImportClick={() => setShowImportLibraryModal(true)}
-                  isExternalLoading={isImportingLibrary}
-                  externalLoadingText="Importing from Storybook..."
-                  refreshTrigger={dsRefreshTrigger}
-                />
-              </div>
-
-              {/* Design System Section - Consistent sizing */}
-              <div className={cn("p-4 border-b border-zinc-800 flex-shrink-0", selectedDesignSystemId && "opacity-50")}>
                 <div className="flex items-center gap-2 mb-3">
                   <Palette className="w-4 h-4 text-zinc-500" />
-                  <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                    Style
-                  </span>
-                  {selectedDesignSystemId && <span className="text-[9px] text-zinc-500">(using Library)</span>}
+                  <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Style</span>
                 </div>
                 
                 <StyleInjector 
-                  value={selectedDesignSystemId ? "" : styleDirective} 
+                  value={styleDirective} 
                   onChange={setStyleDirective} 
-                  disabled={isProcessing || !!selectedDesignSystemId}
+                  disabled={isProcessing}
                   referenceImage={styleReferenceImage}
                   onReferenceImageChange={setStyleReferenceImage}
+                  importedStyles={importedStylesList}
+                  onImportClick={() => setShowImportLibraryModal(true)}
                 />
               </div>
 
@@ -25332,33 +25120,20 @@ module.exports = {
                   />
                 </div>
                 
-                {/* Library */}
-                <div>
-                  <DesignSystemSelector
-                    value={selectedDesignSystemId}
-                    onChange={(dsId) => setSelectedDesignSystemId(dsId)}
-                    disabled={isProcessing}
-                    onImportClick={() => setShowImportLibraryModal(true)}
-                    isExternalLoading={isImportingLibrary}
-                    externalLoadingText="Importing from Storybook..."
-                    refreshTrigger={dsRefreshTrigger}
-                  />
-                </div>
-
                 {/* Visual Style */}
-                <div className={cn(selectedDesignSystemId && "opacity-50")}>
+                <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
-                      Style {selectedDesignSystemId && <span className="text-zinc-600">(using Library)</span>}
-                    </label>
+                    <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">Style</label>
                   </div>
                   
                   <StyleInjector 
-                    value={selectedDesignSystemId ? "" : styleDirective} 
+                    value={styleDirective} 
                     onChange={setStyleDirective} 
-                    disabled={isProcessing || !!selectedDesignSystemId}
+                    disabled={isProcessing}
                     referenceImage={styleReferenceImage}
                     onReferenceImageChange={setStyleReferenceImage}
+                    importedStyles={importedStylesList}
+                    onImportClick={() => setShowImportLibraryModal(true)}
                   />
                 </div>
                 

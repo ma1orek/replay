@@ -14,9 +14,7 @@ import {
 
 // Design System Context for AI prompts
 import { 
-  getDesignSystemPromptContext,
   detectNewComponentsFromCode,
-  getDesignSystemComponents
 } from "@/lib/prompts/design-system-context";
 import type { LocalComponent } from "@/types/design-system";
 
@@ -38,8 +36,6 @@ interface TransmuteOptions {
   styleReferenceImage?: { url: string; base64?: string };
   /** Enable Agentic Vision Surveyor for precise measurements (default: true) */
   useSurveyor?: boolean;
-  /** Design System ID to use for component reuse and styling consistency */
-  designSystemId?: string;
 }
 
 interface TransmuteResult {
@@ -1455,12 +1451,12 @@ function fixChartReference(code: string): string {
 // ============================================================================
 
 export async function transmuteVideoToCode(options: TransmuteOptions): Promise<TransmuteResult> {
-  const { videoUrl, styleDirective, databaseContext, styleReferenceImage, useSurveyor = true, designSystemId } = options;
+  const { videoUrl, styleDirective, databaseContext, styleReferenceImage, useSurveyor = true } = options;
   
   console.log("[transmute] MULTI-PASS PIPELINE v3.0 - Starting with Agentic Vision...");
   console.log("[transmute] Video URL:", videoUrl?.substring(0, 100));
   console.log("[transmute] Surveyor enabled:", useSurveyor);
-  console.log("[transmute] Design System ID:", designSystemId || "none");
+  console.log("[transmute] Style directive:", styleDirective?.substring(0, 80) || "none");
   
   const apiKey = getApiKey();
   if (!apiKey) {
@@ -1618,11 +1614,39 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
     let assemblerPrompt = ASSEMBLER_PROMPT;
     
     // Check if user selected a specific style (not auto-detect)
+    const isDSStyleDirective = styleDirective?.startsWith("DESIGN SYSTEM STYLE GUIDE:");
     const hasCustomStyle = styleDirective && 
       !styleDirective.toLowerCase().includes('auto') && 
+      !isDSStyleDirective &&
       styleDirective.trim().length > 10;
     
-    if (hasCustomStyle) {
+    if (isDSStyleDirective) {
+      // Design System style - use DS tokens for colors/typography BUT respect video's detected theme (light/dark)
+      assemblerPrompt += `\n\n**═══════════════════════════════════════════════════════════════**
+**🎨 DESIGN SYSTEM STYLE GUIDE - OVERRIDE COLORS ONLY!**
+**═══════════════════════════════════════════════════════════════**
+IMPORTANT: User has imported a Design System. You MUST:
+1. USE the Design System's colors, typography, spacing, and border-radius tokens below
+2. ⚠️ CRITICAL: RESPECT scanData.ui.theme (light/dark) FROM THE VIDEO!
+   - Check scanData.ui.theme value AND scanData.ui.colors.background
+   - If theme === "light" OR background is #fff/#faf/#f5f/white/cream → Generate LIGHT theme output!
+   - If theme === "dark" OR background is #000/#0a0/#111/black → Generate DARK theme output!
+3. Keep the TEXT CONTENT, STRUCTURE, and INTERACTIONS from scanData
+4. Match component purposes from the DS component patterns
+
+**THEME DETECTION RULES FOR DS:**
+- The DS tokens define the PALETTE (which colors to use)
+- The VIDEO defines the THEME (light or dark mode)
+- For LIGHT video: Use DS colors for accents/primary, but keep backgrounds WHITE/LIGHT (bg-white, bg-gray-50)
+- For DARK video: Use DS colors for accents/primary, with DARK backgrounds (bg-zinc-950, bg-gray-900)
+- NEVER default to dark theme when the video clearly shows light backgrounds!
+- If Surveyor detected theme, trust the Surveyor's measurement over AI guessing
+
+**DESIGN SYSTEM:**
+${styleDirective}
+
+Use the DS tokens for all visual styling. Adapt them to the video's detected theme (light/dark).`;
+    } else if (hasCustomStyle) {
       // User selected a specific style - OVERRIDE video colors completely
       assemblerPrompt += `\n\n**═══════════════════════════════════════════════════════════════**
 **🎨 STYLE DIRECTIVE - OVERRIDE VIDEO COLORS/STYLES!**
@@ -1646,30 +1670,9 @@ The style directive above defines ALL visual aspects: colors, backgrounds, gradi
       assemblerPrompt += `\n\n**DATABASE CONTEXT:**\n${databaseContext}`;
     }
     
-    // ════════════════════════════════════════════════════════════════
-    // INJECT DESIGN SYSTEM CONTEXT (Component Reuse)
-    // ════════════════════════════════════════════════════════════════
-    let designSystemContext = '';
-    let existingComponentNames: string[] = [];
-    
-    if (designSystemId) {
-      try {
-        console.log("[transmute] Fetching Design System context...");
-        designSystemContext = await getDesignSystemPromptContext(designSystemId);
-        
-        if (designSystemContext) {
-          assemblerPrompt += `\n\n${designSystemContext}`;
-          console.log("[transmute] Injected Design System context into assembler prompt");
-          
-          // Get component names for new component detection later
-          const dsComponents = await getDesignSystemComponents(designSystemId);
-          existingComponentNames = dsComponents.map(c => c.name);
-          console.log("[transmute] Existing DS components:", existingComponentNames.length);
-        }
-      } catch (dsError: any) {
-        console.warn("[transmute] Failed to fetch Design System context (non-fatal):", dsError?.message);
-      }
-    }
+    // Design System context now flows through styleDirective (DS_STYLE:: format)
+    // The rich style guide with tokens and component specs is built in page.tsx
+    // and passed as the styleDirective parameter - no separate injection needed.
     
     const menuCount = scanData?.ui?.navigation?.sidebar?.items?.length || 0;
     const metricCount = scanData?.data?.metrics?.length || 0;
@@ -1718,6 +1721,9 @@ ${JSON.stringify(scanData, null, 2)}
 5. ${colorInstruction}
 6. ${spacingInstruction}
 7. CONTENT 1:1: Every headline, paragraph, nav label, button text, FAQ item, footer line from scanData MUST appear in the output VERBATIM. Do not skip any section, do not shorten any text.
+8. LAYOUT: Use CSS Grid or Flexbox for card rows — NEVER inline-block. Cards must fill grid cells (w-full, h-full).
+9. BUTTONS: ALL buttons/links MUST be VISIBLE by default. NEVER opacity:0 or visibility:hidden until hover. Hover enhances — doesn't create visibility.
+10. THEME: Respect scanData.ui.theme — if light, use light backgrounds (bg-white). If dark, use dark backgrounds (bg-zinc-950).
 ${surveyorMeasurements ? `
 **CRITICAL - SURVEYOR DATA IS LAW:**
 The measurements above came from Agentic Vision Code Execution - they are PIXEL-PERFECT.
@@ -1805,29 +1811,24 @@ Generate the complete HTML file now:`;
       console.log("[transmute] Surveyor confidence:", Math.round(surveyorMeasurements.confidence * 100) + "%");
     }
     
-    // ════════════════════════════════════════════════════════════════
-    // DETECT NEW COMPONENTS (for "Save to Library" feature)
-    // ════════════════════════════════════════════════════════════════
+    // New component detection - detect data-new-component markers in generated code
     let localComponents: LocalComponent[] = [];
-    
-    if (designSystemId) {
-      try {
-        const newComponents = detectNewComponentsFromCode(code, existingComponentNames);
-        localComponents = newComponents.map((nc, idx) => ({
-          id: `local-${Date.now()}-${idx}`,
-          name: nc.name,
-          code: nc.code,
-          layer: 'components', // Default layer
-          isNew: true,
-          savedToLibrary: false,
-        }));
-        
-        if (localComponents.length > 0) {
-          console.log("[transmute] Detected new components:", localComponents.map(c => c.name).join(", "));
-        }
-      } catch (detectError: any) {
-        console.warn("[transmute] Failed to detect new components:", detectError?.message);
+    try {
+      const newComponents = detectNewComponentsFromCode(code, []);
+      localComponents = newComponents.map((nc, idx) => ({
+        id: `local-${Date.now()}-${idx}`,
+        name: nc.name,
+        code: nc.code,
+        layer: 'components' as const,
+        isNew: true,
+        savedToLibrary: false,
+      }));
+      
+      if (localComponents.length > 0) {
+        console.log("[transmute] Detected new components:", localComponents.map(c => c.name).join(", "));
       }
+    } catch (detectError: any) {
+      console.warn("[transmute] Failed to detect new components:", detectError?.message);
     }
     
     return {

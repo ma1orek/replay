@@ -1,9 +1,17 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { ChevronDown, Search, Info, X, ImagePlus, Upload } from "lucide-react";
+import { ChevronDown, Search, Info, X, ImagePlus, Upload, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+
+export interface ImportedDesignSystem {
+  id: string;
+  name: string;
+  source_url?: string;
+  tokenCount?: number;
+  componentCount?: number;
+}
 
 interface StyleInjectorProps {
   value: string;
@@ -11,6 +19,12 @@ interface StyleInjectorProps {
   disabled?: boolean;
   referenceImage?: { url: string; name: string } | null;
   onReferenceImageChange?: (image: { url: string; name: string } | null) => void;
+  /** Imported design systems to show as style options */
+  importedStyles?: ImportedDesignSystem[];
+  /** Callback to trigger Storybook import */
+  onImportClick?: () => void;
+  /** Callback to delete an imported design system */
+  onDeleteDS?: (dsId: string) => void;
 }
 
 const PLACEHOLDER_EXAMPLES = [
@@ -3835,7 +3849,7 @@ CTA BUTTONS:
 - Preserve ALL content from video`, category: "creative" },
 ];
 
-export default function StyleInjector({ value, onChange, disabled, referenceImage, onReferenceImageChange }: StyleInjectorProps) {
+export default function StyleInjector({ value, onChange, disabled, referenceImage, onReferenceImageChange, importedStyles, onImportClick, onDeleteDS }: StyleInjectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showInfo, setShowInfo] = useState<string | null>(null);
@@ -3848,9 +3862,16 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
   const searchInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Check if a DS style is selected
+  const isDSStyle = value.startsWith("DS_STYLE::");
+  const selectedDSId = isDSStyle ? value.split("::")[1] : null;
+  const selectedDSName = isDSStyle ? value.split("::")[2] : null;
+
   // Find preset - default to "auto-detect" when no style selected (matches video vibe)
-  const selectedPreset = STYLE_PRESETS.find(p => value === p.name || value.startsWith(p.name + ".")) 
-    || (!value || value.trim() === "" ? STYLE_PRESETS.find(p => p.id === "auto-detect") : undefined);
+  const selectedPreset = isDSStyle ? null : (
+    STYLE_PRESETS.find(p => value === p.name || value.startsWith(p.name + ".")) 
+    || (!value || value.trim() === "" ? STYLE_PRESETS.find(p => p.id === "auto-detect") : undefined)
+  );
   
   // Extract custom instructions
   const customInstructions = (() => {
@@ -3999,14 +4020,19 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
         )}
       >
         {selectedPreset && <StylePreview styleId={selectedPreset.id} />}
+        {isDSStyle && <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0"><span className="text-xs text-blue-400 font-bold">DS</span></div>}
         <div className="flex-1 min-w-0">
-          <span className={cn("text-sm block", selectedPreset ? "text-white" : "text-white/25")}>
-            {selectedPreset ? selectedPreset.name : "Select a style..."}
+          <span className={cn("text-sm block", (selectedPreset || isDSStyle) ? "text-white" : "text-white/25")}>
+            {isDSStyle ? selectedDSName : (selectedPreset ? selectedPreset.name : "Select a style...")}
           </span>
+          {isDSStyle && (
+            <span className="text-xs text-blue-400/60 truncate block">Imported Design System</span>
+          )}
           {selectedPreset && (
             <span className="text-xs text-white/30 truncate block">{selectedPreset.desc}</span>
           )}
         </div>
+        {/* DS style selected - no X deselect button; use trash in dropdown to delete imported DS */}
         <ChevronDown className={cn("w-4 h-4 text-white/40 transition-transform flex-shrink-0", isOpen && "rotate-180")} />
       </button>
 
@@ -4059,6 +4085,97 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
                   </div>
                 )}
 
+                {/* Imported Design Systems */}
+                {importedStyles && importedStyles.length > 0 && (!searchQuery || importedStyles.some(ds => ds.name.toLowerCase().includes(searchQuery.toLowerCase()))) && (
+                  <div>
+                    <div className="text-[9px] font-medium px-2 py-1 text-left text-blue-400">
+                      Imported Design Systems
+                    </div>
+                    <div className="space-y-0.5">
+                      {importedStyles
+                        .filter(ds => !searchQuery || ds.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                        .map(ds => (
+                        <button
+                          key={ds.id}
+                          onClick={() => {
+                            onChange(`DS_STYLE::${ds.id}::${ds.name}`);
+                            setIsOpen(false);
+                          }}
+                          className={cn(
+                            "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all",
+                            selectedDSId === ds.id
+                              ? "bg-blue-500/15 border border-blue-500/30"
+                              : "hover:bg-white/[0.04] border border-transparent"
+                          )}
+                        >
+                          <div className="w-7 h-7 rounded-md bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0">
+                            <span className="text-[9px] text-blue-400 font-bold">DS</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-xs text-white block truncate">{ds.name}</span>
+                            <span className="text-[10px] text-white/30 block truncate">
+                              {ds.tokenCount ? `${ds.tokenCount} tokens` : ""}
+                              {ds.tokenCount && ds.componentCount ? " · " : ""}
+                              {ds.componentCount ? `${ds.componentCount} components` : ""}
+                              {!ds.tokenCount && !ds.componentCount && ds.source_url ? ds.source_url.replace(/https?:\/\//, '') : ""}
+                            </span>
+                          </div>
+                          {selectedDSId === ds.id && (
+                            <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                              <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                            </div>
+                          )}
+                          {onDeleteDS && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm(`Delete "${ds.name}" from imported libraries?`)) {
+                                  onDeleteDS(ds.id);
+                                  if (selectedDSId === ds.id) {
+                                    onChange("");
+                                  }
+                                }
+                              }}
+                              className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 text-white/20 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                              title="Delete imported library"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </button>
+                      ))}
+                      {onImportClick && (
+                        <button
+                          onClick={() => { onImportClick(); setIsOpen(false); }}
+                          className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left hover:bg-white/[0.04] border border-dashed border-white/10 transition-all"
+                        >
+                          <div className="w-7 h-7 rounded-md bg-white/[0.03] border border-white/10 flex items-center justify-center flex-shrink-0">
+                            <span className="text-[10px] text-white/40">+</span>
+                          </div>
+                          <span className="text-xs text-white/40">Import from Storybook...</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {/* "Import" button when no imported DS yet */}
+                {(!importedStyles || importedStyles.length === 0) && onImportClick && !searchQuery && (
+                  <div>
+                    <div className="text-[9px] font-medium px-2 py-1 text-left text-blue-400">
+                      Design Systems
+                    </div>
+                    <button
+                      onClick={() => { onImportClick(); setIsOpen(false); }}
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left hover:bg-white/[0.04] border border-dashed border-white/10 transition-all"
+                    >
+                      <div className="w-7 h-7 rounded-md bg-white/[0.03] border border-white/10 flex items-center justify-center flex-shrink-0">
+                        <span className="text-[10px] text-white/40">+</span>
+                      </div>
+                      <span className="text-xs text-white/40">Import from Storybook...</span>
+                    </button>
+                  </div>
+                )}
+
                 {/* Categorized */}
                 {STYLE_CATEGORIES.map(category => {
                   const presets = groupedPresets[category.id];
@@ -4085,7 +4202,7 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
                   );
                 })}
 
-                {filteredPresets.length === 0 && (
+                {filteredPresets.length === 0 && (!importedStyles || importedStyles.length === 0) && (
                   <div className="text-left px-3 py-6 text-white/30 text-xs">
                     No styles found for "{searchQuery}"
                   </div>

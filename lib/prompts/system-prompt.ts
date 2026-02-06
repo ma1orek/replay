@@ -500,6 +500,27 @@ Example:
   <div className="bg-surface rounded-xl p-6 h-full flex flex-col">...</div>
 </div>
 
+⚠️ INLINE BOXES / LAYOUT BUG PREVENTION (MANDATORY!):
+- NEVER use display:inline or inline-block for card containers, sections, or content boxes
+- Cards, panels, stat boxes MUST be block-level (display:flex, display:grid, or display:block)
+- If elements appear side-by-side, use CSS Grid or Flexbox — NOT inline/inline-block
+- Content sections MUST stack vertically (flex-col) — NOT flow inline like text
+- CORRECT: <div class="grid grid-cols-3 gap-6"> or <div class="flex gap-6">
+- WRONG: <div class="inline-block"> or <span> for layout containers
+- Each section/card MUST be a <div> with proper width (w-full, col-span-N)
+- NEVER let cards collapse to content-width — they MUST fill their grid cell
+
+⚠️ BUTTON VISIBILITY BUG PREVENTION (MANDATORY!):
+- ALL buttons and interactive elements MUST be VISIBLE by default!
+- NEVER set opacity:0, visibility:hidden, or display:none on buttons/links/CTAs
+- Buttons must ALWAYS have visible text, background, or border — even BEFORE hover
+- Hover effects should ENHANCE visibility (brighter, lifted, glowing) — NOT create it
+- WRONG: .btn { opacity: 0; } .btn:hover { opacity: 1; } ← Button invisible until hover!
+- WRONG: .btn { color: transparent; } .btn:hover { color: white; } ← Text invisible!
+- CORRECT: .btn { opacity: 1; bg-indigo-600; } .btn:hover { bg-indigo-500; transform: translateY(-2px); }
+- For ghost/outline buttons: MUST have visible border AND text color by default
+- If a button matches the background color (e.g., white text on white bg) = BUG. Fix contrast!
+
 SHADOWS:
 - Colored shadows, not gray: shadow-indigo-500/20
 - Layered: shadow-xl shadow-indigo-500/10
