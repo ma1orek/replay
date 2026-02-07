@@ -697,57 +697,53 @@ function extractNameFromUrl(url: string): string | null {
 /**
  * Categorize component layer following the Storybook source structure.
  * Respects the original Storybook category path (e.g. "Components/Inputs/Button")
- * and maps to the 6-layer system: foundations, primitives, elements, components, patterns, product.
+ * and maps to the 4-layer system: foundations, components, patterns, product.
+ * (primitives/elements are merged into components for enterprise taxonomy)
  */
 function categorizeLayer(category: string, componentName?: string): string {
   const catLower = category.toLowerCase();
   const nameLower = (componentName || "").toLowerCase();
-  
+
   // 1. FOUNDATIONS - tokens, colors, typography, spacing, icons
   if (catLower.includes("foundation") || catLower.includes("token")) return "foundations";
   if (catLower.includes("color") && !catLower.includes("component")) return "foundations";
   if (catLower.includes("typography") && !nameLower.includes("component")) return "foundations";
   if (catLower.includes("spacing") || catLower.includes("breakpoint") || catLower.includes("shadow")) return "foundations";
-  
-  // 2. PRIMITIVES / LAYOUT - structural building blocks
-  if (catLower.includes("layout")) return "primitives";
-  if (catLower.includes("primitive")) return "primitives";
+
+  // 2. COMPONENTS - all UI building blocks (actions, forms, navigation, data-display, feedback, overlays)
+  if (catLower.includes("layout") || catLower.includes("primitive")) return "components";
   const layoutNames = ["box", "stack", "container", "grid", "grid item", "divider", "spacer"];
-  if (layoutNames.some(p => nameLower === p || nameLower === p.replace(" ", ""))) return "primitives";
-  
-  // 3. ELEMENTS - simple atomic components (Inputs category from Storybook)
-  if (catLower.includes("input") || catLower.includes("form")) return "elements";
-  const inputNames = ["button", "checkbox", "radio", "radio group", "select", "select field", "select field item", 
-    "switch", "toggle", "text field", "textfield", "text area", "textarea", "date field", "file field", 
+  if (layoutNames.some(p => nameLower === p || nameLower === p.replace(" ", ""))) return "components";
+
+  if (catLower.includes("input") || catLower.includes("form")) return "components";
+  const inputNames = ["button", "checkbox", "radio", "radio group", "select", "select field", "select field item",
+    "switch", "toggle", "text field", "textfield", "text area", "textarea", "date field", "file field",
     "search field", "search", "link", "checkbox group"];
-  if (inputNames.some(p => nameLower === p || nameLower === p.replace(" ", ""))) return "elements";
-  
-  // 4. COMPONENTS - composite components (Data Display, Feedback, Navigation, Surfaces)
+  if (inputNames.some(p => nameLower === p || nameLower === p.replace(" ", ""))) return "components";
+
   if (catLower.includes("data display") || catLower.includes("data-display")) return "components";
   if (catLower.includes("feedback")) return "components";
   if (catLower.includes("navigation")) return "components";
   if (catLower.includes("surface") || catLower.includes("overlay")) return "components";
-  
-  // Map specific component names to "components" layer
-  const componentNames = ["table", "carousel", "carousel item", "tooltip", "modal", "dialog", 
-    "result dialog", "result toast", "bottom sheet", "breadcrumb", "breadcrumbs", "tabs", 
-    "tab", "pagination", "menu", "dropdown", "accordion", "badge", "status tag", 
+
+  const componentNames = ["table", "carousel", "carousel item", "tooltip", "modal", "dialog",
+    "result dialog", "result toast", "bottom sheet", "breadcrumb", "breadcrumbs", "tabs",
+    "tab", "pagination", "menu", "dropdown", "accordion", "badge", "status tag",
     "skeleton", "trend", "icon", "avatar", "typography", "card"];
   if (componentNames.some(p => nameLower === p || nameLower === p.replace(" ", ""))) return "components";
-  
-  // Table sub-components stay with components
+
   if (nameLower.startsWith("table ") || nameLower.startsWith("table")) return "components";
-  
-  // 5. PATTERNS - complex reusable patterns, templates
+
+  // 3. PATTERNS - complex reusable patterns, templates
   if (catLower.includes("pattern") || catLower.includes("template")) return "patterns";
-  
-  // 6. PRODUCT - business-specific components
+
+  // 4. PRODUCT MODULES - business-specific components
   if (catLower.includes("product") || catLower.includes("page") || catLower.includes("section")) return "product";
-  const productNames = ["hero", "hero banner", "banner", "banner box", "feature box", "feature", 
+  const productNames = ["hero", "hero banner", "banner", "banner box", "feature box", "feature",
     "product box", "product carousel", "category box", "simple summary box", "simple summary box action",
     "landing", "dashboard", "pricing", "testimonial", "cta"];
   if (productNames.some(p => nameLower === p || nameLower === p.replace(" ", ""))) return "product";
-  
+
   // Default: use "components" for anything unrecognized
   return "components";
 }
@@ -1115,7 +1111,7 @@ function describeUsage(name: string, layer: string): string {
   if (n.includes("hero") || n.includes("banner")) return "hero sections and promotional banners";
   if (n.includes("grid")) return "responsive layout grids";
   if (n.includes("toast") || n.includes("notification")) return "transient feedback messages";
-  if (layer === "elements") return "interactive UI elements";
+  if (layer === "components") return "interactive UI elements";
   if (layer === "patterns") return "reusable UI patterns";
   if (layer === "product") return "product-specific sections";
   return "UI composition";

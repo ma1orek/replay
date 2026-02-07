@@ -123,7 +123,12 @@ import {
   Share2,
   HelpCircle,
   Terminal,
-  Settings2
+  Settings2,
+  MousePointerClick,
+  TextCursorInput,
+  Compass,
+  Table,
+  PanelTop
 } from "lucide-react";
 import * as LucideIcons from 'lucide-react';
 import { cn, generateId, formatDuration, updateProjectAnalytics } from "@/lib/utils";
@@ -605,7 +610,7 @@ interface ChatMessage {
 // LIBRARY INTERFACES (Storybook-like component library)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-type ComponentCategory = "layout" | "inputs" | "data" | "feedback" | "navigation";
+type ComponentCategory = "actions" | "forms" | "data-display" | "feedback" | "navigation" | "overlays";
 
 interface ComponentProp {
   name: string;
@@ -641,7 +646,8 @@ interface LibraryComponent {
   id: string;
   name: string;                    // "Button"
   category: ComponentCategory;
-  layer?: "foundations" | "primitives" | "elements" | "components" | "patterns" | "product"; // Library layer for grouping
+  layer?: "foundations" | "components" | "patterns" | "templates" | "product"; // Library layer for grouping
+  subcategory?: ComponentCategory; // Subcategory within components layer
   source?: "storybook" | "generated" | "manual" | "video"; // Where component came from
   description: string;             // AI generated
   
@@ -709,7 +715,7 @@ interface LibraryData {
     borderRadius?: Record<string, string>;
     shadows?: Record<string, string>;
   };
-  primitives?: LibraryComponent[];
+  templates?: LibraryComponent[];
   patterns?: LibraryComponent[];
   product?: LibraryComponent[];
 }
@@ -718,9 +724,9 @@ interface LibraryData {
 function createLibraryComponent(
   name: string, 
   code: string, 
-  category: ComponentCategory = "layout",
+  category: ComponentCategory = "data-display",
   description?: string,
-  layer?: "foundations" | "primitives" | "elements" | "components" | "patterns" | "product",
+  layer?: "foundations" | "components" | "patterns" | "templates" | "product",
   source?: "storybook" | "generated" | "manual" | "video",
   isNew?: boolean
 ): LibraryComponent {
@@ -2029,9 +2035,9 @@ const ShadowPreview = ({
   html, 
   background = "dark",
   className = ""
-}: { 
-  html: string; 
-  background?: "light" | "dark";
+}: {
+  html: string;
+  background?: "light" | "dark" | "transparent";
   className?: string;
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -2333,9 +2339,9 @@ const InteractiveReactPreview = ({
   onAccessibilityResults,
   isFullWidth = false,
   componentId
-}: { 
-  code: string; 
-  background?: "light" | "dark";
+}: {
+  code: string;
+  background?: "light" | "dark" | "transparent";
   className?: string;
   onSizeChange?: (size: { width: number; height: number }) => void;
   onAccessibilityResults?: (results: { violations: any[]; passes: any[]; incomplete: any[] }) => void;
@@ -2417,8 +2423,8 @@ const InteractiveReactPreview = ({
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { 
-      background: ${background === "dark" ? "#18181b" : "#ffffff"}; 
-      color: ${background === "dark" ? "#fafafa" : "#18181b"};
+      background: ${background === "transparent" ? "transparent" : background === "dark" ? "#18181b" : "#ffffff"};
+      color: ${background === "transparent" || background === "dark" ? "#fafafa" : "#18181b"};
       font-family: system-ui, -apple-system, sans-serif;
       /* Fill iframe viewport - content will be responsive */
       width: 100%;
@@ -2444,6 +2450,13 @@ const InteractiveReactPreview = ({
     .border-gray-200, .border-zinc-200, .border-slate-200 { border-color: #3f3f46 !important; }
     .border-gray-300, .border-zinc-300, .border-slate-300 { border-color: #52525b !important; }
     .shadow-lg, .shadow-xl, .shadow-2xl { box-shadow: 0 10px 40px rgba(0,0,0,0.5) !important; }
+    ` : background === "transparent" ? `
+    .bg-white, .bg-gray-50, .bg-zinc-50, .bg-slate-50, .bg-gray-100, .bg-zinc-100, .bg-slate-100 { background-color: transparent !important; }
+    .text-gray-900, .text-zinc-900, .text-slate-900 { color: #fafafa !important; }
+    .text-gray-800, .text-zinc-800, .text-slate-800 { color: #e4e4e7 !important; }
+    .text-gray-700, .text-zinc-700, .text-slate-700 { color: #d4d4d8 !important; }
+    .border-gray-200, .border-zinc-200, .border-slate-200 { border-color: #3f3f46 !important; }
+    .border-gray-300, .border-zinc-300, .border-slate-300 { border-color: #52525b !important; }
     ` : ""}
     /* No scrollbars */
     ::-webkit-scrollbar { display: none !important; }
@@ -2602,7 +2615,7 @@ const InteractiveReactPreview = ({
     }
   </script>
 </head>
-<body class="${background === 'dark' ? 'dark' : ''}">
+<body class="${background === 'dark' || background === 'transparent' ? 'dark' : ''}">
   <div id="root"></div>
   <script type="text/babel" data-presets="react">
     const { useState, useEffect, useCallback, useMemo, useRef, Fragment } = React;
@@ -3462,7 +3475,7 @@ function ReplayToolContent() {
   }, [refetchDesignSystems, styleDirective]);
   
   // Library sidebar collapse states
-  const [librarySectionsExpanded, setLibrarySectionsExpanded] = useState<Record<string, boolean>>({ docs: true, foundations: true, primitives: true, elements: true, components: true, patterns: true, product: true });
+  const [librarySectionsExpanded, setLibrarySectionsExpanded] = useState<Record<string, boolean>>({ docs: true, foundations: true, components: true, patterns: true, templates: true, product: true });
   const [libraryCategoriesExpanded, setLibraryCategoriesExpanded] = useState<Record<string, boolean>>({});
   const [showLibraryOutline, setShowLibraryOutline] = useState(false);
   const [showLibraryCode, setShowLibraryCode] = useState(false);
@@ -3642,32 +3655,39 @@ function ReplayToolContent() {
           name.includes('feature') || name.includes('cta') || name.includes('banner')) {
         return { width: 900, height: 400 };
       }
+      // Large templates (page layouts, app shells)
+      if (layer === 'templates' || name.includes('layout') || name.includes('shell') ||
+          name.includes('page') || name.includes('dashboard')) {
+        return { width: 600, height: 350 };
+      }
       // Medium-large patterns (cards, listings, rows)
-      if (layer === 'patterns' || name.includes('card') || name.includes('listing') || 
+      if (layer === 'patterns' || name.includes('card') || name.includes('listing') ||
           name.includes('row') || name.includes('item')) {
         return { width: 400, height: 280 };
       }
       // Medium components (navbar, sidebar, form)
-      if (layer === 'components' || name.includes('nav') || name.includes('form') || 
+      if (layer === 'components' || name.includes('nav') || name.includes('form') ||
           name.includes('modal') || name.includes('sidebar')) {
         return { width: 350, height: 200 };
       }
-      // Small primitives (buttons, badges, icons, text, divider)
-      if (layer === 'primitives' || name.includes('button') || name.includes('badge') || 
+      // Small action components (buttons, badges, icons, text, divider)
+      if (name.includes('button') || name.includes('badge') ||
           name.includes('icon') || name.includes('text') || name.includes('divider')) {
         return { width: 200, height: 100 };
       }
       // Default medium
       return { width: 320, height: 180 };
     };
-    
-    // Group by layer for organized layout - LARGEST FIRST (product -> primitives)
-    const layers = ['product', 'patterns', 'components', 'elements', 'primitives', 'foundations'];
+
+    // Group by layer for organized layout - LARGEST FIRST (product -> foundations)
+    const layers = ['product', 'templates', 'patterns', 'components', 'foundations'];
     const componentsByLayer: Record<string, any[]> = {};
     layers.forEach(l => componentsByLayer[l] = []);
     
     libraryData.components.forEach((comp: any) => {
-      const layer = (comp.layer || 'components').toLowerCase();
+      let layer = (comp.layer || 'components').toLowerCase();
+      // Backward compat: remap old layer names
+      if (layer === 'primitives' || layer === 'elements') layer = 'components';
       if (componentsByLayer[layer]) {
         componentsByLayer[layer].push(comp);
       } else {
@@ -7012,26 +7032,25 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
       return true;
     };
     
+    // Synchronous duplicate tracker — prevents race conditions from async state updates
+    const addedNodeNames = new Set<string>();
+    const addedNodeIds = new Set<string>();
+
     const addNode = async (node: ProductFlowNode) => {
       await new Promise(r => setTimeout(r, 30));
-      // Validate node name before adding
       if (!isValidPageName(node.name)) {
         console.log('[addNode] Skipping invalid name:', node.name);
         return;
       }
-      // Prevent duplicates - check by id AND name (normalized)
-      setFlowNodes(prev => {
-        const normalizedName = node.name.toLowerCase().trim();
-        const isDuplicate = prev.some(n => 
-          n.id === node.id || 
-          n.name.toLowerCase().trim() === normalizedName
-        );
-        if (isDuplicate) {
-          console.log('[addNode] Skipping duplicate:', node.name);
-          return prev;
-        }
-        return [...prev, node];
-      });
+      const normalizedName = node.name.toLowerCase().trim();
+      // Synchronous check FIRST (prevents race condition)
+      if (addedNodeIds.has(node.id) || addedNodeNames.has(normalizedName)) {
+        console.log('[addNode] Skipping duplicate:', node.name);
+        return;
+      }
+      addedNodeIds.add(node.id);
+      addedNodeNames.add(normalizedName);
+      setFlowNodes(prev => [...prev, node]);
     };
     
     const addEdge = async (edge: ProductFlowEdge) => {
@@ -7112,19 +7131,16 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
       }
       
       // Also add EXTRA possible pages from sidebar navigation items not in pages array
+      // Add EXTRA possible pages from sidebar navigation items not already added
       if (scanData?.ui?.navigation?.sidebar?.items) {
         const navItems = scanData.ui.navigation.sidebar.items;
-        const existingPageIds = new Set(scanData.pages.map((p: any) => (p.id || '').toLowerCase()));
-        
         let extraIndex = possiblePages.length;
         for (const item of navItems) {
           const itemName = item.label || item.name || '';
-          // Validate using comprehensive function
           if (!isValidPageName(itemName)) continue;
-          
           const itemId = itemName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-          if (itemId && !existingPageIds.has(itemId)) {
-            existingPageIds.add(itemId);
+          // addNode already deduplicates via addedNodeNames/addedNodeIds
+          if (itemId) {
             await addNode({
               id: itemId,
               name: itemName,
@@ -7139,28 +7155,17 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
           }
         }
       }
-      
+
       // Also add HEADER navigation items (About, Companies, Startup Jobs, etc.)
       if (scanData?.ui?.navigation?.header?.items) {
         const headerItems = scanData.ui.navigation.header.items;
-        const existingPageIds = new Set(scanData.pages.map((p: any) => (p.id || '').toLowerCase()));
-        // Also include sidebar items we already added
-        if (scanData?.ui?.navigation?.sidebar?.items) {
-          scanData.ui.navigation.sidebar.items.forEach((item: any) => {
-            const id = (item.label || item.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
-            existingPageIds.add(id);
-          });
-        }
-        
         let headerIndex = possiblePages.length + (scanData?.ui?.navigation?.sidebar?.items?.length || 0);
         for (const item of headerItems) {
           const itemName = item.label || item.name || '';
-          // Validate using comprehensive function
           if (!isValidPageName(itemName)) continue;
-          
           const itemId = itemName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-          if (itemId && !existingPageIds.has(itemId)) {
-            existingPageIds.add(itemId);
+          // addNode already deduplicates via addedNodeNames/addedNodeIds
+          if (itemId) {
             await addNode({
               id: itemId,
               name: itemName,
@@ -14589,36 +14594,62 @@ ${publishCode}
                     {/* Layer config */}
                     {(() => {
                       const layers = [
-                        { id: 'foundations', name: 'Layout', icon: <Palette className="w-3 h-3" />, color: 'text-violet-400', bgColor: 'bg-violet-500/10', description: 'Design tokens' },
-                        { id: 'primitives', name: 'Inputs', icon: <Box className="w-3 h-3" />, color: 'text-blue-400', bgColor: 'bg-blue-500/10', description: 'Form controls' },
-                        { id: 'elements', name: 'Components', icon: <Square className="w-3 h-3" />, color: 'text-cyan-400', bgColor: 'bg-cyan-500/10', description: 'UI elements' },
-                        { id: 'components', name: 'Components', icon: <Layers className="w-3 h-3" />, color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', description: 'Composites' },
-                        { id: 'patterns', name: 'Patterns', icon: <Layout className="w-3 h-3" />, color: 'text-amber-400', bgColor: 'bg-amber-500/10', description: 'Recipes' },
-                        { id: 'product', name: 'Product', icon: <Rocket className="w-3 h-3" />, color: 'text-rose-400', bgColor: 'bg-rose-500/10', description: 'Business' },
+                        { id: 'foundations', name: 'Foundations', icon: <Palette className="w-3 h-3" />, color: 'text-violet-400', bgColor: 'bg-violet-500/10', description: 'Design tokens' },
+                        { id: 'components', name: 'Components', icon: <Layers className="w-3 h-3" />, color: 'text-blue-400', bgColor: 'bg-blue-500/10', description: 'UI building blocks' },
+                        { id: 'patterns', name: 'Patterns', icon: <Layout className="w-3 h-3" />, color: 'text-amber-400', bgColor: 'bg-amber-500/10', description: 'Reusable recipes' },
+                        { id: 'templates', name: 'Templates', icon: <Square className="w-3 h-3" />, color: 'text-teal-400', bgColor: 'bg-teal-500/10', description: 'Page layouts' },
+                        { id: 'product', name: 'Product Modules', icon: <Rocket className="w-3 h-3" />, color: 'text-rose-400', bgColor: 'bg-rose-500/10', description: 'Brand-specific' },
                       ];
-                      
+
+                      // Subcategory config for Components layer
+                      const subcategories = [
+                        { id: 'actions', name: 'Actions', icon: <MousePointerClick className="w-2.5 h-2.5" /> },
+                        { id: 'forms', name: 'Forms', icon: <TextCursorInput className="w-2.5 h-2.5" /> },
+                        { id: 'navigation', name: 'Navigation', icon: <Compass className="w-2.5 h-2.5" /> },
+                        { id: 'data-display', name: 'Data Display', icon: <Table className="w-2.5 h-2.5" /> },
+                        { id: 'feedback', name: 'Feedback', icon: <Bell className="w-2.5 h-2.5" /> },
+                        { id: 'overlays', name: 'Overlays', icon: <PanelTop className="w-2.5 h-2.5" /> },
+                      ];
+
                       // Group components by layer
                       const componentsByLayer: Record<string, any[]> = {
                         foundations: [],
-                        primitives: [],
-                        elements: [],
                         components: [],
                         patterns: [],
+                        templates: [],
                         product: []
                       };
-                      
+
+                      // Group components within Components layer by subcategory
+                      const componentsBySubcategory: Record<string, any[]> = {};
+                      subcategories.forEach(sc => componentsBySubcategory[sc.id] = []);
+
                       libraryData.components
-                        ?.filter((comp: any) => 
-                          !librarySearchQuery || 
+                        ?.filter((comp: any) =>
+                          !librarySearchQuery ||
                           comp.name?.toLowerCase().includes(librarySearchQuery.toLowerCase()) ||
-                          comp.layer?.toLowerCase().includes(librarySearchQuery.toLowerCase())
+                          comp.layer?.toLowerCase().includes(librarySearchQuery.toLowerCase()) ||
+                          comp.subcategory?.toLowerCase().includes(librarySearchQuery.toLowerCase())
                         )
                         ?.forEach((comp: any) => {
-                          const layer = comp.layer?.toLowerCase() || 'components';
+                          let layer = comp.layer?.toLowerCase() || 'components';
+                          // Backward compat: remap old layer names
+                          if (layer === 'primitives' || layer === 'elements') layer = 'components';
                           if (componentsByLayer[layer]) {
                             componentsByLayer[layer].push(comp);
                           } else {
                             componentsByLayer.components.push(comp);
+                          }
+                          // Also group by subcategory if it's a component
+                          if (layer === 'components' && comp.subcategory) {
+                            const sc = comp.subcategory.toLowerCase();
+                            if (componentsBySubcategory[sc]) {
+                              componentsBySubcategory[sc].push(comp);
+                            } else {
+                              componentsBySubcategory['data-display'].push(comp);
+                            }
+                          } else if (layer === 'components') {
+                            componentsBySubcategory['data-display'].push(comp);
                           }
                         });
                       
@@ -14709,115 +14740,101 @@ ${publishCode}
                                       </>
                                     )}
                                     
-                                    {/* Other layers - show components */}
-                                    {layer.id !== 'foundations' && layerComponents.map((comp: any) => (
+                                    {/* Components layer - show subcategory groups */}
+                                    {layer.id === 'components' && subcategories.map((sc) => {
+                                      const scComps = componentsBySubcategory[sc.id] || [];
+                                      if (scComps.length === 0) return null;
+                                      const isScExpanded = libraryCategoriesExpanded[sc.id] !== false;
+                                      return (
+                                        <div key={sc.id} className="mb-0.5">
+                                          <button
+                                            onClick={() => setLibraryCategoriesExpanded(prev => ({ ...prev, [sc.id]: !isScExpanded }))}
+                                            className="w-full flex items-center gap-1.5 px-1.5 py-1 text-[10px] font-medium text-zinc-500 hover:text-zinc-300 rounded transition-colors"
+                                          >
+                                            {isScExpanded ? <ChevronDown className="w-2.5 h-2.5" /> : <ChevronRight className="w-2.5 h-2.5" />}
+                                            <span className="text-blue-400/70">{sc.icon}</span>
+                                            {sc.name}
+                                            <span className="text-zinc-600 ml-auto text-[9px]">{scComps.length}</span>
+                                          </button>
+                                          {isScExpanded && scComps.map((comp: any) => (
+                                            <div
+                                              key={comp.id}
+                                              className={cn(
+                                                "w-full flex items-center gap-2 px-2 pl-5 py-1.5 text-xs rounded-md transition-colors group/comp cursor-pointer",
+                                                selectedLibraryItem === `comp-${comp.id}` ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300"
+                                              )}
+                                              onClick={() => { if (editingComponentName !== comp.id) { setSelectedLibraryItem(`comp-${comp.id}`); setLibraryPropsOverride({}); } }}
+                                              onDoubleClick={() => { setEditingComponentName(comp.id); setEditingNameValue(comp.name); }}
+                                            >
+                                              <span className={layer.color}>{layer.icon}</span>
+                                              {editingComponentName === comp.id ? (
+                                                <input type="text" value={editingNameValue} onChange={(e) => setEditingNameValue(e.target.value)}
+                                                  onBlur={() => { if (editingNameValue.trim()) { setLibraryData((prev: any) => ({ ...prev, components: prev?.components?.map((c: any) => c.id === comp.id ? { ...c, name: editingNameValue.trim() } : c) || [] })); } setEditingComponentName(null); }}
+                                                  onKeyDown={(e) => { if (e.key === 'Enter') { if (editingNameValue.trim()) { setLibraryData((prev: any) => ({ ...prev, components: prev?.components?.map((c: any) => c.id === comp.id ? { ...c, name: editingNameValue.trim() } : c) || [] })); } setEditingComponentName(null); } else if (e.key === 'Escape') { setEditingComponentName(null); } }}
+                                                  className="flex-1 bg-zinc-700 border border-zinc-600 rounded px-1.5 py-0.5 text-[11px] text-white focus:outline-none focus:border-emerald-500" autoFocus onClick={(e) => e.stopPropagation()} />
+                                              ) : (
+                                                <span className="truncate flex-1 text-left flex items-center gap-1.5">
+                                                  {comp.name}
+                                                  {localComponents.find(lc => lc.name === comp.name && lc.isNew && !lc.savedToLibrary) && <NewComponentInlineBadge />}
+                                                </span>
+                                              )}
+                                              <button onClick={(e) => { e.stopPropagation(); setEditingComponentName(comp.id); setEditingNameValue(comp.name); }}
+                                                className={cn("p-0.5 hover:bg-zinc-700 rounded transition-opacity", selectedLibraryItem === `comp-${comp.id}` ? "opacity-100" : "opacity-0 group-hover/comp:opacity-100")} title="Rename">
+                                                <Pencil className="w-3 h-3" />
+                                              </button>
+                                              <button onClick={(e) => { e.stopPropagation(); if (libraryData) { const updated = { ...libraryData, components: libraryData.components.filter((c: any) => c.id !== comp.id) }; setLibraryData(updated); if (selectedLibraryItem === `comp-${comp.id}`) setSelectedLibraryItem(null); } }}
+                                                className={cn("p-0.5 hover:bg-zinc-700 rounded transition-opacity", selectedLibraryItem === `comp-${comp.id}` ? "opacity-100" : "opacity-0 group-hover/comp:opacity-100")} title="Delete component">
+                                                <X className="w-3 h-3" />
+                                              </button>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      );
+                                    })}
+
+                                    {/* Other layers (patterns, templates, product) - flat component list */}
+                                    {layer.id !== 'foundations' && layer.id !== 'components' && layerComponents.map((comp: any) => (
                                       <div
                                         key={comp.id}
                                         className={cn(
                                           "w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md transition-colors group/comp cursor-pointer",
                                           selectedLibraryItem === `comp-${comp.id}` ? "bg-zinc-800 text-white" : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300"
                                         )}
-                                        onClick={() => {
-                                          if (editingComponentName !== comp.id) {
-                                            setSelectedLibraryItem(`comp-${comp.id}`);
-                                            setLibraryPropsOverride({});
-                                          }
-                                        }}
-                                        onDoubleClick={() => {
-                                          setEditingComponentName(comp.id);
-                                          setEditingNameValue(comp.name);
-                                        }}
+                                        onClick={() => { if (editingComponentName !== comp.id) { setSelectedLibraryItem(`comp-${comp.id}`); setLibraryPropsOverride({}); } }}
+                                        onDoubleClick={() => { setEditingComponentName(comp.id); setEditingNameValue(comp.name); }}
                                       >
                                         <span className={layer.color}>{layer.icon}</span>
                                         {editingComponentName === comp.id ? (
-                                          <input
-                                            type="text"
-                                            value={editingNameValue}
-                                            onChange={(e) => setEditingNameValue(e.target.value)}
-                                            onBlur={() => {
-                                              if (editingNameValue.trim()) {
-                                                setLibraryData((prev: any) => ({
-                                                  ...prev,
-                                                  components: prev?.components?.map((c: any) => 
-                                                    c.id === comp.id ? { ...c, name: editingNameValue.trim() } : c
-                                                  ) || []
-                                                }));
-                                              }
-                                              setEditingComponentName(null);
-                                            }}
-                                            onKeyDown={(e) => {
-                                              if (e.key === 'Enter') {
-                                                if (editingNameValue.trim()) {
-                                                  setLibraryData((prev: any) => ({
-                                                    ...prev,
-                                                    components: prev?.components?.map((c: any) => 
-                                                      c.id === comp.id ? { ...c, name: editingNameValue.trim() } : c
-                                                    ) || []
-                                                  }));
-                                                }
-                                                setEditingComponentName(null);
-                                              } else if (e.key === 'Escape') {
-                                                setEditingComponentName(null);
-                                              }
-                                            }}
-                                            className="flex-1 bg-zinc-700 border border-zinc-600 rounded px-1.5 py-0.5 text-[11px] text-white focus:outline-none focus:border-emerald-500"
-                                            autoFocus
-                                            onClick={(e) => e.stopPropagation()}
-                                          />
+                                          <input type="text" value={editingNameValue} onChange={(e) => setEditingNameValue(e.target.value)}
+                                            onBlur={() => { if (editingNameValue.trim()) { setLibraryData((prev: any) => ({ ...prev, components: prev?.components?.map((c: any) => c.id === comp.id ? { ...c, name: editingNameValue.trim() } : c) || [] })); } setEditingComponentName(null); }}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') { if (editingNameValue.trim()) { setLibraryData((prev: any) => ({ ...prev, components: prev?.components?.map((c: any) => c.id === comp.id ? { ...c, name: editingNameValue.trim() } : c) || [] })); } setEditingComponentName(null); } else if (e.key === 'Escape') { setEditingComponentName(null); } }}
+                                            className="flex-1 bg-zinc-700 border border-zinc-600 rounded px-1.5 py-0.5 text-[11px] text-white focus:outline-none focus:border-emerald-500" autoFocus onClick={(e) => e.stopPropagation()} />
                                         ) : (
                                           <span className="truncate flex-1 text-left flex items-center gap-1.5">
                                             {comp.name}
-                                            {/* Show NEW badge for local components not yet saved */}
-                                            {localComponents.find(lc => lc.name === comp.name && lc.isNew && !lc.savedToLibrary) && (
-                                              <NewComponentInlineBadge />
-                                            )}
+                                            {localComponents.find(lc => lc.name === comp.name && lc.isNew && !lc.savedToLibrary) && <NewComponentInlineBadge />}
                                           </span>
                                         )}
-                                        {/* Rename button */}
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setEditingComponentName(comp.id);
-                                            setEditingNameValue(comp.name);
-                                          }}
-                                          className={cn(
-                                            "p-0.5 hover:bg-zinc-700 rounded transition-opacity",
-                                            selectedLibraryItem === `comp-${comp.id}` ? "opacity-100" : "opacity-0 group-hover/comp:opacity-100"
-                                          )}
-                                          title="Rename"
-                                        >
+                                        <button onClick={(e) => { e.stopPropagation(); setEditingComponentName(comp.id); setEditingNameValue(comp.name); }}
+                                          className={cn("p-0.5 hover:bg-zinc-700 rounded transition-opacity", selectedLibraryItem === `comp-${comp.id}` ? "opacity-100" : "opacity-0 group-hover/comp:opacity-100")} title="Rename">
                                           <Pencil className="w-3 h-3" />
                                         </button>
-                                        {/* Delete button */}
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (libraryData) {
-                                              const updated = {
-                                                ...libraryData,
-                                                components: libraryData.components.filter((c: any) => c.id !== comp.id)
-                                              };
-                                              setLibraryData(updated);
-                                              if (selectedLibraryItem === `comp-${comp.id}`) {
-                                                setSelectedLibraryItem(null);
-                                              }
-                                            }
-                                          }}
-                                          className={cn(
-                                            "p-0.5 hover:bg-zinc-700 rounded transition-opacity",
-                                            selectedLibraryItem === `comp-${comp.id}` ? "opacity-100" : "opacity-0 group-hover/comp:opacity-100"
-                                          )}
-                                          title="Delete component"
-                                        >
+                                        <button onClick={(e) => { e.stopPropagation(); if (libraryData) { const updated = { ...libraryData, components: libraryData.components.filter((c: any) => c.id !== comp.id) }; setLibraryData(updated); if (selectedLibraryItem === `comp-${comp.id}`) setSelectedLibraryItem(null); } }}
+                                          className={cn("p-0.5 hover:bg-zinc-700 rounded transition-opacity", selectedLibraryItem === `comp-${comp.id}` ? "opacity-100" : "opacity-0 group-hover/comp:opacity-100")} title="Delete component">
                                           <X className="w-3 h-3" />
                                         </button>
                                       </div>
                                     ))}
                                     
                                     {/* Empty state */}
-                                    {layer.id !== 'foundations' && layerComponents.length === 0 && (
+                                    {layer.id !== 'foundations' && layer.id !== 'components' && layerComponents.length === 0 && (
                                       <div className="px-2 py-2 text-[10px] text-zinc-600 italic">
                                         No {layer.name.toLowerCase()} extracted
+                                      </div>
+                                    )}
+                                    {layer.id === 'components' && layerComponents.length === 0 && (
+                                      <div className="px-2 py-2 text-[10px] text-zinc-600 italic">
+                                        No components extracted
                                       </div>
                                     )}
                                   </div>
@@ -17812,7 +17829,7 @@ export default function GeneratedPage() {
                               )}
                               
                               {/* Node header with status badge */}
-                              <div className="p-1.5">
+                              <div className="p-2 pb-1">
                                 {/* Top row: Icon + Name + Status Badge */}
                                 <div className="flex items-center gap-1.5 mb-1">
                                   {/* Icon - compact */}
@@ -17886,7 +17903,7 @@ export default function GeneratedPage() {
                               </div>
                               
                               {/* Action buttons - minimal */}
-                              <div className="flex items-center gap-1 px-2 pb-1 pt-0.5">
+                              <div className="flex items-center gap-1 px-2 pb-2.5 pt-0.5">
                                 {hasCode ? (
                                   <>
                                     <button
@@ -19777,15 +19794,17 @@ export default function GeneratedPage() {
                                   {/* Components by Layer */}
                                   {(() => {
                                     const layers = [
-                                      { id: 'primitives', name: 'Inputs', color: 'blue', desc: 'Form controls' },
-                                      { id: 'components', name: 'Components', color: 'emerald', desc: 'UI elements' },
+                                      { id: 'components', name: 'Components', color: 'blue', desc: 'UI building blocks' },
                                       { id: 'patterns', name: 'Patterns', color: 'amber', desc: 'Reusable recipes' },
-                                      { id: 'product', name: 'Product', color: 'rose', desc: 'Business-specific' },
+                                      { id: 'templates', name: 'Templates', color: 'teal', desc: 'Page layouts' },
+                                      { id: 'product', name: 'Product Modules', color: 'rose', desc: 'Brand-specific' },
                                     ];
                                     const compsByLayer: Record<string, any[]> = {};
                                     layers.forEach(l => compsByLayer[l.id] = []);
                                     (libraryData?.components || []).forEach((comp: any) => {
-                                      const layer = (comp.layer || 'components').toLowerCase();
+                                      let layer = (comp.layer || 'components').toLowerCase();
+                                      // Backward compat
+                                      if (layer === 'primitives' || layer === 'elements') layer = 'components';
                                       if (compsByLayer[layer]) compsByLayer[layer].push(comp);
                                       else compsByLayer.components.push(comp);
                                     });
@@ -21559,7 +21578,7 @@ module.exports = {
                       className={cn(
                         "flex-1 relative",
                         draggingComponent ? "cursor-grabbing" : isBlueprintsPanning ? "cursor-grabbing" : "cursor-default",
-                        blueprintsBackground === "light" ? "bg-zinc-100" : "bg-[#111111]"
+                        blueprintsBackground === "transparent" ? "bg-[#0a0a0a]" : blueprintsBackground === "light" ? "bg-zinc-100" : "bg-[#111111]"
                       )}
                       style={{ 
                         overflow: 'clip', // Use clip instead of hidden - allows handles to be visible at component edges
@@ -22188,9 +22207,9 @@ module.exports = {
                                         <div className="w-full h-full overflow-hidden rounded relative">
                                           {/* Use same InteractiveReactPreview as Library for identical rendering */}
                                           {/* Iframe fills this container 100% - so resizing container = responsive content */}
-                                          <InteractiveReactPreview 
+                                          <InteractiveReactPreview
                                             code={stableCode}
-                                            background={blueprintsBackground === "light" ? "light" : "dark"}
+                                            background={blueprintsBackground}
                                             className="pointer-events-none w-full h-full"
                                             componentId={comp.id}
                                             onSizeChange={(newSize) => {

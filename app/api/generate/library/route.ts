@@ -4,48 +4,51 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// DESIGN SYSTEM LIBRARY EXTRACTION - 5-Layer Architecture
-// Industry Standard: Google, IBM, Shopify, Salesforce level
+// DESIGN SYSTEM LIBRARY EXTRACTION - Enterprise Architecture
+// Industry Standard: Carbon, Spectrum, Atlassian, Polaris level
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const LIBRARY_EXTRACTION_PROMPT = `You are a DESIGN SYSTEM ARCHITECT extracting a professional component library.
 
 ═══════════════════════════════════════════════════════════════════════════════
-🏗️ 5-LAYER DESIGN SYSTEM ARCHITECTURE (MANDATORY!)
+🏗️ ENTERPRISE DESIGN SYSTEM ARCHITECTURE (MANDATORY!)
 ═══════════════════════════════════════════════════════════════════════════════
 
-Extract components into these EXACT 5 layers:
+Extract into these layers. Every component in "components" MUST have a "subcategory" field.
 
-**L1 - FOUNDATIONS (Design DNA)** → layer: "foundations"
-Pure design tokens - the mathematical language of design.
-- Colors (extracted HEX values with semantic names)
-- Typography (font families, sizes, weights, line heights)
-- Spacing (padding/margin scale)
-- Border Radius (corner rounding scale)
-- Shadows (elevation system)
-- Motion (animation timings)
+**FOUNDATIONS** → JSON key: "foundations"
+Design tokens — the mathematical DNA of the system.
+- Colors (primary, secondary, surface, text, semantic: success/warning/error)
+- Typography (fontFamily, fontSize scale, fontWeight, lineHeight)
+- Spacing scale, Border Radius scale, Shadows/Elevation, Iconography, Motion
 
-**L2 - PRIMITIVES (Atoms)** → layer: "primitives"  
-Zero business context. Single-purpose, indivisible elements.
-Examples: Box, Text, Icon, Image, Button (generic), Input, Select, Checkbox, Link, Stack, Divider
-✅ "Button" ❌ "DownloadAppButton"
-✅ "Text" ❌ "HeadlineText"
+**COMPONENTS** → JSON key: "components", layer: "components"
+ALL UI building blocks — both atoms and molecules. Each MUST have a "subcategory":
 
-**L3 - COMPONENTS (Composite/Molecules)** → layer: "components"
-Combinations of primitives with UX purpose. Still no business context.
-Examples: Card, ListItem, Avatar, Badge, Navbar, Footer, SearchBar, FilterBar, Alert, Modal, Tooltip
-✅ "Card" ❌ "ProductCard"
-✅ "ListItem" ❌ "JobListItem"
+  subcategory: "actions"       → Button, IconButton, Link, ToggleButton
+  subcategory: "forms"         → Input, Select, Checkbox, Radio, Switch, Toggle, Textarea, DatePicker
+  subcategory: "navigation"    → Tabs, Sidebar, Breadcrumbs, Pagination, NavLink, Menu
+  subcategory: "data-display"  → Table, Badge, Avatar, Tag, Tooltip, List, Heading, Text, Stat, Icon
+  subcategory: "feedback"      → Toast, Alert, Spinner, Skeleton, Progress, Banner
+  subcategory: "overlays"      → Modal, Dropdown, Popover, Dialog, Drawer, BottomSheet
 
-**L4 - PATTERNS (Recipes/Use-case)** → layer: "patterns"
-Components with applied business context. Reusable across similar contexts.
-Examples: CategoryCard, ProductRow, ArticlePreview, TestimonialBlock, PricingTable, FeatureGrid, LoginForm, DashboardWidget
-These combine Components + specific styling + data structure.
+Classification guide:
+- Button, Link → actions. Input, Select, Checkbox → forms. Tabs, Sidebar → navigation.
+- Card, Badge, Avatar, Table, Heading, Text → data-display. Toast, Alert, Spinner → feedback.
+- Modal, Dropdown, Drawer → overlays.
+- If unsure → data-display.
 
-**L5 - PRODUCT (Business Semantics)** → layer: "product"
-Highly specific to this exact product/brand.
-Examples: LuxuryHeroSection, JobListingRow, ArticleListItem, VideoPreviewCard
-Named exactly as they appear for this specific product.
+**PATTERNS** → JSON key: "patterns", layer: "patterns"
+Reusable recipes that combine components for specific workflows:
+Cards, Filtering, Empty States, Dashboard Widgets, Table Workflows, Pricing Tables, Feature Grids, Login Forms
+
+**TEMPLATES** → JSON key: "templates", layer: "templates"
+Full page layouts and structural shells:
+App Shell (sidebar+header+content), Dashboard Layout, Landing Page, Settings Page, Auth Page
+
+**PRODUCT MODULES** → JSON key: "product", layer: "product"
+Brand-specific sections unique to THIS product:
+Named exactly as they appear (e.g., YCHeroSection, SolenisProductCard)
 
 ═══════════════════════════════════════════════════════════════════════════════
 🚨 OUTPUT FORMAT - PURE HTML CODE FIELD
@@ -62,17 +65,10 @@ The "code" field MUST be COMPLETE, PURE HTML that renders in an iframe.
 RULES:
 1. Use class="..." with DOUBLE QUOTES (not className)
 2. NO curly braces {} - replace with actual values
-3. NO React components - convert to HTML
-4. MINIMUM 50 characters for primitives, 150 for patterns/product
+3. NO React components - convert to HTML elements
+4. MINIMUM 50 characters for simple components, 150 for patterns/templates/product
 5. Include ALL Tailwind classes from original
-
-ICON CONVERSION:
-- <Icon /> → <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">...</svg>
-- Use inline SVG paths from Lucide icons
-
-IMAGE URLs:
-- Use picsum: https://picsum.photos/seed/[context]/[width]/[height]
-- Avatars: https://i.pravatar.cc/150?u=[name]
+6. Icons: use inline SVG from Lucide. Images: use picsum/pravatar URLs.
 
 ═══════════════════════════════════════════════════════════════════════════════
 📤 OUTPUT JSON STRUCTURE
@@ -80,146 +76,124 @@ IMAGE URLs:
 
 {
   "overview": {
-    "name": "Design System Name (extracted from brand/title)",
-    "description": "Short description of this UI/brand aesthetic",
+    "name": "Design System Name",
+    "description": "Short description of UI/brand aesthetic",
     "style": "minimalist | modern | luxury | playful | corporate | tech",
     "theme": "dark | light | mixed",
-    "primaryBrand": "#hex (main brand color)",
+    "primaryBrand": "#hex",
     "accessibilityScore": 85,
     "componentCount": 0,
-    "colorStats": {
-      "readabilityScore": 90,
-      "lc75Plus": 25,
-      "lc90Plus": 15,
-      "minReadable": 35
-    },
     "principles": [
       { "title": "Accessibility", "items": ["WCAG compliance", "Keyboard nav", "Screen readers"] },
       { "title": "Consistency", "items": ["Unified language", "Standard interactions", "Cohesive typography"] },
       { "title": "Developer Experience", "items": ["TypeScript ready", "Clear docs", "Modern tooling"] }
     ]
   },
-  
+
   "foundations": {
-    "colors": {
-      "primary": "#hex",
-      "secondary": "#hex", 
-      "background": "#hex",
-      "surface": "#hex",
-      "text": "#hex",
-      "textMuted": "#hex",
-      "border": "#hex",
-      "success": "#hex",
-      "warning": "#hex",
-      "error": "#hex"
-    },
+    "colors": { "primary": "#hex", "secondary": "#hex", "background": "#hex", "surface": "#hex", "text": "#hex", "textMuted": "#hex", "border": "#hex", "success": "#hex", "warning": "#hex", "error": "#hex" },
     "typography": {
       "fontFamily": { "sans": "Inter, system-ui", "mono": "ui-monospace" },
       "fontSize": { "xs": "0.75rem", "sm": "0.875rem", "base": "1rem", "lg": "1.125rem", "xl": "1.25rem", "2xl": "1.5rem", "3xl": "1.875rem", "4xl": "2.25rem" },
       "fontWeight": { "normal": 400, "medium": 500, "semibold": 600, "bold": 700 },
       "lineHeight": { "tight": 1.25, "normal": 1.5, "relaxed": 1.75 }
     },
-    "spacing": { "1": "0.25rem", "2": "0.5rem", "3": "0.75rem", "4": "1rem", "5": "1.25rem", "6": "1.5rem", "8": "2rem", "10": "2.5rem", "12": "3rem", "16": "4rem" },
+    "spacing": { "1": "0.25rem", "2": "0.5rem", "3": "0.75rem", "4": "1rem", "6": "1.5rem", "8": "2rem", "12": "3rem", "16": "4rem" },
     "borderRadius": { "none": "0", "sm": "0.25rem", "md": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px" },
-    "shadows": { "sm": "0 1px 2px rgba(0,0,0,0.05)", "md": "0 4px 6px rgba(0,0,0,0.1)", "lg": "0 10px 15px rgba(0,0,0,0.1)", "xl": "0 20px 25px rgba(0,0,0,0.15)" },
-    "iconography": {
-      "library": "lucide | heroicons | custom",
-      "style": "outline | filled | duotone",
-      "defaultSize": "w-5 h-5",
-      "icons": ["Menu", "Check", "X", "ChevronDown", "Search", "User"]
-    }
+    "shadows": { "sm": "0 1px 2px rgba(0,0,0,0.05)", "md": "0 4px 6px rgba(0,0,0,0.1)", "lg": "0 10px 15px rgba(0,0,0,0.1)" },
+    "iconography": { "library": "lucide", "style": "outline", "defaultSize": "w-5 h-5" }
   },
-  
-  "primitives": [
+
+  "components": [
     {
       "id": "button-primary",
       "name": "Button",
-      "layer": "primitives",
-      "description": "Primary action button with solid background",
+      "layer": "components",
+      "subcategory": "actions",
+      "description": "Primary action button",
       "code": "<button class=\\"px-6 py-3 bg-primary text-white font-medium rounded-lg\\">Button</button>",
       "props": [
-        { "name": "label", "type": "string", "default": "Button", "description": "Button text" },
+        { "name": "label", "type": "string", "default": "Button" },
         { "name": "variant", "type": "select", "options": ["primary", "secondary", "ghost"], "default": "primary" },
-        { "name": "size", "type": "select", "options": ["sm", "md", "lg"], "default": "md" },
-        { "name": "disabled", "type": "boolean", "default": false }
+        { "name": "size", "type": "select", "options": ["sm", "md", "lg"], "default": "md" }
       ],
       "variants": [
         { "name": "Primary", "props": { "variant": "primary" } },
-        { "name": "Secondary", "props": { "variant": "secondary" } },
-        { "name": "Ghost", "props": { "variant": "ghost" } }
+        { "name": "Secondary", "props": { "variant": "secondary" } }
       ]
-    }
-  ],
-  
-  "components": [
+    },
     {
-      "id": "card",
-      "name": "Card",
+      "id": "input-text",
+      "name": "Text Input",
       "layer": "components",
-      "description": "Content container with border and shadow",
-      "code": "<div class=\\"rounded-xl border border-white/10 bg-white/5 p-6\\">Card content</div>",
-      "composition": ["Box", "Text"],
-      "props": [...]
+      "subcategory": "forms",
+      "description": "Text input field with label",
+      "code": "<div><label class=\\"block text-sm font-medium mb-1\\">Label</label><input type=\\"text\\" class=\\"w-full px-3 py-2 border rounded-lg\\" placeholder=\\"Enter text...\\" /></div>",
+      "props": [{ "name": "label", "type": "string", "default": "Label" }],
+      "variants": []
     }
   ],
-  
+
   "patterns": [
     {
-      "id": "category-card",
-      "name": "CategoryCard",
+      "id": "feature-card",
+      "name": "FeatureCard",
       "layer": "patterns",
-      "description": "Card displaying a category with icon and label",
+      "description": "Card showing a feature with icon and description",
       "code": "<div class=\\"...\\">...</div>",
       "composition": ["Card", "Icon", "Text"],
-      "businessContext": "Used for navigation to category sections",
-      "props": [...]
+      "businessContext": "Feature highlight sections"
     }
   ],
-  
+
+  "templates": [
+    {
+      "id": "app-shell",
+      "name": "App Shell",
+      "layer": "templates",
+      "description": "Main application layout with sidebar and header",
+      "code": "<div class=\\"flex h-screen\\"><aside class=\\"w-64 bg-zinc-900 p-4\\">Sidebar</aside><main class=\\"flex-1 p-8\\">Content</main></div>",
+      "composition": ["Sidebar", "Header", "Content"]
+    }
+  ],
+
   "product": [
     {
-      "id": "luxury-hero-section",
-      "name": "LuxuryHeroSection",
+      "id": "hero-section",
+      "name": "HeroSection",
       "layer": "product",
-      "description": "Full-width hero section with background image and CTA",
+      "description": "Brand-specific hero with CTA",
       "code": "<section class=\\"...\\">...</section>",
-      "composition": ["Card", "Button", "Text", "Image"],
-      "businessContext": "Main landing hero for luxury brand aesthetic",
-      "props": [...]
+      "businessContext": "Main landing hero"
     }
   ]
 }
 
 ═══════════════════════════════════════════════════════════════════════════════
-🎯 CLASSIFICATION RULES
+🎯 CLASSIFICATION & EXTRACTION RULES
 ═══════════════════════════════════════════════════════════════════════════════
 
-**To determine layer, ask:**
+**Classification flow:**
+1. Design token? → FOUNDATIONS
+2. Single element OR generic composite (no business context)?
+   → COMPONENTS + assign subcategory (actions/forms/navigation/data-display/feedback/overlays)
+3. Business-context recipe reusable across products? → PATTERNS
+4. Full page structure/layout? → TEMPLATES
+5. Unique to THIS brand/product? → PRODUCT MODULES
 
-Is it a design token (color, spacing, font)? → FOUNDATIONS
+**⚠️ COMMON MISTAKES TO AVOID:**
+- "Hero Heading" is NOT a form input → it's data-display (Heading)
+- "Testimonial Card" is a PATTERN, not a component
+- "App Shell" / "Dashboard Layout" are TEMPLATES, not patterns
+- ALL buttons/links → subcategory: "actions", ALL inputs → subcategory: "forms"
 
-Is it a single HTML element with no business meaning?
-- Button, Input, Text, Icon, Image → PRIMITIVES
-
-Is it multiple primitives combined, but still generic?
-- Card, Avatar, Badge, SearchBar → COMPONENTS
-
-Does it have a specific use-case but could apply to other products?
-- ProductCard, ArticlePreview, PricingTable → PATTERNS
-
-Is it named specifically for THIS product/brand?
-- LuxuryHeroSection, JobListingRow → PRODUCT
-
-**CRITICAL EXTRACTION RULES:**
-- Extract ALL UNIQUE components you can find — typically 5-12 per layer for rich UIs
-- DO NOT limit yourself to 3 per layer — extract EVERY distinct component in the source code
-- Primitives: every unique button style, input type, text variant, icon usage → often 5-8+
-- Components: every card, nav, footer, modal, dropdown, badge, avatar → often 5-10+
-- Patterns: every distinct section/recipe (hero, feature grid, pricing, testimonials) → often 4-8+
-- Product: every brand-specific named section → often 3-6+
-- Every component MUST have realistic code that renders
-- Props must have sensible defaults
-- Include 2-3 variants per component where applicable
+**EXTRACTION DEPTH:**
+- Extract ALL UNIQUE components — typically 8-20 total across all subcategories
+- Components should cover: actions (3-5), forms (3-5), navigation (2-4), data-display (3-6), feedback (2-3), overlays (1-3)
+- Patterns: 3-8 distinct recipes
+- Templates: 1-3 page layouts
+- Product: 2-5 brand-specific sections
+- Every component MUST have realistic, renderable HTML code
 - Each component must be UNIQUE — no duplicates with minor text changes
 
 Return ONLY valid JSON. No explanation.`;
@@ -270,7 +244,7 @@ For EACH component:
 - Keep ALL Tailwind classes
 - Convert icons to inline SVG
 
-Return the complete JSON structure with all 5 layers populated.`;
+Return the complete JSON with foundations, components (with subcategories), patterns, templates, and product.`;
 
     console.log("[Library] Starting extraction...");
     const startTime = Date.now();
@@ -286,7 +260,7 @@ Return the complete JSON structure with all 5 layers populated.`;
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         libraryData = JSON.parse(jsonMatch[0]);
-        console.log(`[Library] Parsed: primitives=${libraryData.primitives?.length || 0}, components=${libraryData.components?.length || 0}, patterns=${libraryData.patterns?.length || 0}, product=${libraryData.product?.length || 0}`);
+        console.log(`[Library] Parsed: components=${libraryData.components?.length || 0}, patterns=${libraryData.patterns?.length || 0}, templates=${libraryData.templates?.length || 0}, product=${libraryData.product?.length || 0}`);
       } else {
         throw new Error("No JSON found in response");
       }
@@ -379,9 +353,9 @@ function createDefaultStructure() {
         icons: []
       }
     },
-    primitives: [],
     components: [],
     patterns: [],
+    templates: [],
     product: []
   };
 }
@@ -432,9 +406,25 @@ function ensureStructure(data: any) {
       iconography: { library: "lucide", style: "outline", defaultSize: "w-5 h-5", icons: [] }
     };
   }
-  if (!data.primitives) data.primitives = [];
+  // Backward compat: merge old "primitives" into "components" with subcategory
+  if (data.primitives && Array.isArray(data.primitives) && data.primitives.length > 0) {
+    if (!data.components) data.components = [];
+    for (const prim of data.primitives) {
+      prim.layer = 'components';
+      if (!prim.subcategory) {
+        const n = (prim.name || '').toLowerCase();
+        prim.subcategory = n.includes('button') || n.includes('link') ? 'actions' :
+          n.includes('input') || n.includes('select') || n.includes('check') || n.includes('radio') || n.includes('switch') || n.includes('toggle') ? 'forms' :
+          n.includes('tab') || n.includes('nav') || n.includes('breadcrumb') || n.includes('sidebar') || n.includes('menu') ? 'navigation' :
+          'data-display';
+      }
+      data.components.push(prim);
+    }
+    delete data.primitives;
+  }
   if (!data.components) data.components = [];
   if (!data.patterns) data.patterns = [];
+  if (!data.templates) data.templates = [];
   if (!data.product) data.product = [];
   
   // Ensure foundations sub-objects
@@ -484,9 +474,9 @@ function convertAllCodeToJsx(data: any) {
     }));
   };
   
-  data.primitives = convertLayer(data.primitives);
   data.components = convertLayer(data.components);
   data.patterns = convertLayer(data.patterns);
+  data.templates = convertLayer(data.templates);
   data.product = convertLayer(data.product);
   
   return data;
@@ -495,25 +485,16 @@ function convertAllCodeToJsx(data: any) {
 function buildLegacyComponents(data: any) {
   // Combine all layers into a single components array for backward compatibility
   const allComponents: any[] = [];
-  
-  // Add primitives with category
-  (data.primitives || []).forEach((item: any) => {
-    allComponents.push({
-      ...item,
-      category: 'primitives',
-      layer: 'primitives'
-    });
-  });
-  
-  // Add components (composite)
+
+  // Add components (with subcategory preserved)
   (data.components || []).forEach((item: any) => {
     allComponents.push({
       ...item,
-      category: item.category || 'components',
+      category: item.subcategory || 'components',
       layer: 'components'
     });
   });
-  
+
   // Add patterns
   (data.patterns || []).forEach((item: any) => {
     allComponents.push({
@@ -522,8 +503,17 @@ function buildLegacyComponents(data: any) {
       layer: 'patterns'
     });
   });
-  
-  // Add product components
+
+  // Add templates
+  (data.templates || []).forEach((item: any) => {
+    allComponents.push({
+      ...item,
+      category: 'templates',
+      layer: 'templates'
+    });
+  });
+
+  // Add product modules
   (data.product || []).forEach((item: any) => {
     allComponents.push({
       ...item,
@@ -531,6 +521,6 @@ function buildLegacyComponents(data: any) {
       layer: 'product'
     });
   });
-  
+
   return allComponents;
 }

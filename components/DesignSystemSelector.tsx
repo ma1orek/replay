@@ -433,7 +433,7 @@ export function ImportLibraryModal({
             {/* Header */}
             <div className="px-5 py-4 border-b border-zinc-800">
               <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                <Import className="w-5 h-5 text-orange-400" />
+                <Import className="w-5 h-5 text-zinc-400" />
                 Import from Storybook
               </h2>
               <p className="text-sm text-zinc-400 mt-1">
@@ -453,7 +453,7 @@ export function ImportLibraryModal({
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   placeholder="https://designsystem.example.com/"
-                  className="w-full px-3 py-2.5 rounded-lg bg-zinc-800/50 border border-zinc-700/50 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-orange-500/50"
+                  className="w-full px-3 py-2.5 rounded-lg bg-zinc-800/50 border border-zinc-700/50 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
                 />
                 <p className="text-[10px] text-zinc-500 mt-1">
                   e.g., https://designsystem.solenis.com/
@@ -470,7 +470,7 @@ export function ImportLibraryModal({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="My Design System"
-                  className="w-full px-3 py-2.5 rounded-lg bg-zinc-800/50 border border-zinc-700/50 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-orange-500/50"
+                  className="w-full px-3 py-2.5 rounded-lg bg-zinc-800/50 border border-zinc-700/50 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
                 />
               </div>
 
@@ -496,7 +496,7 @@ export function ImportLibraryModal({
                 disabled={isImporting || !url.trim()}
                 className={cn(
                   "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2",
-                  "bg-orange-500 text-white hover:bg-orange-600",
+                  "bg-white text-black hover:bg-zinc-200",
                   (isImporting || !url.trim()) && "opacity-50 cursor-not-allowed"
                 )}
               >
