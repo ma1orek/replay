@@ -3444,7 +3444,8 @@ function ReplayToolContent() {
   const handleDeleteDS = useCallback(async (dsId: string) => {
     try {
       const res = await fetch(`/api/design-systems/${dsId}`, { method: "DELETE" });
-      if (res.ok) {
+      if (res.ok || res.status === 404) {
+        // 404 means already deleted — treat as success
         console.log("[DS] Deleted design system:", dsId);
         refetchDesignSystems();
         // If this DS was selected, clear selection
@@ -3452,7 +3453,8 @@ function ReplayToolContent() {
           setStyleDirective("");
         }
       } else {
-        console.error("[DS] Failed to delete:", await res.text());
+        const errText = await res.text();
+        console.error("[DS] Failed to delete:", errText);
       }
     } catch (err) {
       console.error("[DS] Delete error:", err);
@@ -11213,13 +11215,45 @@ Try these prompts in Cursor or v0:
           }
           
           // Build rich style guide from tokens
+          // Filter out unreliable "discovered-" colors (Storybook chrome, not actual DS tokens)
+          const STORYBOOK_CHROME_COLORS = new Set(["#ff4400", "#ff0000", "#f6f9fc", "#242424", "#c6c6c6", "#646464", "#e6e6e6", "#fff", "#ffffff", "#000", "#000000"]);
+          let reliableColors: Record<string, string> = {};
+          let hasNamedColors = false;
+          if (tokens.colors) {
+            for (const [k, v] of Object.entries(tokens.colors)) {
+              const val = String(v).toLowerCase();
+              if (!k.startsWith("discovered-")) {
+                hasNamedColors = true;
+                reliableColors[k] = String(v);
+              } else if (!STORYBOOK_CHROME_COLORS.has(val)) {
+                reliableColors[k] = String(v);
+              }
+            }
+          }
+          const hasReliableColors = Object.keys(reliableColors).length > 0 && hasNamedColors;
+
+          // Read typography tokens (import stores as "typography", also check "fonts" for backwards compat)
+          const typo = tokens.typography || tokens.fonts || {};
+          const typoEntries: [string, string][] = [];
+          if (typo.fontFamily) Object.entries(typo.fontFamily).forEach(([k, v]) => typoEntries.push([`font-${k}`, String(v)]));
+          if (typo.fontSize) Object.entries(typo.fontSize).forEach(([k, v]) => typoEntries.push([`size-${k}`, String(v)]));
+          if (typo.fontWeight) Object.entries(typo.fontWeight).forEach(([k, v]) => typoEntries.push([`weight-${k}`, String(v)]));
+          if (typo.lineHeight) Object.entries(typo.lineHeight).forEach(([k, v]) => typoEntries.push([`leading-${k}`, String(v)]));
+          // Also handle flat font entries (backwards compat)
+          if (typeof typo === "object" && !typo.fontFamily && !typo.fontSize) {
+            Object.entries(typo).forEach(([k, v]) => { if (typeof v === "string") typoEntries.push([k, v]); });
+          }
+
+          // Read border radius (import stores as "borderRadius", also check "radii")
+          const radii = tokens.borderRadius || tokens.radii || {};
+
           fullStyleDirective = `DESIGN SYSTEM STYLE GUIDE: "${dsName}"
 
 === VISUAL TOKENS ===
-${tokens.colors ? `COLORS:\n${Object.entries(tokens.colors).map(([k, v]) => `  ${k}: ${v}`).join("\n")}` : ""}
-${tokens.fonts ? `\nTYPOGRAPHY:\n${Object.entries(tokens.fonts).map(([k, v]) => `  ${k}: ${v}`).join("\n")}` : ""}
+${hasReliableColors ? `COLORS:\n${Object.entries(reliableColors).map(([k, v]) => `  ${k}: ${v}`).join("\n")}` : "COLORS: No specific color tokens defined. Use professional colors that match the brand identity and video content."}
+${typoEntries.length > 0 ? `\nTYPOGRAPHY:\n${typoEntries.map(([k, v]) => `  ${k}: ${v}`).join("\n")}` : ""}
 ${tokens.spacing ? `\nSPACING:\n${Object.entries(tokens.spacing).map(([k, v]) => `  ${k}: ${v}`).join("\n")}` : ""}
-${tokens.radii ? `\nBORDER RADIUS:\n${Object.entries(tokens.radii).map(([k, v]) => `  ${k}: ${v}`).join("\n")}` : ""}
+${Object.keys(radii).length > 0 ? `\nBORDER RADIUS:\n${Object.entries(radii).map(([k, v]) => `  ${k}: ${v}`).join("\n")}` : ""}
 ${tokens.shadows ? `\nSHADOWS:\n${Object.entries(tokens.shadows).map(([k, v]) => `  ${k}: ${v}`).join("\n")}` : ""}
 
 === STYLE RULES ===

@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
 
     // Try to fetch Storybook index
     let storybookData: StorybookIndex | null = null;
+    let allExtractedCSS: string[] = [];
     let components: { 
       name: string; 
       category: string; 
@@ -226,6 +227,130 @@ export async function POST(request: NextRequest) {
       components = Array.from(componentMap.values());
       console.log(`[Import] Found ${components.length} components with states:`, 
         components.map(c => `${c.name} (${(c as any).states?.length || 0} states)`).join(", "));
+      
+      // ════════════════════════════════════════════════════════════════
+      // DEEP FETCH: Extract CSS tokens (design tokens) from Storybook
+      // Strategy: fetch component iframes, docs pages, linked CSS files,
+      // and JS bundles to extract CSS custom properties, colors,
+      // typography, spacing - used as STYLE REFERENCE.
+      // ════════════════════════════════════════════════════════════════
+
+      const CONCURRENCY = 4;
+      const IFRAME_TIMEOUT = 6000;
+      const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
+
+      // 1. Fetch docs pages (Colors, Typography, Foundations) — these contain token definitions
+      const docsEntries = storybookData.entries || storybookData.stories || {};
+      const docsPagesToFetch: string[] = [];
+      Object.values(docsEntries).forEach((entry: any) => {
+        const title = (entry.title || entry.kind || "").toLowerCase();
+        const name = (entry.name || "").toLowerCase();
+        const id = entry.id || "";
+        if ((entry.type === "docs" || name === "docs") &&
+            (title.includes("color") || title.includes("typography") || title.includes("token") ||
+             title.includes("foundation") || title.includes("palette") || title.includes("theme") ||
+             title.includes("getting started") || title.includes("style"))) {
+          docsPagesToFetch.push(id);
+        }
+      });
+
+      console.log(`[Import] Found ${docsPagesToFetch.length} docs pages to fetch for tokens`);
+
+      for (const docsId of docsPagesToFetch.slice(0, 6)) {
+        try {
+          const docsUrl = `${baseUrl}/iframe.html?id=${encodeURIComponent(docsId)}&viewMode=docs`;
+          const response = await fetch(docsUrl, {
+            headers: { "Accept": "text/html", "User-Agent": UA },
+            signal: AbortSignal.timeout(IFRAME_TIMEOUT),
+          });
+          if (response.ok) {
+            const html = await response.text();
+            allExtractedCSS.push(html);
+            console.log(`[Import] ✓ Docs page ${docsId}: fetched (${html.length} chars)`);
+          }
+        } catch (e: any) {
+          console.log(`[Import] ✗ Docs page ${docsId}: fetch failed (${e.message})`);
+        }
+      }
+
+      // 2. Fetch component iframes for CSS extraction
+      const fetchableComponents = components.filter(c => c.stories && c.stories.length > 0);
+      const samplesToFetch = fetchableComponents.slice(0, 8);
+
+      console.log(`[Import] Fetching ${samplesToFetch.length} component iframes for CSS token extraction`);
+
+      for (let i = 0; i < samplesToFetch.length; i += CONCURRENCY) {
+        const batch = samplesToFetch.slice(i, i + CONCURRENCY);
+
+        await Promise.allSettled(batch.map(async (comp) => {
+          const defaultStoryId = comp.stories!.find(id => id.endsWith('--default')) || comp.stories![0];
+          if (!defaultStoryId) return;
+
+          try {
+            const iframeUrl = `${baseUrl}/iframe.html?id=${encodeURIComponent(defaultStoryId)}&viewMode=story`;
+            const response = await fetch(iframeUrl, {
+              headers: { "Accept": "text/html", "User-Agent": UA },
+              signal: AbortSignal.timeout(IFRAME_TIMEOUT),
+            });
+
+            if (response.ok) {
+              const html = await response.text();
+              allExtractedCSS.push(html);
+
+              // 3. Also fetch any linked CSS files from the iframe
+              const cssLinks = html.match(/<link[^>]+rel=["']stylesheet["'][^>]+href=["']([^"']+)["']/gi) || [];
+              const cssHrefs = cssLinks.map(link => {
+                const hrefMatch = link.match(/href=["']([^"']+)["']/);
+                return hrefMatch ? hrefMatch[1] : null;
+              }).filter(Boolean) as string[];
+
+              for (const cssHref of cssHrefs.slice(0, 3)) {
+                try {
+                  const cssUrl = cssHref.startsWith("http") ? cssHref : `${baseUrl}/${cssHref.replace(/^\.?\//, "")}`;
+                  const cssResponse = await fetch(cssUrl, {
+                    headers: { "Accept": "text/css", "User-Agent": UA },
+                    signal: AbortSignal.timeout(5000),
+                  });
+                  if (cssResponse.ok) {
+                    const cssText = await cssResponse.text();
+                    allExtractedCSS.push(`<style>${cssText}</style>`);
+                    console.log(`[Import] ✓ Linked CSS: ${cssHref.slice(0, 50)} (${cssText.length} chars)`);
+                  }
+                } catch {}
+              }
+
+              console.log(`[Import] ✓ ${comp.name}: fetched iframe (${html.length} chars)`);
+            }
+          } catch (e: any) {
+            console.log(`[Import] ✗ ${comp.name}: iframe fetch failed (${e.message})`);
+          }
+        }));
+      }
+
+      // 4. Fetch main Storybook page + try common CSS bundle paths
+      const pagesToFetch = [
+        baseUrl,
+        `${baseUrl}/sb-common-assets/fonts.css`,
+        `${baseUrl}/assets/main.css`,
+        `${baseUrl}/static/css/main.css`,
+      ];
+
+      for (const pageUrl of pagesToFetch) {
+        try {
+          const response = await fetch(pageUrl, {
+            headers: { "Accept": "text/html, text/css", "User-Agent": UA },
+            signal: AbortSignal.timeout(8000),
+          });
+          if (response.ok) {
+            const text = await response.text();
+            const isCss = pageUrl.endsWith(".css") || (response.headers.get("content-type") || "").includes("text/css");
+            allExtractedCSS.push(isCss ? `<style>${text}</style>` : text);
+            console.log(`[Import] ✓ Fetched ${pageUrl.replace(baseUrl, "...")} (${text.length} chars)`);
+          }
+        } catch {}
+      }
+
+      console.log(`[Import] CSS extraction: collected ${allExtractedCSS.length} sources`);
     }
 
     // If we couldn't fetch from API, create a placeholder design system
@@ -238,7 +363,16 @@ export async function POST(request: NextRequest) {
       ];
     }
 
-    // Create the design system
+    // Extract design tokens from collected CSS
+    const extractedTokens = extractDesignTokens(allExtractedCSS || []);
+    console.log(`[Import] Extracted tokens:`, {
+      colors: Object.keys(extractedTokens.colors).length,
+      fonts: Object.keys(extractedTokens.typography.fontFamily).length,
+      spacing: Object.keys(extractedTokens.spacing).length,
+      radii: Object.keys(extractedTokens.borderRadius).length,
+    });
+
+    // Create the design system as a STYLE REFERENCE
     const dsName = name?.trim() || extractNameFromUrl(baseUrl) || "Imported Library";
     
     const { data: newDS, error: dsError } = await adminSupabase
@@ -248,13 +382,7 @@ export async function POST(request: NextRequest) {
         name: dsName,
         source_type: "storybook",
         source_url: baseUrl,
-        tokens: {
-          colors: {},
-          typography: { fontFamily: {}, fontSize: {}, fontWeight: {}, lineHeight: {} },
-          spacing: {},
-          borderRadius: {},
-          shadows: {},
-        },
+        tokens: extractedTokens,
         is_default: false,
         is_public: false,
       })
@@ -266,7 +394,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: dsError.message }, { status: 500 });
     }
 
-    // Insert components with their states/variants
+    // Insert components as lightweight specs (metadata for AI style context only)
+    // These are NOT renderable components - they are style reference specs
     const componentInserts = components.map(comp => {
       const states = comp.states || ["Default"];
       const variants = states.map(state => ({
@@ -275,30 +404,26 @@ export async function POST(request: NextRequest) {
         description: `${state} variant of ${comp.name}`,
       }));
       const layer = categorizeLayer(comp.category, comp.name);
+      const description = comp.description || describeComponent(comp.name, layer, comp.category);
+      const variantsStr = states.filter(s => s !== "Default" && s !== "Docs").join(", ") || "Default";
+      
+      // Lightweight spec string - just metadata, NOT renderable code
+      const code = `/* ${comp.name} - ${comp.category} | Layer: ${layer} | Variants: ${variantsStr} */`;
       
       return {
         design_system_id: newDS.id,
         name: comp.name,
         layer,
         category: comp.category,
-        code: generateComponentSpec(comp.name, {
-          states,
-          layer,
-          category: comp.category,
-          description: comp.description,
-          packageName: comp.packageName,
-          dsName,
-        }),
+        code,
         variants: variants,
         props: [],
         docs: {
-          description: comp.description || `${comp.name} component from ${dsName}`,
-          usage: `Use <${comp.name.replace(/\s+/g, "")} /> for ${describeUsage(comp.name, layer)}`,
+          description,
+          usage: describeUsage(comp.name, layer),
           states: states.join(", "),
           package: comp.packageName || undefined,
           category: comp.category,
-          accessibility: "",
-          bestPractices: [],
         },
         is_approved: true,
         usage_count: 0,
@@ -353,6 +478,161 @@ export async function POST(request: NextRequest) {
     console.error("[Import] Error:", err);
     return NextResponse.json({ error: err.message || "Import failed" }, { status: 500 });
   }
+}
+
+// ════════════════════════════════════════════════════════════════
+// CSS TOKEN EXTRACTION
+// Extract design tokens (colors, typography, spacing) from
+// Storybook HTML pages to build a style reference profile.
+// ════════════════════════════════════════════════════════════════
+
+function extractDesignTokens(htmlPages: string[]): {
+  colors: Record<string, string>;
+  typography: { fontFamily: Record<string, string>; fontSize: Record<string, string>; fontWeight: Record<string, number>; lineHeight: Record<string, string> };
+  spacing: Record<string, string>;
+  borderRadius: Record<string, string>;
+  shadows: Record<string, string>;
+} {
+  const colors: Record<string, string> = {};
+  const fontFamily: Record<string, string> = {};
+  const fontSize: Record<string, string> = {};
+  const fontWeight: Record<string, number> = {};
+  const lineHeight: Record<string, string> = {};
+  const spacing: Record<string, string> = {};
+  const borderRadius: Record<string, string> = {};
+  const shadows: Record<string, string> = {};
+  
+  const allCSS = htmlPages.join('\n');
+  
+  // 1. Extract CSS custom properties from :root, :host, html, body
+  const customPropBlocks = allCSS.match(/(?::root|:host|html|body)\s*\{([^}]+)\}/gi) || [];
+  
+  for (const block of customPropBlocks) {
+    const propsContent = block.match(/\{([^}]+)\}/)?.[1] || "";
+    const propRegex = /--([\w-]+)\s*:\s*([^;]+)/g;
+    let match;
+    
+    while ((match = propRegex.exec(propsContent)) !== null) {
+      const name = match[1].trim();
+      const value = match[2].trim();
+      const nameLower = name.toLowerCase();
+      
+      // Categorize tokens by name patterns
+      if (nameLower.includes("color") || nameLower.includes("bg") || nameLower.includes("text-") || 
+          nameLower.includes("primary") || nameLower.includes("secondary") || nameLower.includes("accent") ||
+          nameLower.includes("surface") || nameLower.includes("border") || nameLower.includes("error") ||
+          nameLower.includes("success") || nameLower.includes("warning") || nameLower.includes("info") ||
+          value.match(/^#[0-9a-f]{3,8}$/i) || value.match(/^rgb/i) || value.match(/^hsl/i)) {
+        colors[name] = value;
+      } else if (nameLower.includes("font-family") || nameLower.includes("font-face") || nameLower.includes("typeface")) {
+        fontFamily[name] = value;
+      } else if (nameLower.includes("font-size") || nameLower.includes("text-size")) {
+        fontSize[name] = value;
+      } else if (nameLower.includes("font-weight") || nameLower.includes("text-weight")) {
+        const num = parseInt(value);
+        if (!isNaN(num)) fontWeight[name] = num;
+      } else if (nameLower.includes("line-height") || nameLower.includes("leading")) {
+        lineHeight[name] = value;
+      } else if (nameLower.includes("spacing") || nameLower.includes("space") || nameLower.includes("gap") || nameLower.includes("padding") || nameLower.includes("margin")) {
+        spacing[name] = value;
+      } else if (nameLower.includes("radius") || nameLower.includes("rounded")) {
+        borderRadius[name] = value;
+      } else if (nameLower.includes("shadow") || nameLower.includes("elevation")) {
+        shadows[name] = value;
+      }
+    }
+  }
+  
+  // Known Storybook framework chrome colors to exclude
+  const STORYBOOK_CHROME = new Set([
+    "#ff4400", "#ff0000", "#f6f9fc", "#242424", "#c6c6c6", "#646464", "#e6e6e6",
+    "#fff", "#ffffff", "#000", "#000000", "#333", "#333333", "#999", "#999999",
+    "#ccc", "#cccccc", "#eee", "#eeeeee", "#ddd", "#dddddd", "#aaa", "#aaaaaa",
+    "#fafafa", "#f5f5f5", "#e0e0e0", "#bdbdbd", "#9e9e9e", "#757575", "#616161",
+    "#424242", "#212121", "#1ea7fd", "#ffae00", "#66bf3c", "#fc521f",
+  ]);
+
+  // 2. Extract colors from style blocks AND inline styles in HTML body
+  const colorValues = new Set<string>();
+  const hexPattern = /#[0-9a-f]{3,8}/gi;
+  const rgbPattern = /rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+(?:\s*,\s*[\d.]+)?\s*\)/gi;
+
+  // Scan <style> blocks
+  const styleBlocks = allCSS.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
+  const cssOnly = styleBlocks.join('\n');
+
+  let colorMatch;
+  while ((colorMatch = hexPattern.exec(cssOnly)) !== null) {
+    const c = colorMatch[0].toLowerCase();
+    if (!STORYBOOK_CHROME.has(c)) colorValues.add(colorMatch[0]);
+  }
+  while ((colorMatch = rgbPattern.exec(cssOnly)) !== null) {
+    colorValues.add(colorMatch[0]);
+  }
+
+  // Also scan inline styles in HTML body (style="..." attributes)
+  const inlineStylePattern = /style=["']([^"']+)["']/gi;
+  let inlineMatch;
+  while ((inlineMatch = inlineStylePattern.exec(allCSS)) !== null) {
+    const styleValue = inlineMatch[1];
+    const hexInline = styleValue.match(/#[0-9a-f]{3,8}/gi) || [];
+    for (const h of hexInline) {
+      if (!STORYBOOK_CHROME.has(h.toLowerCase())) colorValues.add(h);
+    }
+    const rgbInline = styleValue.match(/rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+(?:\s*,\s*[\d.]+)?\s*\)/gi) || [];
+    for (const r of rgbInline) colorValues.add(r);
+  }
+
+  // Scan HTML body for structured color values (data attributes, color tables, palette displays)
+  const dataColorPattern = /data-(?:color|value|hex|swatch)=["']([^"']+)["']/gi;
+  while ((colorMatch = dataColorPattern.exec(allCSS)) !== null) {
+    const val = colorMatch[1].trim();
+    if (val.match(/^#[0-9a-f]{3,8}$/i) && !STORYBOOK_CHROME.has(val.toLowerCase())) {
+      colors[`token-${Object.keys(colors).length}`] = val;
+    }
+  }
+
+  // Also scan for color values near identifiers like "palette", "swatch", "color-" in class names
+  const classColorPattern = /class=["'][^"']*(?:palette|swatch|color-\w+)[^"']*["'][^>]*>(?:\s*<[^>]+>)*\s*(?:#[0-9a-f]{3,8})/gi;
+  while ((colorMatch = classColorPattern.exec(allCSS)) !== null) {
+    const hexInClass = colorMatch[0].match(/#[0-9a-f]{3,8}$/i);
+    if (hexInClass && !STORYBOOK_CHROME.has(hexInClass[0].toLowerCase())) {
+      colors[`palette-${Object.keys(colors).length}`] = hexInClass[0];
+    }
+  }
+
+  // Add discovered colors with auto-names (only if we didn't find many named colors)
+  if (Object.keys(colors).length < 5) {
+    let idx = 0;
+    for (const cv of Array.from(colorValues).slice(0, 20)) {
+      if (!Object.values(colors).includes(cv) && !STORYBOOK_CHROME.has(cv.toLowerCase())) {
+        colors[`discovered-${idx++}`] = cv;
+      }
+    }
+  }
+  
+  // 3. Extract font-family from CSS rules
+  const fontFamilyCSS = cssOnly.match(/font-family\s*:\s*([^;}]+)/gi) || [];
+  const seenFonts = new Set<string>();
+  for (const ff of fontFamilyCSS) {
+    const value = ff.replace(/font-family\s*:\s*/i, '').trim();
+    if (value && !seenFonts.has(value) && !value.includes('monospace') && value.length < 100) {
+      seenFonts.add(value);
+      if (Object.keys(fontFamily).length < 5) {
+        fontFamily[`font-${Object.keys(fontFamily).length}`] = value;
+      }
+    }
+  }
+  
+  console.log(`[Import] Token extraction: ${Object.keys(colors).length} colors, ${Object.keys(fontFamily).length} fonts, ${Object.keys(spacing).length} spacing, ${Object.keys(borderRadius).length} radii`);
+  
+  return {
+    colors,
+    typography: { fontFamily, fontSize, fontWeight, lineHeight },
+    spacing,
+    borderRadius,
+    shadows,
+  };
 }
 
 function extractNameFromUrl(url: string): string | null {
