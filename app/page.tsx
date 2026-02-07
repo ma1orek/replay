@@ -3701,26 +3701,30 @@ function ReplayToolContent() {
     layers.forEach(layer => {
       const comps = componentsByLayer[layer];
       if (comps.length === 0) return;
-      
+
+      // Store a label position for this layer section
+      newPositions[`label-${layer}`] = { x: START_X, y: currentY };
+      currentY += 28; // space for label
+
       let currentX = START_X;
       let rowMaxHeight = 0;
-      
+
       comps.forEach((comp: any) => {
         const id = `comp-${comp.id}`;
         const size = getComponentSize(comp);
-        
+
         // Wrap to next row if exceeding max width
         if (currentX + size.width > MAX_ROW_WIDTH && currentX > START_X) {
           currentX = START_X;
           currentY += rowMaxHeight + GAP;
           rowMaxHeight = 0;
         }
-        
+
         newPositions[id] = { x: currentX, y: currentY };
         currentX += size.width + GAP;
         rowMaxHeight = Math.max(rowMaxHeight, size.height);
       });
-      
+
       // Move to next section
       currentY += rowMaxHeight + GAP * 2;
     });
@@ -22012,6 +22016,28 @@ module.exports = {
                           </div>
                         ) : (
                           <>
+                            {/* Layer labels on canvas */}
+                            {Object.entries(blueprintPositions)
+                              .filter(([key]) => key.startsWith('label-'))
+                              .map(([key, pos]) => {
+                                const layerName = key.replace('label-', '');
+                                const layerConfig: Record<string, { name: string; color: string }> = {
+                                  components: { name: 'Components', color: 'text-blue-400' },
+                                  patterns: { name: 'Patterns', color: 'text-amber-400' },
+                                  templates: { name: 'Templates', color: 'text-teal-400' },
+                                  product: { name: 'Product Modules', color: 'text-rose-400' },
+                                  foundations: { name: 'Foundations', color: 'text-violet-400' },
+                                };
+                                const config = layerConfig[layerName] || { name: layerName, color: 'text-zinc-400' };
+                                return (
+                                  <div key={key} className="absolute pointer-events-none" style={{ transform: `translate(${pos.x}px, ${pos.y}px)` }}>
+                                    <span className={cn("text-[11px] font-semibold uppercase tracking-wider opacity-60", config.color)}>
+                                      {config.name}
+                                    </span>
+                                  </div>
+                                );
+                              })
+                            }
                             {/* Draggable Components - FIGMA STYLE: just component + small name */}
                             {libraryData.components.map((comp: any) => {
                               const id = `comp-${comp.id}`;
@@ -22151,14 +22177,15 @@ module.exports = {
                                       // Check name, category, and code for full-width indicators
                                       const nameLower = comp.name?.toLowerCase() || '';
                                       const codeLower = stableCode?.toLowerCase() || '';
-                                      const isFullWidthComp = ['product', 'section', 'hero', 'footer', 'header', 'page', 'nav', 'landing', 'banner'].includes(
-                                        comp.category?.toLowerCase() || comp.layer?.toLowerCase() || ''
-                                      ) || nameLower.includes('hero') || nameLower.includes('footer') || 
+                                      const layerLower = comp.layer?.toLowerCase() || '';
+                                      const isFullWidthComp = ['product', 'templates'].includes(layerLower) ||
+                                         nameLower.includes('hero') || nameLower.includes('footer') ||
                                          nameLower.includes('section') || nameLower.includes('header') ||
                                          nameLower.includes('landing') || nameLower.includes('banner') ||
+                                         nameLower.includes('layout') || nameLower.includes('page') || nameLower.includes('shell') ||
                                          // Also detect by code patterns - if it has full viewport styling
                                          codeLower.includes('min-h-screen') || codeLower.includes('h-screen') ||
-                                         codeLower.includes('w-full') && (codeLower.includes('100vh') || codeLower.includes('min-h-['));
+                                         (codeLower.includes('w-full') && (codeLower.includes('100vh') || codeLower.includes('min-h-[')));
                                       
                                       // During generation OR new component: force fixed compact size
                                       const isGeneratingThis = isGenerating;
@@ -22183,12 +22210,12 @@ module.exports = {
                                         finalWidth = 320;
                                         finalHeight = 120;
                                       } else if (size) {
-                                        // Use iframe-reported size with generous caps
-                                        finalWidth = isFullWidthComp ? '100%' : Math.min(size.width, 600);
-                                        finalHeight = Math.min(size.height, 500);
+                                        // Use iframe-reported size — real content dimensions
+                                        finalWidth = isFullWidthComp ? Math.max(size.width, 800) : size.width;
+                                        finalHeight = size.height;
                                       } else {
                                         // No size yet - comfortable default
-                                        finalWidth = isFullWidthComp ? '100%' : 400;
+                                        finalWidth = isFullWidthComp ? 800 : 400;
                                         finalHeight = 250;
                                       }
                                       

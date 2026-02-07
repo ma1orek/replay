@@ -1690,7 +1690,7 @@ The style directive above defines ALL visual aspects: colors, backgrounds, gradi
     
     // Color instruction depends on whether custom style or DS is selected
     const colorInstruction = isDSStyleDirective
-      ? "USE DESIGN SYSTEM COLORS from the DS style guide above! IGNORE scanData.ui.colors — the DS tokens define ALL colors (primary, background, surface, text, border). Only use scanData.ui.theme to determine light/dark mode."
+      ? "USE DESIGN SYSTEM COLORS ONLY from the DS style guide above! IGNORE scanData.ui.colors AND surveyor colors completely. The DS tokens define ALL colors for EVERY element: header, nav, buttons, backgrounds, text, borders. Use them CONSISTENTLY across the ENTIRE page — no mixing with video colors. Only use scanData.ui.theme to determine light/dark mode."
       : hasCustomStyle
         ? "IGNORE scanData.ui.colors - use STYLE DIRECTIVE colors instead!"
         : surveyorMeasurements
@@ -1726,11 +1726,15 @@ ${JSON.stringify(scanData, null, 2)}
 8. LAYOUT: Use CSS Grid or Flexbox for card rows — NEVER inline-block. Cards must fill grid cells (w-full, h-full).
 9. BUTTONS: ALL buttons/links MUST be VISIBLE by default. NEVER opacity:0 or visibility:hidden until hover. Hover enhances — doesn't create visibility.
 10. THEME: Respect scanData.ui.theme — if light, use light backgrounds (bg-white). If dark, use dark backgrounds (bg-zinc-950).
+${isDSStyleDirective ? `11. DS CONSISTENCY: Apply Design System colors uniformly to ALL sections — header, hero, content, sidebar, footer. Every bg-*, text-*, border-* class must come from the DS token palette. Do NOT use any hardcoded hex colors that aren't in the DS style guide.` : ''}
 ${surveyorMeasurements ? `
-**CRITICAL - SURVEYOR DATA IS LAW:**
+**CRITICAL - SURVEYOR DATA IS LAW FOR LAYOUT/SPACING:**
 The measurements above came from Agentic Vision Code Execution - they are PIXEL-PERFECT.
 Use p-[${surveyorMeasurements.spacing.cardPadding}] NOT p-4 or p-6.
-Use bg-[${surveyorMeasurements.colors.background}] NOT bg-slate-900.
+${isDSStyleDirective
+  ? '⚠️ COLORS: Use DESIGN SYSTEM colors from the DS style guide — NOT surveyor colors. Surveyor is only authoritative for SPACING and LAYOUT dimensions.'
+  : `Use bg-[${surveyorMeasurements.colors.background}] NOT bg-slate-900.`
+}
 ` : ''}
 Generate the complete HTML file now:`;
     
