@@ -210,11 +210,17 @@ Does it have a specific use-case but could apply to other products?
 Is it named specifically for THIS product/brand?
 - LuxuryHeroSection, JobListingRow → PRODUCT
 
-**CRITICAL:**
-- Extract AT LEAST 3 items per layer (except foundations)
+**CRITICAL EXTRACTION RULES:**
+- Extract ALL UNIQUE components you can find — typically 5-12 per layer for rich UIs
+- DO NOT limit yourself to 3 per layer — extract EVERY distinct component in the source code
+- Primitives: every unique button style, input type, text variant, icon usage → often 5-8+
+- Components: every card, nav, footer, modal, dropdown, badge, avatar → often 5-10+
+- Patterns: every distinct section/recipe (hero, feature grid, pricing, testimonials) → often 4-8+
+- Product: every brand-specific named section → often 3-6+
 - Every component MUST have realistic code that renders
 - Props must have sensible defaults
-- Include 2-3 variants per component
+- Include 2-3 variants per component where applicable
+- Each component must be UNIQUE — no duplicates with minor text changes
 
 Return ONLY valid JSON. No explanation.`;
 

@@ -507,24 +507,27 @@ function extractDesignTokens(htmlPages: string[]): {
   // 1. Extract CSS custom properties from :root, :host, html, body
   const customPropBlocks = allCSS.match(/(?::root|:host|html|body)\s*\{([^}]+)\}/gi) || [];
   
+  // Helpers for value-based validation
+  const isColorValue = (v: string) =>
+    /^#[0-9a-f]{3,8}$/i.test(v) || /^rgba?\(/i.test(v) || /^hsla?\(/i.test(v) ||
+    /^var\(--(?:color|bg|background|border|accent|primary|secondary|surface|theme)/i.test(v) ||
+    /^(?:transparent|currentColor|inherit)$/i.test(v);
+  const isSizeValue = (v: string) =>
+    /^[\d.]+(?:rem|em|px|%|vh|vw|ch|ex|pt)$/i.test(v) || /^clamp\(/i.test(v) || /^calc\(/i.test(v);
+  const isNumericWeight = (v: string) => /^\d{3}$/.test(v); // 100-900
+
   for (const block of customPropBlocks) {
     const propsContent = block.match(/\{([^}]+)\}/)?.[1] || "";
     const propRegex = /--([\w-]+)\s*:\s*([^;]+)/g;
     let match;
-    
+
     while ((match = propRegex.exec(propsContent)) !== null) {
       const name = match[1].trim();
       const value = match[2].trim();
       const nameLower = name.toLowerCase();
-      
-      // Categorize tokens by name patterns
-      if (nameLower.includes("color") || nameLower.includes("bg") || nameLower.includes("text-") || 
-          nameLower.includes("primary") || nameLower.includes("secondary") || nameLower.includes("accent") ||
-          nameLower.includes("surface") || nameLower.includes("border") || nameLower.includes("error") ||
-          nameLower.includes("success") || nameLower.includes("warning") || nameLower.includes("info") ||
-          value.match(/^#[0-9a-f]{3,8}$/i) || value.match(/^rgb/i) || value.match(/^hsl/i)) {
-        colors[name] = value;
-      } else if (nameLower.includes("font-family") || nameLower.includes("font-face") || nameLower.includes("typeface")) {
+
+      // --- Explicit typography names always go to typography ---
+      if (nameLower.includes("font-family") || nameLower.includes("font-face") || nameLower.includes("typeface")) {
         fontFamily[name] = value;
       } else if (nameLower.includes("font-size") || nameLower.includes("text-size")) {
         fontSize[name] = value;
@@ -533,6 +536,37 @@ function extractDesignTokens(htmlPages: string[]): {
         if (!isNaN(num)) fontWeight[name] = num;
       } else if (nameLower.includes("line-height") || nameLower.includes("leading")) {
         lineHeight[name] = value;
+
+      // --- "text-*" is ambiguous: could be color (text-primary) or size (text-lg) ---
+      // Use VALUE to decide: size value → fontSize, color value → colors
+      } else if (nameLower.startsWith("text-") || nameLower.includes("-text-")) {
+        if (isSizeValue(value)) {
+          fontSize[name] = value;
+        } else if (isNumericWeight(value)) {
+          fontWeight[name] = parseInt(value);
+        } else if (isColorValue(value) || value.startsWith("var(")) {
+          colors[name] = value;
+        }
+        // else skip ambiguous (e.g. "text-transform: uppercase")
+
+      // --- Color names: require the value to actually look like a color ---
+      } else if (nameLower.includes("color") || nameLower.includes("bg") ||
+          nameLower.includes("primary") || nameLower.includes("secondary") || nameLower.includes("accent") ||
+          nameLower.includes("surface") || nameLower.includes("border-color") ||
+          nameLower.includes("error") || nameLower.includes("success") ||
+          nameLower.includes("warning") || nameLower.includes("info")) {
+        if (isColorValue(value) || value.startsWith("var(")) {
+          colors[name] = value;
+        } else if (isSizeValue(value)) {
+          // border-width, etc. - goes to spacing
+          spacing[name] = value;
+        }
+
+      // --- Value IS a color even if name doesn't hint at it ---
+      } else if (isColorValue(value)) {
+        colors[name] = value;
+
+      // --- Spacing ---
       } else if (nameLower.includes("spacing") || nameLower.includes("space") || nameLower.includes("gap") || nameLower.includes("padding") || nameLower.includes("margin")) {
         spacing[name] = value;
       } else if (nameLower.includes("radius") || nameLower.includes("rounded")) {

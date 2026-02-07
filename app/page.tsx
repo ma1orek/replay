@@ -7176,16 +7176,32 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
         }
       }
       
-      // Add edges between pages (navigation flow)
-      const allPageIds = scanData.pages.map((p: any) => p.id || '');
-      for (let i = 0; i < allPageIds.length - 1; i++) {
-        if (allPageIds[i] && allPageIds[i + 1]) {
+      // Add edges between OBSERVED pages (sequential navigation flow)
+      const observedIds = observedPages.map((p: any) => p.id || '').filter(Boolean);
+      for (let i = 0; i < observedIds.length - 1; i++) {
+        if (observedIds[i] && observedIds[i + 1]) {
           await addEdge({
-            id: `edge-${allPageIds[i]}-${allPageIds[i+1]}`,
-            from: allPageIds[i],
-            to: allPageIds[i + 1],
+            id: `edge-${observedIds[i]}-${observedIds[i+1]}`,
+            from: observedIds[i],
+            to: observedIds[i + 1],
             label: 'navigates',
             type: 'navigation'
+          });
+        }
+      }
+
+      // Add POSSIBLE edges from first observed page → each detected page
+      // (detected pages come from nav, so the main page links to them)
+      const mainPageId = observedIds[0] || '';
+      if (mainPageId) {
+        const allDetectedIds = possiblePages.map((p: any) => p.id || '').filter(Boolean);
+        for (const detId of allDetectedIds) {
+          await addEdge({
+            id: `edge-${mainPageId}-${detId}`,
+            from: mainPageId,
+            to: detId,
+            label: 'possible',
+            type: 'possible'
           });
         }
       }
@@ -11216,12 +11232,20 @@ Try these prompts in Cursor or v0:
           
           // Build rich style guide from tokens
           // Filter out unreliable "discovered-" colors (Storybook chrome, not actual DS tokens)
+          // Also filter out misclassified size values (rem/px/em) that got into colors
           const STORYBOOK_CHROME_COLORS = new Set(["#ff4400", "#ff0000", "#f6f9fc", "#242424", "#c6c6c6", "#646464", "#e6e6e6", "#fff", "#ffffff", "#000", "#000000"]);
+          const isSizeVal = (v: string) => /^[\d.]+(?:rem|em|px|%|vh|vw|ch|pt)$/i.test(v) || /^clamp\(/i.test(v) || /^calc\(/i.test(v);
           let reliableColors: Record<string, string> = {};
+          const rescuedFontSizes: Record<string, string> = {}; // sizes misclassified as colors
           let hasNamedColors = false;
           if (tokens.colors) {
             for (const [k, v] of Object.entries(tokens.colors)) {
-              const val = String(v).toLowerCase();
+              const val = String(v).toLowerCase().trim();
+              // Safeguard: if value is a size (rem/px/em), redirect to typography
+              if (isSizeVal(val)) {
+                rescuedFontSizes[k] = String(v);
+                continue;
+              }
               if (!k.startsWith("discovered-")) {
                 hasNamedColors = true;
                 reliableColors[k] = String(v);
@@ -11242,6 +11266,10 @@ Try these prompts in Cursor or v0:
           // Also handle flat font entries (backwards compat)
           if (typeof typo === "object" && !typo.fontFamily && !typo.fontSize) {
             Object.entries(typo).forEach(([k, v]) => { if (typeof v === "string") typoEntries.push([k, v]); });
+          }
+          // Add rescued font sizes that were misclassified as colors (e.g. text-lg: 1.125rem)
+          for (const [k, v] of Object.entries(rescuedFontSizes)) {
+            typoEntries.push([`size-${k}`, v]);
           }
 
           // Read border radius (import stores as "borderRadius", also check "radii")
@@ -14851,8 +14879,8 @@ ${publishCode}
               <div className="flex-1 overflow-y-auto p-3 space-y-4">
                 {/* TIER 1: OBSERVED (SOLID) - Seen on video ≥2s, 100% certain */}
                 <div>
-                  <div className="text-[9px] font-semibold uppercase tracking-wider text-zinc-400 mb-2 flex items-center gap-1.5">
-                    <Check className="w-3 h-3" /> Observed Pages
+                  <div className="text-[9px] font-semibold uppercase tracking-wider text-emerald-400/80 mb-2 flex items-center gap-1.5">
+                    <Check className="w-3 h-3" /> Observed — Shown in Video
                   </div>
                   {flowNodes.filter(n => n.status === "observed" || n.status === "added").length > 0 ? (
                     <div className="space-y-1">
@@ -14888,8 +14916,8 @@ ${publishCode}
                 
                 {/* TIER 2: DETECTED (DASHED) - Link/button visible but not clicked */}
                 <div>
-                  <div className="text-[9px] font-semibold uppercase tracking-wider text-zinc-500 mb-2 flex items-center gap-1.5">
-                    <AlertCircle className="w-3 h-3" /> Detected (Not Visited)
+                  <div className="text-[9px] font-semibold uppercase tracking-wider text-blue-400/70 mb-2 flex items-center gap-1.5">
+                    <AlertCircle className="w-3 h-3" /> Possible Paths — In Nav Only
                   </div>
                   {flowNodes.filter(n => n.status === "detected").length > 0 ? (
                     <div className="space-y-1">
@@ -14925,7 +14953,7 @@ ${publishCode}
                 {flowNodes.filter(n => n.status === "inferred" || n.status === "possible").length > 0 && (
                   <div>
                     <div className="text-[9px] font-semibold uppercase tracking-wider text-zinc-500/60 mb-2 flex items-center gap-1.5">
-                      <GitBranch className="w-3 h-3" /> Inferred (AI Suggestion)
+                      <GitBranch className="w-3 h-3" /> AI Suggested Pages
                     </div>
                     <div className="space-y-1">
                       {flowNodes.filter(n => n.status === "inferred" || n.status === "possible").map((node) => (
@@ -22132,17 +22160,17 @@ module.exports = {
                                         finalWidth = size.width;
                                         finalHeight = size.height;
                                       } else if (needsFixedSize) {
-                                        // Generating/new - small placeholder
-                                        finalWidth = 200;
-                                        finalHeight = 80;
+                                        // Generating/new - placeholder
+                                        finalWidth = 320;
+                                        finalHeight = 120;
                                       } else if (size) {
-                                        // Use iframe-reported size but compact
-                                        finalWidth = isFullWidthComp ? '100%' : Math.min(size.width, 400);
-                                        finalHeight = Math.min(size.height, 300);
+                                        // Use iframe-reported size with generous caps
+                                        finalWidth = isFullWidthComp ? '100%' : Math.min(size.width, 600);
+                                        finalHeight = Math.min(size.height, 500);
                                       } else {
-                                        // No size yet - small default
-                                        finalWidth = isFullWidthComp ? '100%' : 250;
-                                        finalHeight = 150;
+                                        // No size yet - comfortable default
+                                        finalWidth = isFullWidthComp ? '100%' : 400;
+                                        finalHeight = 250;
                                       }
                                       
                                       return (
