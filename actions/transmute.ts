@@ -769,6 +769,10 @@ USE: scanData.ui.navigation.sidebar.logo.text or "Dashboard"
 FOR PHOTOS: https://picsum.photos/seed/{unique-name}/{width}/{height}
 FOR AVATARS: https://i.pravatar.cc/150?img=X  or  https://api.dicebear.com/7.x/avataaars/svg?seed=Name
 
+🔴 EVERY IMAGE MUST USE A UNIQUE SEED! Never reuse same seed → same photo!
+- If page has 8 images → 8 DIFFERENT seeds (hero-main, card-urban, card-nature, team-photo, product-1, about-office, gallery-sunset, footer-bg)
+- Combine context + unique word (project-kyoto, project-berlin, project-sydney NOT project-1, project-2, project-3)
+
 EXAMPLES:
 <img src="https://picsum.photos/seed/hero-main/1200/800" class="w-full h-64 object-cover" />
 <img src="https://picsum.photos/seed/project-tokyo/800/600" class="w-full h-48 object-cover rounded-lg" />
@@ -1318,8 +1322,14 @@ The template below has LIGHT theme as default. CHANGE IT if theme is "dark"!
 ☑ High contrast everywhere
 
 🖼️ IMAGES:
-☑ Picsum: https://picsum.photos/seed/NAME/W/H
+☑ Picsum: https://picsum.photos/seed/NAME/W/H — EVERY image uses a UNIQUE seed!
 ☑ Avatars: https://i.pravatar.cc/150?img=XX
+
+📝 CONTENT COMPLETENESS:
+☑ ALL sections from scanData present — none removed
+☑ ALL text content VERBATIM — no shortening or paraphrasing
+☑ ALL nav items, metrics, table rows, form fields present
+☑ Style changes APPEARANCE only — never removes content!
 
 Generate STUNNING, AWWWARDS-QUALITY code:`;
 
@@ -1766,12 +1776,19 @@ IMPORTANT: User has selected a CUSTOM STYLE. You MUST:
 1. IGNORE scanData.ui.colors completely - do NOT use video's original colors
 2. IGNORE scanData.ui.theme - apply the style's own theme (light/dark)
 3. APPLY ALL style instructions below for colors, gradients, shadows, animations
-4. Keep ONLY the TEXT CONTENT and STRUCTURE from scanData (headlines, nav items, metrics, etc.)
+4. Keep ALL TEXT CONTENT and ALL SECTIONS from scanData — every headline, paragraph, nav item, metric, table row, form field VERBATIM!
+5. Keep the SAME number of sections/cards/items — custom style changes APPEARANCE not CONTENT!
+6. Do NOT shorten paragraphs, remove sections, or drop content to "fit" the style
+
+🔴 CONTENT COMPLETENESS RULE: The style changes colors/fonts/effects — it NEVER removes or shortens content!
+   - If scanData has 5 sections → output has 5 sections (with new style)
+   - If scanData has a 3-sentence paragraph → output has the SAME 3-sentence paragraph (styled differently)
+   - If scanData has 8 nav items → output has 8 nav items (styled differently)
 
 **STYLE TO APPLY:**
 ${styleDirective}
 
-The style directive above defines ALL visual aspects: colors, backgrounds, gradients, shadows, animations, hover effects. USE IT, not the video colors!`;
+The style directive above defines ALL visual aspects: colors, backgrounds, gradients, shadows, animations, hover effects. USE IT, not the video colors! But KEEP ALL CONTENT intact!`;
     } else if (styleDirective && styleDirective.trim()) {
       // Light directive with some text - use video colors
       assemblerPrompt += `\n\n**STYLE DIRECTIVE:**\n${styleDirective}`;

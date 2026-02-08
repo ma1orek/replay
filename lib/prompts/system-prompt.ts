@@ -305,7 +305,13 @@ SYNTAX: https://picsum.photos/seed/{UNIQUE_NAME}/{WIDTH}/{HEIGHT}
 
 The "seed" ensures SAME image every time. Use descriptive names.
 
-EXAMPLES BY CATEGORY:
+🔴 EVERY IMAGE MUST HAVE A UNIQUE SEED! Never repeat the same seed across images.
+- BAD: 3 cards all using "project-kyoto" → same image 3 times
+- GOOD: "project-kyoto", "project-osaka", "project-berlin" → 3 different images
+- RULE: Combine context + number or unique adjective (e.g., hero-main-1, card-photo-urban, team-portrait-sarah)
+- If the page has 6 images, you need 6 DIFFERENT seeds. Count them!
+
+EXAMPLES BY CATEGORY (use as INSPIRATION, create your OWN unique seeds):
 
 HERO/HEADER:
 src="https://picsum.photos/seed/hero-main/1200/800"

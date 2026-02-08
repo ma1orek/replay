@@ -4589,6 +4589,40 @@ ${processedCode}
       }
     }
     
+    // FOUC fix: detect dark background from Tailwind classes and add inline style
+    // so the page doesn't flash white while Tailwind CDN loads
+    const darkBgClasses = ['bg-zinc-950', 'bg-zinc-900', 'bg-gray-950', 'bg-gray-900', 'bg-slate-950', 'bg-slate-900', 'bg-neutral-950', 'bg-neutral-900', 'bg-black', 'bg-stone-950', 'bg-stone-900'];
+    const darkBgMap: Record<string, string> = {
+      'bg-zinc-950': '#09090b', 'bg-zinc-900': '#18181b', 'bg-gray-950': '#030712', 'bg-gray-900': '#111827',
+      'bg-slate-950': '#020617', 'bg-slate-900': '#0f172a', 'bg-neutral-950': '#0a0a0a', 'bg-neutral-900': '#171717',
+      'bg-black': '#000000', 'bg-stone-950': '#0c0a09', 'bg-stone-900': '#1c1917'
+    };
+    // Check body tag and html tag for dark background classes
+    const bodyMatch = processedCode.match(/<body[^>]*class="([^"]*)"/);
+    const htmlMatch = processedCode.match(/<html[^>]*class="([^"]*)"/);
+    const bodyClasses = (bodyMatch?.[1] || '') + ' ' + (htmlMatch?.[1] || '');
+    let inlineBgColor = '';
+    for (const cls of darkBgClasses) {
+      if (bodyClasses.includes(cls)) {
+        inlineBgColor = darkBgMap[cls];
+        break;
+      }
+    }
+    // Also check for inline background-color or hex in style attribute
+    if (!inlineBgColor) {
+      const bodyStyleMatch = processedCode.match(/<body[^>]*style="([^"]*)"/);
+      const bgColorMatch = bodyStyleMatch?.[1]?.match(/background(?:-color)?:\s*(#[0-9a-fA-F]{3,8}|rgb[^;)]+\))/);
+      if (bgColorMatch) inlineBgColor = bgColorMatch[1];
+    }
+    if (inlineBgColor) {
+      const foucFix = `<style>html,body{background-color:${inlineBgColor} !important;}</style>`;
+      if (processedCode.includes('</head>')) {
+        processedCode = processedCode.replace('</head>', `${foucFix}\n</head>`);
+      } else if (processedCode.includes('<body')) {
+        processedCode = processedCode.replace(/<body/, `${foucFix}\n<body`);
+      }
+    }
+
     const codeWithHandler = injectAssetClickHandler(processedCode);
     return URL.createObjectURL(new Blob([codeWithHandler], { type: "text/html" }));
   }, [injectAssetClickHandler]);
@@ -7066,10 +7100,20 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
     
     // ═══════════════════════════════════════════════════════════════════════════
     // PRIORITY: Use scanData.pages if available (from video analysis)
+    // Handle BOTH formats: flat array OR { detected: [...] } object
     // ═══════════════════════════════════════════════════════════════════════════
-    
-    if (scanData?.pages && Array.isArray(scanData.pages) && scanData.pages.length > 0) {
-      console.log('[buildFlowLive] Using scanData.pages:', scanData.pages.length, 'pages');
+
+    // Normalize scanData.pages — transmute.ts returns { detected: [...] } object,
+    // but we need a flat array for processing
+    const rawPages = scanData?.pages;
+    const pagesArray: any[] = Array.isArray(rawPages)
+      ? rawPages
+      : Array.isArray(rawPages?.detected)
+        ? rawPages.detected
+        : [];
+
+    if (pagesArray.length > 0) {
+      console.log('[buildFlowLive] Using scanData.pages:', pagesArray.length, 'pages (format:', Array.isArray(rawPages) ? 'flat' : 'nested', ')');
       
       // ═══════════════════════════════════════════════════════════════════════════
       // IMPORTANT: Cross-check scanData with actual code content
@@ -7092,17 +7136,17 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
       };
       
       // Separate pages - use code content as source of truth for "observed" status
-      const observedPages = scanData.pages.filter((p: any) => {
-        const name = p.title || p.name || p.id || '';
+      const observedPages = pagesArray.filter((p: any) => {
+        const name = p.title || p.name || p.navLabel || p.id || '';
         if (!isValidPageName(name)) return false;
         // Page is observed if: originally seen in video OR now has content in code (was reconstructed)
-        return p.seenInVideo === true || p.isDefault || pageHasContentInCode(name);
+        return p.seenInVideo === true || p.isVisible === true || p.isDefault || pageHasContentInCode(name);
       });
-      const possiblePages = scanData.pages.filter((p: any) => {
-        const name = p.title || p.name || p.id || '';
+      const possiblePages = pagesArray.filter((p: any) => {
+        const name = p.title || p.name || p.navLabel || p.id || '';
         if (!isValidPageName(name)) return false;
         // Page is possible only if NOT in video AND NOT has content in code
-        return p.seenInVideo === false && !p.isDefault && !pageHasContentInCode(name);
+        return (p.seenInVideo === false || p.isVisible === false) && !p.isDefault && !pageHasContentInCode(name);
       });
       
       console.log('[buildFlowLive] Observed:', observedPages.length, 'Possible:', possiblePages.length);
@@ -7112,7 +7156,7 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
         const page = observedPages[i];
         await addNode({
           id: page.id || `page-${i}`,
-          name: page.title || page.name || page.id,
+          name: page.title || page.name || page.navLabel || page.id,
           type: 'view',
           status: 'observed',
           description: page.description || `Path: ${page.path || '/'}`,
@@ -7127,7 +7171,7 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
         const page = possiblePages[i];
         await addNode({
           id: page.id || `possible-${i}`,
-          name: page.title || page.name || page.id,
+          name: page.title || page.name || page.navLabel || page.id,
           type: 'view',
           status: 'detected',
           description: page.description || `Present in navigation, not shown in video`,
@@ -9237,13 +9281,22 @@ Try these prompts in Cursor or v0:
 
   const addVideoToFlows = async (blob: Blob, name: string, knownDuration?: number) => {
     console.log("addVideoToFlows called, blob size:", blob.size, "type:", blob.type, "knownDuration:", knownDuration);
-    
+
     // Validate blob
     if (!blob || blob.size === 0) {
       console.error("Invalid blob - empty or null");
       showToast("Invalid video file", "error");
       return;
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // RESET: Each new video must be treated as a FRESH analysis
+    // Clear previous style/context so they don't leak into new video
+    // ═══════════════════════════════════════════════════════════════
+    setStyleDirective(getDefaultStyleName());
+    setRefinements("");
+    setStyleReferenceImage(null);
+    setEditInput("");
     
     const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
     const url = URL.createObjectURL(blob);
@@ -9308,9 +9361,48 @@ Try these prompts in Cursor or v0:
       const finishCreation = async (thumbnail?: string) => {
         if (resolved) return;
         resolved = true;
-        
+
         const duration = getValidDuration();
         const flowId = generateId();
+
+        // If duration was estimated from blob size, try to get real duration asynchronously
+        // and update the flow once real metadata loads
+        const d = video.duration;
+        const usedEstimate = !(d && isFinite(d) && !isNaN(d) && d > 0 && d < 7200) && !(knownDuration && knownDuration > 0) && !(recordingDuration > 0);
+        if (usedEstimate) {
+          // Create a new video element to load metadata in the background
+          const metaVideo = document.createElement('video');
+          metaVideo.preload = 'metadata';
+          metaVideo.src = URL.createObjectURL(blob);
+          metaVideo.onloadedmetadata = () => {
+            const realD = metaVideo.duration;
+            if (realD && isFinite(realD) && !isNaN(realD) && realD > 0 && realD < 7200) {
+              const realDuration = Math.round(realD);
+              console.log('[Duration fix] Updated flow duration from', duration, 'to', realDuration);
+              setFlows(prev => prev.map(f => f.id === flowId ? { ...f, duration: realDuration, trimEnd: realDuration } : f));
+            }
+            URL.revokeObjectURL(metaVideo.src);
+          };
+          // For webm, seek to end to get real duration
+          metaVideo.onseeked = () => {
+            const realD = metaVideo.duration;
+            if (realD && isFinite(realD) && !isNaN(realD) && realD > 0 && realD < 7200) {
+              const realDuration = Math.round(realD);
+              console.log('[Duration fix] Updated flow duration (after seek) from', duration, 'to', realDuration);
+              setFlows(prev => prev.map(f => f.id === flowId ? { ...f, duration: realDuration, trimEnd: realDuration } : f));
+            }
+            URL.revokeObjectURL(metaVideo.src);
+          };
+          metaVideo.load();
+          // For webm files, try seeking to the end after metadata loads
+          const origOnMeta = metaVideo.onloadedmetadata;
+          metaVideo.onloadedmetadata = (e) => {
+            if (origOnMeta) (origOnMeta as EventListener)(e);
+            if (!isFinite(metaVideo.duration) || metaVideo.duration <= 0) {
+              metaVideo.currentTime = 1e10; // Force seek to get real duration for webm
+            }
+          };
+        }
         
         // Generate name - use file name if provided, otherwise create unique recording name
         let baseName = name && name.trim() ? name.trim() : "";
@@ -11418,7 +11510,10 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
             databaseContext: databaseContextStr || undefined,
             styleReferenceImage: effectiveStyleRefImage || undefined,
           });
-          console.log("[Generate] Server action completed:", result.success ? "success" : result.error);
+          if (!result) {
+            result = { success: false, error: "Server timed out (504). Video may be too large or complex. Try a shorter recording." };
+          }
+          console.log("[Generate] Server action completed:", result?.success ? "success" : result?.error);
         } else {
           // Small video - use streaming for real-time output
           console.log(`[Generate] Video ${videoSizeMB.toFixed(2)}MB < ${STREAMING_SIZE_LIMIT_MB}MB limit, using STREAMING mode`);
@@ -11431,8 +11526,8 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
             );
             
             // If streaming failed for other reasons, fallback to server action
-            if (!result.success) {
-              console.log("[Generate] Streaming failed, falling back to server action:", result.error);
+            if (!result || !result.success) {
+              console.log("[Generate] Streaming failed, falling back to server action:", result?.error);
               setStreamingStatus("🔄 Switching to server processing...");
               result = await transmuteVideoToCode({
                 videoUrl,
@@ -11440,6 +11535,9 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
                 databaseContext: databaseContextStr || undefined,
                 styleReferenceImage: effectiveStyleRefImage || undefined,
               });
+              if (!result) {
+                result = { success: false, error: "Server timed out (504). Video may be too large or complex. Try a shorter recording." };
+              }
               console.log("[Generate] Server action completed:", result.success ? "success" : result.error);
             }
           } catch (streamError: any) {
@@ -11451,6 +11549,9 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
               databaseContext: databaseContextStr || undefined,
               styleReferenceImage: effectiveStyleRefImage || undefined,
             });
+            if (!result) {
+              result = { success: false, error: "Server timed out (504). Video may be too large or complex. Try a shorter recording." };
+            }
             console.log("[Generate] Server action completed:", result.success ? "success" : result.error);
           }
         }
@@ -11463,6 +11564,9 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
           databaseContext: databaseContextStr || undefined,
           styleReferenceImage: effectiveStyleRefImage || undefined,
         });
+        if (!result) {
+          result = { success: false, error: "Server timed out (504). Video may be too large or complex. Try a shorter recording." };
+        }
       }
       
       // Clear streaming status after generation
@@ -17695,9 +17799,12 @@ export default function GeneratedPage() {
                             const fromNode = flowNodes.find(n => n.id === edge.from);
                             const toNode = flowNodes.find(n => n.id === edge.to);
                             if (!fromNode || !toNode) return null;
+                            // Guard against NaN coordinates (nodes loaded without valid x/y)
+                            if (typeof fromNode.x !== 'number' || typeof fromNode.y !== 'number' || isNaN(fromNode.x) || isNaN(fromNode.y)) return null;
+                            if (typeof toNode.x !== 'number' || typeof toNode.y !== 'number' || isNaN(toNode.x) || isNaN(toNode.y)) return null;
                             // Hide edges to hidden detected/possible/inferred nodes
                             if (!showPossiblePaths && (toNode.status === "detected" || toNode.status === "possible" || toNode.status === "inferred")) return null;
-                            
+
                             const fromHeight = getFlowNodeHeight(fromNode);
                             const x1 = fromNode.x + FLOW_NODE_WIDTH / 2;
                             const y1 = fromNode.y + fromHeight;

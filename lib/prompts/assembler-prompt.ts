@@ -54,7 +54,7 @@ Your job is to FAITHFULLY RECONSTRUCT this UI as production-quality React + Tail
 🚀 Shadows → Subtle depth on cards
 🚀 Animations → GSAP on scroll + hover (smooth, not excessive)
 🚀 Hover effects → Cards lift, buttons highlight
-🚀 Images → picsum.photos with contextual seeds
+🚀 Images → picsum.photos with UNIQUE contextual seeds (every image DIFFERENT seed!)
 
 **FALLBACK DESIGN SYSTEM (only when NO style/DS is selected AND video colors are unclear):**
 
@@ -168,6 +168,7 @@ const Icon = ({ name, className = "w-5 h-5" }) => {
 \`\`\`
 🚫 BANNED: pollinations.ai (rate limits!), placehold.co, placeholder.com, unsplash.com, empty src=""
 ✅ ALLOWED: picsum.photos/seed/NAME/W/H, i.pravatar.cc, api.dicebear.com
+🔴 EVERY image MUST have a UNIQUE seed! If page has 6 images → 6 DIFFERENT seeds (e.g., hero-main, card-urban, card-nature, team-photo, about-office, footer-bg)
 
 **CARD TEMPLATE (PREMIUM):**
 \`\`\`jsx
@@ -300,7 +301,7 @@ const Icon = ({ name, className = "w-5 h-5" }) => {
 □ 8. LAYOUT: matches scanData structure (sidebar-main, grid columns, etc.)
 □ 9. GSAP animations on load and scroll (smooth, not excessive)
 □ 10. Hover effects on cards/buttons (but buttons VISIBLE before hover!)
-□ 11. Picsum.photos images (NO pollinations - rate limits!)
+□ 11. Picsum.photos images with UNIQUE seeds per image (NO pollinations - rate limits!)
 □ 12. Chart.js with theme-appropriate colors
 □ 13. CSS Grid/Flexbox for card rows — NEVER inline-block
 □ 14. NO missing sections — if scanData has hero+features+FAQ+footer, output has ALL of them
