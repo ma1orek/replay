@@ -70,6 +70,17 @@ const UNIFIED_SCAN_PROMPT = `You are a VISUAL REVERSE ENGINEERING SYSTEM with pi
 **YOUR MISSION:** Perform a COMPLETE forensic analysis of this UI. Extract EVERY piece of data visible.
 
 ═══════════════════════════════════════════════════════════════════════════════
+🔴 ACCURACY IS EVERYTHING — NO SHORTCUTS!
+═══════════════════════════════════════════════════════════════════════════════
+Your output will be used to RECONSTRUCT this UI pixel-for-pixel. If you miss text, skip sections,
+or shorten content — the output will be WRONG. Treat this like a forensic evidence report:
+- EVERY word matters
+- EVERY number matters
+- EVERY section matters
+- EVERY menu item matters
+Watch the ENTIRE video frame by frame. Do NOT rush. Do NOT summarize. Do NOT skip "boring" sections.
+
+═══════════════════════════════════════════════════════════════════════════════
 🚫 CRITICAL: DO NOT INVENT APP NAMES
 ═══════════════════════════════════════════════════════════════════════════════
 
@@ -119,17 +130,26 @@ HOW TO GET THE REAL NAME:
     - Use common sense: major companies don't have "2 funded startups" - estimate realistic final values!
 
 ═══════════════════════════════════════════════════════════════════════════════
-🟢 CONTENT 1:1 — OBOWIĄZKOWE (NIE POMIJAJ, NIE SKRACAJ!)
+🟢 CONTENT 1:1 — MANDATORY (DO NOT SKIP, DO NOT SHORTEN!)
 ═══════════════════════════════════════════════════════════════════════════════
-Content musi być odtworzony W CAŁOŚCI, 1:1 z tym co widać. ZAKAZ:
-- skracania paragrafów, "pierwszych 3 punktów", "itp."
-- pomijania sekcji (hero, partnerzy, FAQ, newsletter, stopka — wszystkie muszą być)
-- parafrazowania ("Dostarczamy zaawansowane…" ≠ "We deliver advanced…" — dokładna treść)
-- używania placeholderów zamiast realnego tekstu
+Content must be reproduced IN FULL, 1:1 with what's visible. FORBIDDEN:
+- Shortening paragraphs, "first 3 items", "etc.", "..."
+- Skipping sections (hero, partners, FAQ, newsletter, footer — ALL must be included)
+- Paraphrasing ("We deliver advanced..." ≠ "Dostarczamy zaawansowane..." — EXACT text!)
+- Using placeholders instead of real text
+- Summarizing ("Various features" instead of listing each one)
+- Dropping table rows (if 12 rows visible → output ALL 12)
+- Dropping menu items (if 8 items visible → output ALL 8)
 
-WYMAGANE: Każdy nagłówek, akapit, etykieta nav, tekst przycisku, pozycja listy, pytanie/odpowiedź FAQ,
-tekst w stopce, pole formularza — wpisuj do JSON VERBATIM (znak w znak). Jeśli jest 7 pozycji menu,
-wypisz wszystkie 7. Jeśli sekcja ma 4 akapity, wypisz wszystkie 4. Zero wyjątków.
+REQUIRED: Every headline, paragraph, nav label, button text, list item, FAQ question/answer,
+footer text, form field — write to JSON VERBATIM (character by character). If there are 7 menu items,
+list all 7. If a section has 4 paragraphs, list all 4. ZERO exceptions.
+
+SELF-CHECK before outputting JSON:
+- Count nav items in your output vs video — do they match?
+- Count sections in your output vs video — do they match?
+- Is every paragraph FULL LENGTH or did you accidentally shorten it?
+- Are table rows COMPLETE or did you only capture first few?
 
 **OUTPUT UNIFIED JSON:**
 {
@@ -344,7 +364,21 @@ EVERY page shown in video MUST be included in "pages.detected" array!
 For each page, include EVERY section (hero, partners, certyfikaty, FAQ, newsletter, footer, etc.) with FULL text.
 CONTENT 1:1: every string must appear verbatim — no paraphrasing, no "…", no dropping items.
 
-Analyze the video and extract EVERYTHING:`;
+═══════════════════════════════════════════════════════════════════════════════
+🔴 FINAL ACCURACY CHECK — DO THIS BEFORE RETURNING JSON!
+═══════════════════════════════════════════════════════════════════════════════
+Before you output your JSON, verify:
+1. NAV ITEMS: Count items in video → count items in your JSON. MUST MATCH.
+2. SECTIONS: Count visible sections → count sections in pages.detected. MUST MATCH.
+3. TEXT LENGTH: Are all paragraphs FULL length? Or did you truncate any?
+4. TABLE ROWS: Count visible rows → count rows in your JSON. MUST MATCH.
+5. COLORS: Did you sample ACTUAL pixel colors or guess? Sample from video!
+6. THEME: Is background white/light → "light" or dark → "dark"? Double-check.
+7. NUMBERS: Are all values exact from video? "$1,234.56" not "$1234" or "$1,235".
+
+If ANY check fails, fix it before outputting.
+
+Analyze the video and extract EVERYTHING with 100% accuracy:`;
 
 // ============================================================================
 // ASSEMBLER PROMPT - Generate AWWWARDS-QUALITY code from SCAN DATA
@@ -1751,7 +1785,11 @@ No custom style was selected. You MUST:
 2. Respect scanData.ui.theme (light/dark) — if the video is light, output MUST be light!
 3. If Surveyor measurements are provided, they are pixel-sampled — trust them exactly.
 4. Do NOT default to a dark theme. Do NOT add indigo/purple accents unless they are in the video.
-5. The goal is FAITHFUL RECREATION of the original video's visual design.`;
+5. The goal is FAITHFUL RECREATION of the original video's visual design.
+6. IGNORE any "premium dark theme" or "AWWWARDS" instructions from the base prompt — in auto-detect mode the VIDEO IS LAW.
+7. If scanData.ui.colors.background is #ffffff or similar light color → bg-white, NOT bg-zinc-950!
+8. If scanData.ui.colors.primary is #ea580c → use orange accents, NOT indigo/purple!
+9. CONTENT: Every single text string from scanData MUST appear in the output. No missing sections, no shortened text.`;
     }
     
     if (databaseContext) {
@@ -1810,7 +1848,7 @@ ${JSON.stringify(scanData, null, 2)}
 4. Create ${tableCount} tables with all rows — no dropping rows.
 5. ${colorInstruction}
 6. ${spacingInstruction}
-7. CONTENT 1:1: Every headline, paragraph, nav label, button text, FAQ item, footer line from scanData MUST appear in the output VERBATIM. Do not skip any section, do not shorten any text.
+7. CONTENT 1:1 (🔴 MOST IMPORTANT RULE): Every headline, paragraph, nav label, button text, FAQ item, footer line from scanData MUST appear in the output VERBATIM. Do not skip ANY section, do not shorten ANY text. If scanData has 5 FAQ items, output MUST have 5 FAQ items. If a paragraph has 3 sentences, output ALL 3 sentences. ZERO exceptions.
 8. LAYOUT: Use CSS Grid or Flexbox for card rows — NEVER inline-block. Cards must fill grid cells (w-full, h-full).
 9. BUTTONS: ALL buttons/links MUST be VISIBLE by default. NEVER opacity:0 or visibility:hidden until hover. Hover enhances — doesn't create visibility.
 10. THEME: Respect scanData.ui.theme — if light, use light backgrounds (bg-white). If dark, use dark backgrounds (bg-zinc-950).
