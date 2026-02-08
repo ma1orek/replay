@@ -29,10 +29,36 @@ export default function BlueprintsPage() {
       <div className="space-y-4">
         <h2 className="text-2xl font-semibold text-white">Overview</h2>
         <p className="text-zinc-400 leading-relaxed">
-          The Editor is a visual canvas where you can arrange components, resize them, 
-          and use AI to make changes. It's designed for designers who prefer visual editing 
-          over code manipulation.
+          The Editor is an infinite canvas where you can arrange, resize, and edit components
+          with AI assistance. Components are organized by their Library taxonomy layer
+          (Foundations, Components, Patterns, Templates, Product Modules) with visual labels.
         </p>
+        <p className="text-zinc-400 leading-relaxed">
+          Components auto-size to their real rendered dimensions and render with proper
+          Google Fonts (Inter). The canvas supports pan, zoom, drag-and-drop, and
+          AI-powered editing of individual components.
+        </p>
+      </div>
+
+      {/* Layer Organization */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-semibold text-white">Layer Organization</h2>
+        <p className="text-zinc-400 leading-relaxed">
+          When you click Auto Layout, components are arranged by their taxonomy layer with color-coded labels:
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {[
+            { name: "Foundations", color: "text-violet-400 border-violet-500/20" },
+            { name: "Components", color: "text-blue-400 border-blue-500/20" },
+            { name: "Patterns", color: "text-amber-400 border-amber-500/20" },
+            { name: "Templates", color: "text-teal-400 border-teal-500/20" },
+            { name: "Product", color: "text-rose-400 border-rose-500/20" },
+          ].map((l) => (
+            <div key={l.name} className={`p-3 rounded-lg bg-zinc-800/50 border text-center ${l.color}`}>
+              <span className="text-xs font-semibold uppercase tracking-wider">{l.name}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Features */}

@@ -29,10 +29,32 @@ export default function LibraryPage() {
       <div className="space-y-4">
         <h2 className="text-2xl font-semibold text-white">Overview</h2>
         <p className="text-zinc-400 leading-relaxed">
-          The Library view transforms your generated UI into a professional component documentation system. 
-          Each component gets its own page with interactive controls, prop tables, accessibility audits, 
+          The Library view transforms your generated UI into a professional component documentation system.
+          Each component gets its own page with interactive controls, prop tables, accessibility audits,
           and copy-paste code snippets.
         </p>
+      </div>
+
+      {/* Enterprise Taxonomy */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-semibold text-white">Enterprise Taxonomy</h2>
+        <p className="text-zinc-400 leading-relaxed">
+          Components are organized into an industry-standard 5-layer architecture following Carbon, Spectrum, and Atlassian design system standards:
+        </p>
+        <div className="grid gap-3">
+          {[
+            { layer: "Foundations", color: "text-violet-400", desc: "Design tokens, colors, typography, spacing, and grid definitions." },
+            { layer: "Components", color: "text-blue-400", desc: "Atomic UI elements organized into 6 subcategories: Actions, Forms, Navigation, Data Display, Feedback, and Overlays." },
+            { layer: "Patterns", color: "text-amber-400", desc: "Reusable compositions combining multiple components (e.g., search bars, card grids, data tables)." },
+            { layer: "Templates", color: "text-teal-400", desc: "Full page layouts and wireframes (e.g., dashboard layouts, landing page structures)." },
+            { layer: "Product Modules", color: "text-rose-400", desc: "Complete feature blocks with business logic (e.g., checkout flows, onboarding wizards)." },
+          ].map((item) => (
+            <div key={item.layer} className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
+              <h4 className={`font-medium ${item.color} mb-1`}>{item.layer}</h4>
+              <p className="text-sm text-zinc-400">{item.desc}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Tabs explanation */}

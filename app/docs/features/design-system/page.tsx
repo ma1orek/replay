@@ -117,6 +117,23 @@ export default function DesignSystemPage() {
         </div>
       </div>
 
+      {/* Import Design System */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-semibold text-white">Import Design System</h2>
+        <p className="text-zinc-400 leading-relaxed">
+          You can import an external Design System from any Storybook URL. Replay extracts tokens
+          (colors, typography, spacing, border radius) and applies them consistently across all
+          generated code.
+        </p>
+        <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-700 font-mono text-sm">
+          <p className="text-emerald-400">// When DS is imported:</p>
+          <p className="text-zinc-400 mt-2">DS colors override video-detected colors</p>
+          <p className="text-zinc-400">DS typography replaces default Inter font</p>
+          <p className="text-zinc-400">DS spacing tokens used for all layout</p>
+          <p className="text-zinc-500 mt-2">→ Consistent branding across header, content, sidebar, and footer</p>
+        </div>
+      </div>
+
       {/* Style injection */}
       <div className="space-y-4">
         <h2 className="text-2xl font-semibold text-white">Style Injection</h2>

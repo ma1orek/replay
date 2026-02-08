@@ -3,6 +3,57 @@ import { Clock, Sparkles, Bug, ArrowUp, Bell } from "lucide-react";
 
 const changelog = [
   {
+    date: "February 8, 2026",
+    version: "2.2.0",
+    changes: [
+      {
+        type: "feature",
+        title: "Enterprise Library Taxonomy",
+        description: "Component Library now uses industry-standard 5-layer architecture: Foundations, Components (6 subcategories), Patterns, Templates, and Product Modules. Follows Carbon/Spectrum/Atlassian design system standards."
+      },
+      {
+        type: "feature",
+        title: "Design System Import",
+        description: "Import Design Systems from any Storybook URL. Tokens (colors, typography, spacing) are extracted and applied consistently across all generated code."
+      },
+      {
+        type: "feature",
+        title: "Flow Map Reconstruct",
+        description: "Click on detected navigation paths in Flow Map to reconstruct pages not shown in the original video. AI generates new subpages matching your existing design."
+      },
+      {
+        type: "feature",
+        title: "Project Export",
+        description: "Download your entire project as a zip package including all components, design tokens, and configuration files."
+      },
+      {
+        type: "improvement",
+        title: "Editor Canvas Improvements",
+        description: "Components now auto-size to their real rendered dimensions. Layer labels (Foundations, Components, Patterns, etc.) appear on the canvas. Google Fonts (Inter) load correctly in all previews."
+      },
+      {
+        type: "improvement",
+        title: "DS Color Consistency",
+        description: "When a Design System is active, DS colors now override video-detected colors consistently across all sections — header, content, sidebar, and footer."
+      },
+      {
+        type: "improvement",
+        title: "Flow Map Detection",
+        description: "Broadened multi-page detection to recognize anchor navigation, section IDs, and more Alpine.js variable patterns (activeTab, selected, view, section)."
+      },
+      {
+        type: "fix",
+        title: "Preview Refresh Crash",
+        description: "Fixed a crash that occurred when clicking the refresh button on malformed or incomplete code. Now gracefully recovers."
+      },
+      {
+        type: "fix",
+        title: "Font Loading in Previews",
+        description: "Google Fonts (Inter) now load correctly in Library and Editor component previews. Previously only system fonts were used."
+      },
+    ]
+  },
+  {
     date: "February 2, 2026",
     version: "2.1.0",
     changes: [

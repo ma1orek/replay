@@ -83,6 +83,14 @@ export default function FlowMapPage() {
             </p>
           </div>
           <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
+            <h4 className="font-medium text-white mb-2">Reconstruct Pages</h4>
+            <p className="text-sm text-zinc-400">
+              Click on any detected path to reconstruct pages not shown in the original video.
+              The AI generates a new subpage matching your existing design system and connects it
+              to the navigation flow automatically.
+            </p>
+          </div>
+          <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
             <h4 className="font-medium text-white mb-2">Generate New Pages</h4>
             <p className="text-sm text-zinc-400">
               Click "+ Generate" on possible nodes to create new pages. The AI will match your existing design system.
@@ -92,6 +100,14 @@ export default function FlowMapPage() {
             <h4 className="font-medium text-white mb-2">Navigation Paths</h4>
             <p className="text-sm text-zinc-400">
               Lines between nodes show how pages are connected via navigation links.
+            </p>
+          </div>
+          <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
+            <h4 className="font-medium text-white mb-2">Smart Detection</h4>
+            <p className="text-sm text-zinc-400">
+              Flow Map detects pages from multiple patterns: Alpine.js multi-page structures,
+              anchor-based navigation, section IDs, tab/panel patterns, and navigation menu items.
+              Detection covers variables like activeTab, currentPage, selected, view, and section.
             </p>
           </div>
         </div>
