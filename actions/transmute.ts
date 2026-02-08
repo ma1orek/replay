@@ -1588,21 +1588,98 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
     
     const scanText = scanResult.response.text();
     console.log("[transmute] Phase 1 complete. Scan length:", scanText.length);
-    
-    // Parse scan data
+
+    // Parse scan data with JSON repair
     let scanData: any = null;
-    try {
-      const jsonMatch = scanText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        scanData = JSON.parse(jsonMatch[0]);
-        console.log("[transmute] Scan data parsed. Menu items:", scanData?.ui?.navigation?.sidebar?.items?.length || 0);
+
+    const tryParseJSON = (text: string): any => {
+      // Try direct match first
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) return null;
+
+      let jsonStr = jsonMatch[0];
+
+      // Attempt 1: direct parse
+      try {
+        return JSON.parse(jsonStr);
+      } catch (e) {
+        console.warn("[transmute] Direct JSON parse failed, attempting repair...");
       }
-    } catch (e) {
-      console.error("[transmute] Failed to parse scan JSON:", e);
+
+      // Attempt 2: fix common Gemini JSON issues
+      try {
+        // Remove trailing commas before } or ]
+        jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1');
+        // Fix unescaped newlines inside strings
+        jsonStr = jsonStr.replace(/(?<=":[ ]*"[^"]*)\n(?=[^"]*")/g, '\\n');
+        // Remove control characters
+        jsonStr = jsonStr.replace(/[\x00-\x1F\x7F]/g, (c) => c === '\n' || c === '\r' || c === '\t' ? c : '');
+        return JSON.parse(jsonStr);
+      } catch (e) {
+        console.warn("[transmute] Repaired JSON parse also failed");
+      }
+
+      // Attempt 3: extract between first { and last }
+      try {
+        const firstBrace = text.indexOf('{');
+        const lastBrace = text.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace > firstBrace) {
+          let extracted = text.substring(firstBrace, lastBrace + 1);
+          extracted = extracted.replace(/,\s*([\]}])/g, '$1');
+          return JSON.parse(extracted);
+        }
+      } catch (e) {
+        console.warn("[transmute] Extracted JSON parse also failed");
+      }
+
+      return null;
+    };
+
+    scanData = tryParseJSON(scanText);
+
+    if (scanData) {
+      console.log("[transmute] Scan data parsed. Menu items:", scanData?.ui?.navigation?.sidebar?.items?.length || 0);
     }
-    
+
+    // If parse failed, retry with Pro again (with JSON mode forced)
     if (!scanData) {
-      return { success: false, error: "Failed to extract structured data from video" };
+      console.warn("[transmute] Phase 1 JSON parse failed. Retrying with gemini-3-pro-preview (JSON mode)...");
+      console.warn("[transmute] First 500 chars of failed response:", scanText.substring(0, 500));
+
+      try {
+        const retryModel = genAI.getGenerativeModel({
+          model: "gemini-3-pro-preview",
+          generationConfig: {
+            temperature: 0.05,
+            maxOutputTokens: 16384,
+            responseMimeType: "application/json",
+          },
+        });
+
+        const retryResult = await withTimeout(
+          retryModel.generateContent([
+            { text: UNIFIED_SCAN_PROMPT },
+            { inlineData: { mimeType: videoData.mimeType, data: videoData.base64 } },
+          ]),
+          phase1Timeout,
+          "Phase 1 Retry (gemini-3-pro-preview JSON mode)"
+        );
+
+        const retryText = retryResult.response.text();
+        console.log("[transmute] Retry scan length:", retryText.length);
+        scanData = tryParseJSON(retryText);
+
+        if (scanData) {
+          usedModel = "gemini-3-pro-preview (retry)";
+          console.log("[transmute] Retry succeeded with Pro JSON mode");
+        }
+      } catch (retryError: any) {
+        console.error("[transmute] Pro retry also failed:", retryError?.message);
+      }
+    }
+
+    if (!scanData) {
+      return { success: false, error: "Failed to extract structured data from video. The AI could not parse the video content. Please try again or use a shorter/clearer video." };
     }
     
     // ════════════════════════════════════════════════════════════════
@@ -1661,9 +1738,20 @@ IMPORTANT: User has selected a CUSTOM STYLE. You MUST:
 ${styleDirective}
 
 The style directive above defines ALL visual aspects: colors, backgrounds, gradients, shadows, animations, hover effects. USE IT, not the video colors!`;
-    } else if (styleDirective) {
-      // Auto-detect or light directive - use video colors
+    } else if (styleDirective && styleDirective.trim()) {
+      // Light directive with some text - use video colors
       assemblerPrompt += `\n\n**STYLE DIRECTIVE:**\n${styleDirective}`;
+    } else {
+      // AUTO-DETECT MODE — no style selected, use video colors exactly
+      assemblerPrompt += `\n\n**═══════════════════════════════════════════════════════════════**
+**🎯 AUTO-DETECT MODE — PRESERVE EXACT VIDEO COLORS & THEME!**
+**═══════════════════════════════════════════════════════════════**
+No custom style was selected. You MUST:
+1. Use the EXACT colors from scanData.ui.colors — do NOT substitute or "improve" them!
+2. Respect scanData.ui.theme (light/dark) — if the video is light, output MUST be light!
+3. If Surveyor measurements are provided, they are pixel-sampled — trust them exactly.
+4. Do NOT default to a dark theme. Do NOT add indigo/purple accents unless they are in the video.
+5. The goal is FAITHFUL RECREATION of the original video's visual design.`;
     }
     
     if (databaseContext) {

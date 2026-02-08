@@ -99,6 +99,50 @@ function calculateReadTime(content: string): number {
   return Math.ceil(words / wordsPerMinute);
 }
 
+// Extract meaningful SEO keyword from title (NOT just first 3 words!)
+function extractKeyword(title: string): string {
+  const lower = title.toLowerCase();
+
+  // Remove noise patterns that aren't keywords
+  const cleaned = lower
+    .replace(/^(the|a|an|why|how|what|when|where|who)\s+/i, '')
+    .replace(/\b(the|a|an|for|with|and|or|to|of|in|on|at|by|from|is|are|was|were|be|been|has|have|had|do|does|did|will|would|could|should|may|might|can)\b/gi, ' ')
+    .replace(/\b(here's|that's|what's|it's|don't|isn't|aren't|won't|can't|didn't|doesn't|haven't|hasn't|hadn't|wouldn't|couldn't|shouldn't)\b/gi, ' ')
+    .replace(/[^a-z0-9\s-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // High-value keyword patterns (check in order of specificity)
+  const keywordPatterns: RegExp[] = [
+    // Technology migration: "COBOL to React", "VB6 to TypeScript"
+    /\b(cobol|vb6?|asp|oracle\s*forms?|powerbuilder|delphi|winforms?|silverlight|mainframe)\s+(?:to\s+)?(react|typescript|javascript|web|cloud|modern)/i,
+    // Specific frameworks/tools
+    /\b(legacy\s+(?:system|code|modernization|migration|extraction|rewrite|platform))/i,
+    /\b(technical\s+debt(?:\s+calculator)?)/i,
+    /\b(reverse\s+engineering)/i,
+    /\b(design\s+system)/i,
+    /\b(video[- ](?:to[- ]code|based|first|extraction))/i,
+    // Industry terms
+    /\b(enterprise\s+(?:architecture|modernization|migration))/i,
+    /\b(strangler\s+fig(?:\s+pattern)?)/i,
+    // Compliance
+    /\b(soc2|hipaa|gdpr|pci\s*dss)/i,
+    // Business terms
+    /\b(modernization\s+(?:roi|cost|budget|timeline|team))/i,
+  ];
+
+  for (const pattern of keywordPatterns) {
+    const match = title.match(pattern);
+    if (match) return match[0].toLowerCase().trim();
+  }
+
+  // Fallback: Extract the longest meaningful noun phrase (2-4 words)
+  const words = cleaned.split(' ').filter(w => w.length > 2);
+  if (words.length >= 3) return words.slice(0, 3).join(' ');
+  if (words.length >= 2) return words.slice(0, 2).join(' ');
+  return words[0] || cleaned.substring(0, 30);
+}
+
 // Generate SEO score (comprehensive heuristic)
 function calculateSeoScore(content: string, keyword: string, title: string): number {
   let score = 0;
@@ -606,7 +650,7 @@ export async function POST(request: NextRequest) {
       try {
         const userPrompt = `Write a blog post about: "${title}"
 
-Target Keyword: ${targetKeyword || title.split(' ').slice(0, 3).join(' ')}
+Target Keyword: ${targetKeyword || extractKeyword(title)}
 
 ${keyTakeaways.length > 0 ? `Key points to include:\n${keyTakeaways.map((t: string) => `- ${t}`).join('\n')}` : ''}
 
@@ -648,24 +692,41 @@ Remember: Be concise, technical, and valuable. No fluff.`;
         const readTime = calculateReadTime(content);
         const seoScore = calculateSeoScore(content, targetKeyword || title, title);
         
-        // Generate meta description
-        let cleanContent = content
-          .replace(/^>?\s*\*?\*?TL;?DR:?\*?\*?:?\s*/gim, '')
-          .replace(/[#*`>\[\]]/g, '')
-          .replace(/\n+/g, ' ')
-          .trim();
-        
-        const sentences = cleanContent.split(/[.!?]+/).filter((s: string) => s.trim().length > 30);
-        const metaDescription = sentences.length > 0 
-          ? sentences[0].trim().substring(0, 155) + '...'
-          : cleanContent.substring(0, 155).trim() + '...';
+        // Generate meta description - extract from TL;DR first, then fallback to intro
+        const keyword = targetKeyword || extractKeyword(title);
+        let metaDescription = '';
+
+        // Try 1: Extract from TL;DR (best summary)
+        const tldrMatch = content.match(/>\s*\*?\*?TL;?DR:?\*?\*?:?\s*(.+?)(?:\n|$)/i);
+        if (tldrMatch) {
+          metaDescription = tldrMatch[1].replace(/[*`\[\]]/g, '').trim();
+        }
+
+        // Try 2: First substantive paragraph (skip headers, quotes, code)
+        if (!metaDescription || metaDescription.length < 50) {
+          const paragraphs = content.split('\n\n')
+            .map((p: string) => p.replace(/[#*`>\[\]]/g, '').trim())
+            .filter((p: string) => p.length > 60 && !p.startsWith('|') && !p.startsWith('-') && !p.startsWith('```'));
+          if (paragraphs.length > 0) {
+            metaDescription = paragraphs[0];
+          }
+        }
+
+        // Trim to 155 chars at word boundary, ensure keyword is included
+        if (metaDescription.length > 155) {
+          metaDescription = metaDescription.substring(0, 155).replace(/\s+\S*$/, '') + '...';
+        }
+        // If description doesn't contain keyword, prepend it
+        if (keyword && !metaDescription.toLowerCase().includes(keyword.toLowerCase().split(' ')[0])) {
+          metaDescription = metaDescription.substring(0, 130).replace(/\s+\S*$/, '') + '...';
+        }
 
         const articleData: Record<string, any> = {
           title,
           slug,
           content,
           meta_description: metaDescription,
-          target_keyword: targetKeyword || title.split(' ').slice(0, 3).join(' '),
+          target_keyword: targetKeyword || extractKeyword(title),
           tone,
           status: 'published',
           read_time_minutes: readTime,
@@ -776,7 +837,7 @@ Remember: Be concise, technical, and valuable. No fluff.`;
       try {
         const userPrompt = `Write a blog post about: "${title}"
 
-Target Keyword: ${targetKeyword || title.split(' ').slice(0, 3).join(' ')}
+Target Keyword: ${targetKeyword || extractKeyword(title)}
 
 ${keyTakeaways.length > 0 ? `Key points to include:\n${keyTakeaways.map((t: string) => `- ${t}`).join('\n')}` : ''}
 
@@ -839,7 +900,7 @@ Remember: Be concise, technical, and valuable. No fluff.`;
           slug,
           content,
           meta_description: metaDescription,
-          target_keyword: targetKeyword || title.split(' ').slice(0, 3).join(' '),
+          target_keyword: targetKeyword || extractKeyword(title),
           tone,
           status: 'published',
           read_time_minutes: readTime,
