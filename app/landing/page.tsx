@@ -927,14 +927,14 @@ function BentoFeaturesSection() {
             </div>
           </BentoCard>
 
-          {/* BLUEPRINTS */}
-          <BentoCard className="col-span-1 md:col-span-4 min-h-[240px]" delay={0.2} title="BLUEPRINTS" icon={Box}>
+          {/* EDITOR */}
+          <BentoCard className="col-span-1 md:col-span-4 min-h-[240px]" delay={0.2} title="EDITOR" icon={Box}>
             <p className="text-zinc-500 text-[11px] mb-4">
               Create & edit components with AI. Changes propagate globally.
             </p>
-            
+
             <div className="relative w-full h-32 rounded border border-zinc-800 overflow-hidden group">
-              <Image src="/blue.png" alt="Blueprints" fill className="object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
+              <Image src="/blue.png" alt="Editor" fill className="object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
             </div>
           </BentoCard>
 
@@ -1312,6 +1312,7 @@ function FooterSection() {
           <Link href="/privacy" className="hover:text-white transition-colors">PRIVACY</Link>
           <Link href="/terms" className="hover:text-white transition-colors">TERMS</Link>
           <Link href="/docs" className="hover:text-white transition-colors">DOCS</Link>
+          <Link href="/blog" className="hover:text-white transition-colors">BLOG</Link>
         </div>
         <p className="text-xs text-zinc-600 font-mono">© 2026 REPLAY</p>
       </div>

@@ -320,7 +320,7 @@ export default function MobileMirrorMode({
               </div>
               <div className="flex items-center gap-3 text-sm text-zinc-300">
                 <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                Component Blueprints workshop
+                Component Editor workshop
               </div>
               <div className="flex items-center gap-3 text-sm text-zinc-300">
                 <div className="w-1.5 h-1.5 rounded-full bg-white" />

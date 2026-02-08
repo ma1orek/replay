@@ -2420,12 +2420,13 @@ const InteractiveReactPreview = ({
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.8.4/axe.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { 
+    html, body {
       background: ${background === "transparent" ? "transparent" : background === "dark" ? "#18181b" : "#ffffff"};
       color: ${background === "transparent" || background === "dark" ? "#fafafa" : "#18181b"};
-      font-family: system-ui, -apple-system, sans-serif;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       /* Fill iframe viewport - content will be responsive */
       width: 100%;
       height: 100%;
@@ -2606,6 +2607,7 @@ const InteractiveReactPreview = ({
       darkMode: 'class',
       theme: {
         extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
           colors: {
             primary: '#3b82f6',
             secondary: '#6366f1',
@@ -7078,12 +7080,13 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
       // Helper: Check if a page has actual content in the code
       const pageHasContentInCode = (pageName: string): boolean => {
         const normalizedName = pageName.toLowerCase().replace(/[^a-z0-9]+/g, '');
-        // Check for Alpine.js x-show with this page name
+        const escapedName = pageName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        // Check for Alpine.js x-show with this page name — all common variable names
+        const varNames = '(?:page|currentPage|activeTab|activeView|selected|active|current|tab|view|section)';
         const xShowPatterns = [
-          new RegExp(`x-show\\s*=\\s*["']\\s*(?:page|currentPage)\\s*===?\\s*['"]${normalizedName}['"]`, 'i'),
-          new RegExp(`x-show\\s*=\\s*["']\\s*(?:page|currentPage)\\s*===?\\s*['"]${pageName}['"]`, 'i'),
-          // Also check with spaces/dashes normalized
-          new RegExp(`x-show\\s*=\\s*["']\\s*(?:page|currentPage)\\s*===?\\s*['"][^'"]*${normalizedName}[^'"]*['"]`, 'i'),
+          new RegExp(`x-show\\s*=\\s*["']\\s*${varNames}\\s*===?\\s*['"]${normalizedName}['"]`, 'i'),
+          new RegExp(`x-show\\s*=\\s*["']\\s*${varNames}\\s*===?\\s*['"]${escapedName}['"]`, 'i'),
+          new RegExp(`x-show\\s*=\\s*["']\\s*${varNames}\\s*===?\\s*['"][^'"]*${normalizedName}[^'"]*['"]`, 'i'),
         ];
         return xShowPatterns.some(pattern => pattern.test(code));
       };
@@ -7294,7 +7297,32 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
         navNames.add(text);
       }
     }
-    
+
+    // Pattern 4: Anchor-based navigation (href="#section-id") with matching section ids
+    const anchorRegex = /href\s*=\s*["']#([a-zA-Z][\w-]{1,30})["']/gi;
+    while ((m = anchorRegex.exec(code)) !== null) {
+      const sectionId = m[1];
+      // Check if a matching section/div with that ID exists in the code
+      const hasSection = new RegExp(`<(?:section|div|main|article)[^>]*id\\s*=\\s*["']${sectionId}["']`, 'i').test(code);
+      if (hasSection) {
+        const name = sectionId.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        if (isValidPageName(name)) navNames.add(name);
+      }
+    }
+
+    // Pattern 5: Multiple <section> elements with IDs (common multi-page layout)
+    const sectionIdRegex = /<section[^>]*id\s*=\s*["']([a-zA-Z][\w-]{2,30})["']/gi;
+    const sectionIds: string[] = [];
+    while ((m = sectionIdRegex.exec(code)) !== null) {
+      sectionIds.push(m[1]);
+    }
+    if (sectionIds.length >= 2) {
+      for (const sid of sectionIds) {
+        const name = sid.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        if (isValidPageName(name)) navNames.add(name);
+      }
+    }
+
     // Final filter using comprehensive validation (double-check all entries)
     const filteredNavNames = Array.from(navNames).filter(name => isValidPageName(name));
     
@@ -7377,8 +7405,8 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
       console.log('[buildFlowLive] Page detected:', pageName, '| hasContent:', hasRealContent, '| contentLen:', content.length);
     }
     
-    // Pattern 2: Navigation buttons that set currentPage (to find pages we might have missed)
-    const navButtonRegex = /@click\s*=\s*["'](?:currentPage|page|activeTab|activeView)\s*=\s*['"]([^'"]+)['"]/gi;
+    // Pattern 2: Navigation buttons that set page variables (to find pages we might have missed)
+    const navButtonRegex = /@click\s*=\s*["'](?:currentPage|page|activeTab|activeView|selected|active|current|tab|view|section)\s*=\s*['"]([^'"]+)['"]/gi;
     while ((match = navButtonRegex.exec(code)) !== null) {
       const pageId = match[1].toLowerCase().replace(/[^a-z0-9]+/g, '-');
       
@@ -12595,15 +12623,23 @@ ${publishCode}
     setIsDirectEditMode(false);
     setIsPointAndEdit(false);
     setSelectedElement(null);
-    
+
     // Refresh the preview by re-creating the blob URL
     if (editableCode) {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(createPreviewUrl(editableCode));
-      // Rebuild architecture, flow and style
-      buildArchitectureLive(editableCode);
-      buildFlowLive(editableCode);
-      setStyleInfo(extractStyleInfo(editableCode));
+      try {
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(createPreviewUrl(editableCode));
+        // Rebuild architecture, flow and style
+        buildArchitectureLive(editableCode);
+        buildFlowLive(editableCode);
+        setStyleInfo(extractStyleInfo(editableCode));
+      } catch (err) {
+        console.error('Refresh failed:', err);
+        // At minimum re-create the preview URL
+        try {
+          setPreviewUrl(createPreviewUrl(editableCode));
+        } catch (e) { /* silently fail */ }
+      }
     }
   };
 
@@ -14777,9 +14813,8 @@ ${publishCode}
                                                   onKeyDown={(e) => { if (e.key === 'Enter') { if (editingNameValue.trim()) { setLibraryData((prev: any) => ({ ...prev, components: prev?.components?.map((c: any) => c.id === comp.id ? { ...c, name: editingNameValue.trim() } : c) || [] })); } setEditingComponentName(null); } else if (e.key === 'Escape') { setEditingComponentName(null); } }}
                                                   className="flex-1 bg-zinc-700 border border-zinc-600 rounded px-1.5 py-0.5 text-[11px] text-white focus:outline-none focus:border-emerald-500" autoFocus onClick={(e) => e.stopPropagation()} />
                                               ) : (
-                                                <span className="truncate flex-1 text-left flex items-center gap-1.5">
+                                                <span className="truncate flex-1 text-left">
                                                   {comp.name}
-                                                  {localComponents.find(lc => lc.name === comp.name && lc.isNew && !lc.savedToLibrary) && <NewComponentInlineBadge />}
                                                 </span>
                                               )}
                                               <button onClick={(e) => { e.stopPropagation(); setEditingComponentName(comp.id); setEditingNameValue(comp.name); }}
@@ -14814,9 +14849,8 @@ ${publishCode}
                                             onKeyDown={(e) => { if (e.key === 'Enter') { if (editingNameValue.trim()) { setLibraryData((prev: any) => ({ ...prev, components: prev?.components?.map((c: any) => c.id === comp.id ? { ...c, name: editingNameValue.trim() } : c) || [] })); } setEditingComponentName(null); } else if (e.key === 'Escape') { setEditingComponentName(null); } }}
                                             className="flex-1 bg-zinc-700 border border-zinc-600 rounded px-1.5 py-0.5 text-[11px] text-white focus:outline-none focus:border-emerald-500" autoFocus onClick={(e) => e.stopPropagation()} />
                                         ) : (
-                                          <span className="truncate flex-1 text-left flex items-center gap-1.5">
+                                          <span className="truncate flex-1 text-left">
                                             {comp.name}
-                                            {localComponents.find(lc => lc.name === comp.name && lc.isNew && !lc.savedToLibrary) && <NewComponentInlineBadge />}
                                           </span>
                                         )}
                                         <button onClick={(e) => { e.stopPropagation(); setEditingComponentName(comp.id); setEditingNameValue(comp.name); }}
