@@ -266,7 +266,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { videoBase64, mimeType, styleDirective, databaseContext, styleReferenceImage } = body;
+    const { videoBase64, mimeType, styleDirective, databaseContext, styleReferenceImage, creativityLevel = 0 } = body;
 
     if (!videoBase64 || !mimeType) {
       return new Response(
@@ -397,10 +397,25 @@ ${styleDirective}`;
 ${databaseContext}`;
           }
           
+          // Creativity level instructions
+          if (creativityLevel > 0) {
+            prompt += `\n\n🎨 CREATIVITY LEVEL: ${creativityLevel}/100 ${creativityLevel <= 33 ? '(ENHANCED)' : creativityLevel <= 66 ? '(CREATIVE)' : '(MAXIMUM)'}`;
+            if (creativityLevel <= 33) {
+              prompt += `\nKeep layout identical. Add smoother animations, refined typography, subtle polish. Content MUST remain 100% identical.`;
+            } else if (creativityLevel <= 66) {
+              prompt += `\nKeep ALL content but reimagine layout. Use creative sections, bento grids, impressive animations. Content MUST remain identical.`;
+            } else {
+              prompt += `\nKeep ALL content verbatim but FULLY reimagine the design. Bold layouts, maximum animations, creative typography, rich effects. Content 100% identical.`;
+            }
+          }
+
           // MINIMAL VISION INSTRUCTIONS - NO CODE EXAMPLES!
           prompt += `
 
 WATCH THE VIDEO. CREATE AWWWARDS-QUALITY OUTPUT.
+
+CRITICAL: Every section MUST have REAL content (no empty cards!). Every image uses UNIQUE picsum seed.
+If a section spans full width in the video → make it full width in output.
 
 If multiple pages shown: use Alpine.js x-data/x-show for navigation.
 Include GSAP + ScrollTrigger for animations.

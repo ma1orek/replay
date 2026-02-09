@@ -36,6 +36,8 @@ interface TransmuteOptions {
   styleReferenceImage?: { url: string; base64?: string };
   /** Enable Agentic Vision Surveyor for precise measurements (default: true) */
   useSurveyor?: boolean;
+  /** Creativity level: 0=Exact (faithful), 50=Enhanced (polished), 100=Creative (reimagined) */
+  creativityLevel?: number;
 }
 
 interface TransmuteResult {
@@ -1495,7 +1497,7 @@ function fixChartReference(code: string): string {
 // ============================================================================
 
 export async function transmuteVideoToCode(options: TransmuteOptions): Promise<TransmuteResult> {
-  const { videoUrl, styleDirective, databaseContext, styleReferenceImage, useSurveyor = true } = options;
+  const { videoUrl, styleDirective, databaseContext, styleReferenceImage, useSurveyor = true, creativityLevel = 0 } = options;
   
   console.log("[transmute] MULTI-PASS PIPELINE v3.0 - Starting with Agentic Vision...");
   console.log("[transmute] Video URL:", videoUrl?.substring(0, 100));
@@ -1879,6 +1881,48 @@ ${isDSStyleDirective
   : `Use bg-[${surveyorMeasurements.colors.background}] NOT bg-slate-900.`
 }
 ` : ''}
+
+**🚫 EMPTY SECTIONS — ZERO TOLERANCE:**
+- EVERY card, section, or content block MUST have REAL text content inside!
+- If scanData has cards with text (title + description) → output EVERY card with that text
+- NEVER output empty cards with just a number or icon — fill with the actual scanData content
+- If scanData has 4 feature cards → each card needs its title AND description text from scanData
+
+**📐 FULLSCREEN SECTIONS:**
+- If scanData shows a section spans full viewport width → use w-full, min-h-screen or equivalent
+- Hero sections that fill the screen → MUST be full-width in output
+- Dark background sections that span edge-to-edge → MUST span full width (no max-w container on bg)
+
+**🖼️ IMAGE UNIQUENESS — CRITICAL:**
+- Count ALL <img> tags you generate. EVERY one MUST have a DIFFERENT picsum seed!
+- BAD: card-1/800/600, card-1/800/600, card-1/800/600 (same seed 3x)
+- GOOD: card-tokyo/800/600, card-berlin/800/600, card-paris/800/600 (unique seeds)
+- Use descriptive, contextual seeds — NOT just numbers!
+
+${creativityLevel > 0 ? `
+**🎨 CREATIVITY LEVEL: ${creativityLevel}/100 ${creativityLevel <= 33 ? '(ENHANCED)' : creativityLevel <= 66 ? '(CREATIVE)' : '(MAXIMUM)'}**
+${creativityLevel <= 33 ? `
+- Keep layout structure IDENTICAL to scanData
+- Add smoother animations and micro-interactions
+- Use more refined typography (better font weights, letter-spacing, line-heights)
+- Add subtle visual polish: better shadows, gradients, border treatments
+- Content MUST remain 100% identical
+` : creativityLevel <= 66 ? `
+- Keep ALL content and sections — but you may reimagine the LAYOUT
+- Use creative section designs: asymmetric grids, bento layouts, split sections
+- Add impressive animations: parallax scrolling, staggered reveals, counter animations
+- Use creative typography: gradient text, large display fonts, mixed weights
+- More visual variety: different card styles per section, creative hero layouts
+- Content MUST remain 100% identical — only the presentation changes
+` : `
+- Keep ALL content verbatim — but FULLY reimagine the visual design
+- Use bold, award-winning layouts: magazine-style grids, overlapping elements, full-bleed sections
+- Maximum animations: GSAP timelines, scroll-triggered sequences, parallax layers, morphing shapes
+- Creative typography: oversized headings, kinetic text, gradient masks, custom letter-spacing
+- Rich visual effects: glassmorphism, gradient orbs, noise textures, animated backgrounds
+- Diverse section designs: each section should feel unique and surprising
+- Content MUST remain 100% identical — unleash creativity on PRESENTATION only
+`}` : ''}
 Generate the complete HTML file now:`;
     
     // Calculate remaining time for Phase 2 (leave buffer for Vercel 300s limit)

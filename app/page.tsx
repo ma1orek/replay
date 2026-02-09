@@ -3216,7 +3216,8 @@ function ReplayToolContent() {
   
   // Initialize to empty string to avoid hydration mismatch
   const [styleDirective, setStyleDirective] = useState("");
-  
+  const [creativityLevel, setCreativityLevel] = useState<number>(0); // 0=Exact, 50=Enhanced, 100=Creative
+
   // Enterprise removed - using system-prompt.ts only for premium styling
   
   // Load default style from localStorage after mount
@@ -9976,7 +9977,8 @@ Try these prompts in Cursor or v0:
     setChatMessages([]);
     setStyleDirective(""); // Reset to Auto-Detect for fresh generation
     setStyleReferenceImage(null);
-    
+    setCreativityLevel(0); // Reset creativity to Exact for new project
+
     const flowId = `flow_${Date.now()}`;
     const newFlow: FlowItem = {
       id: flowId,
@@ -10653,7 +10655,8 @@ Try these prompts in Cursor or v0:
     videoBlob: Blob,
     styleDirective: string,
     databaseContext?: string,
-    styleReferenceImage?: { url: string; base64?: string }
+    styleReferenceImage?: { url: string; base64?: string },
+    streamCreativityLevel?: number
   ): Promise<{ success: boolean; code?: string; error?: string; tokenUsage?: any; scanData?: any }> => {
     try {
       // Convert video blob to base64
@@ -10683,6 +10686,7 @@ Try these prompts in Cursor or v0:
           styleDirective,
           databaseContext,
           styleReferenceImage,
+          creativityLevel: streamCreativityLevel,
         }),
         signal: controller.signal,
       });
@@ -11509,6 +11513,7 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
             styleDirective: fullStyleDirective,
             databaseContext: databaseContextStr || undefined,
             styleReferenceImage: effectiveStyleRefImage || undefined,
+            creativityLevel,
           });
           if (!result) {
             result = { success: false, error: "Server timed out (504). Video may be too large or complex. Try a shorter recording." };
@@ -11522,7 +11527,8 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
               videoBlobToUse,
               fullStyleDirective,
               databaseContextStr || undefined,
-              effectiveStyleRefImage || undefined
+              effectiveStyleRefImage || undefined,
+              creativityLevel
             );
             
             // If streaming failed for other reasons, fallback to server action
@@ -16038,9 +16044,9 @@ ${publishCode}
                         <Palette className="w-3.5 h-3.5" /> STYLE
                       </span>
                     </div>
-                    <StyleInjector 
-                      value={styleDirective} 
-                      onChange={setStyleDirective} 
+                    <StyleInjector
+                      value={styleDirective}
+                      onChange={setStyleDirective}
                       disabled={isProcessing}
                       referenceImage={styleReferenceImage}
                       onReferenceImageChange={setStyleReferenceImage}
@@ -16049,10 +16055,41 @@ ${publishCode}
                       onDeleteDS={handleDeleteDS}
                     />
                   </div>
-                  
+
+                  {/* Creativity Slider */}
+                  <div className="px-4 py-3 border-b border-white/[0.06]">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="sidebar-label text-[11px] font-semibold text-white/40 uppercase tracking-wider flex items-center gap-2">
+                        <Sparkles className="w-3.5 h-3.5" /> CREATIVITY
+                      </span>
+                      <span className="text-[10px] font-medium text-white/50">
+                        {creativityLevel === 0 ? "Exact" : creativityLevel <= 33 ? "Enhanced" : creativityLevel <= 66 ? "Creative" : "Maximum"}
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={creativityLevel}
+                        onChange={(e) => setCreativityLevel(Number(e.target.value))}
+                        disabled={isProcessing}
+                        className="w-full h-1.5 rounded-full appearance-none cursor-pointer disabled:opacity-50 bg-zinc-800 creativity-slider"
+                        style={{
+                          background: `linear-gradient(to right, #FF6E3C ${creativityLevel}%, #27272a ${creativityLevel}%)`,
+                        }}
+                      />
+                      <div className="flex justify-between mt-1.5">
+                        <span className="text-[9px] text-white/30">Faithful</span>
+                        <span className="text-[9px] text-white/30">Creative</span>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Generate Button */}
                   <div className="p-4 border-b border-white/[0.06]">
-                    <ShimmerButton 
+                    <ShimmerButton
                       onClick={handleGenerate}
                       disabled={isProcessing || flows.length === 0}
                       shimmerColor="#ffffff"
@@ -24230,9 +24267,9 @@ module.exports = {
                   <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Style</span>
                 </div>
                 
-                <StyleInjector 
-                  value={styleDirective} 
-                  onChange={setStyleDirective} 
+                <StyleInjector
+                  value={styleDirective}
+                  onChange={setStyleDirective}
                   disabled={isProcessing}
                   referenceImage={styleReferenceImage}
                   onReferenceImageChange={setStyleReferenceImage}
@@ -24240,6 +24277,35 @@ module.exports = {
                   onImportClick={() => setShowImportLibraryModal(true)}
                   onDeleteDS={handleDeleteDS}
                 />
+              </div>
+
+              {/* Creativity Slider */}
+              <div className="px-4 py-3 border-b border-zinc-800 flex-shrink-0">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+                    <Sparkles className="w-3.5 h-3.5 text-zinc-500" /> Creativity
+                  </span>
+                  <span className="text-[10px] font-medium text-zinc-500">
+                    {creativityLevel === 0 ? "Exact" : creativityLevel <= 33 ? "Enhanced" : creativityLevel <= 66 ? "Creative" : "Maximum"}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={creativityLevel}
+                  onChange={(e) => setCreativityLevel(Number(e.target.value))}
+                  disabled={isProcessing}
+                  className="w-full h-1.5 rounded-full appearance-none cursor-pointer disabled:opacity-50 creativity-slider"
+                  style={{
+                    background: `linear-gradient(to right, #FF6E3C ${creativityLevel}%, #27272a ${creativityLevel}%)`,
+                  }}
+                />
+                <div className="flex justify-between mt-1.5">
+                  <span className="text-[9px] text-zinc-600">Faithful</span>
+                  <span className="text-[9px] text-zinc-600">Creative</span>
+                </div>
               </div>
 
               {/* Generate Button */}
