@@ -17177,15 +17177,17 @@ ${publishCode}
                         {/* Actions */}
                         <div className="flex gap-2">
                           {publishedUrl && (
-                            <a
-                              href={`${publishedUrl}?v=${publishCacheTimestamp}&_=${Math.random().toString(36).substring(7)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <button
+                              onClick={() => {
+                                // Generate NEW random on EVERY click (not just render)
+                                const freshUrl = `${publishedUrl}?v=${publishCacheTimestamp}&_=${Date.now()}.${Math.random().toString(36).substring(7)}`;
+                                window.open(freshUrl, '_blank', 'noopener,noreferrer');
+                              }}
                               className="flex-1 py-2.5 rounded-lg bg-zinc-800/50 hover:bg-white/10 text-zinc-200 text-sm font-medium transition-colors flex items-center justify-center gap-2"
                             >
                               <ExternalLink className="w-4 h-4" />
                               Open
-                            </a>
+                            </button>
                           )}
                           <button
                             onClick={() => handlePublish()}
