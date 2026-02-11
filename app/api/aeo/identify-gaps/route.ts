@@ -92,7 +92,15 @@ async function identifyGaps(daysToAnalyze: number = 7): Promise<ContentGap[]> {
       }
     }
 
-    if (!topCompetitor) continue;
+    // If no competitor mentioned, still identify as gap if Replay not mentioned
+    if (!topCompetitor && replayMentions.length > 0) {
+      continue; // Replay mentioned but no competitor = good, skip
+    }
+
+    // If no tool mentioned at all, set topCompetitor as "none"
+    if (!topCompetitor) {
+      topCompetitor = "none";
+    }
 
     // Calculate competitor average position
     const competitorPositions = queryCitations
