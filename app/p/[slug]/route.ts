@@ -352,19 +352,22 @@ export async function GET(
 (function() {
   function forceAllVisible() {
     document.querySelectorAll('*').forEach(function(el) {
+      // CRITICAL: Skip Alpine.js x-show elements (managed by Alpine state)
+      if (el.hasAttribute('x-show') || el.hasAttribute('x-if') || el.hasAttribute('@click')) {
+        return;
+      }
+
       var style = window.getComputedStyle(el);
-      // Fix opacity
-      if (parseFloat(style.opacity) < 0.1) {
+      // Fix opacity - but NOT for elements that should start hidden
+      if (parseFloat(style.opacity) < 0.1 && !el.hasAttribute('x-transition')) {
         el.style.setProperty('opacity', '1', 'important');
       }
-      // Fix visibility
-      if (style.visibility === 'hidden') {
+      // Fix visibility - but NOT for Alpine-controlled elements
+      if (style.visibility === 'hidden' && !el.closest('[x-show]')) {
         el.style.setProperty('visibility', 'visible', 'important');
       }
-      // Fix display
-      if (style.display === 'none' && !el.classList.contains('hidden') && el.tagName !== 'SCRIPT' && el.tagName !== 'STYLE') {
-        el.style.setProperty('display', 'block', 'important');
-      }
+      // NEVER force display on hidden elements - breaks Alpine x-show
+      // Only fix elements with inline opacity/transform (GSAP animations)
     });
   }
   
