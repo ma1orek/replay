@@ -15,5 +15,11 @@
       "maxDuration": 300,
       "memory": 3008
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/aeo/cron",
+      "schedule": "0 */6 * * *"
+    }
+  ]
 }

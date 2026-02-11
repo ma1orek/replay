@@ -3,15 +3,15 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { 
-  Users, Code, Activity, TrendingUp, Clock, 
+import {
+  Users, Code, Activity, TrendingUp, Clock,
   Eye, EyeOff, LogOut, Search, ChevronDown,
   BarChart3, Zap, CreditCard, Video, Palette,
   Calendar, ArrowUpRight, Filter, Download,
   User, Mail, Shield, AlertTriangle, Loader2,
   DollarSign, Cpu, MessageSquare, ThumbsUp, ThumbsDown, Meh,
   Play, FileText, PenSquare, Trash2, Plus, Send, Sparkles, Check, X, ExternalLink,
-  Layers, GitBranch, Monitor, Maximize2, Copy, Menu
+  Layers, GitBranch, Monitor, Maximize2, Copy, Menu, Target, TrendingDown, RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
@@ -129,7 +129,7 @@ export default function AdminPage() {
   const [feedback, setFeedback] = useState<FeedbackData[]>([]);
   const [feedbackStats, setFeedbackStats] = useState<FeedbackStats | null>(null);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "users" | "generations" | "feedback" | "content" | "viral">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "generations" | "feedback" | "content" | "viral" | "aeo">("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [dataLoading, setDataLoading] = useState(false);
@@ -157,6 +157,12 @@ export default function AdminPage() {
   const [viralSubTab, setViralSubTab] = useState<"posts" | "replies" | "daily" | "accounts">("posts");
   const [viralContext, setViralContext] = useState("");
   const [viralCategory, setViralCategory] = useState<"arrogant" | "numbers" | "contrarian" | "philosophy">("arrogant");
+
+  // AEO (AI Engine Optimization) state
+  const [aeoData, setAeoData] = useState<any>(null);
+  const [aeoLoading, setAeoLoading] = useState(false);
+  const [aeoAutoPublish, setAeoAutoPublish] = useState(false);
+  const [selectedGap, setSelectedGap] = useState<any>(null);
   const [viralTone, setViralTone] = useState<"aggressive" | "data-driven" | "philosophical" | "meme">("aggressive");
   const [viralAssetUrl, setViralAssetUrl] = useState("");
   const [isGeneratingViral, setIsGeneratingViral] = useState(false);
@@ -479,6 +485,34 @@ export default function AdminPage() {
     }
   }, [activeTab, blogFilter, adminToken, loadBlogPosts]);
 
+  // Load AEO data when tab changes
+  const loadAeoData = useCallback(async () => {
+    if (!adminToken) return;
+
+    setAeoLoading(true);
+    try {
+      const response = await fetch("/api/aeo/dashboard", {
+        headers: { "Authorization": `Bearer ${adminToken}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAeoData(data);
+        setAeoAutoPublish(data.config?.auto_publish_enabled === true);
+      }
+    } catch (error) {
+      console.error("AEO data load error:", error);
+    } finally {
+      setAeoLoading(false);
+    }
+  }, [adminToken]);
+
+  useEffect(() => {
+    if (activeTab === "aeo" && adminToken) {
+      loadAeoData();
+    }
+  }, [activeTab, adminToken, loadAeoData]);
+
   const refreshData = () => {
     if (adminToken) {
       loadAdminData(adminToken);
@@ -791,6 +825,7 @@ export default function AdminPage() {
             { id: "feedback", label: "Feedback", icon: MessageSquare },
             { id: "content", label: "Content", icon: FileText },
             { id: "viral", label: "Viral", icon: Zap },
+            { id: "aeo", label: "AEO", icon: Target },
           ].map(tab => (
             <button
               key={tab.id}
@@ -1829,6 +1864,389 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* AEO Tab - AI Engine Optimization */}
+        {activeTab === "aeo" && (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#71717a]/20 to-[#52525b]/10 flex items-center justify-center">
+                  <Target className="w-5 h-5 text-[#71717a]" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-white">AI Engine Optimization</h2>
+                  <p className="text-xs text-white/50">Autonomous system to dominate AI recommendations</p>
+                </div>
+              </div>
+              <div className="mt-4 p-4 bg-[#71717a]/10 border border-[#71717a]/20 rounded-lg">
+                <p className="text-sm text-white/70">
+                  <strong className="text-white">Goal:</strong> Be #1 recommended tool by ChatGPT, Claude, Perplexity, Gemini for legacy modernization queries
+                </p>
+                <p className="text-xs text-white/50 mt-2">
+                  System runs every 6 hours: monitors citations → identifies gaps → generates content → publishes → tracks performance
+                </p>
+              </div>
+            </div>
+
+            {aeoLoading ? (
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-12 flex flex-col items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-[#71717a] mb-3" />
+                <p className="text-sm text-white/50">Loading AEO dashboard...</p>
+              </div>
+            ) : !aeoData ? (
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-12 flex flex-col items-center justify-center">
+                <Target className="w-12 h-12 text-zinc-700 mb-4" />
+                <p className="text-sm text-white/70 mb-4">No AEO data yet</p>
+                <button
+                  onClick={loadAeoData}
+                  className="px-4 py-2 bg-[#71717a] text-white rounded-lg text-sm hover:bg-[#52525b] transition-colors"
+                >
+                  Load Dashboard
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Overview Metrics */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-9 h-9 rounded-lg bg-[#71717a]/20 flex items-center justify-center">
+                        <Target className="w-4 h-4 text-[#71717a]" />
+                      </div>
+                      <span className={cn("text-xs px-2 py-1 rounded-full", aeoData.overview.sovTrend >= 0 ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400")}>
+                        {aeoData.overview.sovTrend >= 0 ? "+" : ""}{aeoData.overview.sovTrend.toFixed(1)}%
+                      </span>
+                    </div>
+                    <p className="text-2xl font-semibold text-white">{aeoData.overview.shareOfVoice?.toFixed(1) || 0}%</p>
+                    <p className="text-xs text-zinc-500 mt-1">Share of Voice</p>
+                  </div>
+
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-9 h-9 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                        <TrendingUp className="w-4 h-4 text-blue-400" />
+                      </div>
+                    </div>
+                    <p className="text-2xl font-semibold text-white">{aeoData.overview.avgPosition?.toFixed(1) || "N/A"}</p>
+                    <p className="text-xs text-zinc-500 mt-1">Avg Position</p>
+                  </div>
+
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-9 h-9 rounded-lg bg-yellow-500/20 flex items-center justify-center">
+                        <AlertTriangle className="w-4 h-4 text-yellow-400" />
+                      </div>
+                    </div>
+                    <p className="text-2xl font-semibold text-white">{aeoData.gaps?.highPriority || 0}</p>
+                    <p className="text-xs text-zinc-500 mt-1">High Priority Gaps</p>
+                  </div>
+
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-9 h-9 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                        <FileText className="w-4 h-4 text-emerald-400" />
+                      </div>
+                    </div>
+                    <p className="text-2xl font-semibold text-white">{aeoData.content?.published || 0}</p>
+                    <p className="text-xs text-zinc-500 mt-1">Published Articles</p>
+                  </div>
+                </div>
+
+                {/* Platform Breakdown */}
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+                  <h3 className="text-sm font-semibold text-white mb-4">Platform Breakdown</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                      { name: "ChatGPT", value: aeoData.overview.platformBreakdown?.chatgpt || 0, icon: "🤖" },
+                      { name: "Claude", value: aeoData.overview.platformBreakdown?.claude || 0, icon: "🔮" },
+                      { name: "Gemini", value: aeoData.overview.platformBreakdown?.gemini || 0, icon: "✨" },
+                      { name: "Perplexity", value: aeoData.overview.platformBreakdown?.perplexity || 0, icon: "🔍" }
+                    ].map(platform => (
+                      <div key={platform.name} className="p-4 bg-black/30 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-xl">{platform.icon}</span>
+                          <span className="text-xs text-white/70">{platform.name}</span>
+                        </div>
+                        <p className="text-xl font-semibold text-white">{platform.value.toFixed(1)}%</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* System Controls */}
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+                  <h3 className="text-sm font-semibold text-white mb-4">System Controls</h3>
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      onClick={async () => {
+                        const newValue = !aeoAutoPublish;
+                        setAeoAutoPublish(newValue);
+                        await fetch("/api/aeo/dashboard", {
+                          method: "POST",
+                          headers: {
+                            "Authorization": `Bearer ${adminToken}`,
+                            "Content-Type": "application/json"
+                          },
+                          body: JSON.stringify({
+                            key: "auto_publish_enabled",
+                            value: newValue
+                          })
+                        });
+                        setToastMessage(`✅ Auto-publish ${newValue ? "enabled" : "disabled"}`);
+                      }}
+                      className={cn(
+                        "px-4 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2",
+                        aeoAutoPublish
+                          ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                          : "bg-zinc-800 text-white/70 border border-zinc-700"
+                      )}
+                    >
+                      {aeoAutoPublish ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
+                      Auto-Publish: {aeoAutoPublish ? "ON" : "OFF"}
+                    </button>
+
+                    <button
+                      onClick={async () => {
+                        setToastMessage("⏳ Running monitoring...");
+                        try {
+                          const response = await fetch("/api/aeo/monitor-citations", {
+                            method: "POST",
+                            headers: {
+                              "Authorization": `Bearer ${adminToken}`,
+                              "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({ testMode: true })
+                          });
+                          const data = await response.json();
+                          if (data.success) {
+                            setToastMessage(`✅ Monitoring complete: ${data.summary.shareOfVoice} Share of Voice`);
+                            loadAeoData();
+                          } else {
+                            setToastMessage(`❌ ${data.error}`);
+                          }
+                        } catch (error) {
+                          setToastMessage("❌ Monitoring failed");
+                        }
+                      }}
+                      className="px-4 py-2.5 rounded-lg text-sm font-medium bg-[#71717a] text-white hover:bg-[#52525b] transition-colors flex items-center gap-2"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Run Monitoring Now
+                    </button>
+
+                    <button
+                      onClick={async () => {
+                        setToastMessage("⏳ Identifying gaps...");
+                        try {
+                          const response = await fetch("/api/aeo/identify-gaps", {
+                            method: "POST",
+                            headers: {
+                              "Authorization": `Bearer ${adminToken}`,
+                              "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({ daysToAnalyze: 7 })
+                          });
+                          const data = await response.json();
+                          if (data.success) {
+                            setToastMessage(`✅ Found ${data.gapsIdentified} gaps (${data.highPriorityGaps} high priority)`);
+                            loadAeoData();
+                          } else {
+                            setToastMessage(`❌ ${data.error}`);
+                          }
+                        } catch (error) {
+                          setToastMessage("❌ Gap identification failed");
+                        }
+                      }}
+                      className="px-4 py-2.5 rounded-lg text-sm font-medium bg-zinc-800 text-white hover:bg-zinc-700 transition-colors flex items-center gap-2"
+                    >
+                      <Search className="w-4 h-4" />
+                      Identify Gaps Now
+                    </button>
+
+                    <button
+                      onClick={loadAeoData}
+                      className="px-4 py-2.5 rounded-lg text-sm font-medium bg-zinc-800 text-white hover:bg-zinc-700 transition-colors flex items-center gap-2"
+                    >
+                      <Activity className="w-4 h-4" />
+                      Refresh Dashboard
+                    </button>
+                  </div>
+
+                  {aeoData.overview.lastMonitoringRun && (
+                    <p className="text-xs text-white/40 mt-3">
+                      Last monitoring: {new Date(aeoData.overview.lastMonitoringRun).toLocaleString()} ({aeoData.overview.lastMonitoringStatus})
+                    </p>
+                  )}
+                </div>
+
+                {/* Content Gaps Table */}
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
+                  <div className="p-6 border-b border-zinc-800">
+                    <h3 className="text-sm font-semibold text-white">Content Gaps (High Priority)</h3>
+                    <p className="text-xs text-white/50 mt-1">Queries where competitors dominate</p>
+                  </div>
+                  <div className="overflow-x-auto">
+                    {aeoData.gaps?.items && aeoData.gaps.items.length > 0 ? (
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-zinc-800">
+                            <th className="text-left p-4 text-xs font-medium text-zinc-400">Query</th>
+                            <th className="text-center p-4 text-xs font-medium text-zinc-400">Priority</th>
+                            <th className="text-left p-4 text-xs font-medium text-zinc-400">Competitor</th>
+                            <th className="text-center p-4 text-xs font-medium text-zinc-400">Status</th>
+                            <th className="text-right p-4 text-xs font-medium text-zinc-400">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {aeoData.gaps.items.filter((gap: any) => gap.priority >= 7).slice(0, 10).map((gap: any) => (
+                            <tr key={gap.id} className="border-b border-zinc-800/50 hover:bg-white/5">
+                              <td className="p-4 text-sm text-white">{gap.query}</td>
+                              <td className="p-4 text-center">
+                                <span className={cn(
+                                  "px-2 py-1 rounded-full text-xs font-medium",
+                                  gap.priority >= 9 ? "bg-red-500/20 text-red-400" :
+                                  gap.priority >= 8 ? "bg-yellow-500/20 text-yellow-400" :
+                                  "bg-zinc-700 text-zinc-300"
+                                )}>
+                                  {gap.priority}
+                                </span>
+                              </td>
+                              <td className="p-4 text-sm text-white/70">{gap.competitor_dominating}</td>
+                              <td className="p-4 text-center">
+                                <span className={cn(
+                                  "px-2 py-1 rounded-full text-xs",
+                                  gap.status === "published" ? "bg-emerald-500/20 text-emerald-400" :
+                                  gap.status === "generating" ? "bg-yellow-500/20 text-yellow-400" :
+                                  "bg-zinc-700 text-zinc-300"
+                                )}>
+                                  {gap.status}
+                                </span>
+                              </td>
+                              <td className="p-4 text-right">
+                                {gap.status === "identified" && (
+                                  <button
+                                    onClick={async () => {
+                                      setToastMessage("⏳ Generating content...");
+                                      try {
+                                        const response = await fetch("/api/aeo/generate-content", {
+                                          method: "POST",
+                                          headers: {
+                                            "Authorization": `Bearer ${adminToken}`,
+                                            "Content-Type": "application/json"
+                                          },
+                                          body: JSON.stringify({
+                                            query: gap.query,
+                                            targetKeywords: gap.target_keywords || [],
+                                            gapId: gap.id,
+                                            autoPublish: aeoAutoPublish
+                                          })
+                                        });
+                                        const data = await response.json();
+                                        if (data.success) {
+                                          setToastMessage(`✅ Generated: ${data.title}`);
+                                          loadAeoData();
+                                        } else {
+                                          setToastMessage(`❌ ${data.error}`);
+                                        }
+                                      } catch (error) {
+                                        setToastMessage("❌ Generation failed");
+                                      }
+                                    }}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#71717a] text-white hover:bg-[#52525b] transition-colors"
+                                  >
+                                    Generate
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div className="p-8 text-center text-white/50 text-sm">
+                        No content gaps identified yet
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Generated Content Queue */}
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
+                  <div className="p-6 border-b border-zinc-800">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-sm font-semibold text-white">Generated Content</h3>
+                        <p className="text-xs text-white/50 mt-1">{aeoData.content?.pending || 0} pending approval</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto">
+                    {aeoData.content?.items && aeoData.content.items.length > 0 ? (
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-zinc-800">
+                            <th className="text-left p-4 text-xs font-medium text-zinc-400">Title</th>
+                            <th className="text-center p-4 text-xs font-medium text-zinc-400">Words</th>
+                            <th className="text-center p-4 text-xs font-medium text-zinc-400">Published</th>
+                            <th className="text-center p-4 text-xs font-medium text-zinc-400">Performance</th>
+                            <th className="text-right p-4 text-xs font-medium text-zinc-400">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {aeoData.content.items.slice(0, 10).map((content: any) => (
+                            <tr key={content.id} className="border-b border-zinc-800/50 hover:bg-white/5">
+                              <td className="p-4 text-sm text-white max-w-md truncate">{content.title}</td>
+                              <td className="p-4 text-center text-sm text-white/70">
+                                {content.content ? content.content.split(/\s+/).length : 0}
+                              </td>
+                              <td className="p-4 text-center">
+                                {content.published ? (
+                                  <Check className="w-4 h-4 text-emerald-400 mx-auto" />
+                                ) : (
+                                  <X className="w-4 h-4 text-zinc-600 mx-auto" />
+                                )}
+                              </td>
+                              <td className="p-4 text-center text-sm">
+                                {content.citation_improvement_48h !== null ? (
+                                  <span className={cn(
+                                    "font-medium",
+                                    content.citation_improvement_48h > 0 ? "text-emerald-400" : "text-red-400"
+                                  )}>
+                                    {content.citation_improvement_48h > 0 ? "+" : ""}{content.citation_improvement_48h.toFixed(1)}%
+                                  </span>
+                                ) : (
+                                  <span className="text-white/40">-</span>
+                                )}
+                              </td>
+                              <td className="p-4 text-right">
+                                {content.published_url && (
+                                  <a
+                                    href={content.published_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 text-white hover:bg-zinc-700 transition-colors"
+                                  >
+                                    <ExternalLink className="w-3 h-3" />
+                                    View
+                                  </a>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div className="p-8 text-center text-white/50 text-sm">
+                        No generated content yet
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
 
