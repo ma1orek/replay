@@ -23,7 +23,7 @@ async function generateContent(
   targetKeywords: string[],
   competitorContent: string | null
 ): Promise<{ title: string; content: string; metaDescription: string; slug: string }> {
-  const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   const prompt = `You are an expert content writer specializing in AI Engine Optimization (AEO) for legacy modernization and enterprise software.
 
