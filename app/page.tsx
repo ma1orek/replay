@@ -4188,6 +4188,7 @@ function ReplayToolContent() {
   // Publishing state
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+  const [publishCacheTimestamp, setPublishCacheTimestamp] = useState(Date.now()); // Cache-busting timestamp
   const [showPublishModal, setShowPublishModal] = useState(false);
   
   // Storybook / Design System state
@@ -12766,6 +12767,7 @@ ${publishCode}
       if (data.success && data.url) {
         const newSlug = data.slug;
         setPublishedUrl(data.url);
+        setPublishCacheTimestamp(Date.now()); // Update cache-busting timestamp
         
         // Save the slug to the generation record for future updates
         if (newSlug) {
@@ -17176,7 +17178,7 @@ ${publishCode}
                         <div className="flex gap-2">
                           {publishedUrl && (
                             <a
-                              href={`${publishedUrl}?v=${Date.now()}`}
+                              href={`${publishedUrl}?v=${publishCacheTimestamp}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex-1 py-2.5 rounded-lg bg-zinc-800/50 hover:bg-white/10 text-zinc-200 text-sm font-medium transition-colors flex items-center justify-center gap-2"

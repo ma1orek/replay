@@ -169,122 +169,60 @@ function fixBrokenImageUrls(code: string): string {
 function buildSystemPrompt(chatHistory?: any[]): string {
   // Extract recent conversation context
   let conversationContext = '';
-  
+
   if (chatHistory && chatHistory.length > 0) {
-    const recent = chatHistory.slice(-4).map(m => 
+    const recent = chatHistory.slice(-4).map(m =>
       `${m.role === 'user' ? 'USER' : 'AI'}: ${(m.content || '').substring(0, 200)}`
     ).join('\n');
     conversationContext = `\n\nRECENT CONVERSATION:\n${recent}`;
   }
 
-  // Always respond in English
-  const languageInstructions = `LANGUAGE: Always respond in English.`;
+  return `REPLAY AI - Precision Code Editor
 
-  return `REPLAY AI - Code Editor
+MISSION: Make SURGICAL, TARGETED edits. Change ONLY what the user asked. Keep everything else BYTE-FOR-BYTE IDENTICAL.
 
-MISSION: Transform user requests into immediate, visible code changes.
+CORE PRINCIPLE - MINIMAL DIFF:
+- You are a DIFF engine, NOT a code generator
+- Think: "What is the SMALLEST change needed?"
+- "make header blue" → change ONLY the header background class/style
+- "add a button" → insert ONLY the button element, touch NOTHING else
+- "fix the chart" → fix ONLY the chart code
+- NEVER rewrite, reorganize, or "improve" untouched sections
+- NEVER remove content, sections, or pages unless explicitly asked
+- NEVER change formatting, indentation, or whitespace of untouched code
 
-CAPABILITIES:
-- Edit HTML/CSS/JavaScript/Alpine.js
-- Translate text to any language
-- Change styles, colors, layouts
-- Add/remove components
-- Apply styles from reference images
+CONTEXT${conversationContext}
+- "yes" / "do it" / "fix it" = apply the discussed change (minimal)
+- "translate to X" = translate ALL visible text (keep structure identical)
+- "change logo" + image = replace logo src attribute only
 
-RULES:
+OUTPUT FORMAT:
+- Return COMPLETE HTML document (<!DOCTYPE to </html>)
+- Wrap in html code blocks
+- The output must be IDENTICAL to input EXCEPT for the specific requested changes
 
-1. ALWAYS MAKE CHANGES
-   - Unchanged code = FAILURE
-   - Make visible modifications
-   
-2. UNDERSTAND CONTEXT${conversationContext}
-   - "yes" / "do it" / "fix it" = apply the change
-   - "no" / "undo" = try different approach
-   - "translate to X" = translate ALL text
-   - "change logo to this" + image = replace logo with uploaded image URL
+PRESERVATION RULES (MANDATORY):
+1. Every x-show section in input MUST exist in output (same count or more)
+2. Every navigation item MUST be preserved
+3. Every <script> block MUST be preserved exactly
+4. All <style> blocks, CSS variables, animations MUST be preserved
+5. Page count MUST stay the same (unless adding/removing pages)
+6. All Alpine.js x-data, x-show, x-on, @click directives MUST be preserved
+7. All content text MUST be preserved (unless user asked to change it)
+8. NEVER delete sections, cards, testimonials, features, or any content blocks
 
-3. OUTPUT FORMAT
-   - Return COMPLETE HTML (<!DOCTYPE to </html>)
-   - Wrap in html code blocks
-   - Preserve Alpine.js directives
+ICONS: Use Lucide only: <i data-lucide="icon-name" class="w-5 h-5"></i>
+IMAGES: https://picsum.photos/WxH?random=N | AVATARS: https://i.pravatar.cc/150?img=N
 
-4. IMAGE HANDLING
-   - When user uploads an image to change logo/asset:
-   - Use the image URL directly from the upload
-   - Do NOT use external services like imgur
-   - Replace the src attribute with the provided URL
-
-${languageInstructions}
-
-ICONS - MANDATORY:
-- Use ONLY Lucide icons: <i data-lucide="icon-name" class="w-5 h-5 text-white"></i>
-- NEVER use inline SVG for icons (no <svg><path>...)
-- NEVER add solid background to icon: ❌ bg-orange-500 on <i> tag
-- For icon in colored box: <div class="bg-orange-500/10"><i class="text-orange-500"></i></div>
-- Common icons: home, menu, x, check, arrow-right, user, settings, heart, star, search, users, briefcase, globe, zap, rocket, shield
-
-ENTERPRISE-READY CODE:
-
-1. NO HARDCODED COLORS:
-   ✅ class="bg-[var(--color-primary)]"
-   ❌ class="bg-[#6366f1]"
-
-2. SEMANTIC HTML (Accessibility):
-   ✅ <button class="...">Click</button>
-   ✅ <a href="#section">Link</a>
-   ❌ <div class="cursor-pointer">Click</div>
-   - Clickable = use <button> or <a>, NOT <div>
-   - Icon-only buttons need aria-label
-
-3. DESIGN QUALITY:
-- Use CSS variables: var(--color-primary), var(--color-muted)
-- Add hover states on all buttons/cards
-- Use glassmorphism: backdrop-blur-xl bg-white/5
-- Use glassmorphism: backdrop-blur + bg-white/5 + border-white/10
-- Use semantic class names: .card, .btn, .section
+RESPONSE: Brief summary (2-3 bullet points of what changed), then complete HTML code block.
+NEVER add explanations after the code block.
 
 FORBIDDEN:
-- Using emojis in responses (NO emoji!)
-- Returning identical code
+- Rewriting/regenerating sections the user didn't ask to change
+- Removing existing content, sections, pages, or functionality
+- Changing code formatting or structure of untouched parts
 - Using external image services (imgur, etc.)
-- Single-word responses like "Done!" or "Fixed!"
-- Inline SVG icons (use Lucide instead!)
-
-RESPONSE FORMAT:
-1. Detailed summary explaining WHAT you changed (use bullet points for multiple changes)
-2. Complete HTML code in code block
-3. Nothing else
-
-SUMMARY REQUIREMENTS:
-- Be specific and detailed - explain exactly what was modified
-- Use bullet points when making multiple changes
-- Include technical details (CSS properties, component names, layout changes)
-- Mention any improvements to responsiveness, accessibility, or UX
-
-Example GOOD summaries:
-
-"Updated the dashboard layout with the following changes:
-- Converted sidebar from fixed to responsive flex layout
-- Added mobile hamburger menu that toggles sidebar visibility
-- Increased card padding from 16px to 24px for better readability
-- Applied hover effects with scale transform on all interactive elements"
-
-"Implemented the contact form section:
-- Added form with name, email, subject, and message fields
-- Styled inputs with glassmorphism effect (backdrop-blur + white/10 bg)
-- Included validation states with red/green border colors
-- Submit button has gradient background with hover animation"
-
-"Fixed chart rendering issues:
-- Set explicit height (300px) on chart containers
-- Added maintainAspectRatio: false to Chart.js config
-- Charts now fill their parent containers properly"
-
-Example BAD summaries (NEVER USE):
-- "Done!" (says nothing)
-- "Changes applied." (meaningless)
-- "Updated the code." (no details)
-- "Fixed it." (what was fixed?)
+- Inline SVG icons (use Lucide data-lucide instead)
 
 \`\`\`html
 <!DOCTYPE html>
@@ -444,7 +382,7 @@ Odpowiedz krótko i przyjaźnie:`;
           const genAI = new GoogleGenerativeAI(geminiKey);
           const model = genAI.getGenerativeModel({
             model: "gemini-3-pro-preview", // Gemini 3 Pro for image processing
-            generationConfig: { temperature: 0.8, maxOutputTokens: 65536 },
+            generationConfig: { temperature: 0.4, maxOutputTokens: 65536 },
           });
           
           // Check if user wants to replace an asset (logo, image, etc.)
@@ -667,109 +605,110 @@ CRITICAL RULES:
             });
           }
         } else {
-          // Use Gemini for text-only edits (consistent with generation)
-          send("status", { message: "Generating code with AI...", phase: "ai" });
-          
-          const geminiKey = getGeminiKey();
-          if (!geminiKey) {
-            send("error", { error: "Gemini API key not configured" });
-            controller.close();
-            return;
-          }
-          
-          const genAI = new GoogleGenerativeAI(geminiKey);
+          // DUAL MODE: SEARCH/REPLACE (default) or Full HTML (fallback)
+          const editMode = selectEditMode(editRequest, currentCode, false);
+          console.log(`[Stream Edit] Using mode: ${editMode}`);
 
-          send("status", { message: "Writing code...", phase: "writing" });
+          if (editMode === 'search-replace') {
+            // ===== SEARCH/REPLACE MODE (NEW) =====
+            send("status", { message: "Making targeted edits...", phase: "ai" });
 
-          try {
-            const systemPrompt = buildSystemPrompt(chatHistory);
-            const fullPrompt = `${systemPrompt}\n\n${prompt}`;
-            
-            // Use retry logic with fallback models
-            const { result, modelUsed } = await executeGeminiWithRetry(
-              genAI,
-              "gemini-3-pro-preview", // Use Gemini 3 Pro
-              fullPrompt,
-              { temperature: 0.7, maxOutputTokens: 65536 },
-              3,
-              (attempt, error) => {
-                const friendlyMsg = getUserFriendlyError(error);
-                send("status", { message: `${friendlyMsg} (próba ${attempt}/3)`, phase: "retry" });
-              }
-            );
-            
-            console.log(`[Stream Edit] Using model: ${modelUsed}`);
-            
-            let fullCode = "";
-            let chunkCount = 0;
-            
-            for await (const chunk of result.stream) {
-              const text = chunk.text() || "";
-              fullCode += text;
-              chunkCount++;
-              
-              if (text.length > 0) {
-                send("chunk", { text, fullText: fullCode });
-              }
-              
-              if (chunkCount % 5 === 0) {
-                const lines = fullCode.split('\n').length;
-                send("progress", { lines, chars: fullCode.length, preview: fullCode.slice(-300) });
-              }
+            const geminiKey = getGeminiKey();
+            if (!geminiKey) {
+              send("error", { error: "Gemini API key not configured" });
+              controller.close();
+              return;
             }
 
-            send("status", { message: "Finalizing...", phase: "finalize" });
-            await delay(50);
+            const genAI = new GoogleGenerativeAI(geminiKey);
+            send("status", { message: "Analyzing code...", phase: "writing" });
 
-            const extractedCode = extractCode(fullCode);
-            
-            if (extractedCode) {
-              // Validate that code actually changed
-              const normalizeCode = (code: string) => code.replace(/\s+/g, ' ').trim();
-              const codeChanged = normalizeCode(extractedCode) !== normalizeCode(currentCode);
-              
-              if (!codeChanged) {
-                console.warn("[Stream Edit] Code unchanged - AI didn't make modifications");
-                // Return an error so user knows to be more specific
-                send("complete", { 
-                  code: "I understood your request but couldn't determine what specific changes to make. Please be more specific, like:\n- 'Change the header background to blue'\n- 'Translate all text to Spanish'\n- 'Make the buttons rounded'\n- 'Add a footer section'", 
-                  isChat: true,
-                  needsClarification: true
+            try {
+              const searchReplacePrompt = buildSearchReplacePrompt(editRequest, currentCode, undefined);
+
+              // Lower temperature for precision, lower maxOutputTokens (blocks are tiny)
+              const { result, modelUsed } = await executeGeminiWithRetry(
+                genAI,
+                "gemini-3-pro-preview",
+                searchReplacePrompt,
+                { temperature: 0.2, maxOutputTokens: 8192 }, // Precise + small output
+                3,
+                (attempt, error) => {
+                  const friendlyMsg = getUserFriendlyError(error);
+                  send("status", { message: `${friendlyMsg} (próba ${attempt}/3)`, phase: "retry" });
+                }
+              );
+
+              console.log(`[Stream Edit] SEARCH/REPLACE using model: ${modelUsed}`);
+
+              let fullResponse = "";
+              for await (const chunk of result.stream) {
+                const text = chunk.text() || "";
+                fullResponse += text;
+              }
+
+              send("status", { message: "Applying changes...", phase: "finalize" });
+              await delay(50);
+
+              // Parse SEARCH/REPLACE blocks
+              const parsed = parseSearchReplaceResponse(fullResponse);
+
+              if (parsed.isSearchReplace && parsed.blocks.length > 0) {
+                // Apply blocks
+                const applyResult = applySearchReplace(currentCode, parsed.blocks);
+
+                if (applyResult.failedCount > 0) {
+                  console.warn(`[Stream Edit] S/R: ${applyResult.failedCount}/${parsed.blocks.length} blocks failed`);
+
+                  // If ALL blocks failed, fallback to full HTML mode
+                  if (applyResult.appliedCount === 0) {
+                    console.log("[Stream Edit] S/R: ALL blocks failed, falling back to full HTML");
+                    await runFullHtmlEdit(prompt, currentCode, editRequest, chatHistory, send);
+                    return;
+                  }
+                }
+
+                // Success: return edited code
+                const summary = parsed.summary || `Applied ${applyResult.appliedCount} change(s)`;
+                send("complete", {
+                  code: applyResult.code,
+                  summary,
+                  stats: {
+                    originalLines: currentCode.split('\n').length,
+                    newLines: applyResult.code.split('\n').length,
+                    originalSize: currentCode.length,
+                    newSize: applyResult.code.length,
+                    mode: 'search-replace',
+                    blocksApplied: applyResult.appliedCount,
+                    blocksFailed: applyResult.failedCount
+                  }
                 });
               } else {
-                const summary = generateChangeSummary(currentCode, extractedCode, editRequest, fullCode);
-                send("complete", { 
-                  code: extractedCode, 
+                // AI returned full HTML despite S/R prompt - use it
+                console.log("[Stream Edit] AI returned full HTML in S/R mode, accepting it");
+                const extractedCode = parsed.fullHtml || extractCode(fullResponse) || currentCode;
+                const summary = parsed.summary || "Changes applied";
+                send("complete", {
+                  code: extractedCode,
                   summary,
                   stats: {
                     originalLines: currentCode.split('\n').length,
                     newLines: extractedCode.split('\n').length,
                     originalSize: currentCode.length,
                     newSize: extractedCode.length,
+                    mode: 'search-replace-fallback-full'
                   }
                 });
               }
-            } else {
-              const fallbackCode = tryFallbackExtraction(fullCode);
-              if (fallbackCode) {
-                send("complete", { code: fallbackCode, summary: "Changes applied" });
-              } else {
-                const looksLikeExplanation = fullCode.length < 2000 && 
-                  !fullCode.includes('<!DOCTYPE') && 
-                  !fullCode.includes('<html');
-                
-                if (looksLikeExplanation) {
-                  send("complete", { code: fullCode.trim(), isChat: true, needsClarification: false });
-                } else {
-                  const clarifyResponse = generateClarifyingQuestion(editRequest, currentCode);
-                  send("complete", { code: clarifyResponse, isChat: true, needsClarification: true });
-                }
-              }
+            } catch (error: any) {
+              console.error("[Stream Edit] SEARCH/REPLACE error:", error);
+              // Fallback to full HTML on error
+              console.log("[Stream Edit] S/R error, falling back to full HTML");
+              await runFullHtmlEdit(prompt, currentCode, editRequest, chatHistory, send);
             }
-          } catch (streamError: any) {
-            console.error("[Stream Edit] Gemini error after retries:", streamError);
-            const friendlyError = getUserFriendlyError(streamError);
-            send("error", { error: friendlyError, technical: streamError?.message });
+          } else {
+            // ===== FULL HTML MODE (LEGACY) =====
+            await runFullHtmlEdit(prompt, currentCode, editRequest, chatHistory, send);
           }
         }
 
@@ -1043,37 +982,494 @@ DO NOT translate:
 - URLs, IDs
 ` : '';
 
-  return `You are Replay, an Elite AI Code Editor (like Lovable, Bolt, Cursor).
+  // Count existing structural elements for validation context
+  const xShowCount = (code.match(/x-show\s*=\s*["']/g) || []).length;
+  const sectionCount = (code.match(/<section[\s>]/g) || []).length;
+  const navItemCount = (code.match(/<(?:a|button)[^>]*(?:@click|x-on:click)[^>]*currentPage/g) || []).length;
+  const scriptCount = (code.match(/<script[\s>]/g) || []).length;
 
-MISSION: Make the exact changes the user requested. ALWAYS modify the code!
+  return `SURGICAL CODE EDIT — MINIMAL CHANGES ONLY
 ${conversationContext}
 
-CURRENT CODE:
+STRUCTURAL FINGERPRINT (your output MUST match or exceed these counts):
+- x-show sections: ${xShowCount}
+- <section> tags: ${sectionCount}
+- Navigation items: ${navItemCount}
+- <script> blocks: ${scriptCount}
+
+CURRENT CODE (${code.length} chars, ${code.split('\\n').length} lines):
 \`\`\`html
 ${code}
 \`\`\`
 
-USER REQUEST:
-${request}${imageContext}${dbContextStr}
+USER REQUEST: ${request}${imageContext}${dbContextStr}
 ${pageCreationInstructions}${translationInstructions}
 
-OUTPUT RULES:
-1. Return COMPLETE HTML document (<!DOCTYPE html> to </html>)
-2. Wrap code in html code blocks
-3. ⚠️ PRESERVE ALL EXISTING CODE - only ADD/MODIFY what was specifically requested
-4. ⚠️ If adding a page: KEEP all existing x-show sections, ADD the new one
-5. Preserve Alpine.js x-data, x-show, x-on directives exactly
-6. Keep all existing pages, navigation, and multi-page structure
-7. NEVER return partial code or explanations instead of code
-8. NEVER reduce the amount of content - only add or modify
+EDIT STRATEGY:
+1. LOCATE the specific part of the code the user wants changed
+2. Make ONLY the requested change to that specific part
+3. Copy ALL other code EXACTLY as-is (byte-for-byte identical)
+4. Return the COMPLETE HTML document with the minimal edit applied
 
-TECHNICAL STANDARDS:
-- Use Tailwind CSS for all styling
-- Use Alpine.js for interactivity
-- Mobile-first responsive design
-- IMAGES: ONLY use https://picsum.photos/WxH?random=N
-- AVATARS: ONLY use https://i.pravatar.cc/150?img=N
+HARD RULES:
+- x-show sections in output >= ${xShowCount} (NEVER fewer)
+- <section> tags in output >= ${sectionCount} (NEVER fewer)
+- Navigation items MUST all be preserved
+- ALL <script> blocks preserved exactly (${scriptCount} blocks)
+- Alpine.js directives (x-data, x-show, x-on, @click) MUST NOT be removed
+- Content text outside the edited area MUST NOT change
+- If you're unsure what to change, change LESS not MORE
 
-Return ONLY the complete modified HTML code wrapped in html code blocks.
-No explanations before or after the code block.`;
+Return brief summary (what you changed), then complete HTML in code block.`;
+}
+
+// ============================================================================
+// SEARCH/REPLACE BLOCK MODE - Helper functions
+// ============================================================================
+
+function countOccurrences(str: string, substring: string): number {
+  let count = 0;
+  let pos = 0;
+  while ((pos = str.indexOf(substring, pos)) !== -1) {
+    count++;
+    pos += substring.length;
+  }
+  return count;
+}
+
+function normalizeWhitespace(str: string): string {
+  return str.replace(/\s+/g, ' ').trim();
+}
+
+function levenshteinDistance(a: string, b: string): number {
+  const matrix: number[][] = [];
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
+  }
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) { // FIXED: was "i <= a.length" (infinite loop bug)
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+  return matrix[b.length][a.length];
+}
+
+function lineSimilarity(a: string, b: string): number {
+  const distance = levenshteinDistance(a, b);
+  const maxLen = Math.max(a.length, b.length);
+  if (maxLen === 0) return 1;
+  return 1 - distance / maxLen;
+}
+
+function fuzzyLineMatch(codeLines: string[], searchLines: string[], startIdx: number, threshold: number = 0.85): { match: boolean; endIdx: number } {
+  if (startIdx + searchLines.length > codeLines.length) {
+    return { match: false, endIdx: -1 };
+  }
+
+  let totalSimilarity = 0;
+  for (let i = 0; i < searchLines.length; i++) {
+    const sim = lineSimilarity(
+      normalizeWhitespace(codeLines[startIdx + i]),
+      normalizeWhitespace(searchLines[i])
+    );
+    totalSimilarity += sim;
+  }
+
+  const avgSimilarity = totalSimilarity / searchLines.length;
+  if (avgSimilarity >= threshold) {
+    return { match: true, endIdx: startIdx + searchLines.length - 1 };
+  }
+
+  return { match: false, endIdx: -1 };
+}
+
+function anchorMatch(codeLines: string[], searchLines: string[]): { startIdx: number; endIdx: number } | null {
+  if (searchLines.length < 2) return null;
+
+  const firstSearch = normalizeWhitespace(searchLines[0]);
+  const lastSearch = normalizeWhitespace(searchLines[searchLines.length - 1]);
+
+  // Find matching first line
+  let firstIdx = -1;
+  for (let i = 0; i < codeLines.length; i++) {
+    if (lineSimilarity(normalizeWhitespace(codeLines[i]), firstSearch) >= 0.85) {
+      firstIdx = i;
+      break;
+    }
+  }
+
+  if (firstIdx === -1) return null;
+
+  // Find matching last line after first
+  const searchRange = Math.min(firstIdx + searchLines.length + 10, codeLines.length);
+  for (let i = firstIdx + 1; i < searchRange; i++) {
+    if (lineSimilarity(normalizeWhitespace(codeLines[i]), lastSearch) >= 0.85) {
+      return { startIdx: firstIdx, endIdx: i };
+    }
+  }
+
+  return null;
+}
+
+function findOriginalRange(code: string, search: string): { start: number; end: number } | null {
+  const codeLines = code.split('\n');
+  const searchLines = search.split('\n');
+
+  // Strategy 1: Exact match
+  const exactIdx = code.indexOf(search);
+  if (exactIdx !== -1) {
+    return { start: exactIdx, end: exactIdx + search.length };
+  }
+
+  // Strategy 2: Normalized whitespace
+  const normalizedCode = normalizeWhitespace(code);
+  const normalizedSearch = normalizeWhitespace(search);
+  const normIdx = normalizedCode.indexOf(normalizedSearch);
+  if (normIdx !== -1) {
+    // Map back to original indices (approximate)
+    let charCount = 0;
+    let normalCount = 0;
+    let startIdx = -1;
+    for (let i = 0; i < code.length; i++) {
+      if (!/\s/.test(code[i])) {
+        if (normalCount === normIdx && startIdx === -1) {
+          startIdx = i;
+        }
+        normalCount++;
+        if (normalCount === normIdx + normalizedSearch.length) {
+          return { start: startIdx, end: i + 1 };
+        }
+      }
+    }
+  }
+
+  // Strategy 3: Fuzzy line match
+  for (let i = 0; i <= codeLines.length - searchLines.length; i++) {
+    const { match, endIdx } = fuzzyLineMatch(codeLines, searchLines, i);
+    if (match) {
+      const startChar = codeLines.slice(0, i).join('\n').length + (i > 0 ? 1 : 0);
+      const endChar = codeLines.slice(0, endIdx + 1).join('\n').length;
+      return { start: startChar, end: endChar };
+    }
+  }
+
+  // Strategy 4: Anchor match
+  const anchors = anchorMatch(codeLines, searchLines);
+  if (anchors) {
+    const startChar = codeLines.slice(0, anchors.startIdx).join('\n').length + (anchors.startIdx > 0 ? 1 : 0);
+    const endChar = codeLines.slice(0, anchors.endIdx + 1).join('\n').length;
+    return { start: startChar, end: endChar };
+  }
+
+  return null;
+}
+
+// ============================================================================
+// SEARCH/REPLACE BLOCK MODE - Core functions
+// ============================================================================
+
+interface SearchReplaceBlock {
+  search: string;
+  replace: string;
+}
+
+interface ParsedSearchReplace {
+  summary: string;
+  blocks: SearchReplaceBlock[];
+  isSearchReplace: boolean;
+  fullHtml?: string;
+}
+
+function parseSearchReplaceResponse(response: string): ParsedSearchReplace {
+  // Check if response contains SEARCH/REPLACE markers
+  if (!response.includes('<<<SEARCH') || !response.includes('>>>REPLACE') || !response.includes('<<<END')) {
+    // Fallback: extract full HTML from code block
+    const codeBlockMatch = response.match(/```html?\n([\s\S]*?)\n```/);
+    if (codeBlockMatch) {
+      return {
+        summary: response.split('```')[0].trim(),
+        blocks: [],
+        isSearchReplace: false,
+        fullHtml: codeBlockMatch[1]
+      };
+    }
+    return {
+      summary: response,
+      blocks: [],
+      isSearchReplace: false,
+      fullHtml: response
+    };
+  }
+
+  // Extract summary (text before first <<<SEARCH)
+  const summaryMatch = response.match(/^([\s\S]*?)<<<SEARCH/);
+  const summary = summaryMatch ? summaryMatch[1].trim() : '';
+
+  // Extract all SEARCH/REPLACE blocks
+  const blocks: SearchReplaceBlock[] = [];
+  const blockPattern = /<<<SEARCH\n([\s\S]*?)\n>>>REPLACE\n([\s\S]*?)\n<<<END/g;
+  let match;
+
+  while ((match = blockPattern.exec(response)) !== null) {
+    blocks.push({
+      search: match[1],
+      replace: match[2]
+    });
+  }
+
+  return {
+    summary,
+    blocks,
+    isSearchReplace: true
+  };
+}
+
+interface ApplyResult {
+  code: string;
+  appliedCount: number;
+  failedCount: number;
+  failures: string[];
+}
+
+function applySearchReplace(originalCode: string, blocks: SearchReplaceBlock[]): ApplyResult {
+  let code = originalCode;
+  let appliedCount = 0;
+  let failedCount = 0;
+  const failures: string[] = [];
+
+  for (const block of blocks) {
+    const range = findOriginalRange(code, block.search);
+
+    if (range) {
+      // Apply replacement
+      code = code.slice(0, range.start) + block.replace + code.slice(range.end);
+      appliedCount++;
+    } else {
+      failedCount++;
+      const preview = block.search.slice(0, 100).replace(/\n/g, '\\n');
+      failures.push(preview);
+    }
+  }
+
+  return {
+    code,
+    appliedCount,
+    failedCount,
+    failures
+  };
+}
+
+// ============================================================================
+// SEARCH/REPLACE BLOCK MODE - Prompt builder
+// ============================================================================
+
+function buildSearchReplacePrompt(editRequest: string, currentCode: string, selectedElement?: string): string {
+  const elementContext = selectedElement
+    ? `\n\nSELECTED ELEMENT (user clicked this specific element to edit):\n${selectedElement}\n`
+    : '';
+
+  return `You are a SURGICAL code editor. Output ONLY the changed lines using SEARCH/REPLACE blocks.
+
+CURRENT CODE:
+${currentCode}
+${elementContext}
+USER REQUEST: ${editRequest}
+
+INSTRUCTIONS:
+1. Output brief summary of what you're changing (1 sentence)
+2. Output one or more SEARCH/REPLACE blocks with this EXACT format:
+
+<<<SEARCH
+[exact text to find - must match current code EXACTLY]
+>>>REPLACE
+[new text to replace with]
+<<<END
+
+3. Rules for SEARCH blocks:
+   - Must be EXACT substring of current code (copy-paste, not paraphrase)
+   - Include enough context for uniqueness (2-3 lines around the change)
+   - Multiple blocks if changes are scattered
+   - Only include the CHANGED part + surrounding context
+
+4. DO NOT output full HTML page
+5. DO NOT change anything except what user requested
+6. Preserve all Alpine.js directives (x-show, x-data, x-on)
+7. Preserve all navigation, scripts, and sections
+
+Example:
+Changed button color to blue
+
+<<<SEARCH
+<button class="bg-red-500 px-4 py-2">
+  Contact
+</button>
+>>>REPLACE
+<button class="bg-blue-600 px-4 py-2">
+  Contact
+</button>
+<<<END`;
+}
+
+// ============================================================================
+// SEARCH/REPLACE BLOCK MODE - Mode selector
+// ============================================================================
+
+type EditMode = 'search-replace' | 'full-html';
+
+function selectEditMode(editRequest: string, currentCode: string, isImageEdit: boolean): EditMode {
+  const requestLower = editRequest.toLowerCase();
+
+  // Full HTML mode for these cases:
+  if (isImageEdit) return 'full-html';
+  if (requestLower.includes('translate') || requestLower.includes('tłumacz')) return 'full-html';
+  if (requestLower.includes('add') && (requestLower.includes('page') || requestLower.includes('section'))) return 'full-html';
+  if (requestLower.includes('new page') || requestLower.includes('nowa strona')) return 'full-html';
+  if (requestLower.includes('global') || requestLower.includes('całkowit') || requestLower.includes('everywhere')) return 'full-html';
+  if (currentCode.length < 2000) return 'full-html'; // Short code = easier to regenerate
+
+  // Default: SEARCH/REPLACE mode (safer, faster, more precise)
+  return 'search-replace';
+}
+
+// ============================================================================
+// Full HTML edit mode (fallback/legacy)
+// ============================================================================
+
+async function runFullHtmlEdit(
+  prompt: string,
+  currentCode: string,
+  editRequest: string,
+  chatHistory: any[],
+  send: (event: string, data: any) => void
+): Promise<void> {
+  send("status", { message: "Generating code with AI...", phase: "ai" });
+
+  const geminiKey = getGeminiKey();
+  if (!geminiKey) {
+    send("error", { error: "Gemini API key not configured" });
+    return;
+  }
+
+  const genAI = new GoogleGenerativeAI(geminiKey);
+  send("status", { message: "Writing code...", phase: "writing" });
+
+  try {
+    const systemPrompt = buildSystemPrompt(chatHistory);
+    const fullPrompt = `${systemPrompt}\n\n${prompt}`;
+
+    // Use retry logic with fallback models
+    const { result, modelUsed } = await executeGeminiWithRetry(
+      genAI,
+      "gemini-3-pro-preview",
+      fullPrompt,
+      { temperature: 0.3, maxOutputTokens: 65536 },
+      3,
+      (attempt, error) => {
+        const friendlyMsg = getUserFriendlyError(error);
+        send("status", { message: `${friendlyMsg} (próba ${attempt}/3)`, phase: "retry" });
+      }
+    );
+
+    console.log(`[Stream Edit] Using model: ${modelUsed}`);
+
+    let fullCode = "";
+    let chunkCount = 0;
+
+    for await (const chunk of result.stream) {
+      const text = chunk.text() || "";
+      fullCode += text;
+      chunkCount++;
+
+      if (text.length > 0) {
+        send("chunk", { text, fullText: fullCode });
+      }
+
+      if (chunkCount % 5 === 0) {
+        const lines = fullCode.split('\n').length;
+        send("progress", { lines, chars: fullCode.length, preview: fullCode.slice(-300) });
+      }
+    }
+
+    send("status", { message: "Finalizing...", phase: "finalize" });
+    await delay(50);
+
+    const extractedCode = extractCode(fullCode);
+
+    if (extractedCode) {
+      // Validate that code actually changed
+      const normalizeCode = (code: string) => code.replace(/\s+/g, ' ').trim();
+      const codeChanged = normalizeCode(extractedCode) !== normalizeCode(currentCode);
+
+      if (!codeChanged) {
+        console.warn("[Stream Edit] Code unchanged - AI didn't make modifications");
+        send("complete", {
+          code: "I understood your request but couldn't determine what specific changes to make. Please be more specific, like:\n- 'Change the header background to blue'\n- 'Translate all text to Spanish'\n- 'Make the buttons rounded'\n- 'Add a footer section'",
+          isChat: true,
+          needsClarification: true
+        });
+      } else {
+        // STRUCTURAL VALIDATION: Check AI didn't destroy the page
+        const origXShow = (currentCode.match(/x-show\s*=\s*["']/g) || []).length;
+        const newXShow = (extractedCode.match(/x-show\s*=\s*["']/g) || []).length;
+        const origSections = (currentCode.match(/<section[\s>]/g) || []).length;
+        const newSections = (extractedCode.match(/<section[\s>]/g) || []).length;
+        const sizeDrop = extractedCode.length / currentCode.length;
+
+        // If AI removed >40% of code or lost x-show sections, warn but still return
+        // (user can undo via versioning)
+        let warning = '';
+        if (origXShow > 1 && newXShow < origXShow) {
+          warning = ` Warning: ${origXShow - newXShow} page(s) may have been removed.`;
+          console.warn(`[Stream Edit] STRUCTURAL WARNING: x-show dropped from ${origXShow} to ${newXShow}`);
+        }
+        if (sizeDrop < 0.5 && currentCode.length > 5000) {
+          warning += ' Warning: Code size dropped significantly - some content may have been lost.';
+          console.warn(`[Stream Edit] SIZE WARNING: ${currentCode.length} → ${extractedCode.length} (${Math.round(sizeDrop * 100)}%)`);
+        }
+
+        const summary = generateChangeSummary(currentCode, extractedCode, editRequest, fullCode) + warning;
+        send("complete", {
+          code: extractedCode,
+          summary,
+          stats: {
+            originalLines: currentCode.split('\n').length,
+            newLines: extractedCode.split('\n').length,
+            originalSize: currentCode.length,
+            newSize: extractedCode.length,
+          }
+        });
+      }
+    } else {
+      const fallbackCode = tryFallbackExtraction(fullCode);
+      if (fallbackCode) {
+        send("complete", { code: fallbackCode, summary: "Changes applied" });
+      } else {
+        const looksLikeExplanation = fullCode.length < 2000 &&
+          !fullCode.includes('<!DOCTYPE') &&
+          !fullCode.includes('<html');
+
+        if (looksLikeExplanation) {
+          send("complete", { code: fullCode.trim(), isChat: true, needsClarification: false });
+        } else {
+          const clarifyResponse = generateClarifyingQuestion(editRequest, currentCode);
+          send("complete", { code: clarifyResponse, isChat: true, needsClarification: true });
+        }
+      }
+    }
+  } catch (streamError: any) {
+    console.error("[Stream Edit] Gemini error after retries:", streamError);
+    const friendlyError = getUserFriendlyError(streamError);
+    send("error", { error: friendlyError, technical: streamError?.message });
+  }
 }
