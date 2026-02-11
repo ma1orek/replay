@@ -521,21 +521,65 @@ export async function GET(
     // CRITICAL: Inject React hooks globals right after React loads
     // This fixes "useRef is not defined" errors
     const reactHooksScript = `<script>if(typeof React!=='undefined'){window.useState=React.useState;window.useEffect=React.useEffect;window.useRef=React.useRef;window.useCallback=React.useCallback;window.useMemo=React.useMemo;window.useContext=React.useContext;window.useReducer=React.useReducer;window.useLayoutEffect=React.useLayoutEffect;window.Fragment=React.Fragment;}</script>`;
-    
+
     // Inject after babel.min.js script (right before </head>)
     if (code.includes('</head>')) {
       code = code.replace('</head>', `${reactHooksScript}\n</head>`);
     }
-    
-    // Inject badge before </body>
-    if (badgeHtml) {
-      if (code.includes('</body>')) {
-        code = code.replace('</body>', `${badgeHtml}\n</body>`);
-      } else if (code.includes('</html>')) {
-        code = code.replace('</html>', `${badgeHtml}\n</html>`);
-      } else {
-        code = code + badgeHtml;
+
+    // CRITICAL: Alpine.js initialization script (MUST match preview behavior)
+    // Fixes: mobile menu visible on desktop, broken multi-page navigation, overlapping elements
+    const alpineInitScript = `<script>
+(function() {
+  function initAlpineDefaults() {
+    try {
+      var root = document.querySelector('[x-data]');
+      if (root && root._x_dataStack && root._x_dataStack[0]) {
+        var data = root._x_dataStack[0];
+
+        // Ensure mobile menu starts CLOSED (fixes mobile menu on desktop)
+        if (data.mobileMenuOpen !== undefined) data.mobileMenuOpen = false;
+        if (data.menuOpen !== undefined) data.menuOpen = false;
+        if (data.isMenuOpen !== undefined) data.isMenuOpen = false;
+        if (data.showMenu !== undefined) data.showMenu = false;
+
+        // Set default page to home/first (fixes multi-page navigation)
+        if (data.currentPage !== undefined && !data.currentPage) data.currentPage = 'home';
+        if (data.page !== undefined && !data.page) data.page = 'home';
+        if (data.activeTab !== undefined && !data.activeTab) data.activeTab = 'home';
+        if (data.activeView !== undefined && !data.activeView) data.activeView = 'home';
+
+        console.log('Alpine defaults set:', data);
       }
+    } catch (e) {
+      console.log('Alpine init error:', e);
+    }
+  }
+
+  // Run on Alpine.js events (most reliable)
+  document.addEventListener('alpine:init', initAlpineDefaults);
+  document.addEventListener('alpine:initialized', initAlpineDefaults);
+
+  // Run on page load (backup)
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(initAlpineDefaults, 50);
+    setTimeout(initAlpineDefaults, 200);
+  } else {
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(initAlpineDefaults, 50);
+      setTimeout(initAlpineDefaults, 200);
+    });
+  }
+})();
+</script>`;
+
+    // Inject Alpine init script + badge before </body>
+    if (code.includes('</body>')) {
+      code = code.replace('</body>', `${alpineInitScript}\n${badgeHtml}\n</body>`);
+    } else if (code.includes('</html>')) {
+      code = code.replace('</html>', `${alpineInitScript}\n${badgeHtml}\n</html>`);
+    } else {
+      code = code + alpineInitScript + badgeHtml;
     }
     
     fullHtml = code;
@@ -628,6 +672,49 @@ export async function GET(
 </head>
 <body${bodyClasses ? ` class="${bodyClasses}"` : ''}>
 ${htmlContent}
+<script>
+(function() {
+  function initAlpineDefaults() {
+    try {
+      var root = document.querySelector('[x-data]');
+      if (root && root._x_dataStack && root._x_dataStack[0]) {
+        var data = root._x_dataStack[0];
+
+        // Ensure mobile menu starts CLOSED (fixes mobile menu on desktop)
+        if (data.mobileMenuOpen !== undefined) data.mobileMenuOpen = false;
+        if (data.menuOpen !== undefined) data.menuOpen = false;
+        if (data.isMenuOpen !== undefined) data.isMenuOpen = false;
+        if (data.showMenu !== undefined) data.showMenu = false;
+
+        // Set default page to home/first (fixes multi-page navigation)
+        if (data.currentPage !== undefined && !data.currentPage) data.currentPage = 'home';
+        if (data.page !== undefined && !data.page) data.page = 'home';
+        if (data.activeTab !== undefined && !data.activeTab) data.activeTab = 'home';
+        if (data.activeView !== undefined && !data.activeView) data.activeView = 'home';
+
+        console.log('Alpine defaults set:', data);
+      }
+    } catch (e) {
+      console.log('Alpine init error:', e);
+    }
+  }
+
+  // Run on Alpine.js events (most reliable)
+  document.addEventListener('alpine:init', initAlpineDefaults);
+  document.addEventListener('alpine:initialized', initAlpineDefaults);
+
+  // Run on page load (backup)
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(initAlpineDefaults, 50);
+    setTimeout(initAlpineDefaults, 200);
+  } else {
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(initAlpineDefaults, 50);
+      setTimeout(initAlpineDefaults, 200);
+    });
+  }
+})();
+</script>
 ${badgeHtml}
 </body>
 </html>`;
