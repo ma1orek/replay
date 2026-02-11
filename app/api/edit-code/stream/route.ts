@@ -1154,23 +1154,11 @@ function findOriginalRange(code: string, search: string): { start: number; end: 
     }
   }
 
-  // Strategy 3: Fuzzy line match
-  for (let i = 0; i <= codeLines.length - searchLines.length; i++) {
-    const { match, endIdx } = fuzzyLineMatch(codeLines, searchLines, i);
-    if (match) {
-      const startChar = codeLines.slice(0, i).join('\n').length + (i > 0 ? 1 : 0);
-      const endChar = codeLines.slice(0, endIdx + 1).join('\n').length;
-      return { start: startChar, end: endChar };
-    }
-  }
+  // Strategy 3: DISABLED - Fuzzy matching was causing wrong matches and breaking pages
+  // Use Full HTML mode instead for complex edits
 
-  // Strategy 4: Anchor match
-  const anchors = anchorMatch(codeLines, searchLines);
-  if (anchors) {
-    const startChar = codeLines.slice(0, anchors.startIdx).join('\n').length + (anchors.startIdx > 0 ? 1 : 0);
-    const endChar = codeLines.slice(0, anchors.endIdx + 1).join('\n').length;
-    return { start: startChar, end: endChar };
-  }
+  // Strategy 4: DISABLED - Anchor matching also unreliable
+  // If exact/normalized fails, fallback to Full HTML mode
 
   return null;
 }
@@ -1337,6 +1325,12 @@ function selectEditMode(editRequest: string, currentCode: string, isImageEdit: b
   if (requestLower.includes('new page') || requestLower.includes('nowa strona')) return 'full-html';
   if (requestLower.includes('global') || requestLower.includes('całkowit') || requestLower.includes('everywhere')) return 'full-html';
   if (currentCode.length < 2000) return 'full-html'; // Short code = easier to regenerate
+
+  // Large/complex changes → Full HTML (fuzzy matching disabled, safer to regenerate)
+  if (requestLower.includes('replace') && requestLower.includes('animation')) return 'full-html';
+  if (requestLower.includes('remove') || requestLower.includes('delete') || requestLower.includes('usuń')) return 'full-html';
+  if (requestLower.includes('redesign') || requestLower.includes('rebuild') || requestLower.includes('recreate')) return 'full-html';
+  if (editRequest.split(' ').length > 15) return 'full-html'; // Long request = complex change
 
   // Default: SEARCH/REPLACE mode (safer, faster, more precise)
   return 'search-replace';
