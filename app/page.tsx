@@ -128,7 +128,8 @@ import {
   TextCursorInput,
   Compass,
   Table,
-  PanelTop
+  PanelTop,
+  Wand2,
 } from "lucide-react";
 import * as LucideIcons from 'lucide-react';
 import { cn, generateId, formatDuration, updateProjectAnalytics } from "@/lib/utils";
@@ -3216,7 +3217,7 @@ function ReplayToolContent() {
   
   // Initialize to empty string to avoid hydration mismatch
   const [styleDirective, setStyleDirective] = useState("");
-  const [creativityLevel, setCreativityLevel] = useState<number>(0); // 0=Exact, 50=Enhanced, 100=Creative
+  const [generationMode, setGenerationMode] = useState<"reconstruct" | "reimagine">("reconstruct");
 
   // Enterprise removed - using system-prompt.ts only for premium styling
   
@@ -4622,6 +4623,60 @@ ${processedCode}
       } else if (processedCode.includes('<body')) {
         processedCode = processedCode.replace(/<body/, `${foucFix}\n<body`);
       }
+    }
+
+    // CRITICAL: Alpine.js initialization script (MUST match published page behavior)
+    // Fixes: mobile menu visible on desktop, broken multi-page navigation, overlapping elements
+    const alpineInitScript = `
+<script>
+(function() {
+  function initAlpineDefaults() {
+    try {
+      var root = document.querySelector('[x-data]');
+      if (root && root._x_dataStack && root._x_dataStack[0]) {
+        var data = root._x_dataStack[0];
+
+        // Ensure mobile menu starts CLOSED (fixes mobile menu on desktop)
+        if (data.mobileMenuOpen !== undefined) data.mobileMenuOpen = false;
+        if (data.menuOpen !== undefined) data.menuOpen = false;
+        if (data.isMenuOpen !== undefined) data.isMenuOpen = false;
+        if (data.showMenu !== undefined) data.showMenu = false;
+
+        // Set default page to home/first (fixes multi-page navigation)
+        if (data.currentPage !== undefined && !data.currentPage) data.currentPage = 'home';
+        if (data.page !== undefined && !data.page) data.page = 'home';
+        if (data.activeTab !== undefined && !data.activeTab) data.activeTab = 'home';
+        if (data.activeView !== undefined && !data.activeView) data.activeView = 'home';
+
+        console.log('Alpine defaults set:', data);
+      }
+    } catch (e) {
+      console.log('Alpine init error:', e);
+    }
+  }
+
+  // Run on Alpine.js events (most reliable)
+  document.addEventListener('alpine:init', initAlpineDefaults);
+  document.addEventListener('alpine:initialized', initAlpineDefaults);
+
+  // Run on page load (backup)
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(initAlpineDefaults, 50);
+    setTimeout(initAlpineDefaults, 200);
+  } else {
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(initAlpineDefaults, 50);
+      setTimeout(initAlpineDefaults, 200);
+    });
+  }
+})();
+</script>`;
+
+    // Inject Alpine init script before </body>
+    if (processedCode.includes('</body>')) {
+      processedCode = processedCode.replace('</body>', alpineInitScript + '\n</body>');
+    } else {
+      processedCode = processedCode + alpineInitScript;
     }
 
     const codeWithHandler = injectAssetClickHandler(processedCode);
@@ -6253,6 +6308,7 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
   // Save active generation to Supabase when complete
   // Track failed saves to prevent spam
   const failedSavesRef = useRef<Set<string>>(new Set());
+  const skipPersistRef = useRef(false); // Skip persistence effect during version restore
   
   const saveGenerationToSupabase = useCallback(async (gen: GenerationRecord) => {
     if (!user) {
@@ -6357,7 +6413,9 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
   // Update active generation when code/flow changes (for persistence)
   useEffect(() => {
     if (!activeGeneration || !generatedCode || !generationComplete) return;
-    
+    // Skip during version restore to prevent race condition / stale overwrites
+    if (skipPersistRef.current) return;
+
     // Update the active generation with latest state
     const updatedGen: GenerationRecord = {
       ...activeGeneration,
@@ -6370,10 +6428,12 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
       status: "complete",
       // Persist component library data
       libraryData: libraryData,
+      // Explicitly preserve versions array
+      versions: activeGeneration.versions || [],
     };
-    
+
     setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
-    
+
     // Sync to Supabase
     saveGenerationToSupabase(updatedGen);
   }, [generatedCode, flowNodes, flowEdges, styleInfo, styleDirective, generationTitle, generationComplete, activeGeneration?.id, saveGenerationToSupabase, libraryData]);
@@ -9812,28 +9872,31 @@ Try these prompts in Cursor or v0:
   const restoreVersion = useCallback((genId: string, version: GenerationVersion) => {
     console.log('[restoreVersion] Called with genId:', genId, 'version:', version.label);
     console.log('[restoreVersion] Version code length:', version.code?.length || 0);
-    console.log('[restoreVersion] Version code first 100 chars:', version.code?.substring(0, 100));
-    
+
     const gen = generations.find(g => g.id === genId);
     if (!gen) {
       console.error('[restoreVersion] Generation not found:', genId);
       showToast("Failed to restore - generation not found", "error");
       return;
     }
-    
+
     // Check if version has code
     if (!version.code || version.code.length < 50) {
       console.error('[restoreVersion] Version has no/invalid code');
       showToast("Failed to restore - version code is missing", "error");
       return;
     }
-    
+
+    // CRITICAL: Block the persistence effect from firing during restore
+    // Otherwise it reads stale activeGeneration and overwrites Supabase with corrupted data
+    skipPersistRef.current = true;
+
     // Save current state as a version before restoring (with descriptive name)
     if (activeGeneration?.id === genId && generatedCode && generatedCode !== version.code) {
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       saveVersion(`Snapshot @ ${timeStr} (before "${version.label.slice(0, 20)}${version.label.length > 20 ? '...' : ''}")`);
     }
-    
+
     // Restore the version
     console.log('[restoreVersion] Setting code states...');
     setGeneratedCode(version.code);
@@ -9842,8 +9905,8 @@ Try these prompts in Cursor or v0:
     setFlowNodes(version.flowNodes || []);
     setFlowEdges(version.flowEdges || []);
     if (version.styleInfo) setStyleInfo(version.styleInfo);
-    
-    // CRITICAL: Also update activeGeneration so UI reflects the change
+
+    // CRITICAL: Update activeGeneration with restored code while PRESERVING versions
     setActiveGeneration(prev => {
       if (!prev || prev.id !== genId) return prev;
       return {
@@ -9852,35 +9915,46 @@ Try these prompts in Cursor or v0:
         flowNodes: version.flowNodes || prev.flowNodes,
         flowEdges: version.flowEdges || prev.flowEdges,
         styleInfo: version.styleInfo || prev.styleInfo,
+        // versions already preserved from ...prev spread
       };
     });
-    
-    // Also update in generations list
-    const updatedGen = {
-      ...(generations.find(g => g.id === genId) || gen),
-      code: version.code,
-      flowNodes: version.flowNodes || gen.flowNodes,
-      flowEdges: version.flowEdges || gen.flowEdges,
-      styleInfo: version.styleInfo || gen.styleInfo,
-    };
-    
-    setGenerations(prev => prev.map(g => g.id === genId ? updatedGen : g));
-    
-    // Save restored version to Supabase OUTSIDE of setState
-    if (user) {
+
+    // Use functional updater to get LATEST generations state (includes snapshot from saveVersion)
+    // This avoids the stale closure bug where generations read from closure missed the snapshot
+    let genForSupabase: GenerationRecord | null = null;
+    setGenerations(prev => {
+      return prev.map(g => {
+        if (g.id !== genId) return g;
+        const updated = {
+          ...g, // Gets latest state including versions from saveVersion
+          code: version.code,
+          flowNodes: version.flowNodes || g.flowNodes,
+          flowEdges: version.flowEdges || g.flowEdges,
+          styleInfo: version.styleInfo || g.styleInfo,
+        };
+        genForSupabase = updated;
+        return updated;
+      });
+    });
+
+    // Save to Supabase after functional updater captures latest state
+    if (user && genForSupabase) {
       console.log('[restoreVersion] Saving to Supabase');
-      saveGenerationToSupabase(updatedGen);
+      saveGenerationToSupabase(genForSupabase);
     }
-    
+
+    // Re-enable persistence effect after React processes all state updates
+    requestAnimationFrame(() => {
+      skipPersistRef.current = false;
+    });
+
     // Update preview - revoke old URL and create new one immediately
-    console.log('[restoreVersion] Creating preview URL...');
     if (previewUrl) {
       try { URL.revokeObjectURL(previewUrl); } catch {}
     }
     const newPreviewUrl = createPreviewUrl(version.code);
-    console.log('[restoreVersion] New preview URL:', newPreviewUrl?.substring(0, 50));
     setPreviewUrl(newPreviewUrl);
-    
+
     // Switch to preview mode to show the restored version
     setViewMode("preview");
     showToast(`Restored to: ${version.label}`, "success");
@@ -9977,7 +10051,6 @@ Try these prompts in Cursor or v0:
     setChatMessages([]);
     setStyleDirective(""); // Reset to Auto-Detect for fresh generation
     setStyleReferenceImage(null);
-    setCreativityLevel(0); // Reset creativity to Exact for new project
 
     const flowId = `flow_${Date.now()}`;
     const newFlow: FlowItem = {
@@ -10656,38 +10729,38 @@ Try these prompts in Cursor or v0:
     styleDirective: string,
     databaseContext?: string,
     styleReferenceImage?: { url: string; base64?: string },
-    streamCreativityLevel?: number
+    streamVideoUrl?: string,
+    genMode?: "reconstruct" | "reimagine"
   ): Promise<{ success: boolean; code?: string; error?: string; tokenUsage?: any; scanData?: any }> => {
     try {
-      // Convert video blob to base64
       setStreamingStatus("Preparing video for AI...");
       setStreamingCode(null);
       setStreamingLines(0);
-      
-      const videoBase64 = await blobToBase64(videoBlob);
+
       const mimeType = videoBlob.type || "video/mp4";
-      
       const videoSizeMB = videoBlob.size / (1024 * 1024);
-      console.log(`[streaming] Video size: ${videoSizeMB.toFixed(2)}MB`);
-      
+      console.log(`[streaming] Video size: ${videoSizeMB.toFixed(2)}MB, URL mode: ${!!streamVideoUrl}`);
+
+      // For large videos, send URL instead of base64 (server fetches it)
+      let requestBody: Record<string, unknown>;
+      if (streamVideoUrl) {
+        console.log("[streaming] Using URL mode - server will fetch video");
+        requestBody = { videoUrl: streamVideoUrl, mimeType, styleDirective, databaseContext, styleReferenceImage, generationMode: genMode || "reconstruct" };
+      } else {
+        const videoBase64 = await blobToBase64(videoBlob);
+        requestBody = { videoBase64, mimeType, styleDirective, databaseContext, styleReferenceImage, generationMode: genMode || "reconstruct" };
+      }
+
       setStreamingStatus("Connecting to AI...");
-      
+
       // Call streaming endpoint
-      // Create AbortController for timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 280000); // 280s timeout (just under Vercel's 300s)
-      
+
       const response = await fetch("/api/generate/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          videoBase64,
-          mimeType,
-          styleDirective,
-          databaseContext,
-          styleReferenceImage,
-          creativityLevel: streamCreativityLevel,
-        }),
+        body: JSON.stringify(requestBody),
         signal: controller.signal,
       });
       
@@ -11479,9 +11552,9 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
       console.log("[Generate] effectiveStyleRefImage:", isDSStyleSelected ? "DISABLED (DS style)" : (effectiveStyleRefImage ? "provided" : "none"));
       
       // Use STREAMING for real-time AI output when we have a video blob
-      let result: { success: boolean; code?: string; error?: string; tokenUsage?: any; scanData?: any };
+      let result: { success: boolean; code?: string; error?: string; tokenUsage?: any; scanData?: any } = { success: false, error: "Generation did not complete" };
       let videoBlobToUse = flow.videoBlob;
-      
+
       // If blob is empty but we have a URL, fetch the video first
       if ((!videoBlobToUse || videoBlobToUse.size === 0) && flow.videoUrl) {
         console.log("[Generate] Blob empty, fetching video from URL:", flow.videoUrl);
@@ -11496,58 +11569,28 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
           console.error("[Generate] Failed to fetch video:", fetchError);
         }
       }
-      
+
       if (videoBlobToUse && videoBlobToUse.size > 0) {
         const videoSizeMB = videoBlobToUse.size / (1024 * 1024);
-        const STREAMING_SIZE_LIMIT_MB = 3; // Vercel limit is 4.5MB, but base64 adds ~33%, so 3MB raw = ~4MB base64
-        
-        // SMART ROUTING: Skip streaming for large videos, go directly to server action
-        if (videoSizeMB > STREAMING_SIZE_LIMIT_MB) {
-          console.log(`[Generate] Video ${videoSizeMB.toFixed(2)}MB > ${STREAMING_SIZE_LIMIT_MB}MB limit, using SERVER ACTION directly`);
-          setStreamingStatus("🚀 Processing large video via server...");
-          setStreamingCode(null);
-          setStreamingLines(0);
-          
-          result = await transmuteVideoToCode({
-            videoUrl,
-            styleDirective: fullStyleDirective,
-            databaseContext: databaseContextStr || undefined,
-            styleReferenceImage: effectiveStyleRefImage || undefined,
-            creativityLevel,
-          });
-          if (!result) {
-            result = { success: false, error: "Server timed out (504). Video may be too large or complex. Try a shorter recording." };
-          }
-          console.log("[Generate] Server action completed:", result?.success ? "success" : result?.error);
-        } else {
-          // Small video - use streaming for real-time output
-          console.log(`[Generate] Video ${videoSizeMB.toFixed(2)}MB < ${STREAMING_SIZE_LIMIT_MB}MB limit, using STREAMING mode`);
-          try {
-            result = await generateWithStreaming(
-              videoBlobToUse,
-              fullStyleDirective,
-              databaseContextStr || undefined,
-              effectiveStyleRefImage || undefined,
-              creativityLevel
-            );
-            
-            // If streaming failed for other reasons, fallback to server action
-            if (!result || !result.success) {
-              console.log("[Generate] Streaming failed, falling back to server action:", result?.error);
-              setStreamingStatus("🔄 Switching to server processing...");
-              result = await transmuteVideoToCode({
-                videoUrl,
-                styleDirective: fullStyleDirective,
-                databaseContext: databaseContextStr || undefined,
-                styleReferenceImage: effectiveStyleRefImage || undefined,
-              });
-              if (!result) {
-                result = { success: false, error: "Server timed out (504). Video may be too large or complex. Try a shorter recording." };
-              }
-              console.log("[Generate] Server action completed:", result.success ? "success" : result.error);
-            }
-          } catch (streamError: any) {
-            console.error("[Generate] Streaming error, using fallback:", streamError);
+        const STREAMING_BASE64_LIMIT_MB = 3; // Vercel body limit is 4.5MB; 3MB raw = ~4MB base64
+
+        // ALL videos use streaming now! Large videos send URL (server fetches), small send base64
+        const useUrlMode = videoSizeMB > STREAMING_BASE64_LIMIT_MB;
+        console.log(`[Generate] Video ${videoSizeMB.toFixed(2)}MB, streaming mode: ${useUrlMode ? 'URL' : 'base64'}`);
+
+        try {
+          result = await generateWithStreaming(
+            videoBlobToUse,
+            fullStyleDirective,
+            databaseContextStr || undefined,
+            effectiveStyleRefImage || undefined,
+            useUrlMode ? videoUrl : undefined,
+            generationMode
+          );
+
+          // If streaming failed for other reasons, fallback to server action
+          if (!result || !result.success) {
+            console.log("[Generate] Streaming failed, falling back to server action:", result?.error);
             setStreamingStatus("🔄 Switching to server processing...");
             result = await transmuteVideoToCode({
               videoUrl,
@@ -11560,18 +11603,41 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
             }
             console.log("[Generate] Server action completed:", result.success ? "success" : result.error);
           }
+        } catch (streamError: any) {
+          console.error("[Generate] Streaming error, using fallback:", streamError);
+          setStreamingStatus("🔄 Switching to server processing...");
+          try {
+            result = await transmuteVideoToCode({
+              videoUrl,
+              styleDirective: fullStyleDirective,
+              databaseContext: databaseContextStr || undefined,
+              styleReferenceImage: effectiveStyleRefImage || undefined,
+            });
+            if (!result) {
+              result = { success: false, error: "Server timed out (504). Video may be too large or complex. Try a shorter recording." };
+            }
+          } catch (fallbackError: any) {
+            console.error("[Generate] Fallback also failed:", fallbackError);
+            result = { success: false, error: "Both generation methods failed. Please try again." };
+          }
+          console.log("[Generate] Fallback completed:", result.success ? "success" : result.error);
         }
       } else {
         // Fallback to server action for URL-only cases
         console.log("[Generate] Using server action (no blob available)");
-        result = await transmuteVideoToCode({
-          videoUrl,
-          styleDirective: fullStyleDirective,
-          databaseContext: databaseContextStr || undefined,
-          styleReferenceImage: effectiveStyleRefImage || undefined,
-        });
-        if (!result) {
-          result = { success: false, error: "Server timed out (504). Video may be too large or complex. Try a shorter recording." };
+        try {
+          result = await transmuteVideoToCode({
+            videoUrl,
+            styleDirective: fullStyleDirective,
+            databaseContext: databaseContextStr || undefined,
+            styleReferenceImage: effectiveStyleRefImage || undefined,
+          });
+          if (!result) {
+            result = { success: false, error: "Server timed out (504). Video may be too large or complex. Try a shorter recording." };
+          }
+        } catch (fallbackError: any) {
+          console.error("[Generate] Server action failed:", fallbackError);
+          result = { success: false, error: "Generation failed. Please try again." };
         }
       }
       
@@ -11582,8 +11648,8 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
       console.log("Generation result:", result);
       
       if (result && result.success && result.code) {
-        // Track analytics
-        updateProjectAnalytics(flow.id, "generation", result.tokenUsage?.totalTokens);
+        // Track analytics (non-critical — must not crash generation flow)
+        try { updateProjectAnalytics(flow.id, "generation", result.tokenUsage?.totalTokens); } catch (e) { console.warn("[Analytics] Failed:", e); }
         
         // Save scanData from Multi-Pass Pipeline (Source of Truth for all other generators)
         if (result.scanData) {
@@ -12086,58 +12152,66 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
         prompt = `For the @${selectedArchNode} element: ${editInput}`;
       }
       
-      // Process images - use Supabase URLs directly, convert blob URLs to base64
+      // Process images — ensure all have real CDN URLs (not blob URLs)
       let imageData: { base64?: string; url?: string; mimeType: string; name: string }[] = [];
       if (editImages.length > 0) {
         console.log('[handleEdit] Processing', editImages.length, 'images');
         for (const img of editImages) {
           try {
-            // Check if it's a Supabase URL (public URL)
+            let realUrl = '';
+
+            // Check if it already has a Supabase URL
             if (img.url.startsWith('https://') && !img.url.startsWith('blob:')) {
-              // Use URL directly
-              console.log('[handleEdit] Using Supabase URL:', img.url);
-              imageData.push({
-                url: img.url,
-                mimeType: 'image/png',
-                name: img.name,
-              });
-            } else {
-              // Convert blob URL to base64
-              let blob: Blob;
-              if (img.file) {
-                blob = img.file;
-              } else {
-                const response = await fetch(img.url);
-                blob = await response.blob();
+              realUrl = img.url;
+              console.log('[handleEdit] Using existing Supabase URL:', realUrl);
+            } else if (img.file) {
+              // Blob URL — upload to Supabase right now to get a real CDN URL
+              console.log('[handleEdit] Image has blob URL, uploading to Supabase now...');
+              try {
+                const formData = new FormData();
+                formData.append("file", img.file);
+                formData.append("userId", user?.id || "anon");
+                const uploadRes = await fetch("/api/upload-image", { method: "POST", body: formData });
+                const uploadData = await uploadRes.json();
+                if (uploadData.success && uploadData.url) {
+                  realUrl = uploadData.url;
+                  console.log('[handleEdit] Uploaded blob to Supabase:', realUrl);
+                  // Update editImages state so the URL is correct going forward
+                  setEditImages(prev => prev.map(i => i.id === img.id ? { ...i, url: realUrl, uploading: false } : i));
+                }
+              } catch (uploadErr) {
+                console.error('[handleEdit] Failed to upload blob image:', uploadErr);
               }
-              const base64 = await new Promise<string>((resolve, reject) => {
+            }
+
+            // Always convert to base64 for Gemini vision (AI needs to "see" the image)
+            let base64 = '';
+            let mimeType = 'image/png';
+            try {
+              const blob: Blob = img.file ? img.file as Blob : await fetch(img.url).then(r => r.blob());
+              mimeType = (blob as File).type || 'image/png';
+              base64 = await new Promise<string>((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onloadend = () => {
                   const result = reader.result as string;
                   if (result) {
-                    // Handle mimeTypes that might contain commas (e.g., codecs)
-                    const base64Marker = ";base64,";
-                    const base64Index = result.indexOf(base64Marker);
-                    if (base64Index !== -1) {
-                      resolve(result.substring(base64Index + base64Marker.length));
-                    } else {
-                      const commaIndex = result.indexOf(",");
-                      resolve(commaIndex !== -1 ? result.substring(commaIndex + 1) : '');
-                    }
-                  } else {
-                    reject(new Error('Invalid base64 result'));
-                  }
+                    const marker = ";base64,";
+                    const idx = result.indexOf(marker);
+                    resolve(idx !== -1 ? result.substring(idx + marker.length) : (result.indexOf(",") !== -1 ? result.substring(result.indexOf(",") + 1) : ''));
+                  } else reject(new Error('No result'));
                 };
                 reader.onerror = () => reject(reader.error);
                 reader.readAsDataURL(blob);
               });
-              if (base64 && base64.length > 100) {
-                imageData.push({
-                  base64,
-                  mimeType: blob.type || 'image/png',
-                  name: img.name,
-                });
-              }
+            } catch {}
+
+            if (realUrl || (base64 && base64.length > 100)) {
+              imageData.push({
+                ...(realUrl ? { url: realUrl } : {}),
+                ...(base64 && base64.length > 100 ? { base64 } : {}),
+                mimeType,
+                name: img.name,
+              });
             }
           } catch (e) {
             console.error('Failed to process image:', img.name, e);
@@ -12170,9 +12244,9 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
       if (result.success && result.code && result.code.length > 0) {
         console.log('[handleEdit] SUCCESS - Applying code changes...');
         
-        // Track analytics
+        // Track analytics (non-critical)
         if (activeGeneration) {
-          updateProjectAnalytics(activeGeneration.id, "edit");
+          try { updateProjectAnalytics(activeGeneration.id, "edit"); } catch (e) { console.warn("[Analytics] Failed:", e); }
         }
         
         // Save current state as a version before applying changes
@@ -12711,9 +12785,9 @@ ${publishCode}
           // This prevents quota issues from multiple save attempts
         }
         
-        // Track export analytics
+        // Track export analytics (non-critical)
         if (activeGeneration && !data.updated) {
-          updateProjectAnalytics(activeGeneration.id, "export");
+          try { updateProjectAnalytics(activeGeneration.id, "export"); } catch (e) { console.warn("[Analytics] Failed:", e); }
         }
         
         showToast(data.updated ? "Project updated!" : "Project published!", "success");
@@ -14061,47 +14135,57 @@ ${publishCode}
                                           onClick={async (e) => {
                                             e.stopPropagation();
                                             // Restore to initial generation
-                                            // Use activeGeneration code if same project (already loaded), otherwise load it
-                                            let codeToRestore = gen.code;
-                                            let flowNodesToRestore = gen.flowNodes;
-                                            let flowEdgesToRestore = gen.flowEdges;
-                                            let styleInfoToRestore = gen.styleInfo;
-                                            
-                                            if (!codeToRestore || codeToRestore.length < 50) {
-                                              // Try to use activeGeneration if it's the same project
-                                              if (activeGeneration?.id === gen.id && activeGeneration.code) {
-                                                // Find initial version in versions array
-                                                const initialVersion = (activeGeneration.versions || []).find(v => v.label === 'Initial generation');
-                                                if (initialVersion?.code) {
-                                                  codeToRestore = initialVersion.code;
-                                                  flowNodesToRestore = initialVersion.flowNodes;
-                                                  flowEdgesToRestore = initialVersion.flowEdges;
-                                                  styleInfoToRestore = initialVersion.styleInfo;
-                                                } else {
-                                                  // No initial version saved, but we have active code - this shouldn't restore
-                                                  showToast("Initial version not saved - cannot restore", "error");
-                                                  return;
-                                                }
-                                              } else {
-                                                // Load full data from server
-                                                showToast("Loading version data...", "info");
-                                                const fullGen = await loadFullGeneration(gen.id);
-                                                if (!fullGen?.code) {
-                                                  showToast("Failed to load version data", "error");
-                                                  return;
-                                                }
-                                                codeToRestore = fullGen.code;
-                                                flowNodesToRestore = fullGen.flowNodes;
-                                                flowEdgesToRestore = fullGen.flowEdges;
-                                                styleInfoToRestore = fullGen.styleInfo;
+                                            // ALWAYS look in versions array first — gen.code is the CURRENT (edited) code, not the original
+                                            let codeToRestore = '';
+                                            let flowNodesToRestore: ProductFlowNode[] = [];
+                                            let flowEdgesToRestore: ProductFlowEdge[] = [];
+                                            let styleInfoToRestore: StyleInfo | null = null;
+
+                                            // 1. Check gen.versions for "Initial generation" entry
+                                            const initFromGen = (gen.versions || []).find(v => v.label === 'Initial generation');
+                                            if (initFromGen?.code && initFromGen.code.length >= 50) {
+                                              codeToRestore = initFromGen.code;
+                                              flowNodesToRestore = initFromGen.flowNodes || [];
+                                              flowEdgesToRestore = initFromGen.flowEdges || [];
+                                              styleInfoToRestore = initFromGen.styleInfo || null;
+                                            }
+
+                                            // 2. Check activeGeneration.versions (may have newer data in memory)
+                                            if ((!codeToRestore || codeToRestore.length < 50) && activeGeneration?.id === gen.id) {
+                                              const initFromActive = (activeGeneration.versions || []).find(v => v.label === 'Initial generation');
+                                              if (initFromActive?.code && initFromActive.code.length >= 50) {
+                                                codeToRestore = initFromActive.code;
+                                                flowNodesToRestore = initFromActive.flowNodes || [];
+                                                flowEdgesToRestore = initFromActive.flowEdges || [];
+                                                styleInfoToRestore = initFromActive.styleInfo || null;
                                               }
                                             }
-                                            
-                                            restoreVersion(gen.id, { 
-                                              id: 'initial', 
-                                              timestamp: gen.timestamp, 
+
+                                            // 3. Load full data from server as last resort
+                                            if (!codeToRestore || codeToRestore.length < 50) {
+                                              showToast("Loading version data...", "info");
+                                              const fullGen = await loadFullGeneration(gen.id);
+                                              if (fullGen) {
+                                                const initFromServer = (fullGen.versions || []).find(v => v.label === 'Initial generation');
+                                                if (initFromServer?.code && initFromServer.code.length >= 50) {
+                                                  codeToRestore = initFromServer.code;
+                                                  flowNodesToRestore = initFromServer.flowNodes || [];
+                                                  flowEdgesToRestore = initFromServer.flowEdges || [];
+                                                  styleInfoToRestore = initFromServer.styleInfo || null;
+                                                }
+                                              }
+                                            }
+
+                                            if (!codeToRestore || codeToRestore.length < 50) {
+                                              showToast("Initial version not saved - cannot restore", "error");
+                                              return;
+                                            }
+
+                                            restoreVersion(gen.id, {
+                                              id: 'initial',
+                                              timestamp: gen.timestamp,
                                               label: 'Initial generation',
-                                              code: codeToRestore || '',
+                                              code: codeToRestore,
                                               flowNodes: flowNodesToRestore,
                                               flowEdges: flowEdgesToRestore,
                                               styleInfo: styleInfoToRestore
@@ -16056,35 +16140,35 @@ ${publishCode}
                     />
                   </div>
 
-                  {/* Creativity Slider */}
-                  <div className="px-4 py-3 border-b border-white/[0.06]">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="sidebar-label text-[11px] font-semibold text-white/40 uppercase tracking-wider flex items-center gap-2">
-                        <Sparkles className="w-3.5 h-3.5" /> CREATIVITY
-                      </span>
-                      <span className="text-[10px] font-medium text-white/50">
-                        {creativityLevel === 0 ? "Exact" : creativityLevel <= 33 ? "Enhanced" : creativityLevel <= 66 ? "Creative" : "Maximum"}
-                      </span>
+                  {/* MODE Toggle */}
+                  <div className="px-4 pt-3 pb-1">
+                    <div className="flex rounded-lg bg-zinc-800/60 border border-white/[0.06] p-0.5">
+                      <button
+                        onClick={() => setGenerationMode("reconstruct")}
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-[11px] font-medium transition-all ${
+                          generationMode === "reconstruct"
+                            ? "bg-zinc-700/80 text-white/90 shadow-sm"
+                            : "text-white/30 hover:text-white/50"
+                        }`}
+                      >
+                        <Copy className="w-3 h-3" />
+                        Reconstruct
+                      </button>
+                      <button
+                        onClick={() => setGenerationMode("reimagine")}
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-[11px] font-medium transition-all ${
+                          generationMode === "reimagine"
+                            ? "bg-zinc-700/80 text-white/90 shadow-sm"
+                            : "text-white/30 hover:text-white/50"
+                        }`}
+                      >
+                        <Wand2 className="w-3 h-3" />
+                        Reimagine
+                      </button>
                     </div>
-                    <div className="relative">
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={creativityLevel}
-                        onChange={(e) => setCreativityLevel(Number(e.target.value))}
-                        disabled={isProcessing}
-                        className="w-full h-1.5 rounded-full appearance-none cursor-pointer disabled:opacity-50 bg-zinc-800 creativity-slider"
-                        style={{
-                          background: `linear-gradient(to right, #FF6E3C ${creativityLevel}%, #27272a ${creativityLevel}%)`,
-                        }}
-                      />
-                      <div className="flex justify-between mt-1.5">
-                        <span className="text-[9px] text-white/30">Faithful</span>
-                        <span className="text-[9px] text-white/30">Creative</span>
-                      </div>
-                    </div>
+                    <p className="text-[10px] text-white/20 text-center mt-1.5">
+                      {generationMode === "reconstruct" ? "Exact layout & structure" : "Creative layout, same content"}
+                    </p>
                   </div>
 
                   {/* Generate Button */}
@@ -16098,11 +16182,14 @@ ${publishCode}
                       borderRadius="9999px"
                       className="w-full py-3.5 text-[13px] font-semibold disabled:opacity-50"
                     >
-                      <LogoIcon className="w-4 h-4 mr-2" color="white" />
-                      <span className="text-white font-semibold">Reconstruct</span>
+                      {isProcessing ? (
+                        <><Loader2 className="w-4 h-4 animate-spin mr-2" /><span className="text-white">{generationMode === "reimagine" ? "Reimagining..." : "Reconstructing..."}</span></>
+                      ) : (
+                        <><LogoIcon className="w-4 h-4 mr-2" color="white" /><span className="text-white font-semibold">{generationMode === "reimagine" ? "Reimagine" : "Reconstruct"}</span></>
+                      )}
                     </ShimmerButton>
                   </div>
-                  
+
                   {/* Database Section */}
                   <div className="p-4 border-b border-white/[0.06]">
                     <div className="sidebar-label text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3 flex items-center justify-between">
@@ -16317,9 +16404,9 @@ ${publishCode}
                   <Palette className="w-3.5 h-3.5" /> STYLE
                 </div>
                 
-                <StyleInjector 
-                  value={styleDirective} 
-                  onChange={setStyleDirective} 
+                <StyleInjector
+                  value={styleDirective}
+                  onChange={setStyleDirective}
                   disabled={isProcessing}
                   referenceImage={styleReferenceImage}
                   onReferenceImageChange={setStyleReferenceImage}
@@ -16327,6 +16414,37 @@ ${publishCode}
                   onImportClick={() => setShowImportLibraryModal(true)}
                   onDeleteDS={handleDeleteDS}
                 />
+              </div>
+
+              {/* MODE Toggle */}
+              <div className="px-4 pt-3 pb-1">
+                <div className="flex rounded-lg bg-zinc-800/60 border border-white/[0.06] p-0.5">
+                  <button
+                    onClick={() => setGenerationMode("reconstruct")}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-[11px] font-medium transition-all ${
+                      generationMode === "reconstruct"
+                        ? "bg-zinc-700/80 text-white/90 shadow-sm"
+                        : "text-white/30 hover:text-white/50"
+                    }`}
+                  >
+                    <Copy className="w-3 h-3" />
+                    Reconstruct
+                  </button>
+                  <button
+                    onClick={() => setGenerationMode("reimagine")}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-[11px] font-medium transition-all ${
+                      generationMode === "reimagine"
+                        ? "bg-zinc-700/80 text-white/90 shadow-sm"
+                        : "text-white/30 hover:text-white/50"
+                    }`}
+                  >
+                    <Wand2 className="w-3 h-3" />
+                    Reimagine
+                  </button>
+                </div>
+                <p className="text-[10px] text-white/20 text-center mt-1.5">
+                  {generationMode === "reconstruct" ? "Exact layout & structure" : "Creative layout, same content"}
+                </p>
               </div>
 
               {/* Generate Button */}
@@ -16337,9 +16455,9 @@ ${publishCode}
                   const hasContextChange = refinements.trim() !== (activeGeneration?.refinements || "").trim();
                   const hasStyleChange = styleDirective.trim() !== (activeGeneration?.styleDirective || "").trim();
                   const isUpdateMode = hasProject && (hasContextChange || hasStyleChange) && refinements.trim();
-                  
+
                   return (
-                    <ShimmerButton 
+                    <ShimmerButton
                       onClick={handleGenerate}
                       disabled={isProcessing || isEditing || flows.length === 0}
                       shimmerColor="#ffffff"
@@ -16349,9 +16467,9 @@ ${publishCode}
                       className="w-full py-3.5 text-[13px] font-semibold disabled:opacity-50"
                     >
                       {isProcessing || isEditing ? (
-                        <><Loader2 className="w-4 h-4 animate-spin mr-2" /><span className="text-white">{isEditing ? "Updating..." : "Reconstructing..."}</span></>
+                        <><Loader2 className="w-4 h-4 animate-spin mr-2" /><span className="text-white">{isEditing ? "Updating..." : generationMode === "reimagine" ? "Reimagining..." : "Reconstructing..."}</span></>
                       ) : (
-                        <><LogoIcon className="w-4 h-4 mr-2" color="white" /><span className="text-white font-semibold">Reconstruct</span></>
+                        <><LogoIcon className="w-4 h-4 mr-2" color="white" /><span className="text-white font-semibold">{generationMode === "reimagine" ? "Reimagine" : "Reconstruct"}</span></>
                       )}
                     </ShimmerButton>
                   );
@@ -17058,7 +17176,7 @@ ${publishCode}
                         <div className="flex gap-2">
                           {publishedUrl && (
                             <a
-                              href={publishedUrl}
+                              href={`${publishedUrl}?v=${Date.now()}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex-1 py-2.5 rounded-lg bg-zinc-800/50 hover:bg-white/10 text-zinc-200 text-sm font-medium transition-colors flex items-center justify-center gap-2"
@@ -23504,20 +23622,21 @@ module.exports = {
                                     
                                     if (data.success && data.url) {
                                       URL.revokeObjectURL(localUrl);
-                                      setEditImages(prev => prev.map(img => 
+                                      setEditImages(prev => prev.map(img =>
                                         img.id === id ? { ...img, url: data.url, uploading: false } : img
                                       ));
                                       console.log("[EditImages] Uploaded to Supabase:", data.url);
                                     } else {
-                                      setEditImages(prev => prev.map(img => 
-                                        img.id === id ? { ...img, uploading: false } : img
-                                      ));
+                                      // Upload failed — remove the blob image entirely
+                                      URL.revokeObjectURL(localUrl);
+                                      setEditImages(prev => prev.filter(img => img.id !== id));
+                                      showToast("Image upload failed", "error");
                                     }
                                   } catch (error) {
                                     console.error("[EditImages] Upload error:", error);
-                                    setEditImages(prev => prev.map(img => 
-                                      img.id === id ? { ...img, uploading: false } : img
-                                    ));
+                                    URL.revokeObjectURL(localUrl);
+                                    setEditImages(prev => prev.filter(img => img.id !== id));
+                                    showToast("Image upload failed", "error");
                                   }
                                 }
                               }
@@ -23532,7 +23651,7 @@ module.exports = {
                           value={editInput} 
                           onChange={(e) => setEditInput(e.target.value)} 
                           onKeyDown={(e) => {
-                            if (e.key === "Enter" && !showSuggestions) handleEdit();
+                            if (e.key === "Enter" && !showSuggestions && !editImages.some(img => img.uploading)) handleEdit();
                             if (e.key === "Escape" && !isEditing) { setShowFloatingEdit(false); setSelectedArchNode(null); setEditImages([]); }
                           }}
                           placeholder={selectedArchNode ? `Describe changes for @${selectedArchNode}...` : "Type @ to select a component or add images..."} 
@@ -23540,7 +23659,7 @@ module.exports = {
                           disabled={isEditing} 
                           autoFocus 
                         />
-                        <button onClick={handleEdit} disabled={(!editInput.trim() && editImages.length === 0) || isEditing} className="btn-black px-4 rounded-lg flex items-center gap-2 disabled:opacity-50">
+                        <button onClick={handleEdit} disabled={(!editInput.trim() && editImages.length === 0) || isEditing || editImages.some(img => img.uploading)} className="btn-black px-4 rounded-lg flex items-center gap-2 disabled:opacity-50">
                           {isEditing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                         </button>
                       </div>
@@ -24039,43 +24158,57 @@ module.exports = {
                                       onClick={async (e) => {
                                         e.stopPropagation();
                                         // Restore to initial generation
-                                        let codeToRestore = gen.code;
-                                        let flowNodesToRestore = gen.flowNodes;
-                                        let flowEdgesToRestore = gen.flowEdges;
-                                        let styleInfoToRestore = gen.styleInfo;
-                                        
-                                        if (!codeToRestore || codeToRestore.length < 50) {
-                                          // Try to use activeGeneration if it's the same project
-                                          if (activeGeneration?.id === gen.id && activeGeneration.code) {
-                                            const initialVersion = (activeGeneration.versions || []).find(v => v.label === 'Initial generation');
-                                            if (initialVersion?.code) {
-                                              codeToRestore = initialVersion.code;
-                                              flowNodesToRestore = initialVersion.flowNodes;
-                                              flowEdgesToRestore = initialVersion.flowEdges;
-                                              styleInfoToRestore = initialVersion.styleInfo;
-                                            } else {
-                                              showToast("Initial version not saved - cannot restore", "error");
-                                              return;
-                                            }
-                                          } else {
-                                            showToast("Loading version data...", "info");
-                                            const fullGen = await loadFullGeneration(gen.id);
-                                            if (!fullGen?.code) {
-                                              showToast("Failed to load version data", "error");
-                                              return;
-                                            }
-                                            codeToRestore = fullGen.code;
-                                            flowNodesToRestore = fullGen.flowNodes;
-                                            flowEdgesToRestore = fullGen.flowEdges;
-                                            styleInfoToRestore = fullGen.styleInfo;
+                                        // ALWAYS look in versions array first — gen.code is the CURRENT (edited) code
+                                        let codeToRestore = '';
+                                        let flowNodesToRestore: ProductFlowNode[] = [];
+                                        let flowEdgesToRestore: ProductFlowEdge[] = [];
+                                        let styleInfoToRestore: StyleInfo | null = null;
+
+                                        // 1. Check gen.versions
+                                        const initFromGen = (gen.versions || []).find(v => v.label === 'Initial generation');
+                                        if (initFromGen?.code && initFromGen.code.length >= 50) {
+                                          codeToRestore = initFromGen.code;
+                                          flowNodesToRestore = initFromGen.flowNodes || [];
+                                          flowEdgesToRestore = initFromGen.flowEdges || [];
+                                          styleInfoToRestore = initFromGen.styleInfo || null;
+                                        }
+
+                                        // 2. Check activeGeneration.versions
+                                        if ((!codeToRestore || codeToRestore.length < 50) && activeGeneration?.id === gen.id) {
+                                          const initFromActive = (activeGeneration.versions || []).find(v => v.label === 'Initial generation');
+                                          if (initFromActive?.code && initFromActive.code.length >= 50) {
+                                            codeToRestore = initFromActive.code;
+                                            flowNodesToRestore = initFromActive.flowNodes || [];
+                                            flowEdgesToRestore = initFromActive.flowEdges || [];
+                                            styleInfoToRestore = initFromActive.styleInfo || null;
                                           }
                                         }
-                                        
-                                        restoreVersion(gen.id, { 
-                                          id: 'initial', 
-                                          timestamp: gen.timestamp, 
+
+                                        // 3. Load from server
+                                        if (!codeToRestore || codeToRestore.length < 50) {
+                                          showToast("Loading version data...", "info");
+                                          const fullGen = await loadFullGeneration(gen.id);
+                                          if (fullGen) {
+                                            const initFromServer = (fullGen.versions || []).find(v => v.label === 'Initial generation');
+                                            if (initFromServer?.code && initFromServer.code.length >= 50) {
+                                              codeToRestore = initFromServer.code;
+                                              flowNodesToRestore = initFromServer.flowNodes || [];
+                                              flowEdgesToRestore = initFromServer.flowEdges || [];
+                                              styleInfoToRestore = initFromServer.styleInfo || null;
+                                            }
+                                          }
+                                        }
+
+                                        if (!codeToRestore || codeToRestore.length < 50) {
+                                          showToast("Initial version not saved - cannot restore", "error");
+                                          return;
+                                        }
+
+                                        restoreVersion(gen.id, {
+                                          id: 'initial',
+                                          timestamp: gen.timestamp,
                                           label: 'Initial generation',
-                                          code: codeToRestore || '',
+                                          code: codeToRestore,
                                           flowNodes: flowNodesToRestore,
                                           flowEdges: flowEdgesToRestore,
                                           styleInfo: styleInfoToRestore
@@ -24279,33 +24412,35 @@ module.exports = {
                 />
               </div>
 
-              {/* Creativity Slider */}
-              <div className="px-4 py-3 border-b border-zinc-800 flex-shrink-0">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
-                    <Sparkles className="w-3.5 h-3.5 text-zinc-500" /> Creativity
-                  </span>
-                  <span className="text-[10px] font-medium text-zinc-500">
-                    {creativityLevel === 0 ? "Exact" : creativityLevel <= 33 ? "Enhanced" : creativityLevel <= 66 ? "Creative" : "Maximum"}
-                  </span>
+              {/* MODE Toggle */}
+              <div className="px-4 pt-3 pb-1 flex-shrink-0">
+                <div className="flex rounded-lg bg-zinc-800/60 border border-white/[0.06] p-0.5">
+                  <button
+                    onClick={() => setGenerationMode("reconstruct")}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-[11px] font-medium transition-all ${
+                      generationMode === "reconstruct"
+                        ? "bg-zinc-700/80 text-white/90 shadow-sm"
+                        : "text-white/30 hover:text-white/50"
+                    }`}
+                  >
+                    <Copy className="w-3 h-3" />
+                    Reconstruct
+                  </button>
+                  <button
+                    onClick={() => setGenerationMode("reimagine")}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-[11px] font-medium transition-all ${
+                      generationMode === "reimagine"
+                        ? "bg-zinc-700/80 text-white/90 shadow-sm"
+                        : "text-white/30 hover:text-white/50"
+                    }`}
+                  >
+                    <Wand2 className="w-3 h-3" />
+                    Reimagine
+                  </button>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={creativityLevel}
-                  onChange={(e) => setCreativityLevel(Number(e.target.value))}
-                  disabled={isProcessing}
-                  className="w-full h-1.5 rounded-full appearance-none cursor-pointer disabled:opacity-50 creativity-slider"
-                  style={{
-                    background: `linear-gradient(to right, #FF6E3C ${creativityLevel}%, #27272a ${creativityLevel}%)`,
-                  }}
-                />
-                <div className="flex justify-between mt-1.5">
-                  <span className="text-[9px] text-zinc-600">Faithful</span>
-                  <span className="text-[9px] text-zinc-600">Creative</span>
-                </div>
+                <p className="text-[10px] text-white/20 text-center mt-1.5">
+                  {generationMode === "reconstruct" ? "Exact layout & structure" : "Creative layout, same content"}
+                </p>
               </div>
 
               {/* Generate Button */}
@@ -24316,9 +24451,9 @@ module.exports = {
                   const hasContextChange = refinements.trim() !== (activeGeneration?.refinements || "").trim();
                   const hasStyleChange = styleDirective.trim() !== (activeGeneration?.styleDirective || "").trim();
                   const isUpdateMode = hasProject && (hasContextChange || hasStyleChange) && refinements.trim();
-                  
+
                   return (
-                    <ShimmerButton 
+                    <ShimmerButton
                       onClick={handleGenerate}
                       disabled={isProcessing || isEditing || flows.length === 0}
                       shimmerColor="#ffffff"
@@ -24328,9 +24463,9 @@ module.exports = {
                       className="w-full py-3.5 text-[13px] font-semibold disabled:opacity-50"
                     >
                       {isProcessing || isEditing ? (
-                        <><Loader2 className="w-4 h-4 animate-spin mr-2" /><span className="text-white">{isEditing ? "Updating..." : "Reconstructing..."}</span></>
+                        <><Loader2 className="w-4 h-4 animate-spin mr-2" /><span className="text-white">{isEditing ? "Updating..." : generationMode === "reimagine" ? "Reimagining..." : "Reconstructing..."}</span></>
                       ) : (
-                        <><LogoIcon className="w-4 h-4 mr-2" color="white" /><span className="text-white font-semibold">Reconstruct</span></>
+                        <><LogoIcon className="w-4 h-4 mr-2" color="white" /><span className="text-white font-semibold">{generationMode === "reimagine" ? "Reimagine" : "Reconstruct"}</span></>
                       )}
                     </ShimmerButton>
                   );
@@ -25373,15 +25508,33 @@ module.exports = {
                   />
                 </div>
                 
-                {/* Reconstruct Button */}
-                <div className="pt-1">
-                  <button 
+                {/* Mode Toggle + Reconstruct/Reimagine Button */}
+                <div className="pt-1 space-y-2">
+                  <div className="flex rounded-lg bg-zinc-800/60 border border-white/[0.06] p-0.5">
+                    <button
+                      onClick={() => setGenerationMode("reconstruct")}
+                      className={`flex-1 flex items-center justify-center gap-1 py-1 px-2 rounded-md text-[10px] font-medium transition-all ${
+                        generationMode === "reconstruct" ? "bg-zinc-700/80 text-white/90" : "text-white/30"
+                      }`}
+                    >
+                      <Copy className="w-2.5 h-2.5" /> Reconstruct
+                    </button>
+                    <button
+                      onClick={() => setGenerationMode("reimagine")}
+                      className={`flex-1 flex items-center justify-center gap-1 py-1 px-2 rounded-md text-[10px] font-medium transition-all ${
+                        generationMode === "reimagine" ? "bg-zinc-700/80 text-white/90" : "text-white/30"
+                      }`}
+                    >
+                      <Wand2 className="w-2.5 h-2.5" /> Reimagine
+                    </button>
+                  </div>
+                  <button
                     onClick={handleGenerate}
                     disabled={isProcessing || flows.length === 0}
-                    className="w-full py-2.5 rounded-lg bg-zinc-800/10 hover:bg-zinc-800/20 border border-zinc-700 text-xs font-medium text-zinc-300 flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+                    className="w-full py-2.5 rounded-lg border text-xs font-medium flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 bg-zinc-800/10 hover:bg-zinc-800/20 border-zinc-700 text-zinc-300"
                   >
                     <LogoIcon className="w-3.5 h-3.5" color="var(--accent-orange)" />
-                    Reconstruct
+                    {generationMode === "reimagine" ? "Reimagine" : "Reconstruct"}
                   </button>
                 </div>
                 
