@@ -59,6 +59,26 @@ Replay uses a sophisticated multi-model AI pipeline we call the **"Sandwich Arch
 
 ---
 
+## 🆕 Recent Updates (v2.4.0 - Feb 11, 2026)
+
+### 🔧 Edit with AI Improvements
+- **Disabled Fuzzy Matching** — SEARCH/REPLACE mode now uses only exact + normalized whitespace matching. Prevents wrong code replacements that were breaking pages (85% similarity threshold was causing incorrect matches).
+- **Smart Mode Selection** — Large changes (replace animation, remove sections, redesign) automatically use Full HTML mode. Simple edits (colors, text) use precise SEARCH/REPLACE.
+- **Token Efficiency** — Small edits: 10-30K → 200-2000 output tokens, 8-25s → 2-5s latency.
+
+### 🚀 Published Pages Cache-Busting
+- **Fresh on Every Click** — "Open" button now generates unique URL with timestamp + random on EVERY click: `?v=timestamp&_=millis.random`
+- **Zero Cache Issues** — Eliminated Vercel Edge Cache + browser cache problems. Published pages ALWAYS show latest version after Update.
+- **Vercel CDN Bypass** — Added `s-maxage=0, stale-while-revalidate=0` headers to force fresh content.
+
+### 🐛 Critical Fixes
+- **Levenshtein Loop Bug** — Fixed infinite loop in fuzzy matching (`i <= a.length` → `j <= a.length`). Was causing AI to corrupt pages.
+- **onClick Random Generator** — Moved from JSX `href` to `onClick` handler so random generates fresh on every click, not just render.
+
+[See full changelog →](https://replay.build/docs/changelog)
+
+---
+
 ## 🎯 Core Features
 
 ### 📚 Component Library

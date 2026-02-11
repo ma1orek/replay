@@ -3,6 +3,88 @@ import { Clock, Sparkles, Bug, ArrowUp, Bell } from "lucide-react";
 
 const changelog = [
   {
+    date: "February 11, 2026",
+    version: "2.4.0",
+    changes: [
+      {
+        type: "improvement",
+        title: "Disabled Fuzzy Matching in SEARCH/REPLACE",
+        description: "SEARCH/REPLACE mode now uses only exact + normalized whitespace matching. Removed fuzzy matching (85% similarity) and anchor matching which were causing wrong code replacements. Large changes (replace animation, remove, redesign, >15 words) automatically use Full HTML mode instead."
+      },
+      {
+        type: "improvement",
+        title: "Smart Edit Mode Selection",
+        description: "AI editor now intelligently picks between SEARCH/REPLACE (for small, precise edits) and Full HTML (for large structural changes). Translations, new pages, image edits, and complex requests automatically use Full HTML. Simple color/text changes use fast SEARCH/REPLACE."
+      },
+      {
+        type: "fix",
+        title: "Published Pages Cache-Busting v4",
+        description: "Open button now generates unique URL on EVERY click using onClick handler: ?v=timestamp&_=millis.random. Previous versions generated random at render time, causing same URL on repeated clicks. Now published pages ALWAYS show fresh version."
+      },
+      {
+        type: "fix",
+        title: "Vercel Edge Cache Bypass",
+        description: "Added s-maxage=0 and stale-while-revalidate=0 headers to /p/[slug] route. Eliminates Vercel CDN caching of published pages. Combined with onClick cache-buster for zero-cache guarantee."
+      },
+      {
+        type: "fix",
+        title: "Levenshtein Loop Bug",
+        description: "Fixed critical infinite loop in fuzzy matching algorithm. Inner loop condition used 'i' instead of 'j' (for (let j = 1; i <= a.length; j++)), causing wrong matches and page corruption. Now: for (let j = 1; j <= a.length; j++)."
+      },
+      {
+        type: "improvement",
+        title: "Token Efficiency in AI Edits",
+        description: "SEARCH/REPLACE mode: 10-30K → 200-2000 output tokens. Latency: 8-25s → 2-5s. Near-zero code corruption with exact matching only."
+      },
+    ]
+  },
+  {
+    date: "February 10, 2026",
+    version: "2.3.0",
+    changes: [
+      {
+        type: "feature",
+        title: "Reconstruct vs Reimagine Modes",
+        description: "New generation mode toggle in the sidebar. Reconstruct faithfully reproduces video layouts. Reimagine creates a brand-new creative design with the same content, using 18+ animation patterns (GSAP, parallax, glassmorphism, split-text, snap carousels, and more)."
+      },
+      {
+        type: "feature",
+        title: "reactbits.dev Animation Library",
+        description: "Reimagine mode integrates 18 animation patterns from reactbits.dev: split text entrance, scroll reveal, stagger cards, count-up numbers, gradient text, glitch text, spotlight cards, infinite marquee, film grain, aurora backgrounds, floating particles, glassmorphism, hover lift, star border, parallax, custom scrollbars, and horizontal snap carousels."
+      },
+      {
+        type: "improvement",
+        title: "Dashboard Layout Rules",
+        description: "Both modes now handle dashboard/app UIs correctly: CSS Grid sidebar + main area with min-width:0 to prevent chart and table overflow."
+      },
+      {
+        type: "improvement",
+        title: "Testimonial Carousel Enforcement",
+        description: "Testimonials are always rendered as horizontal snap carousels (never vertical stacks). Each card has fixed width with scroll-to-reveal behavior."
+      },
+      {
+        type: "improvement",
+        title: "Text Visibility & Word Wrapping",
+        description: "Headlines use responsive clamp() sizing instead of fixed sizes. Split-text animations preserve word boundaries — no more mid-word line breaks like 'peo ple'."
+      },
+      {
+        type: "improvement",
+        title: "Custom Scrollbars",
+        description: "Reimagine mode outputs sleek thin scrollbars (WebKit + Firefox) instead of browser defaults, both page-wide and on carousel containers."
+      },
+      {
+        type: "fix",
+        title: "504 Timeout Streaming",
+        description: "All video generation now uses streaming route with server-side video fetch, eliminating 504 timeouts on large files."
+      },
+      {
+        type: "fix",
+        title: "Empty Sections Prevention",
+        description: "Zero-tolerance rule ensures every generated section contains real content — no empty cards or placeholder-only blocks."
+      },
+    ]
+  },
+  {
     date: "February 8, 2026",
     version: "2.2.0",
     changes: [
