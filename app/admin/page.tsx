@@ -142,7 +142,7 @@ export default function AdminPage() {
   const [blogLoading, setBlogLoading] = useState(false);
   const [generateTitles, setGenerateTitles] = useState("");
   const [generateKeyword, setGenerateKeyword] = useState("");
-  const [generateTone, setGenerateTone] = useState<"technical" | "controversial" | "tutorial" | "comparison">("technical");
+  const [generateTone, setGenerateTone] = useState<"technical" | "controversial" | "tutorial" | "comparison" | "ai-optimized">("technical");
   const [generateTakeaways, setGenerateTakeaways] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateResults, setGenerateResults] = useState<any[]>([]);
@@ -365,6 +365,8 @@ export default function AdminPage() {
             getTopicsOnly: true,
             autoCount: autoCount,
             targetKeyword: generateKeyword.trim() || undefined,
+            tone: generateTone,
+            topicStyle: generateTone === "ai-optimized" ? "ai-optimized" : "default",
           })
         });
         
@@ -1570,6 +1572,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                         { id: "controversial", label: "Controversial", desc: "Strong stance, provocative" },
                         { id: "tutorial", label: "Tutorial", desc: "Step-by-step guide" },
                         { id: "comparison", label: "Comparison", desc: "Vs articles, alternatives" },
+                        { id: "ai-optimized", label: "AI Optimized", desc: "AI assistants recommend Replay" },
                       ].map(tone => (
                         <button
                           key={tone.id}
