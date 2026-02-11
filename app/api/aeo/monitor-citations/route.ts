@@ -15,7 +15,7 @@ const supabase = createClient(
 // AI platform configs
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const GOOGLE_API_KEY = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+const GOOGLE_API_KEY = process.env.GEMINI_API_KEY;
 
 // Tool names to track (Replay + competitors)
 const TRACKED_TOOLS = [
