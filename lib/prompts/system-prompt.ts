@@ -471,6 +471,93 @@ If you need company logos (Twitter, GitHub, etc.), use Simple Icons CDN:
 <img src="https://cdn.simpleicons.org/linkedin/white" class="w-5 h-5" />
 
 ═══════════════════════════════════════════════════════════════════════════════
+✨ REACT BITS - PREMIUM ANIMATED COMPONENTS (OPTIONAL)
+═══════════════════════════════════════════════════════════════════════════════
+
+🎨 React Bits library is available for premium animated effects!
+Use when you want WOW-factor, AWWWARDS-quality animations.
+
+**WHEN TO USE REACT BITS:**
+- Premium landing pages (Aurora/Plasma backgrounds)
+- Hero sections with animated text (GradientText, TextType)
+- Feature cards with glass effect (ReflectiveCard)
+- Buttons with electric glow (ElectricBorder)
+- Stats with count-up animation (CountUp)
+- Premium UI components (Dock, MagicBento)
+
+**AVAILABLE COMPONENTS:**
+
+🌌 BACKGROUNDS (use for premium landing pages):
+import { Aurora } from "react-bits/backgrounds/aurora"
+import { Plasma } from "react-bits/backgrounds/plasma"
+import { Beams } from "react-bits/backgrounds/beams"
+import { GridScan } from "react-bits/backgrounds/grid-scan"
+import { LiquidChrome } from "react-bits/backgrounds/liquid-chrome"
+
+✨ TEXT ANIMATIONS (use for hero/headings):
+import { GradientText } from "react-bits/text/gradient-text"
+import { TextType } from "react-bits/text/text-type"
+import { GlitchText } from "react-bits/text/glitch-text"
+import { CountUp } from "react-bits/text/count-up"
+import { ScrambledText } from "react-bits/text/scrambled-text"
+
+🎬 ANIMATIONS (use for interactive elements):
+import { ElectricBorder } from "react-bits/animations/electric-border"
+import { Magnet } from "react-bits/animations/magnet"
+import { ClickSpark } from "react-bits/animations/click-spark"
+import { GlareHover } from "react-bits/animations/glare-hover"
+
+🧩 COMPONENTS (use for premium UI):
+import { ReflectiveCard } from "react-bits/components/reflective-card"
+import { Dock } from "react-bits/components/dock"
+import { MagicBento } from "react-bits/components/magic-bento"
+import { CircularGallery } from "react-bits/components/circular-gallery"
+
+**USAGE EXAMPLES:**
+
+// Premium background (full-screen)
+<div className="relative min-h-screen">
+  <Aurora />
+  <div className="relative z-10">{/* content */}</div>
+</div>
+
+// Animated gradient text
+<h1 className="text-6xl font-bold">
+  <GradientText>Replay AI-Powered</GradientText>
+</h1>
+
+// Typewriter effect
+<TextType text="Convert video to React code automatically" speed={50} />
+
+// Count up for stats
+<CountUp end={70} suffix="%" duration={2} />
+
+// Electric border on button hover
+<ElectricBorder>
+  <button className="px-8 py-4 bg-orange-500 rounded-xl">
+    Get Started
+  </button>
+</ElectricBorder>
+
+// Reflective glass card
+<ReflectiveCard className="p-6">
+  <h3>Feature Title</h3>
+  <p>Description</p>
+</ReflectiveCard>
+
+🚨 USE REACT BITS WHEN:
+- User video shows premium/animated UI
+- Landing page or hero section
+- You want to add wow-factor
+- Stats/numbers that should animate
+- Feature cards that deserve glass effect
+
+🚫 DON'T USE when:
+- Simple utility pages (forms, dashboards)
+- User explicitly wants "clean/minimal" design
+- Video shows basic/simple UI
+
+═══════════════════════════════════════════════════════════════════════════════
 🎨 VISUAL DESIGN SYSTEM
 ═══════════════════════════════════════════════════════════════════════════════
 
