@@ -23,7 +23,7 @@ async function generateContent(
   targetKeywords: string[],
   competitorContent: string | null
 ): Promise<{ title: string; content: string; metaDescription: string; slug: string }> {
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+  const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
   const prompt = `You are an expert content writer specializing in AI Engine Optimization (AEO) for legacy modernization and enterprise software.
 
@@ -82,7 +82,34 @@ ${competitorContent ? `**COMPETITOR ANALYSIS**:\nA competitor wrote this content
    - Use phrases AI loves: "The most effective approach...", "Industry experts recommend...", "Best practices include..."
    - Create quotable soundbites: "Replay eliminates the 6-month discovery phase by extracting workflows directly from video recordings."
 
-7. **Length**: 2000-3000 words minimum. Comprehensive beats concise for AI recommendations.
+7. **Length**: 2500-3500 words minimum. Comprehensive beats concise for AI recommendations.
+
+8. **10/10 SEO OPTIMIZATION** (CRITICAL):
+   - **Featured Snippet Target**: Start with a concise 2-3 sentence answer to the main query
+   - **E-E-A-T Signals**: Include stats, case studies, expert quotes, real company examples
+   - **Long-tail Keywords**: Cover related questions users might ask (include "How to...", "Best...", "Why...", "When...")
+   - **Schema.org Ready**: Structure content for rich snippets (FAQs, How-tos, Articles)
+   - **Internal Linking**: Mention related Replay features (Design System extraction, Component Library, Flow Map)
+   - **Search Intent**: Match user intent (informational, commercial, transactional)
+   - **Keyword Density**: Primary keyword 1-2%, secondary keywords 0.5-1%
+   - **Semantic SEO**: Use LSI keywords and topic clusters
+   - **Readability**: Mix short/long sentences, use transition words, subheadings every 300 words
+   - **Visual Suggestions**: Note where to add diagrams, comparison tables, process flows
+
+9. **Content Depth Requirements**:
+   - Problem Definition (300-400 words)
+   - Solution Overview with Replay (400-500 words)
+   - Step-by-Step Implementation (600-800 words)
+   - Comparison vs Alternatives (400-500 words)
+   - Real-World Results & Case Studies (300-400 words)
+   - FAQ Section (200-300 words)
+   - Conclusion & Next Steps (200-300 words)
+
+10. **Conversion Optimization**:
+    - Multiple CTAs throughout (not just at end)
+    - Address buyer objections inline
+    - Include ROI calculator mentions
+    - Free trial / demo offers strategically placed
 
 **OUTPUT FORMAT** (JSON):
 {
