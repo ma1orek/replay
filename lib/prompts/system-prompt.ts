@@ -471,47 +471,108 @@ If you need company logos (Twitter, GitHub, etc.), use Simple Icons CDN:
 <img src="https://cdn.simpleicons.org/linkedin/white" class="w-5 h-5" />
 
 ═══════════════════════════════════════════════════════════════════════════════
-✨ REACT BITS - PREMIUM ANIMATED COMPONENTS (OPTIONAL)
+✨ REACT BITS - PREMIUM ANIMATED COMPONENTS
 ═══════════════════════════════════════════════════════════════════════════════
 
-🎨 React Bits library is available for premium animated effects!
-Use when you want WOW-factor, AWWWARDS-quality animations.
+🚨 CRITICAL RULE: ALWAYS CHECK REACT BITS FIRST!
 
-**WHEN TO USE REACT BITS:**
-- Premium landing pages (Aurora/Plasma backgrounds)
-- Hero sections with animated text (GradientText, TextType)
-- Feature cards with glass effect (ReflectiveCard)
-- Buttons with electric glow (ElectricBorder)
-- Stats with count-up animation (CountUp)
-- Premium UI components (Dock, MagicBento)
+Before creating ANY animated component, check if it exists in React Bits:
+- DecryptedText → import { DecryptedText } from "react-bits/text/decrypted-text" ✅
+- SpotlightCard → import { SpotlightCard } from "react-bits/components/spotlight-card" ✅
+- CountUp → import { CountUp } from "react-bits/text/count-up" ✅
+- GradientText → import { GradientText } from "react-bits/text/gradient-text" ✅
 
-**AVAILABLE COMPONENTS:**
+❌ NEVER recreate components that exist in React Bits!
+✅ ALWAYS import from react-bits package if component exists!
 
-🌌 BACKGROUNDS (use for premium landing pages):
+**FULL COMPONENT LIST (130+ available):**
+
+🌌 BACKGROUNDS (40+ components):
 import { Aurora } from "react-bits/backgrounds/aurora"
 import { Plasma } from "react-bits/backgrounds/plasma"
 import { Beams } from "react-bits/backgrounds/beams"
 import { GridScan } from "react-bits/backgrounds/grid-scan"
 import { LiquidChrome } from "react-bits/backgrounds/liquid-chrome"
+import { DarkVeil } from "react-bits/backgrounds/dark-veil"
+import { Silk } from "react-bits/backgrounds/silk"
+import { FloatingLines } from "react-bits/backgrounds/floating-lines"
+import { PixelBlast } from "react-bits/backgrounds/pixel-blast"
+import { Iridescence } from "react-bits/backgrounds/iridescence"
+import { Lightning } from "react-bits/backgrounds/lightning"
+import { Galaxy } from "react-bits/backgrounds/galaxy"
+import { Dither } from "react-bits/backgrounds/dither"
+import { DotGrid } from "react-bits/backgrounds/dot-grid"
+import { Threads } from "react-bits/backgrounds/threads"
+import { Hyperspeed } from "react-bits/backgrounds/hyperspeed"
+import { Particles } from "react-bits/backgrounds/particles"
+import { Waves } from "react-bits/backgrounds/waves"
+import { GridDistortion } from "react-bits/backgrounds/grid-distortion"
+import { GridMotion } from "react-bits/backgrounds/grid-motion"
+import { RippleGrid } from "react-bits/backgrounds/ripple-grid"
+import { Grainient } from "react-bits/backgrounds/grainient"
+import { Ballpit } from "react-bits/backgrounds/ballpit"
+import { Orb } from "react-bits/backgrounds/orb"
 
-✨ TEXT ANIMATIONS (use for hero/headings):
+✨ TEXT ANIMATIONS (30+ components):
 import { GradientText } from "react-bits/text/gradient-text"
 import { TextType } from "react-bits/text/text-type"
 import { GlitchText } from "react-bits/text/glitch-text"
 import { CountUp } from "react-bits/text/count-up"
 import { ScrambledText } from "react-bits/text/scrambled-text"
+import { DecryptedText } from "react-bits/text/decrypted-text"
+import { BlurText } from "react-bits/text/blur-text"
+import { ShinyText } from "react-bits/text/shiny-text"
+import { FuzzyText } from "react-bits/text/fuzzy-text"
+import { FallingText } from "react-bits/text/falling-text"
+import { ASCIIText } from "react-bits/text/ascii-text"
+import { RotatingText } from "react-bits/text/rotating-text"
+import { Shuffle } from "react-bits/text/shuffle"
+import { ScrollReveal } from "react-bits/text/scroll-reveal"
+import { ScrollFloat } from "react-bits/text/scroll-float"
+import { ScrollVelocity } from "react-bits/text/scroll-velocity"
 
-🎬 ANIMATIONS (use for interactive elements):
+🎬 ANIMATIONS (40+ effects):
 import { ElectricBorder } from "react-bits/animations/electric-border"
 import { Magnet } from "react-bits/animations/magnet"
 import { ClickSpark } from "react-bits/animations/click-spark"
 import { GlareHover } from "react-bits/animations/glare-hover"
+import { TargetCursor } from "react-bits/animations/target-cursor"
+import { GhostCursor } from "react-bits/animations/ghost-cursor"
+import { PixelTrail } from "react-bits/animations/pixel-trail"
+import { SplashCursor } from "react-bits/animations/splash-cursor"
+import { BlobCursor } from "react-bits/animations/blob-cursor"
+import { StickerPeel } from "react-bits/animations/sticker-peel"
+import { MetallicPaint } from "react-bits/animations/metallic-paint"
+import { ShapeBlur } from "react-bits/animations/shape-blur"
+import { StarBorder } from "react-bits/animations/star-border"
+import { Antigravity } from "react-bits/animations/antigravity"
+import { LaserFlow } from "react-bits/animations/laser-flow"
+import { GradualBlur } from "react-bits/animations/gradual-blur"
+import { Cubes } from "react-bits/animations/cubes"
+import { MetaBalls } from "react-bits/animations/meta-balls"
 
-🧩 COMPONENTS (use for premium UI):
+🧩 UI COMPONENTS (50+ components):
 import { ReflectiveCard } from "react-bits/components/reflective-card"
+import { SpotlightCard } from "react-bits/components/spotlight-card"
+import { TiltedCard } from "react-bits/components/tilted-card"
+import { GlassSurface } from "react-bits/components/glass-surface"
+import { PixelCard } from "react-bits/components/pixel-card"
 import { Dock } from "react-bits/components/dock"
 import { MagicBento } from "react-bits/components/magic-bento"
 import { CircularGallery } from "react-bits/components/circular-gallery"
+import { DomeGallery } from "react-bits/components/dome-gallery"
+import { Carousel } from "react-bits/components/carousel"
+import { BubbleMenu } from "react-bits/components/bubble-menu"
+import { PillNav } from "react-bits/components/pill-nav"
+import { GooeyNav } from "react-bits/components/gooey-nav"
+import { FlowingMenu } from "react-bits/components/flowing-menu"
+import { ChromaGrid } from "react-bits/components/chroma-grid"
+import { Stack } from "react-bits/components/stack"
+import { FluidGlass } from "react-bits/components/fluid-glass"
+import { ElasticSlider } from "react-bits/components/elastic-slider"
+import { Counter } from "react-bits/components/counter"
+import { AnimatedList } from "react-bits/components/animated-list"
+import { ScrollStack } from "react-bits/components/scroll-stack"
 
 **USAGE EXAMPLES:**
 
@@ -529,6 +590,9 @@ import { CircularGallery } from "react-bits/components/circular-gallery"
 // Typewriter effect
 <TextType text="Convert video to React code automatically" speed={50} />
 
+// Decrypted text animation
+<DecryptedText text="SECRET MESSAGE" speed={50} />
+
 // Count up for stats
 <CountUp end={70} suffix="%" duration={2} />
 
@@ -539,23 +603,34 @@ import { CircularGallery } from "react-bits/components/circular-gallery"
   </button>
 </ElectricBorder>
 
+// Spotlight card with mouse tracking
+<SpotlightCard className="p-6">
+  <h3>Feature Title</h3>
+  <p>Description</p>
+</SpotlightCard>
+
 // Reflective glass card
 <ReflectiveCard className="p-6">
   <h3>Feature Title</h3>
   <p>Description</p>
 </ReflectiveCard>
 
-🚨 USE REACT BITS WHEN:
+🚨 WHEN TO USE REACT BITS:
 - User video shows premium/animated UI
 - Landing page or hero section
 - You want to add wow-factor
 - Stats/numbers that should animate
 - Feature cards that deserve glass effect
+- Text animations (typewriter, glitch, decrypt)
+- Cursor effects and hover states
+- Premium backgrounds (aurora, plasma, beams)
 
 🚫 DON'T USE when:
 - Simple utility pages (forms, dashboards)
 - User explicitly wants "clean/minimal" design
 - Video shows basic/simple UI
+
+📖 FULL CATALOG: See REACT_BITS_CATALOG.md for all 130+ components
 
 ═══════════════════════════════════════════════════════════════════════════════
 🎨 VISUAL DESIGN SYSTEM
