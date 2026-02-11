@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cursor --install-extension:*)",
+      "Bash(cursor:*)",
+      "Bash(code:*)",
+      "WebFetch(domain:skills.sh)",
+      "WebFetch(domain:github.com)",
+      "Bash(npx install-skill@latest anthropics/skills)",
+      "Bash(npx install-skill@latest vercel-labs/agent-skills)",
+      "Bash(npx install-skill@latest:*)",
+      "Bash(npx next build:*)",
+      "Bash(git status:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nFix DS theme detection, multi-page flow, layout bugs, button visibility, trash icon\n\n- Light theme with DS: Added explicit theme preservation rules so DS colors\n  respect video''s detected theme \\(light/dark\\) instead of defaulting to dark\n- Flow detection: Added multi-page detection techniques and 3-subpage pattern\n  hints for better page counting in scan-all prompts\n- Inline boxes: Added CSS Grid/Flexbox layout rules preventing inline-block\n  on cards/sections in system-prompt, assembler-prompt, and transmute\n- Invisible buttons: Added visibility rules preventing opacity:0/visibility:hidden\n  on buttons until hover across all generation prompts\n- StyleInjector: Removed X deselect button from toggle bar, changed dropdown\n  delete icon from X to Trash2 for deleting imported DS libraries\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "Bash(npx vercel:*)",
+      "Bash(git commit:*)",
+      "WebFetch(domain:designsystem.solenis.com)",
+      "Bash(npm run build:*)",
+      "Bash(findstr:*)",
+      "Bash(ls -la \"c:\\\\Users\\\\idzik\\\\Desktop\\\\replay-fresh2\\\\app\\\\api\\\\edit-code\"\" 2>/dev/null || echo \"Directory not found \")",
+      "WebFetch(domain:reactbits.dev)"
+    ]
+  }
+}
