@@ -347,61 +347,6 @@ export async function GET(
     opacity: 1 !important;
   }
 </style>
-<script>
-// AGGRESSIVE visibility fix - runs multiple times to catch GSAP animations
-(function() {
-  function forceAllVisible() {
-    document.querySelectorAll('*').forEach(function(el) {
-      // CRITICAL: Skip Alpine.js x-show elements (managed by Alpine state)
-      if (el.hasAttribute('x-show') || el.hasAttribute('x-if') || el.hasAttribute('@click')) {
-        return;
-      }
-
-      var style = window.getComputedStyle(el);
-      // Fix opacity - but NOT for elements that should start hidden
-      if (parseFloat(style.opacity) < 0.1 && !el.hasAttribute('x-transition')) {
-        el.style.setProperty('opacity', '1', 'important');
-      }
-      // Fix visibility - but NOT for Alpine-controlled elements
-      if (style.visibility === 'hidden' && !el.closest('[x-show]')) {
-        el.style.setProperty('visibility', 'visible', 'important');
-      }
-      // NEVER force display on hidden elements - breaks Alpine x-show
-      // Only fix elements with inline opacity/transform (GSAP animations)
-    });
-  }
-  
-  // Run immediately
-  if (document.readyState === 'complete') {
-    forceAllVisible();
-  }
-  
-  // Run on DOM ready
-  document.addEventListener('DOMContentLoaded', function() {
-    forceAllVisible();
-    setTimeout(forceAllVisible, 50);
-    setTimeout(forceAllVisible, 150);
-    setTimeout(forceAllVisible, 300);
-  });
-  
-  // Run on load
-  window.addEventListener('load', function() {
-    forceAllVisible();
-    setTimeout(forceAllVisible, 100);
-    setTimeout(forceAllVisible, 300);
-    setTimeout(forceAllVisible, 500);
-    setTimeout(forceAllVisible, 1000);
-  });
-  
-  // Run periodically for first 2 seconds to catch late animations
-  var runCount = 0;
-  var interval = setInterval(function() {
-    forceAllVisible();
-    runCount++;
-    if (runCount > 20) clearInterval(interval);
-  }, 100);
-})();
-</script>
 `;
 
   // Badge HTML - small, subtle, bottom-right corner (injected before </body>)
