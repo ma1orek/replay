@@ -672,7 +672,8 @@ ${badgeHtml}
     headers: {
       "Content-Type": "text/html; charset=utf-8",
       // NO CACHE - ensures updates are immediately visible after republishing
-      "Cache-Control": "no-cache, no-store, must-revalidate",
+      // s-maxage=0 prevents Vercel Edge Cache from caching (critical!)
+      "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0, s-maxage=0, stale-while-revalidate=0",
       "Pragma": "no-cache",
       "Expires": "0",
     },

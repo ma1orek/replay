@@ -17162,7 +17162,7 @@ ${publishCode}
                             {publishedUrl && (
                               <button
                                 onClick={() => {
-                                  navigator.clipboard.writeText(publishedUrl);
+                                  navigator.clipboard.writeText(`${publishedUrl}?v=${publishCacheTimestamp}`);
                                   showToast("Link copied!", "success");
                                 }}
                                 className="p-1.5 rounded hover:bg-white/10 transition-colors"
