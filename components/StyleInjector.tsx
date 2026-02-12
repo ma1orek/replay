@@ -3526,110 +3526,139 @@ ANIMATIONS:
 - Skeleton loading states with shimmer
 
 ⚠️ MANDATORY: Preserve ALL content from video. Style changes appearance only.`, category: "brand" },
-  { id: "deep-blue-law", name: "Deep Blue Law", desc: "Tilleke Blue • Editorial Legal • SE Asian Authority", fullDesc: `⚖️ DEEP BLUE LAW — Authoritative Southeast Asian legal elegance. Modern, confident expertise. Clean editorial design with strong hierarchy, like a global top-tier law firm.
+  { id: "deep-blue-law", name: "Deep Blue Law", desc: "Deep Navy • Editorial Legal • Red Accent", fullDesc: `⚖️ DEEP BLUE LAW — Authoritative legal elegance. Modern, confident expertise. Clean editorial design with strong hierarchy.
 
 ═══════════════════════════════════════════════════════════════════════════════
 🎨 MANDATORY REACT BITS COMPONENTS (import from react-bits):
 ═══════════════════════════════════════════════════════════════════════════════
 HERO: Use Silk background (import { Silk } from "react-bits/backgrounds/silk") — deep navy silk flowing texture
-CARDS: Use SpotlightCard (import { SpotlightCard } from "react-bits/components/spotlight-card") for practice areas / jurisdiction cards
-TEXT: Use SplitText (import { SplitText } from "react-bits/text/split-text") for hero headline reveal + BlurText (import { BlurText } from "react-bits/text/blur-text") for section titles
-SCROLL: Use ScrollFloat (import { ScrollFloat } from "react-bits/text/scroll-float") for section headings appearing on scroll
-HOVER: Use GlareHover (import { GlareHover } from "react-bits/animations/glare-hover") on team/profile cards
+CARDS: Use SpotlightCard (import { SpotlightCard } from "react-bits/components/spotlight-card") for practice/service cards
+TEXT: Use SplitText (import { SplitText } from "react-bits/text/split-text") for hero headline + BlurText (import { BlurText } from "react-bits/text/blur-text") for section titles
+SCROLL: Use ScrollFloat (import { ScrollFloat } from "react-bits/text/scroll-float") for section headings on scroll
+HOVER: Use GlareHover (import { GlareHover } from "react-bits/animations/glare-hover") on profile/team cards
 NAV: Use FadeContent (import { FadeContent } from "react-bits/animations/fade-content") for section transitions
-COUNTER: Use CountUp (import { CountUp } from "react-bits/text/count-up") for statistics (years est., offices, jurisdictions)
+COUNTER: Use CountUp (import { CountUp } from "react-bits/text/count-up") for statistics
 GALLERY: Use Masonry (import { Masonry } from "react-bits/components/masonry") for insights/articles grid
 
 ═══════════════════════════════════════════════════════════════════════════════
-🎨 COLOR PALETTE (Tilleke & Gibbins Brand):
+🎨 COLOR PALETTE:
 ═══════════════════════════════════════════════════════════════════════════════
-Background primary: Tilleke Blue #002042 (deep navy — hero, header, footer, dark sections)
-Background light: Off White #F0F1F2 (content sections, article cards)
-Background warm white: #FAFAFA (body/alternate sections)
-Accent: Tilleke Orange #ED2724 (SPARINGLY — max 10-15% — hover states, CTA buttons, small highlights, bullets)
-Secondary blue: Yale Blue #065193 (links, secondary buttons, interactive elements)
-Secondary deep: Persian Blue #08249C (gradients, section overlays)
+Background primary: Deep Blue #002042 (hero, header, footer, dark sections)
+Background secondary: #001a35 (nav bars, accent bands)
+Background light: Off White #F0F1F2 (content sections, cards)
+Background warm: #FAFAFA (alternate light sections)
+Accent red: #ED2724 (SPARINGLY — max 10-15% — hover states, CTA, highlights, bullets)
+Secondary blue: #065193 (links, secondary buttons, interactive)
+Deep blue: #08249C (gradients, overlays)
 Text on dark: #FFFFFF pure white
 Text on light: #1A1A2E dark charcoal
-Text muted: #6B7280 (metadata, dates, secondary info)
+Text muted: #6B7280 (metadata, dates)
 Borders: rgba(255,255,255,0.08) on dark, rgba(0,32,66,0.08) on light
-Gold accent: #C9A962 (awards, rankings badges — subtle only)
+Gold accent: #C9A962 (awards, badges — subtle only)
 
 ═══════════════════════════════════════════════════════════════════════════════
 📝 TYPOGRAPHY:
 ═══════════════════════════════════════════════════════════════════════════════
-Headlines: "Poppins", sans-serif — weight 600-700, tracking -0.01em
+Headlines: "Poppins", sans-serif
+- Weight 600-700, tracking -0.01em
 - Hero: text-5xl md:text-7xl, weight 700
 - Section titles: text-3xl md:text-5xl, weight 600
-- ALL CAPS for jurisdiction labels and small category tags (tracking 0.15em, text-xs)
+- ALL CAPS for labels and category tags (tracking 0.15em, text-xs)
 
-Body: "Source Sans Pro", sans-serif — weight 400
-- Size: text-base (16px) to text-lg (18px)
-- Line-height: 1.7 (generous, editorial readability)
+Body: "Source Sans Pro", sans-serif
+- Weight 400, size text-base to text-lg
+- Line-height: 1.7 (generous editorial readability)
 
-Accent font: "Playfair Display", serif — ONLY for pull-quotes, testimonials, taglines
-- Italic style for emphasis, weight 400-500
-
-Hierarchy through size and spacing, NOT color variation. Consistent 8px vertical rhythm.
+Accent: "Playfair Display", serif — ONLY for pull-quotes, testimonials, taglines
+- Italic, weight 400-500
 
 ═══════════════════════════════════════════════════════════════════════════════
-✨ SIGNATURE EFFECTS (IMPLEMENT ALL):
+✨ SIGNATURE EFFECTS (IMPLEMENT ALL!):
 ═══════════════════════════════════════════════════════════════════════════════
-1. SILK HERO: Full-viewport hero with Silk background in navy (#002042 to #08249C gradient)
-   - Tagline overlay: "Achieving Excellence Together" or video content
-   - White text with subtle text-shadow: 0 2px 20px rgba(0,0,0,0.3)
-   - Thin horizontal rule below tagline: 60px wide, 2px, Tilleke Orange #ED2724
+1. SILK HERO: Full-viewport hero with Silk background (#002042 → #08249C gradient)
+   - White text with text-shadow: 0 2px 20px rgba(0,0,0,0.3)
+   - Thin horizontal rule below tagline:
+     width: 60px, height: 2px, background: #ED2724
+     animation: ruleExpand 1s ease-out forwards (0px → 60px)
 
-2. JURISDICTION BAR: Horizontal region list below hero
-   - CAMBODIA • INDONESIA • LAOS • MYANMAR • THAILAND • VIETNAM
-   - Orange bullet separators (•), all-caps, tracking 0.2em, text-xs
-   - bg-[#001a35] with py-3
+2. GLOW BORDER CARDS: Cards with subtle blue glow on hover
+   - background: rgba(255,255,255,0.03)
+   - border: 1px solid rgba(255,255,255,0.06)
+   - border-radius: 16px
+   - backdrop-filter: blur(12px)
+   - On hover: box-shadow: 0 0 30px rgba(6,81,147,0.15), border-color: rgba(6,81,147,0.3)
+   - transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1)
+   - Left border accent on hover: border-left: 3px solid #ED2724 (animate width 0 → 3px)
 
-3. EDITORIAL CARDS: Clean white cards for practice areas / insights
-   - bg-white rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-300
-   - Left border accent: border-l-4 border-[#ED2724] on hover only
-   - Image top with object-cover, content bottom with generous p-6 spacing
+3. EDITORIAL WHITE CARDS (light sections): Clean cards for articles/insights
+   - bg-white rounded-xl shadow-sm hover:shadow-lg
+   - transition: box-shadow 0.3s ease, transform 0.3s ease
+   - hover: translateY(-4px)
+   - Image top object-cover, content bottom p-6
 
-4. CREDIBILITY SIGNALS: Rankings/awards section
-   - Gold #C9A962 small badges/shields inline
-   - "Band 1 — Chambers Asia Pacific" style labels
-   - Displayed in horizontal scroll or grid, never overwhelming
+4. FLOATING GRADIENT ORB: Subtle ambient background animation
+   - position: fixed, width: 500px, height: 500px
+   - background: radial-gradient(circle, rgba(8,36,156,0.08) 0%, transparent 70%)
+   - animation: orbFloat 20s ease-in-out infinite
+   - @keyframes orbFloat { 0% { transform: translate(0,0) } 33% { transform: translate(100px,-50px) } 66% { transform: translate(-80px,60px) } 100% { transform: translate(0,0) } }
+   - pointer-events: none, z-index: 0
 
-5. REGIONAL MAP ACCENT: If hero has map/locations content
-   - Abstract Southeast Asian outline using CSS/SVG
-   - Subtle animated dots at office locations
-   - Color: rgba(237,39,36,0.6) for dots, white/20% for map lines
+5. SECTION DIVIDER LINE: Thin animated line between sections
+   - height: 1px, background: linear-gradient(90deg, transparent, #065193, transparent)
+   - animation: shimmerLine 3s ease-in-out infinite
+   - @keyframes shimmerLine { 0%,100% { opacity: 0.3 } 50% { opacity: 0.8 } }
 
-6. DARK/LIGHT SECTION RHYTHM: Alternate sections
+6. SCROLL REVEAL: Sections animate in on viewport enter
+   - Initial: opacity: 0, transform: translateY(40px)
+   - Animate to: opacity: 1, transform: translateY(0)
+   - transition: 0.8s cubic-bezier(0.16, 1, 0.3, 1)
+   - Stagger children by 100ms delay each
+
+7. DARK/LIGHT RHYTHM: Alternate sections
    - Dark (#002042): hero, CTA bands, footer
    - Light (#F0F1F2 or #FAFAFA): content, articles, team
-   - Smooth scroll transitions between dark/light
+   - Smooth transitions between dark/light
 
 ═══════════════════════════════════════════════════════════════════════════════
 🎬 REQUIRED ANIMATIONS:
 ═══════════════════════════════════════════════════════════════════════════════
-- Hero headline: SplitText reveal, 80ms stagger per word, ease-out
-- Section titles: ScrollFloat on viewport enter
-- Cards: FadeContent staggered (100ms delay each), translateY(20px) → 0
-- Stats: CountUp from 0 (e.g., "135+ Years", "7 Offices", "6 Jurisdictions")
-- Hover on cards: GlareHover subtle white sweep + shadow-lg
-- Page transitions: 300ms ease, no flashy effects — CONFIDENT, not showy
-- Orange accent line under active nav: width animation 0 → 100%
+- Hero headline: SplitText reveal, 80ms stagger per word
+   @keyframes wordReveal { from { opacity: 0; transform: translateY(30px) } to { opacity: 1; transform: translateY(0) } }
+   animation: wordReveal 0.6s ease-out forwards
+
+- Section titles: ScrollFloat on viewport enter with blur
+   @keyframes blurIn { from { opacity: 0; filter: blur(8px); transform: translateY(20px) } to { opacity: 1; filter: blur(0); transform: translateY(0) } }
+   animation: blurIn 0.8s ease-out forwards
+
+- Cards: Staggered entrance with lift
+   @keyframes cardIn { from { opacity: 0; transform: translateY(30px) scale(0.98) } to { opacity: 1; transform: translateY(0) scale(1) } }
+   animation: cardIn 0.6s ease-out forwards
+   Each card: animation-delay: calc(var(--i) * 100ms)
+
+- Stats: CountUp from 0 with spring feel
+- Hover on cards: GlareHover white sweep + shadow-lg transition 0.4s
+- Red accent line under active nav:
+   @keyframes navUnderline { from { width: 0 } to { width: 100% } }
+   height: 2px, background: #ED2724, animation: navUnderline 0.3s ease-out forwards
+
+- Button hover pulse:
+   @keyframes btnPulse { 0% { box-shadow: 0 0 0 0 rgba(237,39,36,0.4) } 70% { box-shadow: 0 0 0 10px rgba(237,39,36,0) } 100% { box-shadow: 0 0 0 0 rgba(237,39,36,0) } }
+   CTA buttons on hover: animation: btnPulse 1s ease-out
+
+- Smooth page scroll: scroll-behavior: smooth on html
 
 ═══════════════════════════════════════════════════════════════════════════════
 🏛️ DEEP BLUE LAW PRINCIPLES:
 ═══════════════════════════════════════════════════════════════════════════════
 - NEVER use legal clichés: no gavels, scales of justice, skyline stock photos
-- AVOID clutter: whitespace is authority. Generous py-16 to py-24 section spacing
-- Southeast Asian character: subtle textures, warm but professional, NOT generic Western law firm
-- Thought leadership forward: articles/insights should feel like curated editorial, not blog posts
-- Trust through restraint: Tilleke Orange is a HIGHLIGHT, never dominant. It earns attention.
-- Mobile-first responsive: clean single-column on mobile, editorial grid on desktop
-- Search & navigation: clear mega-menu style nav, practice areas ≤2 clicks from home
+- Whitespace is authority. Generous py-16 to py-24 section spacing
+- Thought leadership forward: articles feel like curated editorial, not blog posts
+- Trust through restraint: red accent is a HIGHLIGHT, never dominant
+- Mobile-first responsive: single-column on mobile, editorial grid on desktop
 
-⚠️ THE FEELING: Walking into the mahogany-paneled lobby of Southeast Asia's most trusted law firm. Everything whispers authority — from the deep navy walls to the single orange orchid on the reception desk. Clean. Uncluttered. 135 years of quiet confidence.
+⚠️ THE FEELING: Walking into the mahogany-paneled lobby of a world-class law firm. Deep navy walls, one red orchid on the reception desk. Clean. Uncluttered. Quiet confidence.
 
-⚠️ MANDATORY: Preserve ALL content from video. Style changes appearance only.`, category: "brand" },
+⚠️ MANDATORY: Preserve ALL content from video. Style changes appearance only.`, category: "dark" },
 
   // === NEW SHADER & ANIMATION STYLES ===
   { id: "liquid-neon", name: "Liquid Neon", desc: "WebGL Metaballs • Lava Lamp • Glow", fullDesc: "CRITICAL: Black #000 background. Neon effect using CSS: Single animated blob with filter: blur(40px) and gradient colors. OR use radial-gradient blobs that animate position. Text has neon glow: text-shadow: 0 0 20px rgba(255,0,255,0.5). Keep layout clean, no overlapping blobs.", category: "shader" },
