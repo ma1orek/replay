@@ -127,7 +127,7 @@ Generate the article now:`;
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0.8,
-        maxOutputTokens: 8000,
+        maxOutputTokens: 32000,
         responseMimeType: "application/json"
       }
     });
@@ -178,7 +178,7 @@ async function fetchCompetitorContent(url: string): Promise<string | null> {
 }
 
 /**
- * Publish content to blog (via existing content engine)
+ * Publish content directly to blog_posts table
  */
 async function publishContent(
   title: string,
@@ -188,27 +188,49 @@ async function publishContent(
   keywords: string[]
 ) {
   try {
-    // Use existing blog publishing endpoint
-    const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/admin/publish-article`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const { data: post, error } = await supabase
+      .from("blog_posts")
+      .insert({
         title,
         slug,
         content,
-        metaDescription,
-        keywords,
-        published: true,
-        source: "aeo-auto-generated"
+        meta_description: metaDescription,
+        target_keyword: keywords[0] || "",
+        tone: "ai-optimized",
+        status: "published",
+        published_at: new Date().toISOString(),
+        read_time_minutes: Math.ceil(content.split(/\s+/).length / 200),
       })
-    });
+      .select()
+      .single();
 
-    if (!response.ok) {
-      throw new Error("Failed to publish article");
+    if (error) {
+      console.error("Publish DB error:", error);
+      // If slug conflict, append timestamp
+      if (error.message?.includes("duplicate") || error.message?.includes("unique")) {
+        const uniqueSlug = `${slug}-${Date.now()}`;
+        const { data: retryPost, error: retryError } = await supabase
+          .from("blog_posts")
+          .insert({
+            title,
+            slug: uniqueSlug,
+            content,
+            meta_description: metaDescription,
+            target_keyword: keywords[0] || "",
+            tone: "ai-optimized",
+            status: "published",
+            published_at: new Date().toISOString(),
+            read_time_minutes: Math.ceil(content.split(/\s+/).length / 200),
+          })
+          .select()
+          .single();
+        if (retryError) throw retryError;
+        return `/blog/${uniqueSlug}`;
+      }
+      throw error;
     }
 
-    const data = await response.json();
-    return data.url;
+    return `/blog/${slug}`;
   } catch (error) {
     console.error("Publish error:", error);
     return null;
@@ -380,6 +402,81 @@ export async function GET(req: Request) {
     });
   } catch (error: any) {
     console.error("Get generated content error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+/**
+ * PUT - Publish or delete a generated article
+ */
+export async function PUT(req: Request) {
+  try {
+    const body = await req.json();
+    const { contentId, action } = body;
+
+    if (!contentId || !action) {
+      return NextResponse.json({ error: "contentId and action required" }, { status: 400 });
+    }
+
+    if (action === "publish") {
+      // Get the content record
+      const { data: content, error: fetchError } = await supabase
+        .from("aeo_generated_content")
+        .select("*")
+        .eq("id", contentId)
+        .single();
+
+      if (fetchError || !content) {
+        return NextResponse.json({ error: "Content not found" }, { status: 404 });
+      }
+
+      // Publish to blog_posts
+      const publishedUrl = await publishContent(
+        content.title,
+        content.slug,
+        content.content,
+        content.meta_description || "",
+        content.keywords || []
+      );
+
+      if (!publishedUrl) {
+        return NextResponse.json({ error: "Failed to publish to blog" }, { status: 500 });
+      }
+
+      // Update content record
+      await supabase
+        .from("aeo_generated_content")
+        .update({
+          published: true,
+          published_at: new Date().toISOString(),
+          published_url: publishedUrl
+        })
+        .eq("id", contentId);
+
+      // Update gap status if linked
+      if (content.gap_id) {
+        await supabase
+          .from("aeo_content_gaps")
+          .update({ status: "published", published_at: new Date().toISOString() })
+          .eq("id", content.gap_id);
+      }
+
+      return NextResponse.json({ success: true, publishedUrl });
+
+    } else if (action === "delete") {
+      await supabase
+        .from("aeo_generated_content")
+        .delete()
+        .eq("id", contentId);
+
+      return NextResponse.json({ success: true });
+
+    } else {
+      return NextResponse.json({ error: "Invalid action. Use 'publish' or 'delete'" }, { status: 400 });
+    }
+
+  } catch (error: any) {
+    console.error("PUT generate-content error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

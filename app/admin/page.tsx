@@ -2084,9 +2084,36 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
 
                 {/* Content Gaps Table */}
                 <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
-                  <div className="p-6 border-b border-zinc-800">
-                    <h3 className="text-sm font-semibold text-white">Content Gaps (High Priority)</h3>
-                    <p className="text-xs text-white/50 mt-1">Queries where competitors dominate</p>
+                  <div className="p-6 border-b border-zinc-800 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold text-white">Content Gaps (High Priority)</h3>
+                      <p className="text-xs text-white/50 mt-1">Queries where competitors dominate</p>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        const identifiedGaps = aeoData.gaps?.items?.filter((g: any) => g.status === "identified" && g.priority >= 7) || [];
+                        if (identifiedGaps.length === 0) { setToastMessage("No identified gaps to generate"); return; }
+                        setToastMessage(`⏳ Generating ${identifiedGaps.length} articles...`);
+                        let success = 0;
+                        for (const gap of identifiedGaps.slice(0, 5)) {
+                          try {
+                            const response = await fetch("/api/aeo/generate-content", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ query: gap.query, targetKeywords: gap.target_keywords || [], gapId: gap.id, autoPublish: aeoAutoPublish })
+                            });
+                            const data = await response.json();
+                            if (data.success) success++;
+                            setToastMessage(`⏳ Generated ${success}/${identifiedGaps.slice(0, 5).length}...`);
+                          } catch {}
+                        }
+                        setToastMessage(`✅ Generated ${success} articles`);
+                        loadAeoData();
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-orange-600 text-white hover:bg-orange-500 transition-colors"
+                    >
+                      Generate All
+                    </button>
                   </div>
                   <div className="overflow-x-auto">
                     {aeoData.gaps?.items && aeoData.gaps.items.length > 0 ? (
@@ -2181,6 +2208,32 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                         <h3 className="text-sm font-semibold text-white">Generated Content</h3>
                         <p className="text-xs text-white/50 mt-1">{aeoData.content?.pending || 0} pending approval</p>
                       </div>
+                      {(aeoData.content?.pending || 0) > 0 && (
+                        <button
+                          onClick={async () => {
+                            const pendingItems = aeoData.content?.items?.filter((c: any) => !c.published) || [];
+                            if (pendingItems.length === 0) return;
+                            setToastMessage(`⏳ Publishing ${pendingItems.length} articles...`);
+                            let success = 0;
+                            for (const item of pendingItems) {
+                              try {
+                                const response = await fetch("/api/aeo/generate-content", {
+                                  method: "PUT",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ contentId: item.id, action: "publish" })
+                                });
+                                const data = await response.json();
+                                if (data.success) success++;
+                              } catch {}
+                            }
+                            setToastMessage(`✅ Published ${success} articles`);
+                            loadAeoData();
+                          }}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-500 transition-colors"
+                        >
+                          Publish All
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div className="overflow-x-auto">
@@ -2222,17 +2275,65 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                                 )}
                               </td>
                               <td className="p-4 text-right">
-                                {content.published_url && (
-                                  <a
-                                    href={content.published_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 text-white hover:bg-zinc-700 transition-colors"
+                                <div className="flex items-center justify-end gap-2">
+                                  {!content.published && (
+                                    <button
+                                      onClick={async () => {
+                                        setToastMessage("⏳ Publishing...");
+                                        try {
+                                          const response = await fetch("/api/aeo/generate-content", {
+                                            method: "PUT",
+                                            headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify({ contentId: content.id, action: "publish" })
+                                          });
+                                          const data = await response.json();
+                                          if (data.success) {
+                                            setToastMessage(`✅ Published: ${data.publishedUrl}`);
+                                            loadAeoData();
+                                          } else {
+                                            setToastMessage(`❌ ${data.error}`);
+                                          }
+                                        } catch { setToastMessage("❌ Publish failed"); }
+                                      }}
+                                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-500 transition-colors"
+                                    >
+                                      Publish
+                                    </button>
+                                  )}
+                                  {content.published_url && (
+                                    <a
+                                      href={content.published_url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 text-white hover:bg-zinc-700 transition-colors"
+                                    >
+                                      <ExternalLink className="w-3 h-3" />
+                                      View
+                                    </a>
+                                  )}
+                                  <button
+                                    onClick={async () => {
+                                      if (!confirm("Delete this article?")) return;
+                                      try {
+                                        const response = await fetch("/api/aeo/generate-content", {
+                                          method: "PUT",
+                                          headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify({ contentId: content.id, action: "delete" })
+                                        });
+                                        const data = await response.json();
+                                        if (data.success) {
+                                          setToastMessage("✅ Deleted");
+                                          loadAeoData();
+                                        } else {
+                                          setToastMessage(`❌ ${data.error}`);
+                                        }
+                                      } catch { setToastMessage("❌ Delete failed"); }
+                                    }}
+                                    className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                                   >
-                                    <ExternalLink className="w-3 h-3" />
-                                    View
-                                  </a>
-                                )}
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           ))}
