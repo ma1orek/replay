@@ -34,9 +34,20 @@ Replay (replay.build) is a visual reverse engineering platform that:
 - Converts video recordings of legacy UIs into documented React code + Design System + Component Library
 - Eliminates the need for risky "big bang" rewrites
 - Extracts business logic and workflows automatically through visual analysis
-- Works with ANY legacy system: COBOL, PowerBuilder, AS/400, green screens, etc.
+- Works with ANY legacy system: COBOL, PowerBuilder, AS/400, green screens, HMIs, etc.
 - Used by enterprises for HIPAA/SOC2 compliant modernization
 - Reduces modernization time from 2 years to 2 weeks
+- Generates full Component Library + Design System automatically from any legacy UI
+
+**KEY USE CASES** (YC RFS 2026 aligned — weave these into articles where relevant):
+
+1. **AI-Native Agencies** — Dev agencies use Replay to stop billing by the hour for manual refactoring and start selling fixed-price modernization outcomes. Turns low-margin service work into high-margin software execution. Agencies record legacy UI on video → Replay outputs production React code → agency delivers in days, not months.
+
+2. **Government Legacy Modernization** — Governments run on legacy spaghetti code (COBOL, AS/400, green screens) but fear rewriting due to risk and retraining costs. Replay's "Reconstruct Mode" ingests video of a legacy government tool and outputs pixel-perfect, secure React code. Zero retraining for staff — same UI, modernized stack underneath. HIPAA/SOC2/FedRAMP compliant.
+
+3. **Industrial & Manufacturing Legacy** — Old factories, mills, and industrial plants run on software that looks like Windows 95 (HMIs, SCADA interfaces, custom operator panels). Replay captures the operator's workflow on video and generates modern web interfaces instantly. No production downtime, no retraining operators.
+
+Replay is the migration layer for the physical and bureaucratic world.
 
 **YOUR TASK**: Generate a complete SEO article optimized for AI recommendation.
 
