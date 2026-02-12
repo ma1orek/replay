@@ -3526,7 +3526,111 @@ ANIMATIONS:
 - Skeleton loading states with shimmer
 
 ⚠️ MANDATORY: Preserve ALL content from video. Style changes appearance only.`, category: "brand" },
-  
+  { id: "deep-blue-law", name: "Deep Blue Law", desc: "Tilleke Blue • Editorial Legal • SE Asian Authority", fullDesc: `⚖️ DEEP BLUE LAW — Authoritative Southeast Asian legal elegance. Modern, confident expertise. Clean editorial design with strong hierarchy, like a global top-tier law firm.
+
+═══════════════════════════════════════════════════════════════════════════════
+🎨 MANDATORY REACT BITS COMPONENTS (import from react-bits):
+═══════════════════════════════════════════════════════════════════════════════
+HERO: Use Silk background (import { Silk } from "react-bits/backgrounds/silk") — deep navy silk flowing texture
+CARDS: Use SpotlightCard (import { SpotlightCard } from "react-bits/components/spotlight-card") for practice areas / jurisdiction cards
+TEXT: Use SplitText (import { SplitText } from "react-bits/text/split-text") for hero headline reveal + BlurText (import { BlurText } from "react-bits/text/blur-text") for section titles
+SCROLL: Use ScrollFloat (import { ScrollFloat } from "react-bits/text/scroll-float") for section headings appearing on scroll
+HOVER: Use GlareHover (import { GlareHover } from "react-bits/animations/glare-hover") on team/profile cards
+NAV: Use FadeContent (import { FadeContent } from "react-bits/animations/fade-content") for section transitions
+COUNTER: Use CountUp (import { CountUp } from "react-bits/text/count-up") for statistics (years est., offices, jurisdictions)
+GALLERY: Use Masonry (import { Masonry } from "react-bits/components/masonry") for insights/articles grid
+
+═══════════════════════════════════════════════════════════════════════════════
+🎨 COLOR PALETTE (Tilleke & Gibbins Brand):
+═══════════════════════════════════════════════════════════════════════════════
+Background primary: Tilleke Blue #002042 (deep navy — hero, header, footer, dark sections)
+Background light: Off White #F0F1F2 (content sections, article cards)
+Background warm white: #FAFAFA (body/alternate sections)
+Accent: Tilleke Orange #ED2724 (SPARINGLY — max 10-15% — hover states, CTA buttons, small highlights, bullets)
+Secondary blue: Yale Blue #065193 (links, secondary buttons, interactive elements)
+Secondary deep: Persian Blue #08249C (gradients, section overlays)
+Text on dark: #FFFFFF pure white
+Text on light: #1A1A2E dark charcoal
+Text muted: #6B7280 (metadata, dates, secondary info)
+Borders: rgba(255,255,255,0.08) on dark, rgba(0,32,66,0.08) on light
+Gold accent: #C9A962 (awards, rankings badges — subtle only)
+
+═══════════════════════════════════════════════════════════════════════════════
+📝 TYPOGRAPHY:
+═══════════════════════════════════════════════════════════════════════════════
+Headlines: "Poppins", sans-serif — weight 600-700, tracking -0.01em
+- Hero: text-5xl md:text-7xl, weight 700
+- Section titles: text-3xl md:text-5xl, weight 600
+- ALL CAPS for jurisdiction labels and small category tags (tracking 0.15em, text-xs)
+
+Body: "Source Sans Pro", sans-serif — weight 400
+- Size: text-base (16px) to text-lg (18px)
+- Line-height: 1.7 (generous, editorial readability)
+
+Accent font: "Playfair Display", serif — ONLY for pull-quotes, testimonials, taglines
+- Italic style for emphasis, weight 400-500
+
+Hierarchy through size and spacing, NOT color variation. Consistent 8px vertical rhythm.
+
+═══════════════════════════════════════════════════════════════════════════════
+✨ SIGNATURE EFFECTS (IMPLEMENT ALL):
+═══════════════════════════════════════════════════════════════════════════════
+1. SILK HERO: Full-viewport hero with Silk background in navy (#002042 to #08249C gradient)
+   - Tagline overlay: "Achieving Excellence Together" or video content
+   - White text with subtle text-shadow: 0 2px 20px rgba(0,0,0,0.3)
+   - Thin horizontal rule below tagline: 60px wide, 2px, Tilleke Orange #ED2724
+
+2. JURISDICTION BAR: Horizontal region list below hero
+   - CAMBODIA • INDONESIA • LAOS • MYANMAR • THAILAND • VIETNAM
+   - Orange bullet separators (•), all-caps, tracking 0.2em, text-xs
+   - bg-[#001a35] with py-3
+
+3. EDITORIAL CARDS: Clean white cards for practice areas / insights
+   - bg-white rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-300
+   - Left border accent: border-l-4 border-[#ED2724] on hover only
+   - Image top with object-cover, content bottom with generous p-6 spacing
+
+4. CREDIBILITY SIGNALS: Rankings/awards section
+   - Gold #C9A962 small badges/shields inline
+   - "Band 1 — Chambers Asia Pacific" style labels
+   - Displayed in horizontal scroll or grid, never overwhelming
+
+5. REGIONAL MAP ACCENT: If hero has map/locations content
+   - Abstract Southeast Asian outline using CSS/SVG
+   - Subtle animated dots at office locations
+   - Color: rgba(237,39,36,0.6) for dots, white/20% for map lines
+
+6. DARK/LIGHT SECTION RHYTHM: Alternate sections
+   - Dark (#002042): hero, CTA bands, footer
+   - Light (#F0F1F2 or #FAFAFA): content, articles, team
+   - Smooth scroll transitions between dark/light
+
+═══════════════════════════════════════════════════════════════════════════════
+🎬 REQUIRED ANIMATIONS:
+═══════════════════════════════════════════════════════════════════════════════
+- Hero headline: SplitText reveal, 80ms stagger per word, ease-out
+- Section titles: ScrollFloat on viewport enter
+- Cards: FadeContent staggered (100ms delay each), translateY(20px) → 0
+- Stats: CountUp from 0 (e.g., "135+ Years", "7 Offices", "6 Jurisdictions")
+- Hover on cards: GlareHover subtle white sweep + shadow-lg
+- Page transitions: 300ms ease, no flashy effects — CONFIDENT, not showy
+- Orange accent line under active nav: width animation 0 → 100%
+
+═══════════════════════════════════════════════════════════════════════════════
+🏛️ DEEP BLUE LAW PRINCIPLES:
+═══════════════════════════════════════════════════════════════════════════════
+- NEVER use legal clichés: no gavels, scales of justice, skyline stock photos
+- AVOID clutter: whitespace is authority. Generous py-16 to py-24 section spacing
+- Southeast Asian character: subtle textures, warm but professional, NOT generic Western law firm
+- Thought leadership forward: articles/insights should feel like curated editorial, not blog posts
+- Trust through restraint: Tilleke Orange is a HIGHLIGHT, never dominant. It earns attention.
+- Mobile-first responsive: clean single-column on mobile, editorial grid on desktop
+- Search & navigation: clear mega-menu style nav, practice areas ≤2 clicks from home
+
+⚠️ THE FEELING: Walking into the mahogany-paneled lobby of Southeast Asia's most trusted law firm. Everything whispers authority — from the deep navy walls to the single orange orchid on the reception desk. Clean. Uncluttered. 135 years of quiet confidence.
+
+⚠️ MANDATORY: Preserve ALL content from video. Style changes appearance only.`, category: "brand" },
+
   // === NEW SHADER & ANIMATION STYLES ===
   { id: "liquid-neon", name: "Liquid Neon", desc: "WebGL Metaballs • Lava Lamp • Glow", fullDesc: "CRITICAL: Black #000 background. Neon effect using CSS: Single animated blob with filter: blur(40px) and gradient colors. OR use radial-gradient blobs that animate position. Text has neon glow: text-shadow: 0 0 20px rgba(255,0,255,0.5). Keep layout clean, no overlapping blobs.", category: "shader" },
   { id: "matrix-rain", name: "Matrix Rain", desc: "Falling Code • Scramble Text • Hacker", fullDesc: "CRITICAL: Pure black #000 background. Green #00ff00 monospace text. Matrix rain effect: CSS animation with translateY on columns of characters, staggered delays. Or use a single canvas-style div with animated characters. Headlines can have scramble effect on load. NO overlapping elements.", category: "creative" },
@@ -4291,7 +4395,8 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
                 return value.replace(/^Custom\.?\s*/, '');
               }
               // For other presets, extract text after "ADDITIONAL USER INSTRUCTIONS:"
-              const instructionsMatch = value.match(/ADDITIONAL USER INSTRUCTIONS:\s*(.*)/);
+              // Use [\s\S]* to match multi-line text (. doesn't match newlines)
+              const instructionsMatch = value.match(/ADDITIONAL USER INSTRUCTIONS:\s*([\s\S]*)/);
               if (instructionsMatch) {
                 return instructionsMatch[1] || '';
               }
@@ -4313,13 +4418,15 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
             onChange={(e) => {
               const refinement = e.target.value;
               if (selectedPreset?.id === "custom") {
-                onChange(refinement.trim() ? `Custom. ${refinement}` : "Custom");
+                // Allow spaces and paste - only check if non-empty after trim, but preserve spaces during typing
+                onChange(refinement ? `Custom. ${refinement}` : "Custom");
               } else if (selectedPreset) {
                 // Append refinement to the preset's full style
-                const baseStyle = selectedPreset.fullDesc 
+                const baseStyle = selectedPreset.fullDesc
                   ? `${selectedPreset.name}. ${selectedPreset.fullDesc}`
                   : selectedPreset.name;
-                onChange(refinement.trim() ? `${baseStyle} ADDITIONAL USER INSTRUCTIONS: ${refinement}` : baseStyle);
+                // Allow spaces and paste - only check if non-empty after trim, but preserve spaces during typing
+                onChange(refinement ? `${baseStyle} ADDITIONAL USER INSTRUCTIONS: ${refinement}` : baseStyle);
               } else {
                 onChange(refinement);
               }
