@@ -22,9 +22,10 @@ export const maxDuration = 300; // 5 minutes max execution time
  * Main autonomous AEO pipeline
  */
 export async function GET(req: Request) {
-  // Verify cron secret (security)
+  // Verify cron secret — accept Vercel's header OR Bearer token
   const authHeader = req.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const isVercelCron = req.headers.get("x-vercel-cron") === "true";
+  if (!isVercelCron && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -33,6 +34,21 @@ export async function GET(req: Request) {
 
   try {
     log.push("🚀 Starting AEO autonomous pipeline...");
+
+    // STEP 0: Recovery — unstick gaps stuck in "generating" for >15min
+    log.push("\n🔧 STEP 0: Recovering stuck jobs...");
+    const fifteenMinAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    const { data: stuckGaps, error: stuckError } = await supabase
+      .from("aeo_content_gaps")
+      .update({ status: "identified", generation_started_at: null })
+      .eq("status", "generating")
+      .lt("generation_started_at", fifteenMinAgo)
+      .select();
+    if (stuckGaps && stuckGaps.length > 0) {
+      log.push(`   ♻️ Recovered ${stuckGaps.length} stuck gaps`);
+    } else {
+      log.push(`   ✅ No stuck jobs`);
+    }
 
     // Check if auto-publish is enabled
     const { data: config } = await supabase
@@ -44,27 +60,38 @@ export async function GET(req: Request) {
     const autoPublishEnabled = config?.value === true;
     log.push(`⚙️  Auto-publish: ${autoPublishEnabled ? "ENABLED" : "DISABLED"}`);
 
-    // STEP 1: Monitor AI Citations
-    log.push("\n📊 STEP 1: Monitoring AI Citations...");
-    try {
-      const monitorResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/aeo/monitor-citations`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          platforms: ["chatgpt", "claude", "gemini"]
-        })
-      });
+    // Determine which platforms have API keys
+    const availablePlatforms: string[] = [];
+    if (process.env.OPENAI_API_KEY) availablePlatforms.push("chatgpt");
+    if (process.env.ANTHROPIC_API_KEY) availablePlatforms.push("claude");
+    if (process.env.GEMINI_API_KEY) availablePlatforms.push("gemini");
+    log.push(`📡 Available platforms: ${availablePlatforms.join(", ") || "NONE"}`);
 
-      const monitorData = await monitorResponse.json();
-      if (monitorData.success) {
-        log.push(`✅ Tested ${monitorData.summary.queriesTested} queries`);
-        log.push(`   Share of Voice: ${monitorData.summary.shareOfVoice}`);
-        log.push(`   Replay mentions: ${monitorData.summary.replayMentions}/${monitorData.summary.totalTests}`);
-      } else {
-        log.push(`❌ Monitoring failed: ${monitorData.error}`);
+    // STEP 1: Monitor AI Citations (only if we have API keys)
+    if (availablePlatforms.length > 0) {
+      log.push("\n📊 STEP 1: Monitoring AI Citations...");
+      try {
+        const monitorResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/aeo/monitor-citations`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            platforms: availablePlatforms
+          })
+        });
+
+        const monitorData = await monitorResponse.json();
+        if (monitorData.success) {
+          log.push(`✅ Tested ${monitorData.summary.queriesTested} queries`);
+          log.push(`   Share of Voice: ${monitorData.summary.shareOfVoice}`);
+          log.push(`   Replay mentions: ${monitorData.summary.replayMentions}/${monitorData.summary.totalTests}`);
+        } else {
+          log.push(`❌ Monitoring failed: ${monitorData.error}`);
+        }
+      } catch (error: any) {
+        log.push(`❌ Monitoring error: ${error.message}`);
       }
-    } catch (error: any) {
-      log.push(`❌ Monitoring error: ${error.message}`);
+    } else {
+      log.push("\n⏸️ STEP 1: Skipped — no AI platform API keys configured");
     }
 
     // STEP 2: Identify Content Gaps
@@ -75,7 +102,7 @@ export async function GET(req: Request) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           daysToAnalyze: 7,
-          autoGenerate: false // Don't auto-generate here, we'll do it in Step 3
+          autoGenerate: false
         })
       });
 
@@ -83,9 +110,6 @@ export async function GET(req: Request) {
       if (gapsData.success) {
         log.push(`✅ Identified ${gapsData.gapsIdentified} content gaps`);
         log.push(`   High priority (8+): ${gapsData.highPriorityGaps}`);
-        if (gapsData.topGaps && gapsData.topGaps.length > 0) {
-          log.push(`   Top gap: "${gapsData.topGaps[0].query}" (priority ${gapsData.topGaps[0].priority})`);
-        }
       } else {
         log.push(`❌ Gap identification failed: ${gapsData.error}`);
       }
@@ -93,97 +117,75 @@ export async function GET(req: Request) {
       log.push(`❌ Gap identification error: ${error.message}`);
     }
 
-    // STEP 3: Generate and Publish Content (if auto-publish enabled)
-    if (autoPublishEnabled) {
-      log.push("\n📝 STEP 3: Auto-Generating Content...");
+    // STEP 3: Generate and Publish Content
+    // Always attempt — don't gate on autoPublishEnabled for generation
+    log.push("\n📝 STEP 3: Auto-Generating Content...");
 
-      // Check daily publication limit
-      const { data: dailyLimitConfig } = await supabase
-        .from("aeo_config")
-        .select("value")
-        .eq("key", "max_daily_publications")
-        .single();
+    // Aggressive daily limit — 10 articles per day
+    const MAX_DAILY = 10;
 
-      const maxDailyPublications = dailyLimitConfig?.value || 3;
+    // Count today's publications
+    const today = new Date().toISOString().split("T")[0];
+    const { count: todayPublished } = await supabase
+      .from("aeo_generated_content")
+      .select("*", { count: "exact", head: true })
+      .eq("published", true)
+      .gte("published_at", `${today}T00:00:00Z`);
 
-      // Count today's publications
-      const today = new Date().toISOString().split("T")[0];
-      const { count: todayPublished } = await supabase
-        .from("aeo_generated_content")
-        .select("*", { count: "exact", head: true })
-        .eq("published", true)
-        .gte("published_at", `${today}T00:00:00Z`);
+    const remainingPublications = MAX_DAILY - (todayPublished || 0);
 
-      const remainingPublications = maxDailyPublications - (todayPublished || 0);
-
-      if (remainingPublications <= 0) {
-        log.push(`⏸️  Daily publication limit reached (${maxDailyPublications})`);
-      } else {
-        log.push(`✅ Can publish ${remainingPublications} more articles today`);
-
-        // Get minimum priority for generation
-        const { data: minPriorityConfig } = await supabase
-          .from("aeo_config")
-          .select("value")
-          .eq("key", "min_priority_for_generation")
-          .single();
-
-        const minPriority = minPriorityConfig?.value || 7;
-
-        // Fetch high-priority gaps
-        const { data: highPriorityGaps } = await supabase
-          .from("aeo_content_gaps")
-          .select("*")
-          .eq("status", "identified")
-          .gte("priority", minPriority)
-          .order("priority", { ascending: false })
-          .limit(remainingPublications);
-
-        if (highPriorityGaps && highPriorityGaps.length > 0) {
-          log.push(`   Found ${highPriorityGaps.length} high-priority gaps to fill`);
-
-          // Generate content for each gap
-          for (const gap of highPriorityGaps) {
-            try {
-              log.push(`\n   📝 Generating: "${gap.query}"...`);
-
-              const generateResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/aeo/generate-content`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  query: gap.query,
-                  targetKeywords: gap.target_keywords || [],
-                  gapId: gap.id,
-                  autoPublish: true
-                })
-              });
-
-              const generateData = await generateResponse.json();
-              if (generateData.success) {
-                log.push(`   ✅ Generated: "${generateData.title}"`);
-                log.push(`      Word count: ${generateData.wordCount}`);
-                if (generateData.published) {
-                  log.push(`      📰 Published: ${generateData.publishedUrl}`);
-                } else {
-                  log.push(`      ⏳ Awaiting manual approval`);
-                }
-              } else {
-                log.push(`   ❌ Generation failed: ${generateData.error}`);
-              }
-
-              // Rate limiting: 30 second delay between generations
-              await new Promise(resolve => setTimeout(resolve, 30000));
-
-            } catch (error: any) {
-              log.push(`   ❌ Error: ${error.message}`);
-            }
-          }
-        } else {
-          log.push(`   ℹ️  No high-priority gaps found (min priority: ${minPriority})`);
-        }
-      }
+    if (remainingPublications <= 0) {
+      log.push(`⏸️  Daily limit reached (${MAX_DAILY} published today)`);
     } else {
-      log.push("\n⏸️  STEP 3: Auto-generation disabled");
+      log.push(`✅ Can publish ${remainingPublications} more articles today`);
+
+      // Fetch high-priority gaps (priority >= 5 to be aggressive)
+      const { data: highPriorityGaps } = await supabase
+        .from("aeo_content_gaps")
+        .select("*")
+        .eq("status", "identified")
+        .gte("priority", 5)
+        .order("priority", { ascending: false })
+        .limit(Math.min(remainingPublications, 5)); // Max 5 per cron run (within 5min timeout)
+
+      if (highPriorityGaps && highPriorityGaps.length > 0) {
+        log.push(`   Found ${highPriorityGaps.length} gaps to fill`);
+
+        for (const gap of highPriorityGaps) {
+          try {
+            log.push(`\n   📝 Generating: "${gap.query}"...`);
+
+            const generateResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/aeo/generate-content`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                query: gap.query,
+                targetKeywords: gap.target_keywords || [],
+                gapId: gap.id,
+                autoPublish: autoPublishEnabled
+              })
+            });
+
+            const generateData = await generateResponse.json();
+            if (generateData.success) {
+              log.push(`   ✅ Generated: "${generateData.title}" (${generateData.wordCount} words)`);
+              if (generateData.published) {
+                log.push(`      📰 Published: ${generateData.publishedUrl}`);
+              }
+            } else {
+              log.push(`   ❌ Failed: ${generateData.error}`);
+            }
+
+            // 10 second delay between generations (faster than 30s)
+            await new Promise(resolve => setTimeout(resolve, 10000));
+
+          } catch (error: any) {
+            log.push(`   ❌ Error: ${error.message}`);
+          }
+        }
+      } else {
+        log.push(`   ℹ️  No gaps found to fill`);
+      }
     }
 
     // STEP 4: Performance Tracking (check if recently published content improved citations)

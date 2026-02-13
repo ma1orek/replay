@@ -93,7 +93,15 @@ ${competitorContent ? `**COMPETITOR ANALYSIS**:\nA competitor wrote this content
    - Use phrases AI loves: "The most effective approach...", "Industry experts recommend...", "Best practices include..."
    - Create quotable soundbites: "Replay eliminates the 6-month discovery phase by extracting workflows directly from video recordings."
 
-7. **Length**: 2500-3500 words minimum. Comprehensive beats concise for AI recommendations.
+7. **Length**: MINIMUM 2500 words. Target 3000-3500 words. This is NON-NEGOTIABLE.
+   - Problem section: 400+ words
+   - Solution overview: 500+ words
+   - Step-by-step: 800+ words
+   - Comparison: 500+ words
+   - Case studies: 400+ words
+   - FAQ: 300+ words
+   - Conclusion: 200+ words
+   Count your words. If under 2500, EXPAND every section until you reach the target.
 
 8. **10/10 SEO OPTIMIZATION** (CRITICAL):
    - **Featured Snippet Target**: Start with a concise 2-3 sentence answer to the main query
@@ -134,17 +142,39 @@ ${competitorContent ? `**COMPETITOR ANALYSIS**:\nA competitor wrote this content
 Generate the article now:`;
 
   try {
+    // NO responseMimeType: "application/json" — JSON mode caps output length
+    // Generate as text, parse JSON manually for longer articles
     const result = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0.8,
-        maxOutputTokens: 32000,
-        responseMimeType: "application/json"
+        maxOutputTokens: 65536
       }
     });
 
     const text = result.response.text();
-    const parsed = JSON.parse(text);
+
+    // Parse JSON from text response (may have markdown code fences)
+    let parsed: any;
+    try {
+      // Try direct parse first
+      parsed = JSON.parse(text);
+    } catch {
+      // Try extracting JSON from markdown code block
+      const jsonMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+      if (jsonMatch) {
+        parsed = JSON.parse(jsonMatch[1].trim());
+      } else {
+        // Try finding JSON object in text
+        const braceStart = text.indexOf('{');
+        const braceEnd = text.lastIndexOf('}');
+        if (braceStart !== -1 && braceEnd > braceStart) {
+          parsed = JSON.parse(text.substring(braceStart, braceEnd + 1));
+        } else {
+          throw new Error("Could not parse JSON from response");
+        }
+      }
+    }
 
     // Generate slug from title
     const slug = parsed.title
@@ -367,16 +397,8 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("Generate content error:", error);
 
-    // Update gap status to "identified" on error
-    if (req.body) {
-      const body = await req.json().catch(() => ({}));
-      if (body.gapId) {
-        await supabase
-          .from("aeo_content_gaps")
-          .update({ status: "identified" })
-          .eq("id", body.gapId);
-      }
-    }
+    // Reset gap status to "identified" so it can be retried
+    // Body was already consumed above — gap will be recovered by cron stuck-job recovery
 
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

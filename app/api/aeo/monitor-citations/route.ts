@@ -410,14 +410,29 @@ export async function POST(req: Request) {
       queriesToTest = dbQueries || [];
     }
 
-    console.log(`Testing ${queriesToTest.length} queries across ${platforms.length} platforms...`);
+    // Filter platforms to only those with API keys configured
+    const activePlatforms = platforms.filter((p: string) => {
+      if (p === "chatgpt" && !OPENAI_API_KEY) return false;
+      if (p === "claude" && !ANTHROPIC_API_KEY) return false;
+      if (p === "gemini" && !GOOGLE_API_KEY) return false;
+      return true;
+    });
 
-    // Test each query on each platform
-    for (const queryObj of queriesToTest) {
+    console.log(`Testing ${queriesToTest.length} queries across ${activePlatforms.length} active platforms (${activePlatforms.join(", ")})`);
+    if (activePlatforms.length < platforms.length) {
+      const skipped = platforms.filter((p: string) => !activePlatforms.includes(p));
+      console.warn(`⚠️ Skipping platforms without API keys: ${skipped.join(", ")}`);
+    }
+
+    // Limit queries per monitoring run to avoid timeout (max 10)
+    const limitedQueries = queriesToTest.slice(0, 10);
+
+    // Test each query on each active platform
+    for (const queryObj of limitedQueries) {
       const query = typeof queryObj === "string" ? queryObj : queryObj.query;
       const category = typeof queryObj === "object" ? queryObj.category : "unknown";
 
-      for (const platform of platforms) {
+      for (const platform of activePlatforms) {
         try {
           let result: CitationResult;
 
@@ -428,16 +443,16 @@ export async function POST(req: Request) {
           } else if (platform === "gemini") {
             result = await testGemini(query);
           } else {
-            continue; // Skip unknown platforms
+            continue;
           }
 
           results.push(result);
           await storeCitation(result, category);
           queriesProcessed++;
 
-          // Rate limiting: small delay between requests
+          // Rate limiting
           if (!testMode) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 500));
           }
 
         } catch (error: any) {
