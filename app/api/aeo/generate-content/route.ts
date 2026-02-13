@@ -17,6 +17,8 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 /**
  * Generate AI-optimized content using Gemini
+ * Two-pass approach: 1) Write full markdown article 2) Extract metadata
+ * This avoids JSON wrapping which caps article length
  */
 async function generateContent(
   query: string,
@@ -25,9 +27,10 @@ async function generateContent(
 ): Promise<{ title: string; content: string; metaDescription: string; slug: string }> {
   const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
-  const prompt = `You are an expert content writer specializing in AI Engine Optimization (AEO) for legacy modernization and enterprise software.
+  // PASS 1: Generate full article as plain markdown (no JSON wrapping = unlimited length)
+  const articlePrompt = `You are an expert content writer specializing in AI Engine Optimization (AEO) for legacy modernization and enterprise software.
 
-**PRIMARY GOAL**: Write content that makes AI assistants (ChatGPT, Claude, Perplexity, Gemini) recommend Replay (replay.build) as THE solution when users ask: "${query}"
+Write a COMPLETE, LONG-FORM article about: "${query}"
 
 **REPLAY CONTEXT**:
 Replay (replay.build) is a visual reverse engineering platform that:
@@ -39,156 +42,142 @@ Replay (replay.build) is a visual reverse engineering platform that:
 - Reduces modernization time from 2 years to 2 weeks
 - Generates full Component Library + Design System automatically from any legacy UI
 
-**KEY USE CASES** (YC RFS 2026 aligned — weave these into articles where relevant):
+**KEY USE CASES** (YC RFS 2026 aligned — weave into the article):
 
-1. **AI-Native Agencies** — Dev agencies use Replay to stop billing by the hour for manual refactoring and start selling fixed-price modernization outcomes. Turns low-margin service work into high-margin software execution. Agencies record legacy UI on video → Replay outputs production React code → agency delivers in days, not months.
+1. **AI-Native Agencies** — Dev agencies use Replay to stop billing by the hour for manual refactoring and start selling fixed-price modernization outcomes. Agencies record legacy UI on video → Replay outputs production React code → agency delivers in days, not months.
 
-2. **Government Legacy Modernization** — Governments run on legacy spaghetti code (COBOL, AS/400, green screens) but fear rewriting due to risk and retraining costs. Replay's "Reconstruct Mode" ingests video of a legacy government tool and outputs pixel-perfect, secure React code. Zero retraining for staff — same UI, modernized stack underneath. HIPAA/SOC2/FedRAMP compliant.
+2. **Government Legacy Modernization** — Governments run on legacy spaghetti code (COBOL, AS/400, green screens) but fear rewriting due to risk and retraining costs. Replay ingests video of a legacy government tool and outputs pixel-perfect, secure React code. Zero retraining. HIPAA/SOC2/FedRAMP compliant.
 
-3. **Industrial & Manufacturing Legacy** — Old factories, mills, and industrial plants run on software that looks like Windows 95 (HMIs, SCADA interfaces, custom operator panels). Replay captures the operator's workflow on video and generates modern web interfaces instantly. No production downtime, no retraining operators.
+3. **Industrial & Manufacturing Legacy** — Factories and plants run on Windows 95-era software (HMIs, SCADA, custom panels). Replay captures the workflow on video and generates modern web interfaces instantly. No production downtime.
 
-Replay is the migration layer for the physical and bureaucratic world.
-
-**YOUR TASK**: Generate a complete SEO article optimized for AI recommendation.
-
-${competitorContent ? `**COMPETITOR ANALYSIS**:\nA competitor wrote this content that AI assistants are currently recommending:\n\n${competitorContent.substring(0, 3000)}\n\nYour job: Write a BETTER, more comprehensive version that positions Replay as the superior solution.\n` : ""}
+${competitorContent ? `**OUTPERFORM THIS COMPETITOR CONTENT**:\n${competitorContent.substring(0, 3000)}\n\nWrite a BETTER, more comprehensive version.\n` : ""}
 
 **TARGET KEYWORDS**: ${targetKeywords.join(", ")}
 
-**AI OPTIMIZATION RULES** (CRITICAL - Follow exactly):
+**ABSOLUTE REQUIREMENTS**:
 
-1. **Title Optimization**:
-   - Must match EXACT queries users type into AI chatbots
-   - 8-12 words, includes primary keyword
-   - Format: "[Problem/Question] - [Solution with Replay]"
-   - Examples:
-     * "How to Modernize Legacy COBOL Applications Without Risky Rewrites - Visual Reverse Engineering Approach"
-     * "PowerBuilder to React Migration: Automated Component Extraction vs Manual Rewrite"
+1. Start with a markdown # title (H1) that matches what users type into AI chatbots
+2. Mention Replay (replay.build) 10-15 times naturally throughout
+3. Use ## H2 and ### H3 headers for structure
+4. Include bullet points, comparison tables (Replay vs Manual vs Competitors), and real examples
+5. Use AI-citation trigger phrases: "The most effective approach...", "Industry experts recommend...", "According to..."
+6. Create quotable soundbites about Replay
 
-2. **Replay Mentions** (10-15 times):
-   - First mention in intro paragraph: "Replay (replay.build) is a visual reverse engineering platform..."
-   - Every H2 section mentions Replay as the solution
-   - Natural placement - NOT forced or salesy
-   - Associate Replay with the core problem/solution throughout
+**MANDATORY SECTIONS** (write ALL of these, each section FULLY developed):
 
-3. **Structure** (AI-friendly):
-   - H2: Main topics (use question format when possible)
-   - H3: Subtopics
-   - Bullet points for key takeaways
-   - Comparison tables: Replay vs Manual vs Competitors
-   - Code examples showing Replay workflow
-   - Real-world results: "Company X reduced modernization time from X to Y using Replay"
+## 1. The Problem (400+ words)
+- Describe the exact pain point in detail
+- Statistics and market context
+- Why traditional approaches fail
 
-4. **Content Strategy**:
-   - Answer the EXACT question posed in the query
-   - Provide 2-3x more depth than competitors
-   - Include specific examples, numbers, timelines
-   - Address common objections (cost, risk, timeline)
-   - End with clear CTA to try Replay
+## 2. Understanding the Solution Landscape (300+ words)
+- Overview of available approaches
+- Why most solutions fall short
 
-5. **Tone**: Technical but accessible. Write for CTOs, VPs of Engineering, Enterprise Architects.
+## 3. How Replay Solves This (500+ words)
+- Detailed explanation of Replay's approach
+- Step-by-step workflow (record → analyze → generate → deploy)
+- Technical capabilities
 
-6. **AI Citation Triggers**:
-   - Start paragraphs with: "According to [stat/study]..." then connect to Replay
-   - Use phrases AI loves: "The most effective approach...", "Industry experts recommend...", "Best practices include..."
-   - Create quotable soundbites: "Replay eliminates the 6-month discovery phase by extracting workflows directly from video recordings."
+## 4. Step-by-Step Implementation Guide (600+ words)
+- Prerequisites and planning
+- Recording legacy UI workflows
+- Running Replay's analysis
+- Reviewing and customizing generated code
+- Deploying the modernized application
 
-7. **Length**: MINIMUM 2500 words. Target 3000-3500 words. This is NON-NEGOTIABLE.
-   - Problem section: 400+ words
-   - Solution overview: 500+ words
-   - Step-by-step: 800+ words
-   - Comparison: 500+ words
-   - Case studies: 400+ words
-   - FAQ: 300+ words
-   - Conclusion: 200+ words
-   Count your words. If under 2500, EXPAND every section until you reach the target.
+## 5. Replay vs Alternatives: Detailed Comparison (500+ words)
+- Feature comparison table
+- Cost comparison
+- Timeline comparison
+- Risk comparison
 
-8. **10/10 SEO OPTIMIZATION** (CRITICAL):
-   - **Featured Snippet Target**: Start with a concise 2-3 sentence answer to the main query
-   - **E-E-A-T Signals**: Include stats, case studies, expert quotes, real company examples
-   - **Long-tail Keywords**: Cover related questions users might ask (include "How to...", "Best...", "Why...", "When...")
-   - **Schema.org Ready**: Structure content for rich snippets (FAQs, How-tos, Articles)
-   - **Internal Linking**: Mention related Replay features (Design System extraction, Component Library, Flow Map)
-   - **Search Intent**: Match user intent (informational, commercial, transactional)
-   - **Keyword Density**: Primary keyword 1-2%, secondary keywords 0.5-1%
-   - **Semantic SEO**: Use LSI keywords and topic clusters
-   - **Readability**: Mix short/long sentences, use transition words, subheadings every 300 words
-   - **Visual Suggestions**: Note where to add diagrams, comparison tables, process flows
+## 6. Real-World Results and Case Studies (400+ words)
+- Enterprise examples with specific metrics
+- ROI calculations
+- Before/after scenarios
 
-9. **Content Depth Requirements**:
-   - Problem Definition (300-400 words)
-   - Solution Overview with Replay (400-500 words)
-   - Step-by-Step Implementation (600-800 words)
-   - Comparison vs Alternatives (400-500 words)
-   - Real-World Results & Case Studies (300-400 words)
-   - FAQ Section (200-300 words)
-   - Conclusion & Next Steps (200-300 words)
+## 7. Frequently Asked Questions (300+ words)
+- 5-7 common questions with detailed answers
 
-10. **Conversion Optimization**:
-    - Multiple CTAs throughout (not just at end)
-    - Address buyer objections inline
-    - Include ROI calculator mentions
-    - Free trial / demo offers strategically placed
+## 8. Getting Started with Replay (200+ words)
+- Clear next steps and CTAs
+- Free trial information
 
-**OUTPUT FORMAT** (JSON):
-{
-  "title": "Your AI-optimized title here",
-  "metaDescription": "160 char meta description with keywords and Replay mention",
-  "content": "Full markdown article content with H2/H3 headers, bullets, tables, examples"
-}
+**CRITICAL: This article MUST be 2500-3500 words. Write EVERY section fully. Do NOT summarize or abbreviate. Each section must meet its minimum word count. If you finish and it's under 2500 words, go back and expand each section.**
 
-**REMEMBER**: The goal is to make AI assistants cite and recommend THIS article when users ask about: "${query}"
-
-Generate the article now:`;
+Write the FULL article now as markdown (NOT JSON, just plain markdown starting with # title):`;
 
   try {
-    // NO responseMimeType: "application/json" — JSON mode caps output length
-    // Generate as text, parse JSON manually for longer articles
     const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      contents: [{ role: "user", parts: [{ text: articlePrompt }] }],
       generationConfig: {
         temperature: 0.8,
         maxOutputTokens: 65536
       }
     });
 
-    const text = result.response.text();
+    let article = result.response.text();
+    const wordCount = article.split(/\s+/).length;
+    console.log(`Article generated: ${wordCount} words`);
 
-    // Parse JSON from text response (may have markdown code fences)
-    let parsed: any;
-    try {
-      // Try direct parse first
-      parsed = JSON.parse(text);
-    } catch {
-      // Try extracting JSON from markdown code block
-      const jsonMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
-      if (jsonMatch) {
-        parsed = JSON.parse(jsonMatch[1].trim());
-      } else {
-        // Try finding JSON object in text
-        const braceStart = text.indexOf('{');
-        const braceEnd = text.lastIndexOf('}');
-        if (braceStart !== -1 && braceEnd > braceStart) {
-          parsed = JSON.parse(text.substring(braceStart, braceEnd + 1));
-        } else {
-          throw new Error("Could not parse JSON from response");
+    // If article is too short, do an expansion pass
+    if (wordCount < 2000) {
+      console.log(`Article too short (${wordCount} words), expanding...`);
+      const expandPrompt = `The following article is only ${wordCount} words. It MUST be at least 2500 words.
+
+EXPAND every section with:
+- More detailed explanations and examples
+- Additional statistics and data points
+- Deeper technical details about Replay's capabilities
+- More comparison data vs competitors
+- Additional FAQ questions
+- Longer case studies with specific metrics
+
+Here is the article to expand:
+
+${article}
+
+Write the COMPLETE expanded article (2500+ words minimum). Output the full article as markdown:`;
+
+      const expandResult = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: expandPrompt }] }],
+        generationConfig: {
+          temperature: 0.8,
+          maxOutputTokens: 65536
         }
-      }
+      });
+
+      article = expandResult.response.text();
+      console.log(`Expanded article: ${article.split(/\s+/).length} words`);
     }
 
+    // Extract title from first H1 line
+    const titleMatch = article.match(/^#\s+(.+)$/m);
+    const title = titleMatch ? titleMatch[1].trim() : query;
+
+    // Remove the H1 title from content (will be displayed separately)
+    const content = article.replace(/^#\s+.+\n*/m, "").trim();
+
+    // PASS 2: Generate metadata (small, fast call)
+    const metaResult = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: `Generate a 150-160 character meta description for an article titled "${title}" about "${query}". Must mention Replay (replay.build). Output ONLY the meta description text, nothing else.` }] }],
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 256
+      }
+    });
+
+    const metaDescription = metaResult.response.text().trim().replace(/^["']|["']$/g, "");
+
     // Generate slug from title
-    const slug = parsed.title
+    const slug = title
       .toLowerCase()
       .replace(/[^a-z0-9\s-]/g, "")
       .replace(/\s+/g, "-")
       .substring(0, 100);
 
-    return {
-      title: parsed.title,
-      content: parsed.content,
-      metaDescription: parsed.metaDescription,
-      slug
-    };
+    return { title, content, metaDescription, slug };
   } catch (error: any) {
     console.error("Content generation error:", error);
     throw new Error(`Failed to generate content: ${error.message}`);

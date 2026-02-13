@@ -43,13 +43,13 @@ export async function GET(req: Request) {
       perplexity: latestMetric?.perplexity_share_of_voice || 0
     };
 
-    // Get content gaps (high priority, not published)
+    // Get content gaps (all non-archived, sorted by priority)
     const { data: gaps, error: gapsError } = await supabase
       .from("aeo_content_gaps")
       .select("*")
       .neq("status", "archived")
       .order("priority", { ascending: false })
-      .limit(20);
+      .limit(100);
 
     if (gapsError) throw gapsError;
 

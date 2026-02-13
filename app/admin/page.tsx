@@ -2091,11 +2091,13 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                     </div>
                     <button
                       onClick={async () => {
-                        const identifiedGaps = aeoData.gaps?.items?.filter((g: any) => g.status === "identified" && g.priority >= 7) || [];
+                        const identifiedGaps = aeoData.gaps?.items?.filter((g: any) => g.status === "identified") || [];
                         if (identifiedGaps.length === 0) { setToastMessage("No identified gaps to generate"); return; }
                         setToastMessage(`⏳ Generating ${identifiedGaps.length} articles...`);
                         let success = 0;
-                        for (const gap of identifiedGaps.slice(0, 5)) {
+                        let failed = 0;
+                        for (let i = 0; i < identifiedGaps.length; i++) {
+                          const gap = identifiedGaps[i];
                           try {
                             const response = await fetch("/api/aeo/generate-content", {
                               method: "POST",
@@ -2104,10 +2106,11 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                             });
                             const data = await response.json();
                             if (data.success) success++;
-                            setToastMessage(`⏳ Generated ${success}/${identifiedGaps.slice(0, 5).length}...`);
-                          } catch {}
+                            else failed++;
+                            setToastMessage(`⏳ Progress: ${success} done, ${failed} failed, ${identifiedGaps.length - i - 1} remaining...`);
+                          } catch { failed++; }
                         }
-                        setToastMessage(`✅ Generated ${success} articles`);
+                        setToastMessage(`✅ Generated ${success} articles (${failed} failed)`);
                         loadAeoData();
                       }}
                       className="px-3 py-1.5 rounded-lg text-xs font-medium bg-orange-600 text-white hover:bg-orange-500 transition-colors"
@@ -2128,7 +2131,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                           </tr>
                         </thead>
                         <tbody>
-                          {aeoData.gaps.items.filter((gap: any) => gap.priority >= 7).slice(0, 10).map((gap: any) => (
+                          {aeoData.gaps.items.slice(0, 50).map((gap: any) => (
                             <tr key={gap.id} className="border-b border-zinc-800/50 hover:bg-white/5">
                               <td className="p-4 text-sm text-white">{gap.query}</td>
                               <td className="p-4 text-center">

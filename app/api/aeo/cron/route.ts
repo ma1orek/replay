@@ -35,14 +35,12 @@ export async function GET(req: Request) {
   try {
     log.push("🚀 Starting AEO autonomous pipeline...");
 
-    // STEP 0: Recovery — unstick gaps stuck in "generating" for >15min
+    // STEP 0: Recovery — unstick ALL gaps in "generating" status
     log.push("\n🔧 STEP 0: Recovering stuck jobs...");
-    const fifteenMinAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
     const { data: stuckGaps, error: stuckError } = await supabase
       .from("aeo_content_gaps")
       .update({ status: "identified", generation_started_at: null })
       .eq("status", "generating")
-      .lt("generation_started_at", fifteenMinAgo)
       .select();
     if (stuckGaps && stuckGaps.length > 0) {
       log.push(`   ♻️ Recovered ${stuckGaps.length} stuck gaps`);
