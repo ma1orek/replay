@@ -108,7 +108,7 @@ export async function GET(req: Request) {
 
       const gapsData = await gapsResponse.json();
       if (gapsData.success) {
-        log.push(`✅ Identified ${gapsData.gapsIdentified} content gaps`);
+        log.push(`✅ Identified ${gapsData.gapsIdentified} content gaps (${gapsData.gapsStored || 0} stored/updated)`);
         log.push(`   High priority (8+): ${gapsData.highPriorityGaps}`);
       } else {
         log.push(`❌ Gap identification failed: ${gapsData.error}`);
@@ -139,14 +139,30 @@ export async function GET(req: Request) {
     } else {
       log.push(`✅ Can publish ${remainingPublications} more articles today`);
 
+      // Debug: count all gaps by status
+      const { data: allGaps } = await supabase
+        .from("aeo_content_gaps")
+        .select("status")
+        .neq("status", "archived");
+
+      if (allGaps) {
+        const statusCounts: Record<string, number> = {};
+        allGaps.forEach(g => { statusCounts[g.status] = (statusCounts[g.status] || 0) + 1; });
+        log.push(`   📊 Gap statuses: ${Object.entries(statusCounts).map(([s, c]) => `${s}=${c}`).join(", ")}`);
+      }
+
       // Fetch high-priority gaps (priority >= 5 to be aggressive)
-      const { data: highPriorityGaps } = await supabase
+      const { data: highPriorityGaps, error: gapQueryError } = await supabase
         .from("aeo_content_gaps")
         .select("*")
         .eq("status", "identified")
         .gte("priority", 5)
         .order("priority", { ascending: false })
         .limit(Math.min(remainingPublications, 5)); // Max 5 per cron run (within 5min timeout)
+
+      if (gapQueryError) {
+        log.push(`   ❌ Gap query error: ${gapQueryError.message}`);
+      }
 
       if (highPriorityGaps && highPriorityGaps.length > 0) {
         log.push(`   Found ${highPriorityGaps.length} gaps to fill`);

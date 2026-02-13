@@ -282,6 +282,8 @@ async function publishContent(
  * POST - Generate content for a content gap
  */
 export async function POST(req: Request) {
+  let gapIdForRecovery: string | null = null;
+
   try {
     const body = await req.json();
     const {
@@ -291,6 +293,8 @@ export async function POST(req: Request) {
       gapId = null,
       autoPublish = false
     } = body;
+
+    gapIdForRecovery = gapId;
 
     if (!query) {
       return NextResponse.json({ error: "Query is required" }, { status: 400 });
@@ -397,8 +401,18 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("Generate content error:", error);
 
-    // Reset gap status to "identified" so it can be retried
-    // Body was already consumed above — gap will be recovered by cron stuck-job recovery
+    // Reset gap status to "identified" so it can be retried immediately
+    if (gapIdForRecovery) {
+      try {
+        await supabase
+          .from("aeo_content_gaps")
+          .update({ status: "identified", generation_started_at: null })
+          .eq("id", gapIdForRecovery);
+        console.log(`Reset gap ${gapIdForRecovery} back to "identified" after error`);
+      } catch (resetError) {
+        console.error("Failed to reset gap status:", resetError);
+      }
+    }
 
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

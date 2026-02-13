@@ -168,43 +168,79 @@ async function identifyGaps(daysToAnalyze: number = 7): Promise<ContentGap[]> {
 /**
  * Store identified gaps in database
  */
-async function storeGaps(gaps: ContentGap[]) {
-  for (const gap of gaps) {
-    // Check if gap already exists
-    const { data: existing } = await supabase
-      .from("aeo_content_gaps")
-      .select("id")
-      .eq("query", gap.query)
-      .eq("status", "identified")
-      .single();
+async function storeGaps(gaps: ContentGap[]): Promise<number> {
+  let storedCount = 0;
 
-    if (existing) {
-      // Update existing gap
-      await supabase
+  for (const gap of gaps) {
+    try {
+      // Check if gap already exists with ANY status (not just "identified")
+      const { data: existingRows } = await supabase
         .from("aeo_content_gaps")
-        .update({
+        .select("id, status")
+        .eq("query", gap.query)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      const existing = existingRows?.[0];
+
+      if (existing) {
+        if (existing.status === "published") {
+          // Already published — skip, don't regenerate
+          continue;
+        } else if (existing.status === "generating") {
+          // Stuck in generating — reset to identified with updated priority
+          const { error } = await supabase
+            .from("aeo_content_gaps")
+            .update({
+              status: "identified",
+              generation_started_at: null,
+              priority: gap.priority,
+              competitor_dominating: gap.competitorDominating,
+              competitor_position: gap.competitorPosition,
+              replay_current_position: gap.replayCurrentPosition,
+              gap_type: gap.gapType,
+              target_keywords: gap.targetKeywords
+            })
+            .eq("id", existing.id);
+          if (!error) storedCount++;
+          else console.error(`storeGaps update error for "${gap.query}":`, error);
+        } else {
+          // Status is "identified" or other — update priority/data
+          const { error } = await supabase
+            .from("aeo_content_gaps")
+            .update({
+              priority: gap.priority,
+              competitor_dominating: gap.competitorDominating,
+              competitor_position: gap.competitorPosition,
+              replay_current_position: gap.replayCurrentPosition,
+              gap_type: gap.gapType,
+              target_keywords: gap.targetKeywords
+            })
+            .eq("id", existing.id);
+          if (!error) storedCount++;
+          else console.error(`storeGaps update error for "${gap.query}":`, error);
+        }
+      } else {
+        // Insert new gap
+        const { error } = await supabase.from("aeo_content_gaps").insert({
+          query: gap.query,
           priority: gap.priority,
           competitor_dominating: gap.competitorDominating,
           competitor_position: gap.competitorPosition,
           replay_current_position: gap.replayCurrentPosition,
+          status: "identified",
           gap_type: gap.gapType,
           target_keywords: gap.targetKeywords
-        })
-        .eq("id", existing.id);
-    } else {
-      // Insert new gap
-      await supabase.from("aeo_content_gaps").insert({
-        query: gap.query,
-        priority: gap.priority,
-        competitor_dominating: gap.competitorDominating,
-        competitor_position: gap.competitorPosition,
-        replay_current_position: gap.replayCurrentPosition,
-        status: "identified",
-        gap_type: gap.gapType,
-        target_keywords: gap.targetKeywords
-      });
+        });
+        if (!error) storedCount++;
+        else console.error(`storeGaps insert error for "${gap.query}":`, error);
+      }
+    } catch (error) {
+      console.error(`storeGaps exception for "${gap.query}":`, error);
     }
   }
+
+  return storedCount;
 }
 
 /**
@@ -220,8 +256,8 @@ export async function POST(req: Request) {
     // Identify gaps
     const gaps = await identifyGaps(daysToAnalyze);
 
-    // Store gaps
-    await storeGaps(gaps);
+    // Store gaps (returns count of successfully stored/updated)
+    const storedCount = await storeGaps(gaps);
 
     // If auto-generate enabled, trigger content generation for high-priority gaps
     if (autoGenerate) {
@@ -259,6 +295,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       gapsIdentified: gaps.length,
+      gapsStored: storedCount,
       highPriorityGaps: gaps.filter(g => g.priority >= 8).length,
       topGaps: gaps.slice(0, 10)
     });
