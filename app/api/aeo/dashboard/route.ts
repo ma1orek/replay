@@ -53,12 +53,12 @@ export async function GET(req: Request) {
 
     if (gapsError) throw gapsError;
 
-    // Get generated content (recent 20)
+    // Get generated content (recent 100)
     const { data: generatedContent, error: contentError } = await supabase
       .from("aeo_generated_content")
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(20);
+      .limit(100);
 
     if (contentError) throw contentError;
 

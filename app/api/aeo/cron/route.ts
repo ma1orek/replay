@@ -156,7 +156,7 @@ export async function GET(req: Request) {
         .eq("status", "identified")
         .gte("priority", 5)
         .order("priority", { ascending: false })
-        .limit(Math.min(remainingPublications, 5)); // Max 5 per cron run (within 5min timeout)
+        .limit(Math.min(remainingPublications, 10)); // Max 10 per cron run (within 5min timeout)
 
       if (gapQueryError) {
         log.push(`   ❌ Gap query error: ${gapQueryError.message}`);
@@ -190,8 +190,8 @@ export async function GET(req: Request) {
               log.push(`   ❌ Failed: ${generateData.error}`);
             }
 
-            // 10 second delay between generations (faster than 30s)
-            await new Promise(resolve => setTimeout(resolve, 10000));
+            // 3 second delay between generations
+            await new Promise(resolve => setTimeout(resolve, 3000));
 
           } catch (error: any) {
             log.push(`   ❌ Error: ${error.message}`);

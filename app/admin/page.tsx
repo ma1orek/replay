@@ -513,6 +513,15 @@ export default function AdminPage() {
     }
   }, [activeTab, adminToken, loadAeoData]);
 
+  // Auto-refresh AEO dashboard every 30 seconds when on AEO tab
+  useEffect(() => {
+    if (activeTab !== "aeo" || !adminToken) return;
+    const interval = setInterval(() => {
+      loadAeoData();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [activeTab, adminToken, loadAeoData]);
+
   const refreshData = () => {
     if (adminToken) {
       loadAdminData(adminToken);
@@ -2252,7 +2261,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                           </tr>
                         </thead>
                         <tbody>
-                          {aeoData.content.items.slice(0, 10).map((content: any) => (
+                          {aeoData.content.items.slice(0, 50).map((content: any) => (
                             <tr key={content.id} className="border-b border-zinc-800/50 hover:bg-white/5">
                               <td className="p-4 text-sm text-white max-w-md truncate">{content.title}</td>
                               <td className="p-4 text-center text-sm text-white/70">
