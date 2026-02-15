@@ -3294,19 +3294,11 @@ function ReplayToolContent() {
   const [selectedProTierIndex, setSelectedProTierIndex] = useState(0);
   const [showProTierDropdown, setShowProTierDropdown] = useState(false);
   
-  // Price IDs for checkout
-  const STARTER_PACK_PRICE_ID = "price_1Spo05Axch1s4iBGydOPAd2i"; // $9 one-time
-  
-  // PRO Subscription tiers (same as pricing page)
+  // Active subscription plans (Jan 26 pricing)
   const PRO_TIERS = [
-    { id: 'pro25', credits: 1500, price: 25, priceId: "price_1SotL1Axch1s4iBGWMvO0JBZ" },
-    { id: 'pro50', credits: 3300, price: 50, priceId: "price_1SotLqAxch1s4iBG1ViXkfc2" },
-    { id: 'pro100', credits: 7500, price: 100, priceId: "price_1SotMYAxch1s4iBGLZZ7ATBs" },
-    { id: 'pro200', credits: 16500, price: 200, priceId: "price_1SotN4Axch1s4iBGUJEfzznw" },
-    { id: 'pro300', credits: 25500, price: 300, priceId: "price_1SotNMAxch1s4iBGzRD7B7VI" },
-    { id: 'pro500', credits: 45000, price: 500, priceId: "price_1SotNuAxch1s4iBGPl81sHqx" },
+    { id: 'pro', credits: 3000, price: 149, priceId: "price_1SttxZAxch1s4iBGchJgatG6" },
   ];
-  const selectedProTier = PRO_TIERS[selectedProTierIndex];
+  const selectedProTier = PRO_TIERS[selectedProTierIndex] || PRO_TIERS[0];
   
   // Handler for direct checkout (used in inline upgrade buttons)
   const handleUpgradeCheckout = async (plan?: "pro") => {
@@ -3319,16 +3311,14 @@ function ReplayToolContent() {
     
     setIsUpgradeCheckingOut(true);
     try {
-      const isStarter = false;
-      
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          type: isStarter ? "starter" : "subscription",
-          priceId: isStarter ? STARTER_PACK_PRICE_ID : selectedProTier.priceId,
-          tierId: isStarter ? "starter" : selectedProTier.id,
-          credits: isStarter ? 200 : selectedProTier.credits,
+          type: "subscription",
+          priceId: selectedProTier.priceId,
+          tierId: selectedProTier.id,
+          credits: selectedProTier.credits,
           interval: "monthly"
         }),
       });
@@ -11089,6 +11079,24 @@ Try these prompts in Cursor or v0:
       return;
     }
     
+    // PRE-VALIDATE video BEFORE spending credits
+    {
+      const flow = flows.find(f => f.id === selectedFlowId) || flows[0];
+      const hasValidUrl = flow.videoUrl && flow.videoUrl.startsWith("https://") && !flow.videoUrl.startsWith("blob:");
+      if (!hasValidUrl) {
+        // Will need to upload blob — validate it first
+        if (!flow.videoBlob || flow.videoBlob.size === 0) {
+          showToast("Video not available. Please re-upload the video.", "error");
+          return;
+        }
+        const videoSizeMB = flow.videoBlob.size / 1024 / 1024;
+        if (videoSizeMB > 50) {
+          showToast("Video too large (max 50MB). Please use a shorter recording or compress the file.", "error");
+          return;
+        }
+      }
+    }
+
     // Credits gate: check if user can afford
     console.log("[handleGenerate] Full generation path - checking credits, cost:", CREDIT_COSTS.VIDEO_GENERATE, "canAfford:", canAfford(CREDIT_COSTS.VIDEO_GENERATE));
     if (!canAfford(CREDIT_COSTS.VIDEO_GENERATE)) {
@@ -11096,7 +11104,10 @@ Try these prompts in Cursor or v0:
       setShowOutOfCreditsModal(true);
       return;
     }
-    
+
+    // Generate a unique reference ID for this generation (used for refund if needed)
+    const generationRefId = `gen_${Date.now()}`;
+
     // Spend credits before generation
     try {
       const spendRes = await fetch("/api/credits/spend", {
@@ -11105,7 +11116,7 @@ Try these prompts in Cursor or v0:
         body: JSON.stringify({
           cost: CREDIT_COSTS.VIDEO_GENERATE,
           reason: "video_generate",
-          referenceId: `gen_${Date.now()}`,
+          referenceId: generationRefId,
         }),
       });
       const spendData = await spendRes.json();
@@ -11348,6 +11359,8 @@ Try these prompts in Cursor or v0:
             showToast(errorData.error || "Failed to prepare upload. Please try again.", "error");
             setIsProcessing(false);
             generationStartTimeRef.current = null;
+            // Refund credits — upload failed before generation
+            fetch("/api/credits/refund", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cost: CREDIT_COSTS.VIDEO_GENERATE, reason: "upload_failed", referenceId: generationRefId }) }).then(() => refreshCredits()).catch(() => {});
             return;
           }
           
@@ -11380,6 +11393,8 @@ Try these prompts in Cursor or v0:
                 showToast("Network error during upload. Please check your connection and try again.", "error");
                 setIsProcessing(false);
                 generationStartTimeRef.current = null;
+                // Refund credits — upload failed after max retries
+                fetch("/api/credits/refund", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cost: CREDIT_COSTS.VIDEO_GENERATE, reason: "upload_network_error", referenceId: generationRefId }) }).then(() => refreshCredits()).catch(() => {});
                 return;
               }
               // Wait before retry (exponential backoff)
@@ -11392,6 +11407,8 @@ Try these prompts in Cursor or v0:
             showToast("Failed to upload video after multiple attempts. Please try a smaller file or check your connection.", "error");
             setIsProcessing(false);
             generationStartTimeRef.current = null;
+            // Refund credits — all upload attempts failed
+            fetch("/api/credits/refund", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cost: CREDIT_COSTS.VIDEO_GENERATE, reason: "upload_all_failed", referenceId: generationRefId }) }).then(() => refreshCredits()).catch(() => {});
             return;
           }
           
@@ -11789,6 +11806,18 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
         console.error("Generation failed:", errorMsg);
         setAnalysisDescription(`Error: ${errorMsg}`);
         showToast(errorMsg, "error");
+        // Refund credits on failed generation
+        try {
+          await fetch("/api/credits/refund", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ cost: CREDIT_COSTS.VIDEO_GENERATE, reason: "generation_failed", referenceId: generationRefId }),
+          });
+          refreshCredits();
+          console.log("Credits refunded for failed generation:", generationRefId);
+        } catch (refundErr) {
+          console.error("Failed to refund credits:", refundErr);
+        }
       }
     } catch (error: any) {
       console.error("Generation error:", error);
@@ -11801,6 +11830,18 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
       showToast(errorMsg, "error");
       setIsProcessing(false);
       generationStartTimeRef.current = null;
+      // Refund credits on error
+      try {
+        await fetch("/api/credits/refund", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cost: CREDIT_COSTS.VIDEO_GENERATE, reason: "generation_error", referenceId: generationRefId }),
+        });
+        refreshCredits();
+        console.log("Credits refunded for generation error:", generationRefId);
+      } catch (refundErr) {
+        console.error("Failed to refund credits:", refundErr);
+      }
     } finally {
       // Don't set isProcessing to false here - let the streaming effect handle it
       // isProcessing will be set to false when streaming completes
@@ -17646,60 +17687,8 @@ export default function GeneratedPage() {
                                         </div>
                                       </div>
                                       
-                                      {/* Capacity selector */}
-                                      <div className="ml-8 relative">
-                                        <button
-                                          onClick={(e) => { e.stopPropagation(); setShowProTierDropdown(!showProTierDropdown); }}
-                                          className="w-full flex items-center justify-between px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-white hover:border-white/20 transition-colors"
-                                        >
-                                          <span>{selectedProTier.credits.toLocaleString()} credits</span>
-                                          <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform ${showProTierDropdown ? "rotate-180" : ""}`} />
-                                        </button>
-                                        
-                                        {showProTierDropdown && (
-                                          <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-lg overflow-hidden z-20 shadow-xl">
-                                            {PRO_TIERS.map((tier, idx) => (
-                                              <button
-                                                key={tier.id}
-                                                onClick={(e) => { e.stopPropagation(); setSelectedProTierIndex(idx); setShowProTierDropdown(false); }}
-                                                className={`w-full px-3 py-2 text-left text-sm hover:bg-zinc-800/50 transition-colors flex items-center justify-between ${
-                                                  idx === selectedProTierIndex ? "text-zinc-300 bg-zinc-800/10" : "text-white"
-                                                }`}
-                                              >
-                                                <span>{tier.credits.toLocaleString()} credits</span>
-                                                <span className="text-zinc-500">${tier.price}/mo</span>
-                                              </button>
-                                            ))}
-                                          </div>
-                                        )}
-                                      </div>
-                                      
-                                      <p className="text-xs text-zinc-500 mt-2 ml-8">Full access • Priority support • Credits roll over</p>
+                                      <p className="text-xs text-zinc-500 mt-2 ml-8">{selectedProTier.credits.toLocaleString()} credits/month • Full access • Credits roll over</p>
                                     </div>
-                                    
-                                    {/* Starter Pack - Simple option */}
-                                    <button
-                                      onClick={() => {}}
-                                      className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                                        false ? "border-[var(--accent-orange)] bg-zinc-800/5" : "border-zinc-700 hover:border-white/20 bg-zinc-800/50"
-                                      }`}
-                                    >
-                                      <div className="flex items-center gap-3">
-                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${false ? "border-[var(--accent-orange)] bg-zinc-800" : "border-white/30"}`}>
-                                          {false && <Check className="w-3 h-3 text-white" />}
-                                        </div>
-                                        <div className="flex-1">
-                                          <div className="flex items-center gap-2">
-                                            <Zap className="w-4 h-4 text-zinc-400" />
-                                            <span className="font-medium text-white">Starter</span>
-                                          </div>
-                                          <p className="text-xs text-zinc-500 mt-0.5">300 credits • ~4 generations • Perfect for testing</p>
-                                        </div>
-                                        <div className="text-right">
-                                          <span className="text-xl font-bold text-white">$9</span>
-                                        </div>
-                                      </div>
-                                    </button>
                                   </div>
                                   
                                   {/* CTA */}
@@ -17713,14 +17702,12 @@ export default function GeneratedPage() {
                                         <Loader2 className="w-4 h-4 animate-spin" />
                                         Processing...
                                       </>
-                                    ) : false ? (
-                                      "Get Starter — $9"
                                     ) : (
                                       `Subscribe — $${selectedProTier.price}/mo`
                                     )}
                                   </button>
                                   <p className="text-center text-[10px] text-zinc-600 mt-3">
-                                    {false ? "One-time payment. Credits never expire." : "Cancel anytime. Credits roll over."}
+                                    Cancel anytime. Credits roll over.
                                   </p>
                                   
                                   <button

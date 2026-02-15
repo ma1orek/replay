@@ -55,17 +55,10 @@ function getSupabaseAdmin() {
 const PRO_MONTHLY_CREDITS = 3000;
 const PRO_MAX_ROLLOVER = 600;
 
-// Credit amounts by tier (matching elastic pricing)
+// Credit amounts by plan (Jan 26 pricing - only Pro + Agency)
 const TIER_CREDITS: Record<string, number> = {
-  pro25: 1500,
-  pro50: 3300,
-  pro100: 7500,
-  pro200: 16500,
-  pro300: 25500,
-  pro500: 45000,
-  pro1000: 95000,
-  pro2000: 200000,
-  pro: 3000, // default fallback
+  pro: 3000,
+  agency: 15000,
 };
 
 // Credit amounts for top-ups
@@ -140,12 +133,13 @@ export async function POST(request: NextRequest) {
           const creditsFromMeta = parseInt(session.metadata?.credits_amount || "0");
           const credits = creditsFromMeta > 0 ? creditsFromMeta : (TIER_CREDITS[tierId] || PRO_MONTHLY_CREDITS);
 
-          // UPSERT membership (handles missing rows)
+          // UPSERT membership (handles missing rows) — use tierId for plan (pro or agency)
+          const plan = tierId === "agency" ? "agency" : "pro";
           await supabase
             .from("memberships")
             .upsert({
               user_id: userId,
-              plan: "pro",
+              plan,
               status: "active",
               stripe_customer_id: customerId,
               stripe_subscription_id: session.subscription as string,
@@ -174,7 +168,7 @@ export async function POST(request: NextRequest) {
           const customerEmail = session.customer_details?.email || session.customer_email;
           await trackFBPurchase(userId, customerEmail, session.amount_total ? session.amount_total / 100 : 29, "Subscribe");
 
-          console.log("Updated membership to Pro for user:", userId, "Credits:", credits, "Tier:", tierId);
+          console.log("Updated membership to", plan, "for user:", userId, "Credits:", credits, "Tier:", tierId);
         }
         
         // Handle top-up purchase (one-time payment) - includes Maker Pack
@@ -264,12 +258,13 @@ export async function POST(request: NextRequest) {
           const creditsFromMeta = parseInt(subscription.metadata?.credits_amount || "0");
           const credits = creditsFromMeta > 0 ? creditsFromMeta : (TIER_CREDITS[tierId] || PRO_MONTHLY_CREDITS);
 
-          // UPSERT membership
+          // UPSERT membership — use tierId for plan (pro or agency)
+          const plan = tierId === "agency" ? "agency" : "pro";
           await supabase
             .from("memberships")
             .upsert({
               user_id: userId,
-              plan: status === "active" || status === "trialing" ? "pro" : "free",
+              plan: status === "active" || status === "trialing" ? plan : "free",
               status: status,
               stripe_customer_id: customerId,
               stripe_subscription_id: subscription.id,

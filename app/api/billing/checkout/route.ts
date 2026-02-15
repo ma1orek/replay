@@ -18,26 +18,12 @@ const TOPUP_MAP: Record<number, { priceId: string; credits: number }> = {
 
 // Maker Pack removed - only PRO subscriptions available
 
-// Valid Stripe Price IDs for subscriptions (for validation)
+// Valid Stripe Price IDs for subscriptions (Jan 26 - only 4 active prices)
 const VALID_SUBSCRIPTION_PRICE_IDS = new Set([
-  // Monthly
-  "price_1SotL1Axch1s4iBGWMvO0JBZ",
-  "price_1SotLqAxch1s4iBG1ViXkfc2",
-  "price_1SotMYAxch1s4iBGLZZ7ATBs",
-  "price_1SotN4Axch1s4iBGUJEfzznw",
-  "price_1SotNMAxch1s4iBGzRD7B7VI",
-  "price_1SotNuAxch1s4iBGPl81sHqx",
-  "price_1SotO9Axch1s4iBGCDE83jPv",
-  "price_1SotOOAxch1s4iBGWiUHzG1M",
-  // Yearly
-  "price_1SotSpAxch1s4iBGbDC8je02",
-  "price_1SotT5Axch1s4iBGUt6BTDDf",
-  "price_1SotTJAxch1s4iBGYRBGTHK6",
-  "price_1SotTdAxch1s4iBGpyDigl9b",
-  "price_1SotTqAxch1s4iBGgaWwuU0Z",
-  "price_1SotU1Axch1s4iBGC1uEWWXN",
-  "price_1SotUEAxch1s4iBGUqWwl9Db",
-  "price_1SotV0Axch1s4iBGZYfILH0H",
+  "price_1SttxZAxch1s4iBGchJgatG6", // Pro Monthly $149
+  "price_1Stty3Axch1s4iBGaQxPAF82", // Pro Yearly $1,428
+  "price_1SttyTAxch1s4iBGhsSdu8pm", // Agency Monthly $499
+  "price_1SttynAxch1s4iBGshtjRh8R", // Agency Yearly $4,788
 ]);
 
 export async function POST(request: NextRequest) {

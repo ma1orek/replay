@@ -578,9 +578,7 @@ export default function AdminPage() {
 
   // Open plan selection modal
   const openPlanModal = (userId: string, userEmail: string, currentMembership: string) => {
-    const currentIndex = PRO_TIERS.findIndex(t => 
-      t.id === currentMembership || (currentMembership === "pro" && t.id === "pro100")
-    );
+    const currentIndex = PRO_TIERS.findIndex(t => t.id === currentMembership);
     setSelectedPlanIndex(currentIndex >= 0 ? currentIndex : 0);
     setPlanModalUser({ id: userId, email: userEmail, membership: currentMembership });
     setPlanModalOpen(true);

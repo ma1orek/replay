@@ -16,8 +16,8 @@ interface OutOfCreditsModalProps {
 
 const DEMO_PROJECT_URL = "https://www.replay.build/tool?project=flow_1769991250167_jr2x4utrt";
 
-// Stripe Price ID - Pro $149/mo
-const PRO_SUBSCRIPTION_PRICE_ID = "price_1SotMYAxch1s4iBGLZZ7ATBs";
+// Stripe Price ID - Pro $149/mo (Jan 26 correct price)
+const PRO_SUBSCRIPTION_PRICE_ID = "price_1SttxZAxch1s4iBGchJgatG6";
 
 export default function OutOfCreditsModal({
   isOpen,
