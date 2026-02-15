@@ -105,6 +105,7 @@ export async function POST(request: NextRequest) {
 
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
+        client_reference_id: user.id,
         mode: "subscription",
         payment_method_types: ["card"],
         line_items: [
@@ -113,6 +114,12 @@ export async function POST(request: NextRequest) {
             quantity: 1,
           },
         ],
+        metadata: {
+          supabase_user_id: user.id,
+          tier_id: tierId || "pro",
+          credits_amount: credits?.toString() || "0",
+          interval: interval || "monthly",
+        },
         success_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?tab=plans&success=1`,
         cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?tab=plans&canceled=1`,
         subscription_data: {
@@ -169,6 +176,7 @@ export async function POST(request: NextRequest) {
 
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
+        client_reference_id: user.id,
         mode: "subscription",
         payment_method_types: ["card"],
         line_items: [
@@ -177,6 +185,12 @@ export async function POST(request: NextRequest) {
             quantity: 1,
           },
         ],
+        metadata: {
+          supabase_user_id: user.id,
+          tier_id: "pro",
+          credits_amount: "3000",
+          interval: "monthly",
+        },
         success_url: `${process.env.NEXT_PUBLIC_APP_URL}/tool?success=pro`,
         cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/tool?canceled=1`,
         subscription_data: {

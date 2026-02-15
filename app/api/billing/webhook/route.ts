@@ -55,6 +55,19 @@ function getSupabaseAdmin() {
 const PRO_MONTHLY_CREDITS = 3000;
 const PRO_MAX_ROLLOVER = 600;
 
+// Credit amounts by tier (matching elastic pricing)
+const TIER_CREDITS: Record<string, number> = {
+  pro25: 1500,
+  pro50: 3300,
+  pro100: 7500,
+  pro200: 16500,
+  pro300: 25500,
+  pro500: 45000,
+  pro1000: 95000,
+  pro2000: 200000,
+  pro: 3000, // default fallback
+};
+
 // Credit amounts for top-ups
 const CREDITS_BY_PRICE: Record<string, number> = {
   [process.env.STRIPE_CREDITS_PRICE_ID_2000 || ""]: 2000,
@@ -87,27 +100,81 @@ export async function POST(request: NextRequest) {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as any;
-        const userId = session.metadata?.supabase_user_id || session.client_reference_id;
-        
-        console.log("Checkout completed:", { mode: session.mode, userId });
-        
+        let userId = session.metadata?.supabase_user_id || session.client_reference_id;
+        const customerId = session.customer as string;
+
+        // Fallback: look up user by Stripe customer ID if session metadata is empty
+        if (!userId && customerId) {
+          const { data: membership } = await supabase
+            .from("memberships")
+            .select("user_id")
+            .eq("stripe_customer_id", customerId)
+            .single();
+          if (membership) {
+            userId = membership.user_id;
+            console.log("Found user by customer ID:", userId);
+          }
+        }
+
+        // Last resort: check subscription metadata
+        if (!userId && session.subscription) {
+          try {
+            const stripe = getStripe();
+            const sub = await stripe.subscriptions.retrieve(session.subscription as string);
+            userId = (sub as any).metadata?.supabase_user_id;
+            if (userId) console.log("Found user from subscription metadata:", userId);
+          } catch (e) { console.error("Sub retrieve error:", e); }
+        }
+
+        console.log("Checkout completed:", { mode: session.mode, userId, customerId });
+
+        if (!userId) {
+          console.error("CRITICAL: No user ID found for checkout session:", session.id);
+          break;
+        }
+
         // Handle subscription purchase
-        if (session.mode === "subscription" && userId && session.subscription) {
+        if (session.mode === "subscription" && session.subscription) {
+          // Determine credits from tier
+          const tierId = session.metadata?.tier_id || "pro";
+          const creditsFromMeta = parseInt(session.metadata?.credits_amount || "0");
+          const credits = creditsFromMeta > 0 ? creditsFromMeta : (TIER_CREDITS[tierId] || PRO_MONTHLY_CREDITS);
+
+          // UPSERT membership (handles missing rows)
           await supabase
             .from("memberships")
-            .update({
+            .upsert({
+              user_id: userId,
               plan: "pro",
               status: "active",
+              stripe_customer_id: customerId,
               stripe_subscription_id: session.subscription as string,
               updated_at: new Date().toISOString(),
-            })
-            .eq("user_id", userId);
-          
+            }, { onConflict: "user_id" });
+
+          // Grant credits (upsert)
+          const { data: wallet } = await supabase
+            .from("credit_wallets")
+            .select("monthly_credits")
+            .eq("user_id", userId)
+            .single();
+
+          if (wallet) {
+            await supabase
+              .from("credit_wallets")
+              .update({ monthly_credits: credits, updated_at: new Date().toISOString() })
+              .eq("user_id", userId);
+          } else {
+            await supabase
+              .from("credit_wallets")
+              .insert({ user_id: userId, monthly_credits: credits, topup_credits: 0, rollover_credits: 0 });
+          }
+
           // Track subscription purchase to Facebook
           const customerEmail = session.customer_details?.email || session.customer_email;
           await trackFBPurchase(userId, customerEmail, session.amount_total ? session.amount_total / 100 : 29, "Subscribe");
-          
-          console.log("Updated membership to Pro for user:", userId);
+
+          console.log("Updated membership to Pro for user:", userId, "Credits:", credits, "Tier:", tierId);
         }
         
         // Handle top-up purchase (one-time payment) - includes Maker Pack
@@ -171,30 +238,69 @@ export async function POST(request: NextRequest) {
       case "customer.subscription.created":
       case "customer.subscription.updated": {
         const subscription = event.data.object as any;
-        const userId = subscription.metadata?.supabase_user_id;
-        
+        let userId = subscription.metadata?.supabase_user_id;
+        const customerId = subscription.customer as string;
+
+        // Fallback: look up by customer ID
+        if (!userId && customerId) {
+          const { data: membership } = await supabase
+            .from("memberships")
+            .select("user_id")
+            .eq("stripe_customer_id", customerId)
+            .single();
+          if (membership) userId = membership.user_id;
+        }
+
         if (userId) {
           const status = subscription.status;
-          const periodEnd = subscription.current_period_end 
-            ? new Date(subscription.current_period_end * 1000) 
+          const periodEnd = subscription.current_period_end
+            ? new Date(subscription.current_period_end * 1000)
             : null;
-          const periodStart = subscription.current_period_start 
-            ? new Date(subscription.current_period_start * 1000) 
+          const periodStart = subscription.current_period_start
+            ? new Date(subscription.current_period_start * 1000)
             : null;
-          
+
+          const tierId = subscription.metadata?.tier_id || "pro";
+          const creditsFromMeta = parseInt(subscription.metadata?.credits_amount || "0");
+          const credits = creditsFromMeta > 0 ? creditsFromMeta : (TIER_CREDITS[tierId] || PRO_MONTHLY_CREDITS);
+
+          // UPSERT membership
           await supabase
             .from("memberships")
-            .update({
+            .upsert({
+              user_id: userId,
               plan: status === "active" || status === "trialing" ? "pro" : "free",
               status: status,
+              stripe_customer_id: customerId,
               stripe_subscription_id: subscription.id,
               current_period_start: periodStart?.toISOString() || null,
               current_period_end: periodEnd?.toISOString() || null,
               updated_at: new Date().toISOString(),
-            })
-            .eq("user_id", userId);
-          
-          console.log("Updated subscription for user:", userId, "status:", status);
+            }, { onConflict: "user_id" });
+
+          // Grant correct credits based on tier
+          if (status === "active" || status === "trialing") {
+            const { data: wallet } = await supabase
+              .from("credit_wallets")
+              .select("monthly_credits")
+              .eq("user_id", userId)
+              .single();
+
+            if (wallet) {
+              await supabase
+                .from("credit_wallets")
+                .update({ monthly_credits: credits, updated_at: new Date().toISOString() })
+                .eq("user_id", userId);
+            } else {
+              await supabase
+                .from("credit_wallets")
+                .insert({ user_id: userId, monthly_credits: credits, topup_credits: 0, rollover_credits: 0 });
+            }
+          }
+
+          console.log("Updated subscription for user:", userId, "status:", status, "credits:", credits, "tier:", tierId);
+        } else {
+          console.error("CRITICAL: No user ID for subscription:", subscription.id, "customer:", customerId);
         }
         break;
       }
@@ -234,18 +340,36 @@ export async function POST(request: NextRequest) {
       case "invoice.paid": {
         const invoice = event.data.object as any;
         const subscriptionId = invoice.subscription as string;
-        
+
         if (subscriptionId) {
-          // Get subscription to find user
+          // Get subscription to find user and tier
+          const stripe = getStripe();
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-          const userId = subscription.metadata?.supabase_user_id;
-          
-          if (userId) {
+          const userId = (subscription as any).metadata?.supabase_user_id;
+
+          // Fallback: find user by customer ID
+          let resolvedUserId = userId;
+          if (!resolvedUserId) {
+            const customerId = subscription.customer as string;
+            const { data: membership } = await supabase
+              .from("memberships")
+              .select("user_id")
+              .eq("stripe_customer_id", customerId)
+              .single();
+            if (membership) resolvedUserId = membership.user_id;
+          }
+
+          if (resolvedUserId) {
+            // Determine correct credits from tier metadata
+            const tierId = (subscription as any).metadata?.tier_id || "pro";
+            const creditsFromMeta = parseInt((subscription as any).metadata?.credits_amount || "0");
+            const monthlyCredits = creditsFromMeta > 0 ? creditsFromMeta : (TIER_CREDITS[tierId] || PRO_MONTHLY_CREDITS);
+
             // Get current credits
             const { data: wallet } = await supabase
               .from("credit_wallets")
               .select("monthly_credits, rollover_credits")
-              .eq("user_id", userId)
+              .eq("user_id", resolvedUserId)
               .single();
 
             // Calculate rollover (unused monthly credits, max 600)
@@ -253,24 +377,30 @@ export async function POST(request: NextRequest) {
             const currentRollover = wallet?.rollover_credits || 0;
             const newRollover = Math.min(currentRollover + currentMonthly, PRO_MAX_ROLLOVER);
 
-            // Allocate new monthly credits
-            await supabase
-              .from("credit_wallets")
-              .update({
-                monthly_credits: PRO_MONTHLY_CREDITS,
-                rollover_credits: newRollover,
-                updated_at: new Date().toISOString(),
-              })
-              .eq("user_id", userId);
+            // Allocate new monthly credits based on actual tier
+            if (wallet) {
+              await supabase
+                .from("credit_wallets")
+                .update({
+                  monthly_credits: monthlyCredits,
+                  rollover_credits: newRollover,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq("user_id", resolvedUserId);
+            } else {
+              await supabase
+                .from("credit_wallets")
+                .insert({ user_id: resolvedUserId, monthly_credits: monthlyCredits, topup_credits: 0, rollover_credits: 0 });
+            }
 
             // Log to ledger
             await supabase
               .from("credit_ledger")
               .insert({
-                user_id: userId,
+                user_id: resolvedUserId,
                 type: "credit",
                 bucket: "monthly",
-                amount: PRO_MONTHLY_CREDITS,
+                amount: monthlyCredits,
                 reason: "monthly_refill",
                 reference_id: invoice.id,
               });
@@ -279,7 +409,7 @@ export async function POST(request: NextRequest) {
               await supabase
                 .from("credit_ledger")
                 .insert({
-                  user_id: userId,
+                  user_id: resolvedUserId,
                   type: "credit",
                   bucket: "rollover",
                   amount: newRollover - currentRollover,
@@ -287,8 +417,10 @@ export async function POST(request: NextRequest) {
                   reference_id: invoice.id,
                 });
             }
-            
-            console.log("Refilled credits for user:", userId);
+
+            console.log("Refilled credits for user:", resolvedUserId, "Credits:", monthlyCredits, "Tier:", tierId);
+          } else {
+            console.error("CRITICAL: No user found for invoice:", invoice.id, "subscription:", subscriptionId);
           }
         }
         break;

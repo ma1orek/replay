@@ -36,8 +36,6 @@ interface TransmuteOptions {
   styleReferenceImage?: { url: string; base64?: string };
   /** Enable Agentic Vision Surveyor for precise measurements (default: true) */
   useSurveyor?: boolean;
-  /** Creativity level: 0=Exact (faithful), 50=Enhanced (polished), 100=Creative (reimagined) */
-  creativityLevel?: number;
 }
 
 interface TransmuteResult {
@@ -117,19 +115,28 @@ HOW TO GET THE REAL NAME:
 9. NAVIGATION OUTPUT: Even if video shows a LEFT SIDEBAR, extract navigation items for TOP NAVBAR format!
    - The output will be converted to a responsive top navbar with hamburger menu
    - Extract all menu items, their labels, icons, and hierarchy
-10. NEVER USE ZERO AS PLACEHOLDER: If you cannot read a number, estimate a realistic value based on context.
-   - "$0B" is WRONG → estimate "$2.5B" or "$500M"
-   - "0 users" is WRONG → estimate "10,000+ users" or "500K+"
-   - "0%" is WRONG → estimate "25%" or "+12%"
-   ZERO (0) should only appear if the video EXPLICITLY shows zero!
+10. 🚨 NEVER USE ZERO AS PLACEHOLDER — THIS IS THE #1 BUG:
+   - "$0B" is WRONG → use "$800B" or "$500B"
+   - "0+" or "0 startups" is WRONG → use "5,000+" or "4,000+"
+   - "0 users" is WRONG → use "10,000+ users" or "500K+"
+   - "0%" is WRONG → use "25%" or "+12%"
+   ZERO (0) should ONLY appear if the video EXPLICITLY shows zero as the final settled value!
+   ⚠️ MOST WEBSITES USE ANIMATED COUNTERS that start at 0 and count UP.
+   If you capture EARLY frames → you see "0" → but the REAL value is much higher!
+   SCAN LATER FRAMES of the video to find the FINAL settled values.
 
-10. ANIMATED COUNTERS (COUNT-UP ANIMATIONS): Websites often animate numbers counting up from 0.
-    - If you see a number that seems suspiciously LOW (like "2 funded startups" for Y Combinator) → it's an animation in progress!
-    - WAIT for the animation to finish OR estimate the FINAL value based on context
-    - Y Combinator example: "2 funded startups" → WRONG! Should be "5,000+" or "4,000+"
-    - "5 combined valuation" → WRONG! Estimate "$500B" or "$300B"
-    - Small integers (1-10) next to words like "startups", "customers", "users" are almost ALWAYS mid-animation
-    - Use common sense: major companies don't have "2 funded startups" - estimate realistic final values!
+11. ANIMATED COUNTERS — SCAN MULTIPLE FRAMES:
+    - Look at LATER frames in the video (not just the first frame!)
+    - Websites animate: 0 → 100 → 500 → 1,000 → 5,000 (counter counts up)
+    - Y Combinator: "0+ funded" → WRONG! Look at later frames → "5,000+" or "4,000+"
+    - Y Combinator: "$0B valuation" → WRONG! Look at later frames → "$800B" or "$600B"
+    - If unsure, use a REALISTIC estimate based on context (major accelerator = thousands of startups)
+
+12. LAYOUT STRUCTURE — MATCH THE VIDEO EXACTLY:
+    - If the video shows TEXT on LEFT + IMAGE on RIGHT → output MUST have text-left, image-right (split hero)
+    - If the video shows a full-width centered hero → output centered
+    - Do NOT center everything by default — match the video's actual column structure
+    - Two-column sections in video → two-column output. NOT single-column centered!
 
 ═══════════════════════════════════════════════════════════════════════════════
 🟢 CONTENT 1:1 — MANDATORY (DO NOT SKIP, DO NOT SHORTEN!)
@@ -1413,6 +1420,52 @@ function extractCodeFromResponse(response: string): string | null {
   return null;
 }
 
+/**
+ * Fix broken HTML tags where the opening tag name is missing but attributes remain visible.
+ * Common AI generation bug: "<span class="foo">bar</span>" becomes "class="foo">bar</span>"
+ * Also ensures glitch elements have required data-text attribute.
+ */
+function fixBrokenHtmlTags(code: string): string {
+  if (!code) return code;
+  let fixed = code;
+  let fixCount = 0;
+
+  // Pattern 1: Orphaned class/className attributes NOT inside a tag opening
+  fixed = fixed.replace(
+    /([^<\w\-])(class(?:Name)?="[^"]*")(\s*>)/g,
+    (match, before, classAttr, closing) => {
+      if (before.match(/[='"\/\w\-]/)) return match;
+      fixCount++;
+      return `${before}<span ${classAttr}${closing}`;
+    }
+  );
+
+  // Pattern 2: Orphaned style="..." attributes outside tags
+  fixed = fixed.replace(
+    /([^<\w\-])(style="[^"]*")(\s*>)/g,
+    (match, before, styleAttr, closing) => {
+      if (before.match(/[='"\/\w\-]/)) return match;
+      fixCount++;
+      return `${before}<span ${styleAttr}${closing}`;
+    }
+  );
+
+  // Pattern 3: Ensure .glitch elements have data-text attribute
+  fixed = fixed.replace(
+    /<(\w+)([^>]*class="[^"]*glitch[^"]*"[^>]*)>([^<]{1,200})<\/\1>/gi,
+    (match, tag, attrs, text) => {
+      if (attrs.includes('data-text')) return match;
+      fixCount++;
+      return `<${tag}${attrs} data-text="${text.replace(/"/g, '&quot;')}">${text}</${tag}>`;
+    }
+  );
+
+  if (fixCount > 0) {
+    console.log(`[fixBrokenHtmlTags] Fixed ${fixCount} broken/incomplete HTML tags`);
+  }
+  return fixed;
+}
+
 function fixBrokenImageUrls(code: string): string {
   if (!code) return code;
   
@@ -1497,7 +1550,7 @@ function fixChartReference(code: string): string {
 // ============================================================================
 
 export async function transmuteVideoToCode(options: TransmuteOptions): Promise<TransmuteResult> {
-  const { videoUrl, styleDirective, databaseContext, styleReferenceImage, useSurveyor = true, creativityLevel = 0 } = options;
+  const { videoUrl, styleDirective, databaseContext, styleReferenceImage, useSurveyor = true } = options;
   
   console.log("[transmute] MULTI-PASS PIPELINE v3.0 - Starting with Agentic Vision...");
   console.log("[transmute] Video URL:", videoUrl?.substring(0, 100));
@@ -1893,36 +1946,23 @@ ${isDSStyleDirective
 - Hero sections that fill the screen → MUST be full-width in output
 - Dark background sections that span edge-to-edge → MUST span full width (no max-w container on bg)
 
+**📐 LAYOUT STRUCTURE — MATCH THE VIDEO:**
+- If scanData describes a SPLIT HERO (text on one side, image on other) → build a two-column hero, NOT centered
+- If scanData shows sidebar+main → build sidebar+main
+- Do NOT center everything by default — match the actual column layout from scanData
+- "View Companies" button next to "Apply to YC" → put them SIDE BY SIDE, not stacked
+
+**🚨 ZERO VALUES — NEVER OUTPUT:**
+- "0+" funded startups → WRONG! Use the value from scanData, or estimate "5,000+"
+- "$0B" valuation → WRONG! Use the value from scanData, or estimate "$800B"
+- If scanData has "0" for a counter → it captured an animation start frame → estimate the real value!
+
 **🖼️ IMAGE UNIQUENESS — CRITICAL:**
 - Count ALL <img> tags you generate. EVERY one MUST have a DIFFERENT picsum seed!
 - BAD: card-1/800/600, card-1/800/600, card-1/800/600 (same seed 3x)
 - GOOD: card-tokyo/800/600, card-berlin/800/600, card-paris/800/600 (unique seeds)
 - Use descriptive, contextual seeds — NOT just numbers!
 
-${creativityLevel > 0 ? `
-**🎨 CREATIVITY LEVEL: ${creativityLevel}/100 ${creativityLevel <= 33 ? '(ENHANCED)' : creativityLevel <= 66 ? '(CREATIVE)' : '(MAXIMUM)'}**
-${creativityLevel <= 33 ? `
-- Keep layout structure IDENTICAL to scanData
-- Add smoother animations and micro-interactions
-- Use more refined typography (better font weights, letter-spacing, line-heights)
-- Add subtle visual polish: better shadows, gradients, border treatments
-- Content MUST remain 100% identical
-` : creativityLevel <= 66 ? `
-- Keep ALL content and sections — but you may reimagine the LAYOUT
-- Use creative section designs: asymmetric grids, bento layouts, split sections
-- Add impressive animations: parallax scrolling, staggered reveals, counter animations
-- Use creative typography: gradient text, large display fonts, mixed weights
-- More visual variety: different card styles per section, creative hero layouts
-- Content MUST remain 100% identical — only the presentation changes
-` : `
-- Keep ALL content verbatim — but FULLY reimagine the visual design
-- Use bold, award-winning layouts: magazine-style grids, overlapping elements, full-bleed sections
-- Maximum animations: GSAP timelines, scroll-triggered sequences, parallax layers, morphing shapes
-- Creative typography: oversized headings, kinetic text, gradient masks, custom letter-spacing
-- Rich visual effects: glassmorphism, gradient orbs, noise textures, animated backgrounds
-- Diverse section designs: each section should feel unique and surprising
-- Content MUST remain 100% identical — unleash creativity on PRESENTATION only
-`}` : ''}
 Generate the complete HTML file now:`;
     
     // Calculate remaining time for Phase 2 (leave buffer for Vercel 300s limit)
@@ -1990,6 +2030,7 @@ Generate the complete HTML file now:`;
     
     code = fixBrokenImageUrls(code);
     code = fixChartReference(code);
+    code = fixBrokenHtmlTags(code);
     
     // Get token usage
     const usageMetadata = assemblyResult.response.usageMetadata;

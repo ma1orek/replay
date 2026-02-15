@@ -223,6 +223,57 @@ function fixTemplateLiteralErrors(code: string): string {
   return fixedCode;
 }
 
+/**
+ * Fix broken HTML tags where the opening tag name is missing but attributes remain visible.
+ * Common AI generation bug: "<span class="foo">bar</span>" becomes "class="foo">bar</span>"
+ * Also ensures glitch elements have required data-text attribute.
+ */
+function fixBrokenHtmlTags(code: string): string {
+  if (!code) return code;
+  let fixed = code;
+  let fixCount = 0;
+
+  // Pattern 1: Orphaned class/className attributes NOT inside a tag opening
+  // Matches: `text class="something">content` or `text className="something">content`
+  // But NOT: `<div class="something">` (correctly inside a tag)
+  fixed = fixed.replace(
+    /([^<\w\-])(class(?:Name)?="[^"]*")(\s*>)/g,
+    (match, before, classAttr, closing) => {
+      // Only fix if the character before is NOT part of a tag attribute list
+      // i.e., if "before" is whitespace, newline, or text content (not = or ")
+      if (before.match(/[='"\/\w\-]/)) return match; // Part of a valid tag, skip
+      fixCount++;
+      return `${before}<span ${classAttr}${closing}`;
+    }
+  );
+
+  // Pattern 2: Orphaned style="..." attributes outside tags
+  fixed = fixed.replace(
+    /([^<\w\-])(style="[^"]*")(\s*>)/g,
+    (match, before, styleAttr, closing) => {
+      if (before.match(/[='"\/\w\-]/)) return match;
+      fixCount++;
+      return `${before}<span ${styleAttr}${closing}`;
+    }
+  );
+
+  // Pattern 3: Ensure .glitch elements have data-text attribute
+  // <ANY class="...glitch..." ...>TEXT</ANY> → add data-text="TEXT" if missing
+  fixed = fixed.replace(
+    /<(\w+)([^>]*class="[^"]*glitch[^"]*"[^>]*)>([^<]{1,200})<\/\1>/gi,
+    (match, tag, attrs, text) => {
+      if (attrs.includes('data-text')) return match; // Already has it
+      fixCount++;
+      return `<${tag}${attrs} data-text="${text.replace(/"/g, '&quot;')}">${text}</${tag}>`;
+    }
+  );
+
+  if (fixCount > 0) {
+    console.log(`[fixBrokenHtmlTags] Fixed ${fixCount} broken/incomplete HTML tags`);
+  }
+  return fixed;
+}
+
 // Extract code from Gemini response
 function extractCodeFromResponse(response: string): string | null {
   let cleaned = response.trim();
@@ -266,7 +317,35 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { videoBase64, mimeType, styleDirective, databaseContext, styleReferenceImage, creativityLevel = 0 } = body;
+    let { videoBase64, mimeType, styleDirective, databaseContext, styleReferenceImage } = body;
+    const { videoUrl, generationMode } = body;
+
+    // If videoUrl provided but no base64, fetch video server-side (for large videos that exceed body size limit)
+    if (!videoBase64 && videoUrl) {
+      try {
+        console.log("[stream] Fetching video from URL server-side:", videoUrl.substring(0, 80));
+        const videoResponse = await fetch(videoUrl, { headers: { 'Accept': 'video/*,*/*' } });
+        if (!videoResponse.ok) {
+          return new Response(
+            JSON.stringify({ error: `Failed to fetch video: ${videoResponse.status}` }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        const contentType = videoResponse.headers.get('content-type') || 'video/mp4';
+        const arrayBuffer = await videoResponse.arrayBuffer();
+        videoBase64 = Buffer.from(arrayBuffer).toString('base64');
+        if (!mimeType) {
+          mimeType = contentType.includes('webm') ? 'video/webm' : contentType.includes('quicktime') ? 'video/quicktime' : 'video/mp4';
+        }
+        console.log("[stream] Video fetched server-side. Size:", arrayBuffer.byteLength, "Type:", mimeType);
+      } catch (fetchErr) {
+        console.error("[stream] Failed to fetch video URL:", fetchErr);
+        return new Response(
+          JSON.stringify({ error: "Failed to fetch video from URL" }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+    }
 
     if (!videoBase64 || !mimeType) {
       return new Response(
@@ -381,8 +460,31 @@ export async function POST(request: NextRequest) {
             console.log("[stream] Injected Surveyor measurements into prompt");
           }
           
-          // Add user's style directive if provided (simple text, no enterprise stuff)
-          if (styleDirective && styleDirective.trim()) {
+          // Add user's style directive — DS needs special handling
+          const isDSStyle = styleDirective?.startsWith("DESIGN SYSTEM STYLE GUIDE:");
+
+          if (isDSStyle) {
+            prompt += `\n\n🚨🚨🚨 MANDATORY DESIGN SYSTEM — OVERRIDES VIDEO COLORS! 🚨🚨🚨
+═══════════════════════════════════════════════════════════════
+The user has selected a DESIGN SYSTEM. This means:
+
+🔴 IGNORE ALL COLORS YOU SEE IN THE VIDEO! Do NOT use the video's color palette!
+🔴 USE ONLY the Design System token colors listed below for buttons, backgrounds, accents, text, borders!
+🔴 The video provides CONTENT and LAYOUT — the Design System provides ALL VISUAL STYLING!
+
+RULES:
+1. BUTTONS: Use DS primary/accent color — NOT the color from the video's buttons
+2. BACKGROUNDS: Use DS background tokens — NOT the video's background colors
+3. TEXT: Use DS text color tokens — NOT whatever colors appear in the video
+4. ACCENTS/HIGHLIGHTS: Use DS accent/secondary colors
+5. THEME: If video is LIGHT → use DS colors with light backgrounds. If DARK → DS colors with dark backgrounds.
+6. Content, text, layout, structure, navigation — copy from the video EXACTLY
+7. Colors, typography, spacing, borders — use ONLY from the DS tokens below
+
+${styleDirective}
+
+REPEAT: Do NOT use colors from the video. ALL colors must come from the Design System tokens above.`;
+          } else if (styleDirective && styleDirective.trim()) {
             prompt += `\n\n═══════════════════════════════════════════════════════════════
 🎨 USER STYLE REQUEST
 ═══════════════════════════════════════════════════════════════
@@ -397,37 +499,425 @@ ${styleDirective}`;
 ${databaseContext}`;
           }
           
-          // Creativity level instructions
-          if (creativityLevel > 0) {
-            prompt += `\n\n🎨 CREATIVITY LEVEL: ${creativityLevel}/100 ${creativityLevel <= 33 ? '(ENHANCED)' : creativityLevel <= 66 ? '(CREATIVE)' : '(MAXIMUM)'}`;
-            if (creativityLevel <= 33) {
-              prompt += `\nKeep layout identical. Add smoother animations, refined typography, subtle polish. Content MUST remain 100% identical.`;
-            } else if (creativityLevel <= 66) {
-              prompt += `\nKeep ALL content but reimagine layout. Use creative sections, bento grids, impressive animations. Content MUST remain identical.`;
-            } else {
-              prompt += `\nKeep ALL content verbatim but FULLY reimagine the design. Bold layouts, maximum animations, creative typography, rich effects. Content 100% identical.`;
-            }
-          }
+          // MODE-AWARE VISION INSTRUCTIONS
+          const isReimagine = generationMode === "reimagine";
 
-          // MINIMAL VISION INSTRUCTIONS - NO CODE EXAMPLES!
-          prompt += `
+          if (isReimagine) {
+            prompt += `
 
-WATCH THE VIDEO. CREATE AWWWARDS-QUALITY OUTPUT.
+WATCH THE VIDEO TO EXTRACT ALL CONTENT AND DATA. Then BUILD A COMPLETELY NEW, BREATHTAKING DESIGN.
 
-CRITICAL: Every section MUST have REAL content (no empty cards!). Every image uses UNIQUE picsum seed.
-If a section spans full width in the video → make it full width in output.
+🎨 REIMAGINE MODE — BE MORE CREATIVE, KEEP ALL CONTENT
+The video is your CONTENT SOURCE only. You must INVENT a brand-new layout.
+
+═══════════════════════════════════════════════════
+CONTENT RULES (MANDATORY — violating = failure):
+═══════════════════════════════════════════════════
+- Keep ALL text VERBATIM: every headline, paragraph, nav item, stat, testimonial, button label
+- Keep ALL data EXACT: numbers, metrics, company names, dates, prices
+- Keep the PURPOSE of each section (hero, features, pricing, testimonials, CTA, footer, etc.)
+- 🚨 ZERO BAN: 0 is BANNED in stats! "0 funded startups" → "5,000+". "$0B" → "$800B+". Scan LAST 5 SECONDS for final counter values!
+- 🏢 Company logos: styled TEXT with company name/initials, NOT external image URLs
+- Every image: unique picsum.photos seed (e.g. ?random=hero1, ?random=feat2)
+
+═══════════════════════════════════════════════════
+SECTION LAYOUT RULES (CLEAN + VARIED)
+═══════════════════════════════════════════════════
+Every section MUST follow this template for clean layout:
+  <section class="relative py-24 md:py-32 overflow-hidden">
+    <div class="max-w-7xl mx-auto px-6">
+      <!-- content here using CSS Grid or Flexbox -->
+    </div>
+  </section>
+
+RULES:
+- Use CSS Grid (display:grid) or Flexbox for ALL layouts — NEVER position:absolute for layout
+- position:absolute ONLY for decorative overlays (floating orbs, grain, aurora)
+- Every section needs proper padding (py-24 to py-32)
+- Cards: use grid with gap-6 to gap-8, responsive columns (grid-cols-1 md:grid-cols-2 lg:grid-cols-3)
+- All text readable: ensure contrast, use text-shadow on image backgrounds
+- Test: every section must look clean and aligned at 1200px width
+- NO broken overlapping elements, NO elements going off-screen
+- 🚨 TEXT VISIBILITY: NO text may be cut off or overflow its container!
+  - Headlines: use font-size:clamp(2rem,5vw,5rem) so they SHRINK on narrow viewports
+  - NEVER use text-8xl or text-9xl as fixed size — always use clamp() or responsive Tailwind (text-4xl md:text-6xl lg:text-7xl)
+  - Add overflow-wrap:break-word on all text containers
+  - Verify ALL text is fully visible — if a headline is too long, it must wrap naturally at WORD boundaries, never mid-word
+
+VARY layouts between sections — cycle through:
+1. Full-viewport cinematic hero (min-h-screen, font-size:clamp(2.5rem,6vw,5rem))
+2. Bento grid (mixed card sizes: CSS Grid with grid-template-areas or span-2)
+3. Horizontal stat strip or floating stat cards with perspective tilt
+4. Horizontal snap carousel (overflow-x-auto snap-x snap-mandatory) for testimonials
+5. Asymmetric 60/40 split (one side sticky with position:sticky)
+6. Diagonal clip-path divider between sections
+7. Infinite marquee for logo bars
+8. Card comparison with hover lift
+9. Vertical timeline with alternating left/right
+
+═══════════════════════════════════════════════════
+ANIMATION LIBRARY — USE ALL OF THESE (from reactbits.dev)
+═══════════════════════════════════════════════════
+Load these CDNs in <head>:
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+Then at the end of <body>, implement ALL of these animation patterns:
+
+───── 1. SPLIT TEXT ENTRANCE (for hero headline) ─────
+Split headline into WORDS first (to preserve word-wrap), then chars within each word:
+document.querySelectorAll('.split-text').forEach(el => {
+  const words = el.textContent.trim().split(/\s+/);
+  el.innerHTML = words.map(word =>
+    '<span style="display:inline-block;white-space:nowrap;margin-right:0.3em">' +
+    word.split('').map(ch => '<span style="display:inline-block;will-change:transform,opacity;">' + ch + '</span>').join('') +
+    '</span>'
+  ).join(' ');
+  el.style.overflowWrap = 'break-word';
+  gsap.fromTo(el.querySelectorAll('span > span'),
+    { opacity: 0, y: 30 },
+    { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out', stagger: 0.02,
+      scrollTrigger: { trigger: el, start: 'top 85%', once: true }
+    });
+});
+IMPORTANT: The headline element MUST have style="font-size:clamp(2.5rem,5vw,4.5rem)" — NEVER a fixed huge size!
+
+───── 2. SCROLL REVEAL TEXT (for paragraphs/descriptions) ─────
+Words unblur and fade in scrubbed to scroll:
+document.querySelectorAll('.scroll-reveal-text').forEach(el => {
+  el.innerHTML = el.textContent.split(/(\s+)/).map(w =>
+    w.match(/^\\s+$/) ? w : '<span class="word" style="display:inline-block">' + w + '</span>'
+  ).join('');
+  const words = el.querySelectorAll('.word');
+  gsap.fromTo(words, { opacity: 0.15, filter: 'blur(4px)' },
+    { opacity: 1, filter: 'blur(0px)', ease: 'none', stagger: 0.05,
+      scrollTrigger: { trigger: el.parentElement, start: 'top 80%', end: 'bottom 60%', scrub: true }
+    });
+});
+
+───── 3. ANIMATED CONTENT ENTRANCE (for every section) ─────
+Every section child slides up and fades in on scroll:
+gsap.registerPlugin(ScrollTrigger);
+document.querySelectorAll('[data-animate]').forEach(el => {
+  const dir = el.dataset.animate || 'up';
+  const from = { opacity: 0, y: dir==='up' ? 60 : dir==='down' ? -60 : 0,
+    x: dir==='left' ? -60 : dir==='right' ? 60 : 0 };
+  gsap.from(el, { ...from, duration: 0.9, ease: 'power3.out',
+    scrollTrigger: { trigger: el, start: 'top 85%', once: true }
+  });
+});
+
+───── 4. STAGGER CARDS (for feature/pricing cards) ─────
+Cards stagger in from bottom with delay:
+document.querySelectorAll('.stagger-cards').forEach(container => {
+  const cards = container.children;
+  gsap.fromTo(cards, { opacity: 0, y: 80, scale: 0.95 },
+    { opacity: 1, y: 0, scale: 1, duration: 0.7, ease: 'power3.out', stagger: 0.15,
+      scrollTrigger: { trigger: container, start: 'top 80%', once: true }
+    });
+});
+
+───── 5. COUNT-UP NUMBERS (for stats/metrics) ─────
+Animated counter using IntersectionObserver:
+document.querySelectorAll('.count-up').forEach(el => {
+  const to = parseFloat(el.dataset.to);
+  const prefix = el.dataset.prefix || '';
+  const suffix = el.dataset.suffix || '';
+  el.textContent = prefix + '0' + suffix;
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(entry => { if (entry.isIntersecting) { obs.unobserve(el);
+      const start = performance.now();
+      (function step(now) {
+        const t = Math.min((now - start) / 2000, 1);
+        const ease = 1 - Math.pow(1 - t, 4);
+        el.textContent = prefix + Math.round(to * ease).toLocaleString() + suffix;
+        if (t < 1) requestAnimationFrame(step);
+      })(start);
+    }});
+  }, { threshold: 0.3 });
+  obs.observe(el);
+});
+
+───── 6. GRADIENT TEXT (for key headlines) ─────
+CSS class for animated gradient text:
+.gradient-text {
+  background: linear-gradient(to right, #5227FF, #FF9FFC, #B19EEF, #5227FF);
+  background-size: 300% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: gradient-shift 4s ease infinite alternate;
+}
+@keyframes gradient-shift { 0%{background-position:0% 50%} 100%{background-position:100% 50%} }
+
+───── 7. GLITCH TEXT (for dramatic headlines) ─────
+.glitch { position:relative; font-weight:900; }
+.glitch::after,.glitch::before {
+  content:attr(data-text); position:absolute; top:0; color:inherit;
+  background:inherit; overflow:hidden; clip-path:inset(0);
+}
+.glitch::after { left:3px; text-shadow:-3px 0 red; animation:glitch-anim 3s infinite linear alternate-reverse; }
+.glitch::before { left:-3px; text-shadow:3px 0 cyan; animation:glitch-anim 2s infinite linear alternate-reverse; }
+@keyframes glitch-anim {
+  0%{clip-path:inset(20% 0 50% 0)} 25%{clip-path:inset(40% 0 20% 0)}
+  50%{clip-path:inset(15% 0 55% 0)} 75%{clip-path:inset(30% 0 40% 0)}
+  100%{clip-path:inset(10% 0 60% 0)}
+}
+
+───── 8. SPOTLIGHT CARDS (cursor-following light on hover) ─────
+.card-spotlight {
+  position:relative; border-radius:1.5rem; border:1px solid rgba(255,255,255,0.08);
+  background:#111; overflow:hidden;
+  --mx:50%; --my:50%;
+}
+.card-spotlight::before {
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(circle at var(--mx) var(--my), rgba(255,255,255,0.15), transparent 70%);
+  opacity:0; transition:opacity 0.4s;
+}
+.card-spotlight:hover::before { opacity:1; }
+JS: document.querySelectorAll('.card-spotlight').forEach(c => {
+  c.addEventListener('mousemove', e => {
+    const r = c.getBoundingClientRect();
+    c.style.setProperty('--mx', (e.clientX-r.left)+'px');
+    c.style.setProperty('--my', (e.clientY-r.top)+'px');
+  });
+});
+
+───── 9. INFINITE MARQUEE (for logo/partner bars) ─────
+.marquee { overflow:hidden; position:relative; width:100%; }
+.marquee-track {
+  display:flex; width:max-content; gap:3rem;
+  animation: marquee-scroll 25s linear infinite;
+}
+.marquee-track:hover { animation-play-state:paused; }
+@keyframes marquee-scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+IMPORTANT: duplicate all items inside marquee-track so loop is seamless!
+
+───── 10. FILM GRAIN OVERLAY (page-wide texture) ─────
+Add a subtle noise texture over the entire page:
+<canvas id="grain" style="position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:9999;opacity:0.04;"></canvas>
+<script>
+(function(){const c=document.getElementById('grain'),x=c.getContext('2d');c.width=c.height=256;
+let f=0;(function d(){if(f++%3===0){const i=x.createImageData(256,256);for(let j=0;j<i.data.length;j+=4){
+const v=Math.random()*255;i.data[j]=i.data[j+1]=i.data[j+2]=v;i.data[j+3]=20;}x.putImageData(i,0,0);}
+requestAnimationFrame(d);})();})();
+</script>
+
+───── 11. AURORA BACKGROUND (for hero or CTA sections) ─────
+.aurora { position:absolute; inset:0; overflow:hidden; z-index:0; pointer-events:none; }
+.aurora::before,.aurora::after {
+  content:''; position:absolute; width:150%; height:60%; border-radius:50%;
+  filter:blur(80px); opacity:0.4;
+  animation:aurora-drift 8s ease-in-out infinite alternate;
+}
+.aurora::before { background:radial-gradient(ellipse,#5227FF 0%,transparent 70%); top:-20%; left:-25%; }
+.aurora::after { background:radial-gradient(ellipse,#7cff67 0%,transparent 70%); bottom:-20%; right:-25%;
+  animation-delay:-4s; animation-direction:alternate-reverse; }
+@keyframes aurora-drift { 0%{transform:translateX(-10%) translateY(0) rotate(-5deg)} 100%{transform:translateX(10%) translateY(-10%) rotate(5deg)} }
+
+───── 12. FLOATING PARTICLES (for hero background) ─────
+<canvas id="particles" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;"></canvas>
+<script>
+(function(){const c=document.getElementById('particles'),x=c.getContext('2d');
+let w,h,p=[];function r(){w=c.width=c.offsetWidth;h=c.height=c.offsetHeight;}
+window.addEventListener('resize',r);r();
+for(let i=0;i<80;i++)p.push({x:Math.random()*w,y:Math.random()*h,r:Math.random()*2+0.5,
+  vx:(Math.random()-0.5)*0.4,vy:(Math.random()-0.5)*0.4,a:Math.random()*0.5+0.3});
+(function d(){x.clearRect(0,0,w,h);p.forEach(pt=>{pt.x+=pt.vx;pt.y+=pt.vy;
+  if(pt.x<0)pt.x=w;if(pt.x>w)pt.x=0;if(pt.y<0)pt.y=h;if(pt.y>h)pt.y=0;
+  x.beginPath();x.arc(pt.x,pt.y,pt.r,0,Math.PI*2);x.fillStyle='rgba(255,255,255,'+pt.a+')';x.fill();});
+  requestAnimationFrame(d);})();})();
+</script>
+
+───── 13. GLASSMORPHISM CARDS ─────
+.glass-card {
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 1.5rem; padding: 2rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+───── 14. HOVER LIFT CARDS ─────
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+}
+
+───── 15. STAR BORDER (animated orbiting glow) ─────
+.star-border { position:relative; display:inline-block; border-radius:20px; overflow:hidden; padding:1px; }
+.star-border::before,.star-border::after {
+  content:''; position:absolute; width:300%; height:50%; opacity:0.7; border-radius:50%;
+  background:radial-gradient(circle,white,transparent 10%); z-index:0;
+}
+.star-border::before { top:-12px; left:-250%; animation:star-orbit 6s linear infinite alternate; }
+.star-border::after { bottom:-12px; right:-250%; animation:star-orbit 6s linear infinite alternate-reverse; }
+.star-border > * { position:relative; z-index:1; }
+@keyframes star-orbit { 0%{transform:translateX(0);opacity:1} 100%{transform:translateX(-100%);opacity:0} }
+
+───── 16. PARALLAX ELEMENTS ─────
+At least 2 sections with background parallax:
+document.querySelectorAll('[data-parallax]').forEach(el => {
+  const speed = parseFloat(el.dataset.parallax) || 0.3;
+  gsap.to(el, { yPercent: -20 * speed, ease: 'none',
+    scrollTrigger: { trigger: el.parentElement, start: 'top bottom', end: 'bottom top', scrub: 1 }
+  });
+});
+
+───── 17. CUSTOM SCROLLBAR (page-wide) ─────
+Add to <style> for sleek custom scrollbar on the entire page:
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+html { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.12) transparent; }
+
+───── 18. HORIZONTAL SNAP CAROUSEL (for testimonials/cards) ─────
+.snap-carousel {
+  display:flex; gap:1.5rem; overflow-x:auto; scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch; padding-bottom:1rem;
+  scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.1) transparent;
+}
+.snap-carousel::-webkit-scrollbar { height:6px; }
+.snap-carousel::-webkit-scrollbar-track { background:transparent; }
+.snap-carousel::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:3px; }
+.snap-carousel > * { scroll-snap-align:start; flex:0 0 auto; min-width:300px; }
+
+═══════════════════════════════════════════════════
+🚨 TESTIMONIAL SECTION — MANDATORY HORIZONTAL CAROUSEL 🚨
+═══════════════════════════════════════════════════
+When rendering testimonials/reviews/quotes:
+- NEVER stack them vertically as a column of cards!
+- ALWAYS use a horizontal snap carousel with EXACTLY this structure:
+<section class="relative py-24 md:py-32 overflow-hidden">
+  <div class="max-w-7xl mx-auto px-6">
+    <h2>...</h2>
+    <div class="snap-carousel" style="display:flex;gap:1.5rem;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding:1rem 0;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.1) transparent;">
+      <!-- Each card: FIXED WIDTH, never full-width -->
+      <div style="scroll-snap-align:start;flex:0 0 340px;min-width:300px;max-width:380px;" class="glass-card p-6 rounded-2xl">
+        <p>"Quote text..."</p>
+        <div class="mt-4 flex items-center gap-3">
+          <img src="https://picsum.photos/48/48?random=test1" class="w-12 h-12 rounded-full" />
+          <div><strong>Name</strong><br><small>Title, Company</small></div>
+        </div>
+      </div>
+      <!-- repeat for each testimonial -->
+    </div>
+  </div>
+</section>
+- Cards must have flex:0 0 340px (NOT flex:1, NOT width:100%)
+- The container must scroll horizontally showing 2-3 cards at a time
+- If there are 3+ testimonials, some MUST be offscreen (scroll to reveal)
+
+═══════════════════════════════════════════════════
+🚨 DASHBOARD / APP UI LAYOUTS 🚨
+═══════════════════════════════════════════════════
+If the video shows a dashboard, admin panel, or app interface with sidebar + main content:
+- Use CSS Grid: display:grid; grid-template-columns:auto 1fr;
+- Sidebar: fixed width (w-64 or 250px), overflow-y:auto
+- Main area: min-width:0 (CRITICAL — prevents grid blowout from charts/tables)
+- Charts/tables: width:100%; max-width:100%; overflow-x:auto on their container
+- NEVER let a chart or table push the main area wider than the viewport
+- Structure:
+<div style="display:grid;grid-template-columns:250px 1fr;min-height:100vh;">
+  <aside style="overflow-y:auto;"><!-- sidebar nav --></aside>
+  <main style="min-width:0;overflow-x:hidden;padding:1.5rem;">
+    <!-- dashboard content -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;">
+      <!-- stat cards -->
+    </div>
+    <div style="width:100%;overflow-x:auto;">
+      <!-- chart or table here -->
+    </div>
+  </main>
+</div>
+
+═══════════════════════════════════════════════════
+ASSEMBLY RULES — MINIMUM REQUIREMENTS:
+═══════════════════════════════════════════════════
+You MUST use at least:
+- split-text on the hero headline
+- scroll-reveal-text on at least 1 description paragraph
+- data-animate on every major content block
+- stagger-cards on at least 1 card grid
+- count-up on every stat/metric number
+- gradient-text on at least 1 secondary headline
+- card-spotlight on at least 1 card set
+- marquee on any logo/partner bar
+- grain overlay on the full page
+- aurora OR particles on the hero background
+- glass-card on at least 2 cards
+- hover-lift on all interactive cards
+- parallax on at least 2 decorative elements
+- At least 1 glitch-text OR star-border element
+- Custom scrollbar styling on <html>
+- snap-carousel on testimonials section (HORIZONTAL, never vertical stack)
+
+If multiple pages shown: use Alpine.js x-data/x-show for navigation.
+Wrap in \`\`\`html blocks.`;
+          } else {
+            prompt += `
+
+WATCH THE VIDEO CAREFULLY — ESPECIALLY LATER FRAMES. CREATE AWWWARDS-QUALITY OUTPUT.
+
+CRITICAL RULES:
+1. Every section MUST have REAL content (no empty cards!). Every image uses UNIQUE picsum seed.
+2. If a section spans full width in the video → make it full width in output.
+3. 🚨🚨🚨 ZERO BAN: The number 0 is BANNED in statistics/metrics! Websites use animated counters that START at 0 and count UP.
+   - "0 funded startups" → WRONG! Must be "5,000+" or similar real number
+   - "$0B" → WRONG! Must be "$800B+" or similar real number
+   - "0+" → WRONG! Must be a realistic large number
+   - SCAN THE LAST 5 SECONDS of the video for the FINAL counter values!
+   - If you cannot read the final value, ESTIMATE a realistic number — NEVER output zero!
+4. 📐 MATCH THE VIDEO LAYOUT: If the video shows text on LEFT + image on RIGHT (split hero) → build a TWO-COLUMN hero, NOT centered. Do NOT center everything — match the column structure!
+5. If the video shows buttons side-by-side → place them side-by-side (flex-row), not stacked.
+6. 🏢 COMPANY LOGO SECTIONS: If the video shows a grid/row of company logos (partners, clients, "Top companies"):
+   - Use STYLED TEXT with the company name or initial letter (e.g., <div class="w-12 h-12 rounded-lg bg-zinc-800 flex items-center justify-center text-white font-bold text-xl">S</div> for Stripe)
+   - Do NOT use external image URLs for company logos — they WILL break!
+   - cdn.simpleicons.org is OK ONLY for social media icons (GitHub, Twitter, LinkedIn)
+7. 📊 DASHBOARD / APP UI LAYOUTS: If the video shows a dashboard, admin panel, or app with sidebar + main content:
+   - Use CSS Grid: display:grid; grid-template-columns:250px 1fr; min-height:100vh;
+   - Sidebar: fixed width, overflow-y:auto, flex-shrink:0
+   - Main area: min-width:0 (CRITICAL — prevents chart/table overflow!)
+   - ALL charts, tables, data grids: wrap in overflow-x:auto container, set width:100%; max-width:100%;
+   - stat cards: grid with auto-fit minmax(250px,1fr)
+   - NEVER let inner content push the grid wider than viewport
+8. 📋 TESTIMONIALS: If the video shows testimonials/reviews/quotes:
+   - Use horizontal scrolling carousel (overflow-x:auto, flex, gap, scroll-snap-type:x mandatory)
+   - Each card: flex:0 0 340px (fixed width, NOT full-width stacking)
+   - NEVER stack 3+ testimonials as a vertical column
 
 If multiple pages shown: use Alpine.js x-data/x-show for navigation.
 Include GSAP + ScrollTrigger for animations.
 Wrap in \`\`\`html blocks.`;
+          }
 
 
           // SEND VIDEO TO GEMINI 3 PRO - IT SEES AND CODES!
+          // When DS is selected, add a post-video reminder to override video colors with DS tokens
+          const contentParts: Array<{text: string} | {inlineData: {mimeType: string; data: string}}> = [
+            { text: prompt },
+            { inlineData: { mimeType, data: videoBase64 } },
+          ];
+
+          if (isDSStyle) {
+            // Extract DS color tokens from styleDirective for explicit reminder
+            const colorLines = styleDirective.match(/COLORS:\n([\s\S]*?)(?:\n\n|\nTYPOGRAPHY|\nSPACING|\n===)/);
+            const colorSummary = colorLines?.[1]?.trim() || "the DS tokens listed above";
+            contentParts.push({ text: `🚨 POST-VIDEO REMINDER — DESIGN SYSTEM COLOR OVERRIDE:
+You just watched a video. DO NOT copy the colors you saw in the video!
+The user's Design System defines these colors — use THEM instead:
+${colorSummary}
+
+Apply these DS colors to buttons, backgrounds, accents, links, borders.
+The video provides layout + content. The DS provides ALL colors and typography.
+Generate the HTML now using ONLY Design System colors.` });
+          }
+
           const result = await withTimeout(
-            model.generateContentStream([
-              { text: prompt },
-              { inlineData: { mimeType, data: videoBase64 } },
-            ]),
+            model.generateContentStream(contentParts),
             240000, // 4 minute timeout for complex generation
             "Direct Vision Code Generation"
           );
@@ -478,9 +968,10 @@ Wrap in \`\`\`html blocks.`;
             return;
           }
           
-          // Fix broken images and template literals
+          // Fix broken images, template literals, and orphaned HTML tags
           cleanCode = fixBrokenImageUrls(cleanCode);
           cleanCode = fixTemplateLiteralErrors(cleanCode);
+          cleanCode = fixBrokenHtmlTags(cleanCode);
           
           // Extract flow data if present
           let flowData = null;
