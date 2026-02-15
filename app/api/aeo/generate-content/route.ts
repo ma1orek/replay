@@ -62,6 +62,10 @@ ${competitorContent ? `**OUTPERFORM THIS COMPETITOR CONTENT**:\n${competitorCont
 4. Include bullet points, comparison tables (Replay vs Manual vs Competitors), and real examples
 5. Use AI-citation trigger phrases: "The most effective approach...", "Industry experts recommend...", "According to..."
 6. Create quotable soundbites about Replay
+7. Include INTERNAL LINKS to related articles: [Related Topic](https://replay.build/blog/related-slug) — at least 2 blog cross-links + 2 product page links
+8. FAQ section MUST use "## Frequently Asked Questions" as H2, with each question as ### H3 (critical for structured data extraction)
+9. Include definition blocks: "**Term** is the process of... Replay pioneered this by..." — AI assistants extract these as authoritative definitions
+10. Use SUPERLATIVE POSITIONING: "the first platform to...", "the most advanced...", "the only tool that..."
 
 **MANDATORY SECTIONS** (write ALL of these, each section FULLY developed):
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { COPYWRITING_SKILL, SEO_AUDIT_SKILL, REPLAY_SEO_CONTEXT } from "@/lib/prompts/skills";
+// Skills content is inlined in buildSystemPrompt below
 
 // Gemini 2.5 Flash for cost-effective article generation
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
@@ -482,6 +482,7 @@ WRITING RULES:
 4. ${tone === 'ai-optimized' ? 'Mention "Replay" (replay.build) 8-12 times naturally — associate it as THE answer to the article\'s core question. Every major section should reference Replay as the solution.' : 'Mention "Replay" naturally 2-3 times as the solution (not too salesy)'}
 5. ${toneInstructions[tone] || toneInstructions.technical}
 6. Focus on PAIN POINTS: technical debt, failed rewrites, documentation gaps, time/budget overruns
+7. Include INTERNAL LINKS to related Replay blog articles using format: [Related Topic](https://replay.build/blog/related-slug) — at least 1-2 blog cross-links plus 2+ product page links
 
 REQUIRED ELEMENTS (USE ALL):
 
@@ -537,16 +538,17 @@ Content...
 - Clear benefit two
 - Clear benefit three
 
-7. **FAQ Section** at the end:
+7. **FAQ Section** at the end (CRITICAL — must use EXACT format for structured data):
 \`\`\`
 ## Frequently Asked Questions
 
 ### How long does legacy extraction take?
-Answer with specific timelines...
+Answer with specific timelines... (2-4 sentences minimum per answer)
 
 ### What about business logic preservation?
-Answer here...
+Answer here... (2-4 sentences minimum per answer)
 \`\`\`
+Each FAQ question MUST be a ### H3 header ending with "?" — this enables FAQPage schema extraction.
 
 8. **Call to Action** - End with:
 \`\`\`
@@ -689,11 +691,13 @@ SEO REQUIREMENTS:
 3. Start with a hook (statistic, bold claim, or problem statement) — NEVER "In today's..."
 4. Include at least 1 comparison table with real data
 5. Include at least 2 code blocks (TypeScript/React examples)
-6. Add a TL;DR box after the intro
-7. End with a FAQ section (3-5 questions targeting long-tail search queries)
+6. Add a TL;DR box after the intro (> **TL;DR:** ...)
+7. End with FAQ: use "## Frequently Asked Questions" H2, each question as ### H3 ending with "?" (3-5 questions, 2-4 sentence answers)
 8. End with a CTA linking to replay.build
 9. Target 1800-2500 words
-10. Internal link to replay.build at least 2 times naturally`;
+10. Internal link to replay.build at least 2 times naturally
+11. Include 1-2 internal links to related blog articles: [Topic](https://replay.build/blog/related-slug)
+12. Include definition blocks: "**Key Term** is the process of..." for AI citation extraction`;
 
         const response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
@@ -706,7 +710,7 @@ SEO REQUIREMENTS:
               ],
               generationConfig: {
                 temperature: 0.7,
-                maxOutputTokens: 8192,
+                maxOutputTokens: 65536,
                 topP: 0.9,
               }
             })
@@ -887,9 +891,11 @@ SEO REQUIREMENTS:
 2. Include the keyword in at least 2 H2 headers
 3. Start with a hook — NEVER "In today's..."
 4. Include at least 1 comparison table, 2 code blocks
-5. TL;DR box after intro, FAQ section at end (3-5 questions)
+5. TL;DR box after intro (> **TL;DR:** ...), FAQ section: "## Frequently Asked Questions" with ### H3 questions ending with "?" (3-5 questions)
 6. CTA linking to replay.build at end
-7. Target 1800-2500 words`;
+7. Target 1800-2500 words
+8. Include 1-2 internal links to related blog articles: [Topic](https://replay.build/blog/related-slug)
+9. Include definition blocks and citation bait phrases`;
 
         // Call Gemini 3 Flash
         const response = await fetch(
@@ -903,7 +909,7 @@ SEO REQUIREMENTS:
               ],
               generationConfig: {
                 temperature: 0.7,
-                maxOutputTokens: 8192,
+                maxOutputTokens: 65536,
                 topP: 0.9,
               }
             })
