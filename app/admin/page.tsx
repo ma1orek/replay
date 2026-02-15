@@ -11,7 +11,7 @@ import {
   User, Mail, Shield, AlertTriangle, Loader2,
   DollarSign, Cpu, MessageSquare, ThumbsUp, ThumbsDown, Meh,
   Play, FileText, PenSquare, Trash2, Plus, Send, Sparkles, Check, X, ExternalLink,
-  Layers, GitBranch, Monitor, Maximize2, Copy, Menu, Target, TrendingDown, RefreshCw
+  Layers, GitBranch, Monitor, Maximize2, Copy, Menu, Target, TrendingDown, RefreshCw, BookOpen
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
@@ -134,7 +134,7 @@ export default function AdminPage() {
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [dataLoading, setDataLoading] = useState(false);
   const [previewGeneration, setPreviewGeneration] = useState<GenerationData | null>(null);
-  const [previewTab, setPreviewTab] = useState<"preview" | "input" | "code" | "design" | "flow">("preview");
+  const [previewTab, setPreviewTab] = useState<"preview" | "input" | "code" | "library" | "flow">("preview");
   
   // Content Engine state
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
@@ -2960,9 +2960,9 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                   {[
                     { id: "preview", label: "Preview", icon: Monitor },
                     { id: "input", label: "Input", icon: Video },
-                    { id: "code", label: "Code", icon: Code },
-                    { id: "design", label: "Design", icon: Palette },
                     { id: "flow", label: "Flow", icon: GitBranch },
+                    { id: "library", label: "Library", icon: BookOpen },
+                    { id: "code", label: "Code", icon: Code },
                   ].map(tab => (
                     <button
                       key={tab.id}
@@ -3113,8 +3113,8 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                 </div>
               )}
               
-              {/* Design System Tab */}
-              {previewTab === "design" && (
+              {/* Library Tab (Design System) */}
+              {previewTab === "library" && (
                 <div className="w-full h-full overflow-auto bg-[#0a0a0a] p-8">
                   <div className="max-w-4xl mx-auto">
                     <div className="flex items-center gap-3 mb-6">
