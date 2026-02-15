@@ -31,8 +31,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No video file provided" }, { status: 400 });
     }
 
-    // Check file size (50MB max)
-    const maxSizeMB = 50;
+    // Check file size (100MB max)
+    const maxSizeMB = 100;
     if (file.size > maxSizeMB * 1024 * 1024) {
       return NextResponse.json({ 
         error: `Video too large. Maximum size is ${maxSizeMB}MB.` 

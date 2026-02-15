@@ -11083,17 +11083,18 @@ Try these prompts in Cursor or v0:
     {
       const flow = flows.find(f => f.id === selectedFlowId) || flows[0];
       const hasValidUrl = flow.videoUrl && flow.videoUrl.startsWith("https://") && !flow.videoUrl.startsWith("blob:");
-      if (!hasValidUrl) {
-        // Will need to upload blob — validate it first
-        if (!flow.videoBlob || flow.videoBlob.size === 0) {
-          showToast("Video not available. Please re-upload the video.", "error");
-          return;
-        }
+
+      // Always check blob size if available (even when URL exists — URL could have been uploaded from mobile without size check)
+      if (flow.videoBlob && flow.videoBlob.size > 0) {
         const videoSizeMB = flow.videoBlob.size / 1024 / 1024;
-        if (videoSizeMB > 50) {
-          showToast("Video too large (max 50MB). Please use a shorter recording or compress the file.", "error");
+        if (videoSizeMB > 100) {
+          showToast("Video too large (max 100MB). Please use a shorter recording or compress the file.", "error");
           return;
         }
+      } else if (!hasValidUrl) {
+        // No blob AND no URL — video is not available
+        showToast("Video not available. Please re-upload the video.", "error");
+        return;
       }
     }
 
@@ -11322,11 +11323,13 @@ Try these prompts in Cursor or v0:
           return;
         }
         
-        // Max 50MB
-        if (videoSizeMB > 50) {
-          showToast("Video too large (max 50MB). Please use a shorter recording.", "error");
+        // Max 100MB
+        if (videoSizeMB > 100) {
+          showToast("Video too large (max 100MB). Please use a shorter recording or compress the file.", "error");
           setIsProcessing(false);
           generationStartTimeRef.current = null;
+          // Refund credits — size check failed after credits were spent
+          fetch("/api/credits/refund", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cost: CREDIT_COSTS.VIDEO_GENERATE, reason: "video_too_large", referenceId: generationRefId }) }).then(() => refreshCredits()).catch(() => {});
           return;
         }
         
@@ -11665,6 +11668,12 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
       
       console.log("Generation result:", result);
       
+      // Validate minimum code quality — if AI returned garbage (<500 chars), treat as failure
+      if (result && result.success && result.code && result.code.length < 500) {
+        console.error(`[Generate] Code too short (${result.code.length} chars) — treating as failed generation`);
+        result = { success: false, error: "Generation produced insufficient output. The video may be too large or complex. Please try a shorter recording." };
+      }
+
       if (result && result.success && result.code) {
         // Track analytics (non-critical — must not crash generation flow)
         try { updateProjectAnalytics(flow.id, "generation", result.tokenUsage?.totalTokens); } catch (e) { console.warn("[Analytics] Failed:", e); }
