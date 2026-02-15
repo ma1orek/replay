@@ -27,12 +27,49 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (existingWallet) {
-      // User already has a wallet
-      const total = (existingWallet.monthly_credits || 0) + 
-                    (existingWallet.rollover_credits || 0) + 
+      const total = (existingWallet.monthly_credits || 0) +
+                    (existingWallet.rollover_credits || 0) +
                     (existingWallet.topup_credits || 0);
-      return NextResponse.json({ 
-        success: true, 
+
+      // Fix: If wallet exists but has 0 credits AND user is on free plan, grant 300 credits
+      // This handles wallets created by DB trigger with old 0-credit values
+      if (total === 0) {
+        const { data: membershipData } = await adminClient
+          .from("memberships")
+          .select("plan")
+          .eq("user_id", user.id)
+          .single();
+
+        const isFree = !membershipData || membershipData.plan === "free";
+        if (isFree) {
+          console.log(`Topping up 0-credit wallet to 300 for free user ${user.email}`);
+          const { data: updatedWallet } = await adminClient
+            .from("credit_wallets")
+            .update({ monthly_credits: 300 })
+            .eq("user_id", user.id)
+            .select()
+            .single();
+
+          await adminClient.from("credit_ledger").insert({
+            user_id: user.id,
+            type: "credit",
+            bucket: "monthly",
+            amount: 300,
+            reason: "signup_bonus",
+            reference_id: "initial_grant_topup"
+          });
+
+          return NextResponse.json({
+            success: true,
+            message: "Wallet topped up to 300 credits",
+            wallet: updatedWallet || { ...existingWallet, monthly_credits: 300 },
+            totalCredits: 300
+          });
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
         message: "Wallet already exists",
         wallet: existingWallet,
         totalCredits: total
@@ -92,7 +129,7 @@ export async function POST(request: NextRequest) {
         type: "credit",
         bucket: "monthly",
         amount: 300,
-        reason: "free_signup",
+        reason: "signup_bonus",
         reference_id: "initial_grant_manual"
       });
 

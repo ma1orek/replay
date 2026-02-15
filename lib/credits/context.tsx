@@ -96,14 +96,52 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
       const { data: walletData, error: walletError } = walletResult;
       const { data: membershipData, error: membershipError } = membershipResult;
 
+      // Determine if user is on free plan (for 0-credit fix below)
+      const plan = membershipData?.plan || "free";
+
       // Process wallet
       if (walletData) {
-        setWallet({
-          monthly_credits: walletData.monthly_credits,
-          rollover_credits: walletData.rollover_credits,
-          topup_credits: walletData.topup_credits,
-          rollover_expires_at: walletData.rollover_expires_at,
-        });
+        const walletTotal = (walletData.monthly_credits || 0) + (walletData.rollover_credits || 0) + (walletData.topup_credits || 0);
+
+        // Fix: If free user has wallet with 0 credits, call init to top-up to 300
+        if (walletTotal === 0 && (plan === "free" || !membershipData)) {
+          console.log("Free user has 0 credits, calling init to top-up:", user.email);
+          try {
+            const initRes = await fetch("/api/credits/init", { method: "POST" });
+            const initData = await initRes.json();
+            if (initData.success && initData.wallet) {
+              setWallet({
+                monthly_credits: initData.wallet.monthly_credits,
+                rollover_credits: initData.wallet.rollover_credits,
+                topup_credits: initData.wallet.topup_credits,
+                rollover_expires_at: initData.wallet.rollover_expires_at,
+              });
+              console.log("Wallet topped up to", initData.totalCredits, "credits");
+            } else {
+              setWallet({
+                monthly_credits: walletData.monthly_credits,
+                rollover_credits: walletData.rollover_credits,
+                topup_credits: walletData.topup_credits,
+                rollover_expires_at: walletData.rollover_expires_at,
+              });
+            }
+          } catch (initError) {
+            console.error("Failed to top-up wallet:", initError);
+            setWallet({
+              monthly_credits: walletData.monthly_credits,
+              rollover_credits: walletData.rollover_credits,
+              topup_credits: walletData.topup_credits,
+              rollover_expires_at: walletData.rollover_expires_at,
+            });
+          }
+        } else {
+          setWallet({
+            monthly_credits: walletData.monthly_credits,
+            rollover_credits: walletData.rollover_credits,
+            topup_credits: walletData.topup_credits,
+            rollover_expires_at: walletData.rollover_expires_at,
+          });
+        }
       } else if (walletError && walletError.code === "PGRST116") {
         // No wallet found - initialize it via API (only for brand new users)
         console.log("No wallet found, initializing for user:", user.email);

@@ -41,15 +41,17 @@ function LoginContent() {
   }, []);
 
   // If user is already logged in and there's a plan in URL, redirect to checkout
+  // IMPORTANT: Don't redirect during registration/OTP verification flow
   useEffect(() => {
+    if (authMode === "register" || authMode === "otp-verify-register") {
+      return; // Don't redirect while user is completing registration
+    }
     if (user && planFromUrl) {
-      // User is logged in, redirect to checkout
       redirectToCheckout(planFromUrl);
     } else if (user && !planFromUrl) {
-      // User is logged in but no plan, just go to tool
       router.push("/tool");
     }
-  }, [user, planFromUrl, router]);
+  }, [user, planFromUrl, router, authMode]);
 
   // Store plan in localStorage for after login redirect
   useEffect(() => {

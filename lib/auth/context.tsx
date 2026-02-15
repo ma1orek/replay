@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { trackCompleteRegistration } from "@/lib/fb-tracking";
@@ -25,6 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const isSigningUpRef = useRef(false); // Suppress onAuthStateChange during signUp
   const supabase = createClient();
 
   useEffect(() => {
@@ -46,6 +47,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: any, session: Session | null) => {
+        // During signUp, Supabase fires SIGNED_IN before we can signOut.
+        // Suppress setting user/session to prevent premature redirect to /tool.
+        if (isSigningUpRef.current) {
+          console.log("[Auth] Suppressing onAuthStateChange during signUp flow");
+          return;
+        }
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
@@ -149,25 +156,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase.auth]);
 
   const signUpWithPassword = useCallback(async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    if (error) {
-      return { error: error.message };
+    // Set flag BEFORE signUp to suppress onAuthStateChange from setting user
+    isSigningUpRef.current = true;
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) {
+        isSigningUpRef.current = false;
+        return { error: error.message };
+      }
+      // DO NOT auto-login here! We need the user to verify their email OTP first.
+      if (data.session) {
+        await supabase.auth.signOut();
+      }
+      console.log("[Auth] Signup initiated, waiting for email verification:", email);
+      return { error: null };
+    } finally {
+      isSigningUpRef.current = false;
     }
-    // DO NOT auto-login here! We need the user to verify their email OTP first.
-    // After OTP verification, handleRegister calls signInWithPassword which sets session.
-    // If we set session here, the user skips email verification entirely.
-    if (data.session) {
-      // Sign out immediately to prevent auto-login before OTP verification
-      await supabase.auth.signOut();
-    }
-    console.log("[FB Tracking] Signup initiated, waiting for email verification before tracking:", email);
-    return { error: null };
   }, [supabase.auth]);
 
   const verifyOtp = useCallback(async (email: string, token: string) => {
