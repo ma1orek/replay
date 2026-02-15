@@ -159,14 +159,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) {
       return { error: error.message };
     }
-    // If email confirmation is required, user won't be logged in yet
+    // DO NOT auto-login here! We need the user to verify their email OTP first.
+    // After OTP verification, handleRegister calls signInWithPassword which sets session.
+    // If we set session here, the user skips email verification entirely.
     if (data.session) {
-      setSession(data.session);
-      setUser(data.session.user);
+      // Sign out immediately to prevent auto-login before OTP verification
+      await supabase.auth.signOut();
     }
-    // NOTE: DO NOT track CompleteRegistration here!
-    // Event fires in onAuthStateChange when user verifies email and SIGNED_IN event triggers
-    // This prevents counting unverified signups in Facebook
     console.log("[FB Tracking] Signup initiated, waiting for email verification before tracking:", email);
     return { error: null };
   }, [supabase.auth]);
