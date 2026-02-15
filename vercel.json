@@ -20,6 +20,10 @@
     {
       "path": "/api/aeo/cron",
       "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/admin/content-cron",
+      "schedule": "*/3 * * * *"
     }
   ]
 }

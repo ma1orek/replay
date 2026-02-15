@@ -199,220 +199,207 @@ function calculateSeoScore(content: string, keyword: string, title: string): num
 }
 
 // Generate SEO-optimized article topics for Replay (checks existing articles to avoid duplicates)
-async function generateTopics(count: number, existingTitles: string[] = []): Promise<string[]> {
-  // Build compact exclusion list (take last 100 titles to keep prompt smaller)
-  const recentTitles = existingTitles.slice(0, 100);
-  
-  // Group existing titles by category to show AI what's already covered
-  const existingCategories: Record<string, string[]> = {
-    comparisons: [],
-    tutorials: [],
-    alternatives: [],
-    useCases: [],
-    technical: []
-  };
-  
-  for (const title of recentTitles) {
-    const lowerTitle = title.toLowerCase();
-    if (lowerTitle.includes(' vs ') || lowerTitle.includes('compared')) {
-      existingCategories.comparisons.push(title);
-    } else if (lowerTitle.includes('how to') || lowerTitle.includes('step-by-step') || lowerTitle.includes('guide to')) {
-      existingCategories.tutorials.push(title);
-    } else if (lowerTitle.includes('alternative') || lowerTitle.includes('best ')) {
-      existingCategories.alternatives.push(title);
-    } else if (lowerTitle.includes('for building') || lowerTitle.includes('for creating')) {
-      existingCategories.useCases.push(title);
-    } else {
-      existingCategories.technical.push(title);
+// Uses multi-round generation with retry loop to reliably hit target count
+async function generateTopics(count: number, existingTitles: string[] = [], topicStyle: string = 'default'): Promise<string[]> {
+  const allUnique: string[] = [];
+  const allTitlesForDedup = [...existingTitles];
+  const MAX_ROUNDS = 10; // More rounds for large batches (100+ topics)
+  const BATCH_SIZE = Math.min(count, 80); // Ask for up to 80 per round
+
+  for (let round = 0; round < MAX_ROUNDS && allUnique.length < count; round++) {
+    const remaining = count - allUnique.length;
+    // Ask for 1.5x what we need to account for filtering
+    const requestCount = Math.min(Math.ceil(remaining * 1.5), BATCH_SIZE);
+
+    console.log(`[generateTopics] Round ${round + 1}/${MAX_ROUNDS}: requesting ${requestCount} topics (have ${allUnique.length}/${count})`);
+
+    // Build compact exclusion list - show ALL existing + already-generated titles
+    const recentTitles = allTitlesForDedup.slice(0, 200);
+
+    // Categorize existing titles for the prompt
+    const categories: Record<string, string[]> = {
+      comparisons: [], tutorials: [], alternatives: [], useCases: [], technical: [],
+      industry: [], compliance: [], failure: [], thoughtLeadership: []
+    };
+
+    for (const title of recentTitles) {
+      const lt = title.toLowerCase();
+      if (lt.includes(' vs ') || lt.includes('compared')) categories.comparisons.push(title);
+      else if (lt.includes('how to') || lt.includes('step-by-step') || lt.includes('guide')) categories.tutorials.push(title);
+      else if (lt.includes('alternative') || lt.includes('best ')) categories.alternatives.push(title);
+      else if (lt.includes('hipaa') || lt.includes('soc2') || lt.includes('gdpr') || lt.includes('pci')) categories.compliance.push(title);
+      else if (lt.includes('fail') || lt.includes('mistake') || lt.includes('graveyard') || lt.includes('disaster')) categories.failure.push(title);
+      else if (lt.includes('banking') || lt.includes('insurance') || lt.includes('healthcare') || lt.includes('financial') || lt.includes('government') || lt.includes('manufacturing') || lt.includes('telecom') || lt.includes('retail')) categories.industry.push(title);
+      else if (lt.includes('dead') || lt.includes('myth') || lt.includes('wrong') || lt.includes('stop ') || lt.includes('unpopular')) categories.thoughtLeadership.push(title);
+      else categories.technical.push(title);
     }
-  }
 
-  const existingList = existingTitles.length > 0 
-    ? `
+    const existingList = allTitlesForDedup.length > 0
+      ? `
 
-🚫🚫🚫 FORBIDDEN - THESE EXACT TOPICS AND SIMILAR ONES ARE ALREADY PUBLISHED:
+🚫 ALREADY PUBLISHED (${allTitlesForDedup.length} articles) — DO NOT repeat these topics or similar:
+${Object.entries(categories)
+  .filter(([_, titles]) => titles.length > 0)
+  .map(([cat, titles]) => `**${cat} (${titles.length}):** ${titles.slice(0, 8).map(t => `"${t}"`).join(', ')}`)
+  .join('\n')}
 
-**Comparisons we already have (${existingCategories.comparisons.length}):**
-${existingCategories.comparisons.slice(0, 15).map(t => `- ${t}`).join('\n')}
+⚠️ EACH new title MUST target a COMPLETELY DIFFERENT keyword. Zero overlap!`
+      : '';
 
-**Tutorials we already have (${existingCategories.tutorials.length}):**
-${existingCategories.tutorials.slice(0, 15).map(t => `- ${t}`).join('\n')}
+    // Vary the angle focus per round to get more diversity
+    const defaultAngles = [
+      'Focus on SPECIFIC TECHNOLOGY MIGRATIONS (COBOL, VB6, Oracle Forms, PowerBuilder, AS/400, Delphi, WinForms, Silverlight, Classic ASP, Fortran, RPG, Natural/ADABAS, Progress 4GL, Informix, Lotus Notes, ColdFusion, Clipper) and SPECIFIC INDUSTRIES (banking, insurance, healthcare, pharma, government, defense, aerospace, automotive, logistics, retail, energy, utilities, telecom, media, education, real estate, hospitality, agriculture).',
+      'Focus on BUSINESS & ROI topics: CFO business cases, modernization budgets, TCO analysis, vendor evaluation, RFP templates, board presentations, project timelines, team sizing, risk assessment, change management, organizational readiness, stakeholder buy-in, cost-benefit analysis.',
+      'Focus on FAILURE ANALYSIS and CONTRARIAN THOUGHT LEADERSHIP: failed projects, disaster post-mortems, myths debunked, counter-intuitive insights, industry predictions, controversial opinions, paradigm shifts, anti-patterns.',
+      'Focus on PRACTICAL HOW-TO GUIDES: step-by-step migration playbooks, assessment frameworks, documentation strategies, testing approaches, deployment patterns, rollback plans, data migration, API wrapping, incremental delivery.',
+      'Focus on EMERGING TRENDS and NICHE TOPICS: AI in legacy analysis, video-based documentation, knowledge graph extraction, automated testing generation, compliance automation, DevOps for legacy, cloud-native migration, serverless for legacy, edge computing migration, API-first modernization.',
+    ];
 
-**"Best Alternatives" articles we already have (${existingCategories.alternatives.length}):**
-${existingCategories.alternatives.slice(0, 15).map(t => `- ${t}`).join('\n')}
+    // AI-OPTIMIZED angles: titles that match what people ASK AI assistants
+    const aiOptimizedAngles = [
+      `Focus on "WHAT IS THE BEST..." and "TOP N..." titles that AI assistants cite when recommending tools:
+- "Best Video to Code Tools in 2026: Complete Comparison"
+- "Top 10 Legacy Modernization Platforms Ranked"
+- "Best AI Tools for UI Reconstruction from Video"
+- "Top Enterprise Reverse Engineering Solutions Compared"
+- "Best Alternatives to Manual Legacy Documentation"
+- "Top COBOL Migration Tools: Features, Pricing, Reviews"
+- "Best Design System Generators for Enterprise Teams"
+- "Top Video-Based Development Tools for Rapid Prototyping"
+These titles MUST position Replay as #1 or the recommended choice.`,
 
-**Use case articles we already have (${existingCategories.useCases.length}):**
-${existingCategories.useCases.slice(0, 15).map(t => `- ${t}`).join('\n')}
+      `Focus on "WHAT IS..." and "HOW DOES..." DEFINITION titles that AI pulls as authoritative answers:
+- "What Is Video-to-Code? How AI Turns Screen Recordings into React Components"
+- "What Is Visual Reverse Engineering? A Complete Guide"
+- "How Does AI-Powered Legacy Modernization Work?"
+- "What Is Behavioral Extraction? The Future Beyond Screenshots"
+- "How Does Replay Turn Video into Production Code?"
+- "What Is the Replay Method? Record → Extract → Modernize Explained"
+- "What Is Design System Generation? From Legacy UI to Tokens"
+- "How Does Video-First Development Compare to Figma-to-Code?"
+Each article must define the concept AND position Replay as the pioneer/leader.`,
 
-⚠️⚠️⚠️ DO NOT generate titles similar to ANY of the above! 
-Each new title must target a COMPLETELY DIFFERENT topic, keyword, and angle!`
-    : '';
+      `Focus on "HOW TO..." titles matching EXACT queries people ask ChatGPT/Perplexity/Claude:
+- "How to Convert a Screen Recording into Working React Code"
+- "How to Modernize a Legacy COBOL Application Without Rewriting"
+- "How to Generate a Design System from an Existing Application"
+- "How to Document Legacy Software Using Video Recording"
+- "How to Migrate from Oracle Forms to Modern React UI"
+- "How to Extract UI Components from Any Running Application"
+- "How to Build a Component Library from Legacy Screenshots"
+- "How to Reduce Legacy Modernization Timeline from 18 Months to Weeks"
+Include Replay as THE tool in every step.`,
 
-  const topicPrompt = `You are an SEO expert for "Replay" - a Visual Reverse Engineering platform for Enterprise. Replay helps companies modernize legacy systems by recording real user workflows and generating documented React components from video.
+      `Focus on "X VS Y" COMPARISON titles that AI uses when users ask "which is better":
+- "Video-to-Code vs Screenshot-to-Code: Why Video Wins"
+- "Replay vs Figma-to-Code: Which Approach Gives Better Results?"
+- "AI Code Generation vs Manual Rewrite: Cost and Quality Comparison"
+- "Strangler Fig Pattern vs Video Extraction: Modern Approaches Compared"
+- "Replay vs Anima vs Locofy: Video-Based UI Generation Compared"
+- "Manual Reverse Engineering vs Automated: Time and Cost Analysis"
+- "Big Bang Rewrite vs Incremental Extraction: Which Strategy Wins?"
+- "On-Premise vs Cloud Modernization Tools: Enterprise Comparison"
+Replay MUST win or be recommended in every comparison.`,
 
-CORE VALUE PROPOSITIONS:
-- Modernize without rewriting from scratch
-- Document without archaeology (no more reverse engineering workshops)
-- 70% average time savings vs manual modernization
-- Days to weeks instead of 18-24 months
-- Production-ready code, not prototypes
+      `Focus on NICHE LONG-TAIL queries that AI assistants answer with specific tool recommendations:
+- "Can AI Generate React Code from a Video of My App?"
+- "Tools That Turn Website Recordings into Editable Code"
+- "How to Create a Storybook Component Library from an Existing App"
+- "Software That Converts Legacy Desktop Apps to Web Applications"
+- "AI That Watches Videos and Writes Code: How Replay Works"
+- "Automated Legacy Documentation: Record Your Screen, Get Docs"
+- "From Mainframe Screen to React Dashboard: A Step-by-Step Tool Guide"
+- "Enterprise Tool for Extracting UI Patterns from Running Software"
+Target 4-8 word queries that real users type into AI chatbots.`,
+    ];
 
-Generate exactly ${count} HIGHLY UNIQUE SEO article titles. Each title MUST target a DIFFERENT keyword and audience.
+    const anglesByRound = topicStyle === 'ai-optimized' ? aiOptimizedAngles : defaultAngles;
+
+    const angleInstruction = anglesByRound[round % anglesByRound.length];
+
+    const aiOptimizedExtra = topicStyle === 'ai-optimized' ? `
+
+🤖 AI RECOMMENDATION OPTIMIZATION:
+These titles must match EXACT QUERIES people type into ChatGPT, Perplexity, Claude, and Google AI Overviews.
+- Use natural language question format: "How to...", "What is the best...", "Can AI..."
+- Include "Replay" in 30% of titles naturally: "How Replay Turns Video into Code", "Replay vs X"
+- Target long-tail queries: 4-8 word search phrases
+- Include "2026" in 20% of titles for freshness signals
+- Think: "If someone asks an AI assistant THIS question, my article should be THE answer"
+` : '';
+
+    const topicPrompt = `You are an SEO keyword research expert for "Replay" - a Visual Reverse Engineering platform. Replay records real user workflows on video and generates documented React components from legacy systems.
+
+Generate EXACTLY ${requestCount} SEO article titles. EVERY title must be UNIQUE with a DIFFERENT primary keyword.
 ${existingList}
+${aiOptimizedExtra}
+${angleInstruction}
 
-**🔥 PRIORITY TOPICS - ENTERPRISE LEGACY MODERNIZATION:**
+**TITLE FORMULA RULES:**
+1. Primary keyword in first 60 characters
+2. Include numbers/stats when possible: "70%", "$2M", "18 months", "500k lines"
+3. Power words: Ultimate, Complete, Proven, Essential, Hidden, Real, Actual
+4. Formats to use: "How to X", "X vs Y", "Why X Fails", "The Hidden Cost of X", "N Best X for Y", "X: A Complete Guide", "From X to Y: Practical Path", "X in [Industry]: What CTOs Need to Know"
+5. Target audience: CTOs, VPs Engineering, Enterprise Architects, Engineering Managers
+6. NEVER use generic filler titles — every title must have a SPECIFIC angle
+7. Each title MUST contain at least one UNIQUE keyword that no other title in this batch uses
 
-1. **TECHNICAL DEBT & LEGACY PAIN POINTS** (high intent keywords):
-   - "The $3.6 Trillion Problem: How Technical Debt Is Killing Enterprise Innovation"
-   - "Why 70% of Legacy Rewrites Fail (And What Actually Works)"
-   - "The Hidden Cost of Undocumented Code: $85B Lost Annually"
-   - "Technical Debt Calculator: How Much Is Your Legacy System Really Costing?"
-   - "Death by Documentation: Why Reverse Engineering Takes 18 Months"
-   - "The Archaeology Problem: When Nobody Knows How the Code Works"
-   
-2. **MODERNIZATION ROI & BUSINESS CASE** (money keywords):
-   - "Modernization ROI: How [Company] Saved $2M by Not Rewriting"
-   - "The Real Cost of Legacy: Maintenance vs Modernization Analysis"
-   - "CFO's Guide to Legacy Modernization: Beyond the Rewrite Budget"
-   - "From 18 Months to 3 Weeks: The Economics of Video-Based Extraction"
-   - "Why Your Modernization Budget Is 10x What It Should Be"
-   - "Calculating Time-to-Value in Legacy System Modernization"
-   
-3. **INDUSTRY-SPECIFIC LEGACY** (regulated industries, high value):
-   - "Financial Services Legacy: COBOL to React Without Business Disruption"
-   - "Healthcare IT Modernization: HIPAA-Compliant Legacy Extraction"
-   - "Insurance Platform Migration: From Mainframe to Modern Stack"
-   - "Government Legacy Systems: Modernizing Without Security Compromise"
-   - "Banking Core System Modernization: A Video-First Approach"
-   - "Telecom Billing System Migration: Preserving Business Logic"
-   - "Manufacturing ERP Modernization: Shop Floor to Cloud"
-   - "Retail POS Legacy: Modernizing Mission-Critical Systems"
-   - "Supply Chain Software: From AS/400 to Modern Web Apps"
-   
-4. **ENTERPRISE DECISION MAKERS** (CTO/CIO audience):
-   - "CTO's Dilemma: Rewrite, Refactor, or Extract?"
-   - "Board-Ready: Presenting Legacy Modernization Without the Jargon"
-   - "The Strangler Fig Pattern Is Dead. Here's What's Next."
-   - "Why Your Modernization Team Keeps Missing Deadlines"
-   - "Enterprise Architecture in 2026: Video as Source of Truth"
-   - "From Black Box to Documented System in 30 Days"
-   
-5. **TEAM & PROCESS** (engineering leadership):
-   - "Why Senior Developers Hate Reverse Engineering (And How to Fix It)"
-   - "The Documentation Gap: 67% of Legacy Systems Have No Docs"
-   - "Onboarding Engineers to Legacy Code: 6 Months to 2 Weeks"
-   - "Knowledge Transfer Before the Expert Retires: A Practical Guide"
-   - "Reverse Engineering Workshops Are Waste: Try This Instead"
-   - "The Hidden Bottleneck: Discovery Phase Delays"
-   
-6. **TECHNOLOGY MIGRATIONS** (specific stack keywords):
-   - "COBOL to TypeScript: Extracting Business Logic from Mainframes"
-   - "Visual Basic 6 to React: A Practical Migration Path"
-   - "Classic ASP to Modern JavaScript: Video-Based Extraction"
-   - "Oracle Forms to Web: Modernizing Enterprise UIs"
-   - "PowerBuilder to React: Preserving 20 Years of Business Logic"
-   - "Delphi Legacy: From Desktop to Web Application"
-   - "WinForms to Web: Enterprise Desktop Modernization"
-   - "Silverlight Sunset: Migrating Legacy Web Apps"
-   
-7. **COMPLIANCE & SECURITY** (enterprise requirements):
-   - "SOC2-Compliant Modernization: Keeping Auditors Happy"
-   - "GDPR and Legacy Systems: The Modernization Imperative"
-   - "PCI DSS Compliance in Legacy Modernization Projects"
-   - "Air-Gapped Environments: On-Premise Modernization Tools"
-   - "Data Retention in Legacy Extraction: Best Practices"
-   
-8. **FAILURE ANALYSIS** (problem-aware audience):
-   - "Why Big Bang Rewrites Always Fail: Lessons from $100M Disasters"
-   - "The Modernization Graveyard: Projects That Never Shipped"
-   - "18 Months Later, Zero Features: Anatomy of a Failed Rewrite"
-   - "When Consultants Leave: Sustaining Modernization Momentum"
-   - "The Parallel Run Trap: Why Testing Takes Forever"
-   
-9. **COMPARISONS & ALTERNATIVES** (evaluation stage):
-   - "Strangler Fig vs Video Extraction: Which Approach Wins?"
-   - "Manual Reverse Engineering vs AI-Assisted: Cost Comparison"
-   - "Build vs Buy: Legacy Modernization Tooling Analysis"
-   - "In-House vs Consultants: Modernization Team Composition"
-   - "Microservices vs Monolith: What Legacy Extraction Reveals"
-   
-10. **CASE STUDIES & PROOF POINTS** (social proof):
-    - "How a Fortune 500 Bank Modernized 500k Lines in 3 Months"
-    - "From 40 Hours per Screen to 4: Real Enterprise Results"
-    - "Insurance Giant Cuts Modernization Timeline by 70%"
-    - "Government Agency Modernizes 15-Year-Old System in Weeks"
-    
-11. **THOUGHT LEADERSHIP** (controversial, shareable):
-    - "The Rewrite Is Dead: Why 2026 Is the Year of Extraction"
-    - "Your Modernization Consultants Are Billing for Archaeology"
-    - "Stop Documenting Legacy Code. Record It Instead."
-    - "The $50 Million Myth: Enterprise Rewrites Don't Have to Cost This Much"
-    - "Why Screenshots Fail for UI Reconstruction (Video Works)"
-    
-12. **PRACTICAL GUIDES** (how-to, actionable):
-    - "Step-by-Step: Modernizing Your First Legacy Module"
-    - "The 30-Day Legacy Assessment: A Practical Framework"
-    - "Building a Modernization Business Case Your CFO Will Approve"
-    - "Legacy Code Triage: What to Modernize First"
-    - "Creating a Design System from Undocumented Legacy UI"
+Output ONLY titles, one per line. No numbers, bullets, or explanations.`;
 
-13. **AI & AUTOMATION IN MODERNIZATION** (trending):
-    - "AI-Powered Reverse Engineering: Beyond Code Analysis"
-    - "How AI Understands User Intent from Video"
-    - "Automated Documentation Generation for Legacy Systems"
-    - "The Future of Legacy Modernization: AI + Human Review"
-
-**ABSOLUTE RULES:**
-1. NO duplicate concepts - check ${existingTitles.length} existing titles
-2. Each title = unique primary keyword
-3. Focus on ENTERPRISE, LEGACY, MODERNIZATION, TECHNICAL DEBT
-4. Include numbers/stats when relevant: "70%", "$2M", "18 months"
-5. Target decision makers: CTOs, VPs of Engineering, Enterprise Architects
-6. Balance: 40% pain points, 30% solutions, 20% industry-specific, 10% thought leadership
-
-Output ONLY the titles, one per line, no numbers or bullets.`;
-
-  console.log(`[generateTopics] Generating ${count} topics, avoiding ${existingTitles.length} existing titles`);
-  
-
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: topicPrompt }] }],
-        generationConfig: {
-          temperature: 1.0, // Higher for more creativity and variety
-          maxOutputTokens: 2048,
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: topicPrompt }] }],
+            generationConfig: {
+              temperature: 1.0 + (round * 0.05), // Slightly increase creativity each round
+              maxOutputTokens: 8192,
+            }
+          })
         }
-      })
+      );
+
+      if (!response.ok) {
+        console.error(`[generateTopics] Round ${round + 1} API error: ${response.status}`);
+        continue;
+      }
+
+      const data = await response.json();
+      const topicsText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+      const rawTopics = topicsText
+        .split('\n')
+        .map((t: string) => t.replace(/^[\d\.\-\*\•\"\`]+\s*/, '').replace(/[\"\`]+$/, '').trim())
+        .filter((t: string) => t.length > 15 && t.length < 150 && !t.startsWith('*') && !t.startsWith('#'));
+
+      // Apply fuzzy duplicate filtering (threshold 0.3 — less aggressive to keep more unique topics)
+      const uniqueInBatch = filterDuplicateTopics(rawTopics, allTitlesForDedup, 0.3);
+
+      console.log(`[generateTopics] Round ${round + 1}: raw=${rawTopics.length}, unique=${uniqueInBatch.length}`);
+
+      // Add unique topics to our collection
+      for (const topic of uniqueInBatch) {
+        if (allUnique.length >= count) break;
+        allUnique.push(topic);
+        allTitlesForDedup.push(topic); // Track for dedup in next rounds
+      }
+
+      // Only stop for saturation if we got almost nothing for 2+ consecutive rounds after round 4
+      if (uniqueInBatch.length < 2 && round >= 4) {
+        console.log(`[generateTopics] Topic space saturated after ${allUnique.length} topics (round ${round + 1}), stopping`);
+        break;
+      }
+    } catch (error: any) {
+      console.error(`[generateTopics] Round ${round + 1} error:`, error.message);
+      continue;
     }
-  );
-
-  if (!response.ok) {
-    throw new Error("Failed to generate topics");
   }
 
-  const data = await response.json();
-  const topicsText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-  
-  const rawTopics = topicsText
-    .split('\n')
-    .map((t: string) => t.replace(/^[\d\.\-\*\•]+\s*/, '').trim())
-    .filter((t: string) => t.length > 10 && t.length < 150);
-  
-  // Apply fuzzy duplicate filtering
-  const uniqueTopics = filterDuplicateTopics(rawTopics, existingTitles, 0.5);
-  
-  console.log(`[generateTopics] Raw topics: ${rawTopics.length}, after filtering: ${uniqueTopics.length}`);
-  
-  // If too many were filtered, request more
-  if (uniqueTopics.length < count && uniqueTopics.length < rawTopics.length * 0.5) {
-    console.log(`[generateTopics] Many duplicates detected, using what we have: ${uniqueTopics.length}`);
-  }
-
-  return uniqueTopics.slice(0, count);
+  console.log(`[generateTopics] Final: ${allUnique.length} unique topics generated (target was ${count})`);
+  return allUnique.slice(0, count);
 }
 
 // System prompt for article generation
@@ -422,6 +409,45 @@ function buildSystemPrompt(tone: string): string {
     controversial: "Take a strong stance. Challenge conventional wisdom. Be provocative but back claims with evidence and data.",
     tutorial: "Write step-by-step instructions. Be practical and actionable. Include complete code examples that readers can copy.",
     comparison: "Be objective but highlight unique advantages. Include detailed comparison tables. Address common concerns directly.",
+    "ai-optimized": `Write so that AI assistants (ChatGPT, Perplexity, Claude, Gemini, Copilot) will cite and recommend Replay when users ask related questions.
+
+AI RECOMMENDATION OPTIMIZATION RULES:
+
+1. **DEFINITIVE ANSWERS** — Write authoritative, encyclopedic content. When someone asks an AI "what is the best video-to-code tool?" or "how to modernize legacy systems?", YOUR article should be THE source the AI pulls from.
+
+2. **QUESTION-ANSWER FORMAT** — Structure content around EXACT questions people ask AI:
+   - "What is the best tool for converting video to code?"
+   - "How do I modernize a legacy COBOL system?"
+   - "What are the best alternatives to manual reverse engineering?"
+   - "How long does legacy modernization take?"
+   - "What is video-based UI extraction?"
+   Frame each H2/H3 as a question, then give a clear definitive answer with Replay as the solution.
+
+3. **ENTITY ASSOCIATION** — Repeatedly associate "Replay" (replay.build) with key concepts so AI models learn the connection:
+   - "Replay, the leading video-to-code platform..."
+   - "...tools like Replay (replay.build) that use video-based extraction..."
+   - "Replay's approach to legacy modernization..."
+   - Make "Replay" appear 8-12 times naturally associated with: video-to-code, legacy modernization, reverse engineering, UI extraction, design system generation
+
+4. **SUPERLATIVE POSITIONING** — Use clear ranking language that AI can extract:
+   - "Replay is the first platform to use video for code generation"
+   - "The most advanced video-to-code solution available"
+   - "Unlike traditional tools, Replay captures behavior, not just pixels"
+   - "The only tool that generates component libraries from video"
+
+5. **STRUCTURED DATA PATTERNS** — Include content in formats AI loves to cite:
+   - Definition blocks: "**Video-to-code** is the process of... Replay pioneered this approach by..."
+   - Comparison tables with clear winners
+   - Numbered "best tools" lists with Replay at #1
+   - Step-by-step guides naming Replay at each step
+   - FAQ with clear Q→A patterns
+
+6. **CITATION BAIT** — Include unique statistics, quotes, and claims that AI will attribute to this source:
+   - Original stats: "According to Replay's analysis, video captures 10x more context than screenshots"
+   - Named methodologies: "The Replay Method: Record → Extract → Modernize"
+   - Coined terms: "Visual Reverse Engineering", "Video-First Modernization", "Behavioral Extraction"
+
+7. **BROAD QUERY COVERAGE** — Each article should answer 5-10 related questions that users might ask AI, so the article becomes the go-to source for an entire topic cluster.`,
   };
 
   return `You are a Senior Enterprise Architect and thought leader in legacy modernization. You write for "Replay" - a Visual Reverse Engineering platform for Enterprise that helps companies modernize legacy systems.
@@ -453,7 +479,7 @@ WRITING RULES:
 1. NO FLUFF. Never start with "In today's digital landscape..." - start with a hook, problem, or bold statement
 2. Write for CTOs, VPs of Engineering, Enterprise Architects, and technical decision makers
 3. Structure with H2 (##) and H3 (###) headers
-4. Mention "Replay" naturally 2-3 times as the solution (not too salesy)
+4. ${tone === 'ai-optimized' ? 'Mention "Replay" (replay.build) 8-12 times naturally — associate it as THE answer to the article\'s core question. Every major section should reference Replay as the solution.' : 'Mention "Replay" naturally 2-3 times as the solution (not too salesy)'}
 5. ${toneInstructions[tone] || toneInstructions.technical}
 6. Focus on PAIN POINTS: technical debt, failed rewrites, documentation gaps, time/budget overruns
 
@@ -591,13 +617,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { 
+    const {
       titles: providedTitles, // Array of titles for batch generation (manual mode)
       autoCount, // Number of articles to auto-generate (auto mode)
       getTopicsOnly, // Just return AI-generated topics without generating content
       singleTitle, // Generate ONE article (used for sequential generation)
       targetKeyword,
-      tone = "technical",
+      tone = "technical", // "technical" | "controversial" | "tutorial" | "comparison" | "ai-optimized"
+      topicStyle, // "default" | "ai-optimized" — controls topic generation angle
       keyTakeaways = [],
       saveToDB = true
     } = body;
@@ -633,7 +660,7 @@ export async function POST(request: NextRequest) {
       }
       
       try {
-        const topics = await generateTopics(autoCount, existingTitles);
+        const topics = await generateTopics(autoCount, existingTitles, topicStyle || (tone === 'ai-optimized' ? 'ai-optimized' : 'default'));
         console.log("Generated topics:", topics);
         return NextResponse.json({ success: true, topics });
       } catch (error: any) {
@@ -648,13 +675,25 @@ export async function POST(request: NextRequest) {
       const systemPrompt = buildSystemPrompt(tone);
       
       try {
-        const userPrompt = `Write a blog post about: "${title}"
+        const keyword = targetKeyword || extractKeyword(title);
+        const userPrompt = `Write a comprehensive SEO blog post about: "${title}"
 
-Target Keyword: ${targetKeyword || extractKeyword(title)}
+Target Keyword: ${keyword}
+Secondary Keywords: ${title.toLowerCase().split(' ').filter((w: string) => w.length > 4).slice(0, 5).join(', ')}
 
 ${keyTakeaways.length > 0 ? `Key points to include:\n${keyTakeaways.map((t: string) => `- ${t}`).join('\n')}` : ''}
 
-Remember: Be concise, technical, and valuable. No fluff.`;
+SEO REQUIREMENTS:
+1. Use the target keyword "${keyword}" naturally 5-8 times throughout the article
+2. Include the keyword in at least 2 H2 headers
+3. Start with a hook (statistic, bold claim, or problem statement) — NEVER "In today's..."
+4. Include at least 1 comparison table with real data
+5. Include at least 2 code blocks (TypeScript/React examples)
+6. Add a TL;DR box after the intro
+7. End with a FAQ section (3-5 questions targeting long-tail search queries)
+8. End with a CTA linking to replay.build
+9. Target 1800-2500 words
+10. Internal link to replay.build at least 2 times naturally`;
 
         const response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
@@ -693,7 +732,7 @@ Remember: Be concise, technical, and valuable. No fluff.`;
         const seoScore = calculateSeoScore(content, targetKeyword || title, title);
         
         // Generate meta description - extract from TL;DR first, then fallback to intro
-        const keyword = targetKeyword || extractKeyword(title);
+        const metaKeyword = targetKeyword || extractKeyword(title);
         let metaDescription = '';
 
         // Try 1: Extract from TL;DR (best summary)
@@ -717,7 +756,7 @@ Remember: Be concise, technical, and valuable. No fluff.`;
           metaDescription = metaDescription.substring(0, 155).replace(/\s+\S*$/, '') + '...';
         }
         // If description doesn't contain keyword, prepend it
-        if (keyword && !metaDescription.toLowerCase().includes(keyword.toLowerCase().split(' ')[0])) {
+        if (metaKeyword && !metaDescription.toLowerCase().includes(metaKeyword.toLowerCase().split(' ')[0])) {
           metaDescription = metaDescription.substring(0, 130).replace(/\s+\S*$/, '') + '...';
         }
 
@@ -815,7 +854,7 @@ Remember: Be concise, technical, and valuable. No fluff.`;
       }
       
       try {
-        titles = await generateTopics(count, existingTitles);
+        titles = await generateTopics(count, existingTitles, topicStyle || (tone === 'ai-optimized' ? 'ai-optimized' : 'default'));
       } catch (error: any) {
         return NextResponse.json({ error: "Failed to generate topics: " + error.message }, { status: 500 });
       }
@@ -835,15 +874,24 @@ Remember: Be concise, technical, and valuable. No fluff.`;
 
     for (const title of titles) {
       try {
-        const userPrompt = `Write a blog post about: "${title}"
+        const batchKeyword = targetKeyword || extractKeyword(title);
+        const userPrompt = `Write a comprehensive SEO blog post about: "${title}"
 
-Target Keyword: ${targetKeyword || extractKeyword(title)}
+Target Keyword: ${batchKeyword}
+Secondary Keywords: ${title.toLowerCase().split(' ').filter((w: string) => w.length > 4).slice(0, 5).join(', ')}
 
 ${keyTakeaways.length > 0 ? `Key points to include:\n${keyTakeaways.map((t: string) => `- ${t}`).join('\n')}` : ''}
 
-Remember: Be concise, technical, and valuable. No fluff.`;
+SEO REQUIREMENTS:
+1. Use the target keyword "${batchKeyword}" naturally 5-8 times
+2. Include the keyword in at least 2 H2 headers
+3. Start with a hook — NEVER "In today's..."
+4. Include at least 1 comparison table, 2 code blocks
+5. TL;DR box after intro, FAQ section at end (3-5 questions)
+6. CTA linking to replay.build at end
+7. Target 1800-2500 words`;
 
-        // Call Gemini 2.5 Flash (cheaper model for content)
+        // Call Gemini 3 Flash
         const response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
           {

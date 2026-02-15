@@ -424,8 +424,8 @@ export async function POST(req: Request) {
       console.warn(`⚠️ Skipping platforms without API keys: ${skipped.join(", ")}`);
     }
 
-    // Limit queries per monitoring run to avoid timeout (max 10)
-    const limitedQueries = queriesToTest.slice(0, 10);
+    // Process up to 25 queries per monitoring run (within 5-min timeout)
+    const limitedQueries = queriesToTest.slice(0, 25);
 
     // Test each query on each active platform
     for (const queryObj of limitedQueries) {

@@ -152,6 +152,7 @@ export default function AdminPage() {
   const [autoCount, setAutoCount] = useState(10); // Number of articles to auto-generate
   const [showMobileSidebar, setShowMobileSidebar] = useState(false); // Mobile sidebar state
   const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0, currentTitle: "" });
+  const [bgQueue, setBgQueue] = useState<{ processed: number; total: number; batchId: string; results: any[] } | null>(null);
   
   // Viral Post Generator state
   const [viralSubTab, setViralSubTab] = useState<"posts" | "replies" | "daily" | "accounts">("posts");
@@ -335,18 +336,47 @@ export default function AdminPage() {
     }
   }, [blogFilter]);
 
-  // Generate articles
+  // Poll background queue progress
+  const pollBgQueue = useCallback(async () => {
+    if (!adminToken) return;
+    try {
+      const res = await fetch("/api/aeo/dashboard", { headers: { "Authorization": `Bearer ${adminToken}` } });
+      if (!res.ok) return;
+      const data = await res.json();
+      const q = data.config?.content_queue;
+      if (q && q.total > 0) {
+        setBgQueue({ processed: q.processed, total: q.total, batchId: q.batchId, results: q.results || [] });
+        if (q.processed >= q.total) {
+          // Done — clear after showing
+          setTimeout(() => setBgQueue(null), 5000);
+          loadBlogPosts(adminToken);
+        }
+      } else {
+        setBgQueue(null);
+      }
+    } catch {}
+  }, [adminToken, loadBlogPosts]);
+
+  // Auto-poll queue when on Content tab
+  useEffect(() => {
+    if (activeTab !== "content" || !adminToken) return;
+    pollBgQueue(); // Check immediately
+    const interval = setInterval(pollBgQueue, 8000); // Poll every 8s
+    return () => clearInterval(interval);
+  }, [activeTab, adminToken, pollBgQueue]);
+
+  // Generate articles — enqueues to background server-side cron
   const handleGenerateArticles = async () => {
     if (!adminToken) return;
-    
+
     // Manual mode validation
     if (!autoMode) {
       if (!generateTitles.trim()) return;
       const titleList = generateTitles.split('\n').filter(t => t.trim()).map(t => t.trim());
       if (titleList.length === 0) return;
     }
-    
-    // Auto mode validation  
+
+    // Auto mode validation
     if (autoMode && autoCount < 1) {
       setToastMessage("❌ Enter at least 1 article");
       return;
@@ -355,15 +385,15 @@ export default function AdminPage() {
     setIsGenerating(true);
     setGenerateResults([]);
     setGenerationProgress({ current: 0, total: 0, currentTitle: "Getting topics..." });
-    
+
     try {
       let titlesToGenerate: string[] = [];
-      
+
       if (autoMode) {
         // First, get AI-generated topics
         const topicsResponse = await fetch("/api/admin/generate-article", {
           method: "POST",
-          headers: { 
+          headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${adminToken}`
           },
@@ -375,67 +405,47 @@ export default function AdminPage() {
             topicStyle: generateTone === "ai-optimized" ? "ai-optimized" : "default",
           })
         });
-        
+
         const topicsData = await topicsResponse.json();
         titlesToGenerate = topicsData.topics || [];
-        
+
         if (titlesToGenerate.length === 0) {
           throw new Error("No topics generated");
         }
       } else {
         titlesToGenerate = generateTitles.split('\n').filter(t => t.trim()).map(t => t.trim());
       }
-      
-      setGenerationProgress({ current: 0, total: titlesToGenerate.length, currentTitle: "" });
-      
-      // Generate articles one by one
-      for (let i = 0; i < titlesToGenerate.length; i++) {
-        const title = titlesToGenerate[i];
-        setGenerationProgress({ current: i + 1, total: titlesToGenerate.length, currentTitle: title });
-        
-        try {
-          const response = await fetch("/api/admin/generate-article", {
-            method: "POST",
-            headers: { 
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${adminToken}`
-            },
-            body: JSON.stringify({
-              singleTitle: title,
-              targetKeyword: generateKeyword.trim() || undefined,
-              tone: generateTone,
-              keyTakeaways: generateTakeaways.split('\n').filter(t => t.trim()),
-              saveToDB: true
-            })
-          });
 
-          const data = await response.json();
-          
-          if (data.result) {
-            setGenerateResults(prev => [...prev, data.result]);
-          } else {
-            setGenerateResults(prev => [...prev, { title, error: true }]);
-          }
-        } catch (err) {
-          console.error(`Error generating "${title}":`, err);
-          setGenerateResults(prev => [...prev, { title, error: true }]);
-        }
-        
-        // Longer delay between requests to avoid DB connection exhaustion
-        if (i < titlesToGenerate.length - 1) {
-          await new Promise(r => setTimeout(r, 2000)); // 2 seconds between each article
-        }
+      setGenerationProgress({ current: 0, total: titlesToGenerate.length, currentTitle: `Queuing ${titlesToGenerate.length} articles...` });
+
+      // Enqueue to background server-side cron (no browser required!)
+      const enqueueRes = await fetch("/api/admin/content-cron", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          titles: titlesToGenerate,
+          tone: generateTone,
+          keyword: generateKeyword.trim() || "",
+          keyTakeaways: generateTakeaways.split('\n').filter(t => t.trim()),
+          adminToken,
+        })
+      });
+
+      const enqueueData = await enqueueRes.json();
+
+      if (enqueueData.success) {
+        setBgQueue({ processed: 0, total: titlesToGenerate.length, batchId: enqueueData.batchId, results: [] });
+        setToastMessage(`✅ Queued ${titlesToGenerate.length} articles for background generation. You can close this tab!`);
+        setGenerateTitles("");
+        setGenerateKeyword("");
+        setGenerateTakeaways("");
+      } else {
+        setToastMessage(`❌ ${enqueueData.error || "Failed to queue"}`);
       }
-      
-      // Refresh blog posts
-      loadBlogPosts(adminToken);
-      // Clear form
-      setGenerateTitles("");
-      setGenerateKeyword("");
-      setGenerateTakeaways("");
-      
-    } catch (error) {
+
+    } catch (error: any) {
       console.error("Generation error:", error);
+      setToastMessage(`❌ ${error.message}`);
     } finally {
       setIsGenerating(false);
       setGenerationProgress({ current: 0, total: 0, currentTitle: "" });
@@ -1685,6 +1695,29 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                 )}
               </div>
 
+              {/* Background Queue Progress */}
+              {bgQueue && bgQueue.total > 0 && (
+                <div className="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Loader2 className={`w-4 h-4 ${bgQueue.processed < bgQueue.total ? "animate-spin" : ""} text-emerald-400`} />
+                    <span className="text-sm font-medium text-emerald-400">
+                      {bgQueue.processed >= bgQueue.total ? "✅ Background generation complete!" : "Background generation running..."}
+                    </span>
+                    <span className="text-xs text-white/50 ml-auto">You can close this tab</span>
+                  </div>
+                  <div className="h-2.5 bg-black/30 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500"
+                      style={{ width: `${(bgQueue.processed / bgQueue.total) * 100}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-white/60 mt-2">
+                    {bgQueue.processed}/{bgQueue.total} articles generated
+                    {bgQueue.results?.length > 0 && ` (${bgQueue.results.filter((r: any) => r.success).length} ✅ ${bgQueue.results.filter((r: any) => !r.success).length > 0 ? `, ${bgQueue.results.filter((r: any) => !r.success).length} ❌` : ""})`}
+                  </p>
+                </div>
+              )}
+
               {/* Generation Results */}
               {generateResults.length > 0 && (
                 <div className="mt-6 p-4 bg-black/30 rounded-xl border border-zinc-800">
@@ -2071,6 +2104,30 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                     >
                       <Search className="w-4 h-4" />
                       Identify Gaps Now
+                    </button>
+
+                    <button
+                      onClick={async () => {
+                        setToastMessage("⏳ Running full AEO pipeline (monitor → gaps → generate → publish)...");
+                        try {
+                          const response = await fetch("/api/aeo/cron", {
+                            headers: { "x-vercel-cron": "true" }
+                          });
+                          const data = await response.json();
+                          if (data.success) {
+                            setToastMessage(`✅ Pipeline completed in ${data.duration}s`);
+                            loadAeoData();
+                          } else {
+                            setToastMessage(`❌ ${data.error}`);
+                          }
+                        } catch (error) {
+                          setToastMessage("❌ Pipeline failed");
+                        }
+                      }}
+                      className="px-4 py-2.5 rounded-lg text-sm font-medium bg-orange-600 text-white hover:bg-orange-500 transition-colors flex items-center gap-2"
+                    >
+                      <Zap className="w-4 h-4" />
+                      Run Full Pipeline
                     </button>
 
                     <button
