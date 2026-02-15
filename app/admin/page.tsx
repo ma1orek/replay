@@ -1703,7 +1703,29 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                     <span className="text-sm font-medium text-emerald-400">
                       {bgQueue.processed >= bgQueue.total ? "✅ Background generation complete!" : "Background generation running..."}
                     </span>
-                    <span className="text-xs text-white/50 ml-auto">You can close this tab</span>
+                    {bgQueue.processed < bgQueue.total && (
+                      <button
+                        onClick={async () => {
+                          if (!adminToken) return;
+                          try {
+                            const res = await fetch("/api/admin/content-cron", {
+                              method: "DELETE",
+                              headers: { "Authorization": `Bearer ${adminToken}` },
+                            });
+                            if (res.ok) {
+                              setBgQueue(null);
+                              setToastMessage("Queue cleared");
+                            }
+                          } catch {}
+                        }}
+                        className="ml-auto text-xs text-red-400 hover:text-red-300 underline"
+                      >
+                        Clear Queue
+                      </button>
+                    )}
+                    {bgQueue.processed >= bgQueue.total && (
+                      <span className="text-xs text-white/50 ml-auto">Done</span>
+                    )}
                   </div>
                   <div className="h-2.5 bg-black/30 rounded-full overflow-hidden">
                     <div

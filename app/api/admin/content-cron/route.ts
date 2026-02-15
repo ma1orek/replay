@@ -27,8 +27,12 @@ interface ContentQueue {
   keyTakeaways: string[];
   batchId: string;
   startedAt: string;
+  lastProgressAt?: string;
   results: Array<{ title: string; success: boolean; slug?: string; error?: string }>;
 }
+
+// If queue hasn't progressed in 15 minutes, consider it stale
+const STALE_THRESHOLD_MS = 15 * 60 * 1000;
 
 // How many articles to generate per cron run
 const ARTICLES_PER_RUN = 5;
@@ -59,6 +63,29 @@ export async function GET(req: Request) {
     }
 
     const queue: ContentQueue = queueRow.value as ContentQueue;
+
+    // Staleness check: if queue hasn't progressed in 15 min, skip remaining failed articles
+    const lastActivity = queue.lastProgressAt || queue.startedAt;
+    const staleDuration = Date.now() - new Date(lastActivity).getTime();
+    if (staleDuration > STALE_THRESHOLD_MS && queue.processed < queue.total) {
+      console.log(`[ContentCron] Queue stale for ${Math.round(staleDuration / 60000)}min — force-completing (${queue.processed}/${queue.total})`);
+      const skippedTitles = queue.titles.slice(queue.processed);
+      const skippedResults = skippedTitles.map(title => ({ title, success: false, error: "Skipped: queue stale timeout" }));
+      const finalResults = [...queue.results, ...skippedResults];
+
+      await supabase
+        .from("aeo_config")
+        .update({ value: null, updated_at: new Date().toISOString() })
+        .eq("key", "content_queue");
+
+      return NextResponse.json({
+        status: "completed_stale",
+        processed: queue.processed,
+        total: queue.total,
+        skipped: skippedTitles.length,
+        batchResults: finalResults,
+      });
+    }
 
     // Check if there are remaining articles
     if (queue.processed >= queue.total) {
@@ -100,6 +127,7 @@ export async function GET(req: Request) {
     const updatedQueue: ContentQueue = {
       ...queue,
       processed: endIdx,
+      lastProgressAt: new Date().toISOString(),
       results: [...queue.results, ...results],
     };
 
@@ -156,10 +184,16 @@ export async function POST(req: Request) {
     if (existingQueue?.value) {
       const q = existingQueue.value as ContentQueue;
       if (q.processed < q.total) {
-        return NextResponse.json({
-          error: `Queue already running: ${q.processed}/${q.total} processed`,
-          queue: { processed: q.processed, total: q.total, batchId: q.batchId }
-        }, { status: 409 });
+        // Allow override if queue is stale (no progress in 15 min)
+        const lastActivity = q.lastProgressAt || q.startedAt;
+        const staleDuration = Date.now() - new Date(lastActivity).getTime();
+        if (staleDuration < STALE_THRESHOLD_MS) {
+          return NextResponse.json({
+            error: `Queue already running: ${q.processed}/${q.total} processed`,
+            queue: { processed: q.processed, total: q.total, batchId: q.batchId }
+          }, { status: 409 });
+        }
+        console.log(`[ContentCron] Overriding stale queue (${q.processed}/${q.total}, stale ${Math.round(staleDuration / 60000)}min)`);
       }
     }
 
@@ -205,6 +239,47 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error("[ContentCron] Enqueue error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+/**
+ * DELETE - Clear a stuck queue manually
+ */
+export async function DELETE(req: Request) {
+  const authHeader = req.headers.get("authorization");
+  const adminToken = authHeader?.replace("Bearer ", "");
+
+  if (!adminToken) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const { data: queueRow } = await supabase
+      .from("aeo_config")
+      .select("value")
+      .eq("key", "content_queue")
+      .single();
+
+    if (!queueRow?.value) {
+      return NextResponse.json({ status: "idle", message: "No queue to clear" });
+    }
+
+    const queue = queueRow.value as ContentQueue;
+
+    await supabase
+      .from("aeo_config")
+      .update({ value: null, updated_at: new Date().toISOString() })
+      .eq("key", "content_queue");
+
+    console.log(`[ContentCron] Queue manually cleared (was ${queue.processed}/${queue.total})`);
+
+    return NextResponse.json({
+      success: true,
+      cleared: { processed: queue.processed, total: queue.total, batchId: queue.batchId },
+    });
+  } catch (error: any) {
+    console.error("[ContentCron] Delete error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
