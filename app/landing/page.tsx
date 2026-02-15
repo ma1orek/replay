@@ -226,18 +226,18 @@ function HeroSection() {
             <div className="mt-8 md:mt-10 flex flex-col gap-3 w-full max-w-xs sm:max-w-none sm:flex-row sm:gap-4">
               <Button size="lg" asChild className="group bg-[#F97316] text-white border-2 border-[#F97316] hover:bg-[#EA580C] hover:border-[#EA580C] h-12 px-8 rounded-full text-base ring-1 ring-orange-400/50 w-full sm:w-auto">
                 <Link href="/login">
-                  Try For Free
+                  Start For Free
                   <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </Button>
               <Button size="lg" asChild className="bg-transparent text-white border border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600 h-12 px-8 rounded-full text-base w-full sm:w-auto">
                 <Link href="https://www.replay.build/tool?project=flow_1769991250167_jr2x4utrt">
-                  Explore Live Demo
+                  View Sample Project
                   <ArrowRight className="ml-2 w-4 h-4" />
                 </Link>
               </Button>
             </div>
-            <p className="text-sm text-zinc-500 mt-4">No credit card required · 2 free reconstructions included</p>
+            <p className="text-sm text-white mt-4">No credit card required · <span className="font-bold text-[#F97316]">2 free reconstructions</span> included</p>
           </AnimatedGroup>
         </div>
       </div>
