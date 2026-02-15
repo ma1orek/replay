@@ -113,11 +113,11 @@ export function Navbar() {
                 >
                   Sign in
                 </Link>
-                <Link 
-                  href="/contact"
-                  className="px-5 py-2 rounded-full text-sm font-medium transition-all bg-white text-zinc-950 hover:bg-zinc-200"
+                <Link
+                  href="/login"
+                  className="px-5 py-2 rounded-full text-sm font-medium transition-all bg-[#F97316] text-white hover:bg-[#EA580C]"
                 >
-                  Book a Demo
+                  Try For Free
                 </Link>
               </>
             )}
@@ -167,8 +167,8 @@ export function Navbar() {
                   <Link href="/login" className="px-4 py-3 text-sm font-medium text-center text-zinc-400 hover:bg-zinc-800 rounded-xl">
                     Sign in
                   </Link>
-                  <Link href="/contact" className="px-4 py-3 text-sm font-medium text-center bg-white text-zinc-950 rounded-xl">
-                    Book a Demo
+                  <Link href="/login" className="px-4 py-3 text-sm font-medium text-center bg-[#F97316] text-white rounded-xl">
+                    Try For Free
                   </Link>
                 </>
               )}

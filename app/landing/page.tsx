@@ -232,11 +232,12 @@ function HeroSection() {
               </Button>
               <Button size="lg" asChild className="bg-transparent text-white border border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600 h-12 px-8 rounded-full text-base w-full sm:w-auto">
                 <Link href="https://www.replay.build/tool?project=flow_1769991250167_jr2x4utrt">
-                  Explore Demo
+                  Explore Live Demo
                   <ArrowRight className="ml-2 w-4 h-4" />
                 </Link>
               </Button>
             </div>
+            <p className="text-sm text-zinc-500 mt-4">No credit card required · 2 free reconstructions included</p>
           </AnimatedGroup>
         </div>
       </div>
@@ -1011,7 +1012,7 @@ function BentoFeaturesSection() {
           </Button>
           <Button size="lg" variant="ghost" asChild className="h-11 px-6 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-900 border border-transparent hover:border-zinc-800">
             <Link href="https://www.replay.build/tool?project=flow_1769991250167_jr2x4utrt" className="flex items-center gap-2">
-              Try Demo
+              View Sample Project
               <ArrowRight className="w-4 h-4" />
             </Link>
           </Button>
