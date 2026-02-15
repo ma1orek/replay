@@ -75,7 +75,7 @@ export async function GET(req: Request) {
 
       await supabase
         .from("aeo_config")
-        .update({ value: null, updated_at: new Date().toISOString() })
+        .delete()
         .eq("key", "content_queue");
 
       return NextResponse.json({
@@ -92,7 +92,7 @@ export async function GET(req: Request) {
       // Queue complete — clear it
       await supabase
         .from("aeo_config")
-        .update({ value: null, updated_at: new Date().toISOString() })
+        .delete()
         .eq("key", "content_queue");
 
       return NextResponse.json({ status: "completed", processed: queue.processed, total: queue.total });
@@ -135,7 +135,7 @@ export async function GET(req: Request) {
       // All done — clear queue
       await supabase
         .from("aeo_config")
-        .update({ value: null, updated_at: new Date().toISOString() })
+        .delete()
         .eq("key", "content_queue");
     } else {
       // More to go — update progress
@@ -269,7 +269,7 @@ export async function DELETE(req: Request) {
 
     await supabase
       .from("aeo_config")
-      .update({ value: null, updated_at: new Date().toISOString() })
+      .delete()
       .eq("key", "content_queue");
 
     console.log(`[ContentCron] Queue manually cleared (was ${queue.processed}/${queue.total})`);
