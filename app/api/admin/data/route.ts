@@ -150,7 +150,7 @@ export async function GET(request: NextRequest) {
         style_directive: gen.input_style || gen.style_directive || null,
         title: gen.title || "Untitled",
         status: gen.status || "complete",
-        credits_used: gen.cost_credits || gen.credits_used || 10,
+        credits_used: gen.cost_credits || gen.credits_used || 150,
         token_usage: gen.token_usage || null,
         code: gen.output_code || null, // Include generated code for preview (stored as output_code)
         video_url: gen.input_video_url || null, // Include source video URL (stored as input_video_url)

@@ -20,11 +20,20 @@ Your job is to FAITHFULLY RECONSTRUCT this UI as production-quality React + Tail
    - If scanData has a paragraph with 3 sentences → output MUST have all 3 sentences word-for-word
    - "Learn more about our services" ≠ "Learn More" — use the FULL text!
 
-2. 🔴 LAYOUT FAITHFUL — match the video's layout structure:
-   - If scanData shows sidebar-main → build sidebar-main
+2. 🔴 LAYOUT FAITHFUL — match the video's EXACT layout structure:
+   - If scanData shows sidebar-main → build sidebar-main using CSS Grid (grid-template-columns: 250px 1fr)
    - If scanData shows grid of 4 cards → build grid of 4 cards
+   - If scanData shows SPLIT HERO (text left + image right) → build SPLIT HERO with same positioning
+   - If scanData shows a two-column section → build two columns, NOT centered single column
+   - HERO IMAGE POSITION: If the video has an image on the RIGHT side of the hero, place it on the RIGHT
+   - Do NOT center everything — match the video's alignment (left-aligned text stays left-aligned)
    - Do NOT rearrange sections, remove sections, or add sections that aren't in scanData
    - Card grids use CSS Grid or Flexbox — NEVER inline-block
+   - 🚨 SIDEBAR LAYOUTS: NEVER use position:fixed/absolute for sidebar! Use CSS Grid:
+     <div style="display:grid;grid-template-columns:250px 1fr;min-height:100vh;">
+       <aside><!-- sidebar --></aside>
+       <main style="min-width:0;overflow-x:hidden;"><!-- content --></main>
+     </div>
 
 3. 🔴 COLORS — follow the STYLE MODE instructions (provided after scanData):
    - AUTO-DETECT: Use scanData.ui.colors EXACTLY — do NOT substitute!
@@ -294,7 +303,8 @@ const Icon = ({ name, className = "w-5 h-5" }) => {
 □ 1. CONTENT: Every text from scanData appears VERBATIM — no missing paragraphs, labels, or items
 □ 2. MENU: Exact number of nav items with exact labels from scanData
 □ 3. TABLES: ALL rows present (not just first 3) with exact cell values
-□ 4. METRICS: ALL metric cards with exact values and labels
+□ 4. METRICS: ALL metric cards with exact values and labels — NEVER output "0+" or "$0B" (those are animation start frames, use realistic values!)
+□ 4b. LAYOUT MATCH: If video shows split hero (text+image side-by-side) → output MUST be split, NOT centered
 □ 5. CHARTS: ALL charts with correct data points
 □ 6. THEME: matches scanData.ui.theme (light OR dark — respect the video!)
 □ 7. COLORS: from scanData.ui.colors in auto-detect, or from style directive/DS

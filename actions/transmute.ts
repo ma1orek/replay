@@ -404,7 +404,7 @@ Your job is to create STUNNING, ANIMATED, PRODUCTION-QUALITY web interfaces.
    - Menu: "fixed inset-0 z-[100] bg-black" (FULL SCREEN, SOLID BLACK, no transparency!)
    - OR: "fixed top-16 left-0 right-0 z-50 bg-zinc-950" (below header, SOLID background!)
    - NEVER use transparent/translucent backgrounds - content will bleed through!
-5. NO LEFT SIDEBARS for navigation - convert to top navbar with hamburger!
+5. SIDEBAR LAYOUT: If video shows a sidebar, keep it! Use CSS Grid (grid-template-columns: 250px 1fr). NEVER position:fixed for sidebars!
 
 ═══════════════════════════════════════════════════════════════════════════════
 🎨 AUTO-DETECT: PRESERVE EXACT COLORS FROM VIDEO!
@@ -658,7 +658,8 @@ All data MUST be defined in React components using useState!
 📱 NAVIGATION: RESPONSIVE NAVBAR WITH HAMBURGER ICON!
 ═══════════════════════════════════════════════════════════════════════════════
 
-🚫 BANNED: Left-side sidebars for main navigation!
+🚨 SIDEBAR LAYOUT: If video shows a left sidebar, KEEP it as a sidebar using CSS Grid!
+   Use: display:grid; grid-template-columns:250px 1fr; — NEVER position:fixed for sidebars!
 ✅ REQUIRED: Top navbar with LOGO on LEFT and HAMBURGER ICON (☰) on RIGHT for mobile!
 
 🚨🚨🚨 CRITICAL - MOBILE NAVBAR LAYOUT 🚨🚨🚨
@@ -762,7 +763,7 @@ const App = () => {
    Content bleeds through transparent menus - this is UNACCEPTABLE!
 ❌ Menu not covering content → Use "fixed inset-0 top-16 z-[100]" to cover ENTIRE viewport!
 
-IF the original video shows a left sidebar, CONVERT IT to a top navbar with hamburger!
+IF the original video shows a left sidebar, KEEP IT as a sidebar! Use CSS Grid layout (grid-template-columns: 250px 1fr). On MOBILE, hide sidebar and show hamburger menu instead.
 
 ═══════════════════════════════════════════════════════════════════════════════
 🚫 DO NOT INVENT APP NAMES
@@ -1948,7 +1949,10 @@ ${isDSStyleDirective
 
 **📐 LAYOUT STRUCTURE — MATCH THE VIDEO:**
 - If scanData describes a SPLIT HERO (text on one side, image on other) → build a two-column hero, NOT centered
-- If scanData shows sidebar+main → build sidebar+main
+- If scanData shows sidebar+main → build sidebar+main using CSS Grid:
+  display:grid; grid-template-columns:250px 1fr; min-height:100vh;
+  ❌ NEVER use position:fixed for sidebar — content will overlap!
+  ✅ sidebar and main must be direct grid children
 - Do NOT center everything by default — match the actual column layout from scanData
 - "View Companies" button next to "Apply to YC" → put them SIDE BY SIDE, not stacked
 

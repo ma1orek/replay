@@ -678,6 +678,15 @@ Example:
 - Each section/card MUST be a <div> with proper width (w-full, col-span-N)
 - NEVER let cards collapse to content-width — they MUST fill their grid cell
 
+⚠️ SIDEBAR + MAIN CONTENT LAYOUT (MANDATORY!):
+- When building a sidebar + main content layout (dashboards, admin panels, SaaS apps):
+  ❌ NEVER use position:fixed or position:absolute for the sidebar — this makes content overlap!
+  ❌ NEVER use position:sticky without a proper grid/flex parent!
+  ✅ ALWAYS use CSS Grid: display:grid; grid-template-columns: 250px 1fr; min-height:100vh;
+  ✅ <aside> and <main> must be DIRECT children of the grid container
+  ✅ Main content must have: min-width:0; overflow-x:hidden;
+- If you use position:fixed for sidebar, ALL content will go UNDER it = BROKEN LAYOUT!
+
 ⚠️ BUTTON VISIBILITY BUG PREVENTION (MANDATORY!):
 - ALL buttons and interactive elements MUST be VISIBLE by default!
 - NEVER set opacity:0, visibility:hidden, or display:none on buttons/links/CTAs

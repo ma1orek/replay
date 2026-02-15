@@ -812,27 +812,36 @@ When rendering testimonials/reviews/quotes:
 - If there are 3+ testimonials, some MUST be offscreen (scroll to reveal)
 
 ═══════════════════════════════════════════════════
-🚨 DASHBOARD / APP UI LAYOUTS 🚨
+🚨🚨🚨 DASHBOARD / APP UI LAYOUTS — SIDEBAR RULE 🚨🚨🚨
 ═══════════════════════════════════════════════════
-If the video shows a dashboard, admin panel, or app interface with sidebar + main content:
-- Use CSS Grid: display:grid; grid-template-columns:auto 1fr;
-- Sidebar: fixed width (w-64 or 250px), overflow-y:auto
-- Main area: min-width:0 (CRITICAL — prevents grid blowout from charts/tables)
-- Charts/tables: width:100%; max-width:100%; overflow-x:auto on their container
-- NEVER let a chart or table push the main area wider than the viewport
-- Structure:
+If the video shows a dashboard, admin panel, SaaS app, or ANY interface with sidebar + main content:
+
+❌ NEVER use position:fixed or position:absolute for the sidebar!
+❌ NEVER use position:sticky for the sidebar without grid/flex parent!
+❌ These cause the main content to OVERLAP/GO UNDER the sidebar!
+
+✅ ALWAYS use CSS Grid for sidebar+main layout:
+✅ The sidebar and main content MUST be siblings in a grid container
+✅ Main area MUST have min-width:0 and overflow-x:hidden
+
+MANDATORY STRUCTURE (copy this exactly):
 <div style="display:grid;grid-template-columns:250px 1fr;min-height:100vh;">
-  <aside style="overflow-y:auto;"><!-- sidebar nav --></aside>
-  <main style="min-width:0;overflow-x:hidden;padding:1.5rem;">
-    <!-- dashboard content -->
+  <aside style="background:#1a1a2e;overflow-y:auto;padding:1rem;">
+    <!-- sidebar logo + nav items -->
+  </aside>
+  <main style="min-width:0;overflow-x:hidden;overflow-y:auto;padding:1.5rem;">
+    <!-- ALL main content goes here -->
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;">
-      <!-- stat cards -->
-    </div>
-    <div style="width:100%;overflow-x:auto;">
-      <!-- chart or table here -->
+      <!-- stat cards, tables, charts -->
     </div>
   </main>
 </div>
+
+VERIFICATION: After generating, check that:
+1. The outermost div has display:grid with grid-template-columns
+2. <aside> and <main> are DIRECT children of the grid container
+3. Main content is NOT positioned at left:0 — it flows naturally in the grid
+4. No element uses position:fixed to create the sidebar
 
 ═══════════════════════════════════════════════════
 ASSEMBLY RULES — MINIMUM REQUIREMENTS:
