@@ -284,140 +284,108 @@ export function extractAssetsFromCode(code: string): ExtractedAsset[] {
 }
 
 /**
+ * Check if the URL at a given position is inside a known image context
+ * (src="...", url(...), backgroundImage, data-src, poster, etc.)
+ * This prevents replacing URLs in JS variables, comments, or template literals
+ */
+function isImageContext(code: string, urlIndex: number): boolean {
+  // Look back up to 60 chars to find the context pattern
+  const lookback = 60;
+  const before = code.substring(Math.max(0, urlIndex - lookback), urlIndex);
+
+  // Valid contexts that precede an image URL
+  const validContexts = [
+    /src=["']$/,                                      // src="URL"
+    /src=\{["'`]$/,                                   // src={"URL"} / src={'URL'} / src={`URL`}
+    /url\(["']?$/,                                    // url("URL") / url('URL') / url(URL)
+    /srcset=["'][^"']*$/,                             // inside srcset="...URL..."
+    /srcSet=\{["'`][^"'`]*$/,                         // JSX srcSet={"...URL..."}
+    /data-(?:src|image|bg|background|lazy)=["']$/,    // data-src="URL"
+    /poster=["']$/,                                   // poster="URL"
+    /content:\s*url\(["']?$/,                         // content: url(URL)
+    /(?:-webkit-)?mask-image:\s*url\(["']?$/,         // mask-image: url(URL)
+    /list-style-image:\s*url\(["']?$/,                // list-style-image: url(URL)
+    /border-image(?:-source)?:\s*url\(["']?$/,        // border-image: url(URL)
+    /bg-\[url\(["']?$/,                               // Tailwind bg-[url('URL')]
+    /backgroundImage\s*:\s*["'`]url\(["']?$/,         // backgroundImage: "url(URL)"
+  ];
+
+  return validContexts.some(pattern => pattern.test(before));
+}
+
+/**
+ * Find all positions of `url` in code that are inside image contexts,
+ * then replace the Nth one. Returns null if no context match found.
+ */
+function replaceInImageContext(
+  code: string,
+  url: string,
+  newUrl: string,
+  targetOccurrence: number
+): string | null {
+  // Find ALL raw positions of this URL in the code
+  const positions: number[] = [];
+  let fromIndex = 0;
+  while (true) {
+    const idx = code.indexOf(url, fromIndex);
+    if (idx === -1) break;
+    positions.push(idx);
+    fromIndex = idx + 1; // +1 to avoid infinite loop on overlapping matches
+  }
+
+  if (positions.length === 0) return null;
+
+  // Filter to only positions inside image contexts
+  const contextPositions = positions.filter(pos => isImageContext(code, pos));
+
+  if (contextPositions.length === 0) {
+    console.log('[Assets] Found URL in code but NOT in image context — skipping to prevent corruption');
+    return null;
+  }
+
+  // Replace the target occurrence (clamp to last available if out of range)
+  const target = Math.min(targetOccurrence, contextPositions.length - 1);
+  const replacePos = contextPositions[target];
+
+  console.log(`[Assets] Replacing context occurrence ${target}/${contextPositions.length} at position ${replacePos}`);
+  return code.slice(0, replacePos) + newUrl + code.slice(replacePos + url.length);
+}
+
+/**
  * Replace a SINGLE image URL in the code without using AI
- * Only replaces the exact URL, not all occurrences
+ * Only replaces URLs that are inside known image contexts (src, url(), etc.)
+ * Never does raw string replacement to prevent code corruption
  */
 export function replaceAssetInCode(
-  code: string, 
-  oldUrl: string, 
+  code: string,
+  oldUrl: string,
   newUrl: string,
   occurrence?: number
 ): string {
   console.log('[Assets] Replacing:', oldUrl, '->', newUrl);
 
-  if (occurrence !== undefined && occurrence !== null) {
-    const replaced = replaceNthOccurrence(code, oldUrl, newUrl, occurrence);
-    if (replaced !== code) {
-      console.log('[Assets] Replaced by occurrence:', occurrence);
-      return replaced;
-    }
-  }
-  
-  // Escape special characters in the old URL for regex
-  const escapedOldUrl = escapeRegex(oldUrl);
+  const targetOcc = occurrence ?? 0;
+
+  // Try original URL first
+  const result1 = replaceInImageContext(code, oldUrl, newUrl, targetOcc);
+  if (result1 !== null) return result1;
+
+  // Try normalized URL (strips domain, keeps path+query)
   const normalizedOldUrl = normalizeAssetUrl(oldUrl);
-  const escapedNormalizedOldUrl = escapeRegex(normalizedOldUrl);
+  if (normalizedOldUrl !== oldUrl) {
+    const result2 = replaceInImageContext(code, normalizedOldUrl, newUrl, targetOcc);
+    if (result2 !== null) return result2;
+  }
+
+  // Try HTML-encoded URL (& → &amp;)
   const encodedOldUrl = oldUrl.replace(/&/g, "&amp;");
-  const escapedEncodedOldUrl = escapeRegex(encodedOldUrl);
-  
-  // Replace ONLY the first occurrence for each pattern
-  // This ensures we replace only the selected image, not all matching URLs
-  
-  // Replace in img src with double quotes
-  const srcDoubleRegex = new RegExp(`src="${escapedOldUrl}"`);
-  if (srcDoubleRegex.test(code)) {
-    console.log('[Assets] Found in src="" - replacing');
-    return code.replace(srcDoubleRegex, `src="${newUrl}"`);
-  }
-  
-  // Replace in img src with single quotes
-  const srcSingleRegex = new RegExp(`src='${escapedOldUrl}'`);
-  if (srcSingleRegex.test(code)) {
-    console.log('[Assets] Found in src=\'\' - replacing');
-    return code.replace(srcSingleRegex, `src='${newUrl}'`);
+  if (encodedOldUrl !== oldUrl) {
+    const result3 = replaceInImageContext(code, encodedOldUrl, newUrl, targetOcc);
+    if (result3 !== null) return result3;
   }
 
-  // Replace in JSX src={"..."}
-  const srcJsxDoubleRegex = new RegExp(`src=\\{"${escapedOldUrl}"\\}`);
-  if (srcJsxDoubleRegex.test(code)) {
-    console.log('[Assets] Found in src={"..."} - replacing');
-    return code.replace(srcJsxDoubleRegex, `src={"${newUrl}"}`);
-  }
-
-  // Replace in JSX src={'...'}
-  const srcJsxSingleRegex = new RegExp(`src=\\{'${escapedOldUrl}'\\}`);
-  if (srcJsxSingleRegex.test(code)) {
-    console.log('[Assets] Found in src={\'...\'} - replacing');
-    return code.replace(srcJsxSingleRegex, `src={'${newUrl}'}`);
-  }
-
-  // Replace in JSX src={`...`}
-  const srcJsxTemplateRegex = new RegExp(`src=\\{\\\`${escapedOldUrl}\\\`\\}`);
-  if (srcJsxTemplateRegex.test(code)) {
-    console.log('[Assets] Found in src={`...`} - replacing');
-    return code.replace(srcJsxTemplateRegex, `src={\`${newUrl}\`}`);
-  }
-  
-  // Replace in background-image url() with double quotes
-  const bgDoubleRegex = new RegExp(`url\\("${escapedOldUrl}"\\)`);
-  if (bgDoubleRegex.test(code)) {
-    console.log('[Assets] Found in url("") - replacing');
-    return code.replace(bgDoubleRegex, `url("${newUrl}")`);
-  }
-  
-  // Replace in background-image url() with single quotes
-  const bgSingleRegex = new RegExp(`url\\('${escapedOldUrl}'\\)`);
-  if (bgSingleRegex.test(code)) {
-    console.log('[Assets] Found in url(\'\') - replacing');
-    return code.replace(bgSingleRegex, `url('${newUrl}')`);
-  }
-  
-  // Replace in background-image url() without quotes
-  const bgNoQuotesRegex = new RegExp(`url\\(${escapedOldUrl}\\)`);
-  if (bgNoQuotesRegex.test(code)) {
-    console.log('[Assets] Found in url() no quotes - replacing');
-    return code.replace(bgNoQuotesRegex, `url(${newUrl})`);
-  }
-
-  // Replace in JSX backgroundImage: "url(...)"
-  const bgImageJsxRegex = new RegExp(`backgroundImage\\s*:\\s*["'\`]url\\((["'\`]?)${escapedOldUrl}\\1\\)["'\`]`);
-  if (bgImageJsxRegex.test(code)) {
-    console.log('[Assets] Found in backgroundImage - replacing');
-    return code.replace(bgImageJsxRegex, `backgroundImage: "url(${newUrl})"`);
-  }
-  
-  // Try direct string replacement
-  if (code.includes(oldUrl)) {
-    console.log('[Assets] Found as plain string - replacing');
-    return code.replace(oldUrl, newUrl);
-  }
-
-  if (normalizedOldUrl !== oldUrl && code.includes(normalizedOldUrl)) {
-    console.log('[Assets] Found normalized URL - replacing');
-    return code.replace(normalizedOldUrl, newUrl);
-  }
-
-  if (encodedOldUrl !== oldUrl && code.includes(encodedOldUrl)) {
-    console.log('[Assets] Found encoded URL - replacing');
-    return code.replace(encodedOldUrl, newUrl);
-  }
-
-  if (escapedNormalizedOldUrl && new RegExp(escapedNormalizedOldUrl).test(code)) {
-    console.log('[Assets] Found normalized URL regex - replacing');
-    return code.replace(new RegExp(escapedNormalizedOldUrl), newUrl);
-  }
-
-  if (escapedEncodedOldUrl && new RegExp(escapedEncodedOldUrl).test(code)) {
-    console.log('[Assets] Found encoded URL regex - replacing');
-    return code.replace(new RegExp(escapedEncodedOldUrl), newUrl);
-  }
-
-  console.log('[Assets] URL not found in code!');
+  console.log('[Assets] URL not found in any image context!');
   console.log('[Assets] Looking for:', oldUrl.substring(0, 100));
-  return code;
-}
-
-function replaceNthOccurrence(code: string, oldStr: string, newStr: string, occurrence: number): string {
-  if (occurrence < 0) return code;
-  let fromIndex = 0;
-  for (let i = 0; i <= occurrence; i++) {
-    const idx = code.indexOf(oldStr, fromIndex);
-    if (idx === -1) return code;
-    if (i === occurrence) {
-      return code.slice(0, idx) + newStr + code.slice(idx + oldStr.length);
-    }
-    fromIndex = idx + oldStr.length;
-  }
   return code;
 }
 
