@@ -49,7 +49,7 @@ export default function PricingPage() {
   const [loadingPlan, setLoadingPlan] = React.useState<string | null>(null);
   
   const handlePlanClick = async (plan: string, href: string) => {
-    if (plan === "Sandbox") {
+    if (plan === "Free") {
       window.location.href = href;
       return;
     }
@@ -94,7 +94,7 @@ export default function PricingPage() {
   
   const plans = [
     {
-      name: "Sandbox",
+      name: "Free",
       subtitle: "Explore the demo",
       price: "$0",
       period: "",
@@ -281,7 +281,7 @@ export default function PricingPage() {
                   ) : (
                     <>
                       {plan.cta}
-                      {plan.name !== "Enterprise" && plan.name !== "Sandbox" && <ArrowRight className="ml-2 w-4 h-4" />}
+                      {plan.name !== "Enterprise" && plan.name !== "Free" && <ArrowRight className="ml-2 w-4 h-4" />}
                       {plan.name === "Enterprise" && <PhoneCall className="ml-2 w-4 h-4" />}
                     </>
                   )}
@@ -304,7 +304,7 @@ export default function PricingPage() {
                 <thead>
                   <tr className="border-b border-zinc-800 bg-zinc-900/50">
                     <th className="text-left py-4 px-4 font-mono text-xs text-zinc-500 uppercase tracking-wider">Features</th>
-                    <th className="text-center py-4 px-4 font-mono text-xs text-zinc-400 uppercase tracking-wider">Sandbox</th>
+                    <th className="text-center py-4 px-4 font-mono text-xs text-zinc-400 uppercase tracking-wider">Free</th>
                     <th className="text-center py-4 px-4 font-mono text-xs text-orange-500 uppercase tracking-wider bg-orange-500/5">Pro</th>
                     <th className="text-center py-4 px-4 font-mono text-xs text-zinc-400 uppercase tracking-wider">Agency</th>
                     <th className="text-center py-4 px-4 font-mono text-xs text-zinc-400 uppercase tracking-wider">Enterprise</th>

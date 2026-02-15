@@ -106,7 +106,7 @@ export default function OutOfCreditsModal({
                     </h2>
                     <p className="text-sm text-zinc-500">
                       {isSandbox 
-                        ? "Sandbox plan has 0 credits. Upgrade to Pro to generate."
+                        ? "Free plan has 0 credits. Upgrade to Pro to generate."
                         : `You need ${requiredCredits} credits. You have ${availableCredits}.`
                       }
                     </p>

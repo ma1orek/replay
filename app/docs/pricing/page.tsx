@@ -66,10 +66,10 @@ export default function PricingPage() {
       <div className="space-y-4">
         <h2 className="text-2xl font-semibold text-white">Plans</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Sandbox */}
+          {/* Free */}
           <div className="p-6 rounded-xl bg-zinc-800/50 border border-zinc-700">
             <div className="mb-4">
-              <h3 className="text-lg font-semibold text-white">Sandbox</h3>
+              <h3 className="text-lg font-semibold text-white">Free</h3>
               <p className="text-sm text-zinc-500">Explore the demo</p>
             </div>
             <div className="mb-4">

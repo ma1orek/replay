@@ -5,7 +5,7 @@ const DEMO_PROJECT_URL = "https://www.replay.build/tool?project=flow_17694440367
 
 const tiers = [
   {
-    name: "Sandbox",
+    name: "Free",
     id: "sandbox",
     price: "$0",
     period: "",

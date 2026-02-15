@@ -70,7 +70,7 @@ export interface PlanConfig {
 
 export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
   free: {
-    name: "Sandbox",
+    name: "Free",
     price: 0,
     yearlyPrice: 0,
     credits: 0,

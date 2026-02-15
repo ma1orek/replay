@@ -61,7 +61,7 @@ const SIDEBAR_ITEMS = [
   { id: "account", label: "Your account", icon: User },
   { id: "preferences", label: "Preferences", icon: Settings },
   { type: "section", label: "Billing" },
-  { id: "plans", label: "Plans & credits", icon: CreditCard },
+  { id: "plans", label: "Plans", icon: CreditCard },
   { id: "credits", label: "Credits", icon: CreditCard },
   { type: "section", label: "Projects" },
   { id: "projects", label: "Your Projects", icon: FolderOpen },
@@ -465,9 +465,6 @@ function SettingsContent() {
               <div className="bg-[#141414]/80 backdrop-blur border border-zinc-800/50 rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-base font-semibold text-zinc-200">Profile</h2>
-                  <Link href="#" className="text-xs text-zinc-100 hover:text-zinc-300 flex items-center gap-1">
-                    Open profile <ExternalLink className="w-3 h-3" />
-                  </Link>
                 </div>
                 
                 <div className="space-y-5">
@@ -659,7 +656,7 @@ function SettingsContent() {
           {activeTab === "plans" && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
               <div>
-                <h1 className="text-2xl font-semibold text-zinc-100 mb-1">Plans & credits</h1>
+                <h1 className="text-2xl font-semibold text-zinc-100 mb-1">Plans</h1>
                 <p className="text-sm text-zinc-500">Manage your subscription and billing</p>
               </div>
 
@@ -672,7 +669,7 @@ function SettingsContent() {
                       <div className="h-8 w-24 bg-zinc-800 rounded animate-pulse" />
                     ) : (
                       <h2 className="text-2xl font-bold text-zinc-100 capitalize flex items-center gap-2">
-                        {currentPlan === "free" ? "Sandbox" : currentPlan}
+                        {currentPlan === "free" ? "Free" : currentPlan}
                         {currentPlan !== "free" && (
                           <span className="px-2 py-0.5 text-xs bg-zinc-700 text-zinc-300 rounded-full uppercase">
                             {currentPlan}
@@ -711,13 +708,13 @@ function SettingsContent() {
 
               {/* Pricing Cards - matching pricing page exactly */}
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
-                {/* Sandbox - $0 */}
+                {/* Free - $0 */}
                 <div className={cn(
                   "bg-[#141414]/80 backdrop-blur border rounded-2xl p-6",
-                  currentPlan === "free" ? "border-emerald-500" : "border-zinc-800/50"
+                  currentPlan === "free" ? "border-zinc-500" : "border-zinc-800/50"
                 )}>
                   <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-zinc-200">Sandbox</h3>
+                    <h3 className="text-lg font-semibold text-zinc-200">Free</h3>
                     <p className="text-sm text-zinc-500">Explore the demo</p>
                   </div>
                   <div className="mb-4">
@@ -737,7 +734,7 @@ function SettingsContent() {
                     ))}
                   </ul>
                   {currentPlan === "free" ? (
-                    <div className="w-full py-2.5 rounded-xl text-sm text-center bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                    <div className="w-full py-2.5 rounded-xl text-sm text-center bg-zinc-800 text-zinc-300 border border-zinc-700">
                       Current Plan
                     </div>
                   ) : (
@@ -753,7 +750,7 @@ function SettingsContent() {
                   currentPlan === "pro" ? "border-zinc-500" : "border-zinc-800/50"
                 )}>
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-                    <span className="px-3 py-1 text-xs bg-[#FF6E3C] text-white rounded-full font-medium whitespace-nowrap">Most Popular</span>
+                    <span className="px-3 py-1 text-xs bg-zinc-600 text-white rounded-full font-medium whitespace-nowrap">Most Popular</span>
                   </div>
                   <div className="mb-4">
                     <h3 className="text-lg font-semibold text-zinc-100">{PRO_PLAN.name}</h3>
@@ -766,7 +763,7 @@ function SettingsContent() {
                   <ul className="space-y-2 mb-6">
                     {PRO_PLAN.features.map((f) => (
                       <li key={f} className="flex items-center gap-2 text-sm text-zinc-400">
-                        <Check className="w-4 h-4 text-[#FF6E3C]" />
+                        <Check className="w-4 h-4 text-zinc-400" />
                         {f}
                       </li>
                     ))}
@@ -1112,8 +1109,7 @@ function SettingsContent() {
                         href="/tool"
                         className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm font-medium transition-colors"
                       >
-                        <Sparkles className="w-4 h-4" />
-                        Go to tool
+                        + Create new project
                       </Link>
                     </>
                   )}

@@ -141,7 +141,7 @@ const changelog = [
     changes: [
       {
         type: "feature",
-        title: "Sandbox Demo Mode",
+        title: "Free Demo Mode",
         description: "New users can explore a full demo project without signing up. Experience Flow Map, Library, and Editor in read-only mode."
       },
       {

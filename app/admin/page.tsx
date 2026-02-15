@@ -570,7 +570,7 @@ export default function AdminPage() {
   // Agency: $499/mo, 15,000 credits
   // Enterprise: Custom
   const PRO_TIERS = [
-    { id: "sandbox", label: "Sandbox (Free)", credits: 0, membership: "free", isTopup: false, price: "$0" },
+    { id: "sandbox", label: "Free", credits: 0, membership: "free", isTopup: false, price: "$0" },
     { id: "pro", label: "Pro ($149/mo)", credits: 3000, membership: "pro", isTopup: false, price: "$149/mo" },
     { id: "agency", label: "Agency ($499/mo)", credits: 15000, membership: "agency", isTopup: false, price: "$499/mo" },
     { id: "enterprise", label: "Enterprise (Custom)", credits: 50000, membership: "enterprise", isTopup: false, price: "Custom" },
