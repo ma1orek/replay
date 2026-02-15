@@ -16,9 +16,9 @@ export function getStripe(): Stripe {
 // ═══════════════════════════════════════════════════════════════
 // PRICING TIERS (January 2026) - CREDIT-BASED
 // ═══════════════════════════════════════════════════════════════
-// Sandbox (Free): 0 credits - must upgrade to Pro for credits
-// Pro: $149/mo = 3000 credits/month (unlimited projects)
-// Agency: $499/mo = 15000 credits/month (team features)
+// Free: 300 credits (2 generations) - preview + flow only
+// Pro: $149/mo = 15,000 credits/month (~100 generations)
+// Agency: $499/mo = 60,000 credits/month (~400 generations)
 // Enterprise: Custom
 //
 // CREDIT COSTS:
@@ -41,11 +41,10 @@ export const STRIPE_PRICES = {
 };
 
 // Credits per plan (monthly)
-// IMPORTANT: Free tier gets 0 credits - must upgrade to Pro/Agency for credits
 export const PLAN_CREDITS: Record<string, number> = {
-  free: 0,      // Sandbox - no credits, must upgrade
-  pro: 3000,
-  agency: 15000,
+  free: 300,      // Free tier - 2 generations
+  pro: 15000,     // ~100 generations
+  agency: 60000,  // ~400 generations
   enterprise: 999999,
 };
 
@@ -73,22 +72,23 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     name: "Free",
     price: 0,
     yearlyPrice: 0,
-    credits: 0,
+    credits: 300,
     teamSeats: 1,
     features: [
-      "Preview mode only",
-      "1 project",
-      "Upgrade to Pro for credits",
+      "300 credits (2 generations)",
+      "Preview & Flow Map",
+      "30s max video",
+      "Upgrade for Code, Editor, Library",
     ],
   },
   pro: {
     name: "Pro",
     price: 14900, // $149
     yearlyPrice: 11900, // $119 (yearly discount)
-    credits: 3000,
+    credits: 15000,
     teamSeats: 1,
     features: [
-      "3,000 credits/month",
+      "15,000 credits/month (~100 generations)",
       "Unlimited projects",
       "React/Tailwind export",
       "Flow Map & Library",
@@ -99,10 +99,10 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     name: "Agency",
     price: 49900, // $499
     yearlyPrice: 39900, // $399 (yearly discount)
-    credits: 15000,
+    credits: 60000,
     teamSeats: 5,
     features: [
-      "15,000 credits/month",
+      "60,000 credits/month (~400 generations)",
       "Unlimited projects",
       "5 team seats",
       "Shared Design System",

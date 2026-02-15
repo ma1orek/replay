@@ -67,19 +67,19 @@ const SIDEBAR_ITEMS = [
   { id: "projects", label: "Your Projects", icon: FolderOpen },
 ];
 
-// Pricing tiers - 4 active Stripe prices (Jan 26)
-// Pro: $149/mo ($119/mo yearly), 3,000 credits
-// Agency: $499/mo ($399/mo yearly), 15,000 credits
+// Pricing tiers - 4 active Stripe prices (Feb 26)
+// Pro: $149/mo ($119/mo yearly), 15,000 credits (~100 gens)
+// Agency: $499/mo ($399/mo yearly), 60,000 credits (~400 gens)
 const PRO_PLAN = {
   id: 'pro',
   name: 'Pro',
   description: 'For freelancers',
-  credits: 3000,
+  credits: 15000,
   monthlyPrice: 149,
   stripePriceId_Monthly: "price_1SttxZAxch1s4iBGchJgatG6",
   stripePriceId_Yearly: "price_1Stty3Axch1s4iBGaQxPAF82",
   features: [
-    "3,000 credits/month",
+    "15,000 credits/month (~100 gens)",
     "Unlimited projects",
     "React + Tailwind export",
     "Flow Map & Design System",
@@ -91,12 +91,12 @@ const AGENCY_PLAN = {
   id: 'agency',
   name: 'Agency',
   description: 'For teams',
-  credits: 15000,
+  credits: 60000,
   monthlyPrice: 499,
   stripePriceId_Monthly: "price_1SttyTAxch1s4iBGhsSdu8pm",
   stripePriceId_Yearly: "price_1SttynAxch1s4iBGshtjRh8R",
   features: [
-    "15,000 credits/month",
+    "60,000 credits/month (~400 gens)",
     "Unlimited projects",
     "5 team members",
     "Shared Design System",

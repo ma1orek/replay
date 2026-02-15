@@ -95,18 +95,18 @@ export default function PricingPage() {
   const plans = [
     {
       name: "Free",
-      subtitle: "Explore the demo",
+      subtitle: "Try it free",
       price: "$0",
       period: "",
-      description: "Full access to a demo project. Explore Flow Map, Library & Design System. No credits, no generations.",
+      description: "300 credits (2 generations). Preview & Flow Map included. Upgrade to unlock code, editor, and library.",
       features: [
-        { name: "Full access to demo project", included: true },
-        { name: "Explore Flow Map & Library", included: true },
-        { name: "Read-only (no generations)", included: true },
-        { name: "Upgrade to Pro anytime", included: true },
+        { name: "300 credits (2 generations)", included: true },
+        { name: "Preview & Flow Map", included: true },
+        { name: "30 second max video", included: true },
+        { name: "Upgrade for Code, Editor, Library", included: true },
       ],
-      cta: "Explore Demo",
-      href: DEMO_PROJECT_URL,
+      cta: "Try For Free",
+      href: "/login",
       popular: false
     },
     {
@@ -114,9 +114,9 @@ export default function PricingPage() {
       subtitle: "For freelancers",
       price: "$149",
       period: "/month",
-      description: "3,000 credits/month. Unlimited projects. ~20 video generations or 300 AI edits.",
+      description: "15,000 credits/month. Unlimited projects. ~100 video generations or 1,500 AI edits.",
       features: [
-        { name: "3,000 credits/month", included: true },
+        { name: "15,000 credits/month (~100 gens)", included: true },
         { name: "Unlimited projects", included: true },
         { name: "React + Tailwind export", included: true },
         { name: "Flow Map & Design System", included: true },
@@ -131,9 +131,9 @@ export default function PricingPage() {
       subtitle: "For teams",
       price: "$499",
       period: "/month",
-      description: "15,000 credits/month. 5 team members. Built for agencies handling multiple clients.",
+      description: "60,000 credits/month. 5 team members. Built for agencies handling multiple clients.",
       features: [
-        { name: "15,000 credits/month", included: true },
+        { name: "60,000 credits/month (~400 gens)", included: true },
         { name: "Unlimited projects", included: true },
         { name: "5 team members", included: true },
         { name: "Shared Design System", included: true },
@@ -163,10 +163,10 @@ export default function PricingPage() {
   ];
 
   const comparisonFeatures = [
-    { name: "Monthly Credits", sandbox: "0 (read-only)", pro: "3,000", agency: "15,000", enterprise: "Custom" },
-    { name: "Video Generation", sandbox: "—", pro: "~150 credits", agency: "~150 credits", enterprise: "~150 credits" },
-    { name: "AI Edit", sandbox: "—", pro: "~10 credits", agency: "~10 credits", enterprise: "~10 credits" },
-    { name: "Projects", sandbox: "Demo only", pro: "Unlimited", agency: "Unlimited", enterprise: "Unlimited" },
+    { name: "Monthly Credits", sandbox: "300", pro: "15,000", agency: "60,000", enterprise: "Custom" },
+    { name: "Video Generation", sandbox: "~150 credits", pro: "~150 credits", agency: "~150 credits", enterprise: "~150 credits" },
+    { name: "AI Edit", sandbox: false, pro: "~10 credits", agency: "~10 credits", enterprise: "~10 credits" },
+    { name: "Projects", sandbox: "1", pro: "Unlimited", agency: "Unlimited", enterprise: "Unlimited" },
     { name: "Team Members", sandbox: "1", pro: "1", agency: "5", enterprise: "Unlimited" },
     { name: "Code Export", sandbox: false, pro: true, agency: true, enterprise: true },
     { name: "Design System", sandbox: "View only", pro: true, agency: "Shared", enterprise: "Custom" },

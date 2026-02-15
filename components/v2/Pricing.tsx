@@ -6,18 +6,18 @@ const DEMO_PROJECT_URL = "https://www.replay.build/tool?project=flow_17694440367
 const tiers = [
   {
     name: "Free",
-    id: "sandbox",
+    id: "free",
     price: "$0",
     period: "",
-    description: "Explore the demo",
+    description: "Try it free",
     features: [
-      { text: "Full access to demo project", included: true },
-      { text: "Explore Flow Map & Library", included: true },
-      { text: "Read-only (no generations)", included: true },
-      { text: "Upgrade anytime", included: true },
+      { text: "300 credits (2 generations)", included: true },
+      { text: "Preview & Flow Map", included: true },
+      { text: "30s max video", included: true },
+      { text: "Upgrade for Code, Editor, Library", included: true },
     ],
-    cta: "Explore Demo",
-    href: DEMO_PROJECT_URL,
+    cta: "Try For Free",
+    href: "/login",
     highlighted: false,
     badge: null,
   },
@@ -28,7 +28,7 @@ const tiers = [
     period: "/mo",
     description: "For freelancers",
     features: [
-      { text: "3,000 credits/month", included: true },
+      { text: "15,000 credits/month (~100 gens)", included: true },
       { text: "Unlimited projects", included: true },
       { text: "React + Tailwind export", included: true },
       { text: "Flow Map & Design System", included: true },
@@ -46,7 +46,7 @@ const tiers = [
     period: "/mo",
     description: "For teams",
     features: [
-      { text: "15,000 credits/month", included: true },
+      { text: "60,000 credits/month (~400 gens)", included: true },
       { text: "Unlimited projects", included: true },
       { text: "5 team members", included: true },
       { text: "Shared Design System", included: true },
@@ -136,7 +136,7 @@ export function Pricing() {
                 className={`mt-6 block rounded-lg py-2.5 px-3 text-center text-sm font-semibold leading-6 transition-colors ${
                   tier.highlighted
                     ? "bg-orange-500 text-white shadow-sm hover:bg-orange-600"
-                    : tier.id === "sandbox"
+                    : tier.id === "free"
                     ? "text-gray-700 ring-1 ring-inset ring-gray-300 hover:ring-gray-400 hover:bg-gray-50"
                     : tier.id === "enterprise"
                     ? "text-gray-700 ring-1 ring-inset ring-gray-300 hover:ring-gray-400 hover:bg-gray-50"

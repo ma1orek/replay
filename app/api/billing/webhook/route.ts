@@ -52,13 +52,13 @@ function getSupabaseAdmin() {
   );
 }
 
-const PRO_MONTHLY_CREDITS = 3000;
-const PRO_MAX_ROLLOVER = 600;
+const PRO_MONTHLY_CREDITS = 15000;
+const PRO_MAX_ROLLOVER = 3000;
 
-// Credit amounts by plan (Jan 26 pricing - only Pro + Agency)
+// Credit amounts by plan (Feb 26 pricing - Pro + Agency)
 const TIER_CREDITS: Record<string, number> = {
-  pro: 3000,
-  agency: 15000,
+  pro: 15000,
+  agency: 60000,
 };
 
 // Credit amounts for top-ups

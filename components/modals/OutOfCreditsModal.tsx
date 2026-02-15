@@ -45,7 +45,7 @@ export default function OutOfCreditsModal({
           type: "subscription",
           priceId: PRO_SUBSCRIPTION_PRICE_ID,
           tierId: "pro",
-          credits: 3000,
+          credits: 15000,
           interval: "monthly"
         }),
       });
@@ -105,8 +105,8 @@ export default function OutOfCreditsModal({
                       {isSandbox ? "Credits Required" : "Out of Credits"}
                     </h2>
                     <p className="text-sm text-zinc-500">
-                      {isSandbox 
-                        ? "Free plan has 0 credits. Upgrade to Pro to generate."
+                      {isSandbox && availableCredits <= 0
+                        ? "You've used your 2 free generations. Upgrade to Pro for unlimited access."
                         : `You need ${requiredCredits} credits. You have ${availableCredits}.`
                       }
                     </p>
@@ -122,7 +122,7 @@ export default function OutOfCreditsModal({
                       </div>
                     </div>
                     <div className="space-y-1.5 text-xs text-zinc-400">
-                      <p>3,000 credits/month (~20 generations)</p>
+                      <p>15,000 credits/month (~100 generations)</p>
                       <p>Unlimited projects</p>
                       <p>React + Tailwind export</p>
                       <p>Flow Map & Design System</p>

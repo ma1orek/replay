@@ -27,25 +27,25 @@ interface CreditsContextType {
   isLoading: boolean;
   refreshCredits: () => Promise<void>;
   canAfford: (cost: number) => boolean;
-  isSandbox: boolean; // True if user is on free/sandbox plan with no credits
+  isSandbox: boolean; // True if user is on free plan (limited features)
   isPaidPlan: boolean; // True if user has pro/agency/enterprise
 }
 
-// Plan limits - Sandbox (free) has 0 credits, must upgrade to Pro
+// Plan limits - Free tier gets 300 credits (2 generations), preview + flow only
 export const PLAN_LIMITS: Record<string, { monthlyCredits: number; rolloverCap: number; rolloverExpiry: number }> = {
   free: {
-    monthlyCredits: 0, // Sandbox tier - read-only, no generations
+    monthlyCredits: 300, // Free tier - 2 generations, preview + flow only
     rolloverCap: 0,
     rolloverExpiry: 0,
   },
   pro: {
-    monthlyCredits: 3000,
-    rolloverCap: 600,
+    monthlyCredits: 15000, // ~100 generations
+    rolloverCap: 3000,
     rolloverExpiry: 90,
   },
   agency: {
-    monthlyCredits: 15000, // Updated to match pricing page
-    rolloverCap: 3000,
+    monthlyCredits: 60000, // ~400 generations
+    rolloverCap: 12000,
     rolloverExpiry: 90,
   },
   enterprise: {
@@ -79,13 +79,24 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      // Fetch wallet - OPTIMIZED: select only needed fields
-      const { data: walletData, error: walletError } = await supabase
-        .from("credit_wallets")
-        .select("monthly_credits, rollover_credits, topup_credits, rollover_expires_at")
-        .eq("user_id", user.id)
-        .single();
+      // PERF: Fetch wallet + membership in PARALLEL (saves 300-500ms)
+      const [walletResult, membershipResult] = await Promise.all([
+        supabase
+          .from("credit_wallets")
+          .select("monthly_credits, rollover_credits, topup_credits, rollover_expires_at")
+          .eq("user_id", user.id)
+          .single(),
+        supabase
+          .from("memberships")
+          .select("plan, status, current_period_start, current_period_end, stripe_customer_id, stripe_subscription_id")
+          .eq("user_id", user.id)
+          .single(),
+      ]);
 
+      const { data: walletData, error: walletError } = walletResult;
+      const { data: membershipData, error: membershipError } = membershipResult;
+
+      // Process wallet
       if (walletData) {
         setWallet({
           monthly_credits: walletData.monthly_credits,
@@ -94,7 +105,7 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
           rollover_expires_at: walletData.rollover_expires_at,
         });
       } else if (walletError && walletError.code === "PGRST116") {
-        // No wallet found - initialize it via API
+        // No wallet found - initialize it via API (only for brand new users)
         console.log("No wallet found, initializing for user:", user.email);
         try {
           const initRes = await fetch("/api/credits/init", { method: "POST" });
@@ -113,18 +124,10 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // Fetch membership
-      const { data: membershipData, error: membershipError } = await supabase
-        .from("memberships")
-        .select("plan, status, current_period_start, current_period_end, stripe_customer_id, stripe_subscription_id")
-        .eq("user_id", user.id)
-        .single();
-
+      // Process membership
       if (membershipData) {
         setMembership(membershipData as Membership);
       } else if (membershipError && membershipError.code === "PGRST116") {
-        // No membership - will be created by init endpoint above
-        // Set default free membership for UI
         setMembership({
           plan: "free",
           status: "active",
@@ -152,7 +155,7 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
     [totalCredits]
   );
 
-  // Check if user is on Sandbox (free) plan - no generations allowed
+  // Check if user is on free plan (limited features - preview + flow only)
   const isSandbox = membership?.plan === "free" || !membership;
   
   // Check if user has a paid plan

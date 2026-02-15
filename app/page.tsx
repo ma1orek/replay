@@ -3288,7 +3288,7 @@ function ReplayToolContent() {
   
   // Upgrade modal for FREE users
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [upgradeFeature, setUpgradeFeature] = useState<"code" | "download" | "publish" | "supabase" | "general">("general");
+  const [upgradeFeature, setUpgradeFeature] = useState<"code" | "download" | "publish" | "supabase" | "general" | "library" | "editor">("general");
   const [isUpgradeCheckingOut, setIsUpgradeCheckingOut] = useState(false);
   const [selectedUpgradePlan, setSelectedUpgradePlan] = useState<"pro">("pro");
   const [selectedProTierIndex, setSelectedProTierIndex] = useState(0);
@@ -8938,7 +8938,7 @@ Try these prompts in Cursor or v0:
       if (isEditing) return;
       if (node) {
         setEditInput(`@${node.name} Create this page with full content and layout`);
-        setShowFloatingEdit(true);
+        openEditWithAI();
       }
     }
   }, [generatedFiles, codeReferenceMap, flowNodes, isEditing]);
@@ -9131,7 +9131,7 @@ Try these prompts in Cursor or v0:
     
     // Open AI edit panel with context-aware prompt and auto-trigger
     setEditInput(aiPrompt);
-    setShowFloatingEdit(true);
+    openEditWithAI();
     
     // Auto-trigger AI generation
     setTimeout(() => {
@@ -10876,6 +10876,16 @@ Try these prompts in Cursor or v0:
     }
   };
 
+  // Guard: opens AI edit for paid users, shows upgrade modal for free
+  const openEditWithAI = () => {
+    if (!isPaidPlan) {
+      setUpgradeFeature("editor");
+      setShowUpgradeModal(true);
+      return;
+    }
+    setShowFloatingEdit(true);
+  };
+
   const handleGenerate = async () => {
     console.log("[handleGenerate] Called, flows:", flows.length, "user:", !!user);
     if (flows.length === 0) {
@@ -10910,10 +10920,10 @@ Try these prompts in Cursor or v0:
     
     // FREE PLAN RESTRICTIONS
     if (!isPaidPlan) {
-      // Check video duration - max 5min for FREE (same as PRO)
+      // Check video duration - max 30s for FREE
       const flow = flows.find(f => f.id === selectedFlowId) || flows[0];
-      if (flow && flow.duration && flow.duration > 300) {
-        showToast("Video too long. Maximum 5 minutes allowed.", "error");
+      if (flow && flow.duration && flow.duration > 30) {
+        showToast("Free plan: max 30 second videos. Upgrade to Pro for up to 5 minutes.", "error");
         return;
       }
       
@@ -12886,7 +12896,7 @@ ${publishCode}
     } else if (!isEditing) {
       setSelectedArchNode(nodeId);
       setEditInput(`@${nodeId} `);
-      setShowFloatingEdit(true);
+      openEditWithAI();
     }
   };
 
@@ -15235,7 +15245,7 @@ ${publishCode}
                           <button
                             onClick={() => {
                               setEditInput(`@${node.name} Create this page with full content matching the design`);
-                              setShowFloatingEdit(true);
+                              openEditWithAI();
                               setTimeout(() => editInputRef.current?.focus(), 100);
                             }}
                             className="opacity-0 group-hover:opacity-100 px-2 py-0.5 text-[9px] bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded transition-all"
@@ -15275,7 +15285,7 @@ ${publishCode}
                           <button
                             onClick={() => {
                               setEditInput(`@${node.name} Create this page - AI suggested based on app patterns`);
-                              setShowFloatingEdit(true);
+                              openEditWithAI();
                               setTimeout(() => editInputRef.current?.focus(), 100);
                             }}
                             className="opacity-0 group-hover:opacity-100 px-2 py-0.5 text-[9px] bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded transition-all"
@@ -15417,7 +15427,7 @@ ${publishCode}
                           const node = flowNodes.find(n => n.id === nodeId);
                           if (node) {
                             setEditInput(`@${node.name} Create this page with full content and layout`);
-                            setShowFloatingEdit(true);
+                            openEditWithAI();
                             setTimeout(() => editInputRef.current?.focus(), 100);
                           }
                         } else {
@@ -16842,23 +16852,24 @@ ${publishCode}
             {/* Left: Navigation Tabs - Animated toggle style */}
             <div className="flex items-center bg-zinc-800/50 rounded-lg p-1">
               {[
-                { id: "preview", icon: Eye, label: "Preview" },
-                { id: "library", icon: Library, label: "Library" },
-                { id: "blueprints", icon: Pencil, label: "Editor" },
-                { id: "flow", icon: GitBranch, label: "Flow" },
-                { id: "code", icon: Code, label: "Code" },
+                { id: "preview", icon: Eye, label: "Preview", locked: false },
+                { id: "library", icon: Library, label: "Library", locked: !isPaidPlan },
+                { id: "blueprints", icon: Pencil, label: "Editor", locked: !isPaidPlan },
+                { id: "flow", icon: GitBranch, label: "Flow", locked: false },
+                { id: "code", icon: Code, label: "Code", locked: !isPaidPlan },
               ].map((tab) => (
                 <div key={tab.id} className="relative group">
-                  <button 
-                    onClick={() => setViewMode(tab.id as ViewMode)} 
+                  <button
+                    onClick={() => setViewMode(tab.id as ViewMode)}
                     className={cn(
-                      "relative flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium transition-all duration-200 rounded-md", 
-                      viewMode === tab.id 
-                        ? "text-white bg-zinc-700" 
+                      "relative flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium transition-all duration-200 rounded-md",
+                      viewMode === tab.id
+                        ? "text-white bg-zinc-700"
                         : "text-zinc-500 hover:text-zinc-300"
                     )}
                   >
                     <tab.icon className="w-3.5 h-3.5" />
+                    {tab.locked && <Lock className="w-2.5 h-2.5 text-zinc-600" />}
                     <AnimatePresence mode="wait">
                       {viewMode === tab.id && (
                         <motion.span
@@ -18244,7 +18255,7 @@ export default function GeneratedPage() {
                                       }
                                       if (isEditing) return;
                                       setEditInput(`@${node.name} Reconstruct this page based on observed navigation patterns and styling from the main page`);
-                                      setShowFloatingEdit(true);
+                                      openEditWithAI();
                                     }}
                                     disabled={isEditing}
                                   >
@@ -18268,7 +18279,7 @@ export default function GeneratedPage() {
                                       }
                                       if (isEditing) return;
                                       setEditInput(`@${node.name} Create this page with full content. Keep the same design system, colors, navigation header, and footer from existing pages. Include realistic text, proper sections, and interactive elements. Make it production-ready.`);
-                                      setShowFloatingEdit(true);
+                                      openEditWithAI();
                                     }}
                                     disabled={isEditing}
                                   >
@@ -19463,7 +19474,25 @@ export default function GeneratedPage() {
 
             {/* Library - Storybook-like component library */}
             {viewMode === "library" && (
-              <div className="flex-1 overflow-hidden flex bg-[#111111]">
+              <div className="flex-1 overflow-hidden flex bg-[#111111] relative">
+                {/* Pro Feature Lock Overlay */}
+                {!isPaidPlan && (
+                  <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#111111]/90 backdrop-blur-sm">
+                    <div className="text-center max-w-sm mx-4">
+                      <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-zinc-800/50 flex items-center justify-center border border-zinc-700/50">
+                        <Library className="w-8 h-8 text-zinc-400" />
+                      </div>
+                      <h3 className="text-xl font-bold text-white mb-2">Component Library</h3>
+                      <p className="text-sm text-zinc-500 mb-6 leading-relaxed">Extract, organize, and reuse UI components across all your projects. Build a shared design system.</p>
+                      <button
+                        onClick={() => { setUpgradeFeature("library"); setShowUpgradeModal(true); }}
+                        className="px-6 py-3 rounded-xl bg-[#F97316] text-white text-sm font-semibold hover:bg-[#EA580C] transition-colors"
+                      >
+                        Upgrade to Pro
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {/* Fullscreen Preview Overlay */}
                 {isLibraryFullscreen && (() => {
                   const compId = selectedLibraryItem?.startsWith("comp-") 
@@ -21864,6 +21893,24 @@ module.exports = {
             {/* Blueprints - Infinite Canvas with Draggable Components */}
             {viewMode === "blueprints" && (
               <div className="flex-1 relative flex flex-col bg-[#111111]" style={{ overflow: 'clip' }}>
+                {/* Pro Feature Lock Overlay */}
+                {!isPaidPlan && (
+                  <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#111111]/90 backdrop-blur-sm">
+                    <div className="text-center max-w-sm mx-4">
+                      <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-zinc-800/50 flex items-center justify-center border border-zinc-700/50">
+                        <Pencil className="w-8 h-8 text-zinc-400" />
+                      </div>
+                      <h3 className="text-xl font-bold text-white mb-2">AI Editor</h3>
+                      <p className="text-sm text-zinc-500 mb-6 leading-relaxed">Edit any element with natural language. Point, describe, and watch AI modify your design in real-time.</p>
+                      <button
+                        onClick={() => { setUpgradeFeature("editor"); setShowUpgradeModal(true); }}
+                        className="px-6 py-3 rounded-xl bg-[#F97316] text-white text-sm font-semibold hover:bg-[#EA580C] transition-colors"
+                      >
+                        Upgrade to Pro
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {/* Show loader when processing */}
                 {(isProcessing || isStreamingCode || isGeneratingBlueprintsComponent) ? (
                   <div className="w-full h-full flex items-center justify-center">
@@ -23761,7 +23808,7 @@ module.exports = {
                           if (isEditing) return;
                           setEditInput(`@${selectedNodeModal.id} `); 
                           setSelectedArchNode(selectedNodeModal.id);
-                          setShowFloatingEdit(true); 
+                          openEditWithAI(); 
                           setSelectedNodeModal(null); 
                         }}
                         className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 bg-zinc-800/10 border border-zinc-700 rounded-xl text-sm text-zinc-300 hover:bg-zinc-800/15 transition-colors"
@@ -23891,14 +23938,17 @@ module.exports = {
             <span className="text-[10px] font-medium">Flow</span>
           </button>
           
-          <button 
+          <button
             onClick={() => setMobilePanel("code")}
             className={cn(
               "flex flex-col items-center justify-center gap-1 rounded-xl transition-colors min-w-[64px] min-h-[56px]",
               mobilePanel === "code" && !showHistoryMode ? "text-zinc-300 bg-zinc-800/10" : "text-zinc-500"
             )}
           >
-            <Code className="w-6 h-6" />
+            <div className="relative">
+              <Code className="w-6 h-6" />
+              {!isPaidPlan && <Lock className="w-2.5 h-2.5 absolute -top-1 -right-1 text-zinc-600" />}
+            </div>
             <span className="text-[10px] font-medium">Code</span>
           </button>
           
@@ -24878,6 +24928,24 @@ module.exports = {
                 
                 {/* Code display with syntax highlighting - Visible for all, export locked */}
                 <div className="flex-1 overflow-auto bg-[#111111] relative">
+                  {/* Blur overlay for free users on mobile */}
+                  {!isPaidPlan && generatedCode && (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#111111]/60 backdrop-blur-[6px]">
+                      <div className="text-center max-w-xs mx-4">
+                        <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-zinc-800/50 flex items-center justify-center border border-zinc-700/50">
+                          <Zap className="w-6 h-6 text-zinc-400" />
+                        </div>
+                        <h3 className="text-lg font-bold text-white mb-1.5">Unlock Source Code</h3>
+                        <p className="text-xs text-zinc-500 mb-4">Get React + Tailwind code for your project</p>
+                        <button
+                          onClick={() => { setUpgradeFeature("code"); setShowUpgradeModal(true); }}
+                          className="px-5 py-2.5 rounded-xl bg-[#F97316] text-white text-xs font-semibold hover:bg-[#EA580C] transition-colors"
+                        >
+                          Upgrade to Pro
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {generatingFilePath && generatingFilePath === activeFilePath ? (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-3">
                       <Loader2 className="w-6 h-6 text-zinc-300 animate-spin" />
@@ -24917,7 +24985,7 @@ module.exports = {
                 {!showFloatingEdit && !isStreamingCode && (
                   <div className="flex-shrink-0 p-3 border-t border-zinc-800">
                     <button 
-                      onClick={() => { setShowFloatingEdit(true); setIsDirectEditMode(false); }} 
+                      onClick={() => { openEditWithAI(); setIsDirectEditMode(false); }} 
                       className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-zinc-800/50 border border-zinc-700 text-zinc-400 text-xs font-medium"
                     >
                       <Sparkles className="w-3.5 h-3.5 text-zinc-300" /> Edit with AI
@@ -25047,7 +25115,7 @@ module.exports = {
                           if (isDetected || isPossible) {
                             // Full prompt like on desktop
                             setEditInput(`@${node.name} Create this page with the same style and navigation as the main page`);
-                            setShowFloatingEdit(true);
+                            openEditWithAI();
                           }
                         }}
                       >
@@ -25123,7 +25191,7 @@ module.exports = {
                 {!showFloatingEdit && !isProcessing && (
                   <div className="flex-shrink-0 p-3 border-t border-zinc-800">
                     <button 
-                      onClick={() => { setShowFloatingEdit(true); setIsDirectEditMode(false); }} 
+                      onClick={() => { openEditWithAI(); setIsDirectEditMode(false); }} 
                       className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-zinc-800/50 border border-zinc-700 text-zinc-400 text-xs font-medium"
                     >
                       <Sparkles className="w-3.5 h-3.5 text-zinc-300" /> Edit with AI

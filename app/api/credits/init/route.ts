@@ -39,9 +39,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // User doesn't have a wallet - create one with 100 free credits
+    // User doesn't have a wallet - create one with 300 free credits (2 generations)
     console.log(`Creating wallet for user ${user.id} (${user.email})`);
-    
+
     // First, ensure membership exists
     const { data: existingMembership } = await adminClient
       .from("memberships")
@@ -64,12 +64,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create credit wallet with 0 credits (Sandbox tier - must upgrade to Pro for credits)
+    // Create credit wallet with 300 free credits (Free tier - 2 generations)
     const { data: newWallet, error: walletError } = await adminClient
       .from("credit_wallets")
       .insert({
         user_id: user.id,
-        monthly_credits: 0,
+        monthly_credits: 300,
         rollover_credits: 0,
         topup_credits: 0
       })
@@ -84,25 +84,25 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    // Add ledger entry for wallet initialization (0 credits - Sandbox tier)
+    // Add ledger entry for wallet initialization (300 free credits)
     await adminClient
       .from("credit_ledger")
       .insert({
         user_id: user.id,
         type: "credit",
         bucket: "monthly",
-        amount: 0,
-        reason: "sandbox_signup",
+        amount: 300,
+        reason: "free_signup",
         reference_id: "initial_grant_manual"
       });
 
-    console.log(`Created wallet with 0 credits (Sandbox) for user ${user.email}`);
+    console.log(`Created wallet with 300 credits (Free tier) for user ${user.email}`);
 
-    return NextResponse.json({ 
-      success: true, 
-      message: "Wallet created (Sandbox - 0 credits). Upgrade to Pro for credits.",
+    return NextResponse.json({
+      success: true,
+      message: "Wallet created (Free tier - 300 credits). 2 free generations!",
       wallet: newWallet,
-      totalCredits: 0
+      totalCredits: 300
     });
 
   } catch (error: any) {

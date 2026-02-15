@@ -8,7 +8,7 @@ import FocusLock from "react-focus-lock";
 interface UpgradeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  feature?: "code" | "download" | "publish" | "supabase" | "general" | "reconstruct";
+  feature?: "code" | "download" | "publish" | "supabase" | "general" | "reconstruct" | "library" | "editor";
 }
 
 const featureMessages = {
@@ -35,6 +35,14 @@ const featureMessages = {
   reconstruct: {
     title: "Credits Required",
     description: "You need credits to reconstruct UI from video.",
+  },
+  library: {
+    title: "Unlock Component Library",
+    description: "Extract, organize, and reuse UI components across all your projects.",
+  },
+  editor: {
+    title: "Unlock AI Editor",
+    description: "Edit any element with AI. Point, describe, watch AI modify your design in real-time.",
   },
 };
 
@@ -107,7 +115,7 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
                       </div>
                     </div>
                     <div className="space-y-1.5 text-xs text-zinc-400">
-                      <p>3,000 credits/month (~20 generations)</p>
+                      <p>15,000 credits/month (~100 generations)</p>
                       <p>Unlimited projects</p>
                       <p>React + Tailwind export</p>
                       <p>Flow Map & Design System</p>
@@ -120,7 +128,7 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
                     className="w-full py-3 rounded-lg bg-white text-black text-sm font-medium hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2"
                   >
                     <Zap className="w-4 h-4" />
-                    Check Pricing
+                    Try For Free
                   </a>
 
                   <p className="text-center text-[11px] text-zinc-600 mt-3">
