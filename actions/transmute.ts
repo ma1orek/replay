@@ -1467,12 +1467,31 @@ function fixBrokenHtmlTags(code: string): string {
   return fixed;
 }
 
+// Fix malformed double-tag patterns like <div <span className="..."> → <div className="...">
+function fixMalformedDoubleTags(code: string): string {
+  if (!code) return code;
+  let fixed = code;
+  let fixCount = 0;
+  let prev = "";
+  while (prev !== fixed) {
+    prev = fixed;
+    fixed = fixed.replace(/<(\w+)\s+<\w+(\s+)/g, (match, firstTag, trailing) => {
+      fixCount++;
+      return `<${firstTag}${trailing}`;
+    });
+  }
+  if (fixCount > 0) {
+    console.log(`[fixMalformedDoubleTags] Fixed ${fixCount} malformed double-tag patterns`);
+  }
+  return fixed;
+}
+
 function fixBrokenImageUrls(code: string): string {
   if (!code) return code;
-  
+
   const validPicsumIds = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60];
   let imageCounter = 0;
-  
+
   const getNextPicsumUrl = (width = 800, height = 600) => {
     const id = validPicsumIds[imageCounter % validPicsumIds.length];
     imageCounter++;
@@ -2035,6 +2054,7 @@ Generate the complete HTML file now:`;
     code = fixBrokenImageUrls(code);
     code = fixChartReference(code);
     code = fixBrokenHtmlTags(code);
+    code = fixMalformedDoubleTags(code);
     
     // Get token usage
     const usageMetadata = assemblyResult.response.usageMetadata;

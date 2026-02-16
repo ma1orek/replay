@@ -274,6 +274,27 @@ function fixBrokenHtmlTags(code: string): string {
   return fixed;
 }
 
+// Fix malformed double-tag patterns like <div <span className="..."> → <div className="...">
+// AI sometimes outputs nested opening tags which is invalid HTML/JSX
+function fixMalformedDoubleTags(code: string): string {
+  if (!code) return code;
+  let fixed = code;
+  let fixCount = 0;
+  // Repeatedly fix <tag1 <tag2 ... patterns until none remain
+  let prev = "";
+  while (prev !== fixed) {
+    prev = fixed;
+    fixed = fixed.replace(/<(\w+)\s+<\w+(\s+)/g, (match, firstTag, trailing) => {
+      fixCount++;
+      return `<${firstTag}${trailing}`;
+    });
+  }
+  if (fixCount > 0) {
+    console.log(`[fixMalformedDoubleTags] Fixed ${fixCount} malformed double-tag patterns`);
+  }
+  return fixed;
+}
+
 // Extract code from Gemini response
 function extractCodeFromResponse(response: string): string | null {
   let cleaned = response.trim();
@@ -977,10 +998,11 @@ Generate the HTML now using ONLY Design System colors.` });
             return;
           }
           
-          // Fix broken images, template literals, and orphaned HTML tags
+          // Fix broken images, template literals, orphaned HTML tags, and malformed double-tags
           cleanCode = fixBrokenImageUrls(cleanCode);
           cleanCode = fixTemplateLiteralErrors(cleanCode);
           cleanCode = fixBrokenHtmlTags(cleanCode);
+          cleanCode = fixMalformedDoubleTags(cleanCode);
           
           // Extract flow data if present
           let flowData = null;

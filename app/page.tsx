@@ -4463,7 +4463,14 @@ function ReplayToolContent() {
   const createPreviewUrl = useCallback((code: string): string => {
     // First stabilize any picsum URLs to prevent images from randomly changing
     let processedCode = stabilizePicsumUrls(code);
-    
+
+    // Fix malformed double-tag patterns: <div <span className="..."> → <div className="...">
+    let dtPrev = "";
+    while (dtPrev !== processedCode) {
+      dtPrev = processedCode;
+      processedCode = processedCode.replace(/<(\w+)\s+<\w+(\s+)/g, '<$1$2');
+    }
+
     // DETECT JSX/React code and convert to HTML
     // JSX code typically starts with comments, imports, or function declarations
     const isJsxCode = /^\/\/\s*(Next\.js|React|App|Page|Component)/i.test(processedCode.trim()) ||
