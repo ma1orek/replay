@@ -52,11 +52,12 @@ interface CitationResult {
 }
 
 /**
- * Test query on ChatGPT
+ * Test query on ChatGPT (with web search enabled via Responses API)
+ * Uses web_search_preview tool so GPT can find published articles about Replay
  */
 async function testChatGPT(query: string): Promise<CitationResult> {
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -64,14 +65,8 @@ async function testChatGPT(query: string): Promise<CitationResult> {
       },
       body: JSON.stringify({
         model: "gpt-4o",
-        messages: [
-          {
-            role: "user",
-            content: query
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 1000
+        tools: [{ type: "web_search_preview" }],
+        input: query
       })
     });
 
@@ -80,7 +75,23 @@ async function testChatGPT(query: string): Promise<CitationResult> {
     }
 
     const data = await response.json();
-    const fullResponse = data.choices[0]?.message?.content || "";
+    // Responses API returns output array with message items
+    let fullResponse = "";
+    if (data.output && Array.isArray(data.output)) {
+      for (const item of data.output) {
+        if (item.type === "message" && item.content) {
+          for (const block of item.content) {
+            if (block.type === "output_text") {
+              fullResponse += block.text;
+            }
+          }
+        }
+      }
+    }
+    // Fallback to choices format if Responses API format not found
+    if (!fullResponse && data.choices) {
+      fullResponse = data.choices[0]?.message?.content || "";
+    }
 
     return analyzeCitation("chatgpt", query, fullResponse);
   } catch (error: any) {
@@ -148,7 +159,8 @@ async function testClaude(query: string): Promise<CitationResult> {
 }
 
 /**
- * Test query on Gemini
+ * Test query on Gemini (with Google Search grounding)
+ * Uses google_search tool so Gemini can find published articles about Replay
  */
 async function testGemini(query: string): Promise<CitationResult> {
   try {
@@ -163,6 +175,7 @@ async function testGemini(query: string): Promise<CitationResult> {
               parts: [{ text: query }]
             }
           ],
+          tools: [{ google_search: {} }],
           generationConfig: {
             temperature: 0.7,
             maxOutputTokens: 1000
