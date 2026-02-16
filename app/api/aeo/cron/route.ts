@@ -63,6 +63,7 @@ export async function GET(req: Request) {
     if (process.env.OPENAI_API_KEY) availablePlatforms.push("chatgpt");
     if (process.env.ANTHROPIC_API_KEY) availablePlatforms.push("claude");
     if (process.env.GEMINI_API_KEY) availablePlatforms.push("gemini");
+    if (process.env.PERPLEXITY_API_KEY) availablePlatforms.push("perplexity");
     log.push(`📡 Available platforms: ${availablePlatforms.join(", ") || "NONE"}`);
 
     // STEP 1: Monitor AI Citations (only if we have API keys)

@@ -16,6 +16,7 @@ const supabase = createClient(
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const GOOGLE_API_KEY = process.env.GEMINI_API_KEY;
+const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 
 // Tool names to track (Replay + competitors)
 const TRACKED_TOOLS = [
@@ -195,6 +196,54 @@ async function testGemini(query: string): Promise<CitationResult> {
 }
 
 /**
+ * Test query on Perplexity
+ */
+async function testPerplexity(query: string): Promise<CitationResult> {
+  try {
+    const response = await fetch("https://api.perplexity.ai/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${PERPLEXITY_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "sonar-pro",
+        messages: [
+          {
+            role: "user",
+            content: query
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 1000
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Perplexity API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const fullResponse = data.choices?.[0]?.message?.content || "";
+
+    return analyzeCitation("perplexity", query, fullResponse);
+  } catch (error: any) {
+    console.error("Perplexity test error:", error);
+    return {
+      platform: "perplexity",
+      query,
+      mentionedTools: [],
+      replayMentioned: false,
+      replayPosition: null,
+      replayContext: null,
+      competitorMentioned: [],
+      fullResponse: `Error: ${error.message}`,
+      responseLength: 0
+    };
+  }
+}
+
+/**
  * Analyze AI response to identify tool mentions and positions
  */
 function analyzeCitation(
@@ -203,14 +252,11 @@ function analyzeCitation(
   response: string
 ): CitationResult {
   const responseLower = response.toLowerCase();
-  const mentionedTools: Array<{ tool: string; position: number; context: string }> = [];
   const competitorMentioned: string[] = [];
 
-  let replayMentioned = false;
-  let replayPosition: number | null = null;
-  let replayContext: string | null = null;
+  // First pass: find all tool mentions with their CHARACTER INDEX in text
+  const rawMentions: Array<{ tool: string; charIndex: number; context: string }> = [];
 
-  // Find all tool mentions with their positions
   TRACKED_TOOLS.forEach(tool => {
     const toolLower = tool.toLowerCase();
     const index = responseLower.indexOf(toolLower);
@@ -221,23 +267,41 @@ function analyzeCitation(
       const end = Math.min(response.length, index + tool.length + 50);
       const context = response.substring(start, end).trim();
 
-      // Determine position (count how many tools were mentioned before this one)
-      const position = mentionedTools.length + 1;
+      rawMentions.push({ tool, charIndex: index, context });
+    }
+  });
 
-      mentionedTools.push({
-        tool,
-        position,
-        context
-      });
+  // Sort by actual text position (character index) — earliest mention = position 1
+  rawMentions.sort((a, b) => a.charIndex - b.charIndex);
 
-      // Check if this is Replay
-      if (toolLower.includes("replay")) {
-        replayMentioned = true;
-        replayPosition = position;
-        replayContext = context;
-      } else {
-        competitorMentioned.push(tool);
-      }
+  // Second pass: assign position based on text order + deduplicate (replay/replay.build)
+  const mentionedTools: Array<{ tool: string; position: number; context: string }> = [];
+  const seenTools = new Set<string>();
+
+  let replayMentioned = false;
+  let replayPosition: number | null = null;
+  let replayContext: string | null = null;
+
+  rawMentions.forEach(mention => {
+    // Deduplicate: "replay" and "replay.build" shouldn't both count
+    const normalizedTool = mention.tool.toLowerCase().replace(/\..*$/, "");
+    if (seenTools.has(normalizedTool)) return;
+    seenTools.add(normalizedTool);
+
+    const position = mentionedTools.length + 1;
+
+    mentionedTools.push({
+      tool: mention.tool,
+      position,
+      context: mention.context
+    });
+
+    if (mention.tool.toLowerCase().includes("replay")) {
+      replayMentioned = true;
+      replayPosition = position;
+      replayContext = mention.context;
+    } else {
+      competitorMentioned.push(mention.tool);
     }
   });
 
@@ -315,6 +379,7 @@ async function updateDailyMetrics(date: string) {
     const chatgptCitations = citations.filter(c => c.ai_platform === "chatgpt");
     const claudeCitations = citations.filter(c => c.ai_platform === "claude");
     const geminiCitations = citations.filter(c => c.ai_platform === "gemini");
+    const perplexityCitations = citations.filter(c => c.ai_platform === "perplexity");
 
     const chatgptShare = chatgptCitations.length > 0
       ? (chatgptCitations.filter(c => c.replay_mentioned).length / chatgptCitations.length) * 100
@@ -324,6 +389,9 @@ async function updateDailyMetrics(date: string) {
       : 0;
     const geminiShare = geminiCitations.length > 0
       ? (geminiCitations.filter(c => c.replay_mentioned).length / geminiCitations.length) * 100
+      : 0;
+    const perplexityShare = perplexityCitations.length > 0
+      ? (perplexityCitations.filter(c => c.replay_mentioned).length / perplexityCitations.length) * 100
       : 0;
 
     // Top winning queries
@@ -361,7 +429,7 @@ async function updateDailyMetrics(date: string) {
       position_3_count: position3,
       chatgpt_share_of_voice: chatgptShare,
       claude_share_of_voice: claudeShare,
-      perplexity_share_of_voice: 0, // TODO: Add Perplexity
+      perplexity_share_of_voice: perplexityShare,
       gemini_share_of_voice: geminiShare,
       top_queries: topQueries,
       losing_queries: losingQueries,
@@ -381,7 +449,7 @@ async function updateDailyMetrics(date: string) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { queries, platforms = ["chatgpt", "claude", "gemini"], testMode = false } = body;
+    const { queries, platforms = ["chatgpt", "claude", "gemini", "perplexity"], testMode = false } = body;
 
     // Start job log
     const { data: jobLog } = await supabase
@@ -415,6 +483,7 @@ export async function POST(req: Request) {
       if (p === "chatgpt" && !OPENAI_API_KEY) return false;
       if (p === "claude" && !ANTHROPIC_API_KEY) return false;
       if (p === "gemini" && !GOOGLE_API_KEY) return false;
+      if (p === "perplexity" && !PERPLEXITY_API_KEY) return false;
       return true;
     });
 
@@ -442,6 +511,8 @@ export async function POST(req: Request) {
             result = await testClaude(query);
           } else if (platform === "gemini") {
             result = await testGemini(query);
+          } else if (platform === "perplexity") {
+            result = await testPerplexity(query);
           } else {
             continue;
           }
@@ -537,6 +608,8 @@ export async function GET(req: Request) {
       result = await testClaude(query);
     } else if (platform === "gemini") {
       result = await testGemini(query);
+    } else if (platform === "perplexity") {
+      result = await testPerplexity(query);
     } else {
       return NextResponse.json({ error: "Invalid platform" }, { status: 400 });
     }
