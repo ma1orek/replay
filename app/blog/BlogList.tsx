@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Clock, Calendar, Tag, ChevronLeft, Search, BookOpen, TrendingUp, Zap } from "lucide-react";
+import { ArrowRight, Clock, Calendar, Tag, ChevronLeft, ChevronRight, Search, BookOpen, TrendingUp, Zap } from "lucide-react";
 import Logo from "@/components/Logo";
+
+const POSTS_PER_PAGE = 25;
 
 export interface BlogPost {
   id: string;
@@ -31,20 +33,40 @@ const TONES = [
 export default function BlogList({ initialPosts }: { initialPosts: BlogPost[] }) {
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Filter posts
-  const filteredPosts = initialPosts.filter(post => {
+  const filteredPosts = useMemo(() => initialPosts.filter(post => {
     const matchesFilter = filter === "all" || post.tone === filter;
-    const matchesSearch = searchQuery === "" || 
+    const matchesSearch = searchQuery === "" ||
       post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.meta_description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.target_keyword?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesFilter && matchesSearch;
-  });
+  }), [initialPosts, filter, searchQuery]);
 
-  // Separate featured (first) and rest
-  const featuredPost = filteredPosts[0];
-  const restPosts = filteredPosts.slice(1);
+  // Pagination
+  const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE);
+  const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
+  const paginatedPosts = filteredPosts.slice(startIndex, startIndex + POSTS_PER_PAGE);
+
+  // Separate featured (first on page 1) and rest
+  const featuredPost = currentPage === 1 ? paginatedPosts[0] : null;
+  const restPosts = currentPage === 1 ? paginatedPosts.slice(1) : paginatedPosts;
+
+  // Reset to page 1 when filter/search changes
+  const handleFilterChange = (value: string) => {
+    setFilter(value);
+    setCurrentPage(1);
+  };
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <div className="min-h-screen bg-[#030303]">
@@ -92,7 +114,7 @@ export default function BlogList({ initialPosts }: { initialPosts: BlogPost[] })
                 type="text"
                 placeholder="Search articles..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-full md:w-72 pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-[#FF6E3C]/50 transition-colors"
               />
             </div>
@@ -109,7 +131,7 @@ export default function BlogList({ initialPosts }: { initialPosts: BlogPost[] })
               return (
                 <button
                   key={tone.value}
-                  onClick={() => setFilter(tone.value)}
+                  onClick={() => handleFilterChange(tone.value)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
                     filter === tone.value
                       ? "bg-[#FF6E3C] text-white"
@@ -218,15 +240,15 @@ export default function BlogList({ initialPosts }: { initialPosts: BlogPost[] })
                             {post.read_time_minutes} min
                           </span>
                         </div>
-                        
+
                         <h2 className="text-lg font-semibold text-white group-hover:text-[#FF6E3C] transition-colors mb-3 line-clamp-2">
                           {post.title}
                         </h2>
-                        
+
                         <p className="text-sm text-white/50 line-clamp-3 mb-4 flex-grow">
                           {post.meta_description?.replace(/^>?\s*\*?\*?TL;?DR:?\*?\*?:?\s*/i, '')}
                         </p>
-                        
+
                         <div className="flex items-center justify-between pt-4 border-t border-white/5">
                           {post.target_keyword && (
                             <span className="text-xs text-white/30 truncate max-w-[120px]">
@@ -241,6 +263,66 @@ export default function BlogList({ initialPosts }: { initialPosts: BlogPost[] })
                     </motion.article>
                   ))}
                 </div>
+              )}
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 pt-10">
+                  <button
+                    onClick={() => goToPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-medium bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft className="w-4 h-4" /> Prev
+                  </button>
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(page => {
+                      // Show first, last, current, and neighbors
+                      if (page === 1 || page === totalPages) return true;
+                      if (Math.abs(page - currentPage) <= 1) return true;
+                      return false;
+                    })
+                    .reduce<(number | "ellipsis")[]>((acc, page, idx, arr) => {
+                      if (idx > 0 && page - (arr[idx - 1] as number) > 1) {
+                        acc.push("ellipsis");
+                      }
+                      acc.push(page);
+                      return acc;
+                    }, [])
+                    .map((item, idx) =>
+                      item === "ellipsis" ? (
+                        <span key={`ellipsis-${idx}`} className="px-2 text-white/30">...</span>
+                      ) : (
+                        <button
+                          key={item}
+                          onClick={() => goToPage(item as number)}
+                          className={`w-10 h-10 rounded-xl text-sm font-medium transition-all ${
+                            currentPage === item
+                              ? "bg-[#FF6E3C] text-white"
+                              : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70"
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      )
+                    )}
+
+                  <button
+                    onClick={() => goToPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-medium bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    Next <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* Page info */}
+              {totalPages > 1 && (
+                <p className="text-center text-sm text-white/30 mt-4">
+                  Showing {startIndex + 1}–{Math.min(startIndex + POSTS_PER_PAGE, filteredPosts.length)} of {filteredPosts.length} articles
+                </p>
               )}
             </div>
           )}
