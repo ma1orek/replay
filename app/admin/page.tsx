@@ -3343,7 +3343,17 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                   {previewGeneration.code && previewGeneration.code.length > 200 ? (
                     <>
                       <iframe
-                        srcDoc={previewGeneration.code}
+                        srcDoc={(() => {
+                          // Inject Alpine.js init script to fix blank previews
+                          const alpineInit = `<script>
+(function(){function d(){try{var r=document.querySelector('[x-data]');if(r&&r._x_dataStack&&r._x_dataStack[0]){var s=r._x_dataStack[0];if(s.mobileMenuOpen!==undefined)s.mobileMenuOpen=false;if(s.menuOpen!==undefined)s.menuOpen=false;if(s.isMenuOpen!==undefined)s.isMenuOpen=false;if(s.showMenu!==undefined)s.showMenu=false;if(s.currentPage!==undefined&&!s.currentPage)s.currentPage='home';if(s.page!==undefined&&!s.page)s.page='home';if(s.activeTab!==undefined&&!s.activeTab)s.activeTab='home';if(s.activeView!==undefined&&!s.activeView)s.activeView='home';}}catch(e){}}document.addEventListener('alpine:init',d);document.addEventListener('alpine:initialized',d);setTimeout(d,50);setTimeout(d,200);setTimeout(d,500);})();
+</script>`;
+                          const code = previewGeneration.code;
+                          if (code.includes('</body>')) {
+                            return code.replace('</body>', alpineInit + '</body>');
+                          }
+                          return code + alpineInit;
+                        })()}
                         className="w-full h-full border-0"
                         sandbox="allow-scripts allow-same-origin"
                         title="Generation Preview"
