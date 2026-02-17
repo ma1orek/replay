@@ -5832,8 +5832,26 @@ Ready to generate from your own videos? Upgrade to Pro to start creating your ow
     try {
       localStorage.setItem("replay_generated_code", generatedCode);
       localStorage.setItem("replay_last_edit_time", Date.now().toString());
-    } catch (e) {
-      console.error("Error saving code:", e);
+    } catch (e: any) {
+      // QuotaExceededError — clear old data and retry once
+      if (e?.name === "QuotaExceededError") {
+        try {
+          // Remove non-essential cached items to free space
+          const keysToRemove: string[] = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (key.startsWith("replay_cache_") || key.startsWith("replay_history_") || key === "replay_generated_code")) {
+              keysToRemove.push(key);
+            }
+          }
+          keysToRemove.forEach(k => localStorage.removeItem(k));
+          // Retry save
+          localStorage.setItem("replay_generated_code", generatedCode);
+          localStorage.setItem("replay_last_edit_time", Date.now().toString());
+        } catch {
+          // Still failed — Supabase is the source of truth, so this is OK
+        }
+      }
     }
   }, [generatedCode, hasLoadedFromStorage]);
 

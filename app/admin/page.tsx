@@ -3339,17 +3339,29 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
             <div className="flex-1 overflow-hidden">
               {/* Preview Tab */}
               {previewTab === "preview" && (
-                <div className="w-full h-full bg-white">
-                  {previewGeneration.code ? (
-                    <iframe
-                      srcDoc={previewGeneration.code}
-                      className="w-full h-full border-0"
-                      sandbox="allow-scripts allow-same-origin"
-                      title="Generation Preview"
-                    />
+                <div className="w-full h-full bg-white relative">
+                  {previewGeneration.code && previewGeneration.code.length > 200 ? (
+                    <>
+                      <iframe
+                        srcDoc={previewGeneration.code}
+                        className="w-full h-full border-0"
+                        sandbox="allow-scripts allow-same-origin"
+                        title="Generation Preview"
+                      />
+                      {/* Code length badge */}
+                      <div className="absolute bottom-2 left-2 px-2 py-1 rounded bg-black/60 text-white/60 text-[10px] font-mono">
+                        {(previewGeneration.code.length / 1000).toFixed(1)}K chars
+                      </div>
+                    </>
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-black/30">
-                      No preview available
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-black/40">
+                      <span className="text-lg">No preview available</span>
+                      <span className="text-sm">
+                        {previewGeneration.code
+                          ? `Code too short (${previewGeneration.code.length} chars) — generation likely failed`
+                          : "No code generated"
+                        }
+                      </span>
                     </div>
                   )}
                 </div>
