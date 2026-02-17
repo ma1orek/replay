@@ -203,7 +203,50 @@ export async function GET(req: Request) {
       }
     }
 
-    // STEP 4: Performance Tracking (check if recently published content improved citations)
+    // STEP 4: Auto-Crosspost to Dev.to (newly published articles)
+    log.push("\n📢 STEP 4: Auto-Crossposting...");
+    if (process.env.DEVTO_API_KEY) {
+      try {
+        // Find articles published in last 24h that haven't been crossposted
+        const cutoff24h = new Date();
+        cutoff24h.setHours(cutoff24h.getHours() - 24);
+
+        const { data: recentPosts } = await supabase
+          .from("blog_posts")
+          .select("slug, title")
+          .eq("status", "published")
+          .gte("published_at", cutoff24h.toISOString())
+          .limit(5);
+
+        if (recentPosts && recentPosts.length > 0) {
+          for (const post of recentPosts) {
+            try {
+              const crosspostResp = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/aeo/crosspost-devto`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ slug: post.slug })
+              });
+              const crosspostData = await crosspostResp.json();
+              if (crosspostData.success) {
+                log.push(`   ✅ Dev.to: ${post.title} → ${crosspostData.devtoUrl}`);
+              } else {
+                log.push(`   ⚠️ Dev.to skip: ${post.slug} — ${crosspostData.error || "already posted"}`);
+              }
+            } catch (e: any) {
+              log.push(`   ❌ Dev.to error for ${post.slug}: ${e.message}`);
+            }
+          }
+        } else {
+          log.push(`   ℹ️ No new articles to crosspost`);
+        }
+      } catch (error: any) {
+        log.push(`   ❌ Crosspost error: ${error.message}`);
+      }
+    } else {
+      log.push(`   ⏸️ Skipped — DEVTO_API_KEY not configured`);
+    }
+
+    // STEP 5: Performance Tracking (check if recently published content improved citations)
     log.push("\n📈 STEP 4: Tracking Performance...");
     try {
       // Get content published 48 hours ago
@@ -279,7 +322,7 @@ export async function GET(req: Request) {
       completed_at: new Date().toISOString(),
       summary: {
         duration_seconds: parseFloat(duration),
-        steps_completed: 4,
+        steps_completed: 5,
         log: log.join("\n")
       }
     });

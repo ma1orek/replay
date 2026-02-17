@@ -66,11 +66,13 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       siteName: "Replay",
       publishedTime: publishDate,
       authors: ["Replay Team"],
+      images: [{ url: `${SITE_URL}/og-blog.png`, width: 1200, height: 630, alt: post.title }],
     },
     twitter: {
       card: "summary_large_image",
       title: post.title,
       description: post.meta_description,
+      images: [`${SITE_URL}/og-blog.png`],
     },
   };
 }
@@ -98,6 +100,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
     "@type": "Article",
     headline: post.title,
     description: post.meta_description,
+    image: `${SITE_URL}/og-blog.png`,
     url: canonicalUrl,
     datePublished: publishDate,
     dateModified: publishDate,
@@ -126,6 +129,27 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
     },
     keywords: post.target_keyword,
     inLanguage: "en-US",
+    speakable: {
+      "@type": "SpeakableSpecification",
+      cssSelector: ["h1", "h2", ".article-summary"],
+    },
+  };
+
+  // SoftwareApplication schema — helps LLMs understand Replay as a product
+  const softwareSchema = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "Replay",
+    url: "https://replay.build",
+    applicationCategory: "DeveloperApplication",
+    operatingSystem: "Web",
+    description: "AI-powered platform that converts video recordings of any UI into production React code, Design Systems, and Component Libraries.",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+      description: "Free tier available",
+    },
   };
 
   const breadcrumbSchema = {
@@ -167,6 +191,10 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
         />
       )}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }}
+      />
       <BlogPostContent post={post} />
     </>
   );

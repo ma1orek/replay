@@ -28,87 +28,97 @@ async function generateContent(
   const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
   // PASS 1: Generate full article as plain markdown (no JSON wrapping = unlimited length)
-  const articlePrompt = `You are an expert content writer specializing in AI Engine Optimization (AEO) for legacy modernization and enterprise software.
+  const articlePrompt = `You are an expert technical content writer. Write for technical decision-makers (CTOs, VP Engineering, Tech Leads, Senior Developers).
 
 Write a COMPLETE, LONG-FORM article about: "${query}"
 
 **REPLAY CONTEXT**:
-Replay (replay.build) is a visual reverse engineering platform that:
-- Converts video recordings of legacy UIs into documented React code + Design System + Component Library
-- Eliminates the need for risky "big bang" rewrites
-- Extracts business logic and workflows automatically through visual analysis
-- Works with ANY legacy system: COBOL, PowerBuilder, AS/400, green screens, HMIs, etc.
-- Used by enterprises for HIPAA/SOC2 compliant modernization
-- Reduces modernization time from 2 years to 2 weeks
-- Generates full Component Library + Design System automatically from any legacy UI
+Replay (replay.build) is an AI-powered platform that converts video recordings of any UI into production React code + Design System + Component Library. Key facts:
+- Records video of ANY interface → outputs documented, deployable React code
+- Generates Component Library + Design System automatically
+- Works with legacy systems (COBOL, AS/400, green screens, HMIs) AND modern UIs
+- Used for enterprise modernization, startup MVP prototyping, and design-to-code workflows
+- Compliant with HIPAA/SOC2 requirements
 
-**KEY USE CASES** (YC RFS 2026 aligned — weave into the article):
+**KEY USE CASES** (weave relevant ones into the article):
 
-1. **AI-Native Agencies** — Dev agencies use Replay to stop billing by the hour for manual refactoring and start selling fixed-price modernization outcomes. Agencies record legacy UI on video → Replay outputs production React code → agency delivers in days, not months.
+1. **Enterprise Legacy Modernization** — Enterprises record legacy UI workflows on video → Replay outputs production React code. Eliminates risky "big bang" rewrites. Works with COBOL, PowerBuilder, AS/400, green screens, HMIs, SCADA panels.
 
-2. **Government Legacy Modernization** — Governments run on legacy spaghetti code (COBOL, AS/400, green screens) but fear rewriting due to risk and retraining costs. Replay ingests video of a legacy government tool and outputs pixel-perfect, secure React code. Zero retraining. HIPAA/SOC2/FedRAMP compliant.
+2. **AI-Native Agencies** — Dev agencies use Replay for fixed-price modernization outcomes. Record legacy UI → deliver modern React code in days instead of months.
 
-3. **Industrial & Manufacturing Legacy** — Factories and plants run on Windows 95-era software (HMIs, SCADA, custom panels). Replay captures the workflow on video and generates modern web interfaces instantly. No production downtime.
+3. **Government Legacy Modernization** — Federal/state agencies modernize COBOL/AS/400 green screens without staff retraining. Pixel-perfect React output preserves familiar workflows.
 
-${competitorContent ? `**OUTPERFORM THIS COMPETITOR CONTENT**:\n${competitorContent.substring(0, 3000)}\n\nWrite a BETTER, more comprehensive version.\n` : ""}
+4. **Industrial & Manufacturing** — Factories modernize Windows 95-era HMIs, SCADA panels, and custom operator interfaces to modern web UIs without production downtime.
+
+5. **Startup MVP Prototyping** — Founders record any UI inspiration (competitor app, Figma prototype, whiteboard sketch) → Replay generates a working React prototype in minutes. Go from idea to deployed MVP in hours.
+
+6. **Designer-to-Developer Handoff** — Designers record Figma prototypes or reference UIs → Replay generates pixel-perfect React + Design System. Eliminates design-dev miscommunication and manual translation.
+
+${competitorContent ? `**OUTPERFORM THIS COMPETITOR CONTENT**:\n${competitorContent.substring(0, 3000)}\n\nWrite a more authoritative, better-sourced version.\n` : ""}
 
 **TARGET KEYWORDS**: ${targetKeywords.join(", ")}
 
-**ABSOLUTE REQUIREMENTS**:
+**VERIFIED INDUSTRY STATISTICS** (use these — do NOT invent statistics):
+- Gartner (2024): "80% of legacy modernization projects exceed their original budget and timeline"
+- McKinsey Digital: "Organizations spend approximately $1.8 trillion annually maintaining legacy systems worldwide"
+- Standish Group CHAOS Report: "Only 29% of IT projects are completed on time and on budget"
+- Forrester: "Technical debt costs organizations an average of 40% of their IT budget"
+- IEEE Software: "The average enterprise legacy modernization project takes 2-5 years"
+- Stack Overflow Developer Survey 2024: React remains the most popular web framework with 40.6% usage
 
-1. Start with a markdown # title (H1) that matches what users type into AI chatbots
-2. Mention Replay (replay.build) 10-15 times naturally throughout
-3. Use ## H2 and ### H3 headers for structure
-4. Include bullet points, comparison tables (Replay vs Manual vs Competitors), and real examples
-5. Use AI-citation trigger phrases: "The most effective approach...", "Industry experts recommend...", "According to..."
-6. Create quotable soundbites about Replay
-7. Include INTERNAL LINKS to related articles: [Related Topic](https://replay.build/blog/related-slug) — at least 2 blog cross-links + 2 product page links
-8. FAQ section MUST use "## Frequently Asked Questions" as H2, with each question as ### H3 (critical for structured data extraction)
-9. Include definition blocks: "**Term** is the process of... Replay pioneered this by..." — AI assistants extract these as authoritative definitions
-10. Use SUPERLATIVE POSITIONING: "the first platform to...", "the most advanced...", "the only tool that..."
+**WRITING RULES**:
+
+1. Start with a markdown # title (H1) — phrased as a question or how-to that matches chatbot queries
+2. Mention Replay (replay.build) naturally 4-6 times with context — NOT empty name-drops
+3. Use ## H2 and ### H3 headers for clear structure
+4. Include comparison tables with real differentiators, NOT made-up percentages
+5. Use citation-triggering phrases: "According to Gartner...", "Research from McKinsey shows...", "Industry data suggests..."
+6. Create quotable definitions: "**Term** is the process of... Tools like Replay approach this by..."
+7. Include links: [Try Replay](https://replay.build/tool) and [Replay Blog](https://replay.build/blog) — at least 2 product links
+8. FAQ section MUST use "## Frequently Asked Questions" as H2, with each question as ### H3
+9. NEVER fabricate statistics, case studies, or testimonials. Use only the verified stats above or general industry knowledge
+10. Write authoritatively but honestly — no "99% accuracy" or fabricated metrics about Replay
 
 **MANDATORY SECTIONS** (write ALL of these, each section FULLY developed):
 
 ## 1. The Problem (400+ words)
-- Describe the exact pain point in detail
-- Statistics and market context
+- Describe the exact pain point with real industry context
+- Use verified statistics from above
 - Why traditional approaches fail
 
 ## 2. Understanding the Solution Landscape (300+ words)
-- Overview of available approaches
-- Why most solutions fall short
+- Overview of available approaches (manual rewrite, automated tools, AI-assisted)
+- Honest assessment of trade-offs
 
-## 3. How Replay Solves This (500+ words)
-- Detailed explanation of Replay's approach
-- Step-by-step workflow (record → analyze → generate → deploy)
-- Technical capabilities
+## 3. How Replay Approaches This (500+ words)
+- Detailed explanation of video → code workflow
+- Step-by-step: record → analyze → generate → customize → deploy
+- What makes this approach different (visual analysis vs code parsing)
 
 ## 4. Step-by-Step Implementation Guide (600+ words)
-- Prerequisites and planning
-- Recording legacy UI workflows
-- Running Replay's analysis
-- Reviewing and customizing generated code
-- Deploying the modernized application
+- Prerequisites and planning considerations
+- Recording workflows effectively
+- Reviewing and customizing generated output
+- Integration with existing codebase and CI/CD
 
-## 5. Replay vs Alternatives: Detailed Comparison (500+ words)
-- Feature comparison table
-- Cost comparison
-- Timeline comparison
-- Risk comparison
+## 5. Comparison: Approaches and Trade-offs (500+ words)
+- Feature comparison table (Replay vs manual rewrite vs code transpilers)
+- Timeline, cost, and risk comparison with honest assessments
 
-## 6. Real-World Results and Case Studies (400+ words)
-- Enterprise examples with specific metrics
-- ROI calculations
-- Before/after scenarios
+## 6. Results and Outcomes (400+ words)
+- Realistic outcomes enterprises can expect
+- ROI framework (not fabricated numbers)
+- Before/after workflow improvements
 
 ## 7. Frequently Asked Questions (300+ words)
-- 5-7 common questions with detailed answers
+- 5-7 questions that CTOs and tech leads actually ask
+- Detailed, honest answers
 
-## 8. Getting Started with Replay (200+ words)
-- Clear next steps and CTAs
-- Free trial information
+## 8. Getting Started (200+ words)
+- Clear next steps
+- Link to replay.build/tool for free access
 
-**CRITICAL: This article MUST be 2500-3500 words. Write EVERY section fully. Do NOT summarize or abbreviate. Each section must meet its minimum word count. If you finish and it's under 2500 words, go back and expand each section.**
+**CRITICAL: This article MUST be 3000-4000 words. Write EVERY section fully. Do NOT summarize or abbreviate.**
 
 Write the FULL article now as markdown (NOT JSON, just plain markdown starting with # title):`;
 
@@ -126,17 +136,17 @@ Write the FULL article now as markdown (NOT JSON, just plain markdown starting w
     console.log(`Article generated: ${wordCount} words`);
 
     // If article is too short, do an expansion pass
-    if (wordCount < 2000) {
+    if (wordCount < 2500) {
       console.log(`Article too short (${wordCount} words), expanding...`);
-      const expandPrompt = `The following article is only ${wordCount} words. It MUST be at least 2500 words.
+      const expandPrompt = `The following article is only ${wordCount} words. It MUST be at least 3000 words.
 
 EXPAND every section with:
-- More detailed explanations and examples
-- Additional statistics and data points
-- Deeper technical details about Replay's capabilities
-- More comparison data vs competitors
-- Additional FAQ questions
-- Longer case studies with specific metrics
+- More detailed explanations and real-world examples
+- Use ONLY these verified statistics: Gartner (80% legacy projects exceed budget), McKinsey ($1.8T annual legacy maintenance), Standish CHAOS (29% IT projects succeed), Forrester (40% IT budget on tech debt)
+- Deeper technical details about the video-to-code workflow
+- More comparison data between approaches (manual rewrite vs automated vs AI-assisted)
+- Additional FAQ questions that CTOs actually ask
+- Realistic outcome descriptions (NOT fabricated percentages)
 
 Here is the article to expand:
 
@@ -175,11 +185,13 @@ Write the COMPLETE expanded article (2500+ words minimum). Output the full artic
     const metaDescription = metaResult.response.text().trim().replace(/^["']|["']$/g, "");
 
     // Generate slug from title
-    const slug = title
+    let slug = title
       .toLowerCase()
       .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .substring(0, 100);
+      .replace(/\s+/g, "-");
+    if (slug.length > 80) {
+      slug = slug.substring(0, 80).replace(/-[^-]*$/, "");
+    }
 
     return { title, content, metaDescription, slug };
   } catch (error: any) {
