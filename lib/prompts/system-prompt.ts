@@ -883,11 +883,12 @@ Implementation with Alpine.js:
 
 🚨 SIDEBAR RESPONSIVENESS (CRITICAL!):
 If the design has a sidebar/left panel:
-- Desktop grid MUST use class="hidden lg:grid" (NOT just "grid"!)
-- Mobile top nav MUST use class="lg:hidden" with hamburger button
-- Mobile slide-out drawer MUST use class="lg:hidden" with x-show toggle
+- Use flex layout: <div class="flex min-h-screen"> with <aside class="hidden lg:flex lg:w-[250px]"> + <main class="flex-1">
+- Only ONE <main> element! Content written ONCE for all screen sizes!
+- Desktop sidebar: class="hidden lg:flex" (invisible on mobile, visible on lg+)
+- Mobile top nav: class="lg:hidden" with hamburger button
+- ❌ NEVER two <main> elements (desktop + mobile) — mobile one will be EMPTY!
 - ❌ NEVER show a 250px sidebar on mobile — it covers the entire screen!
-- ❌ class="grid" alone = BROKEN on mobile! Must be "hidden lg:grid"!
 
 ═══════════════════════════════════════════════════════════════════════════════
 🧱 HTML STRUCTURE TEMPLATE

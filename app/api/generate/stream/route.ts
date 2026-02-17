@@ -861,12 +861,12 @@ If the video shows a dashboard, admin panel, SaaS app, or ANY interface with sid
 ❌ NEVER use position:sticky for the sidebar without grid/flex parent!
 ❌ These cause the main content to OVERLAP/GO UNDER the sidebar!
 
-✅ ALWAYS use CSS Grid for sidebar+main layout:
-✅ The sidebar and main content MUST be siblings in a grid container
+✅ ALWAYS use flex layout for sidebar+main:
 ✅ Main area MUST have min-width:0 and overflow-x:hidden
+✅ SINGLE <main> element — content renders once, works on ALL screen sizes!
 
 MANDATORY STRUCTURE (match the VIDEO's theme for colors!):
-<!-- Desktop: sidebar + main grid. Mobile: top nav + stacked content -->
+<!-- Responsive sidebar: desktop shows sidebar, mobile shows hamburger + drawer -->
 <div x-data="{ sidebarOpen: false }" class="min-h-screen">
   <!-- MOBILE TOP NAV (shown < lg) -->
   <div class="lg:hidden flex items-center justify-between p-4 border-b" style="border-color:var(--border,#e5e7eb);">
@@ -875,44 +875,37 @@ MANDATORY STRUCTURE (match the VIDEO's theme for colors!):
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
     </button>
   </div>
-  <!-- MOBILE SLIDE-OUT MENU -->
+  <!-- MOBILE SLIDE-OUT DRAWER (overlay on mobile) -->
   <div x-show="sidebarOpen" @click.away="sidebarOpen=false" x-transition class="lg:hidden fixed inset-0 z-40">
     <div class="absolute inset-0 bg-black/50" @click="sidebarOpen=false"></div>
     <aside class="relative z-50 w-64 h-full overflow-y-auto p-4" style="background:var(--sidebar-bg,#1f2937);">
-      <!-- sidebar nav items (same as desktop) -->
+      <!-- Same nav items as desktop sidebar -->
     </aside>
   </div>
-  <!-- DESKTOP GRID LAYOUT (shown >= lg) -->
-  <div class="hidden lg:grid" style="grid-template-columns:250px 1fr;min-height:100vh;">
-    <aside style="overflow-y:auto;padding:1rem;">
-      <!-- sidebar logo + nav items — use video's sidebar color! -->
+  <!-- FLEX LAYOUT: desktop sidebar + main content -->
+  <div class="flex min-h-screen">
+    <!-- DESKTOP SIDEBAR (hidden on mobile, visible on lg+) -->
+    <aside class="hidden lg:flex lg:flex-col lg:w-[250px] lg:flex-shrink-0 overflow-y-auto p-4" style="min-height:100vh;">
+      <!-- sidebar logo + nav items -->
     </aside>
-    <main style="min-width:0;overflow-x:hidden;overflow-y:auto;padding:1.5rem;">
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;">
-        <!-- stat cards, tables, charts -->
-      </div>
+    <!-- MAIN CONTENT — ONE element, works on ALL screen sizes! -->
+    <main class="flex-1 min-w-0 overflow-x-hidden p-4 lg:p-6">
+      <!-- ALL content goes here ONCE — stat cards, tables, charts -->
+      <!-- This renders on both desktop AND mobile! -->
     </main>
   </div>
-  <!-- MOBILE MAIN CONTENT (shown < lg, below top nav) -->
-  <main class="lg:hidden p-4" style="min-width:0;overflow-x:hidden;">
-    <!-- Same content as desktop main, stacked vertically -->
-  </main>
 </div>
 
-📱 MOBILE SIDEBAR RULES (CRITICAL!):
-- On mobile (< lg breakpoint): sidebar MUST become a hamburger menu at the TOP
-- NEVER show a 250px sidebar on mobile — it takes the entire screen width!
-- Use Alpine.js x-show to toggle a slide-out drawer on mobile
-- Desktop (lg+): CSS Grid with sidebar + main as usual
-- The main content on mobile should stack vertically with full width
-- Tables on mobile: use overflow-x:auto so they scroll horizontally
+🚨 CRITICAL: Only ONE <main> element! Do NOT create separate desktop/mobile main areas!
+The <main> content is written ONCE and works on all screen sizes automatically.
+The sidebar is hidden on mobile (hidden lg:flex), shown as slide-out drawer on demand.
 
-VERIFICATION: After generating, check that:
-1. Desktop: outermost layout has display:grid with grid-template-columns
-2. Desktop: <aside> and <main> are DIRECT children of the grid container
-3. Mobile: sidebar is HIDDEN, replaced by top nav bar with hamburger toggle
-4. Mobile: main content is full-width, stacked vertically
-5. No element uses position:fixed to create a permanent sidebar
+📱 MOBILE SIDEBAR RULES:
+- Sidebar uses class="hidden lg:flex" — invisible on mobile, visible on desktop
+- Mobile hamburger top nav uses class="lg:hidden"
+- Tables on mobile: wrap in overflow-x:auto for horizontal scrolling
+- ❌ NEVER create TWO separate main content areas (one for desktop, one for mobile)
+- ❌ NEVER show a 250px sidebar on mobile
 
 ═══════════════════════════════════════════════════
 ASSEMBLY RULES — MINIMUM REQUIREMENTS:
@@ -954,53 +947,26 @@ LOOK AT THE VIDEO BACKGROUNDS! This determines your entire color scheme:
 CRITICAL RULES:
 1. Every section MUST have REAL content (no empty cards!). Every image uses UNIQUE picsum seed.
 2. If a section spans full width in the video → make it full width in output.
-3. 🚨🚨🚨 ZERO BAN: The number 0 is BANNED in statistics/metrics! Websites use animated counters that START at 0 and count UP.
+3. 🚨🚨🚨 ZERO BAN: The number 0 is BANNED in ALL statistics, metrics, KPIs, table data!
    - "0 funded startups" → WRONG! Must be "5,000+" or similar real number
    - "$0B" → WRONG! Must be "$800B+" or similar real number
-   - "0+" → WRONG! Must be a realistic large number
+   - "$0", "0 cases", "0 users", "$0.00" in dashboards → ALL WRONG! Use realistic values
+   - Dashboard KPIs: "$14,250", "1,847 cases", "12,500 users" — NEVER $0 or 0!
+   - Table cells: every numeric cell must have a realistic non-zero value
    - SCAN THE LAST 5 SECONDS of the video for the FINAL counter values!
    - If you cannot read the final value, ESTIMATE a realistic number — NEVER output zero!
+   - FINAL CHECK: Search your output for ">0<" and ">$0" — if found, replace with real values!
 4. 📐 MATCH THE VIDEO LAYOUT: If the video shows text on LEFT + image on RIGHT (split hero) → build a TWO-COLUMN hero, NOT centered. Do NOT center everything — match the column structure!
 5. If the video shows buttons side-by-side → place them side-by-side (flex-row), not stacked.
 6. 🏢 COMPANY LOGO SECTIONS: If the video shows a grid/row of company logos (partners, clients, "Top companies"):
    - Use STYLED TEXT with the company name or initial letter (e.g., <div class="w-12 h-12 rounded-lg bg-zinc-800 flex items-center justify-center text-white font-bold text-xl">S</div> for Stripe)
    - Do NOT use external image URLs for company logos — they WILL break!
    - cdn.simpleicons.org is OK ONLY for social media icons (GitHub, Twitter, LinkedIn)
-7. 📊 DASHBOARD / APP UI LAYOUTS: If the video shows a dashboard, admin panel, or app with sidebar + main content:
-   🚨🚨🚨 SIDEBAR MUST BE RESPONSIVE! Follow this EXACT pattern:
-
-   <!-- Outer wrapper -->
-   <div x-data="{ sidebarOpen: false }" class="min-h-screen">
-     <!-- MOBILE: Top nav with hamburger (visible < lg) -->
-     <div class="lg:hidden flex items-center justify-between p-4 border-b">
-       <span class="font-bold">App Name</span>
-       <button @click="sidebarOpen = !sidebarOpen">
-         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-       </button>
-     </div>
-     <!-- MOBILE: Slide-out sidebar drawer (visible < lg when open) -->
-     <div x-show="sidebarOpen" @click.away="sidebarOpen=false" x-transition class="lg:hidden fixed inset-0 z-40">
-       <div class="absolute inset-0 bg-black/50" @click="sidebarOpen=false"></div>
-       <aside class="relative z-50 w-64 h-full overflow-y-auto p-4 bg-[sidebar-color]">
-         <!-- Same nav items as desktop sidebar -->
-       </aside>
-     </div>
-     <!-- DESKTOP: Grid layout (visible >= lg only!) -->
-     <div class="hidden lg:grid" style="grid-template-columns:250px 1fr;min-height:100vh;">
-       <aside style="overflow-y:auto;padding:1rem;"><!-- sidebar --></aside>
-       <main style="min-width:0;overflow-x:hidden;"><!-- main content --></main>
-     </div>
-     <!-- MOBILE: Main content (visible < lg, full width) -->
-     <main class="lg:hidden p-4" style="overflow-x:hidden;">
-       <!-- Same content as desktop main, stacked vertically -->
-     </main>
-   </div>
-
-   ❌ NEVER use just "grid" without "hidden lg:grid" — sidebar shows on mobile!
-   ❌ NEVER show a 250px sidebar on mobile — it covers the entire screen!
-   ✅ Desktop grid container MUST have class="hidden lg:grid"
-   ✅ Mobile top nav MUST have class="lg:hidden"
-   - Main area: min-width:0 (CRITICAL — prevents chart/table overflow!)
+7. 📊 DASHBOARD / APP UI LAYOUTS: If the video shows a dashboard with sidebar:
+   Use the MANDATORY STRUCTURE template above (flex layout with hidden lg:flex sidebar).
+   🚨 SINGLE <main> element! Content is written ONCE, works on both desktop and mobile!
+   ❌ NEVER create two separate main content areas!
+   - Main area: min-width:0, flex-1 (CRITICAL — prevents overflow!)
    - ALL charts, tables, data grids: wrap in overflow-x:auto container
    - stat cards: grid with auto-fit minmax(250px,1fr)
 8. 📋 TESTIMONIALS: If the video shows testimonials/reviews/quotes:
@@ -1013,11 +979,11 @@ Include GSAP + ScrollTrigger for animations.
 
 🚨🚨🚨 FINAL CHECK BEFORE YOU OUTPUT — SIDEBAR RESPONSIVENESS 🚨🚨🚨
 If your output has a sidebar/left panel, verify ALL of these:
-✅ Desktop grid container has class="hidden lg:grid" (NOT just "grid"!)
-✅ Mobile top nav has class="lg:hidden" with hamburger button
-✅ Mobile slide-out has class="lg:hidden" with x-show
-✅ Mobile main content has class="lg:hidden" for full-width stacking
-If ANY of these are missing, FIX IT before outputting! A 250px sidebar on a 375px mobile screen = BROKEN!
+✅ Desktop sidebar has class="hidden lg:flex" (invisible on mobile!)
+✅ Mobile top nav exists with class="lg:hidden" and hamburger button
+✅ Mobile slide-out drawer has class="lg:hidden" with x-show
+✅ Only ONE <main> element exists — content written ONCE for all screen sizes!
+❌ NEVER create two <main> elements (one desktop, one mobile) — mobile one will be empty!
 
 Wrap in \`\`\`html blocks.`;
           }

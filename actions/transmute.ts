@@ -1967,38 +1967,36 @@ ${isDSStyleDirective
 
 **📐 LAYOUT STRUCTURE — MATCH THE VIDEO:**
 - If scanData describes a SPLIT HERO (text on one side, image on other) → build a two-column hero, NOT centered
-- If scanData shows sidebar+main → build RESPONSIVE sidebar layout:
-  🚨 SIDEBAR MUST USE "hidden lg:grid" — NOT just "grid"!
+- If scanData shows sidebar+main → build RESPONSIVE sidebar with SINGLE main:
 
-  MANDATORY PATTERN (Alpine.js):
+  MANDATORY PATTERN (Alpine.js — ONE main content area!):
   <div x-data="{ sidebarOpen: false }" class="min-h-screen">
-    <!-- MOBILE top nav (< lg) -->
     <div class="lg:hidden flex items-center justify-between p-4 border-b">
       <span class="font-bold">App Name</span>
-      <button @click="sidebarOpen = !sidebarOpen"><svg hamburger icon/></button>
+      <button @click="sidebarOpen = !sidebarOpen"><svg hamburger/></button>
     </div>
-    <!-- MOBILE slide-out drawer (< lg) -->
     <div x-show="sidebarOpen" class="lg:hidden fixed inset-0 z-40">...</div>
-    <!-- DESKTOP grid (>= lg ONLY!) -->
-    <div class="hidden lg:grid" style="grid-template-columns:250px 1fr;min-height:100vh;">
-      <aside>...</aside>
-      <main style="min-width:0;overflow-x:hidden;">...</main>
+    <div class="flex min-h-screen">
+      <aside class="hidden lg:flex lg:flex-col lg:w-[250px] lg:flex-shrink-0 p-4">sidebar</aside>
+      <main class="flex-1 min-w-0 overflow-x-hidden p-4 lg:p-6">
+        <!-- ALL content ONCE — works on desktop AND mobile! -->
+      </main>
     </div>
-    <!-- MOBILE main content (< lg, full width) -->
-    <main class="lg:hidden p-4">...</main>
   </div>
 
-  ❌ NEVER use just class="grid" without "hidden lg:grid" — sidebar shows on mobile!
-  ❌ NEVER display a 250px sidebar on mobile — it covers the whole screen!
-  ✅ Desktop grid MUST have class="hidden lg:grid"
-  ✅ Mobile elements MUST have class="lg:hidden"
+  🚨 SINGLE <main>! Content written ONCE for ALL screen sizes!
+  ❌ NEVER create two <main> elements — mobile one will be EMPTY!
+  ❌ NEVER show a 250px sidebar on mobile!
 - Do NOT center everything by default — match the actual column layout from scanData
 - "View Companies" button next to "Apply to YC" → put them SIDE BY SIDE, not stacked
 
-**🚨 ZERO VALUES — NEVER OUTPUT:**
+**🚨 ZERO VALUES — NEVER OUTPUT (applies to ALL numbers in output):**
 - "0+" funded startups → WRONG! Use the value from scanData, or estimate "5,000+"
 - "$0B" valuation → WRONG! Use the value from scanData, or estimate "$800B"
 - If scanData has "0" for a counter → it captured an animation start frame → estimate the real value!
+- DASHBOARD KPIs: "$0", "0 cases", "0 users", "$0.00" → ALL WRONG! Use realistic values: "$14,250", "1,847 cases", "12,500 users"
+- TABLE DATA: Every numeric cell must have a realistic non-zero value. "$0" in a table = BUG.
+- BEFORE outputting: Ctrl+F for ">0<" and ">$0" in your code — if found, REPLACE with realistic values!
 
 **🖼️ IMAGE UNIQUENESS — CRITICAL:**
 - Count ALL <img> tags you generate. EVERY one MUST have a DIFFERENT picsum seed!
@@ -2007,12 +2005,11 @@ ${isDSStyleDirective
 - Use descriptive, contextual seeds — NOT just numbers!
 
 🚨🚨🚨 FINAL CHECK — SIDEBAR RESPONSIVENESS 🚨🚨🚨
-If your output has a sidebar/left panel, verify ALL of these before outputting:
-✅ Desktop grid container has class="hidden lg:grid" (NOT just "grid"!)
+If your output has a sidebar/left panel, verify:
+✅ Desktop sidebar has class="hidden lg:flex" (invisible on mobile!)
 ✅ Mobile top nav exists with class="lg:hidden" and hamburger button
-✅ Mobile slide-out drawer exists with class="lg:hidden" and x-show toggle
-✅ Mobile main content area exists with class="lg:hidden" for full-width stacking
-A 250px sidebar on a 375px mobile screen = COMPLETELY BROKEN! Fix it!
+✅ Only ONE <main> element — content written ONCE for all screen sizes!
+❌ NEVER two <main> elements — mobile one will be EMPTY!
 
 Generate the complete HTML file now:`;
     

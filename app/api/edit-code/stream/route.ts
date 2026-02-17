@@ -684,21 +684,32 @@ CRITICAL RULES:
                   }
                 });
               } else {
-                // AI returned full HTML despite S/R prompt - use it
-                console.log("[Stream Edit] AI returned full HTML in S/R mode, accepting it");
+                // AI returned full HTML despite S/R prompt - validate before accepting
+                console.log("[Stream Edit] AI returned full HTML in S/R mode, validating...");
                 const extractedCode = parsed.fullHtml || extractCode(fullResponse) || currentCode;
-                const summary = parsed.summary || "Changes applied";
-                send("complete", {
-                  code: extractedCode,
-                  summary,
-                  stats: {
-                    originalLines: currentCode.split('\n').length,
-                    newLines: extractedCode.split('\n').length,
-                    originalSize: currentCode.length,
-                    newSize: extractedCode.length,
-                    mode: 'search-replace-fallback-full'
-                  }
-                });
+                const srSizeDrop = extractedCode.length / currentCode.length;
+
+                if (srSizeDrop < 0.4 && currentCode.length > 5000) {
+                  console.error(`[Stream Edit] S/R fallback REJECTED: code destroyed ${currentCode.length} → ${extractedCode.length}`);
+                  send("complete", {
+                    code: `The AI tried to rewrite the entire page instead of making the small change you requested. Your original code has been preserved.\n\nTry being more specific with your edit request.`,
+                    isChat: true,
+                    needsClarification: true
+                  });
+                } else {
+                  const summary = parsed.summary || "Changes applied";
+                  send("complete", {
+                    code: extractedCode,
+                    summary,
+                    stats: {
+                      originalLines: currentCode.split('\n').length,
+                      newLines: extractedCode.split('\n').length,
+                      originalSize: currentCode.length,
+                      newSize: extractedCode.length,
+                      mode: 'search-replace-fallback-full'
+                    }
+                  });
+                }
               }
             } catch (error: any) {
               console.error("[Stream Edit] SEARCH/REPLACE error:", error);
@@ -1328,9 +1339,13 @@ function selectEditMode(editRequest: string, currentCode: string, isImageEdit: b
 
   // Large/complex changes → Full HTML (fuzzy matching disabled, safer to regenerate)
   if (requestLower.includes('replace') && requestLower.includes('animation')) return 'full-html';
-  if (requestLower.includes('remove') || requestLower.includes('delete') || requestLower.includes('usuń')) return 'full-html';
-  if (requestLower.includes('redesign') || requestLower.includes('rebuild') || requestLower.includes('recreate')) return 'full-html';
-  if (editRequest.split(' ').length > 15) return 'full-html'; // Long request = complex change
+  // Only full-html for removing ENTIRE sections/pages, not individual elements
+  const isRemovingSection = (requestLower.includes('remove') || requestLower.includes('delete') || requestLower.includes('usuń'))
+    && (requestLower.includes('section') || requestLower.includes('page') || requestLower.includes('sekcj') || requestLower.includes('stron'));
+  if (isRemovingSection) return 'full-html';
+  if (requestLower.includes('redesign') || requestLower.includes('rebuild') || requestLower.includes('recreate')
+    || requestLower.includes('przebuduj') || requestLower.includes('od nowa')) return 'full-html';
+  if (editRequest.split(' ').length > 20) return 'full-html'; // Very long request = complex change
 
   // Default: SEARCH/REPLACE mode (safer, faster, more precise)
   return 'search-replace';
@@ -1420,29 +1435,44 @@ async function runFullHtmlEdit(
         const newSections = (extractedCode.match(/<section[\s>]/g) || []).length;
         const sizeDrop = extractedCode.length / currentCode.length;
 
-        // If AI removed >40% of code or lost x-show sections, warn but still return
-        // (user can undo via versioning)
-        let warning = '';
-        if (origXShow > 1 && newXShow < origXShow) {
-          warning = ` Warning: ${origXShow - newXShow} page(s) may have been removed.`;
-          console.warn(`[Stream Edit] STRUCTURAL WARNING: x-show dropped from ${origXShow} to ${newXShow}`);
-        }
-        if (sizeDrop < 0.5 && currentCode.length > 5000) {
-          warning += ' Warning: Code size dropped significantly - some content may have been lost.';
-          console.warn(`[Stream Edit] SIZE WARNING: ${currentCode.length} → ${extractedCode.length} (${Math.round(sizeDrop * 100)}%)`);
-        }
-
-        const summary = generateChangeSummary(currentCode, extractedCode, editRequest, fullCode) + warning;
-        send("complete", {
-          code: extractedCode,
-          summary,
-          stats: {
-            originalLines: currentCode.split('\n').length,
-            newLines: extractedCode.split('\n').length,
-            originalSize: currentCode.length,
-            newSize: extractedCode.length,
+        // STRUCTURAL PROTECTION: Reject edits that destroy the page
+        if (sizeDrop < 0.4 && currentCode.length > 5000) {
+          console.error(`[Stream Edit] REJECTED: Code destroyed ${currentCode.length} → ${extractedCode.length} (${Math.round(sizeDrop * 100)}%)`);
+          send("complete", {
+            code: `The AI tried to rewrite the entire page instead of making the small change you requested. Your original code has been preserved.\n\nTry being more specific, e.g.:\n- "Change the chart type from bar to line"\n- "Update the chart colors to blue and green"\n- "Replace the monthly chart with a pie chart"`,
+            isChat: true,
+            needsClarification: true
+          });
+        } else if (origXShow > 2 && newXShow < Math.ceil(origXShow * 0.5)) {
+          console.error(`[Stream Edit] REJECTED: Pages lost x-show ${origXShow} → ${newXShow}`);
+          send("complete", {
+            code: `The AI removed most of your page sections (${origXShow} → ${newXShow}). Your original code has been preserved.\n\nTry a more specific edit request.`,
+            isChat: true,
+            needsClarification: true
+          });
+        } else {
+          let warning = '';
+          if (origXShow > 1 && newXShow < origXShow) {
+            warning = ` Warning: ${origXShow - newXShow} page(s) may have been removed.`;
+            console.warn(`[Stream Edit] STRUCTURAL WARNING: x-show dropped from ${origXShow} to ${newXShow}`);
           }
-        });
+          if (sizeDrop < 0.6 && currentCode.length > 5000) {
+            warning += ' Warning: Code size dropped - some content may have been lost.';
+            console.warn(`[Stream Edit] SIZE WARNING: ${currentCode.length} → ${extractedCode.length} (${Math.round(sizeDrop * 100)}%)`);
+          }
+
+          const summary = generateChangeSummary(currentCode, extractedCode, editRequest, fullCode) + warning;
+          send("complete", {
+            code: extractedCode,
+            summary,
+            stats: {
+              originalLines: currentCode.split('\n').length,
+              newLines: extractedCode.split('\n').length,
+              originalSize: currentCode.length,
+              newSize: extractedCode.length,
+            }
+          });
+        }
       }
     } else {
       const fallbackCode = tryFallbackExtraction(fullCode);
