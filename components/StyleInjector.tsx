@@ -1000,6 +1000,35 @@ export const StylePreview = ({ styleId }: { styleId: string }) => {
         />
       </div>
     ),
+    "rive-playful": (
+      <div className="w-full h-full bg-gradient-to-br from-[#FF6B6B] via-[#FFD93D] to-[#6BCB77] relative overflow-hidden">
+        {/* Bouncing circle */}
+        <motion.div
+          className="absolute w-2 h-2 rounded-full bg-white/80"
+          style={{ top: '20%', left: '25%' }}
+          animate={{ y: [0, -3, 0], scale: [1, 1.2, 1] }}
+          transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut" }}
+        />
+        {/* Pulsing heart */}
+        <motion.div
+          className="absolute text-[6px] text-white"
+          style={{ top: '40%', right: '20%' }}
+          animate={{ scale: [1, 1.3, 1] }}
+          transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
+        >
+          ♥
+        </motion.div>
+        {/* Spinning star */}
+        <motion.div
+          className="absolute text-[5px] text-white/90"
+          style={{ bottom: '15%', left: '45%' }}
+          animate={{ rotate: [0, 360] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        >
+          ✦
+        </motion.div>
+      </div>
+    ),
   };
 
   return (
