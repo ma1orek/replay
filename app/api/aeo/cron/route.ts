@@ -203,25 +203,35 @@ export async function GET(req: Request) {
       }
     }
 
-    // STEP 4: Auto-Crosspost to Dev.to + Hashnode (newly published articles)
-    log.push("\n📢 STEP 4: Auto-Crossposting...");
+    // STEP 4: Auto-Crosspost ENTIRE BACKLOG to Dev.to + Hashnode
+    // Processes 20 articles per platform per cron run (with 1.5s rate limit)
+    // At 4 runs/day = ~160 crossposts/day → full backlog in ~30 days
+    log.push("\n📢 STEP 4: Auto-Crossposting (backlog mode)...");
 
-    // Find articles published in last 24h that haven't been crossposted yet
-    const cutoff24h = new Date();
-    cutoff24h.setHours(cutoff24h.getHours() - 24);
+    const CROSSPOST_BATCH = 20; // articles per platform per cron run
+    const CROSSPOST_DELAY = 1500; // ms between API calls (rate limit safety)
 
-    // Dev.to crossposting
+    // Dev.to crossposting — ALL uncrossposted articles (oldest first for backlog)
     if (process.env.DEVTO_API_KEY) {
       try {
+        const { count: devtoRemaining } = await supabase
+          .from("blog_posts")
+          .select("*", { count: "exact", head: true })
+          .eq("status", "published")
+          .is("devto_url", null);
+
         const { data: devtoPosts } = await supabase
           .from("blog_posts")
           .select("slug, title")
           .eq("status", "published")
-          .gte("published_at", cutoff24h.toISOString())
           .is("devto_url", null)
-          .limit(5);
+          .order("published_at", { ascending: true }) // oldest first = backlog
+          .limit(CROSSPOST_BATCH);
+
+        log.push(`   Dev.to: ${devtoRemaining || 0} remaining, processing ${devtoPosts?.length || 0}`);
 
         if (devtoPosts && devtoPosts.length > 0) {
+          let devtoSuccess = 0;
           for (const post of devtoPosts) {
             try {
               const crosspostResp = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/aeo/crosspost-devto`, {
@@ -231,16 +241,17 @@ export async function GET(req: Request) {
               });
               const crosspostData = await crosspostResp.json();
               if (crosspostData.success) {
-                log.push(`   ✅ Dev.to: ${post.title} → ${crosspostData.devtoUrl}`);
+                devtoSuccess++;
+                log.push(`   ✅ Dev.to: ${post.title}`);
               } else {
                 log.push(`   ⚠️ Dev.to skip: ${post.slug} — ${crosspostData.error || "unknown"}`);
               }
             } catch (e: any) {
               log.push(`   ❌ Dev.to error for ${post.slug}: ${e.message}`);
             }
+            await new Promise(r => setTimeout(r, CROSSPOST_DELAY));
           }
-        } else {
-          log.push(`   ℹ️ Dev.to: No new articles to crosspost`);
+          log.push(`   Dev.to batch done: ${devtoSuccess}/${devtoPosts.length} success, ~${(devtoRemaining || 0) - devtoSuccess} remaining`);
         }
       } catch (error: any) {
         log.push(`   ❌ Dev.to crosspost error: ${error.message}`);
@@ -249,18 +260,27 @@ export async function GET(req: Request) {
       log.push(`   ⏸️ Dev.to: Skipped — DEVTO_API_KEY not configured`);
     }
 
-    // Hashnode crossposting
+    // Hashnode crossposting — ALL uncrossposted articles (oldest first for backlog)
     if (process.env.HASHNODE_API_KEY && process.env.HASHNODE_PUBLICATION_ID) {
       try {
+        const { count: hashnodeRemaining } = await supabase
+          .from("blog_posts")
+          .select("*", { count: "exact", head: true })
+          .eq("status", "published")
+          .is("hashnode_url", null);
+
         const { data: hashnodePosts } = await supabase
           .from("blog_posts")
           .select("slug, title")
           .eq("status", "published")
-          .gte("published_at", cutoff24h.toISOString())
           .is("hashnode_url", null)
-          .limit(5);
+          .order("published_at", { ascending: true }) // oldest first = backlog
+          .limit(CROSSPOST_BATCH);
+
+        log.push(`   Hashnode: ${hashnodeRemaining || 0} remaining, processing ${hashnodePosts?.length || 0}`);
 
         if (hashnodePosts && hashnodePosts.length > 0) {
+          let hashnodeSuccess = 0;
           for (const post of hashnodePosts) {
             try {
               const crosspostResp = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/aeo/crosspost-hashnode`, {
@@ -270,16 +290,17 @@ export async function GET(req: Request) {
               });
               const crosspostData = await crosspostResp.json();
               if (crosspostData.success) {
-                log.push(`   ✅ Hashnode: ${post.title} → ${crosspostData.hashnodeUrl}`);
+                hashnodeSuccess++;
+                log.push(`   ✅ Hashnode: ${post.title}`);
               } else {
                 log.push(`   ⚠️ Hashnode skip: ${post.slug} — ${crosspostData.error || "unknown"}`);
               }
             } catch (e: any) {
               log.push(`   ❌ Hashnode error for ${post.slug}: ${e.message}`);
             }
+            await new Promise(r => setTimeout(r, CROSSPOST_DELAY));
           }
-        } else {
-          log.push(`   ℹ️ Hashnode: No new articles to crosspost`);
+          log.push(`   Hashnode batch done: ${hashnodeSuccess}/${hashnodePosts.length} success, ~${(hashnodeRemaining || 0) - hashnodeSuccess} remaining`);
         }
       } catch (error: any) {
         log.push(`   ❌ Hashnode crosspost error: ${error.message}`);
@@ -289,7 +310,7 @@ export async function GET(req: Request) {
     }
 
     // STEP 5: Performance Tracking (check if recently published content improved citations)
-    log.push("\n📈 STEP 4: Tracking Performance...");
+    log.push("\n📈 STEP 5: Tracking Performance...");
     try {
       // Get content published 48 hours ago
       const cutoff48h = new Date();

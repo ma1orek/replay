@@ -39,7 +39,7 @@ export async function POST(req: Request) {
 
   const body = await req.json();
   const platform = body.platform || "all"; // "devto" | "hashnode" | "all"
-  const batchSize = Math.min(body.batchSize || 10, 20); // max 20 per call (rate limits)
+  const batchSize = Math.min(body.batchSize || 20, 50); // max 50 per call
 
   const results: { platform: string; slug: string; url?: string; error?: string }[] = [];
   let processed = 0;

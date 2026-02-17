@@ -378,7 +378,7 @@ export default function AdminPage() {
         const resp = await fetch("/api/aeo/crosspost-bulk", {
           method: "POST",
           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminToken}` },
-          body: JSON.stringify({ platform, batchSize: 10 }),
+          body: JSON.stringify({ platform, batchSize: 20 }),
         });
         const data = await resp.json();
         if (!data.success) { setCrosspostLog(l => [...l, `Error: ${data.error}`]); break; }
