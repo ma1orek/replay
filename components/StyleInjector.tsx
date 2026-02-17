@@ -2785,43 +2785,34 @@ Body: font-weight 400-600, tracking-wide
 Style: Rounded, bouncy, friendly feel
 
 ═══════════════════════════════════════════════════════════════════════════════
-🎬 RIVE ANIMATIONS — USE THESE EXACT .riv URLs!
+🎬 RIVE ANIMATIONS — VERIFIED WORKING .riv FILES (small, fast, autoplay)
 ═══════════════════════════════════════════════════════════════════════════════
-ONLY use URLs from this catalog. NEVER invent or guess .riv URLs!
+ONLY use URLs from this list. NEVER invent .riv URLs! Use MAX 2-3 per page.
 
-LOADING SPINNERS (use for any loading state, page transitions):
-1. https://public.rive.app/community/runtime-files/2195-4346-avatar-pack-use-case.riv — Animated avatars
-2. https://public.rive.app/community/runtime-files/13255-25054-spinner-or-loading.riv — Multi-state spinner
-3. https://public.rive.app/community/runtime-files/15716-29634-circle-spinner-animation-loading-animation.riv — Circle loader
+LOADING SPINNER:
+1. https://public.rive.app/community/runtime-files/15716-29634-circle-spinner-animation-loading-animation.riv — Circle loader (3KB)
 
-TOGGLE SWITCHES (use for any on/off, checkbox, setting):
-4. https://public.rive.app/community/runtime-files/8442-16190-toggle-switch-buttons-on-and-off.riv — Toggle switch
+TOGGLE SWITCH:
+2. https://public.rive.app/community/runtime-files/8442-16190-toggle-switch-buttons-on-and-off.riv — On/off toggle (14KB)
 
-LIKE / HEART (use for favorites, likes, bookmarks):
-5. https://public.rive.app/community/runtime-files/21148-39810-like-heartbeat-animation.riv — Like heart
-6. https://public.rive.app/community/runtime-files/875-1696-heart-beat.riv — Heartbeat
+HEART / LIKE:
+3. https://public.rive.app/community/runtime-files/875-1696-heart-beat.riv — Heartbeat pulse (1KB)
 
-STAR RATING (use for reviews, ratings, scoring):
-7. https://public.rive.app/community/runtime-files/7185-13802-star-rating-interaction.riv — Star rating
+CONFETTI / SUCCESS:
+4. https://public.rive.app/community/runtime-files/1456-2840-confetti-explosion.riv — Confetti burst (5KB)
+5. https://public.rive.app/community/runtime-files/5024-10163-order-successful-animation.riv — Order success (32KB)
 
-SUCCESS / CELEBRATION (use for form submit, order complete, achievements):
-8. https://public.rive.app/community/runtime-files/7184-13803-success-confetti-animation.riv — Success confetti
-9. https://public.rive.app/community/runtime-files/1456-2840-confetti-explosion.riv — Confetti burst
-10. https://public.rive.app/community/runtime-files/5024-10163-order-successful-animation.riv — Order success
+ICONS:
+6. https://public.rive.app/community/runtime-files/572-1084-menu-icon.riv — Menu hamburger (3KB)
+7. https://public.rive.app/community/runtime-files/382-718-download-icon.riv — Download progress (5KB)
+8. https://public.rive.app/community/runtime-files/1298-2487-animated-icon-set-1-color.riv — Icon set (10KB)
 
-ICONS (use for menu, download, actions):
-11. https://public.rive.app/community/runtime-files/572-1084-menu-icon.riv — Hamburger menu
-12. https://public.rive.app/community/runtime-files/382-718-download-icon.riv — Download with progress
-13. https://public.rive.app/community/runtime-files/1298-2487-animated-icon-set-1-color.riv — Icon set (multiple)
+BUTTON:
+9. https://public.rive.app/community/runtime-files/737-1448-button-animation.riv — Button states (2KB)
 
-BUTTONS (use for CTA, submit, interactive buttons):
-14. https://public.rive.app/community/runtime-files/8144-15621-button-animation.riv — Button hover/click
-15. https://public.rive.app/community/runtime-files/737-1448-button-animation.riv — Button states
-
-CHARACTERS / MASCOTS (use for hero section, about, empty states):
-16. https://public.rive.app/community/runtime-files/2244-7248-animated-login-character.riv — Login character
-17. https://public.rive.app/community/runtime-files/6241-12116-character-animation.riv — Interactive character
-18. https://public.rive.app/community/runtime-files/9246-17588-chatbot-animation.riv — Chatbot/AI assistant
+CHARACTER:
+10. https://public.rive.app/community/runtime-files/2244-7248-animated-login-character.riv — Login mascot (42KB)
+11. https://public.rive.app/community/runtime-files/2195-4346-avatar-pack-use-case.riv — Animated avatars (15KB)
 
 ═══════════════════════════════════════════════════════════════════════════════
 📋 HOW TO USE RIVE — Canvas Template
@@ -2865,8 +2856,8 @@ document.addEventListener('DOMContentLoaded', () => {
 ═══════════════════════════════════════════════════════════════════════════════
 🎯 WHEN TO USE RIVE vs OTHER
 ═══════════════════════════════════════════════════════════════════════════════
-✅ USE RIVE: Loading spinners, toggles, checkboxes, like/heart buttons, star ratings, success animations, hero mascots, CTA buttons, menu hamburger
-❌ DO NOT USE RIVE: Scroll animations (GSAP!), text reveals (GSAP!), page transitions (CSS!), backgrounds (CSS gradients!)
+✅ USE RIVE FOR (pick 2-3 MAX per page): Loading spinner, toggle switch, heart/like, success confetti, menu icon, login character
+❌ DO NOT USE RIVE FOR: Scroll animations (GSAP!), text reveals (GSAP!), page transitions (CSS!), backgrounds (CSS!), charts (Chart.js!)
 
 ═══════════════════════════════════════════════════════════════════════════════
 🎨 DESIGN RULES
@@ -2875,9 +2866,9 @@ document.addEventListener('DOMContentLoaded', () => {
 - Soft colored shadows: shadow-xl shadow-pink-200/30, shadow-teal-200/30
 - Cards: bg-white rounded-3xl p-6 shadow-lg shadow-pink-100/40 hover:shadow-xl transition-shadow
 - Buttons: rounded-full px-8 py-3 font-bold
-- Use 3-5 Rive animations per page for the full playful effect
-- Every canvas needs UNIQUE id. Use data-rive pattern for 3+ animations
-- Set width/height attributes on every canvas + Tailwind responsive classes
+- MAX 2-3 Rive animations per page — quality over quantity!
+- Every canvas needs UNIQUE id. Set width/height attributes on every canvas
+- Use data-rive pattern for multiple animations (cleaner code)
 - ONLY use .riv URLs from the catalog above — NEVER invent URLs!
 
 ⚠️ MANDATORY: Preserve ALL content from video. Apply this playful Rive style to every section.`, category: "interactive" },
