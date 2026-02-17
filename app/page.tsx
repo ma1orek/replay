@@ -3294,9 +3294,9 @@ function ReplayToolContent() {
   const [selectedProTierIndex, setSelectedProTierIndex] = useState(0);
   const [showProTierDropdown, setShowProTierDropdown] = useState(false);
   
-  // Active subscription plans (Jan 26 pricing)
+  // Active subscription plans (Feb 2026 pricing)
   const PRO_TIERS = [
-    { id: 'pro', credits: 3000, price: 149, priceId: "price_1SttxZAxch1s4iBGchJgatG6" },
+    { id: 'pro', credits: 15000, price: 149, priceId: "price_1SttxZAxch1s4iBGchJgatG6" },
   ];
   const selectedProTier = PRO_TIERS[selectedProTierIndex] || PRO_TIERS[0];
   
@@ -17681,48 +17681,60 @@ export default function GeneratedPage() {
                                   
                                   {/* Header */}
                                   <div className="text-center mb-5">
-                                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-zinc-800/10 flex items-center justify-center">
-                                      <Zap className="w-7 h-7 text-zinc-300" />
-                                    </div>
                                     <h3 className="text-xl font-bold text-white mb-2">Unlock Source Code</h3>
                                     <p className="text-sm text-zinc-500">Get instant access to React + Tailwind code</p>
                                   </div>
-                                  
-                                  {/* Options */}
-                                  <div className="space-y-3 mb-5">
-                                    {/* Pro Subscription - Best Value */}
+
+                                  {/* Plan Options */}
+                                  <div className="space-y-2.5 mb-5">
+                                    {/* Pro */}
                                     <div
                                       onClick={() => setSelectedUpgradePlan("pro")}
-                                      className={`w-full p-4 rounded-xl border-2 transition-all text-left relative cursor-pointer ${
+                                      className={`w-full p-3.5 rounded-xl border-2 transition-all text-left cursor-pointer ${
                                         selectedUpgradePlan === "pro" ? "border-[var(--accent-orange)] bg-zinc-800/5" : "border-zinc-700 hover:border-white/20 bg-zinc-800/50"
                                       }`}
                                     >
-                                      <span className="absolute -top-2 right-3 px-2 py-0.5 text-[10px] font-bold uppercase bg-zinc-800 text-white rounded">Best Value</span>
-                                      <div className="flex items-center gap-3 mb-3">
-                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedUpgradePlan === "pro" ? "border-[var(--accent-orange)] bg-zinc-800" : "border-white/30"}`}>
-                                          {selectedUpgradePlan === "pro" && <Check className="w-3 h-3 text-white" />}
+                                      <div className="flex items-center gap-3">
+                                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedUpgradePlan === "pro" ? "border-[var(--accent-orange)]" : "border-white/30"}`}>
+                                          {selectedUpgradePlan === "pro" && <div className="w-2 h-2 rounded-full bg-[var(--accent-orange)]" />}
                                         </div>
                                         <div className="flex-1">
-                                          <div className="flex items-center gap-2">
-                                            <Sparkles className="w-4 h-4 text-zinc-300" />
-                                            <span className="font-semibold text-white">Pro Subscription</span>
-                                          </div>
+                                          <span className="font-semibold text-white text-sm">Pro</span>
+                                          <span className="text-[10px] text-zinc-500 ml-2">For freelancers</span>
                                         </div>
                                         <div className="text-right">
-                                          <span className="text-xl font-bold text-white">${selectedProTier.price}</span>
+                                          <span className="text-lg font-bold text-white">$149</span>
                                           <span className="text-xs text-zinc-500">/mo</span>
                                         </div>
                                       </div>
-                                      
-                                      <p className="text-xs text-zinc-500 mt-2 ml-8">{selectedProTier.credits.toLocaleString()} credits/month • Full access • Credits roll over</p>
+                                      <p className="text-[11px] text-zinc-500 mt-2 ml-7">15,000 credits/month (~100 gens) • Full access • Credits roll over</p>
+                                    </div>
+
+                                    {/* Agency */}
+                                    <div
+                                      onClick={() => setSelectedUpgradePlan("pro")}
+                                      className="w-full p-3.5 rounded-xl border-2 border-zinc-700 hover:border-white/20 bg-zinc-800/50 transition-all text-left cursor-pointer"
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-4 h-4 rounded-full border-2 border-white/30 flex-shrink-0" />
+                                        <div className="flex-1">
+                                          <span className="font-semibold text-white text-sm">Agency</span>
+                                          <span className="text-[10px] text-zinc-500 ml-2">For teams</span>
+                                        </div>
+                                        <div className="text-right">
+                                          <span className="text-lg font-bold text-white">$499</span>
+                                          <span className="text-xs text-zinc-500">/mo</span>
+                                        </div>
+                                      </div>
+                                      <p className="text-[11px] text-zinc-500 mt-2 ml-7">60,000 credits/month (~400 gens) • 5 team members • Priority GPU</p>
                                     </div>
                                   </div>
-                                  
+
                                   {/* CTA */}
                                   <button
                                     onClick={() => handleUpgradeCheckout(selectedUpgradePlan)}
                                     disabled={isUpgradeCheckingOut}
-                                    className="w-full py-3.5 rounded-xl bg-zinc-800 text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                                    className="w-full py-3.5 rounded-xl bg-white text-black text-sm font-semibold hover:bg-zinc-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                                   >
                                     {isUpgradeCheckingOut ? (
                                       <>
@@ -17730,16 +17742,20 @@ export default function GeneratedPage() {
                                         Processing...
                                       </>
                                     ) : (
-                                      `Subscribe — $${selectedProTier.price}/mo`
+                                      `Get Pro — $149/mo`
                                     )}
                                   </button>
-                                  <p className="text-center text-[10px] text-zinc-600 mt-3">
-                                    Cancel anytime. Credits roll over.
-                                  </p>
-                                  
+
+                                  <a
+                                    href="/pricing"
+                                    className="block text-center text-[11px] text-zinc-500 hover:text-zinc-400 mt-3 transition-colors"
+                                  >
+                                    View all pricing options
+                                  </a>
+
                                   <button
                                     onClick={() => setViewMode("preview")}
-                                    className="w-full mt-3 text-xs text-zinc-600 hover:text-zinc-500 transition-colors"
+                                    className="w-full mt-2 text-xs text-zinc-600 hover:text-zinc-500 transition-colors"
                                   >
                                     Maybe later
                                   </button>
@@ -24939,16 +24955,13 @@ module.exports = {
                   {!isPaidPlan && generatedCode && (
                     <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#111111]/60 backdrop-blur-[6px]">
                       <div className="text-center max-w-xs mx-4">
-                        <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-zinc-800/50 flex items-center justify-center border border-zinc-700/50">
-                          <Zap className="w-6 h-6 text-zinc-400" />
-                        </div>
                         <h3 className="text-lg font-bold text-white mb-1.5">Unlock Source Code</h3>
                         <p className="text-xs text-zinc-500 mb-4">Get React + Tailwind code for your project</p>
                         <button
                           onClick={() => { setUpgradeFeature("code"); setShowUpgradeModal(true); }}
-                          className="px-5 py-2.5 rounded-xl bg-[#F97316] text-white text-xs font-semibold hover:bg-[#EA580C] transition-colors"
+                          className="px-5 py-2.5 rounded-xl bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors"
                         >
-                          Upgrade to Pro
+                          View Plans
                         </button>
                       </div>
                     </div>

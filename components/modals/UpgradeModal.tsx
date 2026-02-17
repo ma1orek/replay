@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Zap } from "lucide-react";
+import { X, Check } from "lucide-react";
 import FocusLock from "react-focus-lock";
 
 interface UpgradeModalProps {
@@ -46,15 +46,39 @@ const featureMessages = {
   },
 };
 
+const plans = [
+  {
+    id: "pro",
+    name: "Pro",
+    price: 149,
+    credits: 15000,
+    label: "For freelancers",
+    features: ["15,000 credits/month (~100 gens)", "Unlimited projects", "React + Tailwind export", "Flow Map & Design System"],
+    popular: true,
+  },
+  {
+    id: "agency",
+    name: "Agency",
+    price: 499,
+    credits: 60000,
+    label: "For teams",
+    features: ["60,000 credits/month (~400 gens)", "5 team members", "Shared Design System", "Priority GPU + API"],
+    popular: false,
+  },
+];
+
 export default function UpgradeModal({ isOpen, onClose, feature = "general" }: UpgradeModalProps) {
   const featureInfo = featureMessages[feature];
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const [selectedPlan, setSelectedPlan] = useState("pro");
 
   useEffect(() => {
     if (isOpen && closeButtonRef.current) {
       closeButtonRef.current.focus();
     }
   }, [isOpen]);
+
+  const activePlan = plans.find(p => p.id === selectedPlan) || plans[0];
 
   return (
     <AnimatePresence>
@@ -68,7 +92,7 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
             className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
             onClick={onClose}
           />
-          
+
           {/* Modal */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -78,7 +102,7 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
             <FocusLock returnFocus>
-              <div 
+              <div
                 className="relative w-full max-w-sm bg-[#111] border border-zinc-800 rounded-xl shadow-2xl overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
                 role="dialog"
@@ -98,42 +122,68 @@ export default function UpgradeModal({ isOpen, onClose, feature = "general" }: U
                 {/* Content */}
                 <div className="p-6">
                   {/* Header */}
-                  <div className="text-center mb-6">
+                  <div className="text-center mb-5">
                     <h2 id="upgrade-modal-title" className="text-lg font-semibold text-white mb-1">
                       {featureInfo.title}
                     </h2>
                     <p className="text-sm text-zinc-500">{featureInfo.description}</p>
                   </div>
 
-                  {/* Pro Plan Box */}
-                  <div className="p-4 rounded-lg bg-zinc-900 border border-zinc-800 mb-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-white">Pro</span>
-                      <div className="text-right">
-                        <span className="text-xl font-bold text-white">$149</span>
-                        <span className="text-xs text-zinc-500">/mo</span>
+                  {/* Plan Options */}
+                  <div className="space-y-2.5 mb-4">
+                    {plans.map((plan) => (
+                      <div
+                        key={plan.id}
+                        onClick={() => setSelectedPlan(plan.id)}
+                        className={`p-3.5 rounded-lg border cursor-pointer transition-all ${
+                          selectedPlan === plan.id
+                            ? "border-[var(--accent-orange)] bg-zinc-900/80"
+                            : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2.5">
+                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                              selectedPlan === plan.id ? "border-[var(--accent-orange)]" : "border-zinc-600"
+                            }`}>
+                              {selectedPlan === plan.id && <div className="w-2 h-2 rounded-full bg-[var(--accent-orange)]" />}
+                            </div>
+                            <div>
+                              <span className="text-sm font-medium text-white">{plan.name}</span>
+                              <span className="text-[10px] text-zinc-500 ml-2">{plan.label}</span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-lg font-bold text-white">${plan.price}</span>
+                            <span className="text-xs text-zinc-500">/mo</span>
+                          </div>
+                        </div>
+                        <div className="ml-6.5 pl-0.5 grid grid-cols-2 gap-x-2 gap-y-1">
+                          {plan.features.map((f, i) => (
+                            <p key={i} className="text-[11px] text-zinc-400 flex items-start gap-1">
+                              <Check className="w-3 h-3 text-zinc-500 flex-shrink-0 mt-0.5" />
+                              {f}
+                            </p>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                    <div className="space-y-1.5 text-xs text-zinc-400">
-                      <p>15,000 credits/month (~100 generations)</p>
-                      <p>Unlimited projects</p>
-                      <p>React + Tailwind export</p>
-                      <p>Flow Map & Design System</p>
-                    </div>
+                    ))}
                   </div>
 
                   {/* CTA */}
                   <a
-                    href="/pricing"
+                    href={`/pricing`}
                     className="w-full py-3 rounded-lg bg-white text-black text-sm font-medium hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2"
                   >
-                    <Zap className="w-4 h-4" />
-                    Try For Free
+                    Get {activePlan.name} — ${activePlan.price}/mo
                   </a>
 
-                  <p className="text-center text-[11px] text-zinc-600 mt-3">
-                    View all plans and choose the best for you.
-                  </p>
+                  <a
+                    href="/pricing"
+                    className="block text-center text-[11px] text-zinc-500 hover:text-zinc-400 mt-3 transition-colors"
+                  >
+                    View all pricing options
+                  </a>
                 </div>
               </div>
             </FocusLock>
