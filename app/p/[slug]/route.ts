@@ -592,7 +592,10 @@ export async function GET(
   
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  
+
+  <!-- Rive Animations -->
+  <script src="https://unpkg.com/@rive-app/canvas@2.23.7/rive.js"></script>
+
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   

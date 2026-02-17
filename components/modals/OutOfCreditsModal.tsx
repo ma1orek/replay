@@ -14,7 +14,7 @@ interface OutOfCreditsModalProps {
   isSandbox?: boolean;
 }
 
-const DEMO_PROJECT_URL = "https://www.replay.build/tool?project=flow_1769991250167_jr2x4utrt";
+const DEMO_PROJECT_URL = "https://www.replay.build/tool?project=flow_1771341842965_15zr9r5qa";
 
 // Stripe Price ID - Pro $149/mo (Jan 26 correct price)
 const PRO_SUBSCRIPTION_PRICE_ID = "price_1SttxZAxch1s4iBGchJgatG6";

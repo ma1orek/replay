@@ -2756,7 +2756,132 @@ transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 Fluid, responsive, Apple-quality.
 
 ⚠️ MANDATORY: Preserve ALL content from video.`, category: "interactive" },
-  
+  { id: "rive-playful", name: "Playful (Rive)", desc: "Interactive Animations • Canvas • Micro-interactions", fullDesc: `🎮 PLAYFUL RIVE STYLE — Premium interactive animations powered by Rive (rive.app).
+
+═══════════════════════════════════════════════════════════════════════════════
+🚨 CRITICAL: ADD RIVE CDN TO <head>!
+═══════════════════════════════════════════════════════════════════════════════
+You MUST add this script in <head> BEFORE any Rive usage:
+<script src="https://unpkg.com/@rive-app/canvas@2.23.7/rive.js"></script>
+
+═══════════════════════════════════════════════════════════════════════════════
+🎨 COLOR PALETTE — Playful & Vibrant
+═══════════════════════════════════════════════════════════════════════════════
+Background: Warm white #fefefe or soft cream #faf8f5
+Primary: Coral pink #FF6B6B
+Secondary: Sunny yellow #FFD93D
+Tertiary: Ocean teal #4ECDC4
+Accent: Electric purple #A855F7
+Text: Charcoal #2D3436, muted #636E72
+Cards: White with soft colored shadows (shadow-lg shadow-pink-100/50)
+
+═══════════════════════════════════════════════════════════════════════════════
+🔤 TYPOGRAPHY — Rounded & Friendly
+═══════════════════════════════════════════════════════════════════════════════
+Add to <head>: <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+Font: font-family: 'Nunito', sans-serif on body
+Headlines: font-weight 700-800, text-3xl to text-5xl
+Body: font-weight 400-600, tracking-wide
+Style: Rounded, bouncy, friendly feel
+
+═══════════════════════════════════════════════════════════════════════════════
+🎬 RIVE ANIMATIONS — USE THESE EXACT .riv URLs!
+═══════════════════════════════════════════════════════════════════════════════
+ONLY use URLs from this catalog. NEVER invent or guess .riv URLs!
+
+LOADING SPINNERS (use for any loading state, page transitions):
+1. https://public.rive.app/community/runtime-files/2195-4346-avatar-pack-use-case.riv — Animated avatars
+2. https://public.rive.app/community/runtime-files/13255-25054-spinner-or-loading.riv — Multi-state spinner
+3. https://public.rive.app/community/runtime-files/15716-29634-circle-spinner-animation-loading-animation.riv — Circle loader
+
+TOGGLE SWITCHES (use for any on/off, checkbox, setting):
+4. https://public.rive.app/community/runtime-files/8442-16190-toggle-switch-buttons-on-and-off.riv — Toggle switch
+
+LIKE / HEART (use for favorites, likes, bookmarks):
+5. https://public.rive.app/community/runtime-files/21148-39810-like-heartbeat-animation.riv — Like heart
+6. https://public.rive.app/community/runtime-files/875-1696-heart-beat.riv — Heartbeat
+
+STAR RATING (use for reviews, ratings, scoring):
+7. https://public.rive.app/community/runtime-files/7185-13802-star-rating-interaction.riv — Star rating
+
+SUCCESS / CELEBRATION (use for form submit, order complete, achievements):
+8. https://public.rive.app/community/runtime-files/7184-13803-success-confetti-animation.riv — Success confetti
+9. https://public.rive.app/community/runtime-files/1456-2840-confetti-explosion.riv — Confetti burst
+10. https://public.rive.app/community/runtime-files/5024-10163-order-successful-animation.riv — Order success
+
+ICONS (use for menu, download, actions):
+11. https://public.rive.app/community/runtime-files/572-1084-menu-icon.riv — Hamburger menu
+12. https://public.rive.app/community/runtime-files/382-718-download-icon.riv — Download with progress
+13. https://public.rive.app/community/runtime-files/1298-2487-animated-icon-set-1-color.riv — Icon set (multiple)
+
+BUTTONS (use for CTA, submit, interactive buttons):
+14. https://public.rive.app/community/runtime-files/8144-15621-button-animation.riv — Button hover/click
+15. https://public.rive.app/community/runtime-files/737-1448-button-animation.riv — Button states
+
+CHARACTERS / MASCOTS (use for hero section, about, empty states):
+16. https://public.rive.app/community/runtime-files/2244-7248-animated-login-character.riv — Login character
+17. https://public.rive.app/community/runtime-files/6241-12116-character-animation.riv — Interactive character
+18. https://public.rive.app/community/runtime-files/9246-17588-chatbot-animation.riv — Chatbot/AI assistant
+
+═══════════════════════════════════════════════════════════════════════════════
+📋 HOW TO USE RIVE — Canvas Template
+═══════════════════════════════════════════════════════════════════════════════
+
+SINGLE ANIMATION:
+<canvas id="myAnimation" width="200" height="200" class="w-48 h-48"></canvas>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  new rive.Rive({
+    src: 'PASTE_URL_FROM_CATALOG',
+    canvas: document.getElementById('myAnimation'),
+    autoplay: true,
+    stateMachines: 'State Machine 1',
+    fit: rive.Fit.Contain,
+    alignment: rive.Alignment.Center
+  });
+});
+</script>
+
+MULTIPLE ANIMATIONS (use for 3+ Rive elements — data-rive pattern):
+<canvas data-rive="URL_1" width="200" height="200" class="w-48 h-48"></canvas>
+<canvas data-rive="URL_2" width="100" height="100" class="w-24 h-24"></canvas>
+
+Then ONE init script at end of body:
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('[data-rive]').forEach(canvas => {
+    new rive.Rive({
+      src: canvas.dataset.rive,
+      canvas: canvas,
+      autoplay: true,
+      stateMachines: canvas.dataset.riveSm || 'State Machine 1',
+      fit: rive.Fit.Contain,
+      alignment: rive.Alignment.Center
+    });
+  });
+});
+</script>
+
+═══════════════════════════════════════════════════════════════════════════════
+🎯 WHEN TO USE RIVE vs OTHER
+═══════════════════════════════════════════════════════════════════════════════
+✅ USE RIVE: Loading spinners, toggles, checkboxes, like/heart buttons, star ratings, success animations, hero mascots, CTA buttons, menu hamburger
+❌ DO NOT USE RIVE: Scroll animations (GSAP!), text reveals (GSAP!), page transitions (CSS!), backgrounds (CSS gradients!)
+
+═══════════════════════════════════════════════════════════════════════════════
+🎨 DESIGN RULES
+═══════════════════════════════════════════════════════════════════════════════
+- Rounded corners EVERYWHERE: rounded-2xl, rounded-3xl, rounded-full
+- Soft colored shadows: shadow-xl shadow-pink-200/30, shadow-teal-200/30
+- Cards: bg-white rounded-3xl p-6 shadow-lg shadow-pink-100/40 hover:shadow-xl transition-shadow
+- Buttons: rounded-full px-8 py-3 font-bold
+- Use 3-5 Rive animations per page for the full playful effect
+- Every canvas needs UNIQUE id. Use data-rive pattern for 3+ animations
+- Set width/height attributes on every canvas + Tailwind responsive classes
+- ONLY use .riv URLs from the catalog above — NEVER invent URLs!
+
+⚠️ MANDATORY: Preserve ALL content from video. Apply this playful Rive style to every section.`, category: "interactive" },
+
   // === WEBGL & SHADERS ===
   { id: "chromatic-dispersion", name: "Chromatic Dispersion", desc: "RGB Split • Movement Speed • Shader", fullDesc: `RGB CHANNEL SEPARATION - Speed-based chromatic aberration.
 

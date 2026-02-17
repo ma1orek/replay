@@ -19,6 +19,7 @@ const ALLOWED_IDS = new Set([
   'flow_1768470467213_35dvc8tap',
   'flow_1767812494307_4c540djzy',
   'flow_1769444036799_r8hrcxyx2', // Enterprise Dashboard - Showcase Demo
+  'flow_1771341842965_15zr9r5qa', // Enterprise Claims Manager v2 - New Showcase
 ]);
 
 // GET - Fetch demo generation (no auth required)

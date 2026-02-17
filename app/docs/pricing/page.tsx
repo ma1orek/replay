@@ -90,7 +90,7 @@ export default function PricingPage() {
                 <span>Code preview</span>
               </li>
             </ul>
-            <Link href="https://www.replay.build/tool?project=flow_1769991250167_jr2x4utrt" className="block w-full py-2 rounded-lg bg-zinc-700 text-white text-sm text-center hover:bg-zinc-600 transition-colors">
+            <Link href="https://www.replay.build/tool?project=flow_1771341842965_15zr9r5qa" className="block w-full py-2 rounded-lg bg-zinc-700 text-white text-sm text-center hover:bg-zinc-600 transition-colors">
               Explore Demo
             </Link>
           </div>

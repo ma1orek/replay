@@ -3115,10 +3115,11 @@ function ReplayToolContent() {
     "flow_1767812494307_4c540djzy", // landing - Flooks
     "flow_1769444036799_r8hrcxyx2", // showcase - Enterprise Dashboard (old)
     "flow_1769991250167_jr2x4utrt", // showcase - Enterprise Claims Manager v1.4
+    "flow_1771341842965_15zr9r5qa", // showcase - Enterprise Claims Manager v2
   ]), []);
-  
+
   // Demo showcase project (the main one for landing page)
-  const SHOWCASE_PROJECT_ID = "flow_1769991250167_jr2x4utrt";
+  const SHOWCASE_PROJECT_ID = "flow_1771341842965_15zr9r5qa";
   
   const [flows, setFlows] = useState<FlowItem[]>([]);
   const hasRestoredFlowsRef = useRef(false);
@@ -5577,31 +5578,30 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
         }
         
         // For showcase demo project, add welcome message explaining what this is
-        if (projectId === "flow_1769991250167_jr2x4utrt" || projectId === "flow_1769444036799_r8hrcxyx2") {
+        if (projectId === "flow_1771341842965_15zr9r5qa" || projectId === "flow_1769991250167_jr2x4utrt" || projectId === "flow_1769444036799_r8hrcxyx2") {
           const showcaseWelcome = {
             id: "showcase-welcome",
             role: "assistant" as const,
             content: `Welcome to the Replay Demo!
 
-This is a fully functional showcase demonstrating Replay's capabilities.
-
-What you're seeing:
-This Enterprise Claims Manager was automatically generated from a screen recording. Replay analyzed the video and produced complete production-ready output.
+This Enterprise Claims Manager v2 was automatically generated from a screen recording. Replay's AI analyzed the video and produced complete production-ready output in under 60 seconds.
 
 What was generated:
-• Complete UI Code (React + Tailwind)
+• Complete UI Code (React + Tailwind CSS)
 • Flow Map with navigation structure
-• Component Library inventory  
+• Component Library with categorized elements
 • Design System tokens (colors, typography, spacing)
 
 Explore the tabs above:
-• Preview - Live rendered UI with working navigation
-• Code - Generated source code
-• Flow - Screen navigation map
-• Design - Extracted design tokens
-• Library - Component library
+• Preview — Live rendered UI with working navigation
+• Code — Full source code (copy or download)
+• Flow — Visual navigation map between screens
+• Library — Extracted UI component inventory
+• Design — Color palette, fonts, and spacing tokens
 
-Ready to generate from your own videos? Upgrade to Pro to start creating your own projects!`,
+Try the AI Editor: Click "Replay AI" and ask to change colors, add sections, swap charts, or translate to any language.
+
+Ready to generate from your own videos? Upload any screen recording to get started!`,
             timestamp: Date.now()
           };
           setChatMessages([showcaseWelcome]);
