@@ -100,6 +100,8 @@ interface BlogPost {
   created_at: string;
   updated_at: string;
   published_at: string | null;
+  devto_url: string | null;
+  hashnode_url: string | null;
 }
 
 // Gemini API cost estimation (based on actual Google AI Studio billing)
@@ -158,7 +160,12 @@ export default function AdminPage() {
   const [showMobileSidebar, setShowMobileSidebar] = useState(false); // Mobile sidebar state
   const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0, currentTitle: "" });
   const [bgQueue, setBgQueue] = useState<{ processed: number; total: number; batchId: string; results: any[] } | null>(null);
-  
+
+  // Crosspost state
+  const [crosspostStats, setCrosspostStats] = useState<{ totalPublished: number; devto: { posted: number; remaining: number }; hashnode: { posted: number; remaining: number }; configured: { devto: boolean; hashnode: boolean } } | null>(null);
+  const [crossposting, setCrossposting] = useState<string | null>(null); // "devto" | "hashnode" | "all" | null
+  const [crosspostLog, setCrosspostLog] = useState<string[]>([]);
+
   // Viral Post Generator state
   const [viralSubTab, setViralSubTab] = useState<"posts" | "replies" | "daily" | "accounts">("posts");
   const [viralContext, setViralContext] = useState("");
@@ -350,6 +357,55 @@ export default function AdminPage() {
     }
   }, [blogFilter, blogPage, blogSort, blogOrder, blogSearch]);
 
+  // Load crosspost stats
+  const loadCrosspostStats = useCallback(async (token: string) => {
+    try {
+      const resp = await fetch("/api/aeo/crosspost-bulk", { headers: { "Authorization": `Bearer ${token}` } });
+      if (resp.ok) setCrosspostStats(await resp.json());
+    } catch {}
+  }, []);
+
+  // Run bulk crosspost
+  const runBulkCrosspost = useCallback(async (platform: "devto" | "hashnode" | "all") => {
+    if (!adminToken || crossposting) return;
+    setCrossposting(platform);
+    setCrosspostLog([`Starting bulk crosspost to ${platform}...`]);
+    let totalProcessed = 0;
+    let keepGoing = true;
+
+    while (keepGoing) {
+      try {
+        const resp = await fetch("/api/aeo/crosspost-bulk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminToken}` },
+          body: JSON.stringify({ platform, batchSize: 10 }),
+        });
+        const data = await resp.json();
+        if (!data.success) { setCrosspostLog(l => [...l, `Error: ${data.error}`]); break; }
+
+        totalProcessed += data.processed;
+        for (const r of data.results) {
+          setCrosspostLog(l => [...l, r.url ? `✅ ${r.platform}: ${r.slug} → ${r.url}` : `⚠️ ${r.platform}: ${r.slug} — ${r.error}`]);
+        }
+        setCrosspostLog(l => [...l, `Batch done. Total: ${totalProcessed}. Remaining: Dev.to=${data.remaining.devto}, Hashnode=${data.remaining.hashnode}`]);
+
+        const remaining = platform === "devto" ? data.remaining.devto : platform === "hashnode" ? data.remaining.hashnode : data.remaining.devto + data.remaining.hashnode;
+        if (data.processed === 0 || remaining === 0) keepGoing = false;
+
+        // Brief pause between batches
+        await new Promise(r => setTimeout(r, 2000));
+      } catch (e: any) {
+        setCrosspostLog(l => [...l, `Fatal: ${e.message}`]);
+        keepGoing = false;
+      }
+    }
+
+    setCrosspostLog(l => [...l, `Done! ${totalProcessed} articles crossposted.`]);
+    setCrossposting(null);
+    loadCrosspostStats(adminToken);
+    loadBlogPosts(adminToken);
+  }, [adminToken, crossposting, loadCrosspostStats, loadBlogPosts]);
+
   // Poll background queue progress
   const pollBgQueue = useCallback(async () => {
     if (!adminToken) return;
@@ -506,8 +562,9 @@ export default function AdminPage() {
   useEffect(() => {
     if (activeTab === "content" && adminToken) {
       loadBlogPosts(adminToken);
+      loadCrosspostStats(adminToken);
     }
-  }, [activeTab, blogFilter, blogPage, blogSort, blogOrder, blogSearch, adminToken, loadBlogPosts]);
+  }, [activeTab, blogFilter, blogPage, blogSort, blogOrder, blogSearch, adminToken, loadBlogPosts, loadCrosspostStats]);
 
   // Load AEO data when tab changes
   const loadAeoData = useCallback(async () => {
@@ -1840,6 +1897,84 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
               )}
             </div>
 
+            {/* Crosspost Panel */}
+            {crosspostStats && (
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-medium text-white/70 flex items-center gap-2">
+                    <Send className="w-4 h-4 text-[#71717a]" />
+                    Crossposting ({crosspostStats.totalPublished} published articles)
+                  </h3>
+                  <button
+                    onClick={() => adminToken && loadCrosspostStats(adminToken)}
+                    className="p-1.5 hover:bg-white/10 rounded-lg text-white/40 hover:text-white transition-colors"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div className="bg-white/5 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] text-white/40 uppercase">Dev.to</span>
+                      {crosspostStats.configured.devto ? (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">Active</span>
+                      ) : (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400">No API Key</span>
+                      )}
+                    </div>
+                    <div className="text-lg font-bold text-white">{crosspostStats.devto.posted}<span className="text-xs text-white/30 font-normal"> / {crosspostStats.totalPublished}</span></div>
+                    <div className="text-[10px] text-white/40">{crosspostStats.devto.remaining} remaining</div>
+                    {crosspostStats.configured.devto && crosspostStats.devto.remaining > 0 && (
+                      <button
+                        onClick={() => runBulkCrosspost("devto")}
+                        disabled={!!crossposting}
+                        className="mt-2 w-full px-3 py-1.5 text-[10px] bg-[#71717a]/20 text-[#71717a] rounded-lg hover:bg-[#71717a]/30 disabled:opacity-30 transition-colors"
+                      >
+                        {crossposting === "devto" ? "Posting..." : `Crosspost ${Math.min(crosspostStats.devto.remaining, 10)} →`}
+                      </button>
+                    )}
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] text-white/40 uppercase">Hashnode</span>
+                      {crosspostStats.configured.hashnode ? (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">Active</span>
+                      ) : (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400">No API Key</span>
+                      )}
+                    </div>
+                    <div className="text-lg font-bold text-white">{crosspostStats.hashnode.posted}<span className="text-xs text-white/30 font-normal"> / {crosspostStats.totalPublished}</span></div>
+                    <div className="text-[10px] text-white/40">{crosspostStats.hashnode.remaining} remaining</div>
+                    {crosspostStats.configured.hashnode && crosspostStats.hashnode.remaining > 0 && (
+                      <button
+                        onClick={() => runBulkCrosspost("hashnode")}
+                        disabled={!!crossposting}
+                        className="mt-2 w-full px-3 py-1.5 text-[10px] bg-[#71717a]/20 text-[#71717a] rounded-lg hover:bg-[#71717a]/30 disabled:opacity-30 transition-colors"
+                      >
+                        {crossposting === "hashnode" ? "Posting..." : `Crosspost ${Math.min(crosspostStats.hashnode.remaining, 10)} →`}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {(crosspostStats.devto.remaining > 0 || crosspostStats.hashnode.remaining > 0) && crosspostStats.configured.devto && crosspostStats.configured.hashnode && (
+                  <button
+                    onClick={() => runBulkCrosspost("all")}
+                    disabled={!!crossposting}
+                    className="w-full px-3 py-2 text-xs bg-gradient-to-r from-[#71717a]/20 to-[#52525b]/20 text-[#71717a] rounded-lg hover:from-[#71717a]/30 hover:to-[#52525b]/30 disabled:opacity-30 transition-colors font-medium"
+                  >
+                    {crossposting === "all" ? "Processing all platforms..." : "Crosspost All Platforms →"}
+                  </button>
+                )}
+                {crosspostLog.length > 0 && (
+                  <div className="mt-3 max-h-40 overflow-y-auto bg-black/30 rounded-lg p-2 text-[10px] text-white/50 font-mono space-y-0.5">
+                    {crosspostLog.slice(-20).map((line, i) => (
+                      <div key={i}>{line}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Blog Posts List */}
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl">
               <div className="p-4 border-b border-zinc-800 space-y-3">
@@ -1925,6 +2060,8 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                             <span>{post.read_time_minutes} min read</span>
                             <span>SEO: {post.seo_score}/100</span>
                             <span>{new Date(post.created_at).toLocaleDateString()}</span>
+                            {post.devto_url && <span className="text-blue-400">Dev.to</span>}
+                            {post.hashnode_url && <span className="text-purple-400">Hashnode</span>}
                           </div>
                           {post.meta_description && (
                             <p className="text-xs text-white/50 mt-2 line-clamp-1">{post.meta_description}</p>
