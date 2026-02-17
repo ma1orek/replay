@@ -1969,9 +1969,14 @@ ${isDSStyleDirective
 **📐 LAYOUT STRUCTURE — MATCH THE VIDEO:**
 - If scanData describes a SPLIT HERO (text on one side, image on other) → build a two-column hero, NOT centered
 - If scanData shows sidebar+main → build sidebar+main using CSS Grid:
-  display:grid; grid-template-columns:250px 1fr; min-height:100vh;
+  Desktop (lg+): display:grid; grid-template-columns:250px 1fr; min-height:100vh;
   ❌ NEVER use position:fixed for sidebar — content will overlap!
   ✅ sidebar and main must be direct grid children
+  📱 MOBILE: sidebar MUST become a top nav bar with hamburger menu toggle!
+  - Hide sidebar on mobile (< lg), show hamburger button at top
+  - Use Alpine.js x-data/x-show for mobile menu slide-out drawer
+  - NEVER display a 250px sidebar on mobile — it covers the whole screen!
+  - Main content on mobile: full-width, stacked vertically
 - Do NOT center everything by default — match the actual column layout from scanData
 - "View Companies" button next to "Apply to YC" → put them SIDE BY SIDE, not stacked
 

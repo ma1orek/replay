@@ -866,24 +866,53 @@ If the video shows a dashboard, admin panel, SaaS app, or ANY interface with sid
 ✅ Main area MUST have min-width:0 and overflow-x:hidden
 
 MANDATORY STRUCTURE (match the VIDEO's theme for colors!):
-<div style="display:grid;grid-template-columns:250px 1fr;min-height:100vh;">
-  <!-- MATCH VIDEO COLORS: light video = bg-white/bg-gray-50, dark video = bg-[#1a1a2e] -->
-  <aside style="overflow-y:auto;padding:1rem;">
-    <!-- sidebar logo + nav items — use video's sidebar color! -->
-  </aside>
-  <main style="min-width:0;overflow-x:hidden;overflow-y:auto;padding:1.5rem;">
-    <!-- ALL main content goes here — use video's main area bg color! -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;">
-      <!-- stat cards, tables, charts -->
-    </div>
+<!-- Desktop: sidebar + main grid. Mobile: top nav + stacked content -->
+<div x-data="{ sidebarOpen: false }" class="min-h-screen">
+  <!-- MOBILE TOP NAV (shown < lg) -->
+  <div class="lg:hidden flex items-center justify-between p-4 border-b" style="border-color:var(--border,#e5e7eb);">
+    <span class="font-bold">App Name</span>
+    <button @click="sidebarOpen = !sidebarOpen">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+  </div>
+  <!-- MOBILE SLIDE-OUT MENU -->
+  <div x-show="sidebarOpen" @click.away="sidebarOpen=false" x-transition class="lg:hidden fixed inset-0 z-40">
+    <div class="absolute inset-0 bg-black/50" @click="sidebarOpen=false"></div>
+    <aside class="relative z-50 w-64 h-full overflow-y-auto p-4" style="background:var(--sidebar-bg,#1f2937);">
+      <!-- sidebar nav items (same as desktop) -->
+    </aside>
+  </div>
+  <!-- DESKTOP GRID LAYOUT (shown >= lg) -->
+  <div class="hidden lg:grid" style="grid-template-columns:250px 1fr;min-height:100vh;">
+    <aside style="overflow-y:auto;padding:1rem;">
+      <!-- sidebar logo + nav items — use video's sidebar color! -->
+    </aside>
+    <main style="min-width:0;overflow-x:hidden;overflow-y:auto;padding:1.5rem;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;">
+        <!-- stat cards, tables, charts -->
+      </div>
+    </main>
+  </div>
+  <!-- MOBILE MAIN CONTENT (shown < lg, below top nav) -->
+  <main class="lg:hidden p-4" style="min-width:0;overflow-x:hidden;">
+    <!-- Same content as desktop main, stacked vertically -->
   </main>
 </div>
 
+📱 MOBILE SIDEBAR RULES (CRITICAL!):
+- On mobile (< lg breakpoint): sidebar MUST become a hamburger menu at the TOP
+- NEVER show a 250px sidebar on mobile — it takes the entire screen width!
+- Use Alpine.js x-show to toggle a slide-out drawer on mobile
+- Desktop (lg+): CSS Grid with sidebar + main as usual
+- The main content on mobile should stack vertically with full width
+- Tables on mobile: use overflow-x:auto so they scroll horizontally
+
 VERIFICATION: After generating, check that:
-1. The outermost div has display:grid with grid-template-columns
-2. <aside> and <main> are DIRECT children of the grid container
-3. Main content is NOT positioned at left:0 — it flows naturally in the grid
-4. No element uses position:fixed to create the sidebar
+1. Desktop: outermost layout has display:grid with grid-template-columns
+2. Desktop: <aside> and <main> are DIRECT children of the grid container
+3. Mobile: sidebar is HIDDEN, replaced by top nav bar with hamburger toggle
+4. Mobile: main content is full-width, stacked vertically
+5. No element uses position:fixed to create a permanent sidebar
 
 ═══════════════════════════════════════════════════
 ASSEMBLY RULES — MINIMUM REQUIREMENTS:
