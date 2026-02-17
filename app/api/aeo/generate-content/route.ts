@@ -20,6 +20,92 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
  * Two-pass approach: 1) Write full markdown article 2) Extract metadata
  * This avoids JSON wrapping which caps article length
  */
+async function generateComparisonContent(
+  competitor: string,
+  targetKeywords: string[]
+): Promise<{ title: string; content: string; metaDescription: string; slug: string }> {
+  const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+
+  const prompt = `You are an expert technical writer creating a fair, detailed comparison article.
+
+Write a COMPLETE comparison article: "Replay vs ${competitor}" for technical decision-makers.
+
+**REPLAY** (replay.build): AI-powered platform that converts video recordings of any UI into production React code + Design System + Component Library. Records ANY interface → outputs documented, deployable React code.
+
+**STRUCTURE** (write ALL sections):
+
+# Replay vs ${competitor}: Comprehensive Comparison for 2026
+
+## Overview
+Brief intro — what each tool does, who it's for.
+
+## Feature Comparison Table
+| Feature | Replay | ${competitor} |
+Use real features, be honest about both tools.
+
+## Approach & Technology
+How each tool works technically. Replay uses video analysis (record UI → AI generates React), explain ${competitor}'s approach.
+
+## Pricing Comparison
+Replay: Free tier available, Pro $149/mo, Agency $499/mo.
+Research ${competitor}'s pricing or note "check their website."
+
+## Use Cases: When to Choose Each
+### When to Choose Replay
+- Legacy modernization (COBOL, AS/400, green screens)
+- Converting any existing UI to React
+- Design system extraction
+- Startup MVP from UI inspiration
+
+### When to Choose ${competitor}
+Be honest and fair about ${competitor}'s strengths.
+
+## Strengths and Limitations
+Honest assessment of both tools.
+
+## Integration & Workflow
+How each fits into development workflows.
+
+## Frequently Asked Questions
+5-7 real questions comparing both tools.
+
+## Verdict
+Balanced conclusion. Don't be blindly pro-Replay — acknowledge where ${competitor} excels.
+
+**RULES:**
+- 2500-3500 words
+- Use verified stats: Gartner (80% legacy projects over budget), McKinsey ($1.8T legacy maintenance)
+- Mention Replay naturally 6-8 times with context
+- Include [Try Replay](https://replay.build/tool) link 2-3 times
+- FAQ section MUST use "## Frequently Asked Questions" as H2, each question as ### H3
+- Be fair and honest — readers trust balanced comparisons
+
+**TARGET KEYWORDS:** ${targetKeywords.join(", ")}
+
+Write the FULL article as markdown:`;
+
+  const result = await model.generateContent({
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    generationConfig: { temperature: 0.7, maxOutputTokens: 65536 }
+  });
+
+  let article = result.response.text();
+  const titleMatch = article.match(/^#\s+(.+)$/m);
+  const title = titleMatch ? titleMatch[1].trim() : `Replay vs ${competitor}`;
+  const content = article.replace(/^#\s+.+\n*/m, "").trim();
+
+  const metaResult = await model.generateContent({
+    contents: [{ role: "user", parts: [{ text: `Generate a 150-160 character meta description for "${title}". Must mention both Replay and ${competitor}. Output ONLY the text.` }] }],
+    generationConfig: { temperature: 0.3, maxOutputTokens: 256 }
+  });
+  const metaDescription = metaResult.response.text().trim().replace(/^["']|["']$/g, "");
+
+  let slug = title.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
+  if (slug.length > 80) slug = slug.substring(0, 80).replace(/-[^-]*$/, "");
+
+  return { title, content, metaDescription, slug };
+}
+
 async function generateContent(
   query: string,
   targetKeywords: string[],
@@ -296,7 +382,9 @@ export async function POST(req: Request) {
       targetKeywords = [],
       competitorUrl = null,
       gapId = null,
-      autoPublish = false
+      autoPublish = false,
+      mode = "standard",
+      competitor = null
     } = body;
 
     gapIdForRecovery = gapId;
@@ -305,7 +393,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Query is required" }, { status: 400 });
     }
 
-    console.log(`Generating content for query: "${query}"...`);
+    console.log(`Generating content (mode=${mode}) for query: "${query}"...`);
 
     // Update gap status to "generating"
     if (gapId) {
@@ -318,15 +406,19 @@ export async function POST(req: Request) {
         .eq("id", gapId);
     }
 
-    // Fetch competitor content if URL provided
-    let competitorContent: string | null = null;
-    if (competitorUrl) {
-      console.log(`Fetching competitor content from: ${competitorUrl}`);
-      competitorContent = await fetchCompetitorContent(competitorUrl);
+    let generated;
+    if (mode === "comparison" && competitor) {
+      // Comparison mode: "Replay vs X" articles
+      generated = await generateComparisonContent(competitor, targetKeywords.length > 0 ? targetKeywords : [query]);
+    } else {
+      // Standard mode
+      let competitorContent: string | null = null;
+      if (competitorUrl) {
+        console.log(`Fetching competitor content from: ${competitorUrl}`);
+        competitorContent = await fetchCompetitorContent(competitorUrl);
+      }
+      generated = await generateContent(query, targetKeywords, competitorContent);
     }
-
-    // Generate content
-    const generated = await generateContent(query, targetKeywords, competitorContent);
 
     // Store generated content
     const { data: contentRecord, error: insertError } = await supabase

@@ -148,6 +148,11 @@ export default function AdminPage() {
   const [generateResults, setGenerateResults] = useState<any[]>([]);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [blogFilter, setBlogFilter] = useState<"all" | "draft" | "review" | "published">("all");
+  const [blogPage, setBlogPage] = useState(0);
+  const [blogSort, setBlogSort] = useState<"created_at" | "published_at" | "title" | "seo_score">("created_at");
+  const [blogOrder, setBlogOrder] = useState<"asc" | "desc">("desc");
+  const [blogSearch, setBlogSearch] = useState("");
+  const BLOG_PAGE_SIZE = 100;
   const [autoMode, setAutoMode] = useState(true); // Auto-generate mode (AI picks topics)
   const [autoCount, setAutoCount] = useState(10); // Number of articles to auto-generate
   const [showMobileSidebar, setShowMobileSidebar] = useState(false); // Mobile sidebar state
@@ -321,7 +326,16 @@ export default function AdminPage() {
   const loadBlogPosts = useCallback(async (token: string) => {
     setBlogLoading(true);
     try {
-      const response = await fetch(`/api/admin/blog?status=${blogFilter}&limit=500`, {
+      const offset = blogPage * BLOG_PAGE_SIZE;
+      const params = new URLSearchParams({
+        status: blogFilter,
+        limit: String(BLOG_PAGE_SIZE),
+        offset: String(offset),
+        sort: blogSort,
+        order: blogOrder,
+        ...(blogSearch && { search: blogSearch }),
+      });
+      const response = await fetch(`/api/admin/blog?${params}`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (response.ok) {
@@ -334,7 +348,7 @@ export default function AdminPage() {
     } finally {
       setBlogLoading(false);
     }
-  }, [blogFilter]);
+  }, [blogFilter, blogPage, blogSort, blogOrder, blogSearch]);
 
   // Poll background queue progress
   const pollBgQueue = useCallback(async () => {
@@ -493,7 +507,7 @@ export default function AdminPage() {
     if (activeTab === "content" && adminToken) {
       loadBlogPosts(adminToken);
     }
-  }, [activeTab, blogFilter, adminToken, loadBlogPosts]);
+  }, [activeTab, blogFilter, blogPage, blogSort, blogOrder, blogSearch, adminToken, loadBlogPosts]);
 
   // Load AEO data when tab changes
   const loadAeoData = useCallback(async () => {
@@ -1828,26 +1842,56 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
 
             {/* Blog Posts List */}
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl">
-              <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-                <h3 className="text-sm font-medium text-white/70 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-[#71717a]" />
-                  Generated Articles ({blogTotal} total{blogFilter !== 'all' ? `, showing ${blogPosts.length}` : ''})
-                </h3>
+              <div className="p-4 border-b border-zinc-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-white/70 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-[#71717a]" />
+                    Generated Articles ({blogTotal} total, page {blogPage + 1} of {Math.max(1, Math.ceil(blogTotal / BLOG_PAGE_SIZE))})
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    {["all", "draft", "review", "published"].map(status => (
+                      <button
+                        key={status}
+                        onClick={() => { setBlogFilter(status as any); setBlogPage(0); }}
+                        className={cn(
+                          "px-3 py-1.5 text-xs rounded-lg transition-colors capitalize",
+                          blogFilter === status
+                            ? "bg-[#71717a]/20 text-[#71717a]"
+                            : "bg-white/5 text-white/50 hover:text-white/70"
+                        )}
+                      >
+                        {status}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="flex items-center gap-2">
-                  {["all", "draft", "review", "published"].map(status => (
-                    <button
-                      key={status}
-                      onClick={() => setBlogFilter(status as any)}
-                      className={cn(
-                        "px-3 py-1.5 text-xs rounded-lg transition-colors capitalize",
-                        blogFilter === status
-                          ? "bg-[#71717a]/20 text-[#71717a]"
-                          : "bg-white/5 text-white/50 hover:text-white/70"
-                      )}
-                    >
-                      {status}
-                    </button>
-                  ))}
+                  <div className="flex-1 relative">
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+                    <input
+                      type="text"
+                      placeholder="Search articles..."
+                      value={blogSearch}
+                      onChange={(e) => { setBlogSearch(e.target.value); setBlogPage(0); }}
+                      className="w-full pl-9 pr-3 py-1.5 text-xs bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-white/30 focus:outline-none focus:border-[#71717a]/50"
+                    />
+                  </div>
+                  <select
+                    value={blogSort}
+                    onChange={(e) => { setBlogSort(e.target.value as any); setBlogPage(0); }}
+                    className="px-3 py-1.5 text-xs bg-white/5 border border-white/10 rounded-lg text-white/70 focus:outline-none"
+                  >
+                    <option value="created_at">Date Created</option>
+                    <option value="published_at">Date Published</option>
+                    <option value="title">Title</option>
+                    <option value="seo_score">SEO Score</option>
+                  </select>
+                  <button
+                    onClick={() => setBlogOrder(o => o === "desc" ? "asc" : "desc")}
+                    className="px-3 py-1.5 text-xs bg-white/5 border border-white/10 rounded-lg text-white/70 hover:text-white transition-colors"
+                  >
+                    {blogOrder === "desc" ? "↓ Newest" : "↑ Oldest"}
+                  </button>
                 </div>
               </div>
 
@@ -1925,6 +1969,47 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                   ))
                 )}
               </div>
+              {/* Pagination */}
+              {blogTotal > BLOG_PAGE_SIZE && (
+                <div className="p-3 border-t border-white/5 flex items-center justify-between">
+                  <span className="text-[10px] text-white/40">
+                    Showing {blogPage * BLOG_PAGE_SIZE + 1}–{Math.min((blogPage + 1) * BLOG_PAGE_SIZE, blogTotal)} of {blogTotal}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setBlogPage(0)}
+                      disabled={blogPage === 0}
+                      className="px-2 py-1 text-[10px] bg-white/5 rounded text-white/50 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      First
+                    </button>
+                    <button
+                      onClick={() => setBlogPage(p => Math.max(0, p - 1))}
+                      disabled={blogPage === 0}
+                      className="px-2 py-1 text-[10px] bg-white/5 rounded text-white/50 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      Prev
+                    </button>
+                    <span className="px-3 py-1 text-[10px] text-white/70">
+                      {blogPage + 1} / {Math.ceil(blogTotal / BLOG_PAGE_SIZE)}
+                    </span>
+                    <button
+                      onClick={() => setBlogPage(p => Math.min(Math.ceil(blogTotal / BLOG_PAGE_SIZE) - 1, p + 1))}
+                      disabled={blogPage >= Math.ceil(blogTotal / BLOG_PAGE_SIZE) - 1}
+                      className="px-2 py-1 text-[10px] bg-white/5 rounded text-white/50 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                    <button
+                      onClick={() => setBlogPage(Math.ceil(blogTotal / BLOG_PAGE_SIZE) - 1)}
+                      disabled={blogPage >= Math.ceil(blogTotal / BLOG_PAGE_SIZE) - 1}
+                      className="px-2 py-1 text-[10px] bg-white/5 rounded text-white/50 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      Last
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

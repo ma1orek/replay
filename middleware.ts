@@ -7,6 +7,13 @@ import { createServerClient } from "@supabase/ssr";
  * 1. Handle Supabase auth session refresh
  * 2. Route "/" to landing page and "/tool" to the app
  */
+// AI crawler user-agent patterns — always allow through without auth overhead
+const AI_CRAWLER_PATTERNS = [
+  "GPTBot", "ChatGPT-User", "ClaudeBot", "PerplexityBot",
+  "GoogleOther", "Google-Extended", "Amazonbot", "Bytespider",
+  "CCBot", "anthropic-ai", "cohere-ai",
+];
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   let res = NextResponse.next({
@@ -21,6 +28,12 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/api") ||
     pathname.includes(".")
   ) {
+    return res;
+  }
+
+  // Allow AI crawlers through immediately — no auth overhead, no redirects
+  const ua = req.headers.get("user-agent") || "";
+  if (AI_CRAWLER_PATTERNS.some(bot => ua.includes(bot))) {
     return res;
   }
 

@@ -44,12 +44,22 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
+    const sort = searchParams.get('sort') || 'created_at';
+    const order = searchParams.get('order') || 'desc';
+    const search = searchParams.get('search') || '';
+
+    const validSorts = ['created_at', 'published_at', 'title', 'seo_score', 'read_time_minutes', 'updated_at'];
+    const sortColumn = validSorts.includes(sort) ? sort : 'created_at';
 
     let query = supabase
       .from('blog_posts')
       .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false })
+      .order(sortColumn, { ascending: order === 'asc' })
       .range(offset, offset + limit - 1);
+
+    if (search) {
+      query = query.or(`title.ilike.%${search}%,slug.ilike.%${search}%,target_keyword.ilike.%${search}%`);
+    }
 
     if (status && status !== 'all') {
       query = query.eq('status', status);

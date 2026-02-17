@@ -165,6 +165,10 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
       // Process membership
       if (membershipData) {
         setMembership(membershipData as Membership);
+        // Ensure Stripe customer exists (fire-and-forget)
+        if (!membershipData.stripe_customer_id) {
+          fetch("/api/stripe/ensure-customer", { method: "POST" }).catch(() => {});
+        }
       } else if (membershipError && membershipError.code === "PGRST116") {
         setMembership({
           plan: "free",

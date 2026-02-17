@@ -34,6 +34,38 @@ function extractFAQs(content: string): Array<{ question: string; answer: string 
   return faqs.slice(0, 10); // Max 10 FAQs
 }
 
+/** Extract step-by-step instructions for HowTo schema */
+function extractHowToSteps(content: string): Array<{ name: string; text: string }> | null {
+  // Look for "Step-by-Step" or "Implementation Guide" section with numbered/ordered steps
+  const guideMatch = content.match(/##\s*(?:.*(?:step.by.step|implementation guide|how to|getting started|tutorial))[\s\S]*?(?=\n##\s|\n$)/im);
+  if (!guideMatch) return null;
+
+  const section = guideMatch[0];
+  const steps: Array<{ name: string; text: string }> = [];
+
+  // Match H3 subsections or numbered list items as steps
+  const h3Steps = section.split(/###\s+/).slice(1);
+  if (h3Steps.length >= 2) {
+    for (const step of h3Steps) {
+      const lines = step.trim().split("\n");
+      const name = lines[0]?.replace(/\*\*/g, "").replace(/^\d+[.)]\s*/, "").trim();
+      const text = lines.slice(1).map(l => l.replace(/[#*`>]/g, "").trim()).filter(l => l).join(" ").slice(0, 500);
+      if (name && text) steps.push({ name, text });
+    }
+  } else {
+    // Fallback: numbered list items
+    const numbered = section.match(/^\d+[.)]\s+.+/gm);
+    if (numbered && numbered.length >= 2) {
+      for (const item of numbered) {
+        const name = item.replace(/^\d+[.)]\s+/, "").replace(/\*\*/g, "").trim();
+        if (name) steps.push({ name, text: name });
+      }
+    }
+  }
+
+  return steps.length >= 2 ? steps.slice(0, 10) : null;
+}
+
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const supabase = await createServerSupabaseClient();
   const { data: post } = await supabase
@@ -94,6 +126,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   const publishDate = post.published_at || post.created_at;
   const wordCount = post.content?.split(/\s+/).length || 0;
   const faqs = extractFAQs(post.content || "");
+  const howToSteps = extractHowToSteps(post.content || "");
 
   const articleSchema = {
     "@context": "https://schema.org",
@@ -175,6 +208,19 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
     })),
   } : null;
 
+  const howToSchema = howToSteps ? {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    name: post.title,
+    description: post.meta_description,
+    step: howToSteps.map((step, i) => ({
+      "@type": "HowToStep",
+      position: i + 1,
+      name: step.name,
+      text: step.text,
+    })),
+  } : null;
+
   return (
     <>
       <script
@@ -195,6 +241,12 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }}
       />
+      {howToSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }}
+        />
+      )}
       <BlogPostContent post={post} />
     </>
   );

@@ -16,14 +16,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: "https://replay.build/blog", lastModified: new Date(), changeFrequency: "daily", priority: 0.8 },
   ];
 
-  // Fetch all published blog posts
-  const { data: posts } = await supabase
-    .from("blog_posts")
-    .select("slug, published_at, created_at")
-    .eq("status", "published")
-    .order("published_at", { ascending: false });
+  // Fetch ALL published blog posts (paginate past Supabase 1000 row limit)
+  let allPosts: any[] = [];
+  let from = 0;
+  const batchSize = 1000;
+  while (true) {
+    const { data: batch } = await supabase
+      .from("blog_posts")
+      .select("slug, published_at, created_at")
+      .eq("status", "published")
+      .order("published_at", { ascending: false })
+      .range(from, from + batchSize - 1);
+    if (!batch || batch.length === 0) break;
+    allPosts = allPosts.concat(batch);
+    if (batch.length < batchSize) break;
+    from += batchSize;
+  }
 
-  const blogPages: MetadataRoute.Sitemap = (posts || []).map((post) => ({
+  const blogPages: MetadataRoute.Sitemap = allPosts.map((post) => ({
     url: `https://replay.build/blog/${post.slug}`,
     lastModified: new Date(post.published_at || post.created_at),
     changeFrequency: "monthly" as const,
