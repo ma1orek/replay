@@ -96,6 +96,15 @@ export async function POST(req: Request) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Dev.to API error:", response.status, errorText);
+      // Signal rate limit specifically so callers can stop the batch
+      if (response.status === 429) {
+        const retryAfter = response.headers.get("retry-after");
+        return NextResponse.json({
+          error: `Dev.to API error: 429`,
+          rateLimited: true,
+          retryAfterSeconds: retryAfter ? parseInt(retryAfter) : 60,
+        }, { status: 429 });
+      }
       return NextResponse.json({ error: `Dev.to API error: ${response.status}`, details: errorText }, { status: 500 });
     }
 

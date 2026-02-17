@@ -44,16 +44,18 @@ export async function POST(req: Request) {
   const results: { platform: string; slug: string; url?: string; error?: string }[] = [];
   let processed = 0;
   let skipped = 0;
+  let devtoRateLimited = false;
 
-  // Dev.to batch
+  // Dev.to batch — stop immediately on 429
   if ((platform === "devto" || platform === "all") && process.env.DEVTO_API_KEY) {
+    const devtoBatch = Math.min(batchSize, 10); // Dev.to limit ~10/day
     const { data: posts } = await supabase
       .from("blog_posts")
       .select("slug, title")
       .eq("status", "published")
       .is("devto_url", null)
-      .order("published_at", { ascending: false })
-      .limit(batchSize);
+      .order("published_at", { ascending: true }) // oldest first for backlog
+      .limit(devtoBatch);
 
     if (posts && posts.length > 0) {
       for (const post of posts) {
@@ -64,6 +66,11 @@ export async function POST(req: Request) {
             body: JSON.stringify({ slug: post.slug }),
           });
           const data = await resp.json();
+          if (data.rateLimited || resp.status === 429) {
+            results.push({ platform: "devto", slug: post.slug, error: "Rate limited (429) — stopped batch" });
+            devtoRateLimited = true;
+            break;
+          }
           if (data.success) {
             results.push({ platform: "devto", slug: post.slug, url: data.devtoUrl });
             processed++;
@@ -74,21 +81,21 @@ export async function POST(req: Request) {
         } catch (e: any) {
           results.push({ platform: "devto", slug: post.slug, error: e.message });
         }
-        // Rate limit: 1 second between posts
-        await new Promise(r => setTimeout(r, 1000));
+        // 3s between Dev.to calls (strict rate limit)
+        await new Promise(r => setTimeout(r, 3000));
       }
     }
   }
 
-  // Hashnode batch
+  // Hashnode batch — no rate limit issues, go fast
   if ((platform === "hashnode" || platform === "all") && process.env.HASHNODE_API_KEY) {
     const { data: posts } = await supabase
       .from("blog_posts")
       .select("slug, title")
       .eq("status", "published")
       .is("hashnode_url", null)
-      .order("published_at", { ascending: false })
-      .limit(batchSize);
+      .order("published_at", { ascending: true }) // oldest first for backlog
+      .limit(batchSize); // Hashnode handles big batches
 
     if (posts && posts.length > 0) {
       for (const post of posts) {
@@ -131,6 +138,7 @@ export async function POST(req: Request) {
     success: true,
     processed,
     skipped,
+    devtoRateLimited,
     results,
     remaining: {
       devto: remainingDevto || 0,

@@ -204,14 +204,11 @@ export async function GET(req: Request) {
     }
 
     // STEP 4: Auto-Crosspost ENTIRE BACKLOG to Dev.to + Hashnode
-    // Processes 20 articles per platform per cron run (with 1.5s rate limit)
-    // At 4 runs/day = ~160 crossposts/day → full backlog in ~30 days
+    // Dev.to: strict rate limit (~10/day) → small batch, 3s delay, stop on 429
+    // Hashnode: no issues → big batch (50), 1s delay
     log.push("\n📢 STEP 4: Auto-Crossposting (backlog mode)...");
 
-    const CROSSPOST_BATCH = 20; // articles per platform per cron run
-    const CROSSPOST_DELAY = 1500; // ms between API calls (rate limit safety)
-
-    // Dev.to crossposting — ALL uncrossposted articles (oldest first for backlog)
+    // Dev.to crossposting — small batch, stop immediately on 429
     if (process.env.DEVTO_API_KEY) {
       try {
         const { count: devtoRemaining } = await supabase
@@ -225,13 +222,14 @@ export async function GET(req: Request) {
           .select("slug, title")
           .eq("status", "published")
           .is("devto_url", null)
-          .order("published_at", { ascending: true }) // oldest first = backlog
-          .limit(CROSSPOST_BATCH);
+          .order("published_at", { ascending: true })
+          .limit(10); // Dev.to allows ~10/day
 
-        log.push(`   Dev.to: ${devtoRemaining || 0} remaining, processing ${devtoPosts?.length || 0}`);
+        log.push(`   Dev.to: ${devtoRemaining || 0} remaining, trying ${devtoPosts?.length || 0}`);
 
         if (devtoPosts && devtoPosts.length > 0) {
           let devtoSuccess = 0;
+          let devtoRateLimited = false;
           for (const post of devtoPosts) {
             try {
               const crosspostResp = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/aeo/crosspost-devto`, {
@@ -240,6 +238,11 @@ export async function GET(req: Request) {
                 body: JSON.stringify({ slug: post.slug })
               });
               const crosspostData = await crosspostResp.json();
+              if (crosspostData.rateLimited || crosspostResp.status === 429) {
+                log.push(`   ⏸️ Dev.to: Rate limited after ${devtoSuccess} posts — stopping, will resume next cron`);
+                devtoRateLimited = true;
+                break;
+              }
               if (crosspostData.success) {
                 devtoSuccess++;
                 log.push(`   ✅ Dev.to: ${post.title}`);
@@ -249,9 +252,12 @@ export async function GET(req: Request) {
             } catch (e: any) {
               log.push(`   ❌ Dev.to error for ${post.slug}: ${e.message}`);
             }
-            await new Promise(r => setTimeout(r, CROSSPOST_DELAY));
+            // 3s between Dev.to calls (their rate limit is strict)
+            await new Promise(r => setTimeout(r, 3000));
           }
-          log.push(`   Dev.to batch done: ${devtoSuccess}/${devtoPosts.length} success, ~${(devtoRemaining || 0) - devtoSuccess} remaining`);
+          if (!devtoRateLimited) {
+            log.push(`   Dev.to batch done: ${devtoSuccess} posted, ~${(devtoRemaining || 0) - devtoSuccess} remaining`);
+          }
         }
       } catch (error: any) {
         log.push(`   ❌ Dev.to crosspost error: ${error.message}`);
@@ -260,7 +266,7 @@ export async function GET(req: Request) {
       log.push(`   ⏸️ Dev.to: Skipped — DEVTO_API_KEY not configured`);
     }
 
-    // Hashnode crossposting — ALL uncrossposted articles (oldest first for backlog)
+    // Hashnode crossposting — big batch (50), no rate limit issues
     if (process.env.HASHNODE_API_KEY && process.env.HASHNODE_PUBLICATION_ID) {
       try {
         const { count: hashnodeRemaining } = await supabase
@@ -274,8 +280,8 @@ export async function GET(req: Request) {
           .select("slug, title")
           .eq("status", "published")
           .is("hashnode_url", null)
-          .order("published_at", { ascending: true }) // oldest first = backlog
-          .limit(CROSSPOST_BATCH);
+          .order("published_at", { ascending: true })
+          .limit(50); // Hashnode handles large batches fine
 
         log.push(`   Hashnode: ${hashnodeRemaining || 0} remaining, processing ${hashnodePosts?.length || 0}`);
 
@@ -291,14 +297,13 @@ export async function GET(req: Request) {
               const crosspostData = await crosspostResp.json();
               if (crosspostData.success) {
                 hashnodeSuccess++;
-                log.push(`   ✅ Hashnode: ${post.title}`);
               } else {
                 log.push(`   ⚠️ Hashnode skip: ${post.slug} — ${crosspostData.error || "unknown"}`);
               }
             } catch (e: any) {
               log.push(`   ❌ Hashnode error for ${post.slug}: ${e.message}`);
             }
-            await new Promise(r => setTimeout(r, CROSSPOST_DELAY));
+            await new Promise(r => setTimeout(r, 1000));
           }
           log.push(`   Hashnode batch done: ${hashnodeSuccess}/${hashnodePosts.length} success, ~${(hashnodeRemaining || 0) - hashnodeSuccess} remaining`);
         }

@@ -372,35 +372,46 @@ export default function AdminPage() {
     setCrosspostLog([`Starting bulk crosspost to ${platform}...`]);
     let totalProcessed = 0;
     let keepGoing = true;
+    let activePlatform = platform;
 
     while (keepGoing) {
       try {
         const resp = await fetch("/api/aeo/crosspost-bulk", {
           method: "POST",
           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminToken}` },
-          body: JSON.stringify({ platform, batchSize: 20 }),
+          body: JSON.stringify({ platform: activePlatform, batchSize: 30 }),
         });
         const data = await resp.json();
         if (!data.success) { setCrosspostLog(l => [...l, `Error: ${data.error}`]); break; }
 
         totalProcessed += data.processed;
         for (const r of data.results) {
-          setCrosspostLog(l => [...l, r.url ? `✅ ${r.platform}: ${r.slug} → ${r.url}` : `⚠️ ${r.platform}: ${r.slug} — ${r.error}`]);
+          setCrosspostLog(l => [...l, r.url ? `✅ ${r.platform}: ${r.slug}` : `⚠️ ${r.platform}: ${r.slug} — ${r.error}`]);
         }
-        setCrosspostLog(l => [...l, `Batch done. Total: ${totalProcessed}. Remaining: Dev.to=${data.remaining.devto}, Hashnode=${data.remaining.hashnode}`]);
 
-        const remaining = platform === "devto" ? data.remaining.devto : platform === "hashnode" ? data.remaining.hashnode : data.remaining.devto + data.remaining.hashnode;
+        // If Dev.to got rate limited, switch to Hashnode-only
+        if (data.devtoRateLimited && activePlatform === "all") {
+          setCrosspostLog(l => [...l, `⏸️ Dev.to rate limited — continuing with Hashnode only`]);
+          activePlatform = "hashnode";
+        } else if (data.devtoRateLimited && activePlatform === "devto") {
+          setCrosspostLog(l => [...l, `⏸️ Dev.to rate limited — stopping. Will resume automatically via cron.`]);
+          break;
+        }
+
+        setCrosspostLog(l => [...l, `Batch: +${data.processed}. Total: ${totalProcessed}. Remaining: Dev.to=${data.remaining.devto}, Hashnode=${data.remaining.hashnode}`]);
+
+        const remaining = activePlatform === "devto" ? data.remaining.devto : activePlatform === "hashnode" ? data.remaining.hashnode : data.remaining.devto + data.remaining.hashnode;
         if (data.processed === 0 || remaining === 0) keepGoing = false;
 
         // Brief pause between batches
-        await new Promise(r => setTimeout(r, 2000));
+        await new Promise(r => setTimeout(r, 1500));
       } catch (e: any) {
         setCrosspostLog(l => [...l, `Fatal: ${e.message}`]);
         keepGoing = false;
       }
     }
 
-    setCrosspostLog(l => [...l, `Done! ${totalProcessed} articles crossposted.`]);
+    setCrosspostLog(l => [...l, `Done! ${totalProcessed} articles crossposted total.`]);
     setCrossposting(null);
     loadCrosspostStats(adminToken);
     loadBlogPosts(adminToken);
