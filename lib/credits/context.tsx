@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "@/lib/auth/context";
 import { createClient } from "@/lib/supabase/client";
 
@@ -68,6 +68,7 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
   const [wallet, setWallet] = useState<CreditWallet | null>(null);
   const [membership, setMembership] = useState<Membership | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const stripeEnsureCalled = useRef(false);
   const supabase = createClient();
 
   const fetchCredits = useCallback(async () => {
@@ -165,8 +166,9 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
       // Process membership
       if (membershipData) {
         setMembership(membershipData as Membership);
-        // Ensure Stripe customer exists (fire-and-forget)
-        if (!membershipData.stripe_customer_id) {
+        // Ensure Stripe customer exists (fire-and-forget, once per session)
+        if (!membershipData.stripe_customer_id && !stripeEnsureCalled.current) {
+          stripeEnsureCalled.current = true;
           fetch("/api/stripe/ensure-customer", { method: "POST" }).catch(() => {});
         }
       } else if (membershipError && membershipError.code === "PGRST116") {
