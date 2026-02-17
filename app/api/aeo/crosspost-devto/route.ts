@@ -52,6 +52,10 @@ export async function POST(req: Request) {
       if (error || !data) {
         return NextResponse.json({ error: "Blog post not found" }, { status: 404 });
       }
+      // Skip if already crossposted
+      if (data.devto_url) {
+        return NextResponse.json({ success: false, error: "Already crossposted", devtoUrl: data.devto_url });
+      }
       title = data.title;
       content = data.content;
       articleSlug = data.slug;
@@ -99,6 +103,14 @@ export async function POST(req: Request) {
     const devtoUrl = devtoArticle.url;
 
     console.log(`Crossposted to Dev.to: ${devtoUrl}`);
+
+    // Save devto_url back to blog_posts for dedup
+    if (slug) {
+      await supabase
+        .from("blog_posts")
+        .update({ devto_url: devtoUrl })
+        .eq("slug", slug);
+    }
 
     return NextResponse.json({
       success: true,

@@ -203,23 +203,26 @@ export async function GET(req: Request) {
       }
     }
 
-    // STEP 4: Auto-Crosspost to Dev.to (newly published articles)
+    // STEP 4: Auto-Crosspost to Dev.to + Hashnode (newly published articles)
     log.push("\n📢 STEP 4: Auto-Crossposting...");
+
+    // Find articles published in last 24h that haven't been crossposted yet
+    const cutoff24h = new Date();
+    cutoff24h.setHours(cutoff24h.getHours() - 24);
+
+    // Dev.to crossposting
     if (process.env.DEVTO_API_KEY) {
       try {
-        // Find articles published in last 24h that haven't been crossposted
-        const cutoff24h = new Date();
-        cutoff24h.setHours(cutoff24h.getHours() - 24);
-
-        const { data: recentPosts } = await supabase
+        const { data: devtoPosts } = await supabase
           .from("blog_posts")
           .select("slug, title")
           .eq("status", "published")
           .gte("published_at", cutoff24h.toISOString())
+          .is("devto_url", null)
           .limit(5);
 
-        if (recentPosts && recentPosts.length > 0) {
-          for (const post of recentPosts) {
+        if (devtoPosts && devtoPosts.length > 0) {
+          for (const post of devtoPosts) {
             try {
               const crosspostResp = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/aeo/crosspost-devto`, {
                 method: "POST",
@@ -230,20 +233,59 @@ export async function GET(req: Request) {
               if (crosspostData.success) {
                 log.push(`   ✅ Dev.to: ${post.title} → ${crosspostData.devtoUrl}`);
               } else {
-                log.push(`   ⚠️ Dev.to skip: ${post.slug} — ${crosspostData.error || "already posted"}`);
+                log.push(`   ⚠️ Dev.to skip: ${post.slug} — ${crosspostData.error || "unknown"}`);
               }
             } catch (e: any) {
               log.push(`   ❌ Dev.to error for ${post.slug}: ${e.message}`);
             }
           }
         } else {
-          log.push(`   ℹ️ No new articles to crosspost`);
+          log.push(`   ℹ️ Dev.to: No new articles to crosspost`);
         }
       } catch (error: any) {
-        log.push(`   ❌ Crosspost error: ${error.message}`);
+        log.push(`   ❌ Dev.to crosspost error: ${error.message}`);
       }
     } else {
-      log.push(`   ⏸️ Skipped — DEVTO_API_KEY not configured`);
+      log.push(`   ⏸️ Dev.to: Skipped — DEVTO_API_KEY not configured`);
+    }
+
+    // Hashnode crossposting
+    if (process.env.HASHNODE_API_KEY && process.env.HASHNODE_PUBLICATION_ID) {
+      try {
+        const { data: hashnodePosts } = await supabase
+          .from("blog_posts")
+          .select("slug, title")
+          .eq("status", "published")
+          .gte("published_at", cutoff24h.toISOString())
+          .is("hashnode_url", null)
+          .limit(5);
+
+        if (hashnodePosts && hashnodePosts.length > 0) {
+          for (const post of hashnodePosts) {
+            try {
+              const crosspostResp = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/aeo/crosspost-hashnode`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ slug: post.slug })
+              });
+              const crosspostData = await crosspostResp.json();
+              if (crosspostData.success) {
+                log.push(`   ✅ Hashnode: ${post.title} → ${crosspostData.hashnodeUrl}`);
+              } else {
+                log.push(`   ⚠️ Hashnode skip: ${post.slug} — ${crosspostData.error || "unknown"}`);
+              }
+            } catch (e: any) {
+              log.push(`   ❌ Hashnode error for ${post.slug}: ${e.message}`);
+            }
+          }
+        } else {
+          log.push(`   ℹ️ Hashnode: No new articles to crosspost`);
+        }
+      } catch (error: any) {
+        log.push(`   ❌ Hashnode crosspost error: ${error.message}`);
+      }
+    } else {
+      log.push(`   ⏸️ Hashnode: Skipped — HASHNODE_API_KEY not configured`);
     }
 
     // STEP 5: Performance Tracking (check if recently published content improved citations)
