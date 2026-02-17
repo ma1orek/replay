@@ -881,6 +881,14 @@ Implementation with Alpine.js:
 - Responsive text: text-3xl md:text-5xl lg:text-7xl
 - NO horizontal scrollbar
 
+🚨 SIDEBAR RESPONSIVENESS (CRITICAL!):
+If the design has a sidebar/left panel:
+- Desktop grid MUST use class="hidden lg:grid" (NOT just "grid"!)
+- Mobile top nav MUST use class="lg:hidden" with hamburger button
+- Mobile slide-out drawer MUST use class="lg:hidden" with x-show toggle
+- ❌ NEVER show a 250px sidebar on mobile — it covers the entire screen!
+- ❌ class="grid" alone = BROKEN on mobile! Must be "hidden lg:grid"!
+
 ═══════════════════════════════════════════════════════════════════════════════
 🧱 HTML STRUCTURE TEMPLATE
 ═══════════════════════════════════════════════════════════════════════════════

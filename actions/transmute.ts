@@ -404,7 +404,7 @@ Your job is to create STUNNING, ANIMATED, PRODUCTION-QUALITY web interfaces.
    - Menu: "fixed inset-0 z-[100] bg-black" (FULL SCREEN, SOLID BLACK, no transparency!)
    - OR: "fixed top-16 left-0 right-0 z-50 bg-zinc-950" (below header, SOLID background!)
    - NEVER use transparent/translucent backgrounds - content will bleed through!
-5. SIDEBAR LAYOUT: If video shows a sidebar, keep it! Use CSS Grid (grid-template-columns: 250px 1fr). NEVER position:fixed for sidebars!
+5. SIDEBAR LAYOUT: If video shows a sidebar, keep it on DESKTOP using "hidden lg:grid" (grid-template-columns:250px 1fr). On MOBILE: hide sidebar, show hamburger top nav instead! class="hidden lg:grid" is MANDATORY!
 
 ═══════════════════════════════════════════════════════════════════════════════
 🎨 AUTO-DETECT: PRESERVE EXACT COLORS FROM VIDEO!
@@ -658,8 +658,7 @@ All data MUST be defined in React components using useState!
 📱 NAVIGATION: RESPONSIVE NAVBAR WITH HAMBURGER ICON!
 ═══════════════════════════════════════════════════════════════════════════════
 
-🚨 SIDEBAR LAYOUT: If video shows a left sidebar, KEEP it as a sidebar using CSS Grid!
-   Use: display:grid; grid-template-columns:250px 1fr; — NEVER position:fixed for sidebars!
+🚨 SIDEBAR LAYOUT: If video shows a left sidebar, KEEP it on DESKTOP using class="hidden lg:grid" (grid-template-columns:250px 1fr). On MOBILE: sidebar MUST be HIDDEN (class="lg:hidden"), replaced by a hamburger top nav!
 ✅ REQUIRED: Top navbar with LOGO on LEFT and HAMBURGER ICON (☰) on RIGHT for mobile!
 
 🚨🚨🚨 CRITICAL - MOBILE NAVBAR LAYOUT 🚨🚨🚨
@@ -763,7 +762,7 @@ const App = () => {
    Content bleeds through transparent menus - this is UNACCEPTABLE!
 ❌ Menu not covering content → Use "fixed inset-0 top-16 z-[100]" to cover ENTIRE viewport!
 
-IF the original video shows a left sidebar, KEEP IT as a sidebar! Use CSS Grid layout (grid-template-columns: 250px 1fr). On MOBILE, hide sidebar and show hamburger menu instead.
+IF the original video shows a left sidebar, KEEP IT on DESKTOP using class="hidden lg:grid" (grid-template-columns:250px 1fr). On MOBILE: the sidebar MUST be completely HIDDEN — show a hamburger top nav (class="lg:hidden") instead! NEVER show a 250px sidebar on a mobile screen!
 
 ═══════════════════════════════════════════════════════════════════════════════
 🚫 DO NOT INVENT APP NAMES
@@ -1968,15 +1967,31 @@ ${isDSStyleDirective
 
 **📐 LAYOUT STRUCTURE — MATCH THE VIDEO:**
 - If scanData describes a SPLIT HERO (text on one side, image on other) → build a two-column hero, NOT centered
-- If scanData shows sidebar+main → build sidebar+main using CSS Grid:
-  Desktop (lg+): display:grid; grid-template-columns:250px 1fr; min-height:100vh;
-  ❌ NEVER use position:fixed for sidebar — content will overlap!
-  ✅ sidebar and main must be direct grid children
-  📱 MOBILE: sidebar MUST become a top nav bar with hamburger menu toggle!
-  - Hide sidebar on mobile (< lg), show hamburger button at top
-  - Use Alpine.js x-data/x-show for mobile menu slide-out drawer
-  - NEVER display a 250px sidebar on mobile — it covers the whole screen!
-  - Main content on mobile: full-width, stacked vertically
+- If scanData shows sidebar+main → build RESPONSIVE sidebar layout:
+  🚨 SIDEBAR MUST USE "hidden lg:grid" — NOT just "grid"!
+
+  MANDATORY PATTERN (Alpine.js):
+  <div x-data="{ sidebarOpen: false }" class="min-h-screen">
+    <!-- MOBILE top nav (< lg) -->
+    <div class="lg:hidden flex items-center justify-between p-4 border-b">
+      <span class="font-bold">App Name</span>
+      <button @click="sidebarOpen = !sidebarOpen"><svg hamburger icon/></button>
+    </div>
+    <!-- MOBILE slide-out drawer (< lg) -->
+    <div x-show="sidebarOpen" class="lg:hidden fixed inset-0 z-40">...</div>
+    <!-- DESKTOP grid (>= lg ONLY!) -->
+    <div class="hidden lg:grid" style="grid-template-columns:250px 1fr;min-height:100vh;">
+      <aside>...</aside>
+      <main style="min-width:0;overflow-x:hidden;">...</main>
+    </div>
+    <!-- MOBILE main content (< lg, full width) -->
+    <main class="lg:hidden p-4">...</main>
+  </div>
+
+  ❌ NEVER use just class="grid" without "hidden lg:grid" — sidebar shows on mobile!
+  ❌ NEVER display a 250px sidebar on mobile — it covers the whole screen!
+  ✅ Desktop grid MUST have class="hidden lg:grid"
+  ✅ Mobile elements MUST have class="lg:hidden"
 - Do NOT center everything by default — match the actual column layout from scanData
 - "View Companies" button next to "Apply to YC" → put them SIDE BY SIDE, not stacked
 
@@ -1990,6 +2005,14 @@ ${isDSStyleDirective
 - BAD: card-1/800/600, card-1/800/600, card-1/800/600 (same seed 3x)
 - GOOD: card-tokyo/800/600, card-berlin/800/600, card-paris/800/600 (unique seeds)
 - Use descriptive, contextual seeds — NOT just numbers!
+
+🚨🚨🚨 FINAL CHECK — SIDEBAR RESPONSIVENESS 🚨🚨🚨
+If your output has a sidebar/left panel, verify ALL of these before outputting:
+✅ Desktop grid container has class="hidden lg:grid" (NOT just "grid"!)
+✅ Mobile top nav exists with class="lg:hidden" and hamburger button
+✅ Mobile slide-out drawer exists with class="lg:hidden" and x-show toggle
+✅ Mobile main content area exists with class="lg:hidden" for full-width stacking
+A 250px sidebar on a 375px mobile screen = COMPLETELY BROKEN! Fix it!
 
 Generate the complete HTML file now:`;
     

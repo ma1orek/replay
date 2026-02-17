@@ -967,12 +967,42 @@ CRITICAL RULES:
    - Do NOT use external image URLs for company logos — they WILL break!
    - cdn.simpleicons.org is OK ONLY for social media icons (GitHub, Twitter, LinkedIn)
 7. 📊 DASHBOARD / APP UI LAYOUTS: If the video shows a dashboard, admin panel, or app with sidebar + main content:
-   - Use CSS Grid: display:grid; grid-template-columns:250px 1fr; min-height:100vh;
-   - Sidebar: fixed width, overflow-y:auto, flex-shrink:0
+   🚨🚨🚨 SIDEBAR MUST BE RESPONSIVE! Follow this EXACT pattern:
+
+   <!-- Outer wrapper -->
+   <div x-data="{ sidebarOpen: false }" class="min-h-screen">
+     <!-- MOBILE: Top nav with hamburger (visible < lg) -->
+     <div class="lg:hidden flex items-center justify-between p-4 border-b">
+       <span class="font-bold">App Name</span>
+       <button @click="sidebarOpen = !sidebarOpen">
+         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+       </button>
+     </div>
+     <!-- MOBILE: Slide-out sidebar drawer (visible < lg when open) -->
+     <div x-show="sidebarOpen" @click.away="sidebarOpen=false" x-transition class="lg:hidden fixed inset-0 z-40">
+       <div class="absolute inset-0 bg-black/50" @click="sidebarOpen=false"></div>
+       <aside class="relative z-50 w-64 h-full overflow-y-auto p-4 bg-[sidebar-color]">
+         <!-- Same nav items as desktop sidebar -->
+       </aside>
+     </div>
+     <!-- DESKTOP: Grid layout (visible >= lg only!) -->
+     <div class="hidden lg:grid" style="grid-template-columns:250px 1fr;min-height:100vh;">
+       <aside style="overflow-y:auto;padding:1rem;"><!-- sidebar --></aside>
+       <main style="min-width:0;overflow-x:hidden;"><!-- main content --></main>
+     </div>
+     <!-- MOBILE: Main content (visible < lg, full width) -->
+     <main class="lg:hidden p-4" style="overflow-x:hidden;">
+       <!-- Same content as desktop main, stacked vertically -->
+     </main>
+   </div>
+
+   ❌ NEVER use just "grid" without "hidden lg:grid" — sidebar shows on mobile!
+   ❌ NEVER show a 250px sidebar on mobile — it covers the entire screen!
+   ✅ Desktop grid container MUST have class="hidden lg:grid"
+   ✅ Mobile top nav MUST have class="lg:hidden"
    - Main area: min-width:0 (CRITICAL — prevents chart/table overflow!)
-   - ALL charts, tables, data grids: wrap in overflow-x:auto container, set width:100%; max-width:100%;
+   - ALL charts, tables, data grids: wrap in overflow-x:auto container
    - stat cards: grid with auto-fit minmax(250px,1fr)
-   - NEVER let inner content push the grid wider than viewport
 8. 📋 TESTIMONIALS: If the video shows testimonials/reviews/quotes:
    - Use horizontal scrolling carousel (overflow-x:auto, flex, gap, scroll-snap-type:x mandatory)
    - Each card: flex:0 0 340px (fixed width, NOT full-width stacking)
@@ -980,6 +1010,15 @@ CRITICAL RULES:
 
 If multiple pages shown: use Alpine.js x-data/x-show for navigation.
 Include GSAP + ScrollTrigger for animations.
+
+🚨🚨🚨 FINAL CHECK BEFORE YOU OUTPUT — SIDEBAR RESPONSIVENESS 🚨🚨🚨
+If your output has a sidebar/left panel, verify ALL of these:
+✅ Desktop grid container has class="hidden lg:grid" (NOT just "grid"!)
+✅ Mobile top nav has class="lg:hidden" with hamburger button
+✅ Mobile slide-out has class="lg:hidden" with x-show
+✅ Mobile main content has class="lg:hidden" for full-width stacking
+If ANY of these are missing, FIX IT before outputting! A 250px sidebar on a 375px mobile screen = BROKEN!
+
 Wrap in \`\`\`html blocks.`;
           }
 
