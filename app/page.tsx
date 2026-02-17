@@ -4473,13 +4473,17 @@ function ReplayToolContent() {
     }
 
     // DETECT JSX/React code and convert to HTML
-    // JSX code typically starts with comments, imports, or function declarations
-    const isJsxCode = /^\/\/\s*(Next\.js|React|App|Page|Component)/i.test(processedCode.trim()) ||
-                      /^(import\s|export\s+default\s+function|function\s+\w+Page)/i.test(processedCode.trim()) ||
-                      /^['"]use client['"]/.test(processedCode.trim());
-    
-    if (isJsxCode) {
-      console.log("[Preview] Detected JSX code, converting to HTML...");
+    // Only convert if it's ACTUALLY JSX (imports, exports, function components)
+    // NEVER convert if it contains HTML markers (<!DOCTYPE, <html, <head, <body)
+    const trimmedCode = processedCode.trim();
+    const hasHtmlMarkers = /<!DOCTYPE|<html|<head|<body|<meta\s/i.test(trimmedCode);
+    const looksLikeJsx = !hasHtmlMarkers && (
+      /^(import\s|export\s+default\s+function|function\s+\w+Page)/i.test(trimmedCode) ||
+      /^['"]use client['"]/.test(trimmedCode)
+    );
+
+    if (looksLikeJsx) {
+      console.log("[Preview] Detected JSX code (no HTML markers), converting to HTML...");
       processedCode = jsxToHtml(processedCode);
     }
     
