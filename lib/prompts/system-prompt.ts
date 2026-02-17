@@ -826,7 +826,8 @@ Implementation with Alpine.js:
 
 <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
-<body x-data="{ page: 'home' }" class="min-h-screen bg-[#0a0a0a] text-white">
+<!-- THEME: Match the video! Light video = bg-white text-gray-900. Dark video = bg-[#0a0a0a] text-white -->
+<body x-data="{ page: 'home' }" class="min-h-screen">
   <!-- Navigation - ONLY links for pages you actually build! -->
   <nav class="fixed top-0 w-full z-50 glassmorphism py-4">
     <div class="container mx-auto flex justify-between items-center px-4">

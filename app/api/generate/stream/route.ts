@@ -510,6 +510,26 @@ REPEAT: Do NOT use colors from the video. ALL colors must come from the Design S
 🎨 USER STYLE REQUEST
 ═══════════════════════════════════════════════════════════════
 ${styleDirective}`;
+          } else {
+            // AUTO-DETECT MODE — no style selected, MATCH THE VIDEO EXACTLY
+            prompt += `\n\n🚨🚨🚨 AUTO-DETECT MODE — MATCH THE VIDEO'S THEME EXACTLY! 🚨🚨🚨
+═══════════════════════════════════════════════════════════════
+No custom style was selected. You MUST faithfully recreate the video's visual design:
+
+1. THEME IS DETERMINED BY THE VIDEO — look at the backgrounds!
+   - Light/white/cream backgrounds in the video → bg-white, text-gray-900, bg-gray-50, border-gray-200
+   - Dark/black backgrounds in the video → bg-zinc-950, text-white, bg-zinc-900, border-zinc-800
+   - Do NOT default to dark! Many enterprise UIs, dashboards, and SaaS apps are LIGHT themed!
+
+2. COLOR MATCHING — use the exact colors you see in the video
+   - Green buttons → green buttons (not indigo)
+   - Orange accents → orange accents (not purple)
+   - Gray sidebar → gray sidebar (not black)
+
+3. The video is LAW — if it shows a white background with dark text, your output MUST have bg-white and text-gray-900
+4. IGNORE any "premium dark theme" aesthetic from the base prompt — in auto-detect mode, the VIDEO decides the theme!
+
+CRITICAL: Look at the video FIRST. Is the background light or dark? That determines EVERYTHING.`;
           }
           
           // Add database context if provided
@@ -845,13 +865,14 @@ If the video shows a dashboard, admin panel, SaaS app, or ANY interface with sid
 ✅ The sidebar and main content MUST be siblings in a grid container
 ✅ Main area MUST have min-width:0 and overflow-x:hidden
 
-MANDATORY STRUCTURE (copy this exactly):
+MANDATORY STRUCTURE (match the VIDEO's theme for colors!):
 <div style="display:grid;grid-template-columns:250px 1fr;min-height:100vh;">
-  <aside style="background:#1a1a2e;overflow-y:auto;padding:1rem;">
-    <!-- sidebar logo + nav items -->
+  <!-- MATCH VIDEO COLORS: light video = bg-white/bg-gray-50, dark video = bg-[#1a1a2e] -->
+  <aside style="overflow-y:auto;padding:1rem;">
+    <!-- sidebar logo + nav items — use video's sidebar color! -->
   </aside>
   <main style="min-width:0;overflow-x:hidden;overflow-y:auto;padding:1.5rem;">
-    <!-- ALL main content goes here -->
+    <!-- ALL main content goes here — use video's main area bg color! -->
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;">
       <!-- stat cards, tables, charts -->
     </div>
@@ -890,7 +911,16 @@ Wrap in \`\`\`html blocks.`;
           } else {
             prompt += `
 
-WATCH THE VIDEO CAREFULLY — ESPECIALLY LATER FRAMES. CREATE AWWWARDS-QUALITY OUTPUT.
+WATCH THE VIDEO CAREFULLY — ESPECIALLY LATER FRAMES. FAITHFULLY RECONSTRUCT WHAT YOU SEE.
+
+🚨🚨🚨 RULE #0 — THEME DETECTION (BEFORE ANYTHING ELSE!) 🚨🚨🚨
+LOOK AT THE VIDEO BACKGROUNDS! This determines your entire color scheme:
+- WHITE/LIGHT/CREAM backgrounds → You MUST use: bg-white, text-gray-900, bg-gray-50, border-gray-200
+- DARK/BLACK backgrounds → You MUST use: bg-zinc-950, text-white, bg-zinc-900, border-zinc-800
+- MIXED (light main + dark sidebar) → Match each section individually!
+- Do NOT default to dark theme! Enterprise apps, dashboards, SaaS tools are often LIGHT themed!
+- If the body/main area is white/light gray → <body class="bg-white text-gray-900">
+- If the body/main area is dark/black → <body class="bg-[#0a0a0a] text-white">
 
 CRITICAL RULES:
 1. Every section MUST have REAL content (no empty cards!). Every image uses UNIQUE picsum seed.
@@ -944,6 +974,17 @@ ${colorSummary}
 Apply these DS colors to buttons, backgrounds, accents, links, borders.
 The video provides layout + content. The DS provides ALL colors and typography.
 Generate the HTML now using ONLY Design System colors.` });
+          } else if (!isReimagine) {
+            // RECONSTRUCT mode — remind to match the video's theme
+            contentParts.push({ text: `🚨 POST-VIDEO THEME REMINDER:
+You just watched a video. Before generating code, answer this question:
+Was the main background in the video LIGHT (white/cream/gray) or DARK (black/dark gray)?
+
+- If LIGHT: <body class="bg-white text-gray-900"> and use light Tailwind classes throughout
+- If DARK: <body class="bg-[#0a0a0a] text-white"> and use dark Tailwind classes throughout
+
+Match the video EXACTLY. Do NOT default to dark if the video was light!
+Generate the HTML now matching the video's actual theme.` });
           }
 
           const result = await withTimeout(
