@@ -59,21 +59,25 @@ Replay uses a sophisticated multi-model AI pipeline we call the **"Sandwich Arch
 
 ---
 
-## 🆕 Recent Updates (v2.4.0 - Feb 11, 2026)
+## 🆕 Recent Updates (v2.5.0 - Feb 18, 2026)
 
-### 🔧 Edit with AI Improvements
-- **Disabled Fuzzy Matching** — SEARCH/REPLACE mode now uses only exact + normalized whitespace matching. Prevents wrong code replacements that were breaking pages (85% similarity threshold was causing incorrect matches).
-- **Smart Mode Selection** — Large changes (replace animation, remove sections, redesign) automatically use Full HTML mode. Simple edits (colors, text) use precise SEARCH/REPLACE.
-- **Token Efficiency** — Small edits: 10-30K → 200-2000 output tokens, 8-25s → 2-5s latency.
+### 🎮 Playful (Rive) Style
+- **Interactive Canvas Animations** — New style preset powered by [Rive](https://rive.app). AI injects real `.riv` files for loading spinners, toggle switches, animated hearts, and micro-interactions.
+- **11 Curated Animations** — Lightweight files (1-42KB each), auto-playing state machines, playful color palette with Nunito font.
 
-### 🚀 Published Pages Cache-Busting
-- **Fresh on Every Click** — "Open" button now generates unique URL with timestamp + random on EVERY click: `?v=timestamp&_=millis.random`
-- **Zero Cache Issues** — Eliminated Vercel Edge Cache + browser cache problems. Published pages ALWAYS show latest version after Update.
-- **Vercel CDN Bypass** — Added `s-maxage=0, stale-while-revalidate=0` headers to force fresh content.
+### 🧩 React Bits Integration (130+ Components)
+- **Import, Don't Recreate** — AI now imports from the `react-bits` package: DecryptedText, SpotlightCard, Aurora, text animations, hover effects, and 130+ more.
+- **System Prompt Enforced** — Components are imported via `react-bits` package paths, never recreated from scratch.
 
-### 🐛 Critical Fixes
-- **Levenshtein Loop Bug** — Fixed infinite loop in fuzzy matching (`i <= a.length` → `j <= a.length`). Was causing AI to corrupt pages.
-- **onClick Random Generator** — Moved from JSX `href` to `onClick` handler so random generates fresh on every click, not just render.
+### 🛡️ AI Edit Structural Protection
+- **Rejects Destructive Edits** — If AI tries to replace >60% of page code (e.g., "fix chart" → outputs only a chart), the edit is rejected and AI asks for clarification.
+- **Smart Mode Selection** — Dual-mode editing: SEARCH/REPLACE (2-5s, precise) for small changes, Full HTML (8-25s) for translations, new pages, redesigns.
+
+### 🐛 Fixes
+- **JSX Detection on Refresh** — Pages no longer break after browser refresh. Removed aggressive JSX detection that matched HTML comments.
+- **Single-Main Sidebar** — Generated dashboards use single `<main>` flex layout instead of dual desktop/mobile mains.
+- **Alpine.js Published Pages** — Published pages now initialize Alpine.js state correctly (mobile menu closed, first tab active).
+- **Zero Dashboard Values** — Eliminated $0, 0 cases, 0 users in generated KPIs and tables.
 
 [See full changelog →](https://replay.build/docs/changelog)
 
@@ -270,13 +274,17 @@ replay/
 - [x] Component Library with Controls
 - [x] Visual Editor (formerly Blueprints)
 - [x] Flow Map visualization
-- [x] AI editing with chat interface
+- [x] AI editing with chat interface (SEARCH/REPLACE + Full HTML modes)
 - [x] Color picker with contrast ratio
-- [x] One-click publish
+- [x] One-click publish with cache-busting
 - [x] Supabase integration
 - [x] Version history
 - [x] Agentic Vision (Sandwich Architecture)
 - [x] Gemini 3 Pro & Flash integration
+- [x] Design System import from Storybook
+- [x] 40+ style presets (including Rive interactive)
+- [x] React Bits component library (130+ components)
+- [x] Enterprise Library taxonomy (5-layer)
 - [ ] Figma plugin export
 - [ ] Team collaboration
 - [ ] API access

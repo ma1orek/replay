@@ -7,6 +7,8 @@ const STYLE_CATEGORIES = [
   { name: "Dark Premium", color: "text-purple-400" },
   { name: "Light & Clean", color: "text-blue-400" },
   { name: "Motion & 3D", color: "text-cyan-400" },
+  { name: "Interactive", color: "text-pink-400" },
+  { name: "SaaS Landing", color: "text-emerald-400" },
   { name: "Brand Inspired", color: "text-green-400" },
 ];
 
@@ -54,10 +56,24 @@ const ALL_STYLES = [
   { name: "Isometric City", desc: "3D CSS • Voxel Blocks • Hover Lift", category: "Motion" },
   { name: "X-Ray Blueprint", desc: "Wireframe Reveal • Scanner • Technical", category: "Motion" },
   { name: "Digital Collage", desc: "Scrapbook • Stickers • Draggable", category: "Motion" },
+  // Interactive
+  { name: "Playful (Rive)", desc: "Rive Canvas Animations • Micro-interactions", category: "Interactive" },
+  { name: "Messy Colorful Physics", desc: "Matter.js • Drag Tags • Bouncy Pills", category: "Interactive" },
+  // SaaS Landing
+  { name: "Molten Aurora", desc: "Dark • Orange Glow • Premium SaaS", category: "SaaS" },
+  { name: "Midnight Aurora", desc: "Purple Bars • Deep Dark • Enterprise", category: "SaaS" },
+  { name: "Airy Blue Aura", desc: "Light • Blue Gradient • Clean SaaS", category: "SaaS" },
+  { name: "Halftone Beam", desc: "Halftone Dots • Orange • Bold Type", category: "SaaS" },
+  { name: "Mono Wave", desc: "Black & White • Wave Marquee • Type", category: "SaaS" },
+  { name: "Glass Cascade", desc: "Stacked Glass Cards • Dark • Blur", category: "SaaS" },
+  { name: "Stripe Aurora", desc: "Gradient Blobs • White Glass • Modern", category: "SaaS" },
+  { name: "Glowframe Product", desc: "Dark Product • Teal Glow • Premium", category: "SaaS" },
   // Brand Inspired
   { name: "Apple Style", desc: "Frosted Glass • Clean • SF Pro", category: "Brand" },
   { name: "Stripe Design", desc: "Premium Gradient • Trust Blue", category: "Brand" },
   { name: "Spotify Dark", desc: "#121212 • Green Accent • Cards", category: "Brand" },
+  { name: "Linear", desc: "Minimal Dark • Clean Borders • Sleek", category: "Brand" },
+  { name: "Vercel", desc: "Pure Black • White Triangle • Minimal", category: "Brand" },
 ];
 
 export default function StyleInjectionPage() {
@@ -79,7 +95,7 @@ export default function StyleInjectionPage() {
           <h1 className="text-4xl font-bold text-white">Style Injection</h1>
         </div>
         <p className="text-xl text-zinc-400">
-          Transform your UI's look instantly with 30+ pre-built design styles.
+          Transform your UI's look instantly with 40+ pre-built design styles.
         </p>
       </div>
 

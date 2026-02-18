@@ -165,6 +165,63 @@ export default function EditWithAIPage() {
         </Link>
       </div>
 
+      {/* Smart Edit Engine */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-semibold text-white">Smart Edit Engine</h2>
+        <p className="text-zinc-400 leading-relaxed">
+          Replay uses an intelligent dual-mode editing system that picks the best strategy for each request:
+        </p>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
+            <h4 className="font-medium text-white mb-2">SEARCH/REPLACE Mode</h4>
+            <p className="text-sm text-zinc-500 mb-3">For small, precise changes</p>
+            <ul className="text-sm text-zinc-400 space-y-1">
+              <li>Change colors, text, fonts</li>
+              <li>Add/remove CSS classes</li>
+              <li>Swap icons or images</li>
+              <li>Tweak spacing or sizing</li>
+            </ul>
+            <div className="mt-3 p-2 rounded bg-zinc-900 text-xs font-mono text-emerald-400">
+              200-2000 tokens, 2-5s latency
+            </div>
+          </div>
+          <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
+            <h4 className="font-medium text-white mb-2">Full HTML Mode</h4>
+            <p className="text-sm text-zinc-500 mb-3">For large structural changes</p>
+            <ul className="text-sm text-zinc-400 space-y-1">
+              <li>Add new sections or pages</li>
+              <li>Translate entire page</li>
+              <li>Redesign layout structure</li>
+              <li>Replace images with uploads</li>
+            </ul>
+            <div className="mt-3 p-2 rounded bg-zinc-900 text-xs font-mono text-zinc-500">
+              Full regeneration, 8-25s
+            </div>
+          </div>
+        </div>
+        <p className="text-sm text-zinc-500">
+          The system automatically selects the right mode. Simple requests use fast SEARCH/REPLACE.
+          Complex requests (translations, new pages, redesigns) use Full HTML for accuracy.
+        </p>
+      </div>
+
+      {/* Structural Protection */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-semibold text-white">Structural Protection</h2>
+        <p className="text-zinc-400 leading-relaxed">
+          AI edits include built-in safety checks. If an edit would destroy more than 60% of your page code
+          (e.g., replacing an entire page with just one element), the system rejects it and asks for clarification.
+          Your original code is always preserved.
+        </p>
+        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+          <p className="text-sm text-amber-400 font-medium">Protection example:</p>
+          <p className="text-sm text-zinc-400 mt-1">
+            Request: "Fix the chart" &rarr; AI tries to output only a chart (dropping 90% of the page) &rarr;
+            Rejected. AI asks: "Did you mean to fix the chart within the existing page?"
+          </p>
+        </div>
+      </div>
+
       {/* Version history */}
       <div className="space-y-4">
         <h2 className="text-2xl font-semibold text-white">Version History</h2>

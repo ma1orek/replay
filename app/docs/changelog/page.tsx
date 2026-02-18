@@ -3,6 +3,52 @@ import { Clock, Sparkles, Bug, ArrowUp, Bell } from "lucide-react";
 
 const changelog = [
   {
+    date: "February 18, 2026",
+    version: "2.5.0",
+    changes: [
+      {
+        type: "feature",
+        title: "Playful (Rive) Style",
+        description: "New interactive style powered by Rive canvas animations. AI injects real .riv files for loading spinners, toggle switches, animated hearts, and micro-interactions. 11 curated lightweight animations (1-42KB each). Playful color palette with Nunito font."
+      },
+      {
+        type: "feature",
+        title: "React Bits Component Library (130+)",
+        description: "AI now imports from the react-bits package instead of recreating components. 130+ ready-made components: DecryptedText, SpotlightCard, Aurora backgrounds, text animations, hover effects, and more. System prompt enforces imports over custom implementations."
+      },
+      {
+        type: "improvement",
+        title: "SEARCH/REPLACE Edit Protection",
+        description: "AI editing now rejects changes that destroy >60% of page code. If user asks to 'fix the chart', AI can no longer replace the entire page with just a chart. Structural fingerprint tracking validates edit integrity."
+      },
+      {
+        type: "improvement",
+        title: "Single-Main Responsive Sidebar",
+        description: "Generated dashboards now use a single <main> element with flex layout instead of dual desktop/mobile mains. Eliminates empty mobile content rendering on desktop."
+      },
+      {
+        type: "improvement",
+        title: "Alpine.js Published Pages Fix",
+        description: "Published pages now inject Alpine.js initialization script that sets correct default states (mobile menu closed, first tab active). Published page behavior now matches preview iframe 1:1."
+      },
+      {
+        type: "fix",
+        title: "JSX Detection on Refresh",
+        description: "Fixed pages breaking after browser refresh. Removed aggressive JSX detection that matched HTML comments (// Page, // Component). Now only real JSX triggers (import, export default function, 'use client') activate the converter."
+      },
+      {
+        type: "fix",
+        title: "Zero Values in Dashboards",
+        description: "Strengthened rules against $0, 0 cases, 0 users appearing in generated dashboard KPIs and table data. Every numeric cell now requires realistic non-zero values."
+      },
+      {
+        type: "fix",
+        title: "Admin Panel Preview",
+        description: "Admin generations panel now shows direct 'Open Project' link that opens the actual tool UI instead of broken iframe preview. Works for all generations regardless of project_id."
+      },
+    ]
+  },
+  {
     date: "February 11, 2026",
     version: "2.4.0",
     changes: [
