@@ -145,6 +145,7 @@ export async function GET(request: NextRequest) {
         id: gen.id,
         user_id: gen.user_id,
         user_email: user?.email || "Unknown",
+        project_id: gen.project_id || null,
         created_at: gen.created_at,
         video_duration: gen.video_duration || null,
         style_directive: gen.input_style || gen.style_directive || null,
@@ -152,10 +153,10 @@ export async function GET(request: NextRequest) {
         status: gen.status || "complete",
         credits_used: gen.cost_credits || gen.credits_used || 150,
         token_usage: gen.token_usage || null,
-        code: gen.output_code || null, // Include generated code for preview (stored as output_code)
-        video_url: gen.input_video_url || null, // Include source video URL (stored as input_video_url)
-        design_system: gen.output_design_system || null, // Design system info
-        architecture: gen.output_architecture || null, // Flow nodes and edges
+        code: gen.output_code || null,
+        video_url: gen.input_video_url || null,
+        design_system: gen.output_design_system || null,
+        architecture: gen.output_architecture || null,
       };
     });
 

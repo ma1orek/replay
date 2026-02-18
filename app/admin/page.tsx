@@ -32,6 +32,7 @@ interface GenerationData {
   id: string;
   user_id: string;
   user_email?: string;
+  project_id?: string | null;
   created_at: string;
   video_duration: number | null;
   style_directive: string | null;
@@ -1364,7 +1365,7 @@ export default function AdminPage() {
                       </div>
                       <div>
                         <p className="text-xs text-white/50">{gen.user_email || "Unknown"}</p>
-                        <p className="text-[10px] text-white/30 font-mono">{gen.id.slice(0, 8)}...</p>
+                        <p className="text-[10px] text-white/30 font-mono">{gen.project_id ? `${gen.project_id.slice(0, 12)}...` : gen.id.slice(0, 8) + "..."}</p>
                       </div>
                     </div>
                     <span className={cn(
@@ -1404,16 +1405,29 @@ export default function AdminPage() {
                     </div>
                   </div>
                   
-                  {/* Preview Button */}
-                  {gen.code && (
-                    <button
-                      onClick={() => setPreviewGeneration(gen)}
-                      className="w-full mt-3 flex items-center justify-center gap-2 py-2 rounded-lg bg-[#71717a]/20 text-[#71717a] hover:bg-[#71717a]/30 transition-colors text-xs font-medium"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      View Preview
-                    </button>
-                  )}
+                  {/* View & Preview Buttons */}
+                  <div className="flex gap-2 mt-3">
+                    {gen.project_id && (
+                      <a
+                        href={`/tool?project=${gen.project_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-[#FF6E3C]/20 text-[#FF6E3C] hover:bg-[#FF6E3C]/30 transition-colors text-xs font-medium"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        Open Project
+                      </a>
+                    )}
+                    {gen.code && (
+                      <button
+                        onClick={() => setPreviewGeneration(gen)}
+                        className={cn("flex items-center justify-center gap-2 py-2 rounded-lg bg-[#71717a]/20 text-[#71717a] hover:bg-[#71717a]/30 transition-colors text-xs font-medium", gen.project_id ? "flex-1" : "w-full")}
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        Preview
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -1941,7 +1955,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                         disabled={!!crossposting}
                         className="mt-2 w-full px-3 py-1.5 text-[10px] bg-[#71717a]/20 text-[#71717a] rounded-lg hover:bg-[#71717a]/30 disabled:opacity-30 transition-colors"
                       >
-                        {crossposting === "devto" ? "Posting..." : `Crosspost ${Math.min(crosspostStats.devto.remaining, 10)} →`}
+                        {crossposting === "devto" ? "Posting..." : `Crosspost ${Math.min(crosspostStats.devto.remaining, 3)} →`}
                       </button>
                     )}
                   </div>
@@ -1962,7 +1976,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                         disabled={!!crossposting}
                         className="mt-2 w-full px-3 py-1.5 text-[10px] bg-[#71717a]/20 text-[#71717a] rounded-lg hover:bg-[#71717a]/30 disabled:opacity-30 transition-colors"
                       >
-                        {crossposting === "hashnode" ? "Posting..." : `Crosspost ${Math.min(crosspostStats.hashnode.remaining, 10)} →`}
+                        {crossposting === "hashnode" ? "Posting..." : `Crosspost ${Math.min(crosspostStats.hashnode.remaining, 5)} →`}
                       </button>
                     )}
                   </div>
@@ -1976,6 +1990,33 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                     {crossposting === "all" ? "Processing all platforms..." : "Crosspost All Platforms →"}
                   </button>
                 )}
+                {/* Reset stale URLs button */}
+                {(crosspostStats.devto.posted > 0 || crosspostStats.hashnode.posted > 0) && (
+                  <button
+                    onClick={async () => {
+                      if (!adminToken) return;
+                      if (!confirm("Reset ALL crosspost URLs? This will clear devto_url + hashnode_url from DB so articles can be re-crossposted at safe daily limits.")) return;
+                      setCrosspostLog(l => [...l, "Resetting stale URLs..."]);
+                      try {
+                        const resp = await fetch("/api/aeo/crosspost-bulk", {
+                          method: "DELETE",
+                          headers: { "Authorization": `Bearer ${adminToken}`, "Content-Type": "application/json" },
+                          body: JSON.stringify({ platform: "all" }),
+                        });
+                        const data = await resp.json();
+                        setCrosspostLog(l => [...l, data.message || "Done"]);
+                        loadCrosspostStats(adminToken);
+                      } catch (e: any) {
+                        setCrosspostLog(l => [...l, `Error: ${e.message}`]);
+                      }
+                    }}
+                    disabled={!!crossposting}
+                    className="w-full px-3 py-1.5 text-[10px] bg-red-500/10 text-red-400/70 rounded-lg hover:bg-red-500/20 disabled:opacity-30 transition-colors"
+                  >
+                    Reset Stale URLs (re-crosspost from scratch)
+                  </button>
+                )}
+                <div className="text-[9px] text-white/30 text-center">Auto: Dev.to 3/day • Hashnode 20/day • Cron every 6h</div>
                 {crosspostLog.length > 0 && (
                   <div className="mt-3 max-h-40 overflow-y-auto bg-black/30 rounded-lg p-2 text-[10px] text-white/50 font-mono space-y-0.5">
                     {crosspostLog.slice(-20).map((line, i) => (
@@ -3339,20 +3380,93 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
             <div className="flex-1 overflow-hidden">
               {/* Preview Tab */}
               {previewTab === "preview" && (
-                <div className="w-full h-full bg-white relative">
+                <div className="w-full h-full bg-zinc-950 relative">
                   {previewGeneration.code && previewGeneration.code.length > 200 ? (
                     <>
                       <iframe
                         srcDoc={(() => {
-                          // Inject Alpine.js init script to fix blank previews
+                          let processed = previewGeneration.code;
+
+                          // Fix malformed double-tag patterns: <div <span className="..."> → <div className="...">
+                          // AI sometimes generates broken JSX with extra tags as attributes
+                          let dtPrev = "";
+                          while (dtPrev !== processed) {
+                            dtPrev = processed;
+                            processed = processed.replace(/<(\w+)\s+<\w+(\s+)/g, '<$1$2');
+                          }
+
+                          // Invisible fix styles - force visibility for animation-hidden elements
+                          const invisibleFixStyles = `<style id="invisible-fix">
+[style*="opacity: 0"],[style*="opacity:0"]{opacity:1 !important}
+[style*="visibility: hidden"],[style*="visibility:hidden"]{visibility:visible !important}
+.fade-up,.fade-in,.fade-down,.slide-up,.slide-in,.animate-fade,
+[class*="fade-"],[class*="slide-"],[class*="stagger-"],[class*="animate-"]{opacity:1 !important;visibility:visible !important}
+[data-state="hidden"],[data-visible="false"],[data-aos]{opacity:1 !important;visibility:visible !important;transform:none !important}
+.grid>*,.flex>*{opacity:1 !important;visibility:visible !important}
+</style>
+<script>
+function forceVisible(){document.querySelectorAll('*').forEach(function(el){var s=window.getComputedStyle(el);var i=el.getAttribute('style')||'';if(s.opacity==='0'||i.includes('opacity:0')||i.includes('opacity: 0'))el.style.opacity='1';if(s.visibility==='hidden')el.style.visibility='visible';})}
+window.addEventListener('load',forceVisible);setTimeout(forceVisible,100);setTimeout(forceVisible,500);setTimeout(forceVisible,1000);
+window.addEventListener('load',function(){if(typeof lucide!=='undefined'){try{lucide.createIcons()}catch(e){}}});
+</script>`;
+
+                          // Inject Tailwind + libs if missing
+                          if (!processed.includes('cdn.tailwindcss.com') && !processed.includes('tailwindcss')) {
+                            const libs = '<script src="https://cdn.tailwindcss.com"><\/script>\n<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"><\/script>\n<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"><\/script>\n<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"><\/script>\n<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"><\/script>';
+                            if (processed.includes('</head>')) {
+                              processed = processed.replace('</head>', libs + '\n' + invisibleFixStyles + '\n</head>');
+                            } else if (processed.includes('<body')) {
+                              processed = processed.replace(/<body/, '<head>' + libs + '\n' + invisibleFixStyles + '</head>\n<body');
+                            } else {
+                              processed = '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">' + libs + '\n' + invisibleFixStyles + '</head><body class="min-h-screen">' + processed + '</body></html>';
+                            }
+                          } else {
+                            // Tailwind present, just add visibility fix
+                            if (processed.includes('</head>')) {
+                              processed = processed.replace('</head>', invisibleFixStyles + '\n</head>');
+                            } else if (processed.includes('</body>')) {
+                              processed = processed.replace('</body>', invisibleFixStyles + '\n</body>');
+                            }
+                          }
+
+                          // FOUC fix: detect dark bg and inject inline background-color
+                          const darkBgMap: Record<string, string> = {
+                            'bg-zinc-950':'#09090b','bg-zinc-900':'#18181b','bg-gray-950':'#030712','bg-gray-900':'#111827',
+                            'bg-slate-950':'#020617','bg-slate-900':'#0f172a','bg-neutral-950':'#0a0a0a','bg-neutral-900':'#171717',
+                            'bg-black':'#000000','bg-stone-950':'#0c0a09','bg-stone-900':'#1c1917'
+                          };
+                          const bodyMatch = processed.match(/<body[^>]*class="([^"]*)"/);
+                          const htmlMatch = processed.match(/<html[^>]*class="([^"]*)"/);
+                          const bodyClasses = (bodyMatch?.[1] || '') + ' ' + (htmlMatch?.[1] || '');
+                          let inlineBgColor = '';
+                          for (const cls of Object.keys(darkBgMap)) {
+                            if (bodyClasses.includes(cls)) { inlineBgColor = darkBgMap[cls]; break; }
+                          }
+                          if (!inlineBgColor) {
+                            const bodyStyleMatch = processed.match(/<body[^>]*style="([^"]*)"/);
+                            const bgColorMatch = bodyStyleMatch?.[1]?.match(/background(?:-color)?:\s*(#[0-9a-fA-F]{3,8}|rgb[^;)]+\))/);
+                            if (bgColorMatch) inlineBgColor = bgColorMatch[1];
+                          }
+                          if (inlineBgColor) {
+                            const foucFix = `<style>html,body{background-color:${inlineBgColor} !important;}</style>`;
+                            if (processed.includes('</head>')) {
+                              processed = processed.replace('</head>', foucFix + '\n</head>');
+                            } else if (processed.includes('<body')) {
+                              processed = processed.replace(/<body/, foucFix + '\n<body');
+                            }
+                          }
+
+                          // Alpine.js init script
                           const alpineInit = `<script>
 (function(){function d(){try{var r=document.querySelector('[x-data]');if(r&&r._x_dataStack&&r._x_dataStack[0]){var s=r._x_dataStack[0];if(s.mobileMenuOpen!==undefined)s.mobileMenuOpen=false;if(s.menuOpen!==undefined)s.menuOpen=false;if(s.isMenuOpen!==undefined)s.isMenuOpen=false;if(s.showMenu!==undefined)s.showMenu=false;if(s.currentPage!==undefined&&!s.currentPage)s.currentPage='home';if(s.page!==undefined&&!s.page)s.page='home';if(s.activeTab!==undefined&&!s.activeTab)s.activeTab='home';if(s.activeView!==undefined&&!s.activeView)s.activeView='home';}}catch(e){}}document.addEventListener('alpine:init',d);document.addEventListener('alpine:initialized',d);setTimeout(d,50);setTimeout(d,200);setTimeout(d,500);})();
-</script>`;
-                          const code = previewGeneration.code;
-                          if (code.includes('</body>')) {
-                            return code.replace('</body>', alpineInit + '</body>');
+<\/script>`;
+                          if (processed.includes('</body>')) {
+                            processed = processed.replace('</body>', alpineInit + '\n</body>');
+                          } else {
+                            processed = processed + alpineInit;
                           }
-                          return code + alpineInit;
+
+                          return processed;
                         })()}
                         className="w-full h-full border-0"
                         sandbox="allow-scripts allow-same-origin"
