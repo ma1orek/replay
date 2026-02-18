@@ -433,11 +433,11 @@ export async function GET(
   <meta property="og:url" content="https://www.replay.build/p/${typedProject.slug}">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Replay">
-  ${typedProject.thumbnail_url ? `<meta property="og:image" content="${typedProject.thumbnail_url}">` : ''}
+  <meta property="og:image" content="${typedProject.thumbnail_url || 'https://replay.build/imgg.png'}">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${seoTitle}">
   <meta name="twitter:description" content="${safeDescription}">
-  ${typedProject.thumbnail_url ? `<meta name="twitter:image" content="${typedProject.thumbnail_url}">` : ''}
+  <meta name="twitter:image" content="${typedProject.thumbnail_url || 'https://replay.build/imgg.png'}">
   <link rel="canonical" href="https://www.replay.build/p/${typedProject.slug}">`;
     
     // Replace or inject title (remove existing title first)
@@ -562,14 +562,14 @@ export async function GET(
   <meta property="og:url" content="https://www.replay.build/p/${typedProject.slug}">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Replay">
-  ${typedProject.thumbnail_url ? `<meta property="og:image" content="${typedProject.thumbnail_url}">` : ''}
-  
+  <meta property="og:image" content="${typedProject.thumbnail_url || 'https://replay.build/imgg.png'}">
+
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${seoTitle}">
   <meta name="twitter:description" content="${safeDescription}">
-  ${typedProject.thumbnail_url ? `<meta name="twitter:image" content="${typedProject.thumbnail_url}">` : ''}
-  
+  <meta name="twitter:image" content="${typedProject.thumbnail_url || 'https://replay.build/imgg.png'}">
+
   <!-- Canonical -->
   <link rel="canonical" href="https://www.replay.build/p/${typedProject.slug}">
   

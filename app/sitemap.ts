@@ -7,18 +7,58 @@ const supabase = createClient(
 );
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // Static pages
+  const now = new Date();
+
+  // Core pages
   const staticPages: MetadataRoute.Sitemap = [
-    { url: "https://replay.build", lastModified: new Date(), changeFrequency: "weekly", priority: 1.0 },
-    { url: "https://replay.build/tool", lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
-    { url: "https://replay.build/pricing", lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
-    { url: "https://replay.build/docs", lastModified: new Date(), changeFrequency: "weekly", priority: 0.7 },
-    { url: "https://replay.build/blog", lastModified: new Date(), changeFrequency: "daily", priority: 0.8 },
+    { url: "https://replay.build", lastModified: now, changeFrequency: "weekly", priority: 1.0 },
+    { url: "https://replay.build/tool", lastModified: now, changeFrequency: "weekly", priority: 0.9 },
+    { url: "https://replay.build/landing", lastModified: now, changeFrequency: "monthly", priority: 0.9 },
+    { url: "https://replay.build/pricing", lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: "https://replay.build/blog", lastModified: now, changeFrequency: "daily", priority: 0.8 },
+    { url: "https://replay.build/contact", lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: "https://replay.build/terms", lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: "https://replay.build/privacy", lastModified: now, changeFrequency: "yearly", priority: 0.3 },
   ];
+
+  // Learn / SEO content pages
+  const learnPages: MetadataRoute.Sitemap = [
+    { url: "https://replay.build/learn/behavior-driven-ui-reconstruction", lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: "https://replay.build/learn/why-screenshots-fail-for-ui", lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: "https://replay.build/rebuild/rebuild-ui-from-video", lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+  ];
+
+  // Documentation pages
+  const docsPaths = [
+    "docs",
+    "docs/quickstart",
+    "docs/changelog",
+    "docs/faq",
+    "docs/pricing",
+    "docs/features/video-to-ui",
+    "docs/features/library",
+    "docs/features/blueprints",
+    "docs/features/code-view",
+    "docs/features/design-system",
+    "docs/features/edit-with-ai",
+    "docs/features/flow-map",
+    "docs/features/publish",
+    "docs/guides/first-project",
+    "docs/guides/style-injection",
+    "docs/guides/database-integration",
+    "docs/integrations/supabase",
+    "docs/integrations/project-settings",
+  ];
+  const docsPages: MetadataRoute.Sitemap = docsPaths.map((path) => ({
+    url: `https://replay.build/${path}`,
+    lastModified: now,
+    changeFrequency: "weekly" as const,
+    priority: path === "docs" ? 0.7 : 0.5,
+  }));
 
   // Fetch ALL published blog posts (paginate past Supabase 1000 row limit)
   let allPosts: any[] = [];
-  let from = 0;
+  let blogFrom = 0;
   const batchSize = 1000;
   while (true) {
     const { data: batch } = await supabase
@@ -26,11 +66,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .select("slug, published_at, created_at")
       .eq("status", "published")
       .order("published_at", { ascending: false })
-      .range(from, from + batchSize - 1);
+      .range(blogFrom, blogFrom + batchSize - 1);
     if (!batch || batch.length === 0) break;
     allPosts = allPosts.concat(batch);
     if (batch.length < batchSize) break;
-    from += batchSize;
+    blogFrom += batchSize;
   }
 
   const blogPages: MetadataRoute.Sitemap = allPosts.map((post) => ({
@@ -40,5 +80,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticPages, ...blogPages];
+  // Fetch published user projects
+  let allProjects: any[] = [];
+  let projFrom = 0;
+  while (true) {
+    const { data: batch } = await supabase
+      .from("published_projects")
+      .select("slug, updated_at, created_at")
+      .eq("is_published", true)
+      .order("updated_at", { ascending: false })
+      .range(projFrom, projFrom + batchSize - 1);
+    if (!batch || batch.length === 0) break;
+    allProjects = allProjects.concat(batch);
+    if (batch.length < batchSize) break;
+    projFrom += batchSize;
+  }
+
+  const publishedPages: MetadataRoute.Sitemap = allProjects.map((proj) => ({
+    url: `https://replay.build/p/${proj.slug}`,
+    lastModified: new Date(proj.updated_at || proj.created_at),
+    changeFrequency: "monthly" as const,
+    priority: 0.5,
+  }));
+
+  return [...staticPages, ...learnPages, ...docsPages, ...blogPages, ...publishedPages];
 }

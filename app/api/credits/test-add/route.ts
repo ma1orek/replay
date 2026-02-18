@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient, createAdminClient } from "@/lib/supabase/server";
 
-// Test endpoint to add credits - REMOVE IN PRODUCTION
+const ADMIN_EMAILS = [
+  "bartoszidzik@gmail.com",
+];
+
+// Admin-only endpoint to add credits
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -9,6 +13,10 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!ADMIN_EMAILS.includes(user.email || "")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const body = await request.json();

@@ -136,6 +136,51 @@ export default function RootLayout({
         </Script>
       </head>
       <body className="antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify([
+              {
+                "@context": "https://schema.org",
+                "@type": "Organization",
+                name: "Replay",
+                url: "https://replay.build",
+                logo: "https://replay.build/favicon-32x32.png",
+                description: "AI-powered platform that reconstructs production-ready React UI from video recordings of legacy software.",
+                sameAs: [
+                  "https://twitter.com/replaybuild",
+                  "https://www.linkedin.com/company/replaybuild",
+                  "https://github.com/ma1orek/replay",
+                ],
+              },
+              {
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                name: "Replay",
+                url: "https://replay.build",
+                potentialAction: {
+                  "@type": "SearchAction",
+                  target: "https://replay.build/blog?q={search_term_string}",
+                  "query-input": "required name=search_term_string",
+                },
+              },
+              {
+                "@context": "https://schema.org",
+                "@type": "SoftwareApplication",
+                name: "Replay",
+                applicationCategory: "DeveloperApplication",
+                operatingSystem: "Web",
+                url: "https://replay.build",
+                description: "Transform legacy software into production-ready React code with Design System and Component Library from video recordings.",
+                offers: [
+                  { "@type": "Offer", price: "0", priceCurrency: "USD", name: "Sandbox" },
+                  { "@type": "Offer", price: "149", priceCurrency: "USD", name: "Pro", billingIncrement: "P1M" },
+                  { "@type": "Offer", price: "499", priceCurrency: "USD", name: "Agency", billingIncrement: "P1M" },
+                ],
+              },
+            ]),
+          }}
+        />
         <Providers>
           {children}
           <CookieConsent />
