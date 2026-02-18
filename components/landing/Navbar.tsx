@@ -12,9 +12,11 @@ import { useProfile } from "@/lib/profile/context";
 
 const menuItems = [
   { name: "Features", href: "#features" },
-  { name: "Solution", href: "#solution" },
+  { name: "Solutions", href: "#solutions" },
+  { name: "How it Works", href: "#how-it-works" },
+  { name: "ROI", href: "#roi" },
   { name: "Security", href: "#security" },
-  { name: "Pricing", href: "/pricing" },
+  { name: "FAQ", href: "#faq" },
   { name: "Docs", href: "/docs" },
 ];
 

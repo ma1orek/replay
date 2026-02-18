@@ -37,7 +37,13 @@ import {
   Volume2,
   VolumeX,
   Maximize,
-  Pause
+  Pause,
+  Building2,
+  Rocket,
+  Users,
+  Clock,
+  MousePointer2,
+  Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AnimatedGroup } from "@/components/ui/animated-group";
@@ -605,7 +611,7 @@ function ProblemSection() {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section id="features" className="py-20 lg:py-28 bg-zinc-950 border-t border-zinc-900" ref={ref}>
+    <section className="py-20 lg:py-28 bg-zinc-950 border-t border-zinc-900" ref={ref}>
       <div className="landing-container">
         {/* Section Header */}
         <motion.div
@@ -804,6 +810,279 @@ function ProblemSection() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// SOLUTIONS SECTION - 3 Tabs (Enterprise / Founders / Product Teams)
+// ═══════════════════════════════════════════════════════════════
+
+const solutionTabs = [
+  {
+    id: "enterprise",
+    label: "Enterprise",
+    icon: Building2,
+    heading: "Legacy Modernization",
+    subheadline: "De-risk your migration strategy.",
+    description: "Don't spend 18 months documenting spaghetti code. Record your legacy Mainframe, Oracle Forms, or SOAP apps, and let Replay extract the business logic into clean, componentized React architecture. Zero documentation required.",
+    tags: ["SOC2 Compliant", "On-Premise", "Zero Drift"],
+  },
+  {
+    id: "founders",
+    label: "Founders & Startups",
+    icon: Rocket,
+    heading: "Zero to MVP",
+    subheadline: "Ship your idea before the weekend ends.",
+    description: "Skip the boilerplate. Record a competitor's flow or a quick Loom mock-up, and get a production-ready foundation instantly. Focus on your unique value prop, not on building login forms and navbars.",
+    tags: ["Launch Fast", "Low Burn Rate", "Investor Ready"],
+  },
+  {
+    id: "product",
+    label: "Product Teams",
+    icon: Users,
+    heading: "Prototype to Product",
+    subheadline: "Discovery time to zero.",
+    description: "Stop the \"hand-off\" loss. Designers record their Figma prototypes or interaction ideas. Replay turns those pixels into identical code, preserving every micro-interaction and animation state. What you see is actually what you ship.",
+    tags: ["Pixel Perfect", "Figma Logic", "No Hand-off"],
+  },
+];
+
+// Scanner animation for Enterprise tab
+function EnterpriseVisual() {
+  return (
+    <div className="relative w-full h-full bg-zinc-950 overflow-hidden flex items-stretch">
+      {/* Old UI (left half) */}
+      <div className="w-1/2 bg-zinc-200 p-3 flex flex-col gap-2">
+        <div className="h-4 bg-zinc-400 rounded-sm" />
+        <div className="flex gap-2 flex-1">
+          <div className="w-1/4 bg-zinc-300 rounded-sm" />
+          <div className="flex-1 flex flex-col gap-1.5">
+            <div className="h-3 bg-zinc-400/60 rounded-sm w-3/4" />
+            <div className="h-3 bg-zinc-400/60 rounded-sm w-1/2" />
+            <div className="flex-1 bg-zinc-300 rounded-sm" />
+            <div className="h-6 bg-zinc-400 rounded-sm w-1/3" />
+          </div>
+        </div>
+      </div>
+      {/* Modern UI (right half) */}
+      <div className="w-1/2 bg-zinc-900 p-3 flex flex-col gap-2">
+        <div className="h-4 bg-zinc-800 rounded-sm flex items-center px-2 gap-1">
+          <div className="w-1.5 h-1.5 rounded-full bg-red-500/60" />
+          <div className="w-1.5 h-1.5 rounded-full bg-yellow-500/60" />
+          <div className="w-1.5 h-1.5 rounded-full bg-green-500/60" />
+        </div>
+        <div className="flex gap-2 flex-1">
+          <div className="w-1/4 bg-zinc-800 rounded-sm" />
+          <div className="flex-1 flex flex-col gap-1.5">
+            <div className="h-3 bg-orange-500/30 rounded-sm w-3/4" />
+            <div className="h-3 bg-zinc-700 rounded-sm w-1/2" />
+            <div className="flex-1 bg-zinc-800 rounded-sm border border-zinc-700" />
+            <div className="h-6 bg-orange-500/40 rounded-sm w-1/3" />
+          </div>
+        </div>
+      </div>
+      {/* Scanning line */}
+      <motion.div
+        className="absolute top-0 bottom-0 w-0.5 bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.6)] z-10"
+        animate={{ left: ["20%", "80%", "20%"] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+      />
+    </div>
+  );
+}
+
+// Timer countdown for Founders tab
+function FoundersVisual() {
+  return (
+    <div className="relative w-full h-full bg-zinc-950 flex flex-col items-center justify-center gap-6 overflow-hidden">
+      <TechGrid />
+      <div className="relative z-10 flex items-center gap-4">
+        {/* Old time */}
+        <div className="text-center">
+          <motion.div
+            className="text-2xl font-mono text-zinc-600 line-through"
+            animate={{ opacity: [0.3, 0.6, 0.3] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            40h
+          </motion.div>
+          <span className="text-[9px] font-mono text-zinc-700 uppercase">Traditional</span>
+        </div>
+        <ArrowRight className="w-5 h-5 text-zinc-700" />
+        {/* New time */}
+        <div className="text-center">
+          <motion.div
+            className="text-3xl font-mono text-orange-500 font-bold"
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+          >
+            45min
+          </motion.div>
+          <span className="text-[9px] font-mono text-orange-500/60 uppercase">With Replay</span>
+        </div>
+      </div>
+      {/* Recording indicator */}
+      <div className="relative z-10 flex items-center gap-2 px-3 py-1.5 border border-zinc-800 bg-zinc-900 rounded text-[10px] font-mono text-zinc-500">
+        <motion.div
+          className="w-1.5 h-1.5 rounded-full bg-red-500"
+          animate={{ opacity: [1, 0.3, 1] }}
+          transition={{ duration: 1, repeat: Infinity }}
+        />
+        <span>recording_competitor_flow.mp4</span>
+      </div>
+    </div>
+  );
+}
+
+// Cursor + code bubble for Product Teams tab
+function ProductVisual() {
+  return (
+    <div className="relative w-full h-full bg-zinc-950 overflow-hidden">
+      <TechGrid />
+      {/* Figma-like prototype wireframe */}
+      <div className="absolute inset-4 z-0 opacity-40">
+        <div className="h-full border border-zinc-800 rounded p-2 flex flex-col gap-1.5">
+          <div className="h-5 bg-zinc-900 rounded-sm border border-zinc-800" />
+          <div className="flex gap-1.5 flex-1">
+            <div className="w-1/3 bg-zinc-900 rounded-sm border border-zinc-800" />
+            <div className="flex-1 flex flex-col gap-1.5">
+              <div className="h-1/2 bg-zinc-900 rounded-sm border border-zinc-800" />
+              <div className="flex-1 bg-zinc-900 rounded-sm border border-zinc-800" />
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Animated cursor */}
+      <motion.div
+        className="absolute z-20"
+        animate={{
+          x: [60, 120, 90, 150, 60],
+          y: [40, 80, 120, 60, 40],
+        }}
+        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+      >
+        <svg className="w-4 h-4 text-orange-500 fill-current" viewBox="0 0 24 24"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
+        {/* Code bubble */}
+        <motion.div
+          className="absolute left-5 top-5 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-[8px] font-mono text-orange-400 whitespace-nowrap"
+          animate={{ opacity: [0, 1, 1, 0] }}
+          transition={{ duration: 3, repeat: Infinity, times: [0, 0.1, 0.8, 1] }}
+        >
+          {"<Card className=\"p-4\">"}
+        </motion.div>
+      </motion.div>
+    </div>
+  );
+}
+
+function SolutionsSection() {
+  const [activeTab, setActiveTab] = useState(0);
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  const tab = solutionTabs[activeTab];
+
+  return (
+    <section id="solutions" className="py-20 lg:py-28 bg-zinc-950 border-t border-zinc-900" ref={ref}>
+      <div className="landing-container">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-12"
+        >
+          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-white mb-4">
+            Built for every stage of the{" "}
+            <span className="italic text-zinc-500">product lifecycle</span>
+          </h2>
+          <p className="text-zinc-500 max-w-lg mx-auto">
+            From rapid prototyping to mission-critical modernization.
+          </p>
+        </motion.div>
+
+        {/* Tab buttons */}
+        <BlurFade delay={0.2} inView>
+          <div className="flex flex-wrap justify-center gap-2 mb-12">
+            {solutionTabs.map((t, i) => {
+              const Icon = t.icon;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setActiveTab(i)}
+                  className={cn(
+                    "flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all border",
+                    activeTab === i
+                      ? "bg-orange-500/10 border-orange-500/30 text-orange-400"
+                      : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+                  )}
+                >
+                  <Icon className="w-4 h-4" />
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+        </BlurFade>
+
+        {/* Tab content */}
+        <BlurFade delay={0.3} inView>
+          <div className="relative bg-zinc-950 border border-zinc-800 overflow-hidden">
+            {/* Corner accents */}
+            <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-zinc-700 opacity-50" />
+            <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-zinc-700 opacity-50" />
+            <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-zinc-700 opacity-50" />
+            <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-zinc-700 opacity-50" />
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[360px]">
+              {/* Left: Text */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={tab.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.3 }}
+                  className="p-8 lg:p-10 flex flex-col justify-center"
+                >
+                  <h3 className="text-2xl md:text-3xl font-medium text-white mb-2">{tab.heading}</h3>
+                  <p className="text-orange-400/80 text-sm font-medium mb-4">{tab.subheadline}</p>
+                  <p className="text-zinc-400 text-sm leading-relaxed mb-6">{tab.description}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {tab.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="px-3 py-1 text-[10px] font-mono border border-zinc-700 text-zinc-400 rounded-full"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+
+              {/* Right: Visual */}
+              <div className="border-t lg:border-t-0 lg:border-l border-zinc-800 min-h-[240px]">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={tab.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="w-full h-full"
+                  >
+                    {activeTab === 0 && <EnterpriseVisual />}
+                    {activeTab === 1 && <FoundersVisual />}
+                    {activeTab === 2 && <ProductVisual />}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </div>
+          </div>
+        </BlurFade>
+      </div>
+    </section>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // BENTO FEATURES SECTION - Technical Command Grid
 // ═══════════════════════════════════════════════════════════════
 
@@ -855,7 +1134,7 @@ function BentoFeaturesSection() {
   );
 
   return (
-    <section className="relative py-20 bg-zinc-950 overflow-hidden" ref={ref}>
+    <section id="features" className="relative py-20 bg-zinc-950 overflow-hidden" ref={ref}>
       {/* Subtle gradient glow instead of heavy BeamsBackground */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         {/* Subtle radial glow */}
@@ -1026,10 +1305,10 @@ function BentoFeaturesSection() {
 // COMBINED ROI + SECURITY SECTION - Side by Side
 // ═══════════════════════════════════════════════════════════════
 
-function ROIAndSecuritySection() {
+function ROISection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
-  
+
   const [screens, setScreens] = useState(15);
   const [hoursPerScreen, setHoursPerScreen] = useState(40);
   const [hourlyRate, setHourlyRate] = useState(100);
@@ -1040,138 +1319,130 @@ function ROIAndSecuritySection() {
   const savedValue = savedHours * hourlyRate;
 
   return (
-    <section className="py-20 lg:py-28 bg-zinc-950 border-t border-zinc-900" ref={ref}>
-      <div className="landing-container">
-        {/* Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
-          {/* LEFT: Data-Driven Growth / ROI Calculator */}
-          <BlurFade delay={0.1} inView className="flex flex-col">
-            {/* Header */}
-            <div className="mb-6">
-              <h2 className="font-serif text-2xl md:text-3xl text-white mb-2">
-                Data-Driven Growth
-              </h2>
-              <p className="text-zinc-500 text-sm">
-                Stop guessing. Start saving. Calculate your modernization potential.
+    <section id="roi" className="py-20 lg:py-28 bg-zinc-950 border-t border-zinc-900" ref={ref}>
+      <div className="landing-container max-w-3xl">
+        <BlurFade delay={0.1} inView>
+          <div className="text-center mb-10">
+            <h2 className="font-serif text-3xl md:text-4xl text-white mb-3">
+              Data-Driven Growth
+            </h2>
+            <p className="text-zinc-500 text-sm">
+              Stop guessing. Start saving. Calculate your modernization potential.
+            </p>
+          </div>
+
+          <div className="bg-zinc-950 border border-zinc-800">
+            <TechGrid />
+
+            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900/50">
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full bg-zinc-500" />
+                <h3 className="text-sm font-medium text-zinc-300">Estimate Savings</h3>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6 relative z-10">
+              {[
+                { label: "Screens to Migrate", value: screens, setter: setScreens, min: 5, max: 50, unit: "" },
+                { label: "Hours per Screen", value: hoursPerScreen, setter: setHoursPerScreen, min: 20, max: 60, unit: "h" },
+                { label: "Hourly Rate", value: hourlyRate, setter: setHourlyRate, min: 50, max: 150, unit: "$" }
+              ].map((control) => (
+                <div key={control.label}>
+                  <div className="flex justify-between mb-2 font-mono text-xs">
+                    <span className="text-zinc-500">{control.label}</span>
+                    <span className="text-orange-500">{control.unit === "$" ? "$" : ""}{control.value}{control.unit !== "$" ? control.unit : ""}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={control.min}
+                    max={control.max}
+                    value={control.value}
+                    onChange={(e) => control.setter(Number(e.target.value))}
+                    className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                  />
+                </div>
+              ))}
+
+              <div className="pt-6 border-t border-zinc-800 space-y-4">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-xs text-zinc-500">Hours Saved</span>
+                  <motion.span
+                    key={savedHours}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-3xl font-light text-white tabular-nums"
+                  >
+                    {savedHours.toLocaleString()}
+                  </motion.span>
+                </div>
+                <div className="flex items-baseline justify-between">
+                  <span className="text-xs text-zinc-500">Estimated Value</span>
+                  <motion.span
+                    key={savedValue}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-4xl font-light text-white tabular-nums tracking-tight"
+                  >
+                    ${savedValue.toLocaleString()}
+                  </motion.span>
+                </div>
+                <p className="text-[10px] text-zinc-600 font-mono pt-2">
+                  Based on 70% average time savings from pilot results.
+                </p>
+              </div>
+            </div>
+          </div>
+        </BlurFade>
+      </div>
+    </section>
+  );
+}
+
+function SecuritySection() {
+  return (
+    <section id="security" className="py-20 lg:py-28 bg-zinc-950 border-t border-zinc-900">
+      <div className="landing-container max-w-4xl">
+        <BlurFade delay={0.1} inView>
+          <div className="text-center mb-10">
+            <h2 className="font-serif text-3xl md:text-4xl text-white mb-3">
+              Built for regulated environments
+            </h2>
+            <p className="text-zinc-500 text-sm">Your recordings, your control.</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-5 bg-zinc-950 border border-zinc-800">
+              <h3 className="text-white font-medium mb-2 text-sm">Configurable Retention</h3>
+              <p className="text-xs text-zinc-500 leading-relaxed">
+                Default is processing-only with no storage. Configure retention policies to match your compliance requirements.
               </p>
             </div>
 
-            {/* ROI Panel */}
-            <div className="bg-zinc-950 border border-zinc-800 flex-1">
-              <TechGrid />
-              
-              {/* Header Bar */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900/50">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-zinc-500" />
-                  <h3 className="text-sm font-medium text-zinc-300">Estimate Savings</h3>
-                </div>
-              </div>
-
-              <div className="p-6 space-y-6 relative z-10">
-                {[
-                  { label: "Screens to Migrate", value: screens, setter: setScreens, min: 5, max: 50, unit: "" },
-                  { label: "Hours per Screen", value: hoursPerScreen, setter: setHoursPerScreen, min: 20, max: 60, unit: "h" },
-                  { label: "Hourly Rate", value: hourlyRate, setter: setHourlyRate, min: 50, max: 150, unit: "$" }
-                ].map((control) => (
-                  <div key={control.label}>
-                    <div className="flex justify-between mb-2 font-mono text-xs">
-                      <span className="text-zinc-500">{control.label}</span>
-                      <span className="text-orange-500">{control.unit === "$" ? "$" : ""}{control.value}{control.unit !== "$" ? control.unit : ""}</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={control.min}
-                      max={control.max}
-                      value={control.value}
-                      onChange={(e) => control.setter(Number(e.target.value))}
-                      className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-orange-500"
-                    />
-                  </div>
-                ))}
-
-                <div className="pt-6 border-t border-zinc-800 space-y-4">
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-xs text-zinc-500">Hours Saved</span>
-                    <motion.span 
-                      key={savedHours}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="text-3xl font-light text-white tabular-nums"
-                    >
-                      {savedHours.toLocaleString()}
-                    </motion.span>
-                  </div>
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-xs text-zinc-500">Estimated Value</span>
-                    <motion.span 
-                      key={savedValue}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="text-4xl font-light text-white tabular-nums tracking-tight"
-                    >
-                      ${savedValue.toLocaleString()}
-                    </motion.span>
-                  </div>
-                  <p className="text-[10px] text-zinc-600 font-mono pt-2">
-                    Based on 70% average time savings from pilot results.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </BlurFade>
-
-          {/* RIGHT: Built for regulated environments / Security */}
-          <BlurFade delay={0.2} inView className="flex flex-col">
-            {/* Header */}
-            <div className="mb-6">
-              <h2 className="font-serif text-2xl md:text-3xl text-white mb-2">
-                Built for regulated environments
-              </h2>
-              <p className="text-zinc-500 text-sm">Your recordings, your control.</p>
+            <div className="p-5 bg-zinc-950 border border-zinc-800 relative overflow-hidden">
+              <div className="absolute top-3 right-3 px-2 py-0.5 border border-zinc-700 text-[9px] font-mono text-zinc-400">BETA</div>
+              <h3 className="text-white font-medium mb-2 text-sm">PII Detection</h3>
+              <p className="text-xs text-zinc-500 leading-relaxed">
+                Automatic detection of sensitive data patterns. Blur or mask before processing.
+              </p>
             </div>
 
-            {/* Security Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
-              {/* Card 1 */}
-              <div className="p-5 bg-zinc-950 border border-zinc-800">
-                <h3 className="text-white font-medium mb-2 text-sm">Configurable Retention</h3>
-                <p className="text-xs text-zinc-500 leading-relaxed">
-                  Default is processing-only with no storage. Configure retention policies to match your compliance requirements.
-                </p>
-              </div>
-
-              {/* Card 2 */}
-              <div className="p-5 bg-zinc-950 border border-zinc-800 relative overflow-hidden">
-                <div className="absolute top-3 right-3 px-2 py-0.5 border border-zinc-700 text-[9px] font-mono text-zinc-400">BETA</div>
-                <h3 className="text-white font-medium mb-2 text-sm">PII Detection</h3>
-                <p className="text-xs text-zinc-500 leading-relaxed">
-                  Automatic detection of sensitive data patterns. Blur or mask before processing.
-                </p>
-              </div>
-
-              {/* Card 3 */}
-              <div className="p-5 bg-zinc-950 border border-zinc-800 relative overflow-hidden">
-                <div className="absolute top-3 right-3 px-2 py-0.5 border border-zinc-700 text-[9px] font-mono text-zinc-400">ENTERPRISE</div>
-                <h3 className="text-white font-medium mb-2 text-sm">On-Premise Deployment</h3>
-                <p className="text-xs text-zinc-500 leading-relaxed">
-                  Deploy Replay on your infrastructure for complete data isolation.
-                </p>
-              </div>
-
-              {/* Card 4 */}
-              <div className="p-5 bg-zinc-950 border border-zinc-800 relative overflow-hidden">
-                <div className="absolute top-3 right-3 px-2 py-0.5 border border-zinc-700 text-[9px] font-mono text-zinc-400">IN PROGRESS</div>
-                <h3 className="text-white font-medium mb-2 text-sm">Security Controls</h3>
-                <p className="text-xs text-zinc-500 leading-relaxed">
-                  Audit logging, access controls, and security practices aligned with SOC 2 framework.
-                </p>
-              </div>
+            <div className="p-5 bg-zinc-950 border border-zinc-800 relative overflow-hidden">
+              <div className="absolute top-3 right-3 px-2 py-0.5 border border-zinc-700 text-[9px] font-mono text-zinc-400">ENTERPRISE</div>
+              <h3 className="text-white font-medium mb-2 text-sm">On-Premise Deployment</h3>
+              <p className="text-xs text-zinc-500 leading-relaxed">
+                Deploy Replay on your infrastructure for complete data isolation.
+              </p>
             </div>
-          </BlurFade>
 
-        </div>
+            <div className="p-5 bg-zinc-950 border border-zinc-800 relative overflow-hidden">
+              <div className="absolute top-3 right-3 px-2 py-0.5 border border-zinc-700 text-[9px] font-mono text-zinc-400">IN PROGRESS</div>
+              <h3 className="text-white font-medium mb-2 text-sm">Security Controls</h3>
+              <p className="text-xs text-zinc-500 leading-relaxed">
+                Audit logging, access controls, and security practices aligned with SOC 2 framework.
+              </p>
+            </div>
+          </div>
+        </BlurFade>
       </div>
     </section>
   );
@@ -1208,7 +1479,7 @@ function FAQSection() {
   ];
 
   return (
-    <section className="py-24 bg-zinc-950 border-t border-zinc-900">
+    <section id="faq" className="py-24 bg-zinc-950 border-t border-zinc-900">
       <div className="landing-container max-w-3xl">
         <BlurFade delay={0.1} inView>
           <h2 className="text-3xl font-serif text-white mb-12 text-center">Frequently Asked Questions</h2>
@@ -1342,8 +1613,10 @@ export default function LandingPage() {
         <TrustBarSection />
         <ManualModernizationTrapSection />
         <BentoFeaturesSection />
+        <SolutionsSection />
         <SolutionSection />
-        <ROIAndSecuritySection />
+        <ROISection />
+        <SecuritySection />
         <FAQSection />
         <PreFooterCTASection />
         <FooterSection />

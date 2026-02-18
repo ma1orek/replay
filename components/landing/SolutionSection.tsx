@@ -157,7 +157,7 @@ export function SolutionSection() {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section id="solution" className="relative py-20 lg:py-28 bg-zinc-950 border-t border-zinc-900" ref={ref}>
+    <section id="how-it-works" className="relative py-20 lg:py-28 bg-zinc-950 border-t border-zinc-900" ref={ref}>
       <div className="landing-container relative z-10">
         {/* Header */}
         <motion.div
