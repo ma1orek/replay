@@ -1407,21 +1407,19 @@ export default function AdminPage() {
                   
                   {/* View & Preview Buttons */}
                   <div className="flex gap-2 mt-3">
-                    {gen.project_id && (
-                      <a
-                        href={`/tool?project=${gen.project_id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-[#FF6E3C]/20 text-[#FF6E3C] hover:bg-[#FF6E3C]/30 transition-colors text-xs font-medium"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        Open Project
-                      </a>
-                    )}
+                    <a
+                      href={`/tool?project=${gen.project_id || gen.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-[#FF6E3C]/20 text-[#FF6E3C] hover:bg-[#FF6E3C]/30 transition-colors text-xs font-medium"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      Open
+                    </a>
                     {gen.code && (
                       <button
                         onClick={() => setPreviewGeneration(gen)}
-                        className={cn("flex items-center justify-center gap-2 py-2 rounded-lg bg-[#71717a]/20 text-[#71717a] hover:bg-[#71717a]/30 transition-colors text-xs font-medium", gen.project_id ? "flex-1" : "w-full")}
+                        className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-[#71717a]/20 text-[#71717a] hover:bg-[#71717a]/30 transition-colors text-xs font-medium"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         Preview
