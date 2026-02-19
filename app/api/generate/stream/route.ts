@@ -280,13 +280,14 @@ function fixMalformedDoubleTags(code: string): string {
   if (!code) return code;
   let fixed = code;
   let fixCount = 0;
-  // Repeatedly fix <tag1 <tag2 ... patterns until none remain
+  // Repeatedly fix <tag1 [attrs] <tag2 ... patterns until none remain
+  // Handles both <div <span class> AND <span key={i} <span class>
   let prev = "";
   while (prev !== fixed) {
     prev = fixed;
-    fixed = fixed.replace(/<(\w+)\s+<\w+(\s+)/g, (match, firstTag, trailing) => {
+    fixed = fixed.replace(/<(\w+)(\s[^<>]*)<\w+(\s+)/g, (match, firstTag, attrs, trailing) => {
       fixCount++;
-      return `<${firstTag}${trailing}`;
+      return `<${firstTag}${attrs}${trailing}`;
     });
   }
   if (fixCount > 0) {
@@ -1021,16 +1022,51 @@ Match the video EXACTLY. Do NOT default to dark if the video was light!
 Generate the HTML now matching the video's actual theme.` });
           }
 
-          const result = await withTimeout(
-            model.generateContentStream(contentParts),
-            240000, // 4 minute timeout for complex generation
-            "Direct Vision Code Generation"
-          );
-          
+          // Retry loop for 503/429 high demand errors
+          const MAX_RETRIES = 3;
+          const retryDelay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+          let streamResult;
+          let lastStreamError;
+
+          for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+              streamResult = await withTimeout(
+                model.generateContentStream(contentParts),
+                240000, // 4 minute timeout for complex generation
+                "Direct Vision Code Generation"
+              );
+              break; // success
+            } catch (error: any) {
+              lastStreamError = error;
+              console.error(`[stream] Attempt ${attempt}/${MAX_RETRIES} failed:`, error?.message);
+              const isRetryable = error?.message?.includes('503') ||
+                                  error?.message?.includes('overloaded') ||
+                                  error?.message?.includes('Service Unavailable') ||
+                                  error?.message?.includes('429');
+              if (!isRetryable) throw error;
+
+              if (attempt < MAX_RETRIES) {
+                const waitTime = Math.min(2000 * Math.pow(2, attempt - 1), 10000);
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                  type: "status",
+                  message: `Model busy, retrying in ${waitTime / 1000}s... (attempt ${attempt + 1}/${MAX_RETRIES})`,
+                  progress: 5
+                })}\n\n`));
+                await retryDelay(waitTime);
+              }
+            }
+          }
+
+          if (!streamResult) {
+            throw lastStreamError || new Error("All retry attempts failed");
+          }
+
+          const result = streamResult;
+
           let fullText = "";
           let chunkCount = 0;
           let codeStarted = false;
-          
+
           for await (const chunk of result.stream) {
             const chunkText = chunk.text();
             fullText += chunkText;

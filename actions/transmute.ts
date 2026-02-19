@@ -1467,6 +1467,7 @@ function fixBrokenHtmlTags(code: string): string {
 }
 
 // Fix malformed double-tag patterns like <div <span className="..."> → <div className="...">
+// Also handles attributes before duplicate: <span key={i} <span className="..."> → <span key={i} className="...">
 function fixMalformedDoubleTags(code: string): string {
   if (!code) return code;
   let fixed = code;
@@ -1474,9 +1475,9 @@ function fixMalformedDoubleTags(code: string): string {
   let prev = "";
   while (prev !== fixed) {
     prev = fixed;
-    fixed = fixed.replace(/<(\w+)\s+<\w+(\s+)/g, (match, firstTag, trailing) => {
+    fixed = fixed.replace(/<(\w+)(\s[^<>]*)<\w+(\s+)/g, (match, firstTag, attrs, trailing) => {
       fixCount++;
-      return `<${firstTag}${trailing}`;
+      return `<${firstTag}${attrs}${trailing}`;
     });
   }
   if (fixCount > 0) {
@@ -1581,6 +1582,14 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
     return { success: false, error: "API key not configured" };
   }
   
+  // Retry helpers for 503/429 high demand errors
+  const MAX_RETRIES = 3;
+  const retryDelay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+  const isRetryableError = (error: any) => {
+    const msg = error?.message || '';
+    return msg.includes('503') || msg.includes('overloaded') || msg.includes('Service Unavailable') || msg.includes('429') || msg.includes('rate limit');
+  };
+
   // Timeout helper - CRITICAL to avoid 504 errors on Vercel
   const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> => {
     return Promise.race([
@@ -1666,36 +1675,41 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
     let phase1Error: any;
     
     for (const modelName of phase1Models) {
-      try {
-        console.log(`[transmute] Phase 1 trying model: ${modelName}`);
-        const scannerModel = genAI.getGenerativeModel({
-          model: modelName,
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 16384,
-          },
-        });
-        
-        scanResult = await withTimeout(
-          scannerModel.generateContent([
-            { text: UNIFIED_SCAN_PROMPT },
-            { inlineData: { mimeType: videoData.mimeType, data: videoData.base64 } },
-          ]),
-          phase1Timeout,
-          `Phase 1 Video Scan (${modelName})`
-        );
-        usedModel = modelName;
-        break;
-      } catch (error: any) {
-        phase1Error = error;
-        console.error(`[transmute] Phase 1 ${modelName} failed:`, error?.message);
-        const isRetryable = error?.message?.includes('503') || 
-                           error?.message?.includes('overloaded') || 
-                           error?.message?.includes('timed out');
-        if (!isRetryable) {
-          throw error;
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          console.log(`[transmute] Phase 1 trying model: ${modelName} (attempt ${attempt}/${MAX_RETRIES})`);
+          const scannerModel = genAI.getGenerativeModel({
+            model: modelName,
+            generationConfig: {
+              temperature: 0.1,
+              maxOutputTokens: 16384,
+            },
+          });
+
+          scanResult = await withTimeout(
+            scannerModel.generateContent([
+              { text: UNIFIED_SCAN_PROMPT },
+              { inlineData: { mimeType: videoData.mimeType, data: videoData.base64 } },
+            ]),
+            phase1Timeout,
+            `Phase 1 Video Scan (${modelName})`
+          );
+          usedModel = modelName;
+          break;
+        } catch (error: any) {
+          phase1Error = error;
+          console.error(`[transmute] Phase 1 ${modelName} attempt ${attempt} failed:`, error?.message);
+          if (!isRetryableError(error)) {
+            throw error;
+          }
+          if (attempt < MAX_RETRIES) {
+            const waitTime = Math.min(2000 * Math.pow(2, attempt - 1), 10000);
+            console.log(`[transmute] Phase 1 retrying in ${waitTime / 1000}s...`);
+            await retryDelay(waitTime);
+          }
         }
       }
+      if (scanResult) break;
     }
     
     if (!scanResult) {
@@ -2042,22 +2056,26 @@ Generate the complete HTML file now:`;
     let lastError: any;
     
     for (const modelName of modelsToTry) {
-      try {
-        console.log(`[transmute] Phase 2 trying model: ${modelName}`);
-        assemblyResult = await tryModel(modelName, phase2Timeout);
-        assemblerUsedModel = modelName;
-        break;
-      } catch (error: any) {
-        lastError = error;
-        console.error(`[transmute] Phase 2 ${modelName} failed:`, error?.message);
-        // If it's a timeout or overload, try next model
-        const isRetryable = error?.message?.includes('503') || 
-                           error?.message?.includes('overloaded') || 
-                           error?.message?.includes('timed out');
-        if (!isRetryable) {
-          throw error; // Non-retryable error
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          console.log(`[transmute] Phase 2 trying model: ${modelName} (attempt ${attempt}/${MAX_RETRIES})`);
+          assemblyResult = await tryModel(modelName, phase2Timeout);
+          assemblerUsedModel = modelName;
+          break;
+        } catch (error: any) {
+          lastError = error;
+          console.error(`[transmute] Phase 2 ${modelName} attempt ${attempt} failed:`, error?.message);
+          if (!isRetryableError(error)) {
+            throw error;
+          }
+          if (attempt < MAX_RETRIES) {
+            const waitTime = Math.min(2000 * Math.pow(2, attempt - 1), 10000);
+            console.log(`[transmute] Phase 2 retrying in ${waitTime / 1000}s...`);
+            await retryDelay(waitTime);
+          }
         }
       }
+      if (assemblyResult) break;
     }
     
     if (!assemblyResult) {

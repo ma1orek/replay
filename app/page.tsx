@@ -11798,7 +11798,7 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
           thumbnailUrl: flow.thumbnail, // Save video thumbnail for history
           versions: [initialVersion], // Include initial version
           tokenUsage: result.tokenUsage, // Store Gemini API token usage
-          costCredits: CREDIT_COSTS.VIDEO_GENERATE, // 75 credits per generation
+          costCredits: CREDIT_COSTS.VIDEO_GENERATE, // 150 credits per generation
           user_id: user?.id, // Owner of this project for access control
           design_system_id: isDSStyleSelected ? styleDirective.split("::")[1] : null, // Link to selected Design System
         };
@@ -11818,6 +11818,16 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
         
         // Also save to localStorage as backup (for refresh before Supabase sync completes)
         try {
+          // Clear old project backups to prevent QuotaExceededError
+          const keysToRemove: string[] = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key?.startsWith('replay_local_project_') && key !== `replay_local_project_${newGeneration.id}`) {
+              keysToRemove.push(key);
+            }
+          }
+          keysToRemove.forEach(k => localStorage.removeItem(k));
+
           const localKey = `replay_local_project_${newGeneration.id}`;
           localStorage.setItem(localKey, JSON.stringify({
             code: newGeneration.code,
