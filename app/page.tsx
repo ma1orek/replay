@@ -10843,7 +10843,7 @@ Try these prompts in Cursor or v0:
                 
                 if (htmlBlockStart !== -1) {
                   // Extract code after ```html
-                  displayCode = fullCode.slice(htmlBlockStart + 7);
+                  displayCode = fullCode.slice(htmlBlockStart + 7).replace(/```\s*$/, '');
                 } else if (doctypeStart !== -1) {
                   // Extract from <!DOCTYPE
                   displayCode = fullCode.slice(doctypeStart);
@@ -10895,7 +10895,12 @@ Try these prompts in Cursor or v0:
 
       // If we got here without complete event, return accumulated code
       if (fullCode.length > 100) {
-        return { success: true, code: fullCode, tokenUsage };
+        let cleanCode = fullCode;
+        const fenceStart = cleanCode.indexOf("```html");
+        if (fenceStart !== -1) cleanCode = cleanCode.slice(fenceStart + 7).replace(/```\s*$/, '');
+        const docStart = cleanCode.indexOf("<!DOCTYPE");
+        if (docStart > 0) cleanCode = cleanCode.slice(docStart);
+        return { success: true, code: cleanCode.trim(), tokenUsage };
       }
 
       return { success: false, error: "Generation incomplete" };

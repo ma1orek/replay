@@ -1229,7 +1229,7 @@ WHY THIS IS 10/10:
 ⚠️ FORBIDDEN:
 □ NO static/boring pages without animations!
 □ NO repeated same animation on multiple sections!
-□ NO picsum.photos or placehold URLs!
+□ NO placeholder.com or placehold.co — always use picsum.photos/seed/NAME/W/H!
 
 ═══════════════════════════════════════════════════════════════════════════════
 🏆 ENTERPRISE-READY CHECKLIST (10/10 CODE QUALITY)

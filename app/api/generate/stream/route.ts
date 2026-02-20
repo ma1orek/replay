@@ -558,7 +558,9 @@ CONTENT RULES (MANDATORY — violating = failure):
 - Keep the PURPOSE of each section (hero, features, pricing, testimonials, CTA, footer, etc.)
 - 🚨 ZERO BAN: 0 is BANNED in stats! "0 funded startups" → "5,000+". "$0B" → "$800B+". Scan LAST 5 SECONDS for final counter values!
 - 🏢 Company logos: styled TEXT with company name/initials, NOT external image URLs
-- Every image: unique picsum.photos seed (e.g. ?random=hero1, ?random=feat2)
+- 🖼️ IMAGES ARE MANDATORY: Every section MUST have at least one image! NEVER skip images!
+  Use picsum.photos/seed/UNIQUE-NAME/W/H with descriptive seeds (hero-office, team-photo, feature-dashboard, etc.)
+  Every image MUST have a unique seed — NEVER reuse the same seed twice!
 
 ═══════════════════════════════════════════════════
 SECTION LAYOUT RULES (CLEAN + VARIED)
@@ -596,16 +598,28 @@ VARY layouts between sections — cycle through:
 9. Vertical timeline with alternating left/right
 
 ═══════════════════════════════════════════════════
-ANIMATION LIBRARY — USE ALL OF THESE (from reactbits.dev)
+🎨 MEGA ANIMATION LIBRARY — 50 EFFECTS (from reactbits.dev)
 ═══════════════════════════════════════════════════
 Load these CDNs in <head>:
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+For PREMIUM WebGL backgrounds (Aurora, Iridescence, LiquidChrome, Balatro, Grainient, Particles):
+<script type="importmap">{"imports":{"ogl":"https://cdn.jsdelivr.net/npm/ogl@1.0.11/+esm"}}</script>
 
-Then at the end of <body>, implement ALL of these animation patterns:
+🚨 ANIMATION VARIETY — USE AT LEAST 8 DIFFERENT EFFECTS PER PAGE:
+Pick from ALL categories — NEVER just use grain/noise + basic fade-in!
+- 2+ text animations (blur entrance, decrypt, shiny, gradient, typewriter, rotating...)
+- 2+ background effects (aurora, 3D particles, waves, iridescence, liquid chrome, balatro, grainient, dot grid...)
+- 2+ interaction effects (spotlight cards, tilt cards, magnet lines, glare hover...)
+- 1+ SVG animation (morphing blob, line-draw icon, floating shapes)
+- 1+ scroll-triggered animation (parallax, pixel transition, fade content)
+NEVER repeat the same effect across sections! VARY the animation types!
 
-───── 1. SPLIT TEXT ENTRANCE (for hero headline) ─────
-Split headline into WORDS first (to preserve word-wrap), then chars within each word:
+At the end of <body>, implement these animation patterns:
+
+═══ TEXT ANIMATIONS (10 effects) ═══
+
+───── 1. SPLIT TEXT ENTRANCE (hero headline) ─────
 document.querySelectorAll('.split-text').forEach(el => {
   const words = el.textContent.trim().split(/\s+/);
   el.innerHTML = words.map(word =>
@@ -620,66 +634,34 @@ document.querySelectorAll('.split-text').forEach(el => {
       scrollTrigger: { trigger: el, start: 'top 85%', once: true }
     });
 });
-IMPORTANT: The headline element MUST have style="font-size:clamp(2.5rem,5vw,4.5rem)" — NEVER a fixed huge size!
+IMPORTANT: Headlines MUST have style="font-size:clamp(2.5rem,5vw,4.5rem)" — NEVER a fixed huge size!
 
-───── 2. SCROLL REVEAL TEXT (for paragraphs/descriptions) ─────
+───── 2. SCROLL REVEAL TEXT (paragraphs) ─────
 Words unblur and fade in scrubbed to scroll:
 document.querySelectorAll('.scroll-reveal-text').forEach(el => {
   el.innerHTML = el.textContent.split(/(\s+)/).map(w =>
     w.match(/^\\s+$/) ? w : '<span class="word" style="display:inline-block">' + w + '</span>'
   ).join('');
-  const words = el.querySelectorAll('.word');
-  gsap.fromTo(words, { opacity: 0.15, filter: 'blur(4px)' },
+  gsap.fromTo(el.querySelectorAll('.word'), { opacity: 0.15, filter: 'blur(4px)' },
     { opacity: 1, filter: 'blur(0px)', ease: 'none', stagger: 0.05,
       scrollTrigger: { trigger: el.parentElement, start: 'top 80%', end: 'bottom 60%', scrub: true }
     });
 });
 
-───── 3. ANIMATED CONTENT ENTRANCE (for every section) ─────
-Every section child slides up and fades in on scroll:
-gsap.registerPlugin(ScrollTrigger);
-document.querySelectorAll('[data-animate]').forEach(el => {
-  const dir = el.dataset.animate || 'up';
-  const from = { opacity: 0, y: dir==='up' ? 60 : dir==='down' ? -60 : 0,
-    x: dir==='left' ? -60 : dir==='right' ? 60 : 0 };
-  gsap.from(el, { ...from, duration: 0.9, ease: 'power3.out',
-    scrollTrigger: { trigger: el, start: 'top 85%', once: true }
-  });
-});
-
-───── 4. STAGGER CARDS (for feature/pricing cards) ─────
-Cards stagger in from bottom with delay:
-document.querySelectorAll('.stagger-cards').forEach(container => {
-  const cards = container.children;
-  gsap.fromTo(cards, { opacity: 0, y: 80, scale: 0.95 },
-    { opacity: 1, y: 0, scale: 1, duration: 0.7, ease: 'power3.out', stagger: 0.15,
-      scrollTrigger: { trigger: container, start: 'top 80%', once: true }
+───── 3. BLUR TEXT ENTRANCE (subheadings) ─────
+Words blur-in with stagger from bottom:
+document.querySelectorAll('.blur-text').forEach(el => {
+  el.innerHTML = el.textContent.split(/(\s+)/).map(w =>
+    w.trim() ? '<span style="display:inline-block">' + w + '</span>' : w
+  ).join('');
+  gsap.fromTo(el.querySelectorAll('span'),
+    { opacity: 0, filter: 'blur(12px)', y: 20 },
+    { opacity: 1, filter: 'blur(0px)', y: 0, duration: 0.6, ease: 'power2.out', stagger: 0.04,
+      scrollTrigger: { trigger: el, start: 'top 85%', once: true }
     });
 });
 
-───── 5. COUNT-UP NUMBERS (for stats/metrics) ─────
-Animated counter using IntersectionObserver:
-document.querySelectorAll('.count-up').forEach(el => {
-  const to = parseFloat(el.dataset.to);
-  const prefix = el.dataset.prefix || '';
-  const suffix = el.dataset.suffix || '';
-  el.textContent = prefix + '0' + suffix;
-  const obs = new IntersectionObserver(entries => {
-    entries.forEach(entry => { if (entry.isIntersecting) { obs.unobserve(el);
-      const start = performance.now();
-      (function step(now) {
-        const t = Math.min((now - start) / 2000, 1);
-        const ease = 1 - Math.pow(1 - t, 4);
-        el.textContent = prefix + Math.round(to * ease).toLocaleString() + suffix;
-        if (t < 1) requestAnimationFrame(step);
-      })(start);
-    }});
-  }, { threshold: 0.3 });
-  obs.observe(el);
-});
-
-───── 6. GRADIENT TEXT (for key headlines) ─────
-CSS class for animated gradient text:
+───── 4. GRADIENT TEXT (key headlines) ─────
 .gradient-text {
   background: linear-gradient(to right, #5227FF, #FF9FFC, #B19EEF, #5227FF);
   background-size: 300% 100%;
@@ -688,25 +670,362 @@ CSS class for animated gradient text:
 }
 @keyframes gradient-shift { 0%{background-position:0% 50%} 100%{background-position:100% 50%} }
 
-───── 7. GLITCH TEXT (for dramatic headlines) ─────
-.glitch { position:relative; font-weight:900; }
-.glitch::after,.glitch::before {
-  content:attr(data-text); position:absolute; top:0; color:inherit;
-  background:inherit; overflow:hidden; clip-path:inset(0);
+───── 5. SHINY TEXT (shimmer highlight sweep) ─────
+.shiny-text {
+  position: relative; display: inline-block; color: inherit;
+  background: linear-gradient(120deg, currentColor 40%, #fff 50%, currentColor 60%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: shiny-sweep 3s ease-in-out infinite;
 }
-.glitch::after { left:3px; text-shadow:-3px 0 red; animation:glitch-anim 3s infinite linear alternate-reverse; }
-.glitch::before { left:-3px; text-shadow:3px 0 cyan; animation:glitch-anim 2s infinite linear alternate-reverse; }
-@keyframes glitch-anim {
-  0%{clip-path:inset(20% 0 50% 0)} 25%{clip-path:inset(40% 0 20% 0)}
-  50%{clip-path:inset(15% 0 55% 0)} 75%{clip-path:inset(30% 0 40% 0)}
-  100%{clip-path:inset(10% 0 60% 0)}
-}
+@keyframes shiny-sweep { 0%,100%{background-position:200% 0} 50%{background-position:-200% 0} }
 
-───── 8. SPOTLIGHT CARDS (cursor-following light on hover) ─────
+───── 7. DECRYPTED TEXT (Matrix-style reveal) ─────
+document.querySelectorAll('.decrypt-text').forEach(el => {
+  const final = el.textContent; const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
+  let revealed = 0;
+  const obs = new IntersectionObserver(entries => { entries.forEach(entry => { if(entry.isIntersecting) { obs.unobserve(el);
+    const iv = setInterval(() => {
+      el.textContent = final.split('').map((ch, i) => i < revealed ? ch : chars[Math.random()*chars.length|0]).join('');
+      revealed += 2; if(revealed >= final.length) { el.textContent = final; clearInterval(iv); }
+    }, 40);
+  }});}, { threshold: 0.3 }); obs.observe(el);
+});
+
+───── 8. TYPEWRITER EFFECT (typing + cursor) ─────
+document.querySelectorAll('.typewriter').forEach(el => {
+  const text = el.dataset.text || el.textContent; el.textContent = '';
+  el.style.borderRight = '2px solid currentColor';
+  let i = 0;
+  const obs = new IntersectionObserver(entries => { entries.forEach(entry => { if(entry.isIntersecting) { obs.unobserve(el);
+    const iv = setInterval(() => { el.textContent = text.slice(0, ++i); if(i >= text.length) clearInterval(iv); }, 60);
+  }});}, { threshold: 0.3 }); obs.observe(el);
+});
+CSS: .typewriter { animation: blink-cursor 0.7s step-end infinite; }
+@keyframes blink-cursor { 50% { border-color: transparent; } }
+
+───── 9. ROTATING TEXT (cycling words) ─────
+document.querySelectorAll('.rotating-text').forEach(el => {
+  const words = el.dataset.words.split(','); let idx = 0;
+  const span = document.createElement('span'); span.style.display='inline-block';
+  span.textContent = words[0]; el.textContent=''; el.appendChild(span);
+  setInterval(() => {
+    gsap.to(span, { y: -20, opacity: 0, duration: 0.3, ease: 'power2.in', onComplete: () => {
+      idx = (idx+1) % words.length; span.textContent = words[idx];
+      gsap.fromTo(span, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3, ease: 'power2.out' });
+    }});
+  }, 2500);
+});
+
+───── 10. COUNT-UP NUMBERS (stats/metrics) ─────
+document.querySelectorAll('.count-up').forEach(el => {
+  const to = parseFloat(el.dataset.to); const prefix = el.dataset.prefix||''; const suffix = el.dataset.suffix||'';
+  el.textContent = prefix + '0' + suffix;
+  const obs = new IntersectionObserver(entries => { entries.forEach(entry => { if(entry.isIntersecting) { obs.unobserve(el);
+    const start = performance.now();
+    (function step(now) { const t = Math.min((now-start)/2000,1); const ease = 1-Math.pow(1-t,4);
+      el.textContent = prefix + Math.round(to*ease).toLocaleString() + suffix;
+      if(t<1) requestAnimationFrame(step);
+    })(start);
+  }});}, { threshold: 0.3 }); obs.observe(el);
+});
+
+═══ BACKGROUND EFFECTS (10 effects) ═══
+
+───── 11. AURORA BACKGROUND (OGL WebGL — hero/CTA) ─────
+REAL WebGL aurora with Perlin noise waves + 3-color gradient:
+<div id="aurora-bg" style="position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;"></div>
+<script type="module">
+import{Renderer,Program,Mesh,Color,Triangle}from'ogl';
+(function(){const ctn=document.getElementById('aurora-bg');if(!ctn)return;
+const renderer=new Renderer({alpha:true,premultipliedAlpha:true,antialias:true});
+const gl=renderer.gl;gl.clearColor(0,0,0,0);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
+gl.canvas.style.backgroundColor='transparent';gl.canvas.style.width='100%';gl.canvas.style.height='100%';
+const V=\`#version 300 es\\nin vec2 position;\\nvoid main(){gl_Position=vec4(position,0.0,1.0);}\`;
+const F=\`#version 300 es\\nprecision highp float;uniform float uTime;uniform float uAmplitude;uniform vec3 uColorStops[3];uniform vec2 uResolution;uniform float uBlend;out vec4 fragColor;
+vec3 permute(vec3 x){return mod(((x*34.0)+1.0)*x,289.0);}
+float snoise(vec2 v){const vec4 C=vec4(0.211324865405187,0.366025403784439,-0.577350269189626,0.024390243902439);
+vec2 i=floor(v+dot(v,C.yy));vec2 x0=v-i+dot(i,C.xx);vec2 i1=(x0.x>x0.y)?vec2(1.0,0.0):vec2(0.0,1.0);
+vec4 x12=x0.xyxy+C.xxzz;x12.xy-=i1;i=mod(i,289.0);
+vec3 p=permute(permute(i.y+vec3(0.0,i1.y,1.0))+i.x+vec3(0.0,i1.x,1.0));
+vec3 m=max(0.5-vec3(dot(x0,x0),dot(x12.xy,x12.xy),dot(x12.zw,x12.zw)),0.0);m=m*m;m=m*m;
+vec3 x=2.0*fract(p*C.www)-1.0;vec3 h=abs(x)-0.5;vec3 ox=floor(x+0.5);vec3 a0=x-ox;
+m*=1.79284291400159-0.85373472095314*(a0*a0+h*h);vec3 g;g.x=a0.x*x0.x+h.x*x0.y;g.yz=a0.yz*x12.xz+h.yz*x12.yw;return 130.0*dot(m,g);}
+struct CS{vec3 color;float position;};
+void main(){vec2 uv=gl_FragCoord.xy/uResolution;CS c[3];c[0]=CS(uColorStops[0],0.0);c[1]=CS(uColorStops[1],0.5);c[2]=CS(uColorStops[2],1.0);
+int idx=0;for(int i=0;i<2;i++){if(c[i].position<=uv.x)idx=i;}
+vec3 rc=mix(c[idx].color,c[idx+1].color,(uv.x-c[idx].position)/(c[idx+1].position-c[idx].position));
+float ht=snoise(vec2(uv.x*2.0+uTime*0.1,uTime*0.25))*0.5*uAmplitude;ht=exp(ht);ht=(uv.y*2.0-ht+0.2);
+float intensity=0.6*ht;float mp=0.20;float aa=smoothstep(mp-uBlend*0.5,mp+uBlend*0.5,intensity);
+fragColor=vec4(intensity*rc*aa,aa);}\`;
+const geo=new Triangle(gl);if(geo.attributes.uv)delete geo.attributes.uv;
+const colors=[new Color('#5227FF'),new Color('#7cff67'),new Color('#5227FF')].map(c=>[c.r,c.g,c.b]);
+const prog=new Program(gl,{vertex:V,fragment:F,uniforms:{uTime:{value:0},uAmplitude:{value:1.0},uColorStops:{value:colors},uResolution:{value:[ctn.offsetWidth,ctn.offsetHeight]},uBlend:{value:0.5}}});
+const mesh=new Mesh(gl,{geometry:geo,program:prog});ctn.appendChild(gl.canvas);
+function resize(){renderer.setSize(ctn.offsetWidth,ctn.offsetHeight);prog.uniforms.uResolution.value=[ctn.offsetWidth,ctn.offsetHeight];}
+window.addEventListener('resize',resize);resize();
+(function u(t){requestAnimationFrame(u);prog.uniforms.uTime.value=t*0.001;renderer.render({scene:mesh});})(0);
+})();
+</script>
+Customize colors: change the Color('#5227FF'),Color('#7cff67'),Color('#5227FF') to match the page palette.
+
+───── 12. 3D PARTICLES (OGL WebGL — floating point cloud with glow) ─────
+200 particles in 3D space with perspective, rotation, and soft glow:
+<div id="particles-bg" style="position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;"></div>
+<script type="module">
+import{Renderer,Camera,Geometry,Program,Mesh}from'ogl';
+(function(){const ctn=document.getElementById('particles-bg');if(!ctn)return;
+const renderer=new Renderer({alpha:true,antialias:false,dpr:Math.min(window.devicePixelRatio||1,2)});
+const gl=renderer.gl;gl.canvas.style.width='100%';gl.canvas.style.height='100%';
+const camera=new Camera(gl,{fov:15});camera.position.set(0,0,20);
+const N=200;const pos=new Float32Array(N*3),rnd=new Float32Array(N*4),col=new Float32Array(N*3);
+const pal=[[1,1,1],[0.32,0.15,1],[0.44,1,0.4]];
+for(let i=0;i<N;i++){let x,y,z,l;do{x=Math.random()*2-1;y=Math.random()*2-1;z=Math.random()*2-1;l=x*x+y*y+z*z;}while(l>1||l===0);
+const r=Math.cbrt(Math.random());pos.set([x*r,y*r,z*r],i*3);rnd.set([Math.random(),Math.random(),Math.random(),Math.random()],i*4);
+const c=pal[Math.floor(Math.random()*pal.length)];col.set(c,i*3);}
+const geo=new Geometry(gl,{position:{size:3,data:pos},random:{size:4,data:rnd},color:{size:3,data:col}});
+const V=\`attribute vec3 position;attribute vec4 random;attribute vec3 color;uniform mat4 modelMatrix;uniform mat4 viewMatrix;uniform mat4 projectionMatrix;uniform float uTime;varying vec4 vR;varying vec3 vC;
+void main(){vR=random;vC=color;vec3 p=position*10.0;p.z*=10.0;vec4 mP=modelMatrix*vec4(p,1.0);float t=uTime;
+mP.x+=sin(t*random.z+6.28*random.w)*mix(0.1,1.5,random.x);mP.y+=sin(t*random.y+6.28*random.x)*mix(0.1,1.5,random.w);
+mP.z+=sin(t*random.w+6.28*random.y)*mix(0.1,1.5,random.z);vec4 mv=viewMatrix*mP;
+gl_PointSize=(100.0*(1.0+(random.x-0.5)))/length(mv.xyz);gl_Position=projectionMatrix*mv;}\`;
+const F=\`precision highp float;uniform float uTime;varying vec4 vR;varying vec3 vC;void main(){vec2 uv=gl_PointCoord.xy;float d=length(uv-vec2(0.5));
+float c=smoothstep(0.5,0.4,d)*0.8;gl_FragColor=vec4(vC+0.2*sin(uv.yxx+uTime+vR.y*6.28),c);}\`;
+const prog=new Program(gl,{vertex:V,fragment:F,uniforms:{uTime:{value:0}},transparent:true,depthTest:false});
+const mesh=new Mesh(gl,{geometry:geo,program:prog,mode:gl.POINTS});
+function resize(){renderer.setSize(ctn.offsetWidth,ctn.offsetHeight);camera.perspective({aspect:gl.canvas.width/gl.canvas.height});}
+window.addEventListener('resize',resize);resize();ctn.appendChild(gl.canvas);
+let el=0,lt=performance.now();
+(function u(t){requestAnimationFrame(u);el+=(t-lt);lt=t;prog.uniforms.uTime.value=el*0.001;
+mesh.rotation.x=Math.sin(el*0.0002)*0.1;mesh.rotation.y=Math.cos(el*0.0005)*0.15;mesh.rotation.z+=0.01;
+renderer.render({scene:mesh,camera});})(performance.now());
+})();
+</script>
+Customize colors: change the pal array [[r,g,b],...] to match page palette. Values are 0-1 range.
+
+───── 13. WAVES BACKGROUND (Canvas 2D Perlin noise lines) ─────
+Animated flowing wave lines using Perlin noise — mouse-reactive:
+<canvas id="waves-bg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;"></canvas>
+<script>
+(function(){const c=document.getElementById('waves-bg'),ctx=c.getContext('2d');
+let w,h,mx=-10,my=0,t=0;
+const P=[151,160,137,91,90,15,131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,190,6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,88,237,149,56,87,174,20,125,136,171,168,68,175,74,165,71,134,139,48,27,166,77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,102,143,54,65,25,63,161,1,216,80,73,209,76,132,187,208,89,18,169,200,196,135,130,116,188,159,86,164,100,109,198,173,186,3,64,52,217,226,250,124,123,5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,189,28,42,223,183,170,213,119,248,152,2,44,154,163,70,221,153,101,155,167,43,172,9,129,22,39,253,19,98,108,110,79,113,224,232,178,185,112,104,218,246,97,228,251,34,242,193,238,210,144,12,191,179,162,241,81,51,145,235,249,14,239,107,49,192,214,31,181,199,106,157,184,84,204,176,115,121,50,45,127,4,150,254,138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180];
+const perm=new Array(512),gp=new Array(512);
+const G=[[1,1],[-1,1],[1,-1],[-1,-1],[1,0],[-1,0],[0,1],[0,-1]];
+for(let i=0;i<256;i++){perm[i]=perm[i+256]=P[i];gp[i]=gp[i+256]=G[P[i]%8];}
+function noise(px,py){let X=Math.floor(px),Y=Math.floor(py);px-=X;py-=Y;X&=255;Y&=255;
+  const f=t=>t*t*t*(t*(t*6-15)+10);
+  const d=(g,x,y)=>g[0]*x+g[1]*y;
+  const u=f(px),v=f(py);
+  return(1-v)*((1-u)*d(gp[X+perm[Y]],px,py)+u*d(gp[X+1+perm[Y]],px-1,py))+v*((1-u)*d(gp[X+perm[Y+1]],px,py-1)+u*d(gp[X+1+perm[Y+1]],px-1,py-1));}
+function resize(){w=c.width=c.offsetWidth;h=c.height=c.offsetHeight;}
+window.addEventListener('resize',resize);resize();
+window.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
+(function draw(){t+=0.5;ctx.clearRect(0,0,w,h);ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=1;
+  for(let i=0;i<w+20;i+=12){ctx.beginPath();
+    for(let j=0;j<h+20;j+=28){const n=noise((i+t*1.5)*0.002,(j+t*0.8)*0.0015)*12;
+      const px=i+Math.cos(n)*30,py=j+Math.sin(n)*15;
+      j===0?ctx.moveTo(px,py):ctx.lineTo(px,py);}
+    ctx.stroke();}
+  requestAnimationFrame(draw);})();})();
+</script>
+
+───── 14. SQUARES GRID BACKGROUND (Canvas 2D scrolling grid) ─────
+Animated scrolling grid with hover highlight:
+<canvas id="squares-bg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;"></canvas>
+<script>
+(function(){const c=document.getElementById('squares-bg'),ctx=c.getContext('2d');
+let w,h,ox=0,oy=0,hx=-1,hy=-1;const sz=40,spd=0.5;
+function resize(){w=c.width=c.offsetWidth;h=c.height=c.offsetHeight;}
+window.addEventListener('resize',resize);resize();
+c.style.pointerEvents='auto';
+c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect();
+  hx=Math.floor((e.clientX-r.left+ox%sz)/sz);hy=Math.floor((e.clientY-r.top+oy%sz)/sz);});
+c.addEventListener('mouseleave',()=>{hx=hy=-1;});
+(function draw(){ox=(ox+spd)%sz;oy=(oy+spd*0.3)%sz;
+  ctx.clearRect(0,0,w,h);ctx.strokeStyle='rgba(255,255,255,0.06)';
+  for(let x=-sz;x<w+sz;x+=sz){for(let y=-sz;y<h+sz;y+=sz){
+    const px=x-(ox%sz),py=y-(oy%sz);
+    const gx=Math.floor((x+ox%sz)/sz),gy=Math.floor((y+oy%sz)/sz);
+    if(gx===hx&&gy===hy){ctx.fillStyle='rgba(255,255,255,0.04)';ctx.fillRect(px,py,sz,sz);}
+    ctx.strokeRect(px,py,sz,sz);}}
+  const g=ctx.createRadialGradient(w/2,h/2,0,w/2,h/2,Math.hypot(w,h)/2);
+  g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,0.6)');
+  ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+  requestAnimationFrame(draw);})();})();
+</script>
+
+───── 15. DOT GRID (Canvas 2D with proximity highlight) ─────
+<canvas id="dotgrid-bg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;"></canvas>
+<script>
+(function(){const c=document.getElementById('dotgrid-bg'),ctx=c.getContext('2d');
+let w,h,mx=0,my=0; const gap=32,dotR=2,prox=150;
+function resize(){w=c.width=c.offsetWidth;h=c.height=c.offsetHeight;}
+window.addEventListener('resize',resize);resize();
+window.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect();mx=e.clientX-r.left;my=e.clientY-r.top;});
+(function draw(){ctx.clearRect(0,0,w,h);
+  for(let x=gap;x<w;x+=gap){for(let y=gap;y<h;y+=gap){
+    const d=Math.hypot(x-mx,y-my);
+    const t=Math.max(0,1-d/prox);
+    ctx.beginPath();ctx.arc(x,y,dotR+t*3,0,Math.PI*2);
+    ctx.fillStyle=t>0?'rgba(82,39,255,'+(0.2+t*0.8)+')':'rgba(255,255,255,0.12)';ctx.fill();}}
+  requestAnimationFrame(draw);})();})();
+</script>
+
+───── 16. IRIDESCENCE BACKGROUND (OGL WebGL — mouse-reactive rainbow) ─────
+Real WebGL iridescent interference pattern — shifts with mouse:
+<div id="iridescence-bg" style="position:absolute;inset:0;z-index:0;pointer-events:auto;overflow:hidden;"></div>
+<script type="module">
+import{Renderer,Program,Mesh,Color,Triangle}from'ogl';
+(function(){const ctn=document.getElementById('iridescence-bg');if(!ctn)return;
+const renderer=new Renderer();const gl=renderer.gl;gl.clearColor(1,1,1,1);
+gl.canvas.style.width='100%';gl.canvas.style.height='100%';
+const V=\`attribute vec2 uv;attribute vec2 position;varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position,0,1);}\`;
+const F=\`precision highp float;uniform float uTime;uniform vec3 uColor;uniform vec3 uResolution;uniform vec2 uMouse;uniform float uAmplitude;uniform float uSpeed;varying vec2 vUv;
+void main(){float mr=min(uResolution.x,uResolution.y);vec2 uv=(vUv.xy*2.0-1.0)*uResolution.xy/mr;
+uv+=(uMouse-vec2(0.5))*uAmplitude;float d=-uTime*0.5*uSpeed;float a=0.0;
+for(float i=0.0;i<8.0;++i){a+=cos(i-d-a*uv.x);d+=sin(uv.y*i+a);}d+=uTime*0.5*uSpeed;
+vec3 col=vec3(cos(uv*vec2(d,a))*0.6+0.4,cos(a+d)*0.5+0.5);col=cos(col*cos(vec3(d,a,2.5))*0.5+0.5)*uColor;
+gl_FragColor=vec4(col,1.0);}\`;
+const geo=new Triangle(gl);
+const prog=new Program(gl,{vertex:V,fragment:F,uniforms:{uTime:{value:0},uColor:{value:new Color(1,1,1)},
+  uResolution:{value:new Color(gl.canvas.width,gl.canvas.height,gl.canvas.width/gl.canvas.height)},
+  uMouse:{value:new Float32Array([0.5,0.5])},uAmplitude:{value:0.1},uSpeed:{value:1.0}}});
+const mesh=new Mesh(gl,{geometry:geo,program:prog});
+function resize(){renderer.setSize(ctn.offsetWidth,ctn.offsetHeight);
+  prog.uniforms.uResolution.value=new Color(gl.canvas.width,gl.canvas.height,gl.canvas.width/gl.canvas.height);}
+window.addEventListener('resize',resize);resize();
+ctn.addEventListener('mousemove',e=>{const r=ctn.getBoundingClientRect();
+  prog.uniforms.uMouse.value[0]=(e.clientX-r.left)/r.width;prog.uniforms.uMouse.value[1]=1-(e.clientY-r.top)/r.height;});
+ctn.appendChild(gl.canvas);
+(function u(t){requestAnimationFrame(u);prog.uniforms.uTime.value=t*0.001;renderer.render({scene:mesh});})(0);
+})();
+</script>
+
+───── 17. LIQUID CHROME BACKGROUND (OGL WebGL — metallic ripples) ─────
+Liquid metal chrome effect with mouse-reactive ripples:
+<div id="chrome-bg" style="position:absolute;inset:0;z-index:0;pointer-events:auto;overflow:hidden;"></div>
+<script type="module">
+import{Renderer,Program,Mesh,Triangle}from'ogl';
+(function(){const ctn=document.getElementById('chrome-bg');if(!ctn)return;
+const renderer=new Renderer({antialias:true});const gl=renderer.gl;gl.clearColor(1,1,1,1);
+gl.canvas.style.width='100%';gl.canvas.style.height='100%';
+const V=\`attribute vec2 position;attribute vec2 uv;varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position,0.0,1.0);}\`;
+const F=\`precision highp float;uniform float uTime;uniform vec3 uResolution;uniform vec3 uBaseColor;uniform float uAmplitude;uniform float uFrequencyX;uniform float uFrequencyY;uniform vec2 uMouse;varying vec2 vUv;
+vec4 ri(vec2 uvCoord){vec2 fragCoord=uvCoord*uResolution.xy;vec2 uv=(2.0*fragCoord-uResolution.xy)/min(uResolution.x,uResolution.y);
+for(float i=1.0;i<10.0;i++){uv.x+=uAmplitude/i*cos(i*uFrequencyX*uv.y+uTime+uMouse.x*3.14159);uv.y+=uAmplitude/i*cos(i*uFrequencyY*uv.x+uTime+uMouse.y*3.14159);}
+vec2 diff=(uvCoord-uMouse);float dist=length(diff);float falloff=exp(-dist*20.0);float ripple=sin(10.0*dist-uTime*2.0)*0.03;
+uv+=(diff/(dist+0.0001))*ripple*falloff;vec3 color=uBaseColor/abs(sin(uTime-uv.y-uv.x));return vec4(color,1.0);}
+void main(){vec4 col=vec4(0.0);for(int i=-1;i<=1;i++)for(int j=-1;j<=1;j++){col+=ri(vUv+vec2(float(i),float(j))*(1.0/min(uResolution.x,uResolution.y)));}gl_FragColor=col/9.0;}\`;
+const geo=new Triangle(gl);
+const prog=new Program(gl,{vertex:V,fragment:F,uniforms:{uTime:{value:0},
+  uResolution:{value:new Float32Array([gl.canvas.width,gl.canvas.height,gl.canvas.width/gl.canvas.height])},
+  uBaseColor:{value:new Float32Array([0.1,0.1,0.1])},uAmplitude:{value:0.3},uFrequencyX:{value:3},uFrequencyY:{value:3},
+  uMouse:{value:new Float32Array([0,0])}}});
+const mesh=new Mesh(gl,{geometry:geo,program:prog});
+function resize(){renderer.setSize(ctn.offsetWidth,ctn.offsetHeight);const r=prog.uniforms.uResolution.value;r[0]=gl.canvas.width;r[1]=gl.canvas.height;r[2]=gl.canvas.width/gl.canvas.height;}
+window.addEventListener('resize',resize);resize();
+ctn.addEventListener('mousemove',e=>{const r=ctn.getBoundingClientRect();prog.uniforms.uMouse.value[0]=(e.clientX-r.left)/r.width;prog.uniforms.uMouse.value[1]=1-(e.clientY-r.top)/r.height;});
+ctn.appendChild(gl.canvas);
+(function u(t){requestAnimationFrame(u);prog.uniforms.uTime.value=t*0.001*0.2;renderer.render({scene:mesh});})(0);
+})();
+</script>
+Change uBaseColor to match page theme: [0.1,0.1,0.1]=dark, [0.8,0.2,0.4]=warm, [0.1,0.3,0.6]=cool.
+
+───── 18. BEAMS BACKGROUND (vertical light strips) ─────
+.beams-bg { position:absolute; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+.beams-bg span {
+  position:absolute; top:-100%; width:2px; height:200%; opacity:0.1;
+  background:linear-gradient(to bottom, transparent, white, transparent);
+  animation: beam-fall linear infinite;
+}
+Generate 8-12 beam <span>s with varying left%, animation-duration (4-12s), animation-delay (0-5s), opacity (0.05-0.15):
+<div class="beams-bg">
+  <span style="left:10%;animation-duration:8s;animation-delay:0s;opacity:0.08;"></span>
+  <span style="left:25%;animation-duration:6s;animation-delay:1.5s;opacity:0.12;"></span>
+  ...etc
+</div>
+@keyframes beam-fall { 0%{transform:translateY(-50%)} 100%{transform:translateY(50%)} }
+
+───── 19. BALATRO BACKGROUND (OGL WebGL — psychedelic pixelated swirl) ─────
+Hypnotic pixelated paint-swirl effect — vibrant and eye-catching:
+<div id="balatro-bg" style="position:absolute;inset:0;z-index:0;pointer-events:auto;overflow:hidden;"></div>
+<script type="module">
+import{Renderer,Program,Mesh,Triangle}from'ogl';
+(function(){const ctn=document.getElementById('balatro-bg');if(!ctn)return;
+const renderer=new Renderer();const gl=renderer.gl;gl.clearColor(0,0,0,1);gl.canvas.style.width='100%';gl.canvas.style.height='100%';
+const V=\`attribute vec2 uv;attribute vec2 position;varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position,0,1);}\`;
+const F=\`precision highp float;
+#define PI 3.14159265359
+uniform float iTime;uniform vec3 iResolution;uniform vec4 uColor1;uniform vec4 uColor2;uniform vec4 uColor3;
+uniform float uContrast;uniform float uLighting;uniform float uSpinAmount;uniform float uPixelFilter;uniform float uSpinEase;uniform float uSpinSpeed;
+varying vec2 vUv;
+vec4 effect(vec2 ss,vec2 sc){float ps=length(ss)/uPixelFilter;vec2 uv=(floor(sc*(1.0/ps))*ps-0.5*ss)/length(ss);
+float ul=length(uv);float spd=302.2+iTime*uSpinEase*-0.4;float npa=atan(uv.y,uv.x)+spd-uSpinEase*20.0*(uSpinAmount*ul+(1.0-uSpinAmount));
+vec2 mid=(ss/length(ss))/2.0;uv=vec2(ul*cos(npa)+mid.x,ul*sin(npa)+mid.y)-mid;uv*=30.0;
+float speed=iTime*uSpinSpeed;vec2 uv2=vec2(uv.x+uv.y);
+for(int i=0;i<5;i++){uv2+=sin(max(uv.x,uv.y))+uv;uv+=0.5*vec2(cos(5.1123314+0.353*uv2.y+speed*0.131121),sin(uv2.x-0.113*speed));uv-=cos(uv.x+uv.y)-sin(uv.x*0.711-uv.y);}
+float cm=(0.25*uContrast+0.5*uSpinAmount+1.2);float pr=min(2.0,max(0.0,length(uv)*0.035*cm));
+float c1=max(0.0,1.0-cm*abs(1.0-pr));float c2=max(0.0,1.0-cm*abs(pr));float c3=1.0-min(1.0,c1+c2);
+float lt=(uLighting-0.2)*max(c1*5.0-4.0,0.0)+uLighting*max(c2*5.0-4.0,0.0);
+return(0.3/uContrast)*uColor1+(1.0-0.3/uContrast)*(uColor1*c1+uColor2*c2+vec4(c3*uColor3.rgb,c3*uColor1.a))+lt;}
+void main(){gl_FragColor=effect(iResolution.xy,vUv*iResolution.xy);}\`;
+const geo=new Triangle(gl);
+const prog=new Program(gl,{vertex:V,fragment:F,uniforms:{iTime:{value:0},
+iResolution:{value:new Float32Array([gl.canvas.width,gl.canvas.height,gl.canvas.width/gl.canvas.height])},
+uColor1:{value:new Float32Array([0.871,0.267,0.231,1])},uColor2:{value:new Float32Array([0,0.42,0.706,1])},
+uColor3:{value:new Float32Array([0.086,0.137,0.145,1])},
+uContrast:{value:3.5},uLighting:{value:0.4},uSpinAmount:{value:0.25},uPixelFilter:{value:745},uSpinEase:{value:1},uSpinSpeed:{value:7}}});
+const mesh=new Mesh(gl,{geometry:geo,program:prog});
+function resize(){renderer.setSize(ctn.offsetWidth,ctn.offsetHeight);const r=prog.uniforms.iResolution.value;r[0]=gl.canvas.width;r[1]=gl.canvas.height;r[2]=gl.canvas.width/gl.canvas.height;}
+window.addEventListener('resize',resize);resize();ctn.appendChild(gl.canvas);
+(function u(t){requestAnimationFrame(u);prog.uniforms.iTime.value=t*0.001;renderer.render({scene:mesh});})(0);
+})();
+</script>
+Customize: uColor1=red/warm, uColor2=blue/cool, uColor3=dark. Values are vec4 [r,g,b,a] 0-1. Increase uPixelFilter for finer pixels.
+
+───── 20. GRAINIENT BACKGROUND (OGL WebGL 2 — noise gradient with grain) ─────
+Flowing noise-driven gradient with built-in film grain. Requires WebGL 2:
+<div id="grainient-bg" style="position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;"></div>
+<script type="module">
+import{Renderer,Program,Mesh,Triangle}from'ogl';
+(function(){const ctn=document.getElementById('grainient-bg');if(!ctn)return;
+const renderer=new Renderer({webgl:2,alpha:true,antialias:false,dpr:Math.min(window.devicePixelRatio||1,2)});
+const gl=renderer.gl;gl.canvas.style.width='100%';gl.canvas.style.height='100%';
+const V=\`#version 300 es\\nin vec2 position;\\nvoid main(){gl_Position=vec4(position,0,1);}\`;
+const F=\`#version 300 es\\nprecision highp float;uniform vec2 iResolution;uniform float iTime;uniform vec3 uColor1;uniform vec3 uColor2;uniform vec3 uColor3;out vec4 fragColor;
+mat2 Rot(float a){float s=sin(a),c=cos(a);return mat2(c,-s,s,c);}
+vec2 hash(vec2 p){p=vec2(dot(p,vec2(2127.1,81.17)),dot(p,vec2(1269.5,283.37)));return fract(sin(p)*43758.5453);}
+float noise(vec2 p){vec2 i=floor(p),f=fract(p),u=f*f*(3.0-2.0*f);float n=mix(mix(dot(-1.0+2.0*hash(i),f),dot(-1.0+2.0*hash(i+vec2(1,0)),f-vec2(1,0)),u.x),mix(dot(-1.0+2.0*hash(i+vec2(0,1)),f-vec2(0,1)),dot(-1.0+2.0*hash(i+vec2(1,1)),f-vec2(1,1)),u.x),u.y);return 0.5+0.5*n;}
+void main(){float t=iTime*0.25;vec2 uv=gl_FragCoord.xy/iResolution;float r=iResolution.x/iResolution.y;
+vec2 tuv=uv-0.5;tuv/=0.9;float deg=noise(vec2(t*0.1,tuv.x*tuv.y)*2.0);tuv.y/=r;tuv*=Rot(radians((deg-0.5)*500.0+180.0));tuv.y*=r;
+tuv.x+=sin(tuv.y*5.0+t*2.0)/50.0;tuv.y+=sin(tuv.x*7.5+t*2.0)/25.0;
+mat2 bR=Rot(0.0);float bX=(tuv*bR).x;vec3 l1=mix(uColor3,uColor2,smoothstep(-0.35,0.25,bX));
+vec3 l2=mix(uColor2,uColor1,smoothstep(-0.35,0.25,bX));vec3 col=mix(l1,l2,smoothstep(0.55,-0.35,tuv.y));
+float grain=fract(sin(dot(uv*2.0,vec2(12.9898,78.233)))*43758.5453);col+=(grain-0.5)*0.1;
+col=(col-0.5)*1.5+0.5;col=clamp(col,0.0,1.0);fragColor=vec4(col,1.0);}\`;
+const geo=new Triangle(gl);if(geo.attributes.uv)delete geo.attributes.uv;
+const prog=new Program(gl,{vertex:V,fragment:F,uniforms:{iTime:{value:0},
+iResolution:{value:new Float32Array([gl.canvas.width,gl.canvas.height])},
+uColor1:{value:new Float32Array([1,0.624,0.988])},uColor2:{value:new Float32Array([0.322,0.153,1])},uColor3:{value:new Float32Array([0.694,0.62,0.937])}}});
+const mesh=new Mesh(gl,{geometry:geo,program:prog});
+function resize(){renderer.setSize(ctn.offsetWidth,ctn.offsetHeight);prog.uniforms.iResolution.value=new Float32Array([gl.canvas.width,gl.canvas.height]);}
+window.addEventListener('resize',resize);resize();ctn.appendChild(gl.canvas);
+const t0=performance.now();
+(function u(t){requestAnimationFrame(u);prog.uniforms.iTime.value=(t-t0)*0.001;renderer.render({scene:mesh});})(performance.now());
+})();
+</script>
+Customize: uColor1=pink/warm, uColor2=blue/purple, uColor3=soft lavender. All vec3 [r,g,b] 0-1.
+TIP: For extra subtle film grain overlay on top of everything, add:
+<canvas id="grain" style="position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:9999;opacity:0.04;"></canvas>
+<script>(function(){const c=document.getElementById('grain'),x=c.getContext('2d');c.width=c.height=256;(function d(){const i=x.createImageData(256,256);for(let j=0;j<i.data.length;j+=4){const v=Math.random()*255;i.data[j]=i.data[j+1]=i.data[j+2]=v;i.data[j+3]=20;}x.putImageData(i,0,0);requestAnimationFrame(d);})();})()</script>
+
+═══ HOVER/INTERACTION EFFECTS (12 effects) ═══
+
+───── 21. SPOTLIGHT CARDS (cursor-following light) ─────
 .card-spotlight {
   position:relative; border-radius:1.5rem; border:1px solid rgba(255,255,255,0.08);
-  background:#111; overflow:hidden;
-  --mx:50%; --my:50%;
+  background:#111; overflow:hidden; --mx:50%; --my:50%;
 }
 .card-spotlight::before {
   content:''; position:absolute; inset:0; pointer-events:none;
@@ -722,71 +1041,103 @@ JS: document.querySelectorAll('.card-spotlight').forEach(c => {
   });
 });
 
-───── 9. INFINITE MARQUEE (for logo/partner bars) ─────
-.marquee { overflow:hidden; position:relative; width:100%; }
-.marquee-track {
-  display:flex; width:max-content; gap:3rem;
-  animation: marquee-scroll 25s linear infinite;
-}
-.marquee-track:hover { animation-play-state:paused; }
-@keyframes marquee-scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
-IMPORTANT: duplicate all items inside marquee-track so loop is seamless!
+───── 22. TILT CARD (3D perspective on hover) ─────
+.tilt-card { perspective:800px; }
+.tilt-card-inner { transition:transform 0.1s ease-out; transform-style:preserve-3d; }
+JS: document.querySelectorAll('.tilt-card').forEach(card => {
+  const inner = card.querySelector('.tilt-card-inner') || card;
+  card.addEventListener('mousemove', e => {
+    const r = card.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    inner.style.transform = 'rotateY('+x*15+'deg) rotateX('+(-y*15)+'deg) scale(1.02)';
+  });
+  card.addEventListener('mouseleave', () => { inner.style.transform = 'rotateY(0) rotateX(0) scale(1)'; });
+});
 
-───── 10. FILM GRAIN OVERLAY (page-wide texture) ─────
-Add a subtle noise texture over the entire page:
-<canvas id="grain" style="position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:9999;opacity:0.04;"></canvas>
+───── 23. GLARE HOVER (shine sweep on cards) ─────
+.glare-card { position:relative; overflow:hidden; }
+.glare-card::after {
+  content:''; position:absolute; top:-50%; left:-50%; width:200%; height:200%;
+  background:linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%);
+  transition:transform 0.5s ease; transform:translateX(-100%) rotate(0deg);
+}
+.glare-card:hover::after { transform:translateX(100%) rotate(0deg); }
+
+───── 24. ELECTRIC BORDER (Canvas 2D noise border) ─────
+Use around hero CTA or key cards — animated jittery border using procedural noise:
+<div style="position:relative;display:inline-block;">
+  <canvas class="electric-border" style="position:absolute;inset:-30px;width:calc(100%+60px);height:calc(100%+60px);pointer-events:none;z-index:1;"></canvas>
+  <div style="position:relative;z-index:2;">...content...</div>
+</div>
 <script>
-(function(){const c=document.getElementById('grain'),x=c.getContext('2d');c.width=c.height=256;
-let f=0;(function d(){if(f++%3===0){const i=x.createImageData(256,256);for(let j=0;j<i.data.length;j+=4){
-const v=Math.random()*255;i.data[j]=i.data[j+1]=i.data[j+2]=v;i.data[j+3]=20;}x.putImageData(i,0,0);}
-requestAnimationFrame(d);})();})();
+document.querySelectorAll('.electric-border').forEach(c => {
+  const ctx=c.getContext('2d'); let t=0;
+  const noise=(x,s)=>(Math.sin(x*12.9898+s*78.233)*43758.5453)%1;
+  function draw(){t+=0.02; const w=c.width=c.offsetWidth,h=c.height=c.offsetHeight;
+    ctx.clearRect(0,0,w,h); ctx.strokeStyle='#5227FF'; ctx.lineWidth=1; ctx.beginPath();
+    const pad=30,r=20,steps=200;
+    for(let i=0;i<=steps;i++){const p=i/steps; let px,py;
+      const perim=2*(w-2*pad-2*r)+2*(h-2*pad-2*r)+2*Math.PI*r;
+      const d=p*perim; /* walk around rounded rect */
+      const sw=w-2*pad,sh=h-2*pad,se=sw-2*r,st=sh-2*r;
+      let acc=0;
+      if(d<se){px=pad+r+d;py=pad;}
+      else if(d<se+Math.PI*r/2){const a=(d-se)/(r);px=pad+sw-r+Math.cos(a-Math.PI/2)*r;py=pad+r+Math.sin(a-Math.PI/2)*r;}
+      else if(d<se+Math.PI*r/2+st){const o=d-se-Math.PI*r/2;px=pad+sw;py=pad+r+o;}
+      else if(d<se+Math.PI*r+st){const a=(d-se-Math.PI*r/2-st)/(r);px=pad+sw-r+Math.cos(a)*r;py=pad+sh-r+Math.sin(a)*r;}
+      else if(d<2*se+Math.PI*r+st){const o=d-2*se-Math.PI*r-st+se;px=pad+sw-r-o+se;py=pad+sh;}
+      else{px=pad;py=pad+sh/2;}
+      const nx=noise(p*8+t,0)*10, ny=noise(p*8+t,1)*10;
+      i===0?ctx.moveTo(px+nx,py+ny):ctx.lineTo(px+nx,py+ny);}
+    ctx.closePath();ctx.stroke();requestAnimationFrame(draw);}draw();});
 </script>
 
-───── 11. AURORA BACKGROUND (for hero or CTA sections) ─────
-.aurora { position:absolute; inset:0; overflow:hidden; z-index:0; pointer-events:none; }
-.aurora::before,.aurora::after {
-  content:''; position:absolute; width:150%; height:60%; border-radius:50%;
-  filter:blur(80px); opacity:0.4;
-  animation:aurora-drift 8s ease-in-out infinite alternate;
-}
-.aurora::before { background:radial-gradient(ellipse,#5227FF 0%,transparent 70%); top:-20%; left:-25%; }
-.aurora::after { background:radial-gradient(ellipse,#7cff67 0%,transparent 70%); bottom:-20%; right:-25%;
-  animation-delay:-4s; animation-direction:alternate-reverse; }
-@keyframes aurora-drift { 0%{transform:translateX(-10%) translateY(0) rotate(-5deg)} 100%{transform:translateX(10%) translateY(-10%) rotate(5deg)} }
-
-───── 12. FLOATING PARTICLES (for hero background) ─────
-<canvas id="particles" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;"></canvas>
+───── 25. CLICK SPARK (radial burst on click) ─────
+<canvas id="click-spark" style="position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:9998;"></canvas>
 <script>
-(function(){const c=document.getElementById('particles'),x=c.getContext('2d');
-let w,h,p=[];function r(){w=c.width=c.offsetWidth;h=c.height=c.offsetHeight;}
-window.addEventListener('resize',r);r();
-for(let i=0;i<80;i++)p.push({x:Math.random()*w,y:Math.random()*h,r:Math.random()*2+0.5,
-  vx:(Math.random()-0.5)*0.4,vy:(Math.random()-0.5)*0.4,a:Math.random()*0.5+0.3});
-(function d(){x.clearRect(0,0,w,h);p.forEach(pt=>{pt.x+=pt.vx;pt.y+=pt.vy;
-  if(pt.x<0)pt.x=w;if(pt.x>w)pt.x=0;if(pt.y<0)pt.y=h;if(pt.y>h)pt.y=0;
-  x.beginPath();x.arc(pt.x,pt.y,pt.r,0,Math.PI*2);x.fillStyle='rgba(255,255,255,'+pt.a+')';x.fill();});
-  requestAnimationFrame(d);})();})();
+(function(){const c=document.getElementById('click-spark'),ctx=c.getContext('2d');
+c.width=window.innerWidth;c.height=window.innerHeight;
+window.addEventListener('resize',()=>{c.width=innerWidth;c.height=innerHeight;});
+let sparks=[];
+document.addEventListener('click',e=>{
+  for(let i=0;i<10;i++)sparks.push({x:e.clientX,y:e.clientY,angle:Math.PI*2*i/10,t:0});
+});
+(function draw(){ctx.clearRect(0,0,c.width,c.height);
+  sparks=sparks.filter(s=>{s.t+=0.03;if(s.t>=1)return false;
+    const d=s.t*20,len=8*(1-s.t);
+    const x1=s.x+d*Math.cos(s.angle),y1=s.y+d*Math.sin(s.angle);
+    const x2=s.x+(d+len)*Math.cos(s.angle),y2=s.y+(d+len)*Math.sin(s.angle);
+    ctx.strokeStyle='rgba(255,255,255,'+(1-s.t)+')';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();return true;});
+  requestAnimationFrame(draw);})();})();
 </script>
 
-───── 13. GLASSMORPHISM CARDS ─────
-.glass-card {
-  background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 1.5rem; padding: 2rem;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-}
+───── 26. MAGNET LINES (CSS grid lines pointing to cursor) ─────
+.magnet-lines { display:grid; grid-template-columns:repeat(auto-fill,40px); gap:0; position:absolute; inset:0; z-index:0; pointer-events:none; }
+.magnet-lines span { width:40px; height:40px; display:flex; align-items:center; justify-content:center; }
+.magnet-lines span::after { content:''; width:2px; height:20px; background:rgba(255,255,255,0.1); transform:rotate(var(--rotate,0deg)); transition:transform 0.3s; }
+JS: const mlContainer = document.querySelector('.magnet-lines');
+if(mlContainer){const lines=[...mlContainer.querySelectorAll('span')];
+  document.addEventListener('mousemove',e=>{lines.forEach(l=>{
+    const r=l.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+    const angle=Math.atan2(e.clientY-cy,e.clientX-cx)*180/Math.PI+90;
+    l.style.setProperty('--rotate',angle+'deg');
+  });});}
 
-───── 14. HOVER LIFT CARDS ─────
-.hover-lift {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-.hover-lift:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-}
+───── 27. MAGNET PULL (elements attract toward cursor) ─────
+document.querySelectorAll('.magnet').forEach(el => {
+  el.addEventListener('mousemove', e => {
+    const r = el.getBoundingClientRect();
+    const x = (e.clientX - r.left - r.width/2) * 0.3;
+    const y = (e.clientY - r.top - r.height/2) * 0.3;
+    el.style.transform = 'translate3d('+x+'px,'+y+'px,0)';
+  });
+  el.addEventListener('mouseleave', () => { el.style.transform = 'translate3d(0,0,0)'; el.style.transition = 'transform 0.4s ease'; });
+  el.addEventListener('mouseenter', () => { el.style.transition = 'none'; });
+});
 
-───── 15. STAR BORDER (animated orbiting glow) ─────
+───── 28. STAR BORDER (animated orbiting glow) ─────
 .star-border { position:relative; display:inline-block; border-radius:20px; overflow:hidden; padding:1px; }
 .star-border::before,.star-border::after {
   content:''; position:absolute; width:300%; height:50%; opacity:0.7; border-radius:50%;
@@ -797,33 +1148,218 @@ for(let i=0;i<80;i++)p.push({x:Math.random()*w,y:Math.random()*h,r:Math.random()
 .star-border > * { position:relative; z-index:1; }
 @keyframes star-orbit { 0%{transform:translateX(0);opacity:1} 100%{transform:translateX(-100%);opacity:0} }
 
-───── 16. PARALLAX ELEMENTS ─────
-At least 2 sections with background parallax:
-document.querySelectorAll('[data-parallax]').forEach(el => {
-  const speed = parseFloat(el.dataset.parallax) || 0.3;
-  gsap.to(el, { yPercent: -20 * speed, ease: 'none',
-    scrollTrigger: { trigger: el.parentElement, start: 'top bottom', end: 'bottom top', scrub: 1 }
+───── 29. GLASSMORPHISM CARDS ─────
+.glass-card {
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 1.5rem; padding: 2rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+───── 30. HOVER LIFT CARDS ─────
+.hover-lift { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+.hover-lift:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+
+───── 31. DECAY CARD (SVG distortion on hover) ─────
+<svg style="position:absolute;width:0;height:0;"><defs>
+  <filter id="decay"><feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" result="noise" seed="1"/>
+  <feDisplacementMap in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G"/></filter>
+</defs></svg>
+.decay-card { filter:url(#decay); transition:filter 0.5s; }
+.decay-card:hover { filter:url(#decay); }
+JS: document.querySelectorAll('.decay-card').forEach(card => {
+  const filter = document.querySelector('#decay feDisplacementMap');
+  card.addEventListener('mouseenter', () => gsap.to(filter, { attr: { scale: 15 }, duration: 0.5 }));
+  card.addEventListener('mouseleave', () => gsap.to(filter, { attr: { scale: 0 }, duration: 0.8, ease: 'elastic.out(1,0.4)' }));
+});
+
+───── 32. PIXEL CARD (Canvas 2D shimmer on hover) ─────
+.pixel-card { position:relative; overflow:hidden; }
+JS: document.querySelectorAll('.pixel-card').forEach(card => {
+  const cvs = document.createElement('canvas');
+  cvs.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:10;opacity:0;transition:opacity 0.3s;';
+  card.appendChild(cvs); const ctx=cvs.getContext('2d');
+  card.addEventListener('mouseenter',()=>{cvs.style.opacity='1';});
+  card.addEventListener('mouseleave',()=>{cvs.style.opacity='0';});
+  let active=false;
+  (function draw(){if(card.matches(':hover')){cvs.width=card.offsetWidth;cvs.height=card.offsetHeight;
+    for(let i=0;i<20;i++){ctx.fillStyle='rgba(255,255,255,'+(Math.random()*0.3)+')';
+      ctx.fillRect(Math.random()*cvs.width,Math.random()*cvs.height,2,2);}}
+    requestAnimationFrame(draw);})();
+});
+
+═══ SCROLL & SECTION ANIMATIONS (8 effects) ═══
+
+───── 33. ANIMATED CONTENT ENTRANCE (every section) ─────
+gsap.registerPlugin(ScrollTrigger);
+document.querySelectorAll('[data-animate]').forEach(el => {
+  const dir = el.dataset.animate || 'up';
+  const from = { opacity:0, y:dir==='up'?60:dir==='down'?-60:0, x:dir==='left'?-60:dir==='right'?60:0 };
+  gsap.from(el, { ...from, duration:0.9, ease:'power3.out',
+    scrollTrigger: { trigger:el, start:'top 85%', once:true }
   });
 });
 
-───── 17. CUSTOM SCROLLBAR (page-wide) ─────
-Add to <style> for sleek custom scrollbar on the entire page:
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
-html { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.12) transparent; }
+───── 34. STAGGER CARDS (feature/pricing grids) ─────
+document.querySelectorAll('.stagger-cards').forEach(container => {
+  gsap.fromTo(container.children, { opacity:0, y:80, scale:0.95 },
+    { opacity:1, y:0, scale:1, duration:0.7, ease:'power3.out', stagger:0.15,
+      scrollTrigger: { trigger:container, start:'top 80%', once:true }
+    });
+});
 
-───── 18. HORIZONTAL SNAP CAROUSEL (for testimonials/cards) ─────
+───── 35. FADE CONTENT (blur-to-clear on scroll) ─────
+document.querySelectorAll('.fade-content').forEach(el => {
+  gsap.fromTo(el, { opacity:0, filter:'blur(10px)', y:30 },
+    { opacity:1, filter:'blur(0px)', y:0, duration:1, ease:'power2.out',
+      scrollTrigger: { trigger:el, start:'top 85%', once:true }
+    });
+});
+
+───── 36. PARALLAX ELEMENTS ─────
+document.querySelectorAll('[data-parallax]').forEach(el => {
+  const speed = parseFloat(el.dataset.parallax) || 0.3;
+  gsap.to(el, { yPercent:-20*speed, ease:'none',
+    scrollTrigger: { trigger:el.parentElement, start:'top bottom', end:'bottom top', scrub:1 }
+  });
+});
+
+───── 37. BOUNCE CARDS (fan-out on scroll) ─────
+document.querySelectorAll('.bounce-cards').forEach(container => {
+  const cards = [...container.children];
+  cards.forEach((card, i) => {
+    const angle = (i - Math.floor(cards.length/2)) * 8;
+    gsap.fromTo(card, { rotation:0, y:100, opacity:0 },
+      { rotation:angle, y:0, opacity:1, duration:0.8, ease:'back.out(1.4)', delay:i*0.1,
+        scrollTrigger: { trigger:container, start:'top 80%', once:true }
+      });
+  });
+});
+
+───── 38. PIXEL TRANSITION (staggered grid reveal) ─────
+document.querySelectorAll('.pixel-transition').forEach(el => {
+  const cols=15, rows=10; el.style.position='relative';
+  const overlay = document.createElement('div');
+  overlay.style.cssText='position:absolute;inset:0;display:grid;grid-template-columns:repeat('+cols+',1fr);z-index:5;pointer-events:none;';
+  for(let i=0;i<cols*rows;i++){const px=document.createElement('div');px.style.background='inherit';px.style.opacity='1';overlay.appendChild(px);}
+  el.appendChild(overlay);
+  gsap.to(overlay.children, { opacity:0, duration:0.4, stagger:{each:0.02,from:'random'},
+    scrollTrigger:{trigger:el, start:'top 80%', once:true}
+  });
+});
+
+───── 39. INFINITE MARQUEE (logo/partner bars) ─────
+.marquee { overflow:hidden; position:relative; width:100%; }
+.marquee-track { display:flex; width:max-content; gap:3rem; animation:marquee-scroll 25s linear infinite; }
+.marquee-track:hover { animation-play-state:paused; }
+@keyframes marquee-scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+IMPORTANT: duplicate all items inside marquee-track so loop is seamless!
+
+───── 40. HORIZONTAL SNAP CAROUSEL (testimonials) ─────
 .snap-carousel {
   display:flex; gap:1.5rem; overflow-x:auto; scroll-snap-type:x mandatory;
   -webkit-overflow-scrolling:touch; padding-bottom:1rem;
   scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.1) transparent;
 }
-.snap-carousel::-webkit-scrollbar { height:6px; }
-.snap-carousel::-webkit-scrollbar-track { background:transparent; }
-.snap-carousel::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:3px; }
 .snap-carousel > * { scroll-snap-align:start; flex:0 0 auto; min-width:300px; }
+
+═══ SVG ANIMATIONS (6 effects — Gemini 3.1 Pro excels at these!) ═══
+
+───── 41. MORPHING BLOB (organic shape transitions) ─────
+<svg viewBox="0 0 200 200" style="position:absolute;width:300px;height:300px;opacity:0.15;z-index:0;">
+  <path fill="currentColor">
+    <animate attributeName="d" dur="8s" repeatCount="indefinite" values="
+      M40,80 C40,40 80,20 120,40 C160,60 180,100 160,140 C140,180 80,180 60,140 C40,100 40,80 40,80 Z;
+      M60,60 C80,20 140,20 160,60 C180,100 160,160 120,160 C80,160 40,120 60,60 Z;
+      M40,80 C40,40 80,20 120,40 C160,60 180,100 160,140 C140,180 80,180 60,140 C40,100 40,80 40,80 Z
+    "/>
+  </path>
+</svg>
+
+───── 42. LINE-DRAW ICONS (stroke reveal on scroll) ─────
+.line-draw path, .line-draw circle, .line-draw line {
+  stroke-dasharray: 200; stroke-dashoffset: 200;
+  fill: none; stroke: currentColor; stroke-width: 2;
+}
+JS: document.querySelectorAll('.line-draw').forEach(svg => {
+  gsap.to(svg.querySelectorAll('path,circle,line'), { strokeDashoffset:0, duration:1.5, ease:'power2.inOut', stagger:0.2,
+    scrollTrigger: { trigger:svg, start:'top 80%', once:true }
+  });
+});
+
+───── 43. FLOATING SHAPES (decorative geometry) ─────
+<svg class="floating-shapes" viewBox="0 0 400 400" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.1;">
+  <circle cx="100" cy="100" r="30" fill="none" stroke="currentColor" stroke-width="1">
+    <animateTransform attributeName="transform" type="translate" values="0,0;20,-30;0,0" dur="6s" repeatCount="indefinite"/>
+  </circle>
+  <rect x="250" y="200" width="40" height="40" rx="8" fill="none" stroke="currentColor" stroke-width="1" transform="rotate(45,270,220)">
+    <animateTransform attributeName="transform" type="translate" values="0,0;-15,25;0,0" dur="8s" repeatCount="indefinite"/>
+  </rect>
+  <polygon points="200,50 220,90 180,90" fill="none" stroke="currentColor" stroke-width="1">
+    <animateTransform attributeName="transform" type="translate" values="0,0;10,20;0,0" dur="7s" repeatCount="indefinite"/>
+  </polygon>
+</svg>
+
+───── 44. ANIMATED GRADIENT FILL (color cycling SVG) ─────
+<svg style="position:absolute;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.2;">
+  <defs>
+    <linearGradient id="agrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"><animate attributeName="stop-color" values="#5227FF;#FF006E;#06D6A0;#5227FF" dur="6s" repeatCount="indefinite"/></stop>
+      <stop offset="100%"><animate attributeName="stop-color" values="#06D6A0;#5227FF;#FF006E;#06D6A0" dur="6s" repeatCount="indefinite"/></stop>
+    </linearGradient>
+  </defs>
+  <circle cx="50%" cy="50%" r="40%" fill="url(#agrad)" filter="blur(60px)"/>
+</svg>
+
+───── 45. PULSE CIRCLES (breathing decorative dots) ─────
+<svg style="position:absolute;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.15;">
+  <circle cx="15%" cy="30%" fill="currentColor">
+    <animate attributeName="r" values="5;15;5" dur="4s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.3;0.1;0.3" dur="4s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="85%" cy="70%" fill="currentColor">
+    <animate attributeName="r" values="8;20;8" dur="5s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.2;0.08;0.2" dur="5s" repeatCount="indefinite"/>
+  </circle>
+</svg>
+
+───── 46. ANIMATED PATH (flowing line decoration) ─────
+<svg style="position:absolute;width:100%;height:200px;bottom:0;left:0;pointer-events:none;z-index:0;opacity:0.15;">
+  <path d="M0,100 Q100,20 200,100 T400,100 T600,100 T800,100" fill="none" stroke="currentColor" stroke-width="1"
+    stroke-dasharray="10 5" stroke-dashoffset="0">
+    <animate attributeName="stroke-dashoffset" values="0;-30" dur="2s" repeatCount="indefinite"/>
+  </path>
+</svg>
+
+═══ LAYOUT UTILITIES (4 essentials) ═══
+
+───── 47. CUSTOM SCROLLBAR ─────
+::-webkit-scrollbar { width:8px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.12); border-radius:4px; }
+::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,0.2); }
+html { scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.12) transparent; }
+
+───── 48. BENTO GRID (magic bento layout) ─────
+.bento-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:1.5rem; }
+.bento-grid > :nth-child(1) { grid-column:span 2; grid-row:span 2; }
+.bento-grid > :nth-child(4) { grid-column:span 2; }
+@media(max-width:768px){ .bento-grid { grid-template-columns:1fr; } .bento-grid > * { grid-column:span 1!important; grid-row:span 1!important; } }
+
+───── 49. SCROLL STACK (overlapping sections) ─────
+.scroll-stack > section { position:sticky; top:0; min-height:100vh; }
+Each section stacks on top of previous as user scrolls — creates a layered card deck effect.
+
+───── 50. GRID MOTION (image tile grid with GSAP entrance) ─────
+.grid-motion { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:4px; overflow:hidden; }
+.grid-motion img { width:100%; aspect-ratio:1; object-fit:cover; }
+JS: document.querySelectorAll('.grid-motion').forEach(grid => {
+  gsap.fromTo(grid.children, { opacity:0, scale:0.8 },
+    { opacity:1, scale:1, duration:0.5, ease:'power2.out', stagger:{each:0.05,from:'random'},
+      scrollTrigger:{trigger:grid, start:'top 80%', once:true}
+    });
+});
 
 ═══════════════════════════════════════════════════
 🚨 TESTIMONIAL SECTION — MANDATORY HORIZONTAL CAROUSEL 🚨
@@ -907,25 +1443,36 @@ The sidebar is hidden on mobile (hidden lg:flex), shown as slide-out drawer on d
 - ❌ NEVER show a 250px sidebar on mobile
 
 ═══════════════════════════════════════════════════
-ASSEMBLY RULES — MINIMUM REQUIREMENTS:
+ASSEMBLY RULES — MINIMUM REQUIREMENTS (use 15+ effects!):
 ═══════════════════════════════════════════════════
-You MUST use at least:
-- split-text on the hero headline
-- scroll-reveal-text on at least 1 description paragraph
+MANDATORY (every page):
+- split-text OR blur-text OR decrypt-text on the hero headline
+- scroll-reveal-text on at least 1 paragraph
 - data-animate on every major content block
 - stagger-cards on at least 1 card grid
 - count-up on every stat/metric number
-- gradient-text on at least 1 secondary headline
-- card-spotlight on at least 1 card set
+- gradient-text OR shiny-text on at least 1 headline
+- card-spotlight OR tilt-card OR glare-card on at least 1 card set
 - marquee on any logo/partner bar
 - grain overlay on the full page
-- aurora OR particles on the hero background
-- glass-card on at least 2 cards
-- hover-lift on all interactive cards
-- parallax on at least 2 decorative elements
-- At least 1 glitch-text OR star-border element
 - Custom scrollbar styling on <html>
-- snap-carousel on testimonials section (HORIZONTAL, never vertical stack)
+
+PICK 2+ background effects (VARY per section — NEVER same background twice!):
+- OGL WebGL: aurora, 3d-particles, iridescence, liquid-chrome, balatro, grainient
+- Canvas 2D: waves-bg, squares-bg, dotgrid-bg
+- CSS: beams-bg
+Prefer OGL WebGL backgrounds — they are PREMIUM quality with real shaders!
+
+PICK 2+ hover effects:
+- hover-lift, tilt-card, spotlight, glare-hover, electric-border, star-border, decay-card, pixel-card, magnet-pull
+
+PICK 1+ SVG animation:
+- morphing-blob, line-draw icons, floating-shapes, animated-gradient, pulse-circles, animated-path
+
+PICK 1+ bonus:
+- typewriter, rotating-text, click-spark, magnet-lines, fade-content, bounce-cards, pixel-transition, grid-motion, bento-grid, scroll-stack
+
+TESTIMONIALS: snap-carousel (HORIZONTAL, never vertical stack)
 
 If multiple pages shown: use Alpine.js x-data/x-show for navigation.
 Wrap in \`\`\`html blocks.`;
