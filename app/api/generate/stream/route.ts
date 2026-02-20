@@ -1370,6 +1370,258 @@ JS: document.querySelectorAll('.grid-motion').forEach(grid => {
 });
 
 ═══════════════════════════════════════════════════
+🔥🔥🔥 REACT BITS BONUS EFFECTS — 30 MORE (FIRE EFFECTS!) 🔥🔥🔥
+═══════════════════════════════════════════════════
+USE THESE IN ADDITION TO THE 50 ABOVE! Mix and match — the more the better!
+
+───── 51. FALLING TEXT (letters rain down like Matrix) ─────
+.falling-text { position:relative; overflow:hidden; }
+JS: document.querySelectorAll('.falling-text').forEach(el => {
+  const chars = el.textContent.split('');
+  el.innerHTML = chars.map((c,i) => \`<span style="display:inline-block;animation:fallIn 0.6s \${i*0.03}s both cubic-bezier(0.34,1.56,0.64,1)">\${c==' '?'&nbsp;':c}</span>\`).join('');
+});
+CSS: @keyframes fallIn { from{transform:translateY(-60px) rotateX(-90deg);opacity:0} to{transform:none;opacity:1} }
+
+───── 52. CIRCULAR TEXT (text orbiting a center point) ─────
+CSS: .circular-text { position:relative; width:200px; height:200px; }
+.circular-text span { position:absolute; top:50%; left:50%; transform-origin:0 100px; font-size:0.85rem; }
+JS: document.querySelectorAll('.circular-text').forEach(el => {
+  const text = el.dataset.text || el.textContent.trim(); el.innerHTML='';
+  text.split('').forEach((c,i) => {
+    const s = document.createElement('span'); s.textContent = c;
+    s.style.transform = \`rotate(\${i*(360/text.length)}deg)\`; el.appendChild(s);
+  });
+  let r=0; const spin = () => { r+=0.3; el.style.transform=\`rotate(\${r}deg)\`; requestAnimationFrame(spin); }; spin();
+});
+
+───── 53. TEXT PRESSURE (font-weight reacts to cursor distance) ─────
+.text-pressure { display:flex; flex-wrap:wrap; gap:0; }
+.text-pressure span { display:inline-block; transition:font-weight 0.1s,letter-spacing 0.1s; }
+JS: document.querySelectorAll('.text-pressure').forEach(el => {
+  el.innerHTML = el.textContent.split('').map(c => \`<span>\${c==' '?'&nbsp;':c}</span>\`).join('');
+  el.addEventListener('mousemove', e => {
+    el.querySelectorAll('span').forEach(s => {
+      const r = s.getBoundingClientRect(), d = Math.hypot(e.clientX-r.left-r.width/2, e.clientY-r.top-r.height/2);
+      const w = Math.max(100, 900 - d*3); s.style.fontWeight = w; s.style.letterSpacing = (w-400)*0.002+'em';
+    });
+  });
+});
+
+───── 54. FUZZY TEXT (letters shimmer with noise outline on hover) ─────
+.fuzzy-text { cursor:default; }
+.fuzzy-text:hover { text-shadow: 2px 2px 6px currentColor, -2px -2px 6px currentColor; transition:text-shadow 0.3s; }
+CSS: @keyframes fuzzy { 0%,100%{text-shadow:1px 1px 4px currentColor,-1px -1px 4px currentColor} 50%{text-shadow:3px 3px 8px currentColor,-3px -3px 8px currentColor,0 0 12px currentColor} }
+.fuzzy-text { animation:fuzzy 2s ease-in-out infinite; }
+
+───── 55. VARIABLE PROXIMITY (font-weight changes near cursor, whole paragraph) ─────
+JS: document.querySelectorAll('.variable-proximity').forEach(para => {
+  para.innerHTML = para.textContent.split(/(\s+)/).map(w => w.trim() ? \`<span style="font-variation-settings:'wght' 300;transition:font-variation-settings 0.2s">\${w}</span>\` : w).join('');
+  window.addEventListener('mousemove', e => {
+    para.querySelectorAll('span').forEach(s => {
+      const r = s.getBoundingClientRect(), d = Math.hypot(e.clientX-r.left-r.width/2, e.clientY-r.top-r.height/2);
+      s.style.fontVariationSettings = \`'wght' \${Math.min(900, Math.max(300, 900-d*2))}\`;
+    });
+  });
+});
+
+───── 56. LETTER GLITCH BACKGROUND (random chars flashing) ─────
+.letter-glitch-bg { position:relative; overflow:hidden; }
+.letter-glitch-bg::before { content:''; position:absolute; inset:0; pointer-events:none; }
+JS: document.querySelectorAll('.letter-glitch-bg').forEach(el => {
+  const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+  const overlay = document.createElement('div');
+  overlay.style.cssText='position:absolute;inset:0;pointer-events:none;font-family:monospace;font-size:14px;line-height:1.6;opacity:0.06;overflow:hidden;color:currentColor;white-space:pre-wrap;padding:8px';
+  el.style.position='relative'; el.appendChild(overlay);
+  setInterval(() => { overlay.textContent = Array.from({length:500},()=>chars[Math.random()*chars.length|0]).join(''); }, 80);
+});
+
+───── 57. METABALLS (liquid blob animations in hero) ─────
+HTML: <div class="metaballs-container" style="position:relative;overflow:hidden;height:400px;background:#000">
+  <canvas class="metaballs-canvas" style="position:absolute;inset:0;width:100%;height:100%"></canvas>
+  <div style="position:relative;z-index:1">{content}</div></div>
+JS: document.querySelectorAll('.metaballs-canvas').forEach(canvas => {
+  const ctx = canvas.getContext('2d'); canvas.width=canvas.offsetWidth; canvas.height=canvas.offsetHeight;
+  const balls=[{x:200,y:200,vx:1.5,vy:1,r:80,c:'#6366f1'},{x:350,y:150,vx:-1,vy:1.8,r:60,c:'#8b5cf6'},{x:150,y:300,vx:1,vy:-1.2,r:70,c:'#06b6d4'}];
+  const animate=()=>{ctx.clearRect(0,0,canvas.width,canvas.height);balls.forEach(b=>{b.x+=b.vx;b.y+=b.vy;if(b.x<0||b.x>canvas.width)b.vx*=-1;if(b.y<0||b.y>canvas.height)b.vy*=-1;const g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);g.addColorStop(0,b.c);g.addColorStop(1,'transparent');ctx.globalCompositeOperation='screen';ctx.fillStyle=g;ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();});requestAnimationFrame(animate);};animate();
+});
+
+───── 58. RIBBONS BACKGROUND (colorful flowing ribbons) ─────
+HTML: <div class="ribbons-bg" style="position:relative;overflow:hidden">
+JS: document.querySelectorAll('.ribbons-bg').forEach(el => {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0.15';
+  const colors=['#6366f1','#8b5cf6','#06b6d4','#10b981','#f59e0b'];
+  for(let i=0;i<8;i++){const path=document.createElementNS('http://www.w3.org/2000/svg','path');const y=i*15;path.setAttribute('d',\`M-100 \${y+50} Q 200 \${y} 400 \${y+80} T 900 \${y+40}\`);path.setAttribute('stroke',colors[i%colors.length]);path.setAttribute('stroke-width','3');path.setAttribute('fill','none');path.style.animation=\`ribbon \${3+i*0.5}s ease-in-out infinite alternate\`;svg.appendChild(path);}
+  el.style.position='relative'; el.insertBefore(svg,el.firstChild);
+});
+CSS: @keyframes ribbon { from{transform:translateY(-20px)} to{transform:translateY(20px)} }
+
+───── 59. PIXEL TRAIL (cursor leaves colorful pixel trail) ─────
+JS: const pixelTrail=[]; let ptActive=false;
+document.addEventListener('mousemove',e=>{if(!ptActive)return;const px=document.createElement('div');px.style.cssText=\`position:fixed;left:\${e.clientX}px;top:\${e.clientY}px;width:8px;height:8px;border-radius:2px;background:hsl(\${Math.random()*360},100%,60%);pointer-events:none;z-index:9999;transition:opacity 0.4s,transform 0.4s\`;document.body.appendChild(px);setTimeout(()=>{px.style.opacity='0';px.style.transform='scale(0.1)';},50);setTimeout(()=>px.remove(),500);});
+document.querySelectorAll('.pixel-trail-zone').forEach(z=>{z.addEventListener('mouseenter',()=>ptActive=true);z.addEventListener('mouseleave',()=>ptActive=false);});
+
+───── 60. SPLASH CURSOR (fluid ripple follows cursor) ─────
+JS: document.addEventListener('mousemove', e => {
+  const splash = document.createElement('div');
+  splash.style.cssText=\`position:fixed;left:\${e.clientX-30}px;top:\${e.clientY-30}px;width:60px;height:60px;border-radius:50%;border:2px solid rgba(99,102,241,0.6);pointer-events:none;z-index:9998;animation:splashRing 0.6s ease-out forwards\`;
+  document.body.appendChild(splash); setTimeout(()=>splash.remove(),600);
+});
+CSS: @keyframes splashRing { from{transform:scale(0);opacity:1} to{transform:scale(2);opacity:0} }
+
+───── 61. BLOB CURSOR (morphing blob follows cursor with delay) ─────
+HTML: <div id="blob-cursor" style="position:fixed;width:40px;height:40px;background:rgba(99,102,241,0.5);border-radius:50%;pointer-events:none;z-index:9999;transition:transform 0.1s;mix-blend-mode:multiply;filter:blur(8px)"></div>
+JS: const blob=document.getElementById('blob-cursor'); let bx=0,by=0,mx=0,my=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
+const blobAnim=()=>{bx+=(mx-bx)*0.1;by+=(my-by)*0.1;if(blob)blob.style.transform=\`translate(\${bx-20}px,\${by-20}px)\`;requestAnimationFrame(blobAnim);};blobAnim();
+
+───── 62. FAULTY TERMINAL BACKGROUND (glitching green text on black) ─────
+HTML: <div class="faulty-terminal" style="position:relative;background:#000;overflow:hidden">
+JS: document.querySelectorAll('.faulty-terminal').forEach(el => {
+  const term=document.createElement('div');
+  term.style.cssText='position:absolute;inset:0;font-family:monospace;font-size:11px;line-height:1.5;color:#00ff41;opacity:0.15;overflow:hidden;padding:8px;pointer-events:none;white-space:pre-wrap';
+  const lines=['> SYSTEM BOOT','> SCANNING...','> ERROR 0x0042','> RECONNECTING','> ACCESS GRANTED','> LOADING MODULE','> SYNC COMPLETE','> NULL REFERENCE','> PROCESS 0xFF','> FATAL: 0x8004'];
+  el.style.position='relative'; el.insertBefore(term,el.firstChild);
+  setInterval(()=>{ term.textContent=Array.from({length:40},()=>lines[Math.random()*lines.length|0]).join('\n'); },200);
+});
+
+───── 63. PIXEL SNOW BACKGROUND ─────
+HTML: <canvas class="pixel-snow" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0.3"></canvas>
+JS: document.querySelectorAll('.pixel-snow').forEach(canvas=>{
+  canvas.width=canvas.offsetWidth||400; canvas.height=canvas.offsetHeight||300;
+  const ctx=canvas.getContext('2d'); const flakes=Array.from({length:80},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,size:Math.random()*3+1,speed:Math.random()*1+0.5}));
+  const snowAnim=()=>{ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#fff';flakes.forEach(f=>{f.y+=f.speed;if(f.y>canvas.height)f.y=0;ctx.fillRect(f.x,f.y,f.size,f.size);});requestAnimationFrame(snowAnim);};snowAnim();
+});
+
+───── 64. GALAXY / STAR FIELD BACKGROUND ─────
+HTML: <canvas class="galaxy-bg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></canvas>
+JS: document.querySelectorAll('.galaxy-bg').forEach(canvas=>{
+  canvas.width=canvas.offsetWidth||800; canvas.height=canvas.offsetHeight||600;
+  const ctx=canvas.getContext('2d'); const stars=Array.from({length:200},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*1.5+0.5,twinkle:Math.random()*Math.PI*2}));
+  const galaxyAnim=()=>{ctx.fillStyle='#0a0a1a';ctx.fillRect(0,0,canvas.width,canvas.height);stars.forEach(s=>{s.twinkle+=0.02;const a=0.5+0.5*Math.sin(s.twinkle);ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle=\`rgba(255,255,255,\${a})\`;ctx.fill();});requestAnimationFrame(galaxyAnim);};galaxyAnim();
+});
+
+───── 65. HYPERSPEED / WARP STARS BACKGROUND ─────
+HTML: <canvas class="hyperspeed-bg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;background:#000"></canvas>
+JS: document.querySelectorAll('.hyperspeed-bg').forEach(canvas=>{
+  canvas.width=canvas.offsetWidth||800; canvas.height=canvas.offsetHeight||600;
+  const ctx=canvas.getContext('2d'); const cx=canvas.width/2,cy=canvas.height/2;
+  const stars=Array.from({length:120},()=>({x:(Math.random()-0.5)*canvas.width,y:(Math.random()-0.5)*canvas.height,z:Math.random()*canvas.width}));
+  const warpAnim=()=>{ctx.fillStyle='rgba(0,0,0,0.2)';ctx.fillRect(0,0,canvas.width,canvas.height);stars.forEach(s=>{s.z-=5;if(s.z<=0)Object.assign(s,{x:(Math.random()-0.5)*canvas.width,y:(Math.random()-0.5)*canvas.height,z:canvas.width});const sx=cx+s.x/s.z*canvas.width,sy=cy+s.y/s.z*canvas.width,r=Math.max(0.5,2*(1-s.z/canvas.width));ctx.beginPath();ctx.arc(sx,sy,r,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();});requestAnimationFrame(warpAnim);};warpAnim();
+});
+
+───── 66. GRID DISTORTION (mesh grid warps toward cursor) ─────
+HTML: <div class="grid-distortion-wrap" style="position:relative;overflow:hidden">
+JS: document.querySelectorAll('.grid-distortion-wrap').forEach(el=>{
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0.1';
+  const cols=20,rows=15;const lines=[];
+  for(let i=0;i<=cols;i++){const line=document.createElementNS('http://www.w3.org/2000/svg','line');line.setAttribute('stroke','currentColor');line.setAttribute('stroke-width','1');svg.appendChild(line);lines.push({el:line,type:'v',i});}
+  el.style.position='relative';el.insertBefore(svg,el.firstChild);
+  el.addEventListener('mousemove',e=>{const r=el.getBoundingClientRect(),mx=(e.clientX-r.left)/r.width,my=(e.clientY-r.top)/r.height;lines.forEach(l=>{if(l.type==='v'){const x=(l.i/cols*100);const pull=Math.sin((l.i/cols-mx)*Math.PI)*15*Math.max(0,1-Math.abs(l.i/cols-mx)*3);l.el.setAttribute('x1',x+pull+'%');l.el.setAttribute('x2',x+pull+'%');l.el.setAttribute('y1','0%');l.el.setAttribute('y2','100%');}});});
+});
+
+───── 67. LOGO LOOP (infinite horizontal auto-scroll) ─────
+HTML: <div class="logo-loop-track" style="overflow:hidden;white-space:nowrap;width:100%">
+  <div class="logo-loop-inner" style="display:inline-block;animation:logoScroll 20s linear infinite">
+    <!-- logos here, then duplicate them -->
+  </div></div>
+CSS: @keyframes logoScroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+JS: document.querySelectorAll('.logo-loop-inner').forEach(el=>{ el.innerHTML+=el.innerHTML; });
+
+───── 68. CUBES 3D (rotating 3D cubes decoration) ─────
+CSS: .cube-3d{width:60px;height:60px;transform-style:preserve-3d;animation:cubeRotate 6s linear infinite}
+@keyframes cubeRotate{from{transform:rotateX(0deg) rotateY(0deg)}to{transform:rotateX(360deg) rotateY(360deg)}}
+.cube-face{position:absolute;width:60px;height:60px;border:1px solid rgba(99,102,241,0.4);background:rgba(99,102,241,0.05)}
+.cube-front{transform:translateZ(30px)} .cube-back{transform:translateZ(-30px) rotateY(180deg)}
+.cube-right{transform:translateX(30px) rotateY(90deg)} .cube-left{transform:translateX(-30px) rotateY(-90deg)}
+.cube-top{transform:translateY(-30px) rotateX(90deg)} .cube-bottom{transform:translateY(30px) rotateX(-90deg)}
+
+───── 69. ANTIGRAVITY (elements fly away from cursor) ─────
+JS: document.querySelectorAll('.antigravity').forEach(el=>{
+  let ox=0,oy=0; el.style.transition='transform 0.4s cubic-bezier(0.23,1,0.32,1)';
+  el.closest('section')?.addEventListener('mousemove',e=>{
+    const r=el.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),d=Math.sqrt(dx*dx+dy*dy);
+    if(d<150){const f=(150-d)/150*40;ox=-dx/d*f;oy=-dy/d*f;}else{ox=0;oy=0;}
+    el.style.transform=\`translate(\${ox}px,\${oy}px)\`;
+  });
+});
+
+───── 70. STICKER PEEL (card corner peels on hover) ─────
+.sticker-peel { position:relative; overflow:hidden; }
+.sticker-peel::after { content:''; position:absolute; bottom:0; right:0; width:0; height:0; background:linear-gradient(225deg,#fff 45%,rgba(0,0,0,0.1) 45%,transparent); transition:width 0.3s,height 0.3s; }
+.sticker-peel:hover::after { width:40px; height:40px; }
+
+───── 71. METALLIC PAINT (metallic sheen sweeps on hover) ─────
+.metallic-paint { position:relative; overflow:hidden; }
+.metallic-paint::before { content:''; position:absolute; inset:-50%; background:conic-gradient(from 0deg,transparent 0%,rgba(255,255,255,0.15) 20%,transparent 40%,rgba(255,255,255,0.08) 60%,transparent 80%); transform:translateX(-100%); transition:transform 0.8s; }
+.metallic-paint:hover::before { transform:translateX(100%); }
+
+───── 72. SHAPE BLUR (geometric shape blurs/unblurs on hover) ─────
+.shape-blur-wrap { position:relative; }
+.shape-blur-shape { position:absolute; border-radius:30% 70% 70% 30% / 30% 30% 70% 70%; width:200px; height:200px; background:linear-gradient(135deg,rgba(99,102,241,0.3),rgba(139,92,246,0.2)); filter:blur(40px); transition:filter 0.5s; pointer-events:none; }
+.shape-blur-wrap:hover .shape-blur-shape { filter:blur(20px); }
+
+───── 73. CHROMAGRID (chromatic aberration on hover) ─────
+.chroma-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:2px; }
+.chroma-cell { transition:filter 0.3s; }
+.chroma-cell:hover { filter:drop-shadow(2px 0 0 rgba(255,0,0,0.5)) drop-shadow(-2px 0 0 rgba(0,0,255,0.5)); }
+
+───── 74. FLYING POSTERS (3D card cascade on scroll) ─────
+.flying-posters { display:flex; gap:2rem; perspective:1000px; }
+.flying-poster { flex:0 0 280px; transform-origin:center bottom; }
+JS: document.querySelectorAll('.flying-posters').forEach(wrap=>{
+  gsap.fromTo(wrap.children, { rotateY:-45, opacity:0, z:-200 },
+    { rotateY:0, opacity:1, z:0, duration:0.8, stagger:0.15, ease:'power3.out',
+      scrollTrigger:{trigger:wrap,start:'top 80%',once:true} });
+});
+
+───── 75. CIRCULAR GALLERY (rotating 3D ring of cards) ─────
+.circular-gallery-wrap { position:relative; height:400px; perspective:1000px; }
+.circular-gallery-inner { position:absolute; inset:0; transform-style:preserve-3d; }
+JS: document.querySelectorAll('.circular-gallery-wrap').forEach(wrap=>{
+  const inner=wrap.querySelector('.circular-gallery-inner');if(!inner)return;
+  const cards=inner.querySelectorAll('.gallery-card'); const n=cards.length; let angle=0;
+  cards.forEach((c,i)=>{c.style.cssText+=\`;position:absolute;width:200px;left:50%;top:50%;transform:rotateY(\${i*(360/n)}deg) translateZ(280px) translate(-50%,-50%)\`;});
+  const spin=()=>{angle+=0.3;inner.style.transform=\`rotateY(\${angle}deg)\`;requestAnimationFrame(spin);};spin();
+});
+
+───── 76. FLUID GLASS (glass morphism with fluid border) ─────
+.fluid-glass { background:rgba(255,255,255,0.08); backdrop-filter:blur(20px) saturate(180%); -webkit-backdrop-filter:blur(20px) saturate(180%); border:1px solid rgba(255,255,255,0.2); box-shadow:0 8px 32px rgba(0,0,0,0.1),inset 0 1px 0 rgba(255,255,255,0.2); border-radius:1rem; transition:all 0.3s; }
+.fluid-glass:hover { border-color:rgba(255,255,255,0.35); box-shadow:0 12px 40px rgba(0,0,0,0.15),inset 0 1px 0 rgba(255,255,255,0.3); transform:translateY(-2px); }
+
+───── 77. ELASTIC SLIDER (slider with spring physics) ─────
+HTML: <div class="elastic-track" style="display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:1rem;padding:1rem;-webkit-overflow-scrolling:touch;scroll-behavior:smooth">
+  <!-- slides with style="scroll-snap-align:start;flex:0 0 300px" -->
+</div>
+JS: document.querySelectorAll('.elastic-track').forEach(track=>{
+  track.addEventListener('scroll',()=>gsap.to(track,{scaleY:0.97,duration:0.1,yoyo:true,repeat:1,ease:'power2.out'}));
+});
+
+───── 78. ANIMATED LIST (items appear with staggered bounce) ─────
+.animated-list li { opacity:0; transform:translateX(-20px); }
+JS: document.querySelectorAll('.animated-list').forEach(ul=>{
+  gsap.to(ul.querySelectorAll('li'), { opacity:1, x:0, duration:0.5, ease:'back.out(1.7)', stagger:0.08,
+    scrollTrigger:{trigger:ul,start:'top 85%',once:true} });
+});
+
+───── 79. MAGIC BENTO GRID (mixed card sizes with hover glow) ─────
+.bento-magic { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; }
+.bento-magic .bento-large { grid-column:span 2; }
+.bento-magic .bento-tall { grid-row:span 2; }
+.bento-card { border-radius:1.5rem; padding:1.5rem; position:relative; overflow:hidden; cursor:pointer; transition:transform 0.3s; }
+.bento-card:hover { transform:scale(1.02); }
+.bento-card::after { content:''; position:absolute; inset:0; background:radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,0.1) 0%,transparent 60%); opacity:0; transition:opacity 0.3s; }
+.bento-card:hover::after { opacity:1; }
+JS: document.querySelectorAll('.bento-card').forEach(c=>{c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect();c.style.setProperty('--mx',((e.clientX-r.left)/r.width*100)+'%');c.style.setProperty('--my',((e.clientY-r.top)/r.height*100)+'%');});});
+
+───── 80. SCROLL STACK (sections pin and stack over each other) ─────
+JS: document.querySelectorAll('.scroll-stack-section').forEach((section,i)=>{
+  gsap.to(section, { scale:0.9, opacity:0.5, borderRadius:'1rem',
+    scrollTrigger:{ trigger:section, start:'top top', end:'bottom top', scrub:true, pin:true, pinSpacing:false }
+  });
+});
+
+═══════════════════════════════════════════════════
 🚨 TESTIMONIAL SECTION — MANDATORY HORIZONTAL CAROUSEL 🚨
 ═══════════════════════════════════════════════════
 When rendering testimonials/reviews/quotes:
@@ -1449,6 +1701,25 @@ The sidebar is hidden on mobile (hidden lg:flex), shown as slide-out drawer on d
 - Tables on mobile: wrap in overflow-x:auto for horizontal scrolling
 - ❌ NEVER create TWO separate main content areas (one for desktop, one for mobile)
 - ❌ NEVER show a 250px sidebar on mobile
+
+📊 CHART OVERFLOW RULES (MANDATORY for dashboards!):
+- ALL chart containers MUST have overflow:hidden and a FIXED height — NEVER let charts grow unbounded!
+- Bar charts: parent div needs height:280px (or similar fixed px) + overflow:hidden
+- Line/area charts: wrap in div style="height:280px;overflow:hidden;position:relative"
+- Pie/donut charts: container must be width:100%;aspect-ratio:1;max-width:320px;margin:0 auto
+- SVG charts: ALWAYS set viewBox AND width="100%" height="100%" — NEVER set width/height to px values on the SVG
+- Chart grids: use CSS Grid or flex with bounded sizes, NEVER position:absolute unless parent has position:relative + overflow:hidden
+- Bubble/scatter charts: use CSS Grid inside overflow:hidden — NO absolute positioning that escapes boundary
+- WRONG: <div><svg width="600" height="400">...</svg></div> ← SVG overflows on small screens!
+- RIGHT: <div style="height:280px;overflow:hidden;position:relative"><svg viewBox="0 0 600 400" width="100%" height="100%">...</svg></div>
+
+🖼️ IMAGE FORMAT (MANDATORY — picsum ONLY):
+- Use ONLY: https://picsum.photos/seed/DESCRIPTIVE-NAME/WIDTH/HEIGHT
+- Seeds MUST be descriptive: hero-office, team-collaboration, product-laptop, dashboard-chart, etc.
+- NEVER use: https://picsum.photos/id/N/W/H (ID format may return broken images!)
+- NEVER use: https://picsum.photos/WxH or https://picsum.photos/W/H (no seed = inconsistent!)
+- Every image MUST have a UNIQUE seed — duplicate seeds = duplicate images!
+- Avatars: https://i.pravatar.cc/150?img=N (N=1-70)
 
 ═══════════════════════════════════════════════════
 ASSEMBLY RULES — MINIMUM REQUIREMENTS (use 15+ effects!):

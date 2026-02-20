@@ -16179,15 +16179,12 @@ ${publishCode}
                                   </>
                                 ) : flow.videoUrl && !flow.isImage ? (
                                   <>
-                                    <video 
-                                      src={flow.videoUrl} 
-                                      className="w-full h-full object-cover" 
-                                      muted 
+                                    <video
+                                      src={`${flow.videoUrl}#t=0.5`}
+                                      className="w-full h-full object-cover"
+                                      muted
+                                      playsInline
                                       preload="metadata"
-                                      onLoadedData={(e) => {
-                                        const v = e.currentTarget;
-                                        v.currentTime = Math.min(0.5, v.duration * 0.1);
-                                      }}
                                     />
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                       <Play className="w-4 h-4 text-white" />
