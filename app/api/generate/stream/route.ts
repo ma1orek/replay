@@ -968,7 +968,11 @@ CRITICAL RULES:
    🚨 SINGLE <main> element! Content is written ONCE, works on both desktop and mobile!
    ❌ NEVER create two separate main content areas!
    - Main area: min-width:0, flex-1 (CRITICAL — prevents overflow!)
-   - ALL charts, tables, data grids: wrap in overflow-x:auto container
+   - ALL charts: wrap in container with EXPLICIT height (h-64 or h-80) + overflow-hidden
+   - Chart parent cards MUST have overflow-hidden (prevents canvas bleeding)
+   - Pie/Donut charts: h-64 w-64 mx-auto square container
+   - Line/Bar/Area charts: h-64 or h-80 full-width container
+   - ALL tables, data grids: wrap in overflow-x:auto container
    - stat cards: grid with auto-fit minmax(250px,1fr)
 8. 📋 TESTIMONIALS: If the video shows testimonials/reviews/quotes:
    - Use horizontal scrolling carousel (overflow-x:auto, flex, gap, scroll-snap-type:x mandatory)

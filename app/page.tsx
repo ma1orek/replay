@@ -9404,6 +9404,16 @@ Try these prompts in Cursor or v0:
           const ctx = canvas.getContext("2d");
           if (ctx && vw > 0 && vh > 0) {
             ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+            // Check if frame is NOT all black (black frame = video not decoded yet)
+            const sample = ctx.getImageData(0, 0, Math.min(canvas.width, 80), Math.min(canvas.height, 60));
+            let brightness = 0;
+            for (let i = 0; i < sample.data.length; i += 16) { // Sample every 4th pixel
+              brightness += sample.data[i] + sample.data[i+1] + sample.data[i+2];
+            }
+            if (brightness < 100) {
+              console.log("Thumbnail is all black, skipping (video not decoded yet)");
+              return undefined; // Black frame - don't use it
+            }
             const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
             if (dataUrl.length > 1000) return dataUrl;
           }
@@ -9602,8 +9612,17 @@ Try these prompts in Cursor or v0:
         requestAnimationFrame(() => {
           setTimeout(() => {
             if (resolved) return;
-            finishCreation(generateThumbnail(video));
-          }, 100);
+            const thumb = generateThumbnail(video);
+            if (thumb) {
+              finishCreation(thumb);
+            } else {
+              // Black frame - try again after more decode time
+              setTimeout(() => {
+                if (resolved) return;
+                finishCreation(generateThumbnail(video));
+              }, 500);
+            }
+          }, 300);
         });
       };
       
@@ -16169,11 +16188,11 @@ ${publishCode}
                                   </>
                                 ) : flow.videoUrl && !flow.isImage ? (
                                   <>
-                                    <video 
-                                      src={flow.videoUrl} 
-                                      className="w-full h-full object-cover" 
-                                      muted 
-                                      preload="metadata"
+                                    <video
+                                      src={flow.videoUrl}
+                                      className="w-full h-full object-cover"
+                                      muted
+                                      preload="auto"
                                       onLoadedData={(e) => {
                                         const v = e.currentTarget;
                                         v.currentTime = Math.min(0.5, v.duration * 0.1);
@@ -16437,7 +16456,7 @@ ${publishCode}
                           {flow.thumbnail && flow.thumbnail.length > 100 ? (
                             <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" />
                           ) : flow.videoUrl ? (
-                            <video src={flow.videoUrl} className="w-full h-full object-cover" muted preload="metadata" onLoadedData={(e) => { e.currentTarget.currentTime = 0.5; }} />
+                            <video src={flow.videoUrl} className="w-full h-full object-cover" muted preload="auto" onLoadedData={(e) => { e.currentTarget.currentTime = 0.5; }} />
                           ) : (
                             <Film className="w-3 h-3 text-white/20" />
                           )}
@@ -24458,7 +24477,7 @@ module.exports = {
                         {flow.thumbnail && flow.thumbnail.length > 100 ? (
                           <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" />
                         ) : flow.videoUrl ? (
-                          <video src={flow.videoUrl} className="w-full h-full object-cover" muted preload="metadata" onLoadedData={(e) => { e.currentTarget.currentTime = 0.5; }} />
+                          <video src={flow.videoUrl} className="w-full h-full object-cover" muted preload="auto" onLoadedData={(e) => { e.currentTarget.currentTime = 0.5; }} />
                         ) : (
                           <Film className="w-4 h-4 text-white/20" />
                         )}
@@ -25609,7 +25628,7 @@ module.exports = {
                           {flow.thumbnail && flow.thumbnail.length > 100 ? (
                             <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" />
                           ) : flow.videoUrl ? (
-                            <video src={flow.videoUrl} className="w-full h-full object-cover" muted preload="metadata" onLoadedData={(e) => { e.currentTarget.currentTime = 0.5; }} />
+                            <video src={flow.videoUrl} className="w-full h-full object-cover" muted preload="auto" onLoadedData={(e) => { e.currentTarget.currentTime = 0.5; }} />
                           ) : (
                             <Film className="w-3 h-3 text-white/20" />
                           )}

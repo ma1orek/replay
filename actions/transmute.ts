@@ -803,7 +803,13 @@ IF sidebarType is "navigation":
 - Build standard menu with icons and text labels
 - Use Icon component for Lucide icons
 
-Charts MUST have explicit height (h-64, h-80) and use maintainAspectRatio: false!
+CHART CONTAINER RULES (MANDATORY!):
+- Charts MUST have explicit height (h-64, h-80) on their parent container
+- Chart parent card MUST have overflow-hidden to prevent canvas bleeding
+- Pie/Donut: h-64 w-64 mx-auto square container
+- Line/Bar/Area: h-64 or h-80 full-width container
+- NEVER put chart without explicit height — canvas overflows or collapses to 0px
+- Use maintainAspectRatio: false in Chart.js options
 
 ═══════════════════════════════════════════════════════════════════════════════
 🎬 GSAP ANIMATIONS - AWWWARDS-LEVEL (MANDATORY!)
@@ -1235,7 +1241,7 @@ The template below has LIGHT theme as default. CHANGE IT if theme is "dark"!
                 }
                 return () => { if (chartRef.current) chartRef.current.destroy(); };
             }, [type, data, options]);
-            return <canvas ref={canvasRef} />;
+            return <div className="w-full h-64 relative"><canvas ref={canvasRef} /></div>;
         };
 
         // Icon helper - uses data-lucide attribute + createIcons()
@@ -1536,7 +1542,7 @@ function fixChartReference(code: string): string {
                 return () => { if (chartRef.current) chartRef.current.destroy(); };
             }, [type, data, options]);
             
-            return <canvas ref={canvasRef} />;
+            return <div className="w-full h-64 relative"><canvas ref={canvasRef} /></div>;
         };
 `;
 
@@ -1955,6 +1961,9 @@ ${JSON.stringify(scanData, null, 2)}
 6. ${spacingInstruction}
 7. CONTENT 1:1 (🔴 MOST IMPORTANT RULE): Every headline, paragraph, nav label, button text, FAQ item, footer line from scanData MUST appear in the output VERBATIM. Do not skip ANY section, do not shorten ANY text. If scanData has 5 FAQ items, output MUST have 5 FAQ items. If a paragraph has 3 sentences, output ALL 3 sentences. ZERO exceptions.
 8. LAYOUT: Use CSS Grid or Flexbox for card rows — NEVER inline-block. Cards must fill grid cells (w-full, h-full).
+   - Stat/KPI card rows: ALWAYS \`grid grid-cols-2 md:grid-cols-4 gap-4\` — cards MUST stay side-by-side on desktop
+   - Chart cards: ALWAYS \`overflow-hidden\` on the card + \`h-64\` or \`h-80\` on the chart container inside
+   - NEVER let cards or stat boxes stack vertically when they should be in a row
 9. BUTTONS: ALL buttons/links MUST be VISIBLE by default. NEVER opacity:0 or visibility:hidden until hover. Hover enhances — doesn't create visibility.
 10. THEME: Respect scanData.ui.theme — if light, use light backgrounds (bg-white). If dark, use dark backgrounds (bg-zinc-950).
 ${isDSStyleDirective ? `11. DS CONSISTENCY: Apply Design System colors uniformly to ALL sections — header, hero, content, sidebar, footer. Every bg-*, text-*, border-* class must come from the DS token palette. Do NOT use any hardcoded hex colors that aren't in the DS style guide.` : ''}

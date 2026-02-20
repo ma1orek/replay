@@ -151,9 +151,16 @@ const ChartComponent = ({ type, data, options = {} }) => {
         }
         return () => { if (chartRef.current) chartRef.current.destroy(); };
     }, [type, data, options]);
-    return <canvas ref={canvasRef} />;
+    return <div className="w-full h-64 relative"><canvas ref={canvasRef} /></div>;
 };
 \`\`\`
+
+⚠️ CHART CONTAINER RULES (MANDATORY):
+- ALWAYS wrap ChartComponent usage in a sized container: \`<div className="h-64">\` or \`<div className="h-80">\`
+- Chart parent card MUST have \`overflow-hidden\` to prevent canvas bleeding out
+- Pie/Donut charts: use \`h-64 w-64 mx-auto\` square container
+- Line/Bar/Area charts: use \`h-64\` or \`h-80\` full-width container
+- NEVER put a chart in a container without explicit height — canvas will collapse to 0px or overflow
 
 2. **LUCIDE ICONS**:
 \`\`\`jsx
@@ -305,15 +312,16 @@ const Icon = ({ name, className = "w-5 h-5" }) => {
 □ 3. TABLES: ALL rows present (not just first 3) with exact cell values
 □ 4. METRICS: ALL metric cards with exact values and labels — NEVER output "0+" or "$0B" (those are animation start frames, use realistic values!)
 □ 4b. LAYOUT MATCH: If video shows split hero (text+image side-by-side) → output MUST be split, NOT centered
-□ 5. CHARTS: ALL charts with correct data points
+□ 5. CHARTS: ALL charts with correct data points, EACH in a sized container (h-64/h-80) with overflow-hidden on parent card
 □ 6. THEME: matches scanData.ui.theme (light OR dark — respect the video!)
 □ 7. COLORS: from scanData.ui.colors in auto-detect, or from style directive/DS
 □ 8. LAYOUT: matches scanData structure (sidebar-main, grid columns, etc.)
 □ 9. GSAP animations on load and scroll (smooth, not excessive)
 □ 10. Hover effects on cards/buttons (but buttons VISIBLE before hover!)
 □ 11. Picsum.photos images with UNIQUE seeds per image (NO pollinations - rate limits!)
-□ 12. Chart.js with theme-appropriate colors
+□ 12. Chart.js with theme-appropriate colors, canvas inside h-64 container with overflow-hidden
 □ 13. CSS Grid/Flexbox for card rows — NEVER inline-block
+□ 13b. Stat/KPI cards: grid grid-cols-2 md:grid-cols-4 gap-4 — cards MUST stay side-by-side, NEVER stack vertically on desktop
 □ 14. NO missing sections — if scanData has hero+features+FAQ+footer, output has ALL of them
 
 Generate the complete HTML now. CONTENT ACCURACY IS MORE IMPORTANT THAN VISUAL FLAIR.`;
