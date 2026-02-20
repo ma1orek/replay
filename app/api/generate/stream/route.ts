@@ -1257,22 +1257,97 @@ DO NOT output ANY stat/metric/KPI with value 0. Every number must be realistic a
           // Retry loop for 503/429 high demand errors
           const MAX_RETRIES = 3;
           const retryDelay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-          let streamResult;
-          let lastStreamError;
+          let fullText = "";
+          let chunkCount = 0;
+          let usageMetadata: any = null;
+          let lastStreamError: any = null;
 
           // Dynamic timeout: use remaining time from 300s Vercel budget (with 15s safety margin)
           const elapsedMs = Date.now() - startTime;
-          const remainingMs = Math.max(60000, (300 - 15) * 1000 - elapsedMs); // min 60s, max ~285s minus elapsed
+          const remainingMs = Math.max(60000, (300 - 15) * 1000 - elapsedMs);
           console.log(`[stream] Generation timeout: ${Math.round(remainingMs / 1000)}s (elapsed: ${Math.round(elapsedMs / 1000)}s)`);
 
+          // Retry loop covers BOTH stream creation AND stream reading
+          // If stream opens but sends 0 chunks (stall), we retry the entire generation
           for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            fullText = "";
+            chunkCount = 0;
+            let codeStarted = false;
+            let streamAborted = false;
+
             try {
-              streamResult = await withTimeout(
+              const result = await withTimeout(
                 model.generateContentStream(contentParts),
-                remainingMs, // Dynamic: fits within Vercel 300s maxDuration
+                remainingMs,
                 "Direct Vision Code Generation"
               );
-              break; // success
+
+              // Watchdog: abort if no chunks arrive within timeout
+              const FIRST_CHUNK_TIMEOUT = 120000; // 2 min for first chunk (model thinking)
+              const CHUNK_TIMEOUT = 45000; // 45s between subsequent chunks
+              let lastChunkTime = Date.now();
+
+              const watchdogInterval = setInterval(() => {
+                const sinceLastChunk = Date.now() - lastChunkTime;
+                const timeout = chunkCount === 0 ? FIRST_CHUNK_TIMEOUT : CHUNK_TIMEOUT;
+                if (sinceLastChunk > timeout) {
+                  streamAborted = true;
+                  console.error(`[stream] WATCHDOG: No chunk for ${Math.round(sinceLastChunk/1000)}s (count: ${chunkCount}). Aborting.`);
+                  clearInterval(watchdogInterval);
+                }
+              }, 5000);
+
+              try {
+                for await (const chunk of result.stream) {
+                  if (streamAborted) {
+                    console.log(`[stream] Stream aborted by watchdog after ${chunkCount} chunks`);
+                    break;
+                  }
+                  const chunkText = chunk.text();
+                  fullText += chunkText;
+                  chunkCount++;
+                  lastChunkTime = Date.now();
+
+                  if (!codeStarted && (fullText.includes("```html") || fullText.includes("<!DOCTYPE"))) {
+                    codeStarted = true;
+                  }
+
+                  const estimatedProgress = codeStarted
+                    ? Math.min(10 + Math.floor((fullText.length / 50000) * 80), 95)
+                    : 15;
+                  const lineCount = (fullText.match(/\n/g) || []).length;
+
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                    type: "chunk",
+                    content: chunkText,
+                    chunkIndex: chunkCount,
+                    totalLength: fullText.length,
+                    lineCount: lineCount,
+                    progress: estimatedProgress
+                  })}\n\n`));
+                }
+              } finally {
+                clearInterval(watchdogInterval);
+              }
+
+              // If watchdog fired and we got nothing useful → throw to retry
+              if (streamAborted && fullText.length < 100) {
+                throw new Error(`Stream stalled: 0 useful output after ${chunkCount} chunks. Model may be overloaded.`);
+              }
+
+              // Get usage metadata with timeout (don't hang if response never resolves)
+              try {
+                const finalResponse = await Promise.race([
+                  result.response,
+                  new Promise<never>((_, reject) => setTimeout(() => reject(new Error('metadata timeout')), 10000))
+                ]);
+                usageMetadata = finalResponse.usageMetadata;
+              } catch {
+                console.warn('[stream] Could not get usage metadata (timeout or error)');
+              }
+
+              break; // Success — exit retry loop
+
             } catch (error: any) {
               lastStreamError = error;
               console.error(`[stream] Attempt ${attempt}/${MAX_RETRIES} failed:`, error?.message);
@@ -1281,7 +1356,8 @@ DO NOT output ANY stat/metric/KPI with value 0. Every number must be realistic a
                                   error?.message?.includes('overloaded') ||
                                   error?.message?.includes('Service Unavailable') ||
                                   error?.message?.includes('Internal Server Error') ||
-                                  error?.message?.includes('429');
+                                  error?.message?.includes('429') ||
+                                  error?.message?.includes('stalled');
               if (!isRetryable) throw error;
 
               if (attempt < MAX_RETRIES) {
@@ -1296,47 +1372,13 @@ DO NOT output ANY stat/metric/KPI with value 0. Every number must be realistic a
             }
           }
 
-          if (!streamResult) {
-            throw lastStreamError || new Error("All retry attempts failed");
+          // All retries exhausted with no useful output
+          if (fullText.length < 100) {
+            throw lastStreamError || new Error("All retry attempts failed - no output generated");
           }
-
-          const result = streamResult;
-
-          let fullText = "";
-          let chunkCount = 0;
-          let codeStarted = false;
-
-          for await (const chunk of result.stream) {
-            const chunkText = chunk.text();
-            fullText += chunkText;
-            chunkCount++;
-            
-            if (!codeStarted && (fullText.includes("```html") || fullText.includes("<!DOCTYPE"))) {
-              codeStarted = true;
-            }
-            
-            const estimatedProgress = codeStarted 
-              ? Math.min(10 + Math.floor((fullText.length / 50000) * 80), 95)
-              : 15;
-            
-            const lineCount = (fullText.match(/\n/g) || []).length;
-            
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
-              type: "chunk", 
-              content: chunkText,
-              chunkIndex: chunkCount,
-              totalLength: fullText.length,
-              lineCount: lineCount,
-              progress: estimatedProgress
-            })}\n\n`));
-          }
-          
-          const finalResponse = await result.response;
-          const usageMetadata = finalResponse.usageMetadata;
 
           const duration = ((Date.now() - startTime) / 1000).toFixed(1);
           console.log(`[stream] Completed in ${duration}s, chunks: ${chunkCount}, text length: ${fullText.length}`);
-          // @ts-ignore - thoughtsTokenCount exists on newer Gemini models
           console.log(`[stream] Usage: input=${usageMetadata?.promptTokenCount}, output=${usageMetadata?.candidatesTokenCount}, thinking=${(usageMetadata as any)?.thoughtsTokenCount || 0}`);
           if (fullText.length < 500) {
             console.log(`[stream] WARNING: Very short response (${fullText.length} chars). First 500 chars:`, fullText.substring(0, 500));
