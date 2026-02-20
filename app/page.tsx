@@ -4535,11 +4535,13 @@ window.addEventListener('load', function() {
 });
 </script>`;
     
+    // CDN scripts
+    const chartScript = '<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>';
+
     // Ensure Tailwind CSS is included (inject if missing)
     if (!processedCode.includes('cdn.tailwindcss.com') && !processedCode.includes('tailwindcss')) {
       const tailwindScript = '<script src="https://cdn.tailwindcss.com"></script>';
       const gsapScript = '<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>';
-      const chartScript = '<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>';
       const alpineScript = '<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>';
       const lucideScript = '<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>';
       
