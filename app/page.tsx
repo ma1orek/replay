@@ -12919,20 +12919,17 @@ ${publishCode}
 
     // Refresh the preview by re-creating the blob URL
     if (editableCode) {
+      // Step 1: Always re-create preview URL first (most important)
       try {
         if (previewUrl) URL.revokeObjectURL(previewUrl);
         setPreviewUrl(createPreviewUrl(editableCode));
-        // Rebuild architecture, flow and style
-        buildArchitectureLive(editableCode);
-        buildFlowLive(editableCode);
-        setStyleInfo(extractStyleInfo(editableCode));
       } catch (err) {
-        console.error('Refresh failed:', err);
-        // At minimum re-create the preview URL
-        try {
-          setPreviewUrl(createPreviewUrl(editableCode));
-        } catch (e) { /* silently fail */ }
+        console.error('Refresh preview URL failed:', err);
       }
+      // Step 2: Rebuild sidebar panels (non-critical, isolated)
+      try { buildArchitectureLive(editableCode); } catch (err) { console.error('Refresh architecture failed:', err); }
+      try { buildFlowLive(editableCode); } catch (err) { console.error('Refresh flow failed:', err); }
+      try { setStyleInfo(extractStyleInfo(editableCode)); } catch (err) { console.error('Refresh style failed:', err); }
     }
   };
 

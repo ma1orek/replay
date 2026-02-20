@@ -164,6 +164,51 @@ function fixBrokenImageUrls(code: string): string {
 }
 
 // =============================================================================
+// JSX → HTML SANITIZER — safety net if AI outputs React/JSX despite prompt
+// =============================================================================
+function sanitizeJsxToHtml(code: string): string {
+  // If code looks like a React component wrapper, strip it
+  if (/export\s+default\s+function|function\s+\w+Page\s*\(|function\s+\w+Component\s*\(/.test(code)) {
+    // Extract the HTML from inside return ( <> ... </> ) or return ( <div> ... </div> )
+    const returnMatch = code.match(/return\s*\(\s*(?:<>|<React\.Fragment>)?\s*([\s\S]*?)(?:<\/>|<\/React\.Fragment>)?\s*\)\s*;?\s*\}$/);
+    if (returnMatch) {
+      code = returnMatch[1].trim();
+    }
+  }
+  // Strip React imports
+  code = code.replace(/^import\s+(?:React|{[^}]*})\s+from\s+['"][^'"]+['"];?\s*\n/gm, '');
+  code = code.replace(/^['"]use client['"];?\s*\n/gm, '');
+  // className → class (but NOT inside <script> blocks)
+  const scriptBlocks: string[] = [];
+  let sanitized = code.replace(/<script[\s\S]*?<\/script>/gi, (match) => {
+    scriptBlocks.push(match);
+    return `__SCRIPT_PLACEHOLDER_${scriptBlocks.length - 1}__`;
+  });
+  sanitized = sanitized.replace(/\bclassName=/g, 'class=');
+  // style={{ ... }} → style="..." (JSX object style to HTML string style)
+  sanitized = sanitized.replace(/style=\{\{([^}]*)\}\}/g, (_match, inner: string) => {
+    const cssStr = inner
+      .replace(/,\s*$/,'')
+      .split(',')
+      .map((pair: string) => {
+        const [key, ...valParts] = pair.split(':');
+        if (!key || valParts.length === 0) return '';
+        const cssKey = key.trim().replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^['"\s]+|['"\s]+$/g, '');
+        const cssVal = valParts.join(':').trim().replace(/^['"\s]+|['"\s]+$/g, '');
+        return `${cssKey}: ${cssVal}`;
+      })
+      .filter(Boolean)
+      .join('; ');
+    return `style="${cssStr}"`;
+  });
+  // Restore script blocks
+  scriptBlocks.forEach((block, i) => {
+    sanitized = sanitized.replace(`__SCRIPT_PLACEHOLDER_${i}__`, block);
+  });
+  return sanitized;
+}
+
+// =============================================================================
 // REPLAY AI SYSTEM PROMPT - Inspired by Lovable/Bolt architecture
 // =============================================================================
 function buildSystemPrompt(chatHistory?: any[]): string {
@@ -223,6 +268,14 @@ FORBIDDEN:
 - Changing code formatting or structure of untouched parts
 - Using external image services (imgur, etc.)
 - Inline SVG icons (use Lucide data-lucide instead)
+
+🚨 CRITICAL — OUTPUT FORMAT IS PURE HTML, NEVER JSX/REACT:
+- Use "class" NOT "className" — NEVER write className anywhere!
+- Use style="display: none" NOT style={{ display: 'none' }} — NEVER use double-brace style objects!
+- NEVER wrap code in React components: no "export default function", no "function HomePage()", no "return (<>...</>)"
+- NEVER add React imports: no "import React", no "'use client'", no "import { useState }"
+- The output is a STATIC HTML PAGE served in an iframe — it is NOT a React/Next.js component!
+- If the input uses "class=", your output MUST also use "class=" — NEVER convert to className!
 
 \`\`\`html
 <!DOCTYPE html>
@@ -686,7 +739,12 @@ CRITICAL RULES:
               } else {
                 // AI returned full HTML despite S/R prompt - validate before accepting
                 console.log("[Stream Edit] AI returned full HTML in S/R mode, validating...");
-                const extractedCode = parsed.fullHtml || extractCode(fullResponse) || currentCode;
+                let extractedCode = parsed.fullHtml || extractCode(fullResponse) || currentCode;
+                // JSX safety net
+                if (/\bclassName=/.test(extractedCode) || /style=\{\{/.test(extractedCode) || /export\s+default\s+function/.test(extractedCode)) {
+                  console.warn('[Stream Edit] JSX DETECTED in S/R fallback — sanitizing');
+                  extractedCode = sanitizeJsxToHtml(extractedCode);
+                }
                 const srSizeDrop = extractedCode.length / currentCode.length;
 
                 if (srSizeDrop < 0.4 && currentCode.length > 5000) {
@@ -1305,6 +1363,7 @@ INSTRUCTIONS:
 5. DO NOT change anything except what user requested
 6. Preserve all Alpine.js directives (x-show, x-data, x-on)
 7. Preserve all navigation, scripts, and sections
+8. Output PURE HTML only — NEVER use className (use class), NEVER use style={{}} (use style=""), NEVER wrap in React/JSX components
 
 Example:
 Changed button color to blue
@@ -1413,7 +1472,16 @@ async function runFullHtmlEdit(
     send("status", { message: "Finalizing...", phase: "finalize" });
     await delay(50);
 
-    const extractedCode = extractCode(fullCode);
+    let extractedCode = extractCode(fullCode);
+
+    // JSX SAFETY NET: sanitize className/style={{}}/React wrappers
+    if (extractedCode) {
+      const hadJsx = /\bclassName=/.test(extractedCode) || /style=\{\{/.test(extractedCode) || /export\s+default\s+function/.test(extractedCode);
+      if (hadJsx) {
+        console.warn('[Stream Edit] JSX DETECTED in AI output — sanitizing to HTML');
+        extractedCode = sanitizeJsxToHtml(extractedCode);
+      }
+    }
 
     if (extractedCode) {
       // Validate that code actually changed
@@ -1475,8 +1543,12 @@ async function runFullHtmlEdit(
         }
       }
     } else {
-      const fallbackCode = tryFallbackExtraction(fullCode);
+      let fallbackCode = tryFallbackExtraction(fullCode);
       if (fallbackCode) {
+        // JSX safety net for fallback path
+        if (/\bclassName=/.test(fallbackCode) || /style=\{\{/.test(fallbackCode)) {
+          fallbackCode = sanitizeJsxToHtml(fallbackCode);
+        }
         send("complete", { code: fallbackCode, summary: "Changes applied" });
       } else {
         const looksLikeExplanation = fullCode.length < 2000 &&

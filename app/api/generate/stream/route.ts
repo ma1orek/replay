@@ -556,7 +556,15 @@ CONTENT RULES (MANDATORY — violating = failure):
 - Keep ALL text VERBATIM: every headline, paragraph, nav item, stat, testimonial, button label
 - Keep ALL data EXACT: numbers, metrics, company names, dates, prices
 - Keep the PURPOSE of each section (hero, features, pricing, testimonials, CTA, footer, etc.)
-- 🚨 ZERO BAN: 0 is BANNED in stats! "0 funded startups" → "5,000+". "$0B" → "$800B+". Scan LAST 5 SECONDS for final counter values!
+- 🚨🚨🚨 ZERO BAN: The number 0 is BANNED in ALL statistics, metrics, KPIs, table data!
+  "0 funded startups" → WRONG! Must be "5,000+" or similar real number
+  "$0B" → WRONG! Must be "$800B+" or similar real number
+  "$0", "0 cases", "0 users", "$0.00" in dashboards → ALL WRONG! Use realistic values
+  Dashboard KPIs: "$14,250", "1,847 cases", "12,500 users" — NEVER $0 or 0!
+  Table cells: every numeric cell must have a realistic non-zero value
+  SCAN THE LAST 5 SECONDS of the video for the FINAL counter values!
+  If you cannot read the final value, ESTIMATE a realistic number — NEVER output zero!
+  FINAL CHECK: Search your output for ">0<" and ">$0" — if found, replace with real values!
 - 🏢 Company logos: styled TEXT with company name/initials, NOT external image URLs
 - 🖼️ IMAGES ARE MANDATORY: Every section MUST have at least one image! NEVER skip images!
   Use picsum.photos/seed/UNIQUE-NAME/W/H with descriptive seeds (hero-office, team-photo, feature-dashboard, etc.)
