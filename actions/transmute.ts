@@ -1668,10 +1668,10 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
     console.log("[transmute] Phase 1 timeout:", phase1Timeout / 1000, "s");
     
     let scanResult;
-    let usedModel = "gemini-3-pro-preview";
+    let usedModel = "gemini-3.1-pro-preview";
     
     // Use Gemini 3 Pro for best video understanding
-    const phase1Models = ["gemini-3-pro-preview"];
+    const phase1Models = ["gemini-3.1-pro-preview"];
     let phase1Error: any;
     
     for (const modelName of phase1Models) {
@@ -1775,12 +1775,12 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
 
     // If parse failed, retry with Pro again (with JSON mode forced)
     if (!scanData) {
-      console.warn("[transmute] Phase 1 JSON parse failed. Retrying with gemini-3-pro-preview (JSON mode)...");
+      console.warn("[transmute] Phase 1 JSON parse failed. Retrying with gemini-3.1-pro-preview (JSON mode)...");
       console.warn("[transmute] First 500 chars of failed response:", scanText.substring(0, 500));
 
       try {
         const retryModel = genAI.getGenerativeModel({
-          model: "gemini-3-pro-preview",
+          model: "gemini-3.1-pro-preview",
           generationConfig: {
             temperature: 0.05,
             maxOutputTokens: 16384,
@@ -1794,7 +1794,7 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
             { inlineData: { mimeType: videoData.mimeType, data: videoData.base64 } },
           ]),
           phase1Timeout,
-          "Phase 1 Retry (gemini-3-pro-preview JSON mode)"
+          "Phase 1 Retry (gemini-3.1-pro-preview JSON mode)"
         );
 
         const retryText = retryResult.response.text();
@@ -1802,7 +1802,7 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
         scanData = tryParseJSON(retryText);
 
         if (scanData) {
-          usedModel = "gemini-3-pro-preview (retry)";
+          usedModel = "gemini-3.1-pro-preview (retry)";
           console.log("[transmute] Retry succeeded with Pro JSON mode");
         }
       } catch (retryError: any) {
@@ -2033,7 +2033,7 @@ Generate the complete HTML file now:`;
     console.log("[transmute] Phase 2 timeout:", Math.round(phase2Timeout / 1000), "s");
     
     let assemblyResult;
-    let assemblerUsedModel = "gemini-3-pro-preview"; // Use Gemini 3 Pro for code generation
+    let assemblerUsedModel = "gemini-3.1-pro-preview"; // Use Gemini 3 Pro for code generation
     
     // Helper: Try model with retry
     const tryModel = async (modelName: string, timeout: number): Promise<any> => {
@@ -2052,7 +2052,7 @@ Generate the complete HTML file now:`;
     };
     
     // Use Gemini 3 Pro for code generation
-    const modelsToTry = ["gemini-3-pro-preview"];
+    const modelsToTry = ["gemini-3.1-pro-preview"];
     let lastError: any;
     
     for (const modelName of modelsToTry) {

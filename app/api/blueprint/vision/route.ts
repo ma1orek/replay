@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
     }
 
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-3-pro-preview",
+      model: "gemini-3.1-pro-preview",
       generationConfig: {
         temperature: 0.3,
         maxOutputTokens: 32768, // enough for full-page 1:1 content (hero, FAQ, footer, etc.)

@@ -11,7 +11,7 @@ Replay reconstructs working UI from video recordings. Transform legacy software 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-replay.build-FF6E3C?style=for-the-badge)](https://replay.build)
 [![Documentation](https://img.shields.io/badge/Docs-replay.build%2Fdocs-blue?style=for-the-badge)](https://replay.build/docs)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
-[![Gemini AI](https://img.shields.io/badge/Gemini_3-AI-4285F4?style=for-the-badge&logo=google)](https://ai.google.dev)
+[![Gemini AI](https://img.shields.io/badge/Gemini_3.1-AI-4285F4?style=for-the-badge&logo=google)](https://ai.google.dev)
 
 </div>
 
@@ -33,7 +33,7 @@ Replay reconstructs production-ready UI from video recordings. No manual documen
 
 Replay uses a sophisticated multi-model AI pipeline we call the **"Sandwich Architecture"**:
 
-### 🔍 Phase 1: Surveyor (Gemini 3 Flash)
+### 🔍 Phase 1: Surveyor (Gemini 3.1 Flash)
 **"Measure twice, cut once"**
 - Extracts precise layout measurements from video frames
 - Detects grid systems, spacing patterns, color palettes
@@ -41,7 +41,7 @@ Replay uses a sophisticated multi-model AI pipeline we call the **"Sandwich Arch
 - Uses code execution for pixel-accurate measurements
 - Outputs structured JSON with hard data, not guesses
 
-### ⚡ Phase 2: Generator (Gemini 3 Pro)
+### ⚡ Phase 2: Generator (Gemini 3.1 Pro)
 **Main code generation**
 - Receives Surveyor measurements as context
 - Generates production-ready React + Tailwind code
@@ -49,7 +49,7 @@ Replay uses a sophisticated multi-model AI pipeline we call the **"Sandwich Arch
 - Creates interactive components with working navigation
 - Outputs complete single-file React application
 
-### ✅ Phase 3: QA Tester (Gemini 3 Flash)
+### ✅ Phase 3: QA Tester (Gemini 3.1 Flash)
 **Visual verification**
 - Compares generated UI against original video frames
 - Calculates SSIM (Structural Similarity Index)
@@ -126,8 +126,8 @@ Deploy instantly to `replay.build/p/your-project`
 |-------|------------|
 | **Framework** | Next.js 14 (App Router) |
 | **Styling** | Tailwind CSS 3.4 |
-| **AI Models** | Google Gemini 3 Pro (generation) |
-| **AI Vision** | Google Gemini 3 Flash (Agentic Vision) |
+| **AI Models** | Google Gemini 3.1 Pro (generation) |
+| **AI Vision** | Google Gemini 3.1 Flash (Agentic Vision) |
 | **Database** | Supabase (PostgreSQL) |
 | **Auth** | Supabase Auth (Google OAuth) |
 | **Payments** | Stripe |
@@ -164,7 +164,7 @@ Deploy instantly to `replay.build/p/your-project`
 - Node.js 18+
 - Supabase account
 - Stripe account  
-- Google AI Studio API key (Gemini 3)
+- Google AI Studio API key (Gemini 3.1)
 
 #### 1. Clone & Install
 
@@ -194,7 +194,7 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 STRIPE_PRO_PRICE_ID_MONTHLY=price_...
 STRIPE_PRO_PRICE_ID_YEARLY=price_...
 
-# Gemini AI (Gemini 3 Pro & Flash)
+# Gemini AI (Gemini 3.1 Pro & Flash)
 GEMINI_API_KEY=your_gemini_api_key
 
 # App URL
@@ -280,7 +280,7 @@ replay/
 - [x] Supabase integration
 - [x] Version history
 - [x] Agentic Vision (Sandwich Architecture)
-- [x] Gemini 3 Pro & Flash integration
+- [x] Gemini 3.1 Pro & Flash integration
 - [x] Design System import from Storybook
 - [x] 40+ style presets (including Rive interactive)
 - [x] React Bits component library (130+ components)
@@ -327,7 +327,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 - [Next.js](https://nextjs.org) — React framework
 - [Supabase](https://supabase.com) — Database & Auth
-- [Google Gemini 3](https://ai.google.dev) — AI generation (Pro & Flash models)
+- [Google Gemini 3.1](https://ai.google.dev) — AI generation (Pro & Flash models)
 - [Tailwind CSS](https://tailwindcss.com) — Styling
 - [Lucide](https://lucide.dev) — Icons
 - [Vercel](https://vercel.com) — Hosting

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Video, CheckCircle, AlertTriangle, Lightbulb, Check, X } from "lucide-react";
+import { Video, CheckCircle, AlertTriangle, Lightbulb, Check, X, Copy, Wand2 } from "lucide-react";
 
 export default function VideoToUIPage() {
   return (
@@ -42,15 +42,15 @@ export default function VideoToUIPage() {
         </p>
         <div className="space-y-3">
           <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-            <h4 className="font-medium text-blue-400 mb-2">🔍 Phase 1: Surveyor (Gemini 3 Flash)</h4>
+            <h4 className="font-medium text-blue-400 mb-2">🔍 Phase 1: Surveyor (Gemini 3.1 Flash)</h4>
             <p className="text-sm text-zinc-400">"Measure twice, cut once" — Extracts precise layout measurements, grid systems, spacing patterns, and color palettes from video frames using code execution for pixel-accurate data.</p>
           </div>
           <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20">
-            <h4 className="font-medium text-purple-400 mb-2">⚡ Phase 2: Generator (Gemini 3 Pro)</h4>
+            <h4 className="font-medium text-purple-400 mb-2">⚡ Phase 2: Generator (Gemini 3.1 Pro)</h4>
             <p className="text-sm text-zinc-400">Main code generation — Receives Surveyor measurements and generates production-ready React + Tailwind code with working navigation and interactions.</p>
           </div>
           <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-            <h4 className="font-medium text-emerald-400 mb-2">✅ Phase 3: QA Tester (Gemini 3 Flash)</h4>
+            <h4 className="font-medium text-emerald-400 mb-2">✅ Phase 3: QA Tester (Gemini 3.1 Flash)</h4>
             <p className="text-sm text-zinc-400">Visual verification — Compares generated UI against original frames, calculates SSIM similarity, and provides auto-fix suggestions for pixel-perfect output.</p>
           </div>
         </div>
@@ -133,6 +133,48 @@ export default function VideoToUIPage() {
               </ul>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Generation Modes */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-semibold text-white">Generation Modes</h2>
+        <p className="text-zinc-400 leading-relaxed">
+          Before generating, choose between two modes using the toggle in the sidebar:
+        </p>
+        <div className="space-y-3">
+          <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
+            <div className="flex items-center gap-2 mb-2">
+              <Copy className="w-4 h-4 text-zinc-300" />
+              <h4 className="font-medium text-white">Reconstruct</h4>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-700 text-zinc-400">Default</span>
+            </div>
+            <p className="text-sm text-zinc-400">
+              Exact layout & structure match. The AI faithfully reproduces the video's layout,
+              spacing, colors, and content placement. Best for pixel-accurate recreation of
+              existing designs, dashboards, and app UIs.
+            </p>
+          </div>
+          <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
+            <div className="flex items-center gap-2 mb-2">
+              <Wand2 className="w-4 h-4 text-zinc-300" />
+              <h4 className="font-medium text-white">Reimagine</h4>
+            </div>
+            <p className="text-sm text-zinc-400">
+              Creative layout, same content. The AI preserves all text, data, and section
+              purposes but invents a completely new visual design with advanced animations
+              (GSAP ScrollTrigger, split-text effects, parallax, glassmorphism), custom
+              scrollbars, horizontal carousels, bento grids, and cinematic layouts.
+              Powered by 18+ animation patterns from reactbits.dev.
+            </p>
+          </div>
+        </div>
+        <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700 flex items-start gap-2">
+          <Lightbulb className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-zinc-400">
+            Tip: You can switch modes at any time — both in the New Project view and inside
+            existing projects. The toggle appears above the Generate button in the sidebar.
+          </p>
         </div>
       </div>
 

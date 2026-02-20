@@ -69,7 +69,7 @@ export default function DocsPage() {
           you can edit, customize, and publish.
         </p>
         <p className="text-zinc-400 leading-relaxed">
-          Powered by <strong className="text-white">Gemini 3 Pro</strong> for code generation and <strong className="text-white">Gemini 3 Flash with Agentic Vision</strong> for precise UI measurements.
+          Powered by <strong className="text-white">Gemini 3.1 Pro</strong> for code generation and <strong className="text-white">Gemini 3.1 Flash with Agentic Vision</strong> for precise UI measurements.
         </p>
         <p className="text-zinc-400 leading-relaxed">
           The AI analyzes your video to detect:

@@ -381,7 +381,7 @@ export async function POST(request: NextRequest) {
     // SINGLE MODEL: Gemini 3 Pro with VISION
     // Pro SEES the video directly and generates code - NO intermediate JSON!
     const model = genAI.getGenerativeModel({
-      model: "gemini-3-pro-preview",
+      model: "gemini-3.1-pro-preview",
       generationConfig: {
         temperature: 0.85, // High for creative Awwwards-level designs
         maxOutputTokens: 100000,

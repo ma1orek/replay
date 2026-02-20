@@ -63,7 +63,7 @@ async function executeGeminiWithRetry(
   // Try different models in order of preference
   const modelsToTry = [
     modelName,
-    "gemini-3-pro-preview", // Use Gemini 3 Pro for code editing
+    "gemini-3.1-pro-preview", // Use Gemini 3 Pro for code editing
   ].filter((m, i, arr) => arr.indexOf(m) === i); // Remove duplicates
   
   for (const currentModel of modelsToTry) {
@@ -294,7 +294,7 @@ Odpowiedz krótko i przyjaźnie:`;
             // Use retry logic with fallback models
             const { result } = await executeGeminiWithRetry(
               genAI,
-              "gemini-3-pro-preview", // Use Gemini 3 Pro
+              "gemini-3.1-pro-preview", // Use Gemini 3 Pro
               planPrompt,
               { temperature: 0.7, maxOutputTokens: 1000 },
               3,
@@ -381,7 +381,7 @@ Odpowiedz krótko i przyjaźnie:`;
           
           const genAI = new GoogleGenerativeAI(geminiKey);
           const model = genAI.getGenerativeModel({
-            model: "gemini-3-pro-preview", // Gemini 3 Pro for image processing
+            model: "gemini-3.1-pro-preview", // Gemini 3 Pro for image processing
             generationConfig: { temperature: 0.4, maxOutputTokens: 65536 },
           });
           
@@ -629,7 +629,7 @@ CRITICAL RULES:
               // Lower temperature for precision, lower maxOutputTokens (blocks are tiny)
               const { result, modelUsed } = await executeGeminiWithRetry(
                 genAI,
-                "gemini-3-pro-preview",
+                "gemini-3.1-pro-preview",
                 searchReplacePrompt,
                 { temperature: 0.2, maxOutputTokens: 8192 }, // Precise + small output
                 3,
@@ -1380,7 +1380,7 @@ async function runFullHtmlEdit(
     // Use retry logic with fallback models
     const { result, modelUsed } = await executeGeminiWithRetry(
       genAI,
-      "gemini-3-pro-preview",
+      "gemini-3.1-pro-preview",
       fullPrompt,
       { temperature: 0.3, maxOutputTokens: 65536 },
       3,

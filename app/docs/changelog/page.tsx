@@ -197,8 +197,8 @@ const changelog = [
       },
       {
         type: "feature",
-        title: "Gemini 3 Agentic Vision",
-        description: "Upgraded AI pipeline using Gemini 3 Pro for generation and Gemini 3 Flash for Surveyor measurements and QA testing."
+        title: "Gemini 3.1 Agentic Vision",
+        description: "Upgraded AI pipeline using Gemini 3.1 Pro for generation and Gemini 3.1 Flash for Surveyor measurements and QA testing. Gemini 3.1 delivers better reasoning, improved token efficiency, and stronger factual grounding."
       },
       {
         type: "improvement",

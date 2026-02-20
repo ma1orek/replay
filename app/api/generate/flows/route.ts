@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 export const maxDuration = 120;
 
 // Use Gemini 3 Pro Preview for best quality flow detection
-const MODEL_NAME = "gemini-3-pro-preview";
+const MODEL_NAME = "gemini-3.1-pro-preview";
 
 function getApiKey(): string | null {
   return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || null;

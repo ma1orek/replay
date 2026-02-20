@@ -5,7 +5,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-const MODEL_NAME = "gemini-3-pro-preview"; // Using PRO for best quality design extraction
+const MODEL_NAME = "gemini-3.1-pro-preview"; // Using PRO for best quality design extraction
 
 function getApiKey(): string | null {
   return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || null;
