@@ -3206,6 +3206,7 @@ function ReplayToolContent() {
     "generative-ascii": "Generative ASCII",
     "cinematic-portals": "Cinematic Portals",
     "typographic-architecture": "Typographic Architecture",
+    "svg-madness": "SVG Madness",
   };
   
   // Helper function to get default style name from localStorage (only call client-side)
@@ -4572,8 +4573,26 @@ ${processedCode}
 </html>`;
       }
     } else {
-      // Tailwind already present — inject Chart.js CDN if missing + visibility fix
-      const extraScripts = (!processedCode.includes('chart.js') && !processedCode.includes('Chart.js')) ? chartScript + '\n' : '';
+      // Tailwind already present — inject MISSING CDNs + visibility fix
+      let extraScripts = '';
+      // GSAP (critical for animations!)
+      if (!processedCode.includes('gsap') && !processedCode.includes('GSAP')) {
+        extraScripts += '<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>\n<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>\n';
+      } else if (!processedCode.includes('ScrollTrigger')) {
+        extraScripts += '<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>\n';
+      }
+      // Chart.js
+      if (!processedCode.includes('chart.js') && !processedCode.includes('Chart.js')) {
+        extraScripts += chartScript + '\n';
+      }
+      // Alpine.js
+      if (!processedCode.includes('alpinejs') && !processedCode.includes('alpine')) {
+        extraScripts += '<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>\n';
+      }
+      // Lucide icons
+      if (!processedCode.includes('lucide')) {
+        extraScripts += '<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>\n';
+      }
       if (processedCode.includes('</head>')) {
         processedCode = processedCode.replace('</head>', `${extraScripts}${invisibleFixStyles}\n</head>`);
       } else if (processedCode.includes('</body>')) {
@@ -4581,6 +4600,77 @@ ${processedCode}
       }
     }
     
+    // FALLBACK ANIMATION SAFETY NET: If the AI generated HTML without ANY GSAP animations,
+    // inject a universal scroll-reveal animation that makes every section/card animate on scroll
+    const hasGsapAnimations = processedCode.includes('gsap.from') || processedCode.includes('gsap.fromTo') || processedCode.includes('gsap.to(') || processedCode.includes('ScrollTrigger.create');
+    if (!hasGsapAnimations && processedCode.includes('</body>')) {
+      const fallbackAnimationScript = `
+<script>
+// FALLBACK: Auto-animate ALL sections and cards since the page has no GSAP animations
+document.addEventListener('DOMContentLoaded', function() {
+  if (typeof gsap === 'undefined') return;
+  gsap.registerPlugin(ScrollTrigger);
+
+  // Animate every section entrance
+  document.querySelectorAll('section, [class*="py-"], [class*="mb-"]').forEach(function(section, i) {
+    var children = section.querySelectorAll('h1,h2,h3,h4,p,img,a.btn,[class*="card"],[class*="rounded"],[class*="shadow"],button,[class*="grid"] > *,[class*="flex"] > *,table,canvas');
+    if (children.length === 0) children = section.children;
+    var directions = ['up','left','right','up'];
+    var dir = directions[i % directions.length];
+    gsap.from(children, {
+      scrollTrigger: { trigger: section, start: 'top 85%', once: true },
+      opacity: 0,
+      y: dir === 'up' ? 60 : 0,
+      x: dir === 'left' ? -60 : dir === 'right' ? 60 : 0,
+      scale: 0.95,
+      duration: 0.8,
+      ease: 'power3.out',
+      stagger: 0.1
+    });
+  });
+
+  // Animate stat numbers (count-up)
+  document.querySelectorAll('[class*="text-4xl"],[class*="text-5xl"],[class*="text-6xl"],[class*="text-3xl"]').forEach(function(el) {
+    var text = el.textContent.trim();
+    var numMatch = text.match(/([\\$]?)(\\d[\\d,]*\\.?\\d*)([\\+%BMKk]*)/);
+    if (!numMatch) return;
+    var prefix = numMatch[1] || '';
+    var num = parseFloat(numMatch[2].replace(/,/g, ''));
+    var suffix = numMatch[3] || '';
+    if (isNaN(num) || num === 0) return;
+    var fallback = el.textContent;
+    el.textContent = prefix + '0' + suffix;
+    var obs = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          obs.unobserve(el);
+          var start = performance.now();
+          (function step(now) {
+            var t = Math.min((now - start) / 2000, 1);
+            var ease = 1 - Math.pow(1 - t, 4);
+            var val = Math.round(num * ease);
+            el.textContent = prefix + val.toLocaleString() + suffix;
+            if (t < 1) requestAnimationFrame(step);
+          })(start);
+        }
+      });
+    }, { threshold: 0.3 });
+    obs.observe(el);
+    setTimeout(function() { if (el.textContent === prefix + '0' + suffix) el.textContent = fallback; }, 4000);
+  });
+
+  // Hover effects on cards
+  document.querySelectorAll('[class*="card"],[class*="rounded-xl"],[class*="rounded-2xl"],[class*="shadow"]').forEach(function(card) {
+    if (card.tagName === 'IMG' || card.tagName === 'BUTTON') return;
+    card.style.transition = 'transform 0.3s ease, box-shadow 0.3s ease';
+    card.addEventListener('mouseenter', function() { card.style.transform = 'translateY(-6px) scale(1.02)'; card.style.boxShadow = '0 20px 40px rgba(0,0,0,0.3)'; });
+    card.addEventListener('mouseleave', function() { card.style.transform = ''; card.style.boxShadow = ''; });
+  });
+});
+</script>`;
+      processedCode = processedCode.replace('</body>', fallbackAnimationScript + '\n</body>');
+    }
+
     // FOUC fix: detect dark background from Tailwind classes and add inline style
     // so the page doesn't flash white while Tailwind CDN loads
     const darkBgClasses = ['bg-zinc-950', 'bg-zinc-900', 'bg-gray-950', 'bg-gray-900', 'bg-slate-950', 'bg-slate-900', 'bg-neutral-950', 'bg-neutral-900', 'bg-black', 'bg-stone-950', 'bg-stone-900'];

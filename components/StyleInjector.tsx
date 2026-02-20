@@ -1029,6 +1029,39 @@ export const StylePreview = ({ styleId }: { styleId: string }) => {
         </motion.div>
       </div>
     ),
+    "svg-madness": (
+      <div className="w-full h-full bg-[#050505] relative overflow-hidden">
+        {/* Morphing blob */}
+        <motion.div
+          className="absolute w-5 h-5 rounded-full bg-gradient-to-br from-violet-500/60 to-pink-500/60 blur-[3px]"
+          style={{ top: '20%', left: '20%' }}
+          animate={{
+            scale: [1, 1.4, 0.8, 1.2, 1],
+            borderRadius: ['50%', '30%', '60%', '40%', '50%'],
+            x: [0, 4, -2, 3, 0],
+            y: [0, -3, 2, -1, 0],
+          }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        />
+        {/* Orbiting dot */}
+        <motion.div
+          className="absolute w-1 h-1 rounded-full bg-cyan-400"
+          style={{ top: '45%', left: '55%' }}
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        />
+        {/* SVG text */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-[5px] font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-pink-400 tracking-tight">SVG</span>
+        </div>
+        {/* Animated line */}
+        <motion.div
+          className="absolute bottom-2 left-1 right-1 h-[1px] bg-gradient-to-r from-transparent via-violet-400/60 to-transparent"
+          animate={{ opacity: [0.3, 1, 0.3], scaleX: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </div>
+    ),
   };
 
   return (
@@ -4125,6 +4158,135 @@ CTA BUTTONS:
 - Content MUST have relative z-10 to appear above orbs
 - Section MUST have overflow-hidden
 - Preserve ALL content from video`, category: "creative" },
+  { id: "svg-madness", name: "SVG Madness", desc: "Animated SVG • Morphing Shapes • Next-Level Motion", fullDesc: `🎆 SVG MADNESS — MAXIMUM ANIMATED SVG INSANITY! 🎆
+Every pixel must MOVE. Every shape must MORPH. This is the most animation-heavy style possible.
+You are Gemini 3.1 Pro — push SVG animation to its absolute limits!
+
+═══════════════════════════════════════════════════════════════════════════════
+🚀 PHILOSOPHY: EVERYTHING IS SVG, EVERYTHING ANIMATES!
+═══════════════════════════════════════════════════════════════════════════════
+This style uses inline SVG as the PRIMARY visual element — not images, not CSS gradients.
+Every section has at least ONE animated SVG illustration. Backgrounds are SVG. Icons are SVG.
+Decorations are SVG. Even text effects use SVG filters.
+
+═══════════════════════════════════════════════════════════════════════════════
+🎨 COLOR PALETTE:
+═══════════════════════════════════════════════════════════════════════════════
+Background: Deep black #050505 or dark navy #0a0a1a
+Primary: Electric violet #7c3aed → magenta #ec4899 gradient
+Secondary: Cyan #06b6d4 → emerald #10b981 gradient
+Accent: Amber #f59e0b (sparks, highlights)
+Glow: All shapes have animated glow via SVG filters (feGaussianBlur + feComposite)
+Text: White #ffffff, muted #a1a1aa
+
+═══════════════════════════════════════════════════════════════════════════════
+📝 TYPOGRAPHY:
+═══════════════════════════════════════════════════════════════════════════════
+Headlines: Bold, 5vw-8vw, with SVG text stroke animation or gradient fill
+Body: Inter or system font, weight 300-400
+Stats: Monospace with count-up animation
+
+═══════════════════════════════════════════════════════════════════════════════
+🎬 MANDATORY SVG ANIMATIONS (IMPLEMENT ALL!):
+═══════════════════════════════════════════════════════════════════════════════
+
+1. 🌊 HERO: MORPHING BLOB BACKGROUND
+<svg viewBox="0 0 800 600" class="absolute inset-0 w-full h-full">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7c3aed"/>
+      <stop offset="100%" style="stop-color:#ec4899"/>
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="20" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <path fill="url(#grad1)" filter="url(#glow)" opacity="0.4">
+    <animate attributeName="d" dur="8s" repeatCount="indefinite"
+      values="M400,300 C500,100 700,200 600,400 C500,500 300,500 200,400 C100,300 200,100 400,300;
+              M400,300 C600,150 700,350 500,450 C400,500 200,450 150,350 C100,250 250,100 400,300;
+              M400,300 C500,100 700,200 600,400 C500,500 300,500 200,400 C100,300 200,100 400,300"/>
+  </path>
+</svg>
+
+2. ✍️ SVG TEXT STROKE ANIMATION (for hero headline):
+<svg viewBox="0 0 800 100" class="w-full"><text x="50%" y="50%" text-anchor="middle"
+  font-size="80" font-weight="900" fill="none" stroke="url(#grad1)" stroke-width="2"
+  stroke-dasharray="1000" stroke-dashoffset="1000" style="animation:draw-text 3s ease forwards">
+  HEADLINE TEXT
+</text></svg>
+@keyframes draw-text { to { stroke-dashoffset: 0; fill: white; } }
+
+3. 🔄 MORPHING ICONS (for feature cards):
+Each feature icon is an SVG that morphs between shapes:
+<svg viewBox="0 0 64 64"><path fill="#7c3aed">
+  <animate attributeName="d" dur="4s" repeatCount="indefinite"
+    values="M32 8 L56 24 L56 48 L32 56 L8 48 L8 24 Z;
+            M32 4 L60 20 L52 52 L32 60 L12 52 L4 20 Z;
+            M32 8 L56 24 L56 48 L32 56 L8 48 L8 24 Z"/>
+</path></svg>
+
+4. 🌀 ANIMATED SVG WAVE DIVIDERS between sections:
+<svg viewBox="0 0 1200 120" preserveAspectRatio="none" class="w-full h-24">
+  <path fill="#7c3aed" fill-opacity="0.3">
+    <animate attributeName="d" dur="6s" repeatCount="indefinite"
+      values="M0,60 C200,100 400,20 600,60 C800,100 1000,20 1200,60 L1200,120 L0,120Z;
+              M0,60 C200,20 400,100 600,60 C800,20 1000,100 1200,60 L1200,120 L0,120Z;
+              M0,60 C200,100 400,20 600,60 C800,100 1000,20 1200,60 L1200,120 L0,120Z"/>
+  </path>
+</svg>
+
+5. ⭕ ORBITING PARTICLES (SVG circles with animateTransform):
+<svg viewBox="0 0 200 200" class="absolute w-40 h-40">
+  <circle cx="100" cy="100" r="60" fill="none" stroke="#7c3aed" stroke-width="0.5" opacity="0.3"/>
+  <circle cx="100" cy="40" r="4" fill="#ec4899">
+    <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="6s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="100" cy="30" r="2" fill="#06b6d4">
+    <animateTransform attributeName="transform" type="rotate" from="360 100 100" to="0 100 100" dur="8s" repeatCount="indefinite"/>
+  </circle>
+</svg>
+
+6. 📊 ANIMATED SVG CHARTS (for stats):
+SVG bar chart with height animation, SVG donut with stroke-dasharray animation.
+Each bar/segment animates in sequence (use begin="0.2s", begin="0.4s" etc.)
+
+7. 🌌 SVG NOISE TEXTURE BACKGROUND:
+<svg class="fixed inset-0 w-full h-full pointer-events-none z-50 opacity-[0.03]">
+  <filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3"/>
+    <feColorMatrix type="saturate" values="0"/>
+  </filter>
+  <rect width="100%" height="100%" filter="url(#noise)"/>
+</svg>
+
+8. ✨ SVG GLOW CONNECTIONS (animated lines between cards):
+Lines between feature cards with stroke-dasharray animation drawing the path on scroll
+
+═══════════════════════════════════════════════════════════════════════════════
+🎬 GSAP SCROLL ANIMATIONS (MANDATORY — ON TOP OF SVG ANIMATIONS!):
+═══════════════════════════════════════════════════════════════════════════════
+- Every section: gsap.from() with ScrollTrigger (different animation per section!)
+- Cards: stagger from bottom with scale + opacity
+- Stats: count-up animation
+- SVG elements: animate stroke-dashoffset and opacity on scroll
+- Parallax: SVG decorations move at different speeds during scroll
+
+═══════════════════════════════════════════════════════════════════════════════
+🏗️ SECTION STRUCTURE:
+═══════════════════════════════════════════════════════════════════════════════
+- Hero: Full-viewport with morphing SVG blobs + text stroke animation + floating SVG particles
+- Features: Bento grid with morphing SVG icons in each card + glow connections between cards
+- Stats: SVG animated charts (bars/donuts) + count-up numbers
+- Testimonials: Horizontal carousel with SVG quote marks that morph
+- CTA: Animated wave divider + pulsing SVG background
+- Footer: SVG constellation pattern with twinkling stars
+
+⚠️ MANDATORY:
+- Minimum 10 inline SVGs with <animate> or <animateTransform> elements!
+- Every section must have at least 1 animated SVG element
+- GSAP ScrollTrigger animations on top of the native SVG animations
+- Preserve ALL content from video — this transforms appearance only
+- The page should feel like a LIVING, BREATHING artwork!`, category: "creative" },
 ];
 
 export default function StyleInjector({ value, onChange, disabled, referenceImage, onReferenceImageChange, importedStyles, onImportClick, onDeleteDS }: StyleInjectorProps) {

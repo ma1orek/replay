@@ -124,7 +124,36 @@ function fixBrokenImageUrls(code: string, context?: string): string {
   code = code.replace(/https?:\/\/placeimg\.com[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
   // Replace Pollinations (has rate limits) with Picsum
   code = code.replace(/https?:\/\/image\.pollinations\.ai[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
-  
+  // Replace any other stock/AI image services that will break
+  code = code.replace(/https?:\/\/[^"'\s)]*shutterstock[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
+  code = code.replace(/https?:\/\/[^"'\s)]*istockphoto[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
+  code = code.replace(/https?:\/\/[^"'\s)]*stock\.adobe[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
+  code = code.replace(/https?:\/\/[^"'\s)]*freepik[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
+  code = code.replace(/https?:\/\/[^"'\s)]*rawpixel[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
+  code = code.replace(/https?:\/\/[^"'\s)]*depositphotos[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
+
+  // CATCH-ALL: Replace img src URLs that are NOT from allowed sources
+  // Allowed: picsum.photos, pravatar.cc, dicebear.com, cdn.simpleicons.org, cloudinary, supabase, data:
+  code = code.replace(/<img([^>]*?)src="(https?:\/\/[^"]+)"([^>]*?)>/gi, (match, before, url, after) => {
+    const lowerUrl = url.toLowerCase();
+    // Allow known-good sources
+    if (lowerUrl.includes('picsum.photos') ||
+        lowerUrl.includes('pravatar.cc') ||
+        lowerUrl.includes('dicebear.com') ||
+        lowerUrl.includes('simpleicons.org') ||
+        lowerUrl.includes('cloudinary.com') ||
+        lowerUrl.includes('supabase.co') ||
+        lowerUrl.includes('cdn.jsdelivr.net') ||
+        lowerUrl.includes('unpkg.com') ||
+        lowerUrl.includes('cdnjs.cloudflare.com') ||
+        lowerUrl.includes('googleapis.com/storage')) {
+      return match; // Keep allowed URLs
+    }
+    // Replace unknown/potentially broken URLs with Picsum
+    replacedCount++;
+    return `<img${before}src="${getPicsumUrl()}"${after}>`;
+  });
+
   console.log(`[fixBrokenImageUrls] Replaced ${replacedCount} image URLs with Picsum (category: ${primaryCategory})`);
   return code;
 }
@@ -587,15 +616,31 @@ If the video shows 10 sections → your output MUST have 10 sections. NEVER trun
 Your output should be 30,000-50,000+ characters for a complete page. Under 20,000 = TRUNCATED = FAILURE!
 Then BUILD A COMPLETELY NEW, BREATHTAKING DESIGN.
 
-🎨 REIMAGINE MODE — UNLEASH YOUR FULL CREATIVE POWER!
-The video is your CONTENT SOURCE only. You must INVENT a brand-new, UNIQUE layout and design.
-You are Gemini 3.1 Pro — the best at creating stunning UI. Show what you can do!
+🎨 REIMAGINE MODE — AWWWARDS-LEVEL QUALITY! TOP 1% WEB DESIGN!
+The video is your CONTENT SOURCE only. You must INVENT a brand-new, STUNNING layout and design.
+You are Gemini 3.1 Pro — create a page that would win an AWWWARDS Site of the Day award!
+
+🚨🚨🚨 ANIMATION IS NOT OPTIONAL — IT IS THE #1 PRIORITY! 🚨🚨🚨
+A page WITHOUT animations is a FAILURE. Every section, every card, every headline MUST move!
+The GSAP script block at the end of </body> is MANDATORY — without it the page is broken!
+
+REQUIRED ANIMATION CHECKLIST (you MUST implement ALL of these):
+✅ Hero section: split-text character animation OR dramatic scale-up entrance
+✅ Every other section: gsap.from() with ScrollTrigger (fade, slide, scale, rotate — DIFFERENT per section!)
+✅ Cards/grids: stagger animation (cards appear one after another with 0.1-0.15s delay)
+✅ Stats/numbers: count-up animation from 0 to final value
+✅ Hover effects: ALL cards lift on hover (translateY(-8px) + shadow increase)
+✅ Background: animated gradient, aurora, particles, or floating orbs (NOT plain solid!)
+✅ Parallax: at least 1 parallax element (gsap scrub)
+✅ Custom cursor OR gradient text OR split text for visual flair
+
+MANDATORY: Your HTML MUST end with a <script> block containing gsap.registerPlugin(ScrollTrigger) and animations!
+If your output has NO gsap.from() or gsap.fromTo() calls, IT IS BROKEN AND WILL BE REJECTED!
+
 - Create YOUR OWN unique animations with GSAP, CSS, and vanilla JS
-- Animate EVERY component entrance: fade, slide, scale, rotate, blur — mix and match
 - Each section should have a DIFFERENT animation approach — variety is key!
-- DO NOT use the same animation pattern on every section
-- DO NOT use React Bits imports (this is HTML mode — create your own custom effects!)
 - Be BOLD: asymmetric layouts, creative typography, unexpected interactions
+- Animated backgrounds: aurora blobs, gradient mesh, floating particles — NOT plain colors!
 
 ═══════════════════════════════════════════════════
 CONTENT RULES (MANDATORY — violating = failure):
@@ -1030,30 +1075,27 @@ The sidebar is hidden on mobile (hidden lg:flex), shown as slide-out drawer on d
 - ❌ NEVER show a 250px sidebar on mobile
 
 ═══════════════════════════════════════════════════
-ANIMATION MINIMUM REQUIREMENTS:
+🚨🚨🚨 FINAL ANIMATION ENFORCEMENT — READ THIS LAST! 🚨🚨🚨
 ═══════════════════════════════════════════════════
-You MUST animate generously — every section entrance, every card, every heading should have motion:
-- EVERY section: animate on scroll (fade, slide, scale, blur-in, rotate — MIX different effects per section!)
-- Cards/grids: stagger animation (cards appear one after another)
-- Stats/metrics: count-up animation with data-to attribute (NEVER show static "0"!)
-- Hero: dramatic entrance (split chars, typewriter, scale-up — pick ONE, never combine!)
-- Hover effects on ALL interactive elements (cards, buttons, links)
-- Testimonials: horizontal carousel (scroll-snap), NEVER vertical stack
-- Logo bars: marquee scroll if present
+BEFORE you write the closing </body> tag, you MUST add a <script> block with:
 
-🚨 TEXT ANIMATION SAFETY:
-- Each element gets AT MOST ONE text effect: split-text OR gradient-text OR glitch-text
-- NEVER combine split-text + glitch-text on same element (creates garbled doubled text!)
-- NEVER combine split-text + gradient-text on same element
+1. gsap.registerPlugin(ScrollTrigger);
+2. At LEAST 5 different gsap.from() calls targeting different sections
+3. A count-up animation for any stat numbers
+4. Stagger animations for card grids
+5. At least ONE background effect (aurora, particles, gradient mesh, or floating blobs)
 
-🎨 CREATIVE DIVERSITY — BE UNIQUE:
-You are Gemini 3.1 Pro. Create YOUR OWN animations — be diverse and surprising!
-- Background: gradient mesh, aurora, particles, animated SVG, clean solid, geometric — NOT always the same!
-- Color palette: monochromes, earth tones, neon accents, pastels, luxury dark — surprise the user each time
-- Layout: asymmetric, editorial, magazine, bento grid, split-hero — NOT always centered sections
-- Typography: mix serif + sans-serif, use display fonts, vary weights dramatically
-- Animations: each section should feel DIFFERENT — fade-up here, slide-left there, scale-in elsewhere
-- DO NOT repeat the same animation pattern on every section — variety is the hallmark of great UI!
+YOUR HTML OUTPUT MUST CONTAIN ALL OF THESE (search your output before submitting!):
+✅ gsap.registerPlugin(ScrollTrigger)  — if missing, animations are BROKEN
+✅ gsap.from( — at minimum 5 calls for different sections
+✅ ScrollTrigger: { — attached to each gsap.from()
+✅ stagger: — for at least one card/grid animation
+✅ Hover effects on interactive elements (CSS transition + transform)
+✅ Animated background (CSS @keyframes or canvas particles or gradient animation)
+
+🚨 A PAGE WITH NO ANIMATIONS IS A FAILURE! IT WILL BE REJECTED!
+🚨 TEXT ANIMATION SAFETY: Each element gets AT MOST ONE text effect
+🚨 DO NOT repeat the same animation on every section — VARY them!
 
 If multiple pages shown: use Alpine.js x-data/x-show for navigation.
 Wrap in \`\`\`html blocks.`;
