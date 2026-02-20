@@ -1489,13 +1489,19 @@ function fixMalformedDoubleTags(code: string): string {
 function fixBrokenImageUrls(code: string): string {
   if (!code) return code;
 
-  const validPicsumIds = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60];
+  const imageSeeds = [
+    'project-alpha', 'product-hero', 'team-photo', 'office-space', 'city-skyline',
+    'nature-forest', 'architecture-modern', 'abstract-tech', 'person-portrait', 'landscape-mountain',
+    'urban-street', 'interior-design', 'workspace-minimal', 'startup-life', 'tech-device',
+    'food-restaurant', 'travel-destination', 'fitness-health', 'fashion-style', 'art-creative',
+    'ocean-view', 'building-glass', 'garden-green', 'night-city', 'desert-sand',
+  ];
   let imageCounter = 0;
 
   const getNextPicsumUrl = (width = 800, height = 600) => {
-    const id = validPicsumIds[imageCounter % validPicsumIds.length];
+    const seed = imageSeeds[imageCounter % imageSeeds.length];
     imageCounter++;
-    return `https://picsum.photos/id/${id}/${width}/${height}`;
+    return `https://picsum.photos/seed/${seed}/${width}/${height}`;
   };
   
   code = code.replace(/https?:\/\/[^"'\s)]*unsplash[^"'\s)]*/gi, () => getNextPicsumUrl());

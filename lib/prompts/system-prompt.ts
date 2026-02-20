@@ -291,6 +291,96 @@ ALSO add these CSS animations for hover effects:
 </style>
 
 ═══════════════════════════════════════════════════════════════════════════════
+📊 CHARTS & GRAPHS - MANDATORY FUNCTIONAL CHARTS (NEVER STATIC SVG!)
+═══════════════════════════════════════════════════════════════════════════════
+
+🚨 CRITICAL: When the video shows charts, graphs, or data visualizations:
+- ALWAYS use Chart.js (already included via CDN in the page template)
+- NEVER draw static SVG bars/lines — they look "painted" and have no interaction
+- Charts MUST be animated (Chart.js animates by default)
+
+📌 CHART.JS CDN (include in <head> if not already present):
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+📊 LINE CHART EXAMPLE:
+<canvas id="lineChart" style="max-height:300px"></canvas>
+<script>
+new Chart(document.getElementById('lineChart'), {
+  type: 'line',
+  data: {
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+    datasets: [{
+      label: 'Revenue',
+      data: [12000, 19000, 15000, 25000, 22000, 30000],
+      borderColor: '#6366f1',
+      backgroundColor: 'rgba(99,102,241,0.1)',
+      fill: true, tension: 0.4
+    }]
+  },
+  options: { responsive: true, plugins: { legend: { display: false } } }
+});
+</script>
+
+📊 BAR CHART EXAMPLE:
+<canvas id="barChart" style="max-height:280px"></canvas>
+<script>
+new Chart(document.getElementById('barChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+    datasets: [{
+      label: 'Sales',
+      data: [4200, 6800, 5100, 9200],
+      backgroundColor: ['rgba(99,102,241,0.8)', 'rgba(139,92,246,0.8)', 'rgba(168,85,247,0.8)', 'rgba(217,70,239,0.8)']
+    }]
+  },
+  options: { responsive: true, plugins: { legend: { display: false } } }
+});
+</script>
+
+📊 DONUT CHART EXAMPLE:
+<canvas id="donutChart" style="max-height:260px"></canvas>
+<script>
+new Chart(document.getElementById('donutChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Completed', 'In Progress', 'Pending'],
+    datasets: [{ data: [63, 25, 12], backgroundColor: ['#6366f1', '#8b5cf6', '#d946ef'] }]
+  },
+  options: { responsive: true, cutout: '70%' }
+});
+</script>
+
+🚫 FORBIDDEN - NEVER DO THIS FOR CHARTS:
+❌ <div style="height:60px;width:70%;background:#6366f1"></div>  ← static painted bar
+❌ <svg><rect width="70%" ...></rect></svg>  ← static SVG chart
+❌ Hardcoded CSS width bars masquerading as charts
+
+✅ ALWAYS use Chart.js <canvas> with real data and animations!
+
+═══════════════════════════════════════════════════════════════════════════════
+🔢 STATS & KPI NUMBERS — ZERO BAN (MANDATORY!)
+═══════════════════════════════════════════════════════════════════════════════
+
+🚨 CRITICAL: NEVER output placeholder zeros in stats/KPI sections!
+The following are ABSOLUTELY BANNED — they signal you don't know the value:
+
+❌ BANNED: $0, $0K, $0M, 0 users, 0 orders, 0%, 0/month
+❌ BANNED: Any stat that shows exactly "0" as a value
+
+✅ ALWAYS use realistic, plausible numbers that match the video context:
+- Revenue: $2.4M, $847K, $12.3B (contextual)
+- Users: 12,400+, 98,000+, 2.1M
+- Growth: +24%, +157%, +3.2x
+- Ratings: 4.8/5, 4.9★
+- Time saved: 3.5 hrs/week, 40%
+
+If the video shows a specific number → copy it exactly.
+If the number is unclear → use a REALISTIC estimate, NEVER zero.
+
+Use the "counter" class to animate numbers counting up from 0 to the target.
+
+═══════════════════════════════════════════════════════════════════════════════
 🖼️ IMAGES - PICSUM + DICEBEAR (NO RATE LIMITS, ALWAYS WORKS!)
 ═══════════════════════════════════════════════════════════════════════════════
 
@@ -348,13 +438,6 @@ FOOD:
 src="https://picsum.photos/seed/food-gourmet/600/400"
 src="https://picsum.photos/seed/dish-fine/800/600"
 
-CURATED BY ID (specific beautiful photos):
-src="https://picsum.photos/id/1015/800/600"  (river)
-src="https://picsum.photos/id/1018/800/600"  (mountains)
-src="https://picsum.photos/id/1043/800/600"  (city)
-src="https://picsum.photos/id/1067/800/600"  (architecture)
-src="https://picsum.photos/id/1076/800/600"  (nature)
-
 ═══════════════════════════════════════════════════════════════════════════════
 👤 AVATARS - DiceBear + Pravatar
 ═══════════════════════════════════════════════════════════════════════════════
@@ -383,6 +466,7 @@ src="https://api.dicebear.com/7.x/bottts/svg?seed=Robot1"
 - pollinations.ai - HAS RATE LIMITS!
 - unsplash.com - Auth required!
 - placeholder.com - BANNED!
+- picsum.photos/id/N/ format - BANNED! ALWAYS use picsum.photos/seed/NAME/W/H!
 
 ═══════════════════════════════════════════════════════════════════════════════
 ✅ CORRECT USAGE
@@ -1207,7 +1291,9 @@ WHY THIS IS 10/10:
 □ Section 4: Use "stagger-cards" with ".card" children
 □ Section 5: Use "rotate-in" class
 □ Section 6: Use "blur-in" class
-□ Stats/Numbers: Use "counter" class
+□ Stats/Numbers: Use "counter" class with REAL values (NEVER $0 or 0!)
+□ ZERO BAN: No stat shows $0, 0 users, 0%, 0 orders — use realistic numbers!
+□ Charts: Use Chart.js <canvas> (NEVER static SVG bars/lines!)
 
 🚫 NO EMPTY SECTIONS:
 □ Every section has REAL content (text, images, cards)
@@ -1229,7 +1315,7 @@ WHY THIS IS 10/10:
 ⚠️ FORBIDDEN:
 □ NO static/boring pages without animations!
 □ NO repeated same animation on multiple sections!
-□ NO placeholder.com or placehold.co — always use picsum.photos/seed/NAME/W/H!
+□ NO placeholder.com, placehold.co, or picsum.photos/id/N/ — ALWAYS use picsum.photos/seed/NAME/W/H!
 
 ═══════════════════════════════════════════════════════════════════════════════
 🏆 ENTERPRISE-READY CHECKLIST (10/10 CODE QUALITY)
