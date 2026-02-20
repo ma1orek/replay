@@ -549,8 +549,15 @@ ${databaseContext}`;
 
 WATCH THE VIDEO TO EXTRACT ALL CONTENT AND DATA. Then BUILD A COMPLETELY NEW, BREATHTAKING DESIGN.
 
-🎨 REIMAGINE MODE — BE MORE CREATIVE, KEEP ALL CONTENT
-The video is your CONTENT SOURCE only. You must INVENT a brand-new layout.
+🎨 REIMAGINE MODE — UNLEASH YOUR FULL CREATIVE POWER!
+The video is your CONTENT SOURCE only. You must INVENT a brand-new, UNIQUE layout and design.
+You are Gemini 3.1 Pro — the best at creating stunning UI. Show what you can do!
+- Create YOUR OWN unique animations with GSAP, CSS, and vanilla JS
+- Animate EVERY component entrance: fade, slide, scale, rotate, blur — mix and match
+- Each section should have a DIFFERENT animation approach — variety is key!
+- DO NOT use the same animation pattern on every section
+- DO NOT use React Bits imports (this is HTML mode — create your own custom effects!)
+- Be BOLD: asymmetric layouts, creative typography, unexpected interactions
 
 ═══════════════════════════════════════════════════
 CONTENT RULES (MANDATORY — violating = failure):
@@ -607,14 +614,18 @@ Load these CDNs in <head>:
 Then at the end of <body>, implement ALL of these animation patterns:
 
 ───── 1. SPLIT TEXT ENTRANCE (for hero headline) ─────
+🚨 NEVER combine split-text with glitch or gradient-text on the SAME element — pick ONE!
 Split headline into WORDS first (to preserve word-wrap), then chars within each word:
 document.querySelectorAll('.split-text').forEach(el => {
+  // Remove conflicting pseudo-element attributes
+  el.removeAttribute('data-text');
+  el.classList.remove('glitch','gradient-text');
   const words = el.textContent.trim().split(/\s+/);
   el.innerHTML = words.map(word =>
     '<span style="display:inline-block;white-space:nowrap;margin-right:0.3em">' +
     word.split('').map(ch => '<span style="display:inline-block;will-change:transform,opacity;">' + ch + '</span>').join('') +
     '</span>'
-  ).join(' ');
+  ).join('');
   el.style.overflowWrap = 'break-word';
   gsap.fromTo(el.querySelectorAll('span > span'),
     { opacity: 0, y: 30 },
@@ -623,6 +634,9 @@ document.querySelectorAll('.split-text').forEach(el => {
     });
 });
 IMPORTANT: The headline element MUST have style="font-size:clamp(2.5rem,5vw,4.5rem)" — NEVER a fixed huge size!
+🚨 TEXT ANIMATION EXCLUSIVITY: Each element gets AT MOST ONE text effect:
+- split-text OR gradient-text OR glitch-text — NEVER combine them on the same element!
+- Combining them creates garbled/doubled text. Pick ONE per element.
 
 ───── 2. SCROLL REVEAL TEXT (for paragraphs/descriptions) ─────
 Words unblur and fade in scrubbed to scroll:
@@ -660,11 +674,17 @@ document.querySelectorAll('.stagger-cards').forEach(container => {
 });
 
 ───── 5. COUNT-UP NUMBERS (for stats/metrics) ─────
+🚨 IMPORTANT: The HTML must show the REAL final value as text content (not "0"):
+  <span class="count-up" data-to="5000" data-suffix="+">5,000+</span>
+The JS will animate FROM 0 TO the value. If JS fails, the real number is still visible!
 Animated counter using IntersectionObserver:
 document.querySelectorAll('.count-up').forEach(el => {
   const to = parseFloat(el.dataset.to);
+  if (!to || to === 0) return; // Skip zeros — NEVER animate to 0!
   const prefix = el.dataset.prefix || '';
   const suffix = el.dataset.suffix || '';
+  // Save original text as fallback, then start from 0
+  const fallback = el.textContent;
   el.textContent = prefix + '0' + suffix;
   const obs = new IntersectionObserver(entries => {
     entries.forEach(entry => { if (entry.isIntersecting) { obs.unobserve(el);
@@ -678,6 +698,8 @@ document.querySelectorAll('.count-up').forEach(el => {
     }});
   }, { threshold: 0.3 });
   obs.observe(el);
+  // Safety: if not visible after 3s, show final value
+  setTimeout(() => { if (el.textContent === prefix + '0' + suffix) el.textContent = prefix + Math.round(to).toLocaleString() + suffix; }, 3000);
 });
 
 ───── 6. GRADIENT TEXT (for key headlines) ─────
@@ -690,7 +712,7 @@ CSS class for animated gradient text:
 }
 @keyframes gradient-shift { 0%{background-position:0% 50%} 100%{background-position:100% 50%} }
 
-───── 7. GLITCH TEXT (for dramatic headlines) ─────
+───── 7. GLITCH TEXT (for dramatic headlines — NEVER combine with split-text!) ─────
 .glitch { position:relative; font-weight:900; }
 .glitch::after,.glitch::before {
   content:attr(data-text); position:absolute; top:0; color:inherit;
@@ -908,30 +930,30 @@ The sidebar is hidden on mobile (hidden lg:flex), shown as slide-out drawer on d
 - ❌ NEVER show a 250px sidebar on mobile
 
 ═══════════════════════════════════════════════════
-ASSEMBLY RULES — MINIMUM REQUIREMENTS:
+ANIMATION MINIMUM REQUIREMENTS:
 ═══════════════════════════════════════════════════
-You MUST use at least:
-- split-text on the hero headline
-- scroll-reveal-text on at least 1 description paragraph
-- data-animate on every major content block
-- stagger-cards on at least 1 card grid
-- count-up on every stat/metric number
-- gradient-text on at least 1 secondary headline
-- card-spotlight on at least 1 card set
-- marquee on any logo/partner bar
-- 1-2 UNIQUE background effects from: aurora, particles, gradient orbs, mesh gradient, animated SVG, CSS pattern, or clean solid — DO NOT always use grain!
-- glass-card on at least 2 cards
-- hover-lift on all interactive cards
-- parallax on at least 2 decorative elements
-- At least 1 glitch-text OR star-border element
-- Custom scrollbar styling on <html>
-- snap-carousel on testimonials section (HORIZONTAL, never vertical stack)
+You MUST animate generously — every section entrance, every card, every heading should have motion:
+- EVERY section: animate on scroll (fade, slide, scale, blur-in, rotate — MIX different effects per section!)
+- Cards/grids: stagger animation (cards appear one after another)
+- Stats/metrics: count-up animation with data-to attribute (NEVER show static "0"!)
+- Hero: dramatic entrance (split chars, typewriter, scale-up — pick ONE, never combine!)
+- Hover effects on ALL interactive elements (cards, buttons, links)
+- Testimonials: horizontal carousel (scroll-snap), NEVER vertical stack
+- Logo bars: marquee scroll if present
 
-🎨 CREATIVE DIVERSITY: Every reimagine should feel UNIQUE. Vary your:
-- Background approach: gradient mesh, aurora, particles, clean, geometric, animated SVG — NOT always grain
-- Color palette: bold monochromes, warm earth tones, neon accents, pastels, dark luxury — surprise the user
-- Layout structure: asymmetric, editorial, magazine, dashboard-style, bento grid — NOT always centered sections
-- Typography pairing: mix serif + sans-serif, use display fonts, vary weights dramatically
+🚨 TEXT ANIMATION SAFETY:
+- Each element gets AT MOST ONE text effect: split-text OR gradient-text OR glitch-text
+- NEVER combine split-text + glitch-text on same element (creates garbled doubled text!)
+- NEVER combine split-text + gradient-text on same element
+
+🎨 CREATIVE DIVERSITY — BE UNIQUE:
+You are Gemini 3.1 Pro. Create YOUR OWN animations — be diverse and surprising!
+- Background: gradient mesh, aurora, particles, animated SVG, clean solid, geometric — NOT always the same!
+- Color palette: monochromes, earth tones, neon accents, pastels, luxury dark — surprise the user each time
+- Layout: asymmetric, editorial, magazine, bento grid, split-hero — NOT always centered sections
+- Typography: mix serif + sans-serif, use display fonts, vary weights dramatically
+- Animations: each section should feel DIFFERENT — fade-up here, slide-left there, scale-in elsewhere
+- DO NOT repeat the same animation pattern on every section — variety is the hallmark of great UI!
 
 If multiple pages shown: use Alpine.js x-data/x-show for navigation.
 Wrap in \`\`\`html blocks.`;
@@ -1032,6 +1054,16 @@ Was the main background in the video LIGHT (white/cream/gray) or DARK (black/dar
 Match the video EXACTLY. Do NOT default to dark if the video was light!
 Generate the HTML now matching the video's actual theme.` });
           }
+
+          // ZERO BAN post-video reminder (ALL modes)
+          contentParts.push({ text: `🚨🚨🚨 ZERO BAN — FINAL CHECK BEFORE GENERATING:
+The video may show animated counters that START at 0 and count UP. Those 0s are NOT the real values!
+- "0 funded startups" → WRONG! Use "5,000+" or the value from the LAST video frame
+- "$0B combined valuation" → WRONG! Use "$800B+" or similar
+- "0 cases", "$0.00", "0 users" → ALL WRONG! Use realistic non-zero values
+- If you see 0 in a stat/metric → it's an animation start frame → use the FINAL value!
+- SCAN THE LAST 5 SECONDS of the video for the real final counter values!
+DO NOT output ANY stat/metric/KPI with value 0. Every number must be realistic and non-zero.` });
 
           // Retry loop for 503/429 high demand errors
           const MAX_RETRIES = 3;

@@ -474,16 +474,19 @@ If you need company logos (Twitter, GitHub, etc.), use Simple Icons CDN:
 ✨ REACT BITS - PREMIUM ANIMATED COMPONENTS
 ═══════════════════════════════════════════════════════════════════════════════
 
-🚨 CRITICAL RULE: ALWAYS CHECK REACT BITS FIRST!
+💡 REACT BITS — OPTIONAL PREMIUM COMPONENTS (React/JSX mode only)
 
-Before creating ANY animated component, check if it exists in React Bits:
-- DecryptedText → import { DecryptedText } from "react-bits/text/decrypted-text" ✅
-- SpotlightCard → import { SpotlightCard } from "react-bits/components/spotlight-card" ✅
-- CountUp → import { CountUp } from "react-bits/text/count-up" ✅
-- GradientText → import { GradientText } from "react-bits/text/gradient-text" ✅
+React Bits is available for React/JSX output. Use it when it adds value, but you are NOT required to use it.
+You are FREE to create your own custom animations with GSAP, CSS, vanilla JS — especially for Reimagine/HTML mode.
+Gemini 3.1 Pro excels at creating beautiful, diverse UI animations — use your full creative power!
 
-❌ NEVER recreate components that exist in React Bits!
-✅ ALWAYS import from react-bits package if component exists!
+When outputting React JSX (transmute path), you MAY import from react-bits if helpful:
+- DecryptedText → import { DecryptedText } from "react-bits/text/decrypted-text"
+- SpotlightCard → import { SpotlightCard } from "react-bits/components/spotlight-card"
+- CountUp → import { CountUp } from "react-bits/text/count-up"
+- GradientText → import { GradientText } from "react-bits/text/gradient-text"
+
+When outputting HTML (Reimagine/streaming path), DO NOT use React Bits imports — use GSAP/CSS instead.
 
 **FULL COMPONENT LIST (130+ available):**
 
