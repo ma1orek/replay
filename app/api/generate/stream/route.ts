@@ -462,14 +462,13 @@ export async function POST(request: NextRequest) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     
-    // SINGLE MODEL: Gemini 3.1 Pro with VISION (launched Feb 19, 2026)
+    // SINGLE MODEL: Gemini 3.1 Pro with VISION
     // Pro SEES the video directly and generates code - NO intermediate JSON!
-    // NOTE: 3.1 Pro has 65K output token limit (NOT 100K like older models)
     const model = genAI.getGenerativeModel({
       model: "gemini-3.1-pro-preview",
       generationConfig: {
-        temperature: 0.85, // High for creative Awwwards-level designs
-        maxOutputTokens: 65000, // 3.1 Pro output limit = 65K tokens
+        temperature: 0.85,
+        maxOutputTokens: 65000,
         // @ts-ignore - thinking for better code quality (16K fast)
         thinkingConfig: { thinkingBudget: 16384 },
       },
@@ -1261,11 +1260,16 @@ DO NOT output ANY stat/metric/KPI with value 0. Every number must be realistic a
           let streamResult;
           let lastStreamError;
 
+          // Dynamic timeout: use remaining time from 300s Vercel budget (with 15s safety margin)
+          const elapsedMs = Date.now() - startTime;
+          const remainingMs = Math.max(60000, (300 - 15) * 1000 - elapsedMs); // min 60s, max ~285s minus elapsed
+          console.log(`[stream] Generation timeout: ${Math.round(remainingMs / 1000)}s (elapsed: ${Math.round(elapsedMs / 1000)}s)`);
+
           for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
             try {
               streamResult = await withTimeout(
                 model.generateContentStream(contentParts),
-                360000, // 6 minute timeout for complex generation with high thinking budget
+                remainingMs, // Dynamic: fits within Vercel 300s maxDuration
                 "Direct Vision Code Generation"
               );
               break; // success

@@ -1668,8 +1668,8 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
     // ════════════════════════════════════════════════════════════════
     console.log("[transmute] Phase 1: Starting unified scan with Pro model...");
 
-    // 300s timeout for Phase 1 - large videos (20MB) + complex styles (SVG Madness) need more time
-    const phase1Timeout = 300000;
+    // 200s timeout for Phase 1 — must fit within Vercel 300s function limit
+    const phase1Timeout = 200000;
     console.log("[transmute] Phase 1 timeout:", phase1Timeout / 1000, "s");
     
     let scanResult;
@@ -2037,7 +2037,7 @@ Generate the complete HTML file now:`;
     
     // Calculate remaining time for Phase 2 (leave buffer for Vercel 300s limit)
     const elapsedMs = Date.now() - startTime;
-    const phase2Timeout = Math.max(150000, 550000 - elapsedMs); // At least 150s, up to remaining time within Vercel Pro 600s limit
+    const phase2Timeout = Math.max(150000, 280000 - elapsedMs); // At least 150s, up to remaining time
     console.log("[transmute] Phase 2 timeout:", Math.round(phase2Timeout / 1000), "s");
     
     let assemblyResult;
