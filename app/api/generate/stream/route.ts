@@ -369,21 +369,41 @@ function extractCodeFromResponse(response: string): string | null {
 }
 
 // Post-process: fix zero values in stat/metric elements
+// AGGRESSIVE zero detection — catches $0K, $0, >0<, 0%, data-to="0" in ALL contexts
 function fixZeroStats(code: string): string {
   if (!code) return code;
-  // Replace standalone "0" in stat-like contexts with realistic values
-  // Pattern: >0< or >0 < in headings, spans near stat keywords
   let fixed = code;
-  const zeroPatterns = [
-    // "0" as standalone stat number in large text
-    { pattern: /(class="[^"]*text-[3-9]xl[^"]*"[^>]*>)\s*0\s*(<)/g, replacement: '$129$2' },
-    { pattern: /(class="[^"]*text-[3-9]xl[^"]*"[^>]*>)\s*\$0\s*(<)/g, replacement: '$1$14,250$2' },
-    // data-to="0" in count-up elements
-    { pattern: /data-to="0"/g, replacement: 'data-to="847"' },
-  ];
-  for (const { pattern, replacement } of zeroPatterns) {
-    fixed = fixed.replace(pattern, replacement);
-  }
+
+  // Pool of realistic replacement values for variety
+  let valueIdx = 0;
+  const statValues = ['2,847', '1,293', '8,451', '3,672', '956', '4,128', '12,394', '7,561'];
+  const dollarValues = ['$14,250', '$8,730', '$42,500', '$3,890', '$127,400', '$23,100', '$6,450', '$91,200'];
+  const percentValues = ['84%', '67%', '92%', '43%', '71%', '58%', '95%', '36%'];
+  const kValues = ['$14.2K', '$8.7K', '$42.5K', '$3.9K', '$127K', '$23.1K', '$6.5K', '$91.2K'];
+  const getNext = (arr: string[]) => arr[(valueIdx++) % arr.length];
+
+  // 1. data-to="0" → realistic count-up targets
+  fixed = fixed.replace(/data-to="0"/g, () => `data-to="${getNext(statValues).replace(/,/g, '')}"`);
+
+  // 2. Dollar zeros: $0K, $0M, $0B, $0.00, $0
+  fixed = fixed.replace(/(>\s*)\$0\.00(\s*<)/g, (_m, pre, post) => `${pre}${getNext(dollarValues)}${post}`);
+  fixed = fixed.replace(/(>\s*)\$0[KkMmBb](\s*<)/g, (_m, pre, post) => `${pre}${getNext(kValues)}${post}`);
+  fixed = fixed.replace(/(>\s*)\$0(\s*<)/g, (_m, pre, post) => `${pre}${getNext(dollarValues)}${post}`);
+
+  // 3. Percentage zeros: >0%< or >0 %<
+  fixed = fixed.replace(/(>\s*)0\s*%(\s*<)/g, (_m, pre, post) => `${pre}${getNext(percentValues)}${post}`);
+
+  // 4. Standalone zero in large text (text-3xl through text-9xl)
+  fixed = fixed.replace(/(class="[^"]*text-[3-9]xl[^"]*"[^>]*>)\s*0\s*(<)/g, (_m, pre, post) => `${pre}${getNext(statValues)}${post}`);
+
+  // 5. Standalone zero in ANY element: >0< (but NOT >0.5< or >10< or CSS/attribute contexts)
+  // Only match when 0 is the ENTIRE text content between tags
+  fixed = fixed.replace(/(>)\s*0\s*(<\/(?:span|p|h[1-6]|div|td|th|strong|b|em|li|dt|dd)>)/gi, (_m, pre, post) => `${pre}${getNext(statValues)}${post}`);
+
+  // 6. Zero in stat-like containers near keywords (orders, customers, sales, revenue, users, visits)
+  // Look for patterns like: >Orders</span><span...>0</span>  or label then value
+  fixed = fixed.replace(/((?:order|customer|user|visit|sale|revenue|refund|transaction|conversion|session|subscriber|download|view|click|signup|booking|ticket|member|follower|request|payment|invoice|lead|deal|client|project|task|message|notification|email|campaign|impression|engagement|bounce|retention|churn|growth|profit|loss|expense|budget|forecast)[^<]{0,80}>)\s*0\s*(<)/gi, (_m, pre, post) => `${pre}${getNext(statValues)}${post}`);
+
   return fixed;
 }
 

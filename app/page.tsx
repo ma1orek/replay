@@ -4731,6 +4731,66 @@ document.addEventListener('DOMContentLoaded', function() {
       processedCode = processedCode.replace('</body>', fallbackAnimationScript + '\n</body>');
     }
 
+    // CHART.JS SAFETY NET — detect empty canvases and initialize with fallback data
+    // Fixes: AI generates <canvas> but Chart.js script errors or CDN not loaded yet
+    if (processedCode.includes('<canvas') && processedCode.includes('</body>')) {
+      const chartSafetyScript = `
+<script>
+// Chart.js Safety Net — initialize empty canvases after CDN loads
+function initEmptyCharts() {
+  if (typeof Chart === 'undefined') return;
+  var canvases = document.querySelectorAll('canvas');
+  var colors = ['#6366f1','#8b5cf6','#ec4899','#06b6d4','#10b981','#f59e0b','#ef4444','#3b82f6'];
+  var bgColors = ['rgba(99,102,241,0.2)','rgba(139,92,246,0.2)','rgba(236,72,153,0.2)','rgba(6,182,212,0.2)','rgba(16,185,129,0.2)','rgba(245,158,11,0.2)','rgba(239,68,68,0.2)','rgba(59,130,246,0.2)'];
+  canvases.forEach(function(canvas, idx) {
+    // Skip if already has a chart instance
+    if (canvas.__chartjs || (Chart.getChart && Chart.getChart(canvas))) return;
+    // Skip tiny canvases (probably not charts)
+    if (canvas.offsetWidth < 50 || canvas.offsetHeight < 50) return;
+    var ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    // Check if canvas is blank (no pixels drawn)
+    try {
+      var imageData = ctx.getImageData(0, 0, Math.min(canvas.width, 100), Math.min(canvas.height, 100));
+      var hasContent = false;
+      for (var p = 3; p < imageData.data.length; p += 16) {
+        if (imageData.data[p] > 0) { hasContent = true; break; }
+      }
+      if (hasContent) return;
+    } catch(e) {}
+    // Canvas is empty — create a chart
+    var w = canvas.offsetWidth;
+    var h = canvas.offsetHeight;
+    canvas.width = w * 2; canvas.height = h * 2;
+    canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+    var isSmall = w < 200 || h < 200;
+    var label = (canvas.getAttribute('aria-label') || canvas.id || '').toLowerCase();
+    var parentText = (canvas.parentElement ? canvas.parentElement.textContent : '').toLowerCase().substring(0, 200);
+    var isDoughnut = isSmall || label.includes('donut') || label.includes('doughnut') || label.includes('pie') || parentText.includes('distribution') || parentText.includes('breakdown');
+    try {
+      if (isDoughnut) {
+        new Chart(canvas, {
+          type: 'doughnut',
+          data: { labels: ['Segment A','Segment B','Segment C','Segment D'], datasets: [{ data: [35, 25, 22, 18], backgroundColor: colors.slice(0,4), borderWidth: 0 }] },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 } } } } }
+        });
+      } else {
+        new Chart(canvas, {
+          type: idx % 2 === 0 ? 'line' : 'bar',
+          data: { labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul'], datasets: [{ label: 'Data', data: [65,78,90,81,95,110,125], borderColor: colors[idx % colors.length], backgroundColor: idx % 2 === 0 ? colors[idx % colors.length] : bgColors[idx % bgColors.length], fill: idx % 2 === 0, tension: 0.4, borderWidth: 2, borderRadius: idx % 2 === 0 ? 0 : 6 }] },
+          options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { display: false }, ticks: { color: '#94a3b8' } }, y: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8' } } }, plugins: { legend: { display: false } } }
+        });
+      }
+    } catch(e) { console.warn('Chart safety net error:', e); }
+  });
+}
+// Run after Chart.js CDN loads
+if (typeof Chart !== 'undefined') { setTimeout(initEmptyCharts, 500); setTimeout(initEmptyCharts, 2000); }
+else { window.addEventListener('load', function() { setTimeout(initEmptyCharts, 300); setTimeout(initEmptyCharts, 1500); }); }
+</script>`;
+      processedCode = processedCode.replace('</body>', chartSafetyScript + '\n</body>');
+    }
+
     // FOUC fix: detect dark background from Tailwind classes and add inline style
     // so the page doesn't flash white while Tailwind CDN loads
     const darkBgClasses = ['bg-zinc-950', 'bg-zinc-900', 'bg-gray-950', 'bg-gray-900', 'bg-slate-950', 'bg-slate-900', 'bg-neutral-950', 'bg-neutral-900', 'bg-black', 'bg-stone-950', 'bg-stone-900'];
