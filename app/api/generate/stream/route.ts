@@ -1332,7 +1332,8 @@ DO NOT output ANY stat/metric/KPI with value 0. Every number must be realistic a
 
           const duration = ((Date.now() - startTime) / 1000).toFixed(1);
           console.log(`[stream] Completed in ${duration}s, chunks: ${chunkCount}, text length: ${fullText.length}`);
-          console.log(`[stream] Usage: input=${usageMetadata?.promptTokenCount}, output=${usageMetadata?.candidatesTokenCount}, thinking=${usageMetadata?.thoughtsTokenCount || 0}`);
+          // @ts-ignore - thoughtsTokenCount exists on newer Gemini models
+          console.log(`[stream] Usage: input=${usageMetadata?.promptTokenCount}, output=${usageMetadata?.candidatesTokenCount}, thinking=${(usageMetadata as any)?.thoughtsTokenCount || 0}`);
           if (fullText.length < 500) {
             console.log(`[stream] WARNING: Very short response (${fullText.length} chars). First 500 chars:`, fullText.substring(0, 500));
           }
