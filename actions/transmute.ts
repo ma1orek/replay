@@ -2049,7 +2049,7 @@ Generate the complete HTML file now:`;
         model: modelName,
         generationConfig: {
           temperature: 0.2,
-          maxOutputTokens: 100000, // Full output for complex projects
+          maxOutputTokens: 65000, // 3.1 Pro output limit = 65K tokens
         },
       });
       return withTimeout(

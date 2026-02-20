@@ -462,15 +462,16 @@ export async function POST(request: NextRequest) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     
-    // SINGLE MODEL: Gemini 3 Pro with VISION
+    // SINGLE MODEL: Gemini 3.1 Pro with VISION (launched Feb 19, 2026)
     // Pro SEES the video directly and generates code - NO intermediate JSON!
+    // NOTE: 3.1 Pro has 65K output token limit (NOT 100K like older models)
     const model = genAI.getGenerativeModel({
       model: "gemini-3.1-pro-preview",
       generationConfig: {
         temperature: 0.85, // High for creative Awwwards-level designs
-        maxOutputTokens: 100000,
-        // @ts-ignore - thinking for better code quality
-        thinkingConfig: { thinkingBudget: 32768 },
+        maxOutputTokens: 65000, // 3.1 Pro output limit = 65K tokens
+        // @ts-ignore - thinking for better code quality (16K fast)
+        thinkingConfig: { thinkingBudget: 16384 },
       },
     });
     
@@ -1272,8 +1273,10 @@ DO NOT output ANY stat/metric/KPI with value 0. Every number must be realistic a
               lastStreamError = error;
               console.error(`[stream] Attempt ${attempt}/${MAX_RETRIES} failed:`, error?.message);
               const isRetryable = error?.message?.includes('503') ||
+                                  error?.message?.includes('500') ||
                                   error?.message?.includes('overloaded') ||
                                   error?.message?.includes('Service Unavailable') ||
+                                  error?.message?.includes('Internal Server Error') ||
                                   error?.message?.includes('429');
               if (!isRetryable) throw error;
 
@@ -1326,9 +1329,13 @@ DO NOT output ANY stat/metric/KPI with value 0. Every number must be realistic a
           
           const finalResponse = await result.response;
           const usageMetadata = finalResponse.usageMetadata;
-          
+
           const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-          console.log(`[stream] Completed in ${duration}s`);
+          console.log(`[stream] Completed in ${duration}s, chunks: ${chunkCount}, text length: ${fullText.length}`);
+          console.log(`[stream] Usage: input=${usageMetadata?.promptTokenCount}, output=${usageMetadata?.candidatesTokenCount}, thinking=${usageMetadata?.thoughtsTokenCount || 0}`);
+          if (fullText.length < 500) {
+            console.log(`[stream] WARNING: Very short response (${fullText.length} chars). First 500 chars:`, fullText.substring(0, 500));
+          }
           
           let cleanCode = extractCodeFromResponse(fullText);
           
