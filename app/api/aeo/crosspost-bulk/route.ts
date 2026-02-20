@@ -46,9 +46,9 @@ export async function POST(req: Request) {
   let skipped = 0;
   let devtoRateLimited = false;
 
-  // Dev.to batch — SAFE LIMIT: max 3/day to avoid bans
+  // Dev.to batch — stop immediately on 429
   if ((platform === "devto" || platform === "all") && process.env.DEVTO_API_KEY) {
-    const devtoBatch = Math.min(batchSize, 3); // Dev.to safe limit: 3/day
+    const devtoBatch = Math.min(batchSize, 10); // Dev.to limit ~10/day
     const { data: posts } = await supabase
       .from("blog_posts")
       .select("slug, title")
@@ -87,16 +87,15 @@ export async function POST(req: Request) {
     }
   }
 
-  // Hashnode batch — safe limit: 5 per call to avoid moderation flags
+  // Hashnode batch — no rate limit issues, go fast
   if ((platform === "hashnode" || platform === "all") && process.env.HASHNODE_API_KEY) {
-    const hashnodeBatch = Math.min(batchSize, 5); // Hashnode safe limit: 5/run
     const { data: posts } = await supabase
       .from("blog_posts")
       .select("slug, title")
       .eq("status", "published")
       .is("hashnode_url", null)
       .order("published_at", { ascending: true }) // oldest first for backlog
-      .limit(hashnodeBatch);
+      .limit(batchSize); // Hashnode handles big batches
 
     if (posts && posts.length > 0) {
       for (const post of posts) {
@@ -145,47 +144,6 @@ export async function POST(req: Request) {
       devto: remainingDevto || 0,
       hashnode: remainingHashnode || 0,
     },
-  });
-}
-
-/** DELETE - Reset stale crosspost URLs (articles removed by platforms) */
-export async function DELETE(req: Request) {
-  const authHeader = req.headers.get("authorization");
-  const token = authHeader?.replace("Bearer ", "");
-  if (!token || !verifyAdminToken(token)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const body = await req.json().catch(() => ({}));
-  const platform = body.platform || "all"; // "devto" | "hashnode" | "all"
-
-  let devtoReset = 0;
-  let hashnodeReset = 0;
-
-  if (platform === "devto" || platform === "all") {
-    const { data } = await supabase
-      .from("blog_posts")
-      .update({ devto_url: null })
-      .not("devto_url", "is", null)
-      .eq("status", "published")
-      .select("id");
-    devtoReset = data?.length || 0;
-  }
-
-  if (platform === "hashnode" || platform === "all") {
-    const { data } = await supabase
-      .from("blog_posts")
-      .update({ hashnode_url: null })
-      .not("hashnode_url", "is", null)
-      .eq("status", "published")
-      .select("id");
-    hashnodeReset = data?.length || 0;
-  }
-
-  return NextResponse.json({
-    success: true,
-    reset: { devto: devtoReset, hashnode: hashnodeReset },
-    message: `Reset ${devtoReset} Dev.to URLs + ${hashnodeReset} Hashnode URLs. Cron will re-crosspost at safe limits.`,
   });
 }
 

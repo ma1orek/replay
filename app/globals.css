@@ -1521,6 +1521,30 @@ select:focus:not(:focus-visible) {
   box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
 }
 
+/* Creativity slider */
+input[type="range"].creativity-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  background: #FF6E3C;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(255, 110, 60, 0.4);
+  transition: transform 0.15s ease;
+}
+input[type="range"].creativity-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+input[type="range"].creativity-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: #FF6E3C;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 1px 4px rgba(255, 110, 60, 0.4);
+}
+
 /* Footer CTA gradient */
 .footer-cta-gradient {
   background: linear-gradient(180deg, #0f0f14 0%, #1a1a1f 50%, #0f0f14 100%);

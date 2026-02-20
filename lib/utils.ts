@@ -69,41 +69,7 @@ export function updateProjectAnalytics(
     analytics.exports += 1;
   }
   
-  // Save (with quota protection)
-  try {
-    localStorage.setItem(key, JSON.stringify(analytics));
-  } catch (e) {
-    // localStorage full — try to free space by removing old analytics entries
-    console.warn("[Analytics] localStorage quota exceeded, cleaning up old data");
-    try {
-      const keysToRemove: string[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && k.startsWith("replay_analytics_") && k !== key) {
-          keysToRemove.push(k);
-        }
-      }
-      // Remove oldest analytics entries (keep last 5)
-      if (keysToRemove.length > 5) {
-        keysToRemove.slice(0, keysToRemove.length - 5).forEach(k => localStorage.removeItem(k));
-      }
-      // Also remove old local project backups
-      const projectKeys: string[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && k.startsWith("replay_local_project_")) {
-          projectKeys.push(k);
-        }
-      }
-      if (projectKeys.length > 3) {
-        projectKeys.slice(0, projectKeys.length - 3).forEach(k => localStorage.removeItem(k));
-      }
-      // Retry save
-      localStorage.setItem(key, JSON.stringify(analytics));
-    } catch {
-      // Still can't save — silently skip (analytics is non-critical)
-      console.warn("[Analytics] Could not save analytics after cleanup");
-    }
-  }
+  // Save
+  localStorage.setItem(key, JSON.stringify(analytics));
 }
 

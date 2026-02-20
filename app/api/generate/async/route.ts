@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       input_video_url: videoUrl,
       input_style: styleDirective || "",
       input_context: "",
-      cost_credits: 150,
+      cost_credits: 75,
       output_code: null,
       output_architecture: {},
       output_design_system: null,

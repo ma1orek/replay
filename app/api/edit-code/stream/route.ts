@@ -660,22 +660,9 @@ CRITICAL RULES:
                 if (applyResult.failedCount > 0) {
                   console.warn(`[Stream Edit] S/R: ${applyResult.failedCount}/${parsed.blocks.length} blocks failed`);
 
-                  // If ALL blocks failed
+                  // If ALL blocks failed, fallback to full HTML mode
                   if (applyResult.appliedCount === 0) {
-                    const wordCount = editRequest.trim().split(/\s+/).length;
-                    // For SIMPLE edits (< 20 words), DON'T fallback to Full HTML
-                    // Full HTML mode often destroys the page for simple requests
-                    if (wordCount < 20 && currentCode.length > 5000) {
-                      console.log("[Stream Edit] S/R: ALL blocks failed, but simple edit - NOT falling back to full HTML (would destroy page)");
-                      send("complete", {
-                        code: `Nie udało się znaleźć dokładnego fragmentu kodu do zmiany. Spróbuj bardziej precyzyjnie:\n- Podaj dokładny tekst który chcesz zmienić\n- Np. "zmień kolor przycisku Apply na niebieski"\n- Lub "wyrównaj tekst 'Make something people want.' do lewej"`,
-                        isChat: true,
-                        needsClarification: true
-                      });
-                      return;
-                    }
-                    // For complex edits, fallback to full HTML (risky but only option)
-                    console.log("[Stream Edit] S/R: ALL blocks failed, complex edit - falling back to full HTML");
+                    console.log("[Stream Edit] S/R: ALL blocks failed, falling back to full HTML");
                     await runFullHtmlEdit(prompt, currentCode, editRequest, chatHistory, send);
                     return;
                   }
@@ -702,10 +689,8 @@ CRITICAL RULES:
                 const extractedCode = parsed.fullHtml || extractCode(fullResponse) || currentCode;
                 const srSizeDrop = extractedCode.length / currentCode.length;
 
-                const srIsSimple = editRequest.trim().split(/\s+/).length < 15;
-                const srSizeThreshold = srIsSimple ? 0.6 : 0.4;
-                if (srSizeDrop < srSizeThreshold && currentCode.length > 5000) {
-                  console.error(`[Stream Edit] S/R fallback REJECTED: code destroyed ${currentCode.length} → ${extractedCode.length} (threshold: ${Math.round(srSizeThreshold * 100)}%)`);
+                if (srSizeDrop < 0.4 && currentCode.length > 5000) {
+                  console.error(`[Stream Edit] S/R fallback REJECTED: code destroyed ${currentCode.length} → ${extractedCode.length}`);
                   send("complete", {
                     code: `The AI tried to rewrite the entire page instead of making the small change you requested. Your original code has been preserved.\n\nTry being more specific with your edit request.`,
                     isChat: true,
@@ -728,16 +713,9 @@ CRITICAL RULES:
               }
             } catch (error: any) {
               console.error("[Stream Edit] SEARCH/REPLACE error:", error);
-              const srWordCount = editRequest.trim().split(/\s+/).length;
-              if (srWordCount < 20 && currentCode.length > 5000) {
-                // Simple edit + large code = don't risk Full HTML mode
-                console.log("[Stream Edit] S/R error, simple edit - NOT falling back to full HTML");
-                const friendlyError = getUserFriendlyError(error);
-                send("error", { error: friendlyError + " Spróbuj ponownie z bardziej precyzyjnym opisem." });
-              } else {
-                console.log("[Stream Edit] S/R error, complex edit - falling back to full HTML");
-                await runFullHtmlEdit(prompt, currentCode, editRequest, chatHistory, send);
-              }
+              // Fallback to full HTML on error
+              console.log("[Stream Edit] S/R error, falling back to full HTML");
+              await runFullHtmlEdit(prompt, currentCode, editRequest, chatHistory, send);
             }
           } else {
             // ===== FULL HTML MODE (LEGACY) =====
@@ -1458,12 +1436,10 @@ async function runFullHtmlEdit(
         const sizeDrop = extractedCode.length / currentCode.length;
 
         // STRUCTURAL PROTECTION: Reject edits that destroy the page
-        const isSimpleEdit = editRequest.trim().split(/\s+/).length < 15;
-        const sizeThreshold = isSimpleEdit ? 0.6 : 0.4; // Stricter for simple edits
-        if (sizeDrop < sizeThreshold && currentCode.length > 5000) {
-          console.error(`[Stream Edit] REJECTED: Code destroyed ${currentCode.length} → ${extractedCode.length} (${Math.round(sizeDrop * 100)}%, threshold: ${Math.round(sizeThreshold * 100)}%)`);
+        if (sizeDrop < 0.4 && currentCode.length > 5000) {
+          console.error(`[Stream Edit] REJECTED: Code destroyed ${currentCode.length} → ${extractedCode.length} (${Math.round(sizeDrop * 100)}%)`);
           send("complete", {
-            code: `AI próbowało przepisać całą stronę zamiast zrobić małą zmianę. Twój oryginalny kod został zachowany.\n\nSpróbuj bardziej precyzyjnie:\n- "Zmień kolor nagłówka na niebieski"\n- "Wyrównaj tekst do lewej"\n- "Dodaj cień do karty"`,
+            code: `The AI tried to rewrite the entire page instead of making the small change you requested. Your original code has been preserved.\n\nTry being more specific, e.g.:\n- "Change the chart type from bar to line"\n- "Update the chart colors to blue and green"\n- "Replace the monthly chart with a pie chart"`,
             isChat: true,
             needsClarification: true
           });

@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     if (singleId) {
       const { data: gen, error } = await adminSupabase
         .from("generations")
-        .select("id, title, created_at, status, output_code, input_style, input_context, output_architecture, output_design_system, input_video_url, versions, published_slug, library_data, user_id, design_system_id, cost_credits")
+        .select("id, title, created_at, status, output_code, input_style, input_context, output_architecture, output_design_system, input_video_url, versions, published_slug, library_data, user_id, design_system_id")
         .eq("id", singleId)
         .eq("user_id", user.id)
         .single();
@@ -77,7 +77,6 @@ export async function GET(request: NextRequest) {
         user_id: gen.user_id, // For access control
         design_system_id: gen.design_system_id || null,
         designSystemName,
-        costCredits: gen.cost_credits || null,
       };
 
       return NextResponse.json({ success: true, generation: record });
@@ -226,6 +225,7 @@ export async function POST(request: NextRequest) {
       user_id: user.id,
       title: title || 'Untitled Project',
       status: status || 'complete',
+      cost_credits: costCredits || 75,
       input_video_url: videoUrl,
       input_context: refinements,
       input_style: styleDirective,
@@ -236,11 +236,6 @@ export async function POST(request: NextRequest) {
       completed_at: status === 'complete' ? new Date().toISOString() : null,
     };
     
-    // Only add cost_credits on initial save (not on re-saves which don't include it)
-    if (costCredits) {
-      upsertData.cost_credits = costCredits;
-    }
-
     // Only add token_usage if provided
     if (tokenUsage) {
       upsertData.token_usage = tokenUsage;

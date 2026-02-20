@@ -1029,39 +1029,6 @@ export const StylePreview = ({ styleId }: { styleId: string }) => {
         </motion.div>
       </div>
     ),
-    "svg-madness": (
-      <div className="w-full h-full bg-[#050505] relative overflow-hidden">
-        {/* Morphing blob */}
-        <motion.div
-          className="absolute w-5 h-5 rounded-full bg-gradient-to-br from-violet-500/60 to-pink-500/60 blur-[3px]"
-          style={{ top: '20%', left: '20%' }}
-          animate={{
-            scale: [1, 1.4, 0.8, 1.2, 1],
-            borderRadius: ['50%', '30%', '60%', '40%', '50%'],
-            x: [0, 4, -2, 3, 0],
-            y: [0, -3, 2, -1, 0],
-          }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        />
-        {/* Orbiting dot */}
-        <motion.div
-          className="absolute w-1 h-1 rounded-full bg-cyan-400"
-          style={{ top: '45%', left: '55%' }}
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-        />
-        {/* SVG text */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-[5px] font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-pink-400 tracking-tight">SVG</span>
-        </div>
-        {/* Animated line */}
-        <motion.div
-          className="absolute bottom-2 left-1 right-1 h-[1px] bg-gradient-to-r from-transparent via-violet-400/60 to-transparent"
-          animate={{ opacity: [0.3, 1, 0.3], scaleX: [0.5, 1, 0.5] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        />
-      </div>
-    ),
   };
 
   return (
@@ -4158,26 +4125,6 @@ CTA BUTTONS:
 - Content MUST have relative z-10 to appear above orbs
 - Section MUST have overflow-hidden
 - Preserve ALL content from video`, category: "creative" },
-  { id: "svg-madness", name: "SVG Madness", desc: "Animated SVG • Morphing Shapes • Next-Level Motion", fullDesc: `🎆 SVG MADNESS — MAXIMUM ANIMATED SVG!
-Every element MOVES. Every shape MORPHS. Push inline SVG animation to the limit.
-Use inline SVG as PRIMARY visual: backgrounds, icons, decorations, text effects.
-
-🎨 COLORS: bg #050505 or #0a0a1a. Primary: #7c3aed→#ec4899. Secondary: #06b6d4→#10b981. Accent: #f59e0b. All SVGs glow via feGaussianBlur filter. Text: #fff, muted #a1a1aa.
-📝 TYPOGRAPHY: Headlines bold 5-8vw with SVG text stroke-dashoffset draw animation. Body Inter 300-400. Stats monospace count-up.
-
-🎬 8 MANDATORY SVG ANIMATIONS:
-1. HERO MORPHING BLOBS: Full-viewport <svg> with <path><animate attributeName="d" dur="8s" repeatCount="indefinite"> morphing between 3 organic blob shapes, gradient fill, glow filter
-2. TEXT STROKE DRAW: Hero headline as <svg><text> with stroke-dasharray/dashoffset, @keyframes draw-text animating stroke-dashoffset to 0 + fill to white
-3. MORPHING ICONS: Each feature card icon = <svg><path><animate attributeName="d"> morphing between geometric shapes (hexagon↔star↔circle), 4s cycle
-4. WAVE DIVIDERS: Between sections, <svg preserveAspectRatio="none"><path><animate attributeName="d"> wave path morphing, fill-opacity 0.3
-5. ORBITING PARTICLES: <svg> circles with <animateTransform type="rotate"> at different speeds/directions around center points
-6. ANIMATED SVG CHARTS: Bar heights animate with sequential begin delays (0.2s, 0.4s...), donut segments with stroke-dasharray animation
-7. NOISE TEXTURE: Fixed fullscreen <svg> with feTurbulence fractalNoise filter, opacity 0.03, pointer-events none
-8. GLOW CONNECTIONS: Animated SVG lines between cards, stroke-dasharray drawing on scroll
-
-🎬 GSAP (MANDATORY on top of SVG anims): ScrollTrigger on every section, staggered cards, count-up stats, stroke-dashoffset on scroll, parallax SVG decorations at different speeds.
-
-⚠️ RULES: Min 10 inline SVGs with <animate>/<animateTransform>. Every section has 1+ animated SVG. GSAP ScrollTrigger on everything. Preserve ALL video content — style only!`, category: "creative" },
 ];
 
 export default function StyleInjector({ value, onChange, disabled, referenceImage, onReferenceImageChange, importedStyles, onImportClick, onDeleteDS }: StyleInjectorProps) {

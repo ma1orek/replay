@@ -203,77 +203,60 @@ export async function GET(req: Request) {
       }
     }
 
-    // STEP 4: Auto-Crosspost BACKLOG to Dev.to + Hashnode
-    // SAFE LIMITS to avoid platform moderation/bans:
-    // Dev.to: max 3 articles/DAY (strict — they ban bulk posters)
-    // Hashnode: max 5 articles/RUN = ~20/day (more lenient but still careful)
-    // Cron runs every 6h = 4x/day
-    log.push("\n📢 STEP 4: Auto-Crossposting (safe daily drip)...");
+    // STEP 4: Auto-Crosspost ENTIRE BACKLOG to Dev.to + Hashnode
+    // Dev.to: strict rate limit (~10/day) → small batch, 3s delay, stop on 429
+    // Hashnode: no issues → big batch (50), 1s delay
+    log.push("\n📢 STEP 4: Auto-Crossposting (backlog mode)...");
 
-    const DEVTO_DAILY_MAX = 3;
-    const HASHNODE_PER_RUN_MAX = 5;
-    const todayDate = new Date().toISOString().split("T")[0];
-
-    // Dev.to crossposting — check daily count first
+    // Dev.to crossposting — small batch, stop immediately on 429
     if (process.env.DEVTO_API_KEY) {
       try {
-        // Count how many Dev.to crossposts we already did TODAY
-        const { count: devtoToday } = await supabase
-          .from("blog_posts")
-          .select("*", { count: "exact", head: true })
-          .eq("status", "published")
-          .not("devto_url", "is", null)
-          .gte("updated_at", `${todayDate}T00:00:00Z`);
-
-        const devtoRemainingToday = Math.max(0, DEVTO_DAILY_MAX - (devtoToday || 0));
-
-        const { count: devtoBacklog } = await supabase
+        const { count: devtoRemaining } = await supabase
           .from("blog_posts")
           .select("*", { count: "exact", head: true })
           .eq("status", "published")
           .is("devto_url", null);
 
-        if (devtoRemainingToday <= 0) {
-          log.push(`   Dev.to: Daily limit reached (${DEVTO_DAILY_MAX}/day). ${devtoBacklog || 0} in backlog. Resumes tomorrow.`);
-        } else {
-          const batchSize = Math.min(devtoRemainingToday, devtoBacklog || 0);
-          const { data: devtoPosts } = await supabase
-            .from("blog_posts")
-            .select("slug, title")
-            .eq("status", "published")
-            .is("devto_url", null)
-            .order("published_at", { ascending: true })
-            .limit(batchSize);
+        const { data: devtoPosts } = await supabase
+          .from("blog_posts")
+          .select("slug, title")
+          .eq("status", "published")
+          .is("devto_url", null)
+          .order("published_at", { ascending: true })
+          .limit(10); // Dev.to allows ~10/day
 
-          log.push(`   Dev.to: ${devtoBacklog || 0} backlog, ${devtoRemainingToday} left today, posting ${devtoPosts?.length || 0}`);
+        log.push(`   Dev.to: ${devtoRemaining || 0} remaining, trying ${devtoPosts?.length || 0}`);
 
-          if (devtoPosts && devtoPosts.length > 0) {
-            let devtoSuccess = 0;
-            for (const post of devtoPosts) {
-              try {
-                const crosspostResp = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/aeo/crosspost-devto`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ slug: post.slug })
-                });
-                const crosspostData = await crosspostResp.json();
-                if (crosspostData.rateLimited || crosspostResp.status === 429) {
-                  log.push(`   ⏸️ Dev.to: Rate limited after ${devtoSuccess} — will resume next cron`);
-                  break;
-                }
-                if (crosspostData.success) {
-                  devtoSuccess++;
-                  log.push(`   ✅ Dev.to: ${post.title}`);
-                } else {
-                  log.push(`   ⚠️ Dev.to skip: ${post.slug} — ${crosspostData.error || "unknown"}`);
-                }
-              } catch (e: any) {
-                log.push(`   ❌ Dev.to error for ${post.slug}: ${e.message}`);
+        if (devtoPosts && devtoPosts.length > 0) {
+          let devtoSuccess = 0;
+          let devtoRateLimited = false;
+          for (const post of devtoPosts) {
+            try {
+              const crosspostResp = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/aeo/crosspost-devto`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ slug: post.slug })
+              });
+              const crosspostData = await crosspostResp.json();
+              if (crosspostData.rateLimited || crosspostResp.status === 429) {
+                log.push(`   ⏸️ Dev.to: Rate limited after ${devtoSuccess} posts — stopping, will resume next cron`);
+                devtoRateLimited = true;
+                break;
               }
-              // 5s between Dev.to calls (be extra safe)
-              await new Promise(r => setTimeout(r, 5000));
+              if (crosspostData.success) {
+                devtoSuccess++;
+                log.push(`   ✅ Dev.to: ${post.title}`);
+              } else {
+                log.push(`   ⚠️ Dev.to skip: ${post.slug} — ${crosspostData.error || "unknown"}`);
+              }
+            } catch (e: any) {
+              log.push(`   ❌ Dev.to error for ${post.slug}: ${e.message}`);
             }
-            log.push(`   Dev.to: ${devtoSuccess} posted this run. ~${(devtoBacklog || 0) - devtoSuccess} remaining in backlog.`);
+            // 3s between Dev.to calls (their rate limit is strict)
+            await new Promise(r => setTimeout(r, 3000));
+          }
+          if (!devtoRateLimited) {
+            log.push(`   Dev.to batch done: ${devtoSuccess} posted, ~${(devtoRemaining || 0) - devtoSuccess} remaining`);
           }
         }
       } catch (error: any) {
@@ -283,10 +266,10 @@ export async function GET(req: Request) {
       log.push(`   ⏸️ Dev.to: Skipped — DEVTO_API_KEY not configured`);
     }
 
-    // Hashnode crossposting — moderate batch, 2s delay
+    // Hashnode crossposting — big batch (50), no rate limit issues
     if (process.env.HASHNODE_API_KEY && process.env.HASHNODE_PUBLICATION_ID) {
       try {
-        const { count: hashnodeBacklog } = await supabase
+        const { count: hashnodeRemaining } = await supabase
           .from("blog_posts")
           .select("*", { count: "exact", head: true })
           .eq("status", "published")
@@ -298,9 +281,9 @@ export async function GET(req: Request) {
           .eq("status", "published")
           .is("hashnode_url", null)
           .order("published_at", { ascending: true })
-          .limit(HASHNODE_PER_RUN_MAX);
+          .limit(50); // Hashnode handles large batches fine
 
-        log.push(`   Hashnode: ${hashnodeBacklog || 0} backlog, posting ${hashnodePosts?.length || 0} (max ${HASHNODE_PER_RUN_MAX}/run)`);
+        log.push(`   Hashnode: ${hashnodeRemaining || 0} remaining, processing ${hashnodePosts?.length || 0}`);
 
         if (hashnodePosts && hashnodePosts.length > 0) {
           let hashnodeSuccess = 0;
@@ -320,10 +303,9 @@ export async function GET(req: Request) {
             } catch (e: any) {
               log.push(`   ❌ Hashnode error for ${post.slug}: ${e.message}`);
             }
-            // 2s between Hashnode calls (safe pacing)
-            await new Promise(r => setTimeout(r, 2000));
+            await new Promise(r => setTimeout(r, 1000));
           }
-          log.push(`   Hashnode: ${hashnodeSuccess}/${hashnodePosts.length} posted. ~${(hashnodeBacklog || 0) - hashnodeSuccess} remaining.`);
+          log.push(`   Hashnode batch done: ${hashnodeSuccess}/${hashnodePosts.length} success, ~${(hashnodeRemaining || 0) - hashnodeSuccess} remaining`);
         }
       } catch (error: any) {
         log.push(`   ❌ Hashnode crosspost error: ${error.message}`);

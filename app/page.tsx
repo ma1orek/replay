@@ -3206,7 +3206,6 @@ function ReplayToolContent() {
     "generative-ascii": "Generative ASCII",
     "cinematic-portals": "Cinematic Portals",
     "typographic-architecture": "Typographic Architecture",
-    "svg-madness": "SVG Madness",
   };
   
   // Helper function to get default style name from localStorage (only call client-side)
@@ -4488,52 +4487,64 @@ function ReplayToolContent() {
       processedCode = jsxToHtml(processedCode);
     }
     
-    // FIX INVISIBLE ELEMENTS - smart visibility fix that works WITH GSAP, not against it
+    // FIX INVISIBLE ELEMENTS - CSS to force visibility (AI generates opacity:0 for animations)
     const invisibleFixStyles = `
 <style id="invisible-fix">
-  /* Fix Lucide icons */
+  /* Force all elements visible - fix AI generated fade/slide animations */
+  [style*="opacity: 0"], [style*="opacity:0"] { opacity: 1 !important; }
+  [style*="visibility: hidden"], [style*="visibility:hidden"] { visibility: visible !important; }
+  [style*="translate"] { opacity: 1 !important; }
+  .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .animate-fade,
+  [class*="fade-"], [class*="slide-"], [class*="stagger-"], [class*="animate-"] {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  [data-state="hidden"], [data-visible="false"], [data-aos] {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+  }
+  /* Fix Lucide icons - make invisible instead of hidden to preserve layout */
   i[data-lucide]:empty { opacity: 0; width: 1em; height: 1em; display: inline-block; }
   i[data-lucide]:not(:has(svg)) { opacity: 0; width: 1em; height: 1em; display: inline-block; }
   i[data-lucide]:has(svg) { opacity: 1 !important; }
   /* Fix sections with no content showing */
   section:empty { min-height: 0 !important; }
-  /* Fix H1/H2 text cutoff — ensure headlines never clip */
-  h1, h2, h3 { overflow-wrap: break-word; word-break: break-word; }
-  h1 { max-width: 100%; overflow: visible !important; }
-  /* Ensure main content is visible in dashboards */
-  main { min-height: 200px; }
-  main:empty::after { content: 'Loading...'; color: #666; font-size: 14px; display: block; padding: 2rem; }
+  /* Ensure grid/flex children are visible */
+  .grid > *, .flex > * { opacity: 1 !important; visibility: visible !important; }
 </style>
 <script>
-// Smart visibility fix — runs AFTER GSAP has had time to initialize ScrollTrigger
-// Only fixes elements that are STILL invisible and NOT controlled by GSAP/ScrollTrigger
-function smartForceVisible() {
+// Force all elements visible after load
+function forceVisible() {
   document.querySelectorAll('*').forEach(function(el) {
-    // Skip elements that GSAP is managing (have _gsap property or are in a ScrollTrigger)
-    if (el._gsap || el.dataset.animate || el.closest('[data-animate]')) return;
-    // Skip chart containers
-    if (el.tagName === 'CANVAS' || el.closest('.chart-container')) return;
-
     var style = window.getComputedStyle(el);
     var inlineStyle = el.getAttribute('style') || '';
-
-    // Only fix inline opacity:0 (not class-based — GSAP uses inline styles)
-    if (inlineStyle.includes('opacity:0') || inlineStyle.includes('opacity: 0')) {
-      // Check if this is likely a GSAP animation target (has transform too)
-      if (!inlineStyle.includes('translate') && !inlineStyle.includes('scale')) {
-        el.style.opacity = '1';
-      }
+    
+    // Fix opacity:0
+    if (style.opacity === '0' || inlineStyle.includes('opacity:0') || inlineStyle.includes('opacity: 0')) {
+      el.style.opacity = '1';
     }
-
-    // Fix visibility:hidden only on non-Alpine elements
-    if (style.visibility === 'hidden' && !el.hasAttribute('x-show') && !el.hasAttribute('x-cloak')) {
+    
+    // Fix visibility:hidden
+    if (style.visibility === 'hidden') {
       el.style.visibility = 'visible';
+    }
+    
+    // Fix elements positioned off-screen
+    if (el.getBoundingClientRect && el.offsetParent !== null) {
+      var rect = el.getBoundingClientRect();
+      if (rect.top < -1000 || rect.left < -1000) {
+        el.style.transform = 'none';
+        el.style.top = 'auto';
+        el.style.left = 'auto';
+      }
     }
   });
 }
-// Run AFTER GSAP ScrollTrigger has initialized (2s delay)
-setTimeout(smartForceVisible, 2000);
-setTimeout(smartForceVisible, 4000);
+window.addEventListener('load', forceVisible);
+setTimeout(forceVisible, 100);
+setTimeout(forceVisible, 500);
+setTimeout(forceVisible, 1000);
 // Initialize Lucide icons if available
 window.addEventListener('load', function() {
   if (typeof lucide !== 'undefined') {
@@ -4542,9 +4553,6 @@ window.addEventListener('load', function() {
 });
 </script>`;
     
-    // CDN scripts
-    const chartScript = '<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>';
-
     // Ensure Tailwind CSS is included (inject if missing)
     if (!processedCode.includes('cdn.tailwindcss.com') && !processedCode.includes('tailwindcss')) {
       const tailwindScript = '<script src="https://cdn.tailwindcss.com"></script>';
@@ -4554,10 +4562,10 @@ window.addEventListener('load', function() {
       
       if (processedCode.includes('</head>')) {
         // Inject before </head>
-        processedCode = processedCode.replace('</head>', `${tailwindScript}\n${gsapScript}\n${chartScript}\n${alpineScript}\n${lucideScript}\n${invisibleFixStyles}\n</head>`);
+        processedCode = processedCode.replace('</head>', `${tailwindScript}\n${gsapScript}\n${alpineScript}\n${lucideScript}\n${invisibleFixStyles}\n</head>`);
       } else if (processedCode.includes('<body')) {
         // Inject before <body>
-        processedCode = processedCode.replace(/<body/, `<head>${tailwindScript}\n${gsapScript}\n${chartScript}\n${alpineScript}\n${lucideScript}${invisibleFixStyles}</head>\n<body`);
+        processedCode = processedCode.replace(/<body/, `<head>${tailwindScript}\n${gsapScript}\n${alpineScript}\n${lucideScript}${invisibleFixStyles}</head>\n<body`);
       } else {
         // Wrap in full HTML structure
         processedCode = `<!DOCTYPE html>
@@ -4567,7 +4575,6 @@ window.addEventListener('load', function() {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   ${tailwindScript}
   ${gsapScript}
-  ${chartScript}
   ${alpineScript}
   ${lucideScript}
   ${invisibleFixStyles}
@@ -4579,218 +4586,14 @@ ${processedCode}
 </html>`;
       }
     } else {
-      // Tailwind already present — inject MISSING CDNs + visibility fix
-      // IMPORTANT: Check for actual CDN URLs, NOT just the word (e.g. "gsap.from()" would false-positive)
-      let extraScripts = '';
-      // GSAP CDN (critical for animations!)
-      const hasGsapCdn = processedCode.includes('cdnjs.cloudflare.com/ajax/libs/gsap') ||
-                          processedCode.includes('cdn.jsdelivr.net/npm/gsap') ||
-                          processedCode.includes('unpkg.com/gsap');
-      if (!hasGsapCdn) {
-        extraScripts += '<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>\n<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>\n';
-      } else if (!processedCode.includes('ScrollTrigger.min.js')) {
-        extraScripts += '<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>\n';
-      }
-      // Chart.js CDN
-      if (!processedCode.includes('cdn.jsdelivr.net/npm/chart.js') && !processedCode.includes('cdnjs.cloudflare.com/ajax/libs/Chart.js')) {
-        extraScripts += chartScript + '\n';
-      }
-      // Alpine.js CDN
-      const hasAlpineCdn = processedCode.includes('cdn.jsdelivr.net/npm/alpinejs') ||
-                           processedCode.includes('unpkg.com/alpinejs') ||
-                           processedCode.includes('cdnjs.cloudflare.com/ajax/libs/alpinejs');
-      if (!hasAlpineCdn) {
-        extraScripts += '<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>\n';
-      }
-      // Lucide icons CDN
-      const hasLucideCdn = processedCode.includes('unpkg.com/lucide') ||
-                           processedCode.includes('cdn.jsdelivr.net/npm/lucide');
-      if (!hasLucideCdn) {
-        extraScripts += '<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>\n';
-      }
+      // Tailwind already present, just add the fix
       if (processedCode.includes('</head>')) {
-        processedCode = processedCode.replace('</head>', `${extraScripts}${invisibleFixStyles}\n</head>`);
+        processedCode = processedCode.replace('</head>', `${invisibleFixStyles}\n</head>`);
       } else if (processedCode.includes('</body>')) {
-        processedCode = processedCode.replace('</body>', `${extraScripts}${invisibleFixStyles}\n</body>`);
+        processedCode = processedCode.replace('</body>', `${invisibleFixStyles}\n</body>`);
       }
     }
     
-    // FALLBACK ANIMATION SAFETY NET — ALWAYS inject (works with or without GSAP)
-    // Dual-mode: uses GSAP if available, falls back to pure CSS IntersectionObserver
-    if (processedCode.includes('</body>')) {
-      const fallbackAnimationScript = `
-<style>
-/* CSS fallback animations — work even without GSAP */
-@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes fadeSlideLeft { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: translateX(0); } }
-@keyframes fadeSlideRight { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
-@keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-.anim-ready { opacity: 0; }
-.anim-visible { animation-fill-mode: both; animation-duration: 0.8s; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
-.anim-up { animation-name: fadeSlideUp; }
-.anim-left { animation-name: fadeSlideLeft; }
-.anim-right { animation-name: fadeSlideRight; }
-.anim-scale { animation-name: scaleIn; }
-</style>
-<script>
-// UNIVERSAL ANIMATION ENGINE — works with or without GSAP
-document.addEventListener('DOMContentLoaded', function() {
-  var hasGsap = typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined';
-  if (hasGsap) gsap.registerPlugin(ScrollTrigger);
-
-  // Detect if page already has GSAP animations running
-  var hasExistingAnims = document.querySelectorAll('[style*="opacity: 0"]').length > 3;
-
-  // Collect all animatable elements
-  var sections = document.querySelectorAll('section, [class*="py-1"], [class*="py-2"], [class*="py-3"], main > div, .hero, [class*="container"]');
-  if (sections.length === 0) sections = document.querySelectorAll('body > div > div');
-
-  var directions = ['up','left','right','up','scale','up','right','left'];
-
-  sections.forEach(function(section, i) {
-    var children = section.querySelectorAll('h1,h2,h3,h4,h5,h6,p,img,[class*="card"],[class*="rounded-xl"],[class*="rounded-2xl"],[class*="shadow-"],button,a[class*="bg-"],[class*="grid"] > *,table,canvas,.stat,.metric');
-    if (children.length === 0) {
-      children = Array.from(section.children).filter(function(c) { return c.offsetHeight > 20; });
-    }
-    if (children.length === 0) return;
-
-    var dir = directions[i % directions.length];
-
-    if (hasGsap && !hasExistingAnims) {
-      // GSAP mode — best quality
-      gsap.from(children, {
-        scrollTrigger: { trigger: section, start: 'top 88%', once: true },
-        opacity: 0,
-        y: dir === 'up' ? 50 : dir === 'scale' ? 0 : 0,
-        x: dir === 'left' ? -50 : dir === 'right' ? 50 : 0,
-        scale: dir === 'scale' ? 0.9 : 1,
-        duration: 0.7,
-        ease: 'power3.out',
-        stagger: 0.08
-      });
-    } else if (!hasExistingAnims) {
-      // CSS fallback — works without GSAP
-      Array.from(children).forEach(function(child, j) {
-        child.classList.add('anim-ready');
-        var obs = new IntersectionObserver(function(entries) {
-          entries.forEach(function(entry) {
-            if (entry.isIntersecting) {
-              obs.unobserve(entry.target);
-              var el = entry.target;
-              el.classList.remove('anim-ready');
-              el.classList.add('anim-visible');
-              el.classList.add(dir === 'up' ? 'anim-up' : dir === 'left' ? 'anim-left' : dir === 'right' ? 'anim-right' : 'anim-scale');
-              el.style.animationDelay = (j * 0.08) + 's';
-            }
-          });
-        }, { threshold: 0.1 });
-        obs.observe(child);
-      });
-    }
-  });
-
-  // Count-up for stat numbers
-  document.querySelectorAll('[class*="text-3xl"],[class*="text-4xl"],[class*="text-5xl"],[class*="text-6xl"],[class*="text-7xl"]').forEach(function(el) {
-    var text = el.textContent.trim();
-    var numMatch = text.match(/^([\\$\\€\\£]?)\\s*([\\d][\\d,\\.]*\\d?)\\s*([\\+%BMKk]*)$/);
-    if (!numMatch) return;
-    var prefix = numMatch[1] || '';
-    var num = parseFloat(numMatch[2].replace(/,/g, ''));
-    var suffix = numMatch[3] || '';
-    if (isNaN(num) || num === 0) return;
-    var originalText = el.textContent;
-    el.textContent = prefix + '0' + suffix;
-    var obs = new IntersectionObserver(function(entries) {
-      entries.forEach(function(entry) {
-        if (entry.isIntersecting) {
-          obs.unobserve(el);
-          var start = performance.now();
-          (function step(now) {
-            var t = Math.min((now - start) / 2000, 1);
-            var ease = 1 - Math.pow(1 - t, 4);
-            el.textContent = prefix + Math.round(num * ease).toLocaleString() + suffix;
-            if (t < 1) requestAnimationFrame(step);
-          })(start);
-        }
-      });
-    }, { threshold: 0.3 });
-    obs.observe(el);
-    setTimeout(function() { if (el.textContent === prefix + '0' + suffix) el.textContent = originalText; }, 4000);
-  });
-
-  // Hover effects on cards
-  document.querySelectorAll('[class*="card"],[class*="rounded-xl"],[class*="rounded-2xl"]').forEach(function(card) {
-    if (card.tagName === 'IMG' || card.tagName === 'BUTTON' || card.tagName === 'A') return;
-    if (card.offsetHeight < 50) return;
-    card.style.transition = 'transform 0.3s ease, box-shadow 0.3s ease';
-    card.addEventListener('mouseenter', function() { card.style.transform = 'translateY(-4px)'; card.style.boxShadow = '0 15px 30px rgba(0,0,0,0.2)'; });
-    card.addEventListener('mouseleave', function() { card.style.transform = ''; card.style.boxShadow = ''; });
-  });
-});
-</script>`;
-      processedCode = processedCode.replace('</body>', fallbackAnimationScript + '\n</body>');
-    }
-
-    // CHART.JS SAFETY NET — detect empty canvases and initialize with fallback data
-    // Fixes: AI generates <canvas> but Chart.js script errors or CDN not loaded yet
-    if (processedCode.includes('<canvas') && processedCode.includes('</body>')) {
-      const chartSafetyScript = `
-<script>
-// Chart.js Safety Net — initialize empty canvases after CDN loads
-function initEmptyCharts() {
-  if (typeof Chart === 'undefined') return;
-  var canvases = document.querySelectorAll('canvas');
-  var colors = ['#6366f1','#8b5cf6','#ec4899','#06b6d4','#10b981','#f59e0b','#ef4444','#3b82f6'];
-  var bgColors = ['rgba(99,102,241,0.2)','rgba(139,92,246,0.2)','rgba(236,72,153,0.2)','rgba(6,182,212,0.2)','rgba(16,185,129,0.2)','rgba(245,158,11,0.2)','rgba(239,68,68,0.2)','rgba(59,130,246,0.2)'];
-  canvases.forEach(function(canvas, idx) {
-    // Skip if already has a chart instance
-    if (canvas.__chartjs || (Chart.getChart && Chart.getChart(canvas))) return;
-    // Skip tiny canvases (probably not charts)
-    if (canvas.offsetWidth < 50 || canvas.offsetHeight < 50) return;
-    var ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    // Check if canvas is blank (no pixels drawn)
-    try {
-      var imageData = ctx.getImageData(0, 0, Math.min(canvas.width, 100), Math.min(canvas.height, 100));
-      var hasContent = false;
-      for (var p = 3; p < imageData.data.length; p += 16) {
-        if (imageData.data[p] > 0) { hasContent = true; break; }
-      }
-      if (hasContent) return;
-    } catch(e) {}
-    // Canvas is empty — create a chart
-    var w = canvas.offsetWidth;
-    var h = canvas.offsetHeight;
-    canvas.width = w * 2; canvas.height = h * 2;
-    canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
-    var isSmall = w < 200 || h < 200;
-    var label = (canvas.getAttribute('aria-label') || canvas.id || '').toLowerCase();
-    var parentText = (canvas.parentElement ? canvas.parentElement.textContent : '').toLowerCase().substring(0, 200);
-    var isDoughnut = isSmall || label.includes('donut') || label.includes('doughnut') || label.includes('pie') || parentText.includes('distribution') || parentText.includes('breakdown');
-    try {
-      if (isDoughnut) {
-        new Chart(canvas, {
-          type: 'doughnut',
-          data: { labels: ['Segment A','Segment B','Segment C','Segment D'], datasets: [{ data: [35, 25, 22, 18], backgroundColor: colors.slice(0,4), borderWidth: 0 }] },
-          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 } } } } }
-        });
-      } else {
-        new Chart(canvas, {
-          type: idx % 2 === 0 ? 'line' : 'bar',
-          data: { labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul'], datasets: [{ label: 'Data', data: [65,78,90,81,95,110,125], borderColor: colors[idx % colors.length], backgroundColor: idx % 2 === 0 ? colors[idx % colors.length] : bgColors[idx % bgColors.length], fill: idx % 2 === 0, tension: 0.4, borderWidth: 2, borderRadius: idx % 2 === 0 ? 0 : 6 }] },
-          options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { display: false }, ticks: { color: '#94a3b8' } }, y: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8' } } }, plugins: { legend: { display: false } } }
-        });
-      }
-    } catch(e) { console.warn('Chart safety net error:', e); }
-  });
-}
-// Run after Chart.js CDN loads
-if (typeof Chart !== 'undefined') { setTimeout(initEmptyCharts, 500); setTimeout(initEmptyCharts, 2000); }
-else { window.addEventListener('load', function() { setTimeout(initEmptyCharts, 300); setTimeout(initEmptyCharts, 1500); }); }
-</script>`;
-      processedCode = processedCode.replace('</body>', chartSafetyScript + '\n</body>');
-    }
-
     // FOUC fix: detect dark background from Tailwind classes and add inline style
     // so the page doesn't flash white while Tailwind CDN loads
     const darkBgClasses = ['bg-zinc-950', 'bg-zinc-900', 'bg-gray-950', 'bg-gray-900', 'bg-slate-950', 'bg-slate-900', 'bg-neutral-950', 'bg-neutral-900', 'bg-black', 'bg-stone-950', 'bg-stone-900'];
@@ -5087,11 +4890,10 @@ else { window.addEventListener('load', function() { setTimeout(initEmptyCharts, 
   const streamingCompleteRef = useRef(false);
   const generationStartTimeRef = useRef<number | null>(null);
   
-  // Max generation time - MUST be longer than server streaming timeout (360s)
-  // Server streaming: 6 min, server action fallback: additional 5+ min
-  // Client must wait at least 7 min for streaming before declaring stuck
+  // Max generation time (6 minutes on mobile, 4 on desktop) - after this, consider it stuck/failed
   const isMobileDevice = typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const MAX_GENERATION_TIME_MS = isMobileDevice ? 8 * 60 * 1000 : 7 * 60 * 1000;
+  // 5 minutes on desktop (Vercel limit is 300s), 6 minutes on mobile
+  const MAX_GENERATION_TIME_MS = isMobileDevice ? 6 * 60 * 1000 : 5 * 60 * 1000;
   
   // Complete generation and show results
   const completeGeneration = useCallback((code: string) => {
@@ -6463,12 +6265,11 @@ Ready to generate from your own videos? Upload any screen recording to get start
     if (hasFetchedInitialRef.current && lastUserIdRef.current === user.id) {
       return;
     }
-
+    
     hasFetchedInitialRef.current = true;
     lastUserIdRef.current = user.id;
 
     // IMPORTANT: Set loading=true BEFORE async fetch so auto-demo guard blocks
-    // Without this, there's a race: user arrives → isLoadingHistory=false → demo fires BEFORE fetch completes
     setIsLoadingHistory(true);
 
     // Initial fetch - only first 10 projects
@@ -9606,16 +9407,6 @@ Try these prompts in Cursor or v0:
           const ctx = canvas.getContext("2d");
           if (ctx && vw > 0 && vh > 0) {
             ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
-            // Check if frame is NOT all black (black frame = video not decoded yet)
-            const sample = ctx.getImageData(0, 0, Math.min(canvas.width, 80), Math.min(canvas.height, 60));
-            let brightness = 0;
-            for (let i = 0; i < sample.data.length; i += 16) { // Sample every 4th pixel
-              brightness += sample.data[i] + sample.data[i+1] + sample.data[i+2];
-            }
-            if (brightness < 100) {
-              console.log("Thumbnail is all black, skipping (video not decoded yet)");
-              return undefined; // Black frame - don't use it
-            }
             const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
             if (dataUrl.length > 1000) return dataUrl;
           }
@@ -9814,17 +9605,8 @@ Try these prompts in Cursor or v0:
         requestAnimationFrame(() => {
           setTimeout(() => {
             if (resolved) return;
-            const thumb = generateThumbnail(video);
-            if (thumb) {
-              finishCreation(thumb);
-            } else {
-              // Black frame - try again after more decode time
-              setTimeout(() => {
-                if (resolved) return;
-                finishCreation(generateThumbnail(video));
-              }, 500);
-            }
-          }, 300);
+            finishCreation(generateThumbnail(video));
+          }, 100);
         });
       };
       
@@ -11111,18 +10893,9 @@ Try these prompts in Cursor or v0:
         }
       }
 
-      // If we got here without complete event, return accumulated code (strip code fences)
+      // If we got here without complete event, return accumulated code
       if (fullCode.length > 100) {
-        let cleanedFallback = fullCode;
-        // Strip ```html ... ``` code fences
-        const fenceMatch = cleanedFallback.match(/```html?\s*([\s\S]*)```\s*$/i);
-        if (fenceMatch && fenceMatch[1].trim().length > 100) {
-          cleanedFallback = fenceMatch[1].trim().replace(/^html\s*\n/i, '');
-        } else {
-          // Strip any leading/trailing code fence markers
-          cleanedFallback = cleanedFallback.replace(/^```html?\s*\n?/i, '').replace(/\n?```\s*$/g, '').trim();
-        }
-        return { success: true, code: cleanedFallback, tokenUsage };
+        return { success: true, code: fullCode, tokenUsage };
       }
 
       return { success: false, error: "Generation incomplete" };
@@ -11810,20 +11583,14 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
       }
       
       // Add trim info if applicable
-      // Guard: if duration is 0 or trimEnd is 0, it's NOT trimmed (metadata didn't load)
-      const isTrimmed = flow.duration > 0 && flow.trimEnd > 0 && (flow.trimStart > 0 || flow.trimEnd < flow.duration);
+      const isTrimmed = flow.trimStart > 0 || flow.trimEnd < flow.duration;
       console.log(`Flow: trimStart=${flow.trimStart}, trimEnd=${flow.trimEnd}, duration=${flow.duration}, isTrimmed=${isTrimmed}`);
       
       if (isTrimmed) {
         fullStyleDirective += `. CRITICAL: ONLY analyze video content between timestamps ${flow.trimStart.toFixed(1)}s and ${flow.trimEnd.toFixed(1)}s. Ignore ALL content before ${flow.trimStart.toFixed(1)}s and after ${flow.trimEnd.toFixed(1)}s.`;
       } else {
         // Full video selected - add explicit instruction to watch entire video
-        if (flow.duration && flow.duration > 0) {
-          fullStyleDirective += `. This is a ${flow.duration} second video. Watch and analyze the ENTIRE video from 0:00 to ${formatDuration(flow.duration)}. Multiple screens or states may appear - include ALL of them.`;
-        } else {
-          // Duration unknown (metadata didn't load) — give generic instruction
-          fullStyleDirective += `. Watch and analyze the ENTIRE video from start to finish. Multiple screens or states may appear - include ALL of them.`;
-        }
+        fullStyleDirective += `. This is a ${flow.duration} second video. Watch and analyze the ENTIRE video from 0:00 to ${formatDuration(flow.duration)}. Multiple screens or states may appear - include ALL of them.`;
       }
       
       // Check for Supabase integration
@@ -12829,7 +12596,7 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
       setShowUpgradeModal(true);
       return;
     }
-
+    
     // Not logged in: require sign up
     if (!user) {
       setShowAuthModal(true);
@@ -15967,7 +15734,7 @@ ${publishCode}
                           </div>
                         </div>
                       )}
-                      {/* Pro feature overlay for demo mode (logged in FREE user viewing demo) */}
+                      {/* Pro feature overlay for demo mode (logged in but viewing demo) */}
                       {user && isDemoMode && !isPaidPlan && (
                         <div 
                           onClick={() => {
@@ -16405,11 +16172,11 @@ ${publishCode}
                                   </>
                                 ) : flow.videoUrl && !flow.isImage ? (
                                   <>
-                                    <video
-                                      src={flow.videoUrl}
-                                      className="w-full h-full object-cover"
-                                      muted
-                                      preload="auto"
+                                    <video 
+                                      src={flow.videoUrl} 
+                                      className="w-full h-full object-cover" 
+                                      muted 
+                                      preload="metadata"
                                       onLoadedData={(e) => {
                                         const v = e.currentTarget;
                                         v.currentTime = Math.min(0.5, v.duration * 0.1);
@@ -16673,7 +16440,7 @@ ${publishCode}
                           {flow.thumbnail && flow.thumbnail.length > 100 ? (
                             <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" />
                           ) : flow.videoUrl ? (
-                            <video src={flow.videoUrl} className="w-full h-full object-cover" muted preload="auto" onLoadedData={(e) => { e.currentTarget.currentTime = 0.5; }} />
+                            <video src={flow.videoUrl} className="w-full h-full object-cover" muted preload="metadata" onLoadedData={(e) => { e.currentTarget.currentTime = 0.5; }} />
                           ) : (
                             <Film className="w-3 h-3 text-white/20" />
                           )}
@@ -24694,7 +24461,7 @@ module.exports = {
                         {flow.thumbnail && flow.thumbnail.length > 100 ? (
                           <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" />
                         ) : flow.videoUrl ? (
-                          <video src={flow.videoUrl} className="w-full h-full object-cover" muted preload="auto" onLoadedData={(e) => { e.currentTarget.currentTime = 0.5; }} />
+                          <video src={flow.videoUrl} className="w-full h-full object-cover" muted preload="metadata" onLoadedData={(e) => { e.currentTarget.currentTime = 0.5; }} />
                         ) : (
                           <Film className="w-4 h-4 text-white/20" />
                         )}
@@ -25845,7 +25612,7 @@ module.exports = {
                           {flow.thumbnail && flow.thumbnail.length > 100 ? (
                             <img src={flow.thumbnail} alt="" className="w-full h-full object-cover" />
                           ) : flow.videoUrl ? (
-                            <video src={flow.videoUrl} className="w-full h-full object-cover" muted preload="auto" onLoadedData={(e) => { e.currentTarget.currentTime = 0.5; }} />
+                            <video src={flow.videoUrl} className="w-full h-full object-cover" muted preload="metadata" onLoadedData={(e) => { e.currentTarget.currentTime = 0.5; }} />
                           ) : (
                             <Film className="w-3 h-3 text-white/20" />
                           )}
@@ -25965,7 +25732,7 @@ module.exports = {
                 </div>
               )}
               {/* Pro feature overlay for demo mode - Mobile */}
-              {user && isDemoMode && (
+              {user && isDemoMode && !isPaidPlan && (
                 <div 
                   onClick={() => {
                     setUpgradeFeature("code");
