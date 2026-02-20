@@ -469,8 +469,8 @@ export async function POST(request: NextRequest) {
       generationConfig: {
         temperature: 0.85,
         maxOutputTokens: 65000,
-        // @ts-ignore - thinking for better code quality (16K fast)
-        thinkingConfig: { thinkingBudget: 16384 },
+        // thinkingBudget removed: deprecated for Gemini 3.x, causes stream stalls
+        // Model uses default dynamic thinking (recommended by Google docs)
       },
     });
     
