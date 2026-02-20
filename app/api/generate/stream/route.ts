@@ -1622,6 +1622,489 @@ JS: document.querySelectorAll('.scroll-stack-section').forEach((section,i)=>{
 });
 
 ═══════════════════════════════════════════════════
+🔥 REACT BITS COMPLETE CATALOG — 53 MORE EFFECTS (#81-#133) 🔥
+Use THESE TOO — pick freely from all 133 effects!
+═══════════════════════════════════════════════════
+
+══ TEXT ANIMATIONS (#81-#90) ══
+
+───── 81. TEXT TYPE (character-by-character typing with cursor blink) ─────
+CSS: @keyframes cursorBlink { 0%,100%{opacity:1} 50%{opacity:0} }
+.text-type-cursor { display:inline-block;width:2px;height:1em;background:currentColor;margin-left:2px;animation:cursorBlink 0.8s step-end infinite;vertical-align:text-bottom; }
+HTML: <span class="text-type" data-words="Hello World|Build Fast|Ship More"></span>
+JS: document.querySelectorAll('.text-type').forEach(el=>{
+  const words=(el.dataset.words||'Hello').split('|');
+  el.innerHTML='<span class="tw"></span><span class="text-type-cursor"></span>';
+  const tw=el.querySelector('.tw'); let wi=0,ci=0,del=false;
+  const go=()=>{const w=words[wi%words.length];tw.textContent=del?w.slice(0,ci--):w.slice(0,++ci);if(!del&&ci===w.length){setTimeout(()=>{del=true;go();},1500);return;}if(del&&ci<0){del=false;wi++;ci=0;}setTimeout(go,del?50:80);};go();
+});
+
+───── 82. SHUFFLE TEXT (random char shuffle before real text locks in) ─────
+JS: const SCHARS='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%&*';
+document.querySelectorAll('.shuffle-text').forEach(el=>{
+  const orig=el.textContent; let fr=0;
+  const io=new IntersectionObserver(([e])=>{if(!e.isIntersecting)return;io.disconnect();
+    const run=()=>{el.textContent=orig.split('').map((c,i)=>i<Math.floor(fr)?c:SCHARS[Math.random()*SCHARS.length|0]).join('');fr+=0.5;if(fr<orig.length+1)requestAnimationFrame(run);else el.textContent=orig;};run();});
+  io.observe(el);
+});
+
+───── 83. CURVED LOOP TEXT (text on SVG arc, auto-rotating) ─────
+HTML: <div style="width:200px;height:200px">
+  <svg viewBox="0 0 200 200" style="width:100%;height:100%;animation:curveSpin 8s linear infinite">
+    <path id="arcPath" fill="none" d="M 100,100 m -70,0 a 70,70 0 1,1 140,0 a 70,70 0 1,1 -140,0"/>
+    <text font-size="12" fill="currentColor" letter-spacing="3">
+      <textPath href="#arcPath">CURVED TEXT • CURVED TEXT •</textPath>
+    </text>
+  </svg>
+</div>
+CSS: @keyframes curveSpin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+───── 84. TEXT CURSOR (custom cursor text label follows mouse) ─────
+HTML: <div id="tcursor" style="position:fixed;pointer-events:none;z-index:9999;font-size:0.85rem;font-weight:700;color:#fff;mix-blend-mode:difference;padding:4px 8px;border-radius:4px;transform:translate(-50%,-50%);transition:opacity 0.2s;opacity:0"></div>
+JS: const tc=document.getElementById('tcursor');let tx=0,ty=0,trx=0,try_=0;
+document.addEventListener('mousemove',e=>{trx=e.clientX;try_=e.clientY;if(tc)tc.style.opacity='1';});
+document.querySelectorAll('[data-cursor-text]').forEach(el=>{el.addEventListener('mouseenter',()=>{if(tc)tc.textContent=el.dataset.cursorText;});el.addEventListener('mouseleave',()=>{if(tc)tc.textContent='';});});
+const tcAnim=()=>{tx+=(trx-tx)*0.12;ty+=(try_-ty)*0.12;if(tc)tc.style.transform=\`translate(\${tx}px,\${ty}px) translate(-50%,-50%)\`;requestAnimationFrame(tcAnim);};tcAnim();
+
+───── 85. TRUE FOCUS (focused word sharp, others blur) ─────
+.true-focus { display:flex;flex-wrap:wrap;gap:0.4em; }
+.true-focus span { transition:filter 0.4s,opacity 0.4s; }
+.true-focus:hover span { filter:blur(4px);opacity:0.3; }
+.true-focus span:hover { filter:blur(0)!important;opacity:1!important;cursor:default; }
+JS: document.querySelectorAll('.true-focus').forEach(el=>{
+  el.innerHTML=el.textContent.trim().split(' ').map(w=>\`<span>\${w}</span>\`).join(' ');
+});
+
+───── 86. SCROLL FLOAT (letters float up from below with spring on scroll) ─────
+.scroll-float { overflow:hidden; }
+.scroll-float span { display:inline-block; }
+JS: document.querySelectorAll('.scroll-float').forEach(el=>{
+  el.innerHTML=el.textContent.split('').map(c=>c===' '?'<span style="display:inline-block">&nbsp;</span>':\`<span style="display:inline-block">\${c}</span>\`).join('');
+  gsap.fromTo(el.querySelectorAll('span'),{y:60,opacity:0},{y:0,opacity:1,duration:0.8,ease:'back.out(2)',stagger:0.03,scrollTrigger:{trigger:el,start:'top 85%',once:true}});
+});
+
+───── 87. ASCII TEXT (monospace big text, glowing keyframe) ─────
+HTML: <pre class="ascii-art" style="font-family:monospace;font-size:clamp(5px,1.1vw,11px);line-height:1.1;letter-spacing:0;overflow:hidden;color:inherit;background:none;border:none;margin:0">
+  ██  ██  ███  ██  ██  ██████
+  ██  ██ ██ ██ ██  ██  ██   █
+  ██████ █████ ██  ██  ██████
+  ██  ██ ██ ██  ████   ██   █
+  ██  ██ ██ ██   ██    ██████
+</pre>
+CSS: .ascii-art { animation:asciiGlow 3s ease-in-out infinite alternate; }
+@keyframes asciiGlow { from{text-shadow:none} to{text-shadow:0 0 10px currentColor,0 0 20px currentColor} }
+
+───── 88. SCRAMBLED TEXT (Matrix-style scramble-then-reveal per letter) ─────
+JS: (() => {
+  const C='!<>-_\\/[]{}—=+*^?#@ABCDEFGHIJKLMNabcdefghijklmn';
+  document.querySelectorAll('.scrambled-text').forEach(el=>{
+    const orig=el.textContent; let fr=0;
+    const io=new IntersectionObserver(([e])=>{if(!e.isIntersecting)return;io.disconnect();
+      const run=()=>{el.innerHTML=orig.split('').map((c,i)=>{if(c===' ')return ' ';if(i<Math.floor(fr))return \`<span>\${c}</span>\`;return \`<span style="opacity:0.4;color:#6366f1">\${C[Math.random()*C.length|0]}</span>\`;}).join('');fr+=0.35;if(fr<orig.length+1)requestAnimationFrame(run);else el.textContent=orig;};run();});
+    io.observe(el);});
+})();
+
+───── 89. GLITCH TEXT (CSS clip-path color-split distortion) ─────
+.glitch { position:relative; }
+.glitch::before,.glitch::after { content:attr(data-text);position:absolute;left:0;top:0;width:100%; }
+.glitch::before { color:#f00;clip-path:polygon(0 0,100% 0,100% 35%,0 35%);animation:gl1 0.7s infinite linear alternate-reverse; }
+.glitch::after { color:#00f;clip-path:polygon(0 65%,100% 65%,100% 100%,0 100%);animation:gl2 0.7s infinite linear alternate-reverse; }
+CSS: @keyframes gl1 { 0%{transform:translate(-2px)} 50%{transform:translate(2px,1px)} 100%{transform:translate(-1px,-1px)} }
+@keyframes gl2 { 0%{transform:translate(2px)} 50%{transform:translate(-2px,-1px)} 100%{transform:translate(1px,2px)} }
+HTML: <h1 class="glitch" data-text="GLITCH HERO">GLITCH HERO</h1>
+
+───── 90. SCROLL VELOCITY (marquee speed reacts to scroll speed) ─────
+HTML: <div class="scroll-vel-wrap" style="overflow:hidden;white-space:nowrap;padding:1rem 0">
+  <div class="scroll-vel-inner" style="display:inline-block">FAST • WHEN • SCROLLING • FAST • WHEN • SCROLLING • </div>
+</div>
+JS: document.querySelectorAll('.scroll-vel-wrap').forEach(wrap=>{
+  const inner=wrap.querySelector('.scroll-vel-inner');if(!inner)return;
+  inner.innerHTML+=inner.innerHTML;let x=0,lastS=0,vel=0;
+  const anim=()=>{const s=window.scrollY;vel+=(s-lastS)*0.06;vel*=0.95;lastS=s;x-=(0.4+Math.abs(vel));if(Math.abs(x)>inner.scrollWidth/2)x=0;inner.style.transform=\`translateX(\${x}px)\`;requestAnimationFrame(anim);};anim();
+});
+
+══ ANIMATIONS (#91-#98) ══
+
+───── 91. ORBIT IMAGES (images orbiting a center element) ─────
+HTML: <div class="orbit-wrap" style="position:relative;width:360px;height:360px;margin:0 auto">
+  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2">{CENTER LOGO}</div>
+  <div class="orbit-ring" style="position:absolute;inset:20px;border-radius:50%;border:1px dashed rgba(255,255,255,0.1)">
+    <img class="orbit-item" style="position:absolute;width:52px;height:52px;border-radius:50%;object-fit:cover;box-shadow:0 4px 12px rgba(0,0,0,0.3)" src="https://picsum.photos/seed/orb-a/52/52"/>
+    <img class="orbit-item" style="position:absolute;width:52px;height:52px;border-radius:50%;object-fit:cover;box-shadow:0 4px 12px rgba(0,0,0,0.3)" src="https://picsum.photos/seed/orb-b/52/52"/>
+    <img class="orbit-item" style="position:absolute;width:52px;height:52px;border-radius:50%;object-fit:cover;box-shadow:0 4px 12px rgba(0,0,0,0.3)" src="https://picsum.photos/seed/orb-c/52/52"/>
+    <img class="orbit-item" style="position:absolute;width:52px;height:52px;border-radius:50%;object-fit:cover;box-shadow:0 4px 12px rgba(0,0,0,0.3)" src="https://picsum.photos/seed/orb-d/52/52"/>
+  </div>
+</div>
+JS: document.querySelectorAll('.orbit-ring').forEach(ring=>{
+  const items=ring.querySelectorAll('.orbit-item'),n=items.length;const r=ring.offsetWidth/2-26,cx=ring.offsetWidth/2,cy=ring.offsetHeight/2;let a=0;
+  const anim=()=>{a+=0.006;items.forEach((item,i)=>{const th=a+(i/n)*Math.PI*2;item.style.left=(cx+Math.cos(th)*r-26)+'px';item.style.top=(cy+Math.sin(th)*r-26)+'px';});requestAnimationFrame(anim);};anim();
+});
+
+───── 92. TARGET CURSOR (crosshair targeting reticle follows cursor) ─────
+HTML: <div id="target-cur" style="position:fixed;pointer-events:none;z-index:9999;width:44px;height:44px;transform:translate(-50%,-50%);transition:transform 0.08s">
+  <svg viewBox="0 0 44 44" fill="none" stroke="#6366f1" stroke-width="1.5">
+    <circle cx="22" cy="22" r="12"/><circle cx="22" cy="22" r="2" fill="#6366f1"/>
+    <line x1="22" y1="2" x2="22" y2="10"/><line x1="22" y1="34" x2="22" y2="42"/>
+    <line x1="2" y1="22" x2="10" y2="22"/><line x1="34" y1="22" x2="42" y2="22"/>
+  </svg>
+</div>
+JS: const tgt=document.getElementById('target-cur');document.addEventListener('mousemove',e=>{if(tgt){tgt.style.left=e.clientX+'px';tgt.style.top=e.clientY+'px';}});
+
+───── 93. LASER FLOW (laser beam trail from cursor) ─────
+HTML: <canvas id="laser-cv" style="position:fixed;inset:0;pointer-events:none;z-index:9997;width:100%;height:100%"></canvas>
+JS: (() => {
+  const c=document.getElementById('laser-cv');if(!c)return;
+  c.width=window.innerWidth;c.height=window.innerHeight;
+  const ctx=c.getContext('2d');const pts=[];let mx=0,my=0;
+  document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;pts.push({x:mx,y:my,t:Date.now()});});
+  const draw=()=>{ctx.clearRect(0,0,c.width,c.height);const now=Date.now();const alive=pts.filter(p=>now-p.t<500);pts.length=0;pts.push(...alive);
+    if(alive.length>1){for(let i=1;i<alive.length;i++){const a=(1-(now-alive[i].t)/500)*0.9;ctx.beginPath();ctx.strokeStyle=\`rgba(99,102,241,\${a})\`;ctx.lineWidth=a*3;ctx.lineCap='round';ctx.moveTo(alive[i-1].x,alive[i-1].y);ctx.lineTo(alive[i].x,alive[i].y);ctx.stroke();}}requestAnimationFrame(draw);};draw();
+})();
+
+───── 94. GHOST CURSOR (fading soft circle echo trail) ─────
+JS: document.addEventListener('mousemove',e=>{
+  const g=document.createElement('div');
+  g.style.cssText=\`position:fixed;left:\${e.clientX}px;top:\${e.clientY}px;width:16px;height:16px;border-radius:50%;background:rgba(99,102,241,0.4);pointer-events:none;z-index:9996;transform:translate(-50%,-50%);transition:opacity 0.5s,transform 0.5s\`;
+  document.body.appendChild(g);setTimeout(()=>{g.style.opacity='0';g.style.transform='translate(-50%,-50%) scale(3)';},20);setTimeout(()=>g.remove(),550);
+});
+
+───── 95. GRADUAL BLUR (section blurs progressively on scroll) ─────
+JS: document.querySelectorAll('.gradual-blur').forEach(el=>{
+  gsap.to(el,{filter:'blur(10px)',opacity:0.2,scrollTrigger:{trigger:el,start:'top top',end:'bottom center',scrub:true}});
+});
+
+───── 96. NOISE OVERLAY (Canvas 2D film grain animation) ─────
+HTML: <canvas class="noise-cv" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0.07;z-index:1"></canvas>
+JS: document.querySelectorAll('.noise-cv').forEach(c=>{
+  c.width=256;c.height=256;const ctx=c.getContext('2d');
+  const grain=()=>{const d=ctx.createImageData(256,256);for(let i=0;i<d.data.length;i+=4){const v=Math.random()*255|0;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=255;}ctx.putImageData(d,0,0);requestAnimationFrame(grain);};grain();
+});
+
+───── 97. CROSSHAIR (fullscreen crosshair lines follow cursor) ─────
+HTML: <div id="ch-h" style="position:fixed;top:0;width:100vw;height:1px;background:rgba(99,102,241,0.18);pointer-events:none;z-index:9995"></div>
+<div id="ch-v" style="position:fixed;left:0;height:100vh;width:1px;background:rgba(99,102,241,0.18);pointer-events:none;z-index:9995"></div>
+JS: const chh=document.getElementById('ch-h'),chv=document.getElementById('ch-v');
+document.addEventListener('mousemove',e=>{if(chh)chh.style.top=e.clientY+'px';if(chv)chv.style.left=e.clientX+'px';});
+
+───── 98. IMAGE TRAIL (images appear and fade trailing cursor) ─────
+JS: const imgs=['https://picsum.photos/seed/trail-a/80/80','https://picsum.photos/seed/trail-b/80/80','https://picsum.photos/seed/trail-c/80/80','https://picsum.photos/seed/trail-d/80/80'];let iIdx=0,iLast=0;
+document.addEventListener('mousemove',e=>{const now=Date.now();if(now-iLast<130)return;iLast=now;
+  const img=document.createElement('img');img.src=imgs[iIdx++%imgs.length];
+  img.style.cssText=\`position:fixed;left:\${e.clientX-40}px;top:\${e.clientY-40}px;width:80px;height:80px;object-fit:cover;border-radius:8px;pointer-events:none;z-index:9994;transition:opacity 0.4s,transform 0.4s;transform:rotate(\${(Math.random()-0.5)*16}deg)\`;
+  document.body.appendChild(img);setTimeout(()=>{img.style.opacity='0';img.style.transform=\`scale(0.4) rotate(\${(Math.random()-0.5)*20}deg)\`;},80);setTimeout(()=>img.remove(),500);
+});
+
+══ COMPONENTS (#99-#116) ══
+
+───── 99. BUBBLE MENU (circular pop-out menu) ─────
+HTML: <div class="bubble-menu" style="position:relative;display:inline-block;width:56px;height:56px">
+  <button onclick="this.closest('.bubble-menu').classList.toggle('bm-open')" style="width:56px;height:56px;border-radius:50%;background:#6366f1;color:#fff;font-size:1.5rem;border:none;cursor:pointer;z-index:2;position:relative;transition:transform 0.3s">+</button>
+  <button class="bm-item" style="position:absolute;top:0;left:0;width:44px;height:44px;border-radius:50%;background:#8b5cf6;border:none;cursor:pointer;transform:scale(0);opacity:0;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1)"></button>
+  <button class="bm-item" style="position:absolute;top:0;left:0;width:44px;height:44px;border-radius:50%;background:#06b6d4;border:none;cursor:pointer;transform:scale(0);opacity:0;transition:all 0.3s 0.05s cubic-bezier(0.34,1.56,0.64,1)"></button>
+  <button class="bm-item" style="position:absolute;top:0;left:0;width:44px;height:44px;border-radius:50%;background:#10b981;border:none;cursor:pointer;transform:scale(0);opacity:0;transition:all 0.3s 0.1s cubic-bezier(0.34,1.56,0.64,1)"></button>
+</div>
+CSS: .bubble-menu.bm-open .bm-item:nth-child(2){transform:translate(-80px,-30px) scale(1);opacity:1}
+.bubble-menu.bm-open .bm-item:nth-child(3){transform:translate(-90px,20px) scale(1);opacity:1}
+.bubble-menu.bm-open .bm-item:nth-child(4){transform:translate(-60px,70px) scale(1);opacity:1}
+.bubble-menu.bm-open button:first-child{transform:rotate(45deg)}
+
+───── 100. REFLECTIVE CARD (animated reflection sheen sweep) ─────
+.reflective-card { position:relative;overflow:hidden;cursor:pointer; }
+.reflective-card::after { content:'';position:absolute;inset:-100%;background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.12) 50%,transparent 60%);transform:translateX(-200%);transition:transform 0.7s; }
+.reflective-card:hover::after { transform:translateX(200%); }
+
+───── 101. CARD NAV (scroll card nav with dot indicators) ─────
+HTML: <div class="card-nav" style="position:relative">
+  <div class="card-nav-track" style="display:flex;gap:1.5rem;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:0.5rem 0">
+    <div style="scroll-snap-align:start;flex:0 0 300px;border-radius:1rem;padding:1.5rem" class="glass-card">{card1}</div>
+    <div style="scroll-snap-align:start;flex:0 0 300px;border-radius:1rem;padding:1.5rem" class="glass-card">{card2}</div>
+    <div style="scroll-snap-align:start;flex:0 0 300px;border-radius:1rem;padding:1.5rem" class="glass-card">{card3}</div>
+  </div>
+  <div class="card-nav-dots" style="display:flex;gap:6px;justify-content:center;margin-top:1rem"></div>
+</div>
+JS: document.querySelectorAll('.card-nav').forEach(wrap=>{
+  const track=wrap.querySelector('.card-nav-track'),dots=wrap.querySelector('.card-nav-dots');
+  const cards=track.querySelectorAll('[style*="scroll-snap"]');
+  cards.forEach((_,i)=>{const d=document.createElement('button');d.style.cssText=\`width:\${i===0?'24px':'8px'};height:8px;border-radius:4px;border:none;cursor:pointer;background:\${i===0?'#6366f1':'rgba(255,255,255,0.2)'};transition:all 0.3s\`;d.onclick=()=>cards[i].scrollIntoView({behavior:'smooth',block:'nearest',inline:'start'});dots.appendChild(d);});
+  track.addEventListener('scroll',()=>{const idx=Math.round(track.scrollLeft/(track.scrollWidth/cards.length));dots.querySelectorAll('button').forEach((d,i)=>{d.style.width=i===idx?'24px':'8px';d.style.background=i===idx?'#6366f1':'rgba(255,255,255,0.2)';});});
+});
+
+───── 102. STACK (card stack that fans on hover) ─────
+.stack-wrap { position:relative;width:300px;height:220px; }
+.stack-card { position:absolute;inset:0;border-radius:1.25rem;transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+.stack-card:nth-child(1){transform:rotate(-4deg) translateY(8px);z-index:1}
+.stack-card:nth-child(2){transform:rotate(-1deg) translateY(4px);z-index:2}
+.stack-card:nth-child(3){transform:rotate(0deg);z-index:3}
+.stack-wrap:hover .stack-card:nth-child(1){transform:rotate(-14deg) translate(-60px,12px)}
+.stack-wrap:hover .stack-card:nth-child(2){transform:rotate(-5deg) translate(-20px,6px)}
+.stack-wrap:hover .stack-card:nth-child(3){transform:rotate(8deg) translate(40px,8px)}
+
+───── 103. PILL NAV (sliding pill indicator navigation) ─────
+HTML: <nav class="pill-nav" style="display:inline-flex;background:rgba(255,255,255,0.06);border-radius:999px;padding:4px;gap:2px;position:relative">
+  <div class="pill-ind" style="position:absolute;top:4px;left:4px;height:calc(100% - 8px);background:#6366f1;border-radius:999px;transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);pointer-events:none"></div>
+  <button class="pill-btn" style="position:relative;z-index:1;padding:0.5rem 1.25rem;border:none;background:none;color:#fff;cursor:pointer;border-radius:999px;font-weight:600;font-size:0.9rem">Home</button>
+  <button class="pill-btn" style="position:relative;z-index:1;padding:0.5rem 1.25rem;border:none;background:none;color:rgba(255,255,255,0.55);cursor:pointer;border-radius:999px;font-size:0.9rem">Work</button>
+  <button class="pill-btn" style="position:relative;z-index:1;padding:0.5rem 1.25rem;border:none;background:none;color:rgba(255,255,255,0.55);cursor:pointer;border-radius:999px;font-size:0.9rem">About</button>
+</nav>
+JS: document.querySelectorAll('.pill-nav').forEach(nav=>{
+  const ind=nav.querySelector('.pill-ind'),btns=nav.querySelectorAll('.pill-btn');
+  const go=btn=>{const nr=nav.getBoundingClientRect(),br=btn.getBoundingClientRect();ind.style.left=(br.left-nr.left)+'px';ind.style.width=br.width+'px';btns.forEach(b=>b.style.color=b===btn?'#fff':'rgba(255,255,255,0.55)');};
+  btns[0]&&go(btns[0]);btns.forEach(b=>b.addEventListener('click',()=>go(b)));
+});
+
+───── 104. MASONRY (CSS columns waterfall grid) ─────
+.masonry { columns:3;column-gap:1rem; }
+.masonry-item { break-inside:avoid;margin-bottom:1rem; }
+@media(max-width:768px){.masonry{columns:2}}
+@media(max-width:480px){.masonry{columns:1}}
+
+───── 105. GLASS SURFACE (deep multi-layer frosted glass) ─────
+.glass-surface { background:rgba(255,255,255,0.04);backdrop-filter:blur(40px) brightness(1.1) saturate(200%);-webkit-backdrop-filter:blur(40px) brightness(1.1) saturate(200%);border:1px solid rgba(255,255,255,0.08);box-shadow:0 0 0 1px rgba(0,0,0,0.1),0 4px 32px rgba(0,0,0,0.25),inset 0 1px 0 rgba(255,255,255,0.12);position:relative; }
+.glass-surface::before { content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.06) 0%,transparent 50%);border-radius:inherit;pointer-events:none; }
+
+───── 106. DOME GALLERY (spherical dome image grid layout) ─────
+.dome-gallery { display:grid;grid-template-columns:repeat(5,1fr);gap:3px;border-radius:50% 50% 0 0 / 40% 40% 0 0;overflow:hidden; }
+.dome-gallery img { width:100%;aspect-ratio:1;object-fit:cover;transition:transform 0.3s,filter 0.3s; }
+.dome-gallery img:hover { transform:scale(1.08);filter:brightness(1.15); }
+
+───── 107. FOLDER (3D folder open/close on hover) ─────
+.folder-wrap { width:120px;height:90px;position:relative;cursor:pointer;perspective:400px; }
+.folder-back { position:absolute;inset:0;background:#f59e0b;border-radius:4px 14px 14px 14px; }
+.folder-tab { position:absolute;top:-18px;left:0;width:55px;height:20px;background:#d97706;border-radius:8px 8px 0 0; }
+.folder-front { position:absolute;top:8px;left:0;right:0;bottom:0;background:linear-gradient(135deg,#fbbf24,#f59e0b);border-radius:4px 4px 14px 14px;transform-origin:bottom;transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+.folder-wrap:hover .folder-front { transform:rotateX(-50deg); }
+
+───── 108. STAGGERED MENU (list items slide in with stagger) ─────
+.staggered-menu { list-style:none;padding:0;margin:0; }
+.staggered-menu li { opacity:0;transform:translateX(-20px); }
+JS: document.querySelectorAll('.staggered-menu').forEach(ul=>{
+  gsap.to(ul.querySelectorAll('li'),{opacity:1,x:0,duration:0.5,stagger:0.08,ease:'power3.out',scrollTrigger:{trigger:ul,start:'top 85%',once:true}});
+});
+
+───── 109. PROFILE CARD (social profile card with follow button) ─────
+HTML: <div class="profile-card" style="border-radius:1.5rem;overflow:hidden;text-align:center;max-width:280px">
+  <div style="height:100px;background:linear-gradient(135deg,#6366f1,#8b5cf6)"></div>
+  <div style="padding:0 1.5rem 1.5rem">
+    <img src="https://i.pravatar.cc/80?img=5" style="width:80px;height:80px;border-radius:50%;border:4px solid rgba(255,255,255,0.1);margin:-40px auto 1rem;display:block;object-fit:cover"/>
+    <h3 style="margin:0 0 0.25rem;font-size:1.1rem;font-weight:700">Alex Johnson</h3>
+    <p style="margin:0 0 1rem;opacity:0.6;font-size:0.85rem">Product Designer</p>
+    <button class="pf-follow" style="padding:0.5rem 1.5rem;background:#6366f1;color:#fff;border:none;border-radius:999px;cursor:pointer;font-weight:600;transition:all 0.2s" onclick="this.classList.toggle('pf-on');this.textContent=this.classList.contains('pf-on')?'Following':'Follow'">Follow</button>
+  </div>
+</div>
+CSS: .pf-follow.pf-on{background:transparent;border:2px solid #6366f1;color:#6366f1}
+.pf-follow:hover{transform:scale(1.05);box-shadow:0 4px 16px rgba(99,102,241,0.4)}
+
+───── 110. DOCK (macOS magnification dock) ─────
+HTML: <div class="dock-wrap" style="display:flex;align-items:flex-end;gap:8px;padding:8px 16px;background:rgba(255,255,255,0.1);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.18);border-radius:1.25rem;width:fit-content;margin:0 auto">
+  <div class="dock-item" style="width:52px;height:52px;border-radius:12px;overflow:hidden;background:#6366f1;transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1);cursor:pointer;flex-shrink:0"></div>
+  <div class="dock-item" style="width:52px;height:52px;border-radius:12px;overflow:hidden;background:#8b5cf6;transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1);cursor:pointer;flex-shrink:0"></div>
+  <div class="dock-item" style="width:52px;height:52px;border-radius:12px;overflow:hidden;background:#06b6d4;transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1);cursor:pointer;flex-shrink:0"></div>
+  <div class="dock-item" style="width:52px;height:52px;border-radius:12px;overflow:hidden;background:#10b981;transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1);cursor:pointer;flex-shrink:0"></div>
+</div>
+JS: document.querySelectorAll('.dock-wrap').forEach(dock=>{
+  const items=dock.querySelectorAll('.dock-item');
+  dock.addEventListener('mousemove',e=>{const dr=dock.getBoundingClientRect();items.forEach(item=>{const ir=item.getBoundingClientRect(),cx=ir.left+ir.width/2,d=Math.abs(e.clientX-cx),s=Math.max(1,2.6-d*0.018);item.style.transform=\`scale(\${s}) translateY(\${(s-1)*-22}px)\`;});});
+  dock.addEventListener('mouseleave',()=>items.forEach(i=>{i.style.transform='';}));
+});
+
+───── 111. GOOEY NAV (blob gooey filter navigation) ─────
+HTML: <svg style="position:absolute;width:0;height:0"><filter id="goo-f"><feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"/><feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 22 -10" result="goo"/></filter></svg>
+<nav style="display:flex;background:rgba(99,102,241,0.12);border-radius:999px;padding:4px;filter:url(#goo-f);width:fit-content">
+  <a style="padding:0.6rem 1.3rem;border-radius:999px;text-decoration:none;color:inherit;font-weight:500;background:transparent;transition:background 0.3s" href="#">Home</a>
+  <a style="padding:0.6rem 1.3rem;border-radius:999px;text-decoration:none;color:#fff;font-weight:600;background:#6366f1" href="#">Work</a>
+  <a style="padding:0.6rem 1.3rem;border-radius:999px;text-decoration:none;color:inherit;font-weight:500;background:transparent;transition:background 0.3s" href="#">About</a>
+</nav>
+
+───── 112. CARD SWAP (clickable card stack swap) ─────
+.card-swap { position:relative;width:300px;height:400px; }
+.swappable { position:absolute;inset:0;border-radius:1.5rem;cursor:pointer;transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+.swappable:nth-child(1){z-index:3;transform:rotate(0deg)}
+.swappable:nth-child(2){z-index:2;transform:rotate(-5deg) translateY(8px)}
+.swappable:nth-child(3){z-index:1;transform:rotate(5deg) translateY(16px)}
+JS: document.querySelectorAll('.card-swap').forEach(stack=>{
+  stack.addEventListener('click',()=>{
+    const cards=[...stack.children];const top=cards[0];
+    top.style.transition='transform 0.4s';top.style.transform='translate(150%,0) rotate(20deg)';
+    setTimeout(()=>{top.style.transition='none';top.style.transform='rotate(5deg) translateY(16px)';stack.appendChild(top);setTimeout(()=>{top.style.transition='';[...stack.children].forEach((c,i)=>{c.style.zIndex=3-i;c.style.transform=['rotate(0deg)','rotate(-5deg) translateY(8px)','rotate(5deg) translateY(16px)'][i]||'';});},20);},420);
+  });
+});
+
+───── 113. GLASS ICONS (frosted glass icon buttons) ─────
+.glass-icon { display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,0.06);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.12);transition:all 0.2s;cursor:pointer; }
+.glass-icon:hover { background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.25);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.2); }
+
+───── 114. FLOWING MENU (navigation with animated liquid highlight) ─────
+HTML: <nav class="flow-menu" style="display:flex;background:rgba(255,255,255,0.04);border-radius:999px;padding:4px;position:relative">
+  <div class="flow-ind" style="position:absolute;top:4px;left:4px;height:calc(100% - 8px);background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:999px;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);pointer-events:none"></div>
+  <button class="flow-btn" style="position:relative;z-index:1;padding:0.6rem 1.4rem;border:none;background:none;color:#fff;font-weight:600;cursor:pointer;border-radius:999px;font-size:0.9rem">Home</button>
+  <button class="flow-btn" style="position:relative;z-index:1;padding:0.6rem 1.4rem;border:none;background:none;color:rgba(255,255,255,0.5);cursor:pointer;border-radius:999px;font-size:0.9rem">Work</button>
+  <button class="flow-btn" style="position:relative;z-index:1;padding:0.6rem 1.4rem;border:none;background:none;color:rgba(255,255,255,0.5);cursor:pointer;border-radius:999px;font-size:0.9rem">About</button>
+</nav>
+JS: document.querySelectorAll('.flow-menu').forEach(nav=>{
+  const ind=nav.querySelector('.flow-ind'),btns=nav.querySelectorAll('.flow-btn');
+  const go=btn=>{const nr=nav.getBoundingClientRect(),lr=btn.getBoundingClientRect();ind.style.left=(lr.left-nr.left)+'px';ind.style.width=lr.width+'px';ind.style.top=(lr.top-nr.top)+'px';ind.style.height=lr.height+'px';btns.forEach(b=>b.style.color=b===btn?'#fff':'rgba(255,255,255,0.5)');};
+  btns[0]&&go(btns[0]);btns.forEach(b=>b.addEventListener('click',()=>go(b)));
+});
+
+───── 115. INFINITE MENU (auto-scrolling infinite vertical menu) ─────
+HTML: <div class="inf-menu" style="overflow:hidden;height:240px;position:relative;mask-image:linear-gradient(to bottom,transparent,black 20%,black 80%,transparent)">
+  <div class="inf-menu-track" style="display:flex;flex-direction:column">
+    <div class="inf-item" style="padding:0.75rem 1.5rem;font-size:1.05rem;cursor:pointer;transition:color 0.2s,transform 0.2s;white-space:nowrap">Menu Item One</div>
+    <div class="inf-item" style="padding:0.75rem 1.5rem;font-size:1.05rem;cursor:pointer;transition:color 0.2s,transform 0.2s;white-space:nowrap">Menu Item Two</div>
+    <div class="inf-item" style="padding:0.75rem 1.5rem;font-size:1.05rem;cursor:pointer;transition:color 0.2s,transform 0.2s;white-space:nowrap">Menu Item Three</div>
+    <div class="inf-item" style="padding:0.75rem 1.5rem;font-size:1.05rem;cursor:pointer;transition:color 0.2s,transform 0.2s;white-space:nowrap">Menu Item Four</div>
+  </div>
+</div>
+CSS: .inf-item:hover { color:#6366f1;transform:translateX(10px); }
+JS: document.querySelectorAll('.inf-menu').forEach(menu=>{
+  const track=menu.querySelector('.inf-menu-track');if(!track)return;
+  track.innerHTML+=track.innerHTML;let y=0;const h=track.scrollHeight/2;
+  const anim=()=>{y+=0.7;if(y>=h)y=0;track.style.transform=\`translateY(-\${y}px)\`;requestAnimationFrame(anim);};anim();
+});
+
+───── 116. STEPPER (animated step progress indicator) ─────
+HTML: <div class="stepper" style="display:flex;align-items:center">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+    <div style="width:40px;height:40px;border-radius:50%;background:#6366f1;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:0 0 0 4px rgba(99,102,241,0.2)">1</div>
+    <span style="font-size:0.75rem;font-weight:500">Start</span>
+  </div>
+  <div style="height:2px;flex:1;background:linear-gradient(to right,#6366f1,rgba(255,255,255,0.1));min-width:60px"></div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+    <div style="width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;font-weight:700">2</div>
+    <span style="font-size:0.75rem;opacity:0.4">Config</span>
+  </div>
+  <div style="height:2px;flex:1;background:rgba(255,255,255,0.1);min-width:60px"></div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+    <div style="width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;font-weight:700">3</div>
+    <span style="font-size:0.75rem;opacity:0.4">Launch</span>
+  </div>
+</div>
+
+══ BACKGROUNDS (#117-#133) ══
+
+───── 117. LIQUID ETHER (flowing liquid radial gradient animation) ─────
+.liquid-ether { position:relative;overflow:hidden; }
+.liquid-ether::before { content:'';position:absolute;inset:-50%;width:200%;height:200%;background:radial-gradient(ellipse 60% 50% at 30% 50%,rgba(99,102,241,0.25),transparent 55%),radial-gradient(ellipse 50% 60% at 70% 40%,rgba(139,92,246,0.2),transparent 55%),radial-gradient(ellipse 40% 50% at 50% 80%,rgba(6,182,212,0.15),transparent 50%);animation:etherDrift 10s ease-in-out infinite alternate;pointer-events:none; }
+CSS: @keyframes etherDrift { 0%{transform:translate(0,0) scale(1)} 50%{transform:translate(-3%,2%) scale(1.04)} 100%{transform:translate(2%,-3%) scale(0.97)} }
+
+───── 118. PRISM BACKGROUND (prismatic conic gradient spin) ─────
+.prism-bg { position:relative;overflow:hidden; }
+.prism-bg::before { content:'';position:absolute;inset:-50%;width:200%;height:200%;background:conic-gradient(from 0deg at 40% 50%,rgba(255,0,0,0.05),rgba(255,160,0,0.05),rgba(255,255,0,0.05),rgba(0,255,0,0.05),rgba(0,0,255,0.05),rgba(128,0,128,0.05),rgba(255,0,0,0.05));animation:prismSpin 15s linear infinite;pointer-events:none; }
+CSS: @keyframes prismSpin { to{transform:rotate(360deg)} }
+
+───── 119. DARK VEIL (full-page curtain reveal on load) ─────
+HTML: <div class="dark-veil" style="position:fixed;inset:0;background:#000;z-index:9999;pointer-events:none"></div>
+JS: (() => {
+  const v=document.querySelector('.dark-veil');if(!v)return;
+  v.style.animation='veilLift 1s cubic-bezier(0.76,0,0.24,1) 0.2s forwards';
+})();
+CSS: @keyframes veilLift { from{transform:translateY(0);opacity:1} to{transform:translateY(-100%);opacity:0} }
+
+───── 120. LIGHT PILLAR (vertical god beam columns) ─────
+.light-pillars { position:absolute;inset:0;pointer-events:none;overflow:hidden; }
+.light-pillar { position:absolute;width:100px;height:100%;background:linear-gradient(to bottom,rgba(255,255,255,0.9),transparent);filter:blur(50px);opacity:0.05;animation:pillarSway 7s ease-in-out infinite alternate; }
+.light-pillar:nth-child(1){left:15%;animation-duration:5s}
+.light-pillar:nth-child(2){left:45%;animation-delay:1.5s;animation-duration:8s}
+.light-pillar:nth-child(3){left:75%;animation-delay:3s;animation-duration:6s}
+CSS: @keyframes pillarSway { from{transform:skewX(-4deg) scale(1)} to{transform:skewX(4deg) scale(1.05)} }
+HTML: <div class="light-pillars"><div class="light-pillar"></div><div class="light-pillar"></div><div class="light-pillar"></div></div>
+
+───── 121. FLOATING LINES (drifting horizontal line lines BG) ─────
+HTML: <div class="float-lines" style="position:absolute;inset:0;pointer-events:none;overflow:hidden;opacity:0.08"></div>
+JS: document.querySelectorAll('.float-lines').forEach(el=>{
+  for(let i=0;i<14;i++){const l=document.createElement('div');const y=Math.random()*100;const w=25+Math.random()*55;const spd=4+Math.random()*6;l.style.cssText=\`position:absolute;height:1px;background:currentColor;width:\${w}%;top:\${y}%;left:-\${w}%;animation:floatLine \${spd}s \${Math.random()*6}s linear infinite\`;el.appendChild(l);}
+});
+CSS: @keyframes floatLine { to{transform:translateX(300%)} }
+
+───── 122. LIGHT RAYS (god rays emanating from top) ─────
+.light-rays { position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden;opacity:0.07; }
+JS: document.querySelectorAll('.light-rays').forEach(el=>{
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.style.cssText='width:100%;height:100%;position:absolute;inset:0';svg.setAttribute('viewBox','0 0 1000 800');
+  for(let i=0;i<10;i++){const path=document.createElementNS('http://www.w3.org/2000/svg','path');const x=100+i*90;path.setAttribute('d',\`M 500 0 L \${x-30} 800 L \${x+50} 800 Z\`);path.setAttribute('fill',\`rgba(255,255,255,\${0.5-i*0.04})\`);path.style.animation=\`rayPulse \${3+i*0.4}s ease-in-out \${i*0.2}s infinite alternate\`;svg.appendChild(path);}
+  el.appendChild(svg);
+});
+CSS: @keyframes rayPulse { from{opacity:0.4} to{opacity:0.9} }
+
+───── 123. PIXEL BLAST (colorful pixel particle burst background) ─────
+HTML: <canvas class="px-blast" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></canvas>
+JS: document.querySelectorAll('.px-blast').forEach(c=>{
+  c.width=c.offsetWidth||800;c.height=c.offsetHeight||600;const ctx=c.getContext('2d');
+  const ps=Array.from({length:70},()=>({x:Math.random()*c.width,y:Math.random()*c.height,vx:(Math.random()-0.5)*2,vy:(Math.random()-0.5)*2,sz:2+Math.random()*5,h:Math.random()*60+220}));
+  const a=()=>{ctx.fillStyle='rgba(0,0,0,0.08)';ctx.fillRect(0,0,c.width,c.height);ps.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>c.width)p.vx*=-1;if(p.y<0||p.y>c.height)p.vy*=-1;ctx.fillStyle=\`hsl(\${p.h},80%,60%)\`;ctx.fillRect(p.x,p.y,p.sz,p.sz);});requestAnimationFrame(a);};a();
+});
+
+───── 124. COLOR BENDS (distorted color-bending gradient BG) ─────
+.color-bends { position:relative;overflow:hidden; }
+.color-bends::before { content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 50%,rgba(99,102,241,0.28),rgba(139,92,246,0.18) 40%,rgba(6,182,212,0.1) 70%,transparent);filter:blur(35px);animation:cBend 12s ease-in-out infinite alternate;pointer-events:none; }
+CSS: @keyframes cBend { 0%{transform:scale(1) skew(0deg,0deg)} 50%{transform:scale(1.12) skew(-4deg,2deg)} 100%{transform:scale(0.92) skew(3deg,-3deg)} }
+
+───── 125. GRADIENT BLINDS (venetian blind CSS animation) ─────
+.grad-blinds { position:relative;overflow:hidden; }
+.grad-blinds::after { content:'';position:absolute;inset:0;background:repeating-linear-gradient(to bottom,rgba(99,102,241,0.04) 0px,rgba(99,102,241,0.04) 2px,transparent 2px,transparent 44px);animation:blindsDrift 24s linear infinite;pointer-events:none; }
+CSS: @keyframes blindsDrift { from{background-position:0 0} to{background-position:0 44px} }
+
+───── 126. GRID SCAN (scanning glow line over dot grid) ─────
+.grid-scan { position:relative;overflow:hidden;background-image:linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px);background-size:48px 48px; }
+.grid-scan::after { content:'';position:absolute;left:0;right:0;height:2px;background:linear-gradient(to right,transparent,rgba(99,102,241,0.9),transparent);box-shadow:0 0 24px rgba(99,102,241,0.6);animation:scanLine 5s ease-in-out infinite;pointer-events:none; }
+CSS: @keyframes scanLine { 0%,100%{top:0;opacity:0} 5%,95%{opacity:1} 100%{top:100%} }
+
+───── 127. LIGHTNING (Canvas 2D procedural lightning bolts) ─────
+HTML: <canvas class="lightning-cv" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0.5"></canvas>
+JS: document.querySelectorAll('.lightning-cv').forEach(c=>{
+  c.width=c.offsetWidth||800;c.height=c.offsetHeight||500;const ctx=c.getContext('2d');
+  const bolt=(x1,y1,x2,y2,d)=>{if(d===0){ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.strokeStyle='rgba(139,92,246,0.8)';ctx.lineWidth=1;ctx.stroke();return;}const mx=(x1+x2)/2+(Math.random()-0.5)*70,my=(y1+y2)/2+(Math.random()-0.5)*35;bolt(x1,y1,mx,my,d-1);bolt(mx,my,x2,y2,d-1);if(Math.random()<0.4)bolt(mx,my,mx+(Math.random()-0.5)*80,my+40,d-2);};
+  const strike=()=>{ctx.clearRect(0,0,c.width,c.height);bolt(c.width*(0.3+Math.random()*0.4),0,c.width*(0.2+Math.random()*0.6),c.height,6);};
+  setInterval(strike,2500+Math.random()*3500);
+});
+
+───── 128. PRISMATIC BURST (SVG kaleidoscope wedge burst) ─────
+.prism-burst { position:absolute;inset:0;pointer-events:none;overflow:hidden;opacity:0.06; }
+JS: document.querySelectorAll('.prism-burst').forEach(el=>{
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 400 400');svg.style.cssText='width:100%;height:100%;position:absolute;inset:0';
+  const colors=['#6366f1','#8b5cf6','#06b6d4','#10b981','#f59e0b','#ef4444'];
+  for(let i=0;i<12;i++){const a1=(i*30)*Math.PI/180,a2=((i+0.7)*30)*Math.PI/180,r=180;const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',\`M200,200 L\${200+Math.cos(a1)*r},\${200+Math.sin(a1)*r} A\${r},\${r} 0 0,1 \${200+Math.cos(a2)*r},\${200+Math.sin(a2)*r} Z\`);p.setAttribute('fill',colors[i%colors.length]);p.style.transformOrigin='200px 200px';p.style.animation=\`burstRotate 25s linear infinite\`;svg.appendChild(p);}
+  el.appendChild(svg);});
+CSS: @keyframes burstRotate { to{transform:rotate(360deg)} }
+
+───── 129. DITHER BACKGROUND (dot dithering pattern animation) ─────
+.dither-bg { position:relative;overflow:hidden; }
+.dither-bg::after { content:'';position:absolute;inset:0;background-image:radial-gradient(circle,currentColor 1px,transparent 1px);background-size:4px 4px;opacity:0.04;animation:ditherDrift 10s linear infinite;pointer-events:none; }
+CSS: @keyframes ditherDrift { from{background-position:0 0} to{background-position:16px 16px} }
+
+───── 130. RIPPLE GRID (circular wave expanding on dot grid) ─────
+HTML: <canvas class="ripple-grid" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0.25"></canvas>
+JS: document.querySelectorAll('.ripple-grid').forEach(c=>{
+  c.width=c.offsetWidth||800;c.height=c.offsetHeight||600;const ctx=c.getContext('2d');const sp=44;let t=0;
+  const rows=Math.ceil(c.height/sp),cols=Math.ceil(c.width/sp);
+  const a=()=>{ctx.clearRect(0,0,c.width,c.height);t+=0.04;for(let r=0;r<=rows;r++){for(let cl=0;cl<=cols;cl++){const x=cl*sp,y=r*sp,d=Math.sqrt((x-c.width/2)**2+(y-c.height/2)**2),w=Math.sin(d*0.04-t)*0.5+0.5;ctx.beginPath();ctx.arc(x,y,1+w*4,0,Math.PI*2);ctx.fillStyle=\`rgba(99,102,241,\${0.08+w*0.35})\`;ctx.fill();}}requestAnimationFrame(a);};a();
+});
+
+───── 131. THREADS (fine animated thread lines background) ─────
+HTML: <canvas class="threads-bg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0.1"></canvas>
+JS: document.querySelectorAll('.threads-bg').forEach(c=>{
+  c.width=c.offsetWidth||800;c.height=c.offsetHeight||600;const ctx=c.getContext('2d');
+  const th=Array.from({length:35},()=>({x:Math.random()*c.width,y:Math.random()*c.height,ang:Math.random()*Math.PI*2,spd:0.15+Math.random()*0.25,len:60+Math.random()*120}));
+  const a=()=>{ctx.clearRect(0,0,c.width,c.height);th.forEach(t=>{t.x+=Math.cos(t.ang)*t.spd;t.y+=Math.sin(t.ang)*t.spd;if(t.x<0||t.x>c.width||t.y<0||t.y>c.height){t.x=Math.random()*c.width;t.y=Math.random()*c.height;}ctx.beginPath();ctx.moveTo(t.x,t.y);ctx.lineTo(t.x+Math.cos(t.ang)*t.len,t.y+Math.sin(t.ang)*t.len);ctx.strokeStyle='rgba(99,102,241,0.5)';ctx.lineWidth=0.5;ctx.stroke();});requestAnimationFrame(a);};a();
+});
+
+───── 132. BALLPIT (Canvas 2D physics balls with gravity) ─────
+HTML: <canvas class="ballpit-bg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></canvas>
+JS: document.querySelectorAll('.ballpit-bg').forEach(c=>{
+  c.width=c.offsetWidth||800;c.height=c.offsetHeight||600;const ctx=c.getContext('2d');
+  const balls=Array.from({length:28},()=>({x:Math.random()*c.width,y:Math.random()*c.height*0.5,vx:(Math.random()-0.5)*4,vy:(Math.random()-0.5)*3,r:18+Math.random()*28,h:Math.random()*80+200}));
+  const a=()=>{ctx.clearRect(0,0,c.width,c.height);balls.forEach(b=>{b.vy+=0.08;b.x+=b.vx;b.y+=b.vy;if(b.x-b.r<0){b.x=b.r;b.vx=Math.abs(b.vx)*0.85;}if(b.x+b.r>c.width){b.x=c.width-b.r;b.vx=-Math.abs(b.vx)*0.85;}if(b.y+b.r>c.height){b.y=c.height-b.r;b.vy=-Math.abs(b.vy)*0.8;}if(b.y-b.r<0){b.y=b.r;b.vy=Math.abs(b.vy);}const g=ctx.createRadialGradient(b.x-b.r*0.3,b.y-b.r*0.3,0,b.x,b.y,b.r);g.addColorStop(0,\`hsla(\${b.h},80%,70%,0.9)\`);g.addColorStop(1,\`hsla(\${b.h},60%,40%,0.8)\`);ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();});requestAnimationFrame(a);};a();
+});
+
+───── 133. ORB (glowing soft orb gradient background elements) ─────
+HTML: <div class="orb-bg" style="position:relative;overflow:hidden">
+  <div class="orb-el" style="position:absolute;border-radius:50%;filter:blur(70px);pointer-events:none;width:420px;height:420px;background:rgba(99,102,241,0.22);top:-100px;left:-100px;animation:orbDrift 9s ease-in-out infinite alternate"></div>
+  <div class="orb-el" style="position:absolute;border-radius:50%;filter:blur(70px);pointer-events:none;width:380px;height:380px;background:rgba(139,92,246,0.18);bottom:-80px;right:-80px;animation:orbDrift 11s ease-in-out 2s infinite alternate"></div>
+  <div class="orb-el" style="position:absolute;border-radius:50%;filter:blur(60px);pointer-events:none;width:260px;height:260px;background:rgba(6,182,212,0.13);top:50%;left:50%;transform:translate(-50%,-50%);animation:orbDrift 7s ease-in-out 1s infinite alternate"></div>
+  {content}
+</div>
+CSS: @keyframes orbDrift { 0%{transform:translate(0,0) scale(1)} 50%{transform:translate(18px,-15px) scale(1.06)} 100%{transform:translate(-12px,18px) scale(0.95)} }
+
+═══════════════════════════════════════════════════
 🚨 TESTIMONIAL SECTION — MANDATORY HORIZONTAL CAROUSEL 🚨
 ═══════════════════════════════════════════════════
 When rendering testimonials/reviews/quotes:
