@@ -421,7 +421,7 @@ export async function POST(request: NextRequest) {
         temperature: 0.85, // High for creative Awwwards-level designs
         maxOutputTokens: 100000,
         // @ts-ignore - thinking for better code quality
-        thinkingConfig: { thinkingBudget: 16384 },
+        thinkingConfig: { thinkingBudget: 32768 },
       },
     });
     
@@ -582,7 +582,10 @@ ${databaseContext}`;
           if (isReimagine) {
             prompt += `
 
-WATCH THE VIDEO TO EXTRACT ALL CONTENT AND DATA. Then BUILD A COMPLETELY NEW, BREATHTAKING DESIGN.
+🚨 WATCH THE ENTIRE VIDEO — EVERY SECOND, EVERY FRAME! Extract ALL content, ALL sections, ALL data.
+If the video shows 10 sections → your output MUST have 10 sections. NEVER truncate or skip sections!
+Your output should be 30,000-50,000+ characters for a complete page. Under 20,000 = TRUNCATED = FAILURE!
+Then BUILD A COMPLETELY NEW, BREATHTAKING DESIGN.
 
 🎨 REIMAGINE MODE — UNLEASH YOUR FULL CREATIVE POWER!
 The video is your CONTENT SOURCE only. You must INVENT a brand-new, UNIQUE layout and design.
@@ -650,32 +653,58 @@ CDN LIBRARIES — Load in <head>:
 📊 CHART.JS — HTML MODE (for dashboards with charts):
 ═══════════════════════════════════════════════════
 For EVERY chart in a dashboard, use this pattern:
-<div class="h-64 overflow-hidden">
+<div class="h-64 overflow-hidden chart-container">
   <canvas id="chart-unique-id"></canvas>
 </div>
+
+Then at the BOTTOM of <body>, AFTER all chart containers, add ONE script that initializes ALL charts with scroll animation:
 <script>
-new Chart(document.getElementById('chart-unique-id'), {
-  type: 'line', // or 'bar', 'doughnut', 'pie'
-  data: {
-    labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-    datasets: [{
-      label: 'Sales',
-      data: [1200, 1900, 3000, 2500, 2200, 3100, 2800, 3500, 2900, 3200, 2700, 3800],
-      borderColor: '#6366f1',
-      backgroundColor: 'rgba(99,102,241,0.1)',
-      borderWidth: 2, tension: 0.4, fill: true
-    }]
-  },
-  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } } }
-});
+// Initialize charts with scroll-triggered animation
+function initCharts() {
+  const chartConfigs = [
+    { id: 'chart-sales', type: 'line', data: { labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], datasets: [{ label: 'Revenue', data: [1200,1900,3000,2500,2200,3100,2800,3500,2900,3200,2700,3800], borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)', borderWidth: 2, tension: 0.4, fill: true }] }, opts: {} },
+    // Add more chart configs here...
+  ];
+
+  chartConfigs.forEach(cfg => {
+    const el = document.getElementById(cfg.id);
+    if (!el) return;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          new Chart(el, {
+            type: cfg.type,
+            data: cfg.data,
+            options: {
+              responsive: true, maintainAspectRatio: false,
+              animation: { duration: 1500, easing: 'easeOutQuart' },
+              plugins: { legend: { display: true } },
+              ...cfg.opts
+            }
+          });
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.2 });
+    observer.observe(el.parentElement || el);
+  });
+}
+document.addEventListener('DOMContentLoaded', initCharts);
 </script>
+
+IMPORTANT PATTERN for chart initialization:
+- Define ALL chart configs in a single array at the bottom
+- Each chart uses IntersectionObserver to animate on scroll into view
+- Animation: duration 1500ms, easeOutQuart — charts DRAW IN smoothly when scrolled to!
+- The observer fires ONCE per chart (unobserve after init)
 
 RULES:
 - EVERY canvas MUST have a UNIQUE id (chart-sales, chart-progress, chart-orders etc.)
-- Container div MUST have explicit height (h-64 or h-80) + overflow-hidden
-- Doughnut/Pie: add options: { scales: { x: { display: false }, y: { display: false } } }
+- Container div MUST have explicit height (h-64 or h-80) + overflow-hidden + class="chart-container"
+- Doughnut/Pie: add opts: { scales: { x: { display: false }, y: { display: false } } }
 - Use REAL data values — NEVER zeros! Estimate realistic numbers
 - Match chart colors to the dashboard theme
+- animation: { duration: 1500, easing: 'easeOutQuart' } — charts must ANIMATE on appear!
 - 🚨 NEVER fake charts with colored divs/circles/SVG — ALWAYS use Chart.js!
 
 ═══════════════════════════════════════════════════
@@ -1031,7 +1060,13 @@ Wrap in \`\`\`html blocks.`;
           } else {
             prompt += `
 
-WATCH THE VIDEO CAREFULLY — ESPECIALLY LATER FRAMES. FAITHFULLY RECONSTRUCT WHAT YOU SEE.
+🚨🚨🚨 WATCH THE ENTIRE VIDEO — EVERY SECOND, EVERY FRAME, EVERY SECTION! 🚨🚨🚨
+- PAUSE at each moment to identify ALL sections shown in the video
+- SCROLL through the ENTIRE video timeline — beginning, middle, AND end!
+- Count the TOTAL number of sections/blocks visible → your output MUST have the SAME number!
+- If the video shows 8 sections → output 8 sections. If it shows 12 → output 12. NEVER truncate!
+- LATER FRAMES show footer, testimonials, pricing, FAQ — do NOT skip these!
+- Your output should be 30,000-50,000+ characters for a complete page — if under 20,000 you are TRUNCATING!
 
 🚨🚨🚨 RULE #0 — THEME DETECTION (BEFORE ANYTHING ELSE!) 🚨🚨🚨
 LOOK AT THE VIDEO BACKGROUNDS! This determines your entire color scheme:
@@ -1157,7 +1192,7 @@ DO NOT output ANY stat/metric/KPI with value 0. Every number must be realistic a
             try {
               streamResult = await withTimeout(
                 model.generateContentStream(contentParts),
-                300000, // 5 minute timeout for complex generation
+                360000, // 6 minute timeout for complex generation with high thinking budget
                 "Direct Vision Code Generation"
               );
               break; // success

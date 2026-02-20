@@ -4487,64 +4487,46 @@ function ReplayToolContent() {
       processedCode = jsxToHtml(processedCode);
     }
     
-    // FIX INVISIBLE ELEMENTS - CSS to force visibility (AI generates opacity:0 for animations)
+    // FIX INVISIBLE ELEMENTS - smart visibility fix that works WITH GSAP, not against it
     const invisibleFixStyles = `
 <style id="invisible-fix">
-  /* Force all elements visible - fix AI generated fade/slide animations */
-  [style*="opacity: 0"], [style*="opacity:0"] { opacity: 1 !important; }
-  [style*="visibility: hidden"], [style*="visibility:hidden"] { visibility: visible !important; }
-  [style*="translate"] { opacity: 1 !important; }
-  .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .animate-fade,
-  [class*="fade-"], [class*="slide-"], [class*="stagger-"], [class*="animate-"] {
-    opacity: 1 !important;
-    visibility: visible !important;
-  }
-  [data-state="hidden"], [data-visible="false"], [data-aos] {
-    opacity: 1 !important;
-    visibility: visible !important;
-    transform: none !important;
-  }
-  /* Fix Lucide icons - make invisible instead of hidden to preserve layout */
+  /* Fix Lucide icons */
   i[data-lucide]:empty { opacity: 0; width: 1em; height: 1em; display: inline-block; }
   i[data-lucide]:not(:has(svg)) { opacity: 0; width: 1em; height: 1em; display: inline-block; }
   i[data-lucide]:has(svg) { opacity: 1 !important; }
   /* Fix sections with no content showing */
   section:empty { min-height: 0 !important; }
-  /* Ensure grid/flex children are visible */
-  .grid > *, .flex > * { opacity: 1 !important; visibility: visible !important; }
 </style>
 <script>
-// Force all elements visible after load
-function forceVisible() {
+// Smart visibility fix — runs AFTER GSAP has had time to initialize ScrollTrigger
+// Only fixes elements that are STILL invisible and NOT controlled by GSAP/ScrollTrigger
+function smartForceVisible() {
   document.querySelectorAll('*').forEach(function(el) {
+    // Skip elements that GSAP is managing (have _gsap property or are in a ScrollTrigger)
+    if (el._gsap || el.dataset.animate || el.closest('[data-animate]')) return;
+    // Skip chart containers
+    if (el.tagName === 'CANVAS' || el.closest('.chart-container')) return;
+
     var style = window.getComputedStyle(el);
     var inlineStyle = el.getAttribute('style') || '';
-    
-    // Fix opacity:0
-    if (style.opacity === '0' || inlineStyle.includes('opacity:0') || inlineStyle.includes('opacity: 0')) {
-      el.style.opacity = '1';
-    }
-    
-    // Fix visibility:hidden
-    if (style.visibility === 'hidden') {
-      el.style.visibility = 'visible';
-    }
-    
-    // Fix elements positioned off-screen
-    if (el.getBoundingClientRect && el.offsetParent !== null) {
-      var rect = el.getBoundingClientRect();
-      if (rect.top < -1000 || rect.left < -1000) {
-        el.style.transform = 'none';
-        el.style.top = 'auto';
-        el.style.left = 'auto';
+
+    // Only fix inline opacity:0 (not class-based — GSAP uses inline styles)
+    if (inlineStyle.includes('opacity:0') || inlineStyle.includes('opacity: 0')) {
+      // Check if this is likely a GSAP animation target (has transform too)
+      if (!inlineStyle.includes('translate') && !inlineStyle.includes('scale')) {
+        el.style.opacity = '1';
       }
+    }
+
+    // Fix visibility:hidden only on non-Alpine elements
+    if (style.visibility === 'hidden' && !el.hasAttribute('x-show') && !el.hasAttribute('x-cloak')) {
+      el.style.visibility = 'visible';
     }
   });
 }
-window.addEventListener('load', forceVisible);
-setTimeout(forceVisible, 100);
-setTimeout(forceVisible, 500);
-setTimeout(forceVisible, 1000);
+// Run AFTER GSAP ScrollTrigger has initialized (2s delay)
+setTimeout(smartForceVisible, 2000);
+setTimeout(smartForceVisible, 4000);
 // Initialize Lucide icons if available
 window.addEventListener('load', function() {
   if (typeof lucide !== 'undefined') {
@@ -4557,15 +4539,16 @@ window.addEventListener('load', function() {
     if (!processedCode.includes('cdn.tailwindcss.com') && !processedCode.includes('tailwindcss')) {
       const tailwindScript = '<script src="https://cdn.tailwindcss.com"></script>';
       const gsapScript = '<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>';
+      const chartScript = '<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>';
       const alpineScript = '<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>';
       const lucideScript = '<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>';
       
       if (processedCode.includes('</head>')) {
         // Inject before </head>
-        processedCode = processedCode.replace('</head>', `${tailwindScript}\n${gsapScript}\n${alpineScript}\n${lucideScript}\n${invisibleFixStyles}\n</head>`);
+        processedCode = processedCode.replace('</head>', `${tailwindScript}\n${gsapScript}\n${chartScript}\n${alpineScript}\n${lucideScript}\n${invisibleFixStyles}\n</head>`);
       } else if (processedCode.includes('<body')) {
         // Inject before <body>
-        processedCode = processedCode.replace(/<body/, `<head>${tailwindScript}\n${gsapScript}\n${alpineScript}\n${lucideScript}${invisibleFixStyles}</head>\n<body`);
+        processedCode = processedCode.replace(/<body/, `<head>${tailwindScript}\n${gsapScript}\n${chartScript}\n${alpineScript}\n${lucideScript}${invisibleFixStyles}</head>\n<body`);
       } else {
         // Wrap in full HTML structure
         processedCode = `<!DOCTYPE html>
@@ -4575,6 +4558,7 @@ window.addEventListener('load', function() {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   ${tailwindScript}
   ${gsapScript}
+  ${chartScript}
   ${alpineScript}
   ${lucideScript}
   ${invisibleFixStyles}
@@ -4586,11 +4570,12 @@ ${processedCode}
 </html>`;
       }
     } else {
-      // Tailwind already present, just add the fix
+      // Tailwind already present — inject Chart.js CDN if missing + visibility fix
+      const extraScripts = (!processedCode.includes('chart.js') && !processedCode.includes('Chart.js')) ? chartScript + '\n' : '';
       if (processedCode.includes('</head>')) {
-        processedCode = processedCode.replace('</head>', `${invisibleFixStyles}\n</head>`);
+        processedCode = processedCode.replace('</head>', `${extraScripts}${invisibleFixStyles}\n</head>`);
       } else if (processedCode.includes('</body>')) {
-        processedCode = processedCode.replace('</body>', `${invisibleFixStyles}\n</body>`);
+        processedCode = processedCode.replace('</body>', `${extraScripts}${invisibleFixStyles}\n</body>`);
       }
     }
     
