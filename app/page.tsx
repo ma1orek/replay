@@ -5087,10 +5087,11 @@ else { window.addEventListener('load', function() { setTimeout(initEmptyCharts, 
   const streamingCompleteRef = useRef(false);
   const generationStartTimeRef = useRef<number | null>(null);
   
-  // Max generation time (6 minutes on mobile, 4 on desktop) - after this, consider it stuck/failed
+  // Max generation time - MUST be longer than server streaming timeout (360s)
+  // Server streaming: 6 min, server action fallback: additional 5+ min
+  // Client must wait at least 7 min for streaming before declaring stuck
   const isMobileDevice = typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  // 5 minutes on desktop (Vercel limit is 300s), 6 minutes on mobile
-  const MAX_GENERATION_TIME_MS = isMobileDevice ? 6 * 60 * 1000 : 5 * 60 * 1000;
+  const MAX_GENERATION_TIME_MS = isMobileDevice ? 8 * 60 * 1000 : 7 * 60 * 1000;
   
   // Complete generation and show results
   const completeGeneration = useCallback((code: string) => {
@@ -11805,14 +11806,20 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
       }
       
       // Add trim info if applicable
-      const isTrimmed = flow.trimStart > 0 || flow.trimEnd < flow.duration;
+      // Guard: if duration is 0 or trimEnd is 0, it's NOT trimmed (metadata didn't load)
+      const isTrimmed = flow.duration > 0 && flow.trimEnd > 0 && (flow.trimStart > 0 || flow.trimEnd < flow.duration);
       console.log(`Flow: trimStart=${flow.trimStart}, trimEnd=${flow.trimEnd}, duration=${flow.duration}, isTrimmed=${isTrimmed}`);
       
       if (isTrimmed) {
         fullStyleDirective += `. CRITICAL: ONLY analyze video content between timestamps ${flow.trimStart.toFixed(1)}s and ${flow.trimEnd.toFixed(1)}s. Ignore ALL content before ${flow.trimStart.toFixed(1)}s and after ${flow.trimEnd.toFixed(1)}s.`;
       } else {
         // Full video selected - add explicit instruction to watch entire video
-        fullStyleDirective += `. This is a ${flow.duration} second video. Watch and analyze the ENTIRE video from 0:00 to ${formatDuration(flow.duration)}. Multiple screens or states may appear - include ALL of them.`;
+        if (flow.duration && flow.duration > 0) {
+          fullStyleDirective += `. This is a ${flow.duration} second video. Watch and analyze the ENTIRE video from 0:00 to ${formatDuration(flow.duration)}. Multiple screens or states may appear - include ALL of them.`;
+        } else {
+          // Duration unknown (metadata didn't load) — give generic instruction
+          fullStyleDirective += `. Watch and analyze the ENTIRE video from start to finish. Multiple screens or states may appear - include ALL of them.`;
+        }
       }
       
       // Check for Supabase integration
