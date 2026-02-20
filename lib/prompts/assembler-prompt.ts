@@ -155,12 +155,16 @@ const ChartComponent = ({ type, data, options = {} }) => {
 };
 \`\`\`
 
-⚠️ CHART CONTAINER RULES (MANDATORY):
-- ALWAYS wrap ChartComponent usage in a sized container: \`<div className="h-64">\` or \`<div className="h-80">\`
-- Chart parent card MUST have \`overflow-hidden\` to prevent canvas bleeding out
-- Pie/Donut charts: use \`h-64 w-64 mx-auto\` square container
-- Line/Bar/Area charts: use \`h-64\` or \`h-80\` full-width container
+⚠️ CHART RULES (MANDATORY — violating these = broken charts):
+- ALWAYS use \`<ChartComponent type="..." data={{...}} />\` — NEVER draw charts manually with divs/circles/SVG!
+- ALWAYS wrap ChartComponent in a sized container: \`<div className="h-64 overflow-hidden">\` or \`<div className="h-80 overflow-hidden">\`
+- Pie/Donut charts: use \`<div className="h-64 w-64 mx-auto overflow-hidden">\` square container + \`options={{ scales: { x: { display: false }, y: { display: false } } }}\`
+- Line/Bar/Area charts: use \`<div className="h-64 overflow-hidden">\` full-width container
 - NEVER put a chart in a container without explicit height — canvas will collapse to 0px or overflow
+- 🚨 NEVER create fake charts with colored divs, circles, or decorative elements! ALWAYS use Chart.js via ChartComponent!
+- Chart data MUST have proper labels array and datasets array with real numeric data values
+- Doughnut/Pie: \`data: { labels: [...], datasets: [{ data: [numbers], backgroundColor: [colors] }] }\`
+- Line/Bar: \`data: { labels: [...], datasets: [{ label: '...', data: [numbers], borderColor/backgroundColor: '...' }] }\`
 
 2. **LUCIDE ICONS**:
 \`\`\`jsx
@@ -312,14 +316,14 @@ const Icon = ({ name, className = "w-5 h-5" }) => {
 □ 3. TABLES: ALL rows present (not just first 3) with exact cell values
 □ 4. METRICS: ALL metric cards with exact values and labels — NEVER output "0+" or "$0B" (those are animation start frames, use realistic values!)
 □ 4b. LAYOUT MATCH: If video shows split hero (text+image side-by-side) → output MUST be split, NOT centered
-□ 5. CHARTS: ALL charts with correct data points, EACH in a sized container (h-64/h-80) with overflow-hidden on parent card
+□ 5. CHARTS: ALL charts use ChartComponent (NEVER fake with colored divs/circles!), EACH in h-64/h-80 container with overflow-hidden
 □ 6. THEME: matches scanData.ui.theme (light OR dark — respect the video!)
 □ 7. COLORS: from scanData.ui.colors in auto-detect, or from style directive/DS
 □ 8. LAYOUT: matches scanData structure (sidebar-main, grid columns, etc.)
 □ 9. GSAP animations on load and scroll (smooth, not excessive)
 □ 10. Hover effects on cards/buttons (but buttons VISIBLE before hover!)
 □ 11. Picsum.photos images with UNIQUE seeds per image (NO pollinations - rate limits!)
-□ 12. Chart.js with theme-appropriate colors, canvas inside h-64 container with overflow-hidden
+□ 12. Chart.js via ChartComponent with proper data format ({ labels: [...], datasets: [{ data: [numbers] }] }), canvas inside h-64 container with overflow-hidden — NEVER fake charts with divs/circles!
 □ 13. CSS Grid/Flexbox for card rows — NEVER inline-block
 □ 13b. Stat/KPI cards: grid grid-cols-2 md:grid-cols-4 gap-4 — cards MUST stay side-by-side, NEVER stack vertically on desktop
 □ 14. NO missing sections — if scanData has hero+features+FAQ+footer, output has ALL of them

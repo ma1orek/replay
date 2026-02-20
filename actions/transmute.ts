@@ -532,12 +532,12 @@ The difference between "generic Bootstrap" and "AWWWARDS WINNER" is:
    - Icon rotations on hover
    - Cursor effects
 
-4. **VISUAL RICHNESS**
+4. **VISUAL RICHNESS** (VARY between pages — never repeat the same combo!)
    - Gradient text on important headings
-   - Mesh gradients in backgrounds
-   - Noise texture overlays
+   - Mesh gradients, aurora, or animated orbs in backgrounds
    - Glowing borders on hover
    - Animated SVG decorations
+   - 🚨 DO NOT always add grain/noise texture — most modern UIs look cleaner without it
 
 5. **TYPOGRAPHY MASTERY**
    - 6-8xl headings with tight line-height
@@ -564,11 +564,8 @@ The difference between "generic Bootstrap" and "AWWWARDS WINNER" is:
     <div className="gradient-orb absolute bottom-1/4 right-1/3 w-[350px] h-[350px] bg-violet-500/20" style={{animationDelay: '3s'}} />
   </div>
   
-  {/* Grid pattern overlay */}
-  <div className="absolute inset-0 bg-[url('data:image/svg+xml,...')] opacity-[0.02]" />
-  
-  {/* Noise texture */}
-  <div className="absolute inset-0 bg-noise opacity-[0.03]" />
+  {/* Optional: grid/dot/line pattern — or skip for clean look */}
+  {/* <div className="absolute inset-0 bg-[url('data:image/svg+xml,...')] opacity-[0.02]" /> */}
   
   {/* Content */}
   <div className="relative z-10 container mx-auto px-6 py-32">
@@ -803,13 +800,15 @@ IF sidebarType is "navigation":
 - Build standard menu with icons and text labels
 - Use Icon component for Lucide icons
 
-CHART CONTAINER RULES (MANDATORY!):
-- Charts MUST have explicit height (h-64, h-80) on their parent container
-- Chart parent card MUST have overflow-hidden to prevent canvas bleeding
-- Pie/Donut: h-64 w-64 mx-auto square container
-- Line/Bar/Area: h-64 or h-80 full-width container
+CHART RULES (MANDATORY — violating = broken charts!):
+- ALWAYS use ChartComponent for ALL charts — NEVER fake charts with colored divs/circles/SVG shapes!
+- Charts MUST have explicit height (h-64, h-80) on their parent container + overflow-hidden
+- Pie/Donut: h-64 w-64 mx-auto overflow-hidden square container + options={{ scales: { x: { display: false }, y: { display: false } } }}
+- Line/Bar/Area: h-64 or h-80 full-width container + overflow-hidden
 - NEVER put chart without explicit height — canvas overflows or collapses to 0px
 - Use maintainAspectRatio: false in Chart.js options
+- Chart data MUST be valid Chart.js format: { labels: [...], datasets: [{ data: [numbers], ... }] }
+- 🚨 If the video shows a chart → use ChartComponent. NEVER approximate charts with decorative circles or shapes!
 
 ═══════════════════════════════════════════════════════════════════════════════
 🎬 GSAP ANIMATIONS - AWWWARDS-LEVEL (MANDATORY!)

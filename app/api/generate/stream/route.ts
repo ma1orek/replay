@@ -734,15 +734,14 @@ JS: document.querySelectorAll('.card-spotlight').forEach(c => {
 @keyframes marquee-scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
 IMPORTANT: duplicate all items inside marquee-track so loop is seamless!
 
-───── 10. FILM GRAIN OVERLAY (page-wide texture) ─────
-Add a subtle noise texture over the entire page:
+───── 10. BACKGROUND TEXTURES (choose ONE if any — do NOT always add grain!) ─────
+Pick AT MOST one of these textures — OR use NONE if the design looks better clean:
+Option A: Subtle grain canvas (use sparingly, NOT on every page):
 <canvas id="grain" style="position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:9999;opacity:0.04;"></canvas>
-<script>
-(function(){const c=document.getElementById('grain'),x=c.getContext('2d');c.width=c.height=256;
-let f=0;(function d(){if(f++%3===0){const i=x.createImageData(256,256);for(let j=0;j<i.data.length;j+=4){
-const v=Math.random()*255;i.data[j]=i.data[j+1]=i.data[j+2]=v;i.data[j+3]=20;}x.putImageData(i,0,0);}
-requestAnimationFrame(d);})();})();
-</script>
+Option B: CSS dot grid pattern (subtle dots overlay)
+Option C: Diagonal lines pattern
+Option D: No texture — let gradients and color do the work
+🚨 DO NOT default to grain on every page! Variety is key. Most modern UIs look BETTER without grain.
 
 ───── 11. AURORA BACKGROUND (for hero or CTA sections) ─────
 .aurora { position:absolute; inset:0; overflow:hidden; z-index:0; pointer-events:none; }
@@ -920,14 +919,19 @@ You MUST use at least:
 - gradient-text on at least 1 secondary headline
 - card-spotlight on at least 1 card set
 - marquee on any logo/partner bar
-- grain overlay on the full page
-- aurora OR particles on the hero background
+- 1-2 UNIQUE background effects from: aurora, particles, gradient orbs, mesh gradient, animated SVG, CSS pattern, or clean solid — DO NOT always use grain!
 - glass-card on at least 2 cards
 - hover-lift on all interactive cards
 - parallax on at least 2 decorative elements
 - At least 1 glitch-text OR star-border element
 - Custom scrollbar styling on <html>
 - snap-carousel on testimonials section (HORIZONTAL, never vertical stack)
+
+🎨 CREATIVE DIVERSITY: Every reimagine should feel UNIQUE. Vary your:
+- Background approach: gradient mesh, aurora, particles, clean, geometric, animated SVG — NOT always grain
+- Color palette: bold monochromes, warm earth tones, neon accents, pastels, dark luxury — surprise the user
+- Layout structure: asymmetric, editorial, magazine, dashboard-style, bento grid — NOT always centered sections
+- Typography pairing: mix serif + sans-serif, use display fonts, vary weights dramatically
 
 If multiple pages shown: use Alpine.js x-data/x-show for navigation.
 Wrap in \`\`\`html blocks.`;
@@ -968,10 +972,13 @@ CRITICAL RULES:
    🚨 SINGLE <main> element! Content is written ONCE, works on both desktop and mobile!
    ❌ NEVER create two separate main content areas!
    - Main area: min-width:0, flex-1 (CRITICAL — prevents overflow!)
+   - ALL charts: MUST use Chart.js via canvas — NEVER fake charts with colored divs/circles/SVG shapes!
    - ALL charts: wrap in container with EXPLICIT height (h-64 or h-80) + overflow-hidden
    - Chart parent cards MUST have overflow-hidden (prevents canvas bleeding)
-   - Pie/Donut charts: h-64 w-64 mx-auto square container
+   - Pie/Donut charts: h-64 w-64 mx-auto square container, disable axes (display: false)
    - Line/Bar/Area charts: h-64 or h-80 full-width container
+   - Chart data format: { labels: [...], datasets: [{ data: [numbers], borderColor/backgroundColor }] }
+   - 🚨 NEVER approximate charts with decorative circles, colored divs, or SVG shapes!
    - ALL tables, data grids: wrap in overflow-x:auto container
    - stat cards: grid with auto-fit minmax(250px,1fr)
 8. 📋 TESTIMONIALS: If the video shows testimonials/reviews/quotes:
