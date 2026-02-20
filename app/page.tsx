@@ -6332,6 +6332,7 @@ Ready to generate from your own videos? Upload any screen recording to get start
   // Track failed saves to prevent spam
   const failedSavesRef = useRef<Set<string>>(new Set());
   const skipPersistRef = useRef(false); // Skip persistence effect during version restore
+  const saveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const saveGenerationToSupabase = useCallback(async (gen: GenerationRecord) => {
     if (!user) {
@@ -6455,10 +6456,14 @@ Ready to generate from your own videos? Upload any screen recording to get start
       versions: activeGeneration.versions || [],
     };
 
+    // Update local state immediately
     setGenerations(prev => prev.map(g => g.id === activeGeneration.id ? updatedGen : g));
 
-    // Sync to Supabase
-    saveGenerationToSupabase(updatedGen);
+    // Debounce Supabase sync — prevents save spam when flowNodes/styleInfo change rapidly
+    if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
+    saveDebounceRef.current = setTimeout(() => {
+      saveGenerationToSupabase(updatedGen);
+    }, 2000);
   }, [generatedCode, flowNodes, flowEdges, styleInfo, styleDirective, generationTitle, generationComplete, activeGeneration?.id, saveGenerationToSupabase, libraryData]);
   
   // Separate effect for Library data persistence (can update even without code changes)
