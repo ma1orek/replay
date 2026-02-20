@@ -301,26 +301,61 @@ function extractCodeFromResponse(response: string): string | null {
   let cleaned = response.trim();
   cleaned = cleaned.replace(/^(Here'?s?|I'?ve|The|Below is|This is|Sure|Okay|Done)[^`<]*(?=```|<!DOCTYPE|<html)/i, '');
   cleaned = cleaned.trim();
-  
-  const htmlMatch = cleaned.match(/```html\s*([\s\S]*?)```/i);
-  if (htmlMatch && htmlMatch[1].trim().length > 100) return htmlMatch[1].trim();
-  
-  const codeMatch = cleaned.match(/```\s*([\s\S]*?)```/);
-  if (codeMatch && codeMatch[1].trim().length > 100) return codeMatch[1].trim();
-  
+
+  // Use GREEDY match (last ```) to avoid stopping at nested code fences
+  const htmlMatch = cleaned.match(/```html?\s*([\s\S]*)```\s*$/i);
+  if (htmlMatch && htmlMatch[1].trim().length > 100) {
+    let code = htmlMatch[1].trim();
+    // Strip residual "html" language identifier at start
+    code = code.replace(/^html\s*\n/i, '');
+    return code;
+  }
+
+  const codeMatch = cleaned.match(/```\s*([\s\S]*)```\s*$/);
+  if (codeMatch && codeMatch[1].trim().length > 100) {
+    let code = codeMatch[1].trim();
+    code = code.replace(/^html\s*\n/i, '');
+    return code;
+  }
+
   const doctypeMatch = cleaned.match(/(<!DOCTYPE[\s\S]*<\/html>)/i);
   if (doctypeMatch) return doctypeMatch[1].trim();
-  
+
   const htmlTagMatch = cleaned.match(/(<html[\s\S]*<\/html>)/i);
   if (htmlTagMatch) return htmlTagMatch[1].trim();
-  
+
   if (cleaned.startsWith('<!DOCTYPE') || cleaned.toLowerCase().startsWith('<html')) {
     const endIndex = cleaned.toLowerCase().lastIndexOf('</html>');
     if (endIndex > 0) return cleaned.substring(0, endIndex + 7);
     return cleaned;
   }
-  
+
+  // Final fallback: strip ALL code fences and try
+  const stripped = cleaned.replace(/```html?\s*/gi, '').replace(/```\s*/g, '').trim();
+  if (stripped.length > 100 && (stripped.includes('<!DOCTYPE') || stripped.includes('<html'))) {
+    return stripped;
+  }
+
   return null;
+}
+
+// Post-process: fix zero values in stat/metric elements
+function fixZeroStats(code: string): string {
+  if (!code) return code;
+  // Replace standalone "0" in stat-like contexts with realistic values
+  // Pattern: >0< or >0 < in headings, spans near stat keywords
+  let fixed = code;
+  const zeroPatterns = [
+    // "0" as standalone stat number in large text
+    { pattern: /(class="[^"]*text-[3-9]xl[^"]*"[^>]*>)\s*0\s*(<)/g, replacement: '$129$2' },
+    { pattern: /(class="[^"]*text-[3-9]xl[^"]*"[^>]*>)\s*\$0\s*(<)/g, replacement: '$1$14,250$2' },
+    // data-to="0" in count-up elements
+    { pattern: /data-to="0"/g, replacement: 'data-to="847"' },
+  ];
+  for (const { pattern, replacement } of zeroPatterns) {
+    fixed = fixed.replace(pattern, replacement);
+  }
+  return fixed;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -605,11 +640,47 @@ VARY layouts between sections — cycle through:
 9. Vertical timeline with alternating left/right
 
 ═══════════════════════════════════════════════════
-ANIMATION LIBRARY — USE ALL OF THESE (from reactbits.dev)
+CDN LIBRARIES — Load in <head>:
 ═══════════════════════════════════════════════════
-Load these CDNs in <head>:
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+═══════════════════════════════════════════════════
+📊 CHART.JS — HTML MODE (for dashboards with charts):
+═══════════════════════════════════════════════════
+For EVERY chart in a dashboard, use this pattern:
+<div class="h-64 overflow-hidden">
+  <canvas id="chart-unique-id"></canvas>
+</div>
+<script>
+new Chart(document.getElementById('chart-unique-id'), {
+  type: 'line', // or 'bar', 'doughnut', 'pie'
+  data: {
+    labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    datasets: [{
+      label: 'Sales',
+      data: [1200, 1900, 3000, 2500, 2200, 3100, 2800, 3500, 2900, 3200, 2700, 3800],
+      borderColor: '#6366f1',
+      backgroundColor: 'rgba(99,102,241,0.1)',
+      borderWidth: 2, tension: 0.4, fill: true
+    }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } } }
+});
+</script>
+
+RULES:
+- EVERY canvas MUST have a UNIQUE id (chart-sales, chart-progress, chart-orders etc.)
+- Container div MUST have explicit height (h-64 or h-80) + overflow-hidden
+- Doughnut/Pie: add options: { scales: { x: { display: false }, y: { display: false } } }
+- Use REAL data values — NEVER zeros! Estimate realistic numbers
+- Match chart colors to the dashboard theme
+- 🚨 NEVER fake charts with colored divs/circles/SVG — ALWAYS use Chart.js!
+
+═══════════════════════════════════════════════════
+ANIMATION PATTERNS (GSAP + CSS):
+═══════════════════════════════════════════════════
 
 Then at the end of <body>, implement ALL of these animation patterns:
 
@@ -994,6 +1065,18 @@ CRITICAL RULES:
    🚨 SINGLE <main> element! Content is written ONCE, works on both desktop and mobile!
    ❌ NEVER create two separate main content areas!
    - Main area: min-width:0, flex-1 (CRITICAL — prevents overflow!)
+
+   📐 GRID ALIGNMENT (CRITICAL — blocks MUST align evenly in rows!):
+   - EVERY row of cards/sections: use CSS Grid, NEVER flex-wrap for card rows
+   - Stat card row: grid grid-cols-2 md:grid-cols-4 gap-4 (equal width + equal height automatically!)
+   - Chart row (2 charts side-by-side): grid grid-cols-1 lg:grid-cols-2 gap-4 or gap-6
+   - Table row (2 tables side-by-side): grid grid-cols-1 lg:grid-cols-2 gap-4 or gap-6
+   - EVERY card inside grid: add h-full so card fills the entire grid cell height
+   - Pattern: <div class="grid grid-cols-2 gap-4"><div class="bg-white rounded-xl p-4 h-full">...</div><div class="bg-white rounded-xl p-4 h-full">...</div></div>
+   - 🚨 Cards in the SAME ROW must be the SAME HEIGHT — CSS Grid does this automatically when you use h-full on children!
+   - If one card has more content, the shorter card stretches to match — this is the correct behavior!
+
+   📊 CHART RULES:
    - ALL charts: MUST use Chart.js via canvas — NEVER fake charts with colored divs/circles/SVG shapes!
    - ALL charts: wrap in container with EXPLICIT height (h-64 or h-80) + overflow-hidden
    - Chart parent cards MUST have overflow-hidden (prevents canvas bleeding)
@@ -1002,7 +1085,6 @@ CRITICAL RULES:
    - Chart data format: { labels: [...], datasets: [{ data: [numbers], borderColor/backgroundColor }] }
    - 🚨 NEVER approximate charts with decorative circles, colored divs, or SVG shapes!
    - ALL tables, data grids: wrap in overflow-x:auto container
-   - stat cards: grid with auto-fit minmax(250px,1fr)
 8. 📋 TESTIMONIALS: If the video shows testimonials/reviews/quotes:
    - Use horizontal scrolling carousel (overflow-x:auto, flex, gap, scroll-snap-type:x mandatory)
    - Each card: flex:0 0 340px (fixed width, NOT full-width stacking)
@@ -1075,7 +1157,7 @@ DO NOT output ANY stat/metric/KPI with value 0. Every number must be realistic a
             try {
               streamResult = await withTimeout(
                 model.generateContentStream(contentParts),
-                240000, // 4 minute timeout for complex generation
+                300000, // 5 minute timeout for complex generation
                 "Direct Vision Code Generation"
               );
               break; // success
@@ -1157,7 +1239,8 @@ DO NOT output ANY stat/metric/KPI with value 0. Every number must be realistic a
           cleanCode = fixTemplateLiteralErrors(cleanCode);
           cleanCode = fixBrokenHtmlTags(cleanCode);
           cleanCode = fixMalformedDoubleTags(cleanCode);
-          
+          cleanCode = fixZeroStats(cleanCode);
+
           // Extract flow data if present
           let flowData = null;
           const flowMatch = cleanCode.match(/<!--\s*FLOW_DATA:\s*([\s\S]*?)\s*-->/);

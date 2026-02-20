@@ -94,16 +94,26 @@ export default function QuickstartPage() {
           </div>
           <div className="ml-11 space-y-3">
             <p className="text-zinc-400">
-              Click <strong className="text-white">Reconstruct</strong>. 
-              AI will analyze your video and generate the initial UI code.
+              Choose a generation mode and click <strong className="text-white">Generate</strong>:
             </p>
+            <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700 space-y-3">
+              <div>
+                <span className="font-medium text-white">Reconstruct</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-700 text-zinc-400 ml-2">Default</span>
+                <p className="text-sm text-zinc-400 mt-1">Exact layout & structure — faithfully reproduces the video.</p>
+              </div>
+              <div className="border-t border-zinc-700 pt-3">
+                <span className="font-medium text-white">Reimagine</span>
+                <p className="text-sm text-zinc-400 mt-1">Creative layout, same content — brand-new design with advanced animations and effects.</p>
+              </div>
+            </div>
             <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
               <div className="flex items-center gap-3 mb-3">
                 <Sparkles className="w-5 h-5 text-zinc-400" />
                 <span className="font-medium text-white">Generation takes 30-90 seconds</span>
               </div>
               <p className="text-sm text-zinc-400">
-                The AI processes each frame, extracts layouts, detects patterns, 
+                The AI processes each frame, extracts layouts, detects patterns,
                 and generates responsive HTML/CSS code.
               </p>
             </div>

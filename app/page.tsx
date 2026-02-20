@@ -10909,9 +10909,18 @@ Try these prompts in Cursor or v0:
         }
       }
 
-      // If we got here without complete event, return accumulated code
+      // If we got here without complete event, return accumulated code (strip code fences)
       if (fullCode.length > 100) {
-        return { success: true, code: fullCode, tokenUsage };
+        let cleanedFallback = fullCode;
+        // Strip ```html ... ``` code fences
+        const fenceMatch = cleanedFallback.match(/```html?\s*([\s\S]*)```\s*$/i);
+        if (fenceMatch && fenceMatch[1].trim().length > 100) {
+          cleanedFallback = fenceMatch[1].trim().replace(/^html\s*\n/i, '');
+        } else {
+          // Strip any leading/trailing code fence markers
+          cleanedFallback = cleanedFallback.replace(/^```html?\s*\n?/i, '').replace(/\n?```\s*$/g, '').trim();
+        }
+        return { success: true, code: cleanedFallback, tokenUsage };
       }
 
       return { success: false, error: "Generation incomplete" };
