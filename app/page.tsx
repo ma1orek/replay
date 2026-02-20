@@ -6463,10 +6463,14 @@ Ready to generate from your own videos? Upload any screen recording to get start
     if (hasFetchedInitialRef.current && lastUserIdRef.current === user.id) {
       return;
     }
-    
+
     hasFetchedInitialRef.current = true;
     lastUserIdRef.current = user.id;
-    
+
+    // IMPORTANT: Set loading=true BEFORE async fetch so auto-demo guard blocks
+    // Without this, there's a race: user arrives → isLoadingHistory=false → demo fires BEFORE fetch completes
+    setIsLoadingHistory(true);
+
     // Initial fetch - only first 10 projects
     fetchGenerations({ reset: true });
     
@@ -12819,13 +12823,13 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
   const handleDownload = () => {
     if (!editableCode) return;
     
-    // Demo mode: download is Pro feature
-    if (isDemoMode) {
+    // Demo mode: download is Pro feature (only block free users)
+    if (isDemoMode && !isPaidPlan) {
       setUpgradeFeature("download");
       setShowUpgradeModal(true);
       return;
     }
-    
+
     // Not logged in: require sign up
     if (!user) {
       setShowAuthModal(true);
@@ -12848,8 +12852,8 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
   const handlePublishClick = () => {
     if (!editableCode) return;
     
-    // Demo mode: publish is Pro feature
-    if (isDemoMode) {
+    // Demo mode: publish is Pro feature (only block free users)
+    if (isDemoMode && !isPaidPlan) {
       setUpgradeFeature("publish");
       setShowUpgradeModal(true);
       return;
@@ -15963,8 +15967,8 @@ ${publishCode}
                           </div>
                         </div>
                       )}
-                      {/* Pro feature overlay for demo mode (logged in but viewing demo) */}
-                      {user && isDemoMode && (
+                      {/* Pro feature overlay for demo mode (logged in FREE user viewing demo) */}
+                      {user && isDemoMode && !isPaidPlan && (
                         <div 
                           onClick={() => {
                             setUpgradeFeature("code");
@@ -15986,8 +15990,8 @@ ${publishCode}
                         onKeyDown={async (e) => {
                           if (e.key === "Enter" && !e.shiftKey && chatInput.trim() && editableCode) {
                             e.preventDefault();
-                            // Demo mode: AI Edit is Pro feature
-                            if (isDemoMode) {
+                            // Demo mode: AI Edit is Pro feature (only block free users)
+                            if (isDemoMode && !isPaidPlan) {
                               setUpgradeFeature("code");
                               setShowUpgradeModal(true);
                               return;
@@ -17417,8 +17421,8 @@ ${publishCode}
               <div className="relative">
                 <button
                   onClick={() => {
-                    // Demo mode: publish is Pro feature
-                    if (isDemoMode) {
+                    // Demo mode: publish is Pro feature (only block free users)
+                    if (isDemoMode && !isPaidPlan) {
                       setUpgradeFeature("publish");
                       setShowUpgradeModal(true);
                       return;
@@ -18530,7 +18534,7 @@ export default function GeneratedPage() {
                                     className="flow-node-btn flex-1 flex items-center justify-center gap-0.5 py-1 rounded text-[9px] font-medium bg-zinc-700 hover:bg-zinc-600 text-zinc-300 transition-colors"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      if (isDemoMode) {
+                                      if (isDemoMode && !isPaidPlan) {
                                         setUpgradeFeature("code");
                                         setShowUpgradeModal(true);
                                         return;
@@ -18554,7 +18558,7 @@ export default function GeneratedPage() {
                                     className="flow-node-btn flex-1 flex items-center justify-center gap-0.5 py-1 rounded text-[9px] font-medium bg-zinc-800/50 hover:bg-zinc-700 text-zinc-500 transition-colors"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      if (isDemoMode) {
+                                      if (isDemoMode && !isPaidPlan) {
                                         setUpgradeFeature("code");
                                         setShowUpgradeModal(true);
                                         return;
@@ -25996,8 +26000,8 @@ module.exports = {
                     onKeyDown={async (e) => {
                       if (e.key === "Enter" && !e.shiftKey && chatInput.trim() && editableCode) {
                         e.preventDefault();
-                        // Demo mode: AI Edit is Pro feature
-                        if (isDemoMode) {
+                        // Demo mode: AI Edit is Pro feature (only block free users)
+                        if (isDemoMode && !isPaidPlan) {
                           setUpgradeFeature("code");
                           setShowUpgradeModal(true);
                           return;
