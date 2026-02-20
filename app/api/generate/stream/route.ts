@@ -469,8 +469,8 @@ export async function POST(request: NextRequest) {
       generationConfig: {
         temperature: 0.85, // High for creative Awwwards-level designs
         maxOutputTokens: 100000,
-        // @ts-ignore - thinking for better code quality (16K = fast enough, avoids timeouts)
-        thinkingConfig: { thinkingBudget: 16384 },
+        // @ts-ignore - thinking for better code quality
+        thinkingConfig: { thinkingBudget: 32768 },
       },
     });
     
