@@ -124,36 +124,7 @@ function fixBrokenImageUrls(code: string, context?: string): string {
   code = code.replace(/https?:\/\/placeimg\.com[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
   // Replace Pollinations (has rate limits) with Picsum
   code = code.replace(/https?:\/\/image\.pollinations\.ai[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
-  // Replace any other stock/AI image services that will break
-  code = code.replace(/https?:\/\/[^"'\s)]*shutterstock[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
-  code = code.replace(/https?:\/\/[^"'\s)]*istockphoto[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
-  code = code.replace(/https?:\/\/[^"'\s)]*stock\.adobe[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
-  code = code.replace(/https?:\/\/[^"'\s)]*freepik[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
-  code = code.replace(/https?:\/\/[^"'\s)]*rawpixel[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
-  code = code.replace(/https?:\/\/[^"'\s)]*depositphotos[^"'\s)]*/gi, () => { replacedCount++; return getPicsumUrl(); });
-
-  // CATCH-ALL: Replace img src URLs that are NOT from allowed sources
-  // Allowed: picsum.photos, pravatar.cc, dicebear.com, cdn.simpleicons.org, cloudinary, supabase, data:
-  code = code.replace(/<img([^>]*?)src="(https?:\/\/[^"]+)"([^>]*?)>/gi, (match, before, url, after) => {
-    const lowerUrl = url.toLowerCase();
-    // Allow known-good sources
-    if (lowerUrl.includes('picsum.photos') ||
-        lowerUrl.includes('pravatar.cc') ||
-        lowerUrl.includes('dicebear.com') ||
-        lowerUrl.includes('simpleicons.org') ||
-        lowerUrl.includes('cloudinary.com') ||
-        lowerUrl.includes('supabase.co') ||
-        lowerUrl.includes('cdn.jsdelivr.net') ||
-        lowerUrl.includes('unpkg.com') ||
-        lowerUrl.includes('cdnjs.cloudflare.com') ||
-        lowerUrl.includes('googleapis.com/storage')) {
-      return match; // Keep allowed URLs
-    }
-    // Replace unknown/potentially broken URLs with Picsum
-    replacedCount++;
-    return `<img${before}src="${getPicsumUrl()}"${after}>`;
-  });
-
+  
   console.log(`[fixBrokenImageUrls] Replaced ${replacedCount} image URLs with Picsum (category: ${primaryCategory})`);
   return code;
 }
@@ -330,81 +301,26 @@ function extractCodeFromResponse(response: string): string | null {
   let cleaned = response.trim();
   cleaned = cleaned.replace(/^(Here'?s?|I'?ve|The|Below is|This is|Sure|Okay|Done)[^`<]*(?=```|<!DOCTYPE|<html)/i, '');
   cleaned = cleaned.trim();
-
-  // Use GREEDY match (last ```) to avoid stopping at nested code fences
-  const htmlMatch = cleaned.match(/```html?\s*([\s\S]*)```\s*$/i);
-  if (htmlMatch && htmlMatch[1].trim().length > 100) {
-    let code = htmlMatch[1].trim();
-    // Strip residual "html" language identifier at start
-    code = code.replace(/^html\s*\n/i, '');
-    return code;
-  }
-
-  const codeMatch = cleaned.match(/```\s*([\s\S]*)```\s*$/);
-  if (codeMatch && codeMatch[1].trim().length > 100) {
-    let code = codeMatch[1].trim();
-    code = code.replace(/^html\s*\n/i, '');
-    return code;
-  }
-
+  
+  const htmlMatch = cleaned.match(/```html\s*([\s\S]*?)```/i);
+  if (htmlMatch && htmlMatch[1].trim().length > 100) return htmlMatch[1].trim();
+  
+  const codeMatch = cleaned.match(/```\s*([\s\S]*?)```/);
+  if (codeMatch && codeMatch[1].trim().length > 100) return codeMatch[1].trim();
+  
   const doctypeMatch = cleaned.match(/(<!DOCTYPE[\s\S]*<\/html>)/i);
   if (doctypeMatch) return doctypeMatch[1].trim();
-
+  
   const htmlTagMatch = cleaned.match(/(<html[\s\S]*<\/html>)/i);
   if (htmlTagMatch) return htmlTagMatch[1].trim();
-
+  
   if (cleaned.startsWith('<!DOCTYPE') || cleaned.toLowerCase().startsWith('<html')) {
     const endIndex = cleaned.toLowerCase().lastIndexOf('</html>');
     if (endIndex > 0) return cleaned.substring(0, endIndex + 7);
     return cleaned;
   }
-
-  // Final fallback: strip ALL code fences and try
-  const stripped = cleaned.replace(/```html?\s*/gi, '').replace(/```\s*/g, '').trim();
-  if (stripped.length > 100 && (stripped.includes('<!DOCTYPE') || stripped.includes('<html'))) {
-    return stripped;
-  }
-
+  
   return null;
-}
-
-// Post-process: fix zero values in stat/metric elements
-// AGGRESSIVE zero detection — catches $0K, $0, >0<, 0%, data-to="0" in ALL contexts
-function fixZeroStats(code: string): string {
-  if (!code) return code;
-  let fixed = code;
-
-  // Pool of realistic replacement values for variety
-  let valueIdx = 0;
-  const statValues = ['2,847', '1,293', '8,451', '3,672', '956', '4,128', '12,394', '7,561'];
-  const dollarValues = ['$14,250', '$8,730', '$42,500', '$3,890', '$127,400', '$23,100', '$6,450', '$91,200'];
-  const percentValues = ['84%', '67%', '92%', '43%', '71%', '58%', '95%', '36%'];
-  const kValues = ['$14.2K', '$8.7K', '$42.5K', '$3.9K', '$127K', '$23.1K', '$6.5K', '$91.2K'];
-  const getNext = (arr: string[]) => arr[(valueIdx++) % arr.length];
-
-  // 1. data-to="0" → realistic count-up targets
-  fixed = fixed.replace(/data-to="0"/g, () => `data-to="${getNext(statValues).replace(/,/g, '')}"`);
-
-  // 2. Dollar zeros: $0K, $0M, $0B, $0.00, $0
-  fixed = fixed.replace(/(>\s*)\$0\.00(\s*<)/g, (_m, pre, post) => `${pre}${getNext(dollarValues)}${post}`);
-  fixed = fixed.replace(/(>\s*)\$0[KkMmBb](\s*<)/g, (_m, pre, post) => `${pre}${getNext(kValues)}${post}`);
-  fixed = fixed.replace(/(>\s*)\$0(\s*<)/g, (_m, pre, post) => `${pre}${getNext(dollarValues)}${post}`);
-
-  // 3. Percentage zeros: >0%< or >0 %<
-  fixed = fixed.replace(/(>\s*)0\s*%(\s*<)/g, (_m, pre, post) => `${pre}${getNext(percentValues)}${post}`);
-
-  // 4. Standalone zero in large text (text-3xl through text-9xl)
-  fixed = fixed.replace(/(class="[^"]*text-[3-9]xl[^"]*"[^>]*>)\s*0\s*(<)/g, (_m, pre, post) => `${pre}${getNext(statValues)}${post}`);
-
-  // 5. Standalone zero in ANY element: >0< (but NOT >0.5< or >10< or CSS/attribute contexts)
-  // Only match when 0 is the ENTIRE text content between tags
-  fixed = fixed.replace(/(>)\s*0\s*(<\/(?:span|p|h[1-6]|div|td|th|strong|b|em|li|dt|dd)>)/gi, (_m, pre, post) => `${pre}${getNext(statValues)}${post}`);
-
-  // 6. Zero in stat-like containers near keywords (orders, customers, sales, revenue, users, visits)
-  // Look for patterns like: >Orders</span><span...>0</span>  or label then value
-  fixed = fixed.replace(/((?:order|customer|user|visit|sale|revenue|refund|transaction|conversion|session|subscriber|download|view|click|signup|booking|ticket|member|follower|request|payment|invoice|lead|deal|client|project|task|message|notification|email|campaign|impression|engagement|bounce|retention|churn|growth|profit|loss|expense|budget|forecast)[^<]{0,80}>)\s*0\s*(<)/gi, (_m, pre, post) => `${pre}${getNext(statValues)}${post}`);
-
-  return fixed;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -462,15 +378,13 @@ export async function POST(request: NextRequest) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     
-    // SINGLE MODEL: Gemini 3.1 Pro with VISION
+    // SINGLE MODEL: Gemini 3 Pro with VISION
     // Pro SEES the video directly and generates code - NO intermediate JSON!
     const model = genAI.getGenerativeModel({
       model: "gemini-3.1-pro-preview",
       generationConfig: {
-        temperature: 0.85,
-        maxOutputTokens: 65000,
-        // thinkingBudget removed: deprecated for Gemini 3.x, causes stream stalls
-        // Model uses default dynamic thinking (recommended by Google docs)
+        temperature: 0.85, // High for creative Awwwards-level designs
+        maxOutputTokens: 65000, // Gemini 3.1 Pro limit is 65,536
       },
     });
     
@@ -631,36 +545,10 @@ ${databaseContext}`;
           if (isReimagine) {
             prompt += `
 
-🚨 WATCH THE ENTIRE VIDEO — EVERY SECOND, EVERY FRAME! Extract ALL content, ALL sections, ALL data.
-If the video shows 10 sections → your output MUST have 10 sections. NEVER truncate or skip sections!
-Your output should be 30,000-50,000+ characters for a complete page. Under 20,000 = TRUNCATED = FAILURE!
-Then BUILD A COMPLETELY NEW, BREATHTAKING DESIGN.
+WATCH THE VIDEO TO EXTRACT ALL CONTENT AND DATA. Then BUILD A COMPLETELY NEW, BREATHTAKING DESIGN.
 
-🎨 REIMAGINE MODE — AWWWARDS-LEVEL QUALITY! TOP 1% WEB DESIGN!
-The video is your CONTENT SOURCE only. You must INVENT a brand-new, STUNNING layout and design.
-You are Gemini 3.1 Pro — create a page that would win an AWWWARDS Site of the Day award!
-
-🚨🚨🚨 ANIMATION IS NOT OPTIONAL — IT IS THE #1 PRIORITY! 🚨🚨🚨
-A page WITHOUT animations is a FAILURE. Every section, every card, every headline MUST move!
-The GSAP script block at the end of </body> is MANDATORY — without it the page is broken!
-
-REQUIRED ANIMATION CHECKLIST (you MUST implement ALL of these):
-✅ Hero section: split-text character animation OR dramatic scale-up entrance
-✅ Every other section: gsap.from() with ScrollTrigger (fade, slide, scale, rotate — DIFFERENT per section!)
-✅ Cards/grids: stagger animation (cards appear one after another with 0.1-0.15s delay)
-✅ Stats/numbers: count-up animation from 0 to final value
-✅ Hover effects: ALL cards lift on hover (translateY(-8px) + shadow increase)
-✅ Background: animated gradient, aurora, particles, or floating orbs (NOT plain solid!)
-✅ Parallax: at least 1 parallax element (gsap scrub)
-✅ Custom cursor OR gradient text OR split text for visual flair
-
-MANDATORY: Your HTML MUST end with a <script> block containing gsap.registerPlugin(ScrollTrigger) and animations!
-If your output has NO gsap.from() or gsap.fromTo() calls, IT IS BROKEN AND WILL BE REJECTED!
-
-- Create YOUR OWN unique animations with GSAP, CSS, and vanilla JS
-- Each section should have a DIFFERENT animation approach — variety is key!
-- Be BOLD: asymmetric layouts, creative typography, unexpected interactions
-- Animated backgrounds: aurora blobs, gradient mesh, floating particles — NOT plain colors!
+🎨 REIMAGINE MODE — BE MORE CREATIVE, KEEP ALL CONTENT
+The video is your CONTENT SOURCE only. You must INVENT a brand-new layout.
 
 ═══════════════════════════════════════════════════
 CONTENT RULES (MANDATORY — violating = failure):
@@ -708,89 +596,23 @@ VARY layouts between sections — cycle through:
 9. Vertical timeline with alternating left/right
 
 ═══════════════════════════════════════════════════
-CDN LIBRARIES — Load in <head>:
+ANIMATION LIBRARY — USE ALL OF THESE (from reactbits.dev)
 ═══════════════════════════════════════════════════
+Load these CDNs in <head>:
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
-═══════════════════════════════════════════════════
-📊 CHART.JS — HTML MODE (for dashboards with charts):
-═══════════════════════════════════════════════════
-For EVERY chart in a dashboard, use this pattern:
-<div class="h-64 overflow-hidden chart-container">
-  <canvas id="chart-unique-id"></canvas>
-</div>
-
-Then at the BOTTOM of <body>, AFTER all chart containers, add ONE script that initializes ALL charts with scroll animation:
-<script>
-// Initialize charts with scroll-triggered animation
-function initCharts() {
-  const chartConfigs = [
-    { id: 'chart-sales', type: 'line', data: { labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], datasets: [{ label: 'Revenue', data: [1200,1900,3000,2500,2200,3100,2800,3500,2900,3200,2700,3800], borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)', borderWidth: 2, tension: 0.4, fill: true }] }, opts: {} },
-    // Add more chart configs here...
-  ];
-
-  chartConfigs.forEach(cfg => {
-    const el = document.getElementById(cfg.id);
-    if (!el) return;
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          new Chart(el, {
-            type: cfg.type,
-            data: cfg.data,
-            options: {
-              responsive: true, maintainAspectRatio: false,
-              animation: { duration: 1500, easing: 'easeOutQuart' },
-              plugins: { legend: { display: true } },
-              ...cfg.opts
-            }
-          });
-          observer.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.2 });
-    observer.observe(el.parentElement || el);
-  });
-}
-document.addEventListener('DOMContentLoaded', initCharts);
-</script>
-
-IMPORTANT PATTERN for chart initialization:
-- Define ALL chart configs in a single array at the bottom
-- Each chart uses IntersectionObserver to animate on scroll into view
-- Animation: duration 1500ms, easeOutQuart — charts DRAW IN smoothly when scrolled to!
-- The observer fires ONCE per chart (unobserve after init)
-
-RULES:
-- EVERY canvas MUST have a UNIQUE id (chart-sales, chart-progress, chart-orders etc.)
-- Container div MUST have explicit height (h-64 or h-80) + overflow-hidden + class="chart-container"
-- Doughnut/Pie: add opts: { scales: { x: { display: false }, y: { display: false } } }
-- Use REAL data values — NEVER zeros! Estimate realistic numbers
-- Match chart colors to the dashboard theme
-- animation: { duration: 1500, easing: 'easeOutQuart' } — charts must ANIMATE on appear!
-- 🚨 NEVER fake charts with colored divs/circles/SVG — ALWAYS use Chart.js!
-
-═══════════════════════════════════════════════════
-ANIMATION PATTERNS (GSAP + CSS):
-═══════════════════════════════════════════════════
 
 Then at the end of <body>, implement ALL of these animation patterns:
 
 ───── 1. SPLIT TEXT ENTRANCE (for hero headline) ─────
-🚨 NEVER combine split-text with glitch or gradient-text on the SAME element — pick ONE!
 Split headline into WORDS first (to preserve word-wrap), then chars within each word:
 document.querySelectorAll('.split-text').forEach(el => {
-  // Remove conflicting pseudo-element attributes
-  el.removeAttribute('data-text');
-  el.classList.remove('glitch','gradient-text');
   const words = el.textContent.trim().split(/\s+/);
   el.innerHTML = words.map(word =>
     '<span style="display:inline-block;white-space:nowrap;margin-right:0.3em">' +
     word.split('').map(ch => '<span style="display:inline-block;will-change:transform,opacity;">' + ch + '</span>').join('') +
     '</span>'
-  ).join('');
+  ).join(' ');
   el.style.overflowWrap = 'break-word';
   gsap.fromTo(el.querySelectorAll('span > span'),
     { opacity: 0, y: 30 },
@@ -799,9 +621,6 @@ document.querySelectorAll('.split-text').forEach(el => {
     });
 });
 IMPORTANT: The headline element MUST have style="font-size:clamp(2.5rem,5vw,4.5rem)" — NEVER a fixed huge size!
-🚨 TEXT ANIMATION EXCLUSIVITY: Each element gets AT MOST ONE text effect:
-- split-text OR gradient-text OR glitch-text — NEVER combine them on the same element!
-- Combining them creates garbled/doubled text. Pick ONE per element.
 
 ───── 2. SCROLL REVEAL TEXT (for paragraphs/descriptions) ─────
 Words unblur and fade in scrubbed to scroll:
@@ -839,17 +658,11 @@ document.querySelectorAll('.stagger-cards').forEach(container => {
 });
 
 ───── 5. COUNT-UP NUMBERS (for stats/metrics) ─────
-🚨 IMPORTANT: The HTML must show the REAL final value as text content (not "0"):
-  <span class="count-up" data-to="5000" data-suffix="+">5,000+</span>
-The JS will animate FROM 0 TO the value. If JS fails, the real number is still visible!
 Animated counter using IntersectionObserver:
 document.querySelectorAll('.count-up').forEach(el => {
   const to = parseFloat(el.dataset.to);
-  if (!to || to === 0) return; // Skip zeros — NEVER animate to 0!
   const prefix = el.dataset.prefix || '';
   const suffix = el.dataset.suffix || '';
-  // Save original text as fallback, then start from 0
-  const fallback = el.textContent;
   el.textContent = prefix + '0' + suffix;
   const obs = new IntersectionObserver(entries => {
     entries.forEach(entry => { if (entry.isIntersecting) { obs.unobserve(el);
@@ -863,8 +676,6 @@ document.querySelectorAll('.count-up').forEach(el => {
     }});
   }, { threshold: 0.3 });
   obs.observe(el);
-  // Safety: if not visible after 3s, show final value
-  setTimeout(() => { if (el.textContent === prefix + '0' + suffix) el.textContent = prefix + Math.round(to).toLocaleString() + suffix; }, 3000);
 });
 
 ───── 6. GRADIENT TEXT (for key headlines) ─────
@@ -877,7 +688,7 @@ CSS class for animated gradient text:
 }
 @keyframes gradient-shift { 0%{background-position:0% 50%} 100%{background-position:100% 50%} }
 
-───── 7. GLITCH TEXT (for dramatic headlines — NEVER combine with split-text!) ─────
+───── 7. GLITCH TEXT (for dramatic headlines) ─────
 .glitch { position:relative; font-weight:900; }
 .glitch::after,.glitch::before {
   content:attr(data-text); position:absolute; top:0; color:inherit;
@@ -921,14 +732,15 @@ JS: document.querySelectorAll('.card-spotlight').forEach(c => {
 @keyframes marquee-scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
 IMPORTANT: duplicate all items inside marquee-track so loop is seamless!
 
-───── 10. BACKGROUND TEXTURES (choose ONE if any — do NOT always add grain!) ─────
-Pick AT MOST one of these textures — OR use NONE if the design looks better clean:
-Option A: Subtle grain canvas (use sparingly, NOT on every page):
+───── 10. FILM GRAIN OVERLAY (page-wide texture) ─────
+Add a subtle noise texture over the entire page:
 <canvas id="grain" style="position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:9999;opacity:0.04;"></canvas>
-Option B: CSS dot grid pattern (subtle dots overlay)
-Option C: Diagonal lines pattern
-Option D: No texture — let gradients and color do the work
-🚨 DO NOT default to grain on every page! Variety is key. Most modern UIs look BETTER without grain.
+<script>
+(function(){const c=document.getElementById('grain'),x=c.getContext('2d');c.width=c.height=256;
+let f=0;(function d(){if(f++%3===0){const i=x.createImageData(256,256);for(let j=0;j<i.data.length;j+=4){
+const v=Math.random()*255;i.data[j]=i.data[j+1]=i.data[j+2]=v;i.data[j+3]=20;}x.putImageData(i,0,0);}
+requestAnimationFrame(d);})();})();
+</script>
 
 ───── 11. AURORA BACKGROUND (for hero or CTA sections) ─────
 .aurora { position:absolute; inset:0; overflow:hidden; z-index:0; pointer-events:none; }
@@ -1091,54 +903,36 @@ The sidebar is hidden on mobile (hidden lg:flex), shown as slide-out drawer on d
 - Sidebar uses class="hidden lg:flex" — invisible on mobile, visible on desktop
 - Mobile hamburger top nav uses class="lg:hidden"
 - Tables on mobile: wrap in overflow-x:auto for horizontal scrolling
-
-🚨🚨🚨 DASHBOARD COMPLETENESS — DO NOT TRUNCATE! 🚨🚨🚨
-If the video shows a dashboard/admin panel, your <main> content MUST include ALL of these:
-1. STAT CARDS ROW: 3-4 metric cards (total sales, orders, customers, etc.) in a grid
-2. CHARTS: At MINIMUM 2 Chart.js charts (line/bar/doughnut) using <canvas> — NEVER skip charts!
-3. DATA TABLE: At least 1 table with 5+ rows of realistic data
-4. RECENT ACTIVITY or NOTIFICATIONS: A list/feed section
-5. If video shows more content (widgets, calendars, maps) → include ALL of them!
-❌ A dashboard with ONLY stat cards and nothing below = INCOMPLETE = FAILURE!
-❌ Empty main content area = FAILURE! The <main> tag MUST have substantial content inside!
 - ❌ NEVER create TWO separate main content areas (one for desktop, one for mobile)
 - ❌ NEVER show a 250px sidebar on mobile
 
 ═══════════════════════════════════════════════════
-🚨🚨🚨 FINAL ANIMATION ENFORCEMENT — READ THIS LAST! 🚨🚨🚨
+ASSEMBLY RULES — MINIMUM REQUIREMENTS:
 ═══════════════════════════════════════════════════
-BEFORE you write the closing </body> tag, you MUST add a <script> block with:
-
-1. gsap.registerPlugin(ScrollTrigger);
-2. At LEAST 5 different gsap.from() calls targeting different sections
-3. A count-up animation for any stat numbers
-4. Stagger animations for card grids
-5. At least ONE background effect (aurora, particles, gradient mesh, or floating blobs)
-
-YOUR HTML OUTPUT MUST CONTAIN ALL OF THESE (search your output before submitting!):
-✅ gsap.registerPlugin(ScrollTrigger)  — if missing, animations are BROKEN
-✅ gsap.from( — at minimum 5 calls for different sections
-✅ ScrollTrigger: { — attached to each gsap.from()
-✅ stagger: — for at least one card/grid animation
-✅ Hover effects on interactive elements (CSS transition + transform)
-✅ Animated background (CSS @keyframes or canvas particles or gradient animation)
-
-🚨 A PAGE WITH NO ANIMATIONS IS A FAILURE! IT WILL BE REJECTED!
-🚨 TEXT ANIMATION SAFETY: Each element gets AT MOST ONE text effect
-🚨 DO NOT repeat the same animation on every section — VARY them!
+You MUST use at least:
+- split-text on the hero headline
+- scroll-reveal-text on at least 1 description paragraph
+- data-animate on every major content block
+- stagger-cards on at least 1 card grid
+- count-up on every stat/metric number
+- gradient-text on at least 1 secondary headline
+- card-spotlight on at least 1 card set
+- marquee on any logo/partner bar
+- grain overlay on the full page
+- aurora OR particles on the hero background
+- glass-card on at least 2 cards
+- hover-lift on all interactive cards
+- parallax on at least 2 decorative elements
+- At least 1 glitch-text OR star-border element
+- Custom scrollbar styling on <html>
+- snap-carousel on testimonials section (HORIZONTAL, never vertical stack)
 
 If multiple pages shown: use Alpine.js x-data/x-show for navigation.
 Wrap in \`\`\`html blocks.`;
           } else {
             prompt += `
 
-🚨🚨🚨 WATCH THE ENTIRE VIDEO — EVERY SECOND, EVERY FRAME, EVERY SECTION! 🚨🚨🚨
-- PAUSE at each moment to identify ALL sections shown in the video
-- SCROLL through the ENTIRE video timeline — beginning, middle, AND end!
-- Count the TOTAL number of sections/blocks visible → your output MUST have the SAME number!
-- If the video shows 8 sections → output 8 sections. If it shows 12 → output 12. NEVER truncate!
-- LATER FRAMES show footer, testimonials, pricing, FAQ — do NOT skip these!
-- Your output should be 30,000-50,000+ characters for a complete page — if under 20,000 you are TRUNCATING!
+WATCH THE VIDEO CAREFULLY — ESPECIALLY LATER FRAMES. FAITHFULLY RECONSTRUCT WHAT YOU SEE.
 
 🚨🚨🚨 RULE #0 — THEME DETECTION (BEFORE ANYTHING ELSE!) 🚨🚨🚨
 LOOK AT THE VIDEO BACKGROUNDS! This determines your entire color scheme:
@@ -1172,26 +966,8 @@ CRITICAL RULES:
    🚨 SINGLE <main> element! Content is written ONCE, works on both desktop and mobile!
    ❌ NEVER create two separate main content areas!
    - Main area: min-width:0, flex-1 (CRITICAL — prevents overflow!)
-
-   📐 GRID ALIGNMENT (CRITICAL — blocks MUST align evenly in rows!):
-   - EVERY row of cards/sections: use CSS Grid, NEVER flex-wrap for card rows
-   - Stat card row: grid grid-cols-2 md:grid-cols-4 gap-4 (equal width + equal height automatically!)
-   - Chart row (2 charts side-by-side): grid grid-cols-1 lg:grid-cols-2 gap-4 or gap-6
-   - Table row (2 tables side-by-side): grid grid-cols-1 lg:grid-cols-2 gap-4 or gap-6
-   - EVERY card inside grid: add h-full so card fills the entire grid cell height
-   - Pattern: <div class="grid grid-cols-2 gap-4"><div class="bg-white rounded-xl p-4 h-full">...</div><div class="bg-white rounded-xl p-4 h-full">...</div></div>
-   - 🚨 Cards in the SAME ROW must be the SAME HEIGHT — CSS Grid does this automatically when you use h-full on children!
-   - If one card has more content, the shorter card stretches to match — this is the correct behavior!
-
-   📊 CHART RULES:
-   - ALL charts: MUST use Chart.js via canvas — NEVER fake charts with colored divs/circles/SVG shapes!
-   - ALL charts: wrap in container with EXPLICIT height (h-64 or h-80) + overflow-hidden
-   - Chart parent cards MUST have overflow-hidden (prevents canvas bleeding)
-   - Pie/Donut charts: h-64 w-64 mx-auto square container, disable axes (display: false)
-   - Line/Bar/Area charts: h-64 or h-80 full-width container
-   - Chart data format: { labels: [...], datasets: [{ data: [numbers], borderColor/backgroundColor }] }
-   - 🚨 NEVER approximate charts with decorative circles, colored divs, or SVG shapes!
-   - ALL tables, data grids: wrap in overflow-x:auto container
+   - ALL charts, tables, data grids: wrap in overflow-x:auto container
+   - stat cards: grid with auto-fit minmax(250px,1fr)
 8. 📋 TESTIMONIALS: If the video shows testimonials/reviews/quotes:
    - Use horizontal scrolling carousel (overflow-x:auto, flex, gap, scroll-snap-type:x mandatory)
    - Each card: flex:0 0 340px (fixed width, NOT full-width stacking)
@@ -1244,120 +1020,27 @@ Match the video EXACTLY. Do NOT default to dark if the video was light!
 Generate the HTML now matching the video's actual theme.` });
           }
 
-          // ZERO BAN post-video reminder (ALL modes)
-          contentParts.push({ text: `🚨🚨🚨 ZERO BAN — FINAL CHECK BEFORE GENERATING:
-The video may show animated counters that START at 0 and count UP. Those 0s are NOT the real values!
-- "0 funded startups" → WRONG! Use "5,000+" or the value from the LAST video frame
-- "$0B combined valuation" → WRONG! Use "$800B+" or similar
-- "0 cases", "$0.00", "0 users" → ALL WRONG! Use realistic non-zero values
-- If you see 0 in a stat/metric → it's an animation start frame → use the FINAL value!
-- SCAN THE LAST 5 SECONDS of the video for the real final counter values!
-DO NOT output ANY stat/metric/KPI with value 0. Every number must be realistic and non-zero.` });
-
           // Retry loop for 503/429 high demand errors
           const MAX_RETRIES = 3;
           const retryDelay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-          let fullText = "";
-          let chunkCount = 0;
-          let usageMetadata: any = null;
-          let lastStreamError: any = null;
+          let streamResult;
+          let lastStreamError;
 
-          // Dynamic timeout: use remaining time from 300s Vercel budget (with 15s safety margin)
-          const elapsedMs = Date.now() - startTime;
-          const remainingMs = Math.max(60000, (300 - 15) * 1000 - elapsedMs);
-          console.log(`[stream] Generation timeout: ${Math.round(remainingMs / 1000)}s (elapsed: ${Math.round(elapsedMs / 1000)}s)`);
-
-          // Retry loop covers BOTH stream creation AND stream reading
-          // If stream opens but sends 0 chunks (stall), we retry the entire generation
           for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-            fullText = "";
-            chunkCount = 0;
-            let codeStarted = false;
-            let streamAborted = false;
-
             try {
-              const result = await withTimeout(
+              streamResult = await withTimeout(
                 model.generateContentStream(contentParts),
-                remainingMs,
+                240000, // 4 minute timeout for complex generation
                 "Direct Vision Code Generation"
               );
-
-              // Watchdog: abort if no chunks arrive within timeout
-              const FIRST_CHUNK_TIMEOUT = 120000; // 2 min for first chunk (model thinking)
-              const CHUNK_TIMEOUT = 45000; // 45s between subsequent chunks
-              let lastChunkTime = Date.now();
-
-              const watchdogInterval = setInterval(() => {
-                const sinceLastChunk = Date.now() - lastChunkTime;
-                const timeout = chunkCount === 0 ? FIRST_CHUNK_TIMEOUT : CHUNK_TIMEOUT;
-                if (sinceLastChunk > timeout) {
-                  streamAborted = true;
-                  console.error(`[stream] WATCHDOG: No chunk for ${Math.round(sinceLastChunk/1000)}s (count: ${chunkCount}). Aborting.`);
-                  clearInterval(watchdogInterval);
-                }
-              }, 5000);
-
-              try {
-                for await (const chunk of result.stream) {
-                  if (streamAborted) {
-                    console.log(`[stream] Stream aborted by watchdog after ${chunkCount} chunks`);
-                    break;
-                  }
-                  const chunkText = chunk.text();
-                  fullText += chunkText;
-                  chunkCount++;
-                  lastChunkTime = Date.now();
-
-                  if (!codeStarted && (fullText.includes("```html") || fullText.includes("<!DOCTYPE"))) {
-                    codeStarted = true;
-                  }
-
-                  const estimatedProgress = codeStarted
-                    ? Math.min(10 + Math.floor((fullText.length / 50000) * 80), 95)
-                    : 15;
-                  const lineCount = (fullText.match(/\n/g) || []).length;
-
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-                    type: "chunk",
-                    content: chunkText,
-                    chunkIndex: chunkCount,
-                    totalLength: fullText.length,
-                    lineCount: lineCount,
-                    progress: estimatedProgress
-                  })}\n\n`));
-                }
-              } finally {
-                clearInterval(watchdogInterval);
-              }
-
-              // If watchdog fired and we got nothing useful → throw to retry
-              if (streamAborted && fullText.length < 100) {
-                throw new Error(`Stream stalled: 0 useful output after ${chunkCount} chunks. Model may be overloaded.`);
-              }
-
-              // Get usage metadata with timeout (don't hang if response never resolves)
-              try {
-                const finalResponse = await Promise.race([
-                  result.response,
-                  new Promise<never>((_, reject) => setTimeout(() => reject(new Error('metadata timeout')), 10000))
-                ]);
-                usageMetadata = finalResponse.usageMetadata;
-              } catch {
-                console.warn('[stream] Could not get usage metadata (timeout or error)');
-              }
-
-              break; // Success — exit retry loop
-
+              break; // success
             } catch (error: any) {
               lastStreamError = error;
               console.error(`[stream] Attempt ${attempt}/${MAX_RETRIES} failed:`, error?.message);
               const isRetryable = error?.message?.includes('503') ||
-                                  error?.message?.includes('500') ||
                                   error?.message?.includes('overloaded') ||
                                   error?.message?.includes('Service Unavailable') ||
-                                  error?.message?.includes('Internal Server Error') ||
-                                  error?.message?.includes('429') ||
-                                  error?.message?.includes('stalled');
+                                  error?.message?.includes('429');
               if (!isRetryable) throw error;
 
               if (attempt < MAX_RETRIES) {
@@ -1372,17 +1055,46 @@ DO NOT output ANY stat/metric/KPI with value 0. Every number must be realistic a
             }
           }
 
-          // All retries exhausted with no useful output
-          if (fullText.length < 100) {
-            throw lastStreamError || new Error("All retry attempts failed - no output generated");
+          if (!streamResult) {
+            throw lastStreamError || new Error("All retry attempts failed");
           }
 
-          const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-          console.log(`[stream] Completed in ${duration}s, chunks: ${chunkCount}, text length: ${fullText.length}`);
-          console.log(`[stream] Usage: input=${usageMetadata?.promptTokenCount}, output=${usageMetadata?.candidatesTokenCount}, thinking=${(usageMetadata as any)?.thoughtsTokenCount || 0}`);
-          if (fullText.length < 500) {
-            console.log(`[stream] WARNING: Very short response (${fullText.length} chars). First 500 chars:`, fullText.substring(0, 500));
+          const result = streamResult;
+
+          let fullText = "";
+          let chunkCount = 0;
+          let codeStarted = false;
+
+          for await (const chunk of result.stream) {
+            const chunkText = chunk.text();
+            fullText += chunkText;
+            chunkCount++;
+            
+            if (!codeStarted && (fullText.includes("```html") || fullText.includes("<!DOCTYPE"))) {
+              codeStarted = true;
+            }
+            
+            const estimatedProgress = codeStarted 
+              ? Math.min(10 + Math.floor((fullText.length / 50000) * 80), 95)
+              : 15;
+            
+            const lineCount = (fullText.match(/\n/g) || []).length;
+            
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+              type: "chunk", 
+              content: chunkText,
+              chunkIndex: chunkCount,
+              totalLength: fullText.length,
+              lineCount: lineCount,
+              progress: estimatedProgress
+            })}\n\n`));
           }
+          
+          const finalResponse = await result.response;
+          const usageMetadata = finalResponse.usageMetadata;
+          
+          const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+          console.log(`[stream] Completed in ${duration}s`);
           
           let cleanCode = extractCodeFromResponse(fullText);
           
@@ -1400,8 +1112,7 @@ DO NOT output ANY stat/metric/KPI with value 0. Every number must be realistic a
           cleanCode = fixTemplateLiteralErrors(cleanCode);
           cleanCode = fixBrokenHtmlTags(cleanCode);
           cleanCode = fixMalformedDoubleTags(cleanCode);
-          cleanCode = fixZeroStats(cleanCode);
-
+          
           // Extract flow data if present
           let flowData = null;
           const flowMatch = cleanCode.match(/<!--\s*FLOW_DATA:\s*([\s\S]*?)\s*-->/);
