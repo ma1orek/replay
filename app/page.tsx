@@ -4497,6 +4497,12 @@ function ReplayToolContent() {
   i[data-lucide]:has(svg) { opacity: 1 !important; }
   /* Fix sections with no content showing */
   section:empty { min-height: 0 !important; }
+  /* Fix H1/H2 text cutoff — ensure headlines never clip */
+  h1, h2, h3 { overflow-wrap: break-word; word-break: break-word; }
+  h1 { max-width: 100%; overflow: visible !important; }
+  /* Ensure main content is visible in dashboards */
+  main { min-height: 200px; }
+  main:empty::after { content: 'Loading...'; color: #666; font-size: 14px; display: block; padding: 2rem; }
 </style>
 <script>
 // Smart visibility fix — runs AFTER GSAP has had time to initialize ScrollTrigger
@@ -4574,23 +4580,32 @@ ${processedCode}
       }
     } else {
       // Tailwind already present — inject MISSING CDNs + visibility fix
+      // IMPORTANT: Check for actual CDN URLs, NOT just the word (e.g. "gsap.from()" would false-positive)
       let extraScripts = '';
-      // GSAP (critical for animations!)
-      if (!processedCode.includes('gsap') && !processedCode.includes('GSAP')) {
+      // GSAP CDN (critical for animations!)
+      const hasGsapCdn = processedCode.includes('cdnjs.cloudflare.com/ajax/libs/gsap') ||
+                          processedCode.includes('cdn.jsdelivr.net/npm/gsap') ||
+                          processedCode.includes('unpkg.com/gsap');
+      if (!hasGsapCdn) {
         extraScripts += '<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>\n<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>\n';
-      } else if (!processedCode.includes('ScrollTrigger')) {
+      } else if (!processedCode.includes('ScrollTrigger.min.js')) {
         extraScripts += '<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>\n';
       }
-      // Chart.js
-      if (!processedCode.includes('chart.js') && !processedCode.includes('Chart.js')) {
+      // Chart.js CDN
+      if (!processedCode.includes('cdn.jsdelivr.net/npm/chart.js') && !processedCode.includes('cdnjs.cloudflare.com/ajax/libs/Chart.js')) {
         extraScripts += chartScript + '\n';
       }
-      // Alpine.js
-      if (!processedCode.includes('alpinejs') && !processedCode.includes('alpine')) {
+      // Alpine.js CDN
+      const hasAlpineCdn = processedCode.includes('cdn.jsdelivr.net/npm/alpinejs') ||
+                           processedCode.includes('unpkg.com/alpinejs') ||
+                           processedCode.includes('cdnjs.cloudflare.com/ajax/libs/alpinejs');
+      if (!hasAlpineCdn) {
         extraScripts += '<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>\n';
       }
-      // Lucide icons
-      if (!processedCode.includes('lucide')) {
+      // Lucide icons CDN
+      const hasLucideCdn = processedCode.includes('unpkg.com/lucide') ||
+                           processedCode.includes('cdn.jsdelivr.net/npm/lucide');
+      if (!hasLucideCdn) {
         extraScripts += '<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>\n';
       }
       if (processedCode.includes('</head>')) {
@@ -4600,45 +4615,90 @@ ${processedCode}
       }
     }
     
-    // FALLBACK ANIMATION SAFETY NET: If the AI generated HTML without ANY GSAP animations,
-    // inject a universal scroll-reveal animation that makes every section/card animate on scroll
-    const hasGsapAnimations = processedCode.includes('gsap.from') || processedCode.includes('gsap.fromTo') || processedCode.includes('gsap.to(') || processedCode.includes('ScrollTrigger.create');
-    if (!hasGsapAnimations && processedCode.includes('</body>')) {
+    // FALLBACK ANIMATION SAFETY NET — ALWAYS inject (works with or without GSAP)
+    // Dual-mode: uses GSAP if available, falls back to pure CSS IntersectionObserver
+    if (processedCode.includes('</body>')) {
       const fallbackAnimationScript = `
+<style>
+/* CSS fallback animations — work even without GSAP */
+@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeSlideLeft { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes fadeSlideRight { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+.anim-ready { opacity: 0; }
+.anim-visible { animation-fill-mode: both; animation-duration: 0.8s; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+.anim-up { animation-name: fadeSlideUp; }
+.anim-left { animation-name: fadeSlideLeft; }
+.anim-right { animation-name: fadeSlideRight; }
+.anim-scale { animation-name: scaleIn; }
+</style>
 <script>
-// FALLBACK: Auto-animate ALL sections and cards since the page has no GSAP animations
+// UNIVERSAL ANIMATION ENGINE — works with or without GSAP
 document.addEventListener('DOMContentLoaded', function() {
-  if (typeof gsap === 'undefined') return;
-  gsap.registerPlugin(ScrollTrigger);
+  var hasGsap = typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined';
+  if (hasGsap) gsap.registerPlugin(ScrollTrigger);
 
-  // Animate every section entrance
-  document.querySelectorAll('section, [class*="py-"], [class*="mb-"]').forEach(function(section, i) {
-    var children = section.querySelectorAll('h1,h2,h3,h4,p,img,a.btn,[class*="card"],[class*="rounded"],[class*="shadow"],button,[class*="grid"] > *,[class*="flex"] > *,table,canvas');
-    if (children.length === 0) children = section.children;
-    var directions = ['up','left','right','up'];
+  // Detect if page already has GSAP animations running
+  var hasExistingAnims = document.querySelectorAll('[style*="opacity: 0"]').length > 3;
+
+  // Collect all animatable elements
+  var sections = document.querySelectorAll('section, [class*="py-1"], [class*="py-2"], [class*="py-3"], main > div, .hero, [class*="container"]');
+  if (sections.length === 0) sections = document.querySelectorAll('body > div > div');
+
+  var directions = ['up','left','right','up','scale','up','right','left'];
+
+  sections.forEach(function(section, i) {
+    var children = section.querySelectorAll('h1,h2,h3,h4,h5,h6,p,img,[class*="card"],[class*="rounded-xl"],[class*="rounded-2xl"],[class*="shadow-"],button,a[class*="bg-"],[class*="grid"] > *,table,canvas,.stat,.metric');
+    if (children.length === 0) {
+      children = Array.from(section.children).filter(function(c) { return c.offsetHeight > 20; });
+    }
+    if (children.length === 0) return;
+
     var dir = directions[i % directions.length];
-    gsap.from(children, {
-      scrollTrigger: { trigger: section, start: 'top 85%', once: true },
-      opacity: 0,
-      y: dir === 'up' ? 60 : 0,
-      x: dir === 'left' ? -60 : dir === 'right' ? 60 : 0,
-      scale: 0.95,
-      duration: 0.8,
-      ease: 'power3.out',
-      stagger: 0.1
-    });
+
+    if (hasGsap && !hasExistingAnims) {
+      // GSAP mode — best quality
+      gsap.from(children, {
+        scrollTrigger: { trigger: section, start: 'top 88%', once: true },
+        opacity: 0,
+        y: dir === 'up' ? 50 : dir === 'scale' ? 0 : 0,
+        x: dir === 'left' ? -50 : dir === 'right' ? 50 : 0,
+        scale: dir === 'scale' ? 0.9 : 1,
+        duration: 0.7,
+        ease: 'power3.out',
+        stagger: 0.08
+      });
+    } else if (!hasExistingAnims) {
+      // CSS fallback — works without GSAP
+      Array.from(children).forEach(function(child, j) {
+        child.classList.add('anim-ready');
+        var obs = new IntersectionObserver(function(entries) {
+          entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+              obs.unobserve(entry.target);
+              var el = entry.target;
+              el.classList.remove('anim-ready');
+              el.classList.add('anim-visible');
+              el.classList.add(dir === 'up' ? 'anim-up' : dir === 'left' ? 'anim-left' : dir === 'right' ? 'anim-right' : 'anim-scale');
+              el.style.animationDelay = (j * 0.08) + 's';
+            }
+          });
+        }, { threshold: 0.1 });
+        obs.observe(child);
+      });
+    }
   });
 
-  // Animate stat numbers (count-up)
-  document.querySelectorAll('[class*="text-4xl"],[class*="text-5xl"],[class*="text-6xl"],[class*="text-3xl"]').forEach(function(el) {
+  // Count-up for stat numbers
+  document.querySelectorAll('[class*="text-3xl"],[class*="text-4xl"],[class*="text-5xl"],[class*="text-6xl"],[class*="text-7xl"]').forEach(function(el) {
     var text = el.textContent.trim();
-    var numMatch = text.match(/([\\$]?)(\\d[\\d,]*\\.?\\d*)([\\+%BMKk]*)/);
+    var numMatch = text.match(/^([\\$\\€\\£]?)\\s*([\\d][\\d,\\.]*\\d?)\\s*([\\+%BMKk]*)$/);
     if (!numMatch) return;
     var prefix = numMatch[1] || '';
     var num = parseFloat(numMatch[2].replace(/,/g, ''));
     var suffix = numMatch[3] || '';
     if (isNaN(num) || num === 0) return;
-    var fallback = el.textContent;
+    var originalText = el.textContent;
     el.textContent = prefix + '0' + suffix;
     var obs = new IntersectionObserver(function(entries) {
       entries.forEach(function(entry) {
@@ -4648,22 +4708,22 @@ document.addEventListener('DOMContentLoaded', function() {
           (function step(now) {
             var t = Math.min((now - start) / 2000, 1);
             var ease = 1 - Math.pow(1 - t, 4);
-            var val = Math.round(num * ease);
-            el.textContent = prefix + val.toLocaleString() + suffix;
+            el.textContent = prefix + Math.round(num * ease).toLocaleString() + suffix;
             if (t < 1) requestAnimationFrame(step);
           })(start);
         }
       });
     }, { threshold: 0.3 });
     obs.observe(el);
-    setTimeout(function() { if (el.textContent === prefix + '0' + suffix) el.textContent = fallback; }, 4000);
+    setTimeout(function() { if (el.textContent === prefix + '0' + suffix) el.textContent = originalText; }, 4000);
   });
 
   // Hover effects on cards
-  document.querySelectorAll('[class*="card"],[class*="rounded-xl"],[class*="rounded-2xl"],[class*="shadow"]').forEach(function(card) {
-    if (card.tagName === 'IMG' || card.tagName === 'BUTTON') return;
+  document.querySelectorAll('[class*="card"],[class*="rounded-xl"],[class*="rounded-2xl"]').forEach(function(card) {
+    if (card.tagName === 'IMG' || card.tagName === 'BUTTON' || card.tagName === 'A') return;
+    if (card.offsetHeight < 50) return;
     card.style.transition = 'transform 0.3s ease, box-shadow 0.3s ease';
-    card.addEventListener('mouseenter', function() { card.style.transform = 'translateY(-6px) scale(1.02)'; card.style.boxShadow = '0 20px 40px rgba(0,0,0,0.3)'; });
+    card.addEventListener('mouseenter', function() { card.style.transform = 'translateY(-4px)'; card.style.boxShadow = '0 15px 30px rgba(0,0,0,0.2)'; });
     card.addEventListener('mouseleave', function() { card.style.transform = ''; card.style.boxShadow = ''; });
   });
 });

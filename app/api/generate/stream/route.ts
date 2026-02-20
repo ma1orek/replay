@@ -1071,6 +1071,16 @@ The sidebar is hidden on mobile (hidden lg:flex), shown as slide-out drawer on d
 - Sidebar uses class="hidden lg:flex" — invisible on mobile, visible on desktop
 - Mobile hamburger top nav uses class="lg:hidden"
 - Tables on mobile: wrap in overflow-x:auto for horizontal scrolling
+
+🚨🚨🚨 DASHBOARD COMPLETENESS — DO NOT TRUNCATE! 🚨🚨🚨
+If the video shows a dashboard/admin panel, your <main> content MUST include ALL of these:
+1. STAT CARDS ROW: 3-4 metric cards (total sales, orders, customers, etc.) in a grid
+2. CHARTS: At MINIMUM 2 Chart.js charts (line/bar/doughnut) using <canvas> — NEVER skip charts!
+3. DATA TABLE: At least 1 table with 5+ rows of realistic data
+4. RECENT ACTIVITY or NOTIFICATIONS: A list/feed section
+5. If video shows more content (widgets, calendars, maps) → include ALL of them!
+❌ A dashboard with ONLY stat cards and nothing below = INCOMPLETE = FAILURE!
+❌ Empty main content area = FAILURE! The <main> tag MUST have substantial content inside!
 - ❌ NEVER create TWO separate main content areas (one for desktop, one for mobile)
 - ❌ NEVER show a 250px sidebar on mobile
 
