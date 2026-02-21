@@ -103,7 +103,10 @@ gsap.utils.toArray('.counter').forEach(counter => {
   });
 });
 
-// Marquee / infinite scrolling text: ALWAYS duplicate items for seamless loop!
+// Marquee / infinite scrolling text: PREFERRED: use React Bits ScrollVelocity component:
+// import { ScrollVelocity } from "react-bits/text/scroll-velocity"
+// <ScrollVelocity texts={['TEXT1', 'TEXT2', 'TEXT3']} velocity={80} />
+// FALLBACK (if not using React Bits): ALWAYS duplicate items for seamless loop!
 // Container: overflow:hidden. Track: display:flex; animation:marquee Xs linear infinite
 // @keyframes marquee { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
 // Items MUST appear TWICE inside the track — otherwise loop shows a visible GAP!
@@ -303,6 +306,12 @@ const Icon = ({ name, className = "w-5 h-5" }) => {
 □ ALL buttons/links are VISIBLE by default — NEVER opacity:0 or visibility:hidden until hover
 □ Button hover effects ENHANCE appearance — they don't CREATE it from invisible state
 □ Ghost/outline buttons have visible border AND text color before hover
+□ Button text is COMPLETE — NEVER truncated. Write the FULL label from the video!
+□ NO shader/canvas/WebGL effects on buttons — buttons use clean CSS only (solid bg, gradient, border, shadow)
+□ Hero headlines have SINGLE spaces between words — NO extra spaces, NO letter-by-letter spacing with spaces
+□ If video shows "Open Workspace" → output exactly "Open Workspace", NOT "O P E N" or "Open Work..."
+□ ALL animations result in visible elements — no orphaned opacity:0 elements after animation completes
+□ Hero animations fire IMMEDIATELY (no ScrollTrigger on hero). Below-fold: start:'top 85%' (generous trigger)
 
 **FINAL CHECKLIST — VERIFY BEFORE OUTPUT:**
 □ 1. CONTENT: Every text from scanData appears VERBATIM — no missing paragraphs, labels, or items

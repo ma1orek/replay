@@ -2013,7 +2013,9 @@ ${JSON.stringify(scanData, null, 2)}
 6. ${spacingInstruction}
 7. CONTENT 1:1 (🔴 MOST IMPORTANT RULE): Every headline, paragraph, nav label, button text, FAQ item, footer line from scanData MUST appear in the output VERBATIM. Do not skip ANY section, do not shorten ANY text. If scanData has 5 FAQ items, output MUST have 5 FAQ items. If a paragraph has 3 sentences, output ALL 3 sentences. ZERO exceptions.
 8. LAYOUT: Use CSS Grid or Flexbox for card rows — NEVER inline-block. Cards must fill grid cells (w-full, h-full).
-9. BUTTONS: ALL buttons/links MUST be VISIBLE by default. NEVER opacity:0 or visibility:hidden until hover. Hover enhances — doesn't create visibility.
+9. BUTTONS: ALL buttons/links MUST be VISIBLE by default. NEVER opacity:0 or visibility:hidden until hover. Hover enhances — doesn't create visibility. Button text must be COMPLETE (never truncated). NO shader/canvas/WebGL effects on buttons — clean CSS only!
+9b. HERO HEADLINES: Write with SINGLE spaces between words. NO extra spaces ("W E L C O M E" is WRONG — use CSS letter-spacing instead). Write the FULL headline from video, never truncate.
+9c. ANIMATIONS: Hero elements animate IMMEDIATELY (no ScrollTrigger). Below-fold: start:'top 85%'. Every opacity:0 element MUST have a GSAP tween to opacity:1. Zero orphaned invisible elements!
 10. THEME: Respect scanData.ui.theme — if light, use light backgrounds (bg-white). If dark, use dark backgrounds (bg-zinc-950).
 ${isDSStyleDirective ? `11. DS CONSISTENCY: Apply Design System colors uniformly to ALL sections — header, hero, content, sidebar, footer. Every bg-*, text-*, border-* class must come from the DS token palette. Do NOT use any hardcoded hex colors that aren't in the DS style guide.` : ''}
 ${surveyorMeasurements ? `

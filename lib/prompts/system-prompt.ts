@@ -357,6 +357,10 @@ ALSO add these CSS animations for hover effects:
 .marquee-track { display:flex; width:max-content; gap:2rem; animation:marquee-scroll 25s linear infinite; }
 @keyframes marquee-scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
 /* ⚠️ MARQUEE RULE: ALWAYS duplicate ALL items inside .marquee-track so the scroll loops seamlessly with NO gap. Every item appears TWICE. translateX(-50%) shifts exactly one full copy width. Without duplication the marquee will show a VISIBLE GAP before restarting! */
+/* 🎯 PREFERRED: Use React Bits ScrollVelocity component for marquee/scrolling text — it handles loop automatically:
+   import { ScrollVelocity } from "react-bits/text/scroll-velocity"
+   <ScrollVelocity texts={['ARCHITECTURE', 'INTERIOR', 'LANDSCAPE', 'URBAN PLANNING']} velocity={80} />
+   ScrollVelocity provides seamless infinite loop with NO gap, speed-responsive to scroll direction. Use it whenever possible instead of custom CSS marquee! */
 
 /* ANIMATED GRADIENT BACKGROUND */
 .animated-gradient {
@@ -728,6 +732,18 @@ import { RippleGrid } from "react-bits/backgrounds/ripple-grid"
 import { Grainient } from "react-bits/backgrounds/grainient"
 import { Ballpit } from "react-bits/backgrounds/ballpit"
 import { Orb } from "react-bits/backgrounds/orb"
+import { LiquidEther } from "react-bits/backgrounds/liquid-ether"
+import { Prism } from "react-bits/backgrounds/prism"
+import { LightPillar } from "react-bits/backgrounds/light-pillar"
+import { LightRays } from "react-bits/backgrounds/light-rays"
+import { ColorBends } from "react-bits/backgrounds/color-bends"
+import { PixelSnow } from "react-bits/backgrounds/pixel-snow"
+import { PrismaticBurst } from "react-bits/backgrounds/prismatic-burst"
+import { GradientBlinds } from "react-bits/backgrounds/gradient-blinds"
+import { FaultyTerminal } from "react-bits/backgrounds/faulty-terminal"
+import { LetterGlitch } from "react-bits/backgrounds/letter-glitch"
+import { Squares } from "react-bits/backgrounds/squares"
+import { Balatro } from "react-bits/backgrounds/balatro"
 
 ✨ TEXT ANIMATIONS (30+ components):
 import { GradientText } from "react-bits/text/gradient-text"
@@ -746,6 +762,13 @@ import { Shuffle } from "react-bits/text/shuffle"
 import { ScrollReveal } from "react-bits/text/scroll-reveal"
 import { ScrollFloat } from "react-bits/text/scroll-float"
 import { ScrollVelocity } from "react-bits/text/scroll-velocity"
+import { SplitText } from "react-bits/text/split-text"
+import { CircularText } from "react-bits/text/circular-text"
+import { TextPressure } from "react-bits/text/text-pressure"
+import { CurvedLoop } from "react-bits/text/curved-loop"
+import { TextCursor } from "react-bits/text/text-cursor"
+import { TrueFocus } from "react-bits/text/true-focus"
+import { VariableProximity } from "react-bits/text/variable-proximity"
 
 🎬 ANIMATIONS (40+ effects):
 import { ElectricBorder } from "react-bits/animations/electric-border"
@@ -766,6 +789,15 @@ import { LaserFlow } from "react-bits/animations/laser-flow"
 import { GradualBlur } from "react-bits/animations/gradual-blur"
 import { Cubes } from "react-bits/animations/cubes"
 import { MetaBalls } from "react-bits/animations/meta-balls"
+import { Crosshair } from "react-bits/animations/crosshair"
+import { AnimatedContent } from "react-bits/animations/animated-content"
+import { FadeContent } from "react-bits/animations/fade-content"
+import { PixelTransition } from "react-bits/animations/pixel-transition"
+import { LogoLoop } from "react-bits/animations/logo-loop"
+import { MagnetLines } from "react-bits/animations/magnet-lines"
+import { Noise } from "react-bits/animations/noise"
+import { ImageTrail } from "react-bits/animations/image-trail"
+import { Ribbons } from "react-bits/animations/ribbons"
 
 🧩 UI COMPONENTS (50+ components):
 import { ReflectiveCard } from "react-bits/components/reflective-card"
@@ -789,6 +821,19 @@ import { ElasticSlider } from "react-bits/components/elastic-slider"
 import { Counter } from "react-bits/components/counter"
 import { AnimatedList } from "react-bits/components/animated-list"
 import { ScrollStack } from "react-bits/components/scroll-stack"
+import { DecayCard } from "react-bits/components/decay-card"
+import { ProfileCard } from "react-bits/components/profile-card"
+import { BounceCards } from "react-bits/components/bounce-cards"
+import { CardSwap } from "react-bits/components/card-swap"
+import { InfiniteMenu } from "react-bits/components/infinite-menu"
+import { StaggeredMenu } from "react-bits/components/staggered-menu"
+import { CardNav } from "react-bits/components/card-nav"
+import { FlyingPosters } from "react-bits/components/flying-posters"
+import { Masonry } from "react-bits/components/masonry"
+import { Folder } from "react-bits/components/folder"
+import { Stepper } from "react-bits/components/stepper"
+import { ModelViewer } from "react-bits/components/model-viewer"
+import { Lanyard } from "react-bits/components/lanyard"
 
 **USAGE EXAMPLES:**
 
@@ -1021,6 +1066,14 @@ Example:
 - CORRECT: .btn { opacity: 1; bg-indigo-600; } .btn:hover { bg-indigo-500; transform: translateY(-2px); }
 - For ghost/outline buttons: MUST have visible border AND text color by default
 - If a button matches the background color (e.g., white text on white bg) = BUG. Fix contrast!
+- 🚨 BUTTON TEXT COMPLETENESS: NEVER truncate or cut off button text! Write the FULL label visible in the video. If video shows "Open Workspace" → output "Open Workspace", NOT "Open Work" or "CHAD B". Use text-ellipsis ONLY on long data cells, NEVER on buttons/CTAs.
+
+🚫 SHADER/CANVAS EFFECTS ON BUTTONS — ABSOLUTELY FORBIDDEN!
+- WebGL, canvas, Three.js, shader effects, and animated gradient overlays are for PAGE/SECTION BACKGROUNDS ONLY
+- NEVER wrap a <button> or <a> CTA inside a canvas/WebGL container
+- NEVER place a shader/distortion/glitch effect behind or around a button — it creates an ugly, unreadable mess
+- Buttons use ONLY: solid bg color, gradient, border, box-shadow, transform — clean CSS only
+- If you want a "cool" button: use .btn-magnetic with slide-bg, or simple hover:scale + hover:shadow — NO canvas/WebGL!
 
 SHADOWS:
 - Colored shadows, not gray: shadow-indigo-500/20
@@ -1211,6 +1264,24 @@ EVERY text element MUST be clearly visible against its background:
 - ❌ NEVER use text-outline / -webkit-text-stroke with opacity below 60 — stroked text is MUCH harder to read than solid text!
 - Hero headlines: MUST have overflow-hidden on container + max-w-full to prevent text escaping viewport
 - Hero headlines on mobile: MUST shrink via clamp() or responsive classes (text-3xl md:text-5xl lg:text-7xl) — NEVER a fixed huge size
+
+🚨 HERO HEADLINE SPACING — NO EXTRA SPACES!
+- Write hero headlines as NORMAL text with SINGLE spaces between words
+- ❌ WRONG: "W E L C O M E" or "O P E N   W O R K S P A C E" (letter-spaced text written as spaces)
+- ❌ WRONG: "CHAD  B" or "Open  Workspace" (double spaces, truncated words)
+- ✅ CORRECT: "CHAD BROTHERS" or "Open Workspace" — normal text, use CSS letter-spacing for visual effect
+- If you want spaced-out letters, use CSS: letter-spacing: 0.2em — NOT actual space characters
+- NEVER truncate headline text — write the COMPLETE headline visible in video
+
+🚨 ANIMATIONS MUST ALWAYS BE VISIBLE ON LOAD!
+- Every GSAP animation MUST result in the element being VISIBLE after it completes
+- ❌ WRONG: Element starts at opacity:0, y:200 and NEVER gets triggered → permanently invisible
+- ❌ WRONG: ScrollTrigger set to start:'top 20%' on below-fold element → user sees empty space
+- ✅ CORRECT: Hero elements animate on page load (no ScrollTrigger), below-fold elements use start:'top 85%'
+- ALL hero section animations MUST fire immediately (no ScrollTrigger on hero!) — use gsap.from() directly
+- Below-fold sections: ScrollTrigger start:'top 85%' (generous) so animations trigger BEFORE user reaches them
+- If element starts at opacity:0 → it MUST have a GSAP animation that sets opacity:1
+- VERIFY: After all animations complete, EVERY element on the page is visible. No orphaned opacity:0 elements!
 
 ═══════════════════════════════════════════════════════════════════════════════
 📱 RESPONSIVE & MOBILE

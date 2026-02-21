@@ -598,6 +598,20 @@ RULES:
   - Verify ALL text is fully visible — if a headline is too long, it must wrap naturally at WORD boundaries, never mid-word
   - NEVER use text-outline / -webkit-text-stroke with opacity below 60 — stroked text is much harder to read!
   - Hero container MUST have overflow-hidden + max-w-full to prevent text escaping viewport on mobile
+- 🚨 HERO HEADLINE SPACING: Write headlines with SINGLE spaces between words — NO extra spaces!
+  - ❌ "W E L C O M E" or "O P E N" = letter-spaced with actual space chars → WRONG
+  - ❌ "CHAD  B" or truncated text → WRONG. Write COMPLETE text from video!
+  - ✅ Use CSS letter-spacing: 0.2em for visual spacing, NOT space characters
+  - ✅ Write full headline verbatim: "CHAD BROTHERS", "Open Workspace"
+- 🚨 BUTTON RULES:
+  - Button text MUST be COMPLETE — never truncated or cut off
+  - NO shader/canvas/WebGL/glitch effects on buttons — buttons use clean CSS ONLY
+  - Buttons: solid bg, gradient, border, shadow, transform — NO canvas overlays
+- 🚨 ANIMATION VISIBILITY:
+  - Hero animations: fire IMMEDIATELY on load (NO ScrollTrigger on hero elements!)
+  - Below-fold: ScrollTrigger start:'top 85%' so they trigger BEFORE user reaches them
+  - Every element that starts at opacity:0 MUST have a GSAP animation that sets it to opacity:1
+  - After all animations: EVERY element on page is visible. Zero orphaned invisible elements!
 
 VARY layouts between sections — cycle through:
 1. Full-viewport cinematic hero (min-h-screen, font-size:clamp(2.5rem,6vw,5rem))
@@ -1263,6 +1277,10 @@ document.querySelectorAll('.pixel-transition').forEach(el => {
 });
 
 ───── 39. INFINITE MARQUEE (logo/partner bars) ─────
+🎯 PREFERRED: Use React Bits ScrollVelocity for seamless marquee:
+import { ScrollVelocity } from "react-bits/text/scroll-velocity"
+<ScrollVelocity texts={['PARTNER1', 'PARTNER2', 'PARTNER3']} velocity={80} />
+FALLBACK CSS:
 .marquee { overflow:hidden; position:relative; width:100%; }
 .marquee-track { display:flex; width:max-content; gap:3rem; animation:marquee-scroll 25s linear infinite; }
 .marquee-track:hover { animation-play-state:paused; }
