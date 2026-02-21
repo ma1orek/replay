@@ -16,10 +16,5 @@
       "memory": 3008
     }
   },
-  "crons": [
-    {
-      "path": "/api/admin/content-cron",
-      "schedule": "*/3 * * * *"
-    }
-  ]
+  "crons": []
 }
