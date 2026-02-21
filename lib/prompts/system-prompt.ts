@@ -409,16 +409,6 @@ ALSO add these CSS animations for hover effects:
 }
 </style>
 
-🎬 MANDATORY: Add film grain texture to EVERY page (transforms flat AI gradients into premium texture):
-<!-- Add immediately after <body> tag -->
-<svg style="display:none" aria-hidden="true">
-  <filter id="replay-noise">
-    <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
-    <feColorMatrix type="saturate" values="0"/>
-  </filter>
-</svg>
-<div style="position:fixed;inset:0;pointer-events:none;z-index:9998;opacity:0.04;filter:url(#replay-noise);will-change:transform" aria-hidden="true"></div>
-
 🎯 PRIMARY BUTTONS — MAGNETIC FEEL:
 ALL primary buttons use .btn-magnetic class with <span class="slide-bg"> inside:
 <button class="btn-magnetic px-6 py-3 rounded-full bg-indigo-600 text-white font-semibold">

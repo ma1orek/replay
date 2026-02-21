@@ -2216,7 +2216,6 @@ MANDATORY (every page):
 - gradient-text OR shiny-text on at least 1 headline
 - card-spotlight OR tilt-card OR glare-card on at least 1 card set
 - marquee on any logo/partner bar
-- grain overlay on the full page
 - Custom scrollbar styling on <html>
 
 PICK 2+ background effects (VARY per section — NEVER same background twice!):
