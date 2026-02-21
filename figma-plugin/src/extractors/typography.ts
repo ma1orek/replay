@@ -33,8 +33,8 @@ function formatLetterSpacing(ls: LetterSpacing): string {
   return "normal";
 }
 
-export function extractTypography(): ExtractedTypography[] {
-  const textStyles = figma.getLocalTextStyles();
+export async function extractTypography(): Promise<ExtractedTypography[]> {
+  const textStyles = await figma.getLocalTextStylesAsync();
 
   return textStyles.map((style) => {
     const name = style.name.replace(/\//g, "-").replace(/\s+/g, "-").toLowerCase();

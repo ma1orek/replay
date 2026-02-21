@@ -1,6 +1,6 @@
 import { ExtractedSpacing, ExtractedBorderRadius } from "../types";
 
-export function extractSpacing(): { spacing: ExtractedSpacing[]; borderRadius: ExtractedBorderRadius[] } {
+export async function extractSpacing(): Promise<{ spacing: ExtractedSpacing[]; borderRadius: ExtractedBorderRadius[] }> {
   const spacing: ExtractedSpacing[] = [];
   const borderRadius: ExtractedBorderRadius[] = [];
   const seenSpacing = new Set<number>();
@@ -8,9 +8,9 @@ export function extractSpacing(): { spacing: ExtractedSpacing[]; borderRadius: E
 
   // 1. From Variables (FLOAT type)
   try {
-    const floatVars = figma.variables.getLocalVariables("FLOAT");
+    const floatVars = await figma.variables.getLocalVariablesAsync("FLOAT");
     for (const v of floatVars) {
-      const collection = figma.variables.getVariableCollectionById(v.variableCollectionId);
+      const collection = await figma.variables.getVariableCollectionByIdAsync(v.variableCollectionId);
       if (!collection) continue;
 
       const collectionName = collection.name.toLowerCase();
@@ -40,7 +40,7 @@ export function extractSpacing(): { spacing: ExtractedSpacing[]; borderRadius: E
         spacing.push({ name, value: `${value}px` });
       }
     }
-  } catch {
+  } catch (_e) {
     // Variables API not available
   }
 
@@ -74,7 +74,7 @@ export function extractSpacing(): { spacing: ExtractedSpacing[]; borderRadius: E
         }
       }
     }
-  } catch {}
+  } catch (_e) {}
 
   // Sort by numeric value
   spacing.sort((a, b) => parseFloat(a.value) - parseFloat(b.value));

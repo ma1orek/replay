@@ -20,7 +20,22 @@ function mapPropertyType(type: string): string {
   }
 }
 
-export function extractComponents(): ExtractedComponent[] {
+// Safely read componentPropertyDefinitions (throws on broken component sets)
+function safeGetProperties(node: ComponentSetNode | ComponentNode) {
+  try {
+    const defs = node.componentPropertyDefinitions;
+    if (!defs) return [];
+    return Object.entries(defs).map(([key, def]) => ({
+      name: key,
+      type: mapPropertyType(def.type),
+      defaultValue: String(def.defaultValue || ""),
+    }));
+  } catch (_e) {
+    return [];
+  }
+}
+
+export async function extractComponents(): Promise<ExtractedComponent[]> {
   const result: ExtractedComponent[] = [];
   const seen = new Set<string>();
 
@@ -33,25 +48,28 @@ export function extractComponents(): ExtractedComponent[] {
     if (seen.has(set.name)) continue;
     seen.add(set.name);
 
-    const variants = set.children
-      .filter((c) => c.type === "COMPONENT")
-      .map((c) => c.name);
+    try {
+      const variants = set.children
+        .filter((c) => c.type === "COMPONENT")
+        .map((c) => c.name);
 
-    const properties = Object.entries(set.componentPropertyDefinitions || {}).map(
-      ([key, def]) => ({
-        name: key,
-        type: mapPropertyType(def.type),
-        defaultValue: String(def.defaultValue || ""),
-      })
-    );
-
-    result.push({
-      name: set.name,
-      description: set.description || "",
-      properties,
-      variants,
-      category: inferCategory(set),
-    });
+      result.push({
+        name: set.name,
+        description: set.description || "",
+        properties: safeGetProperties(set),
+        variants,
+        category: inferCategory(set),
+      });
+    } catch (_e) {
+      // Skip broken component sets
+      result.push({
+        name: set.name,
+        description: set.description || "",
+        properties: [],
+        variants: [],
+        category: inferCategory(set),
+      });
+    }
   }
 
   // 2. Standalone components (not in variant sets)
@@ -63,18 +81,10 @@ export function extractComponents(): ExtractedComponent[] {
     if (seen.has(comp.name)) continue;
     seen.add(comp.name);
 
-    const properties = Object.entries(comp.componentPropertyDefinitions || {}).map(
-      ([key, def]) => ({
-        name: key,
-        type: mapPropertyType(def.type),
-        defaultValue: String(def.defaultValue || ""),
-      })
-    );
-
     result.push({
       name: comp.name,
       description: comp.description || "",
-      properties,
+      properties: safeGetProperties(comp),
       variants: ["Default"],
       category: inferCategory(comp),
     });

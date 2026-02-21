@@ -2,171 +2,438 @@
 <html>
 <head>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-deep: #0a0a0b;
+      --bg-card: #1f1f23;
+      --bg-input: #0e0e10;
+      --bg-elevated: #161619;
+      --orange: #FF6E3C;
+      --orange-hover: #ff8f5c;
+      --orange-glow: rgba(255, 110, 60, 0.25);
+      --orange-subtle: rgba(255, 110, 60, 0.08);
+      --text-primary: #fafafa;
+      --text-secondary: #888888;
+      --text-muted: #555555;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.12);
+      --success: #22c55e;
+      --error: #ef4444;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+    }
+
     body {
-      font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       font-size: 13px;
-      color: var(--figma-color-text, #333);
-      background: var(--figma-color-bg, #fff);
-      padding: 16px;
+      color: var(--text-primary);
+      background: var(--bg-deep);
+      padding: 0;
       height: 100vh;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
+
+    /* ============ HEADER ============ */
     .header {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--figma-color-border, #e5e5e5);
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-elevated);
+      flex-shrink: 0;
     }
-    .header img { width: 28px; height: 28px; border-radius: 6px; }
-    .header h1 { font-size: 15px; font-weight: 600; }
-    .header span { font-size: 11px; color: var(--figma-color-text-secondary, #999); }
+    .header svg { flex-shrink: 0; }
+    .header-text span {
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
 
-    .screen { display: none; flex-direction: column; flex: 1; }
+    /* ============ SCREENS ============ */
+    .screen {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
     .screen.active { display: flex; }
 
-    label { font-weight: 500; margin-bottom: 4px; display: block; }
+    /* ============ FORMS ============ */
+    .field { margin-bottom: 16px; }
+    .field label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      display: block;
+    }
     input[type="text"], input[type="password"] {
       width: 100%;
-      padding: 8px 12px;
-      border: 1px solid var(--figma-color-border, #ddd);
-      border-radius: 6px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
       font-size: 13px;
-      font-family: monospace;
-      background: var(--figma-color-bg-secondary, #f9f9f9);
-      color: var(--figma-color-text, #333);
+      font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+      background: var(--bg-input);
+      color: var(--text-primary);
       outline: none;
+      transition: all 0.2s;
     }
-    input:focus { border-color: #7c3aed; box-shadow: 0 0 0 2px rgba(124,58,237,0.15); }
+    input:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px var(--orange-glow);
+    }
+    input::placeholder { color: var(--text-muted); }
 
+    .hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+    .hint strong { color: var(--text-secondary); font-weight: 600; }
+    .hint a { color: var(--orange); text-decoration: none; }
+    .hint a:hover { text-decoration: underline; }
+
+    .error-msg {
+      color: var(--error);
+      font-size: 12px;
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: var(--radius-sm);
+    }
+
+    /* ============ BUTTONS ============ */
     .btn {
-      padding: 10px 16px;
+      padding: 12px 20px;
       border: none;
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.2s;
       width: 100%;
+      font-family: 'Inter', sans-serif;
+      letter-spacing: -0.1px;
     }
     .btn-primary {
-      background: #7c3aed;
+      background: linear-gradient(135deg, #FF6E3C 0%, #FF8F5C 100%);
       color: white;
+      box-shadow: 0 4px 16px var(--orange-glow);
     }
-    .btn-primary:hover { background: #6d28d9; }
-    .btn-primary:disabled { background: #c4b5fd; cursor: not-allowed; }
+    .btn-primary:hover {
+      box-shadow: 0 6px 24px rgba(255, 110, 60, 0.4);
+      transform: translateY(-1px);
+    }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
     .btn-secondary {
-      background: var(--figma-color-bg-secondary, #f3f4f6);
-      color: var(--figma-color-text, #333);
-      border: 1px solid var(--figma-color-border, #ddd);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border-strong);
     }
-    .btn-secondary:hover { background: var(--figma-color-bg-hover, #e5e7eb); }
+    .btn-secondary:hover {
+      background: var(--bg-elevated);
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover {
+      color: var(--text-primary);
+      border-color: var(--border-strong);
+      background: var(--bg-card);
+    }
 
-    .hint { font-size: 11px; color: var(--figma-color-text-secondary, #999); margin-top: 6px; }
-    .error { color: #ef4444; font-size: 12px; margin-top: 8px; }
-    .success { color: #10b981; font-size: 12px; margin-top: 8px; }
-
+    /* ============ STATS GRID ============ */
     .stats-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 8px;
       margin: 12px 0;
     }
     .stat-card {
-      background: var(--figma-color-bg-secondary, #f9fafb);
-      border: 1px solid var(--figma-color-border, #e5e5e5);
-      border-radius: 8px;
-      padding: 10px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      text-align: center;
+      transition: border-color 0.2s;
     }
-    .stat-card .stat-value { font-size: 20px; font-weight: 700; color: #7c3aed; }
-    .stat-card .stat-label { font-size: 11px; color: var(--figma-color-text-secondary, #999); margin-top: 2px; }
-
-    .progress-bar {
-      width: 100%;
-      height: 4px;
-      background: var(--figma-color-bg-secondary, #e5e7eb);
-      border-radius: 2px;
-      overflow: hidden;
-      margin: 12px 0;
+    .stat-card:hover { border-color: var(--border-strong); }
+    .stat-value {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--orange);
+      letter-spacing: -0.5px;
     }
-    .progress-bar .fill {
-      height: 100%;
-      background: #7c3aed;
-      border-radius: 2px;
-      transition: width 0.3s;
+    .stat-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      font-weight: 500;
     }
 
-    .status-text { font-size: 12px; color: var(--figma-color-text-secondary, #666); text-align: center; }
-
-    .spacer { flex: 1; }
-
-    .color-preview {
+    /* ============ COLOR SWATCHES ============ */
+    .color-section { margin: 12px 0; }
+    .color-section label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .color-swatches {
       display: flex;
       flex-wrap: wrap;
       gap: 4px;
-      margin-top: 8px;
     }
     .color-swatch {
-      width: 20px;
-      height: 20px;
-      border-radius: 4px;
-      border: 1px solid rgba(0,0,0,0.1);
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      border: 2px solid var(--bg-deep);
+      outline: 1px solid var(--border);
+      transition: transform 0.15s, outline-color 0.15s;
+      cursor: default;
+    }
+    .color-swatch:hover {
+      transform: scale(1.2);
+      outline-color: var(--border-strong);
+      z-index: 1;
     }
 
+    /* ============ PROGRESS ============ */
+    .progress-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      padding: 20px 0;
+    }
+    .progress-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 20px;
+      background: var(--orange-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 0 0 var(--orange-glow); }
+      50% { box-shadow: 0 0 24px 8px var(--orange-glow); }
+    }
+    .progress-icon svg { width: 28px; height: 28px; }
+    .progress-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+      letter-spacing: -0.3px;
+    }
+    .progress-status {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+    .progress-bar {
+      width: 100%;
+      max-width: 240px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-bar .fill {
+      height: 100%;
+      background: linear-gradient(90deg, #FF6E3C, #FF8F5C);
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+
+    /* ============ SUCCESS ============ */
+    .success-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 20px rgba(34, 197, 94, 0.3);
+    }
+    .success-icon svg { width: 36px; height: 36px; }
+    .success-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--success);
+      margin-bottom: 4px;
+      letter-spacing: -0.3px;
+    }
+    .success-details {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+    .success-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 20px 0;
+      width: 100%;
+    }
+    .success-stat {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      text-align: center;
+    }
+    .success-stat .stat-value {
+      font-size: 28px;
+      color: var(--success);
+    }
+
+    /* ============ DS NAME INPUT ============ */
+    .ds-name-field {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ============ SPACER & FOOTER ============ */
+    .spacer { flex: 1; min-height: 12px; }
+
+    .footer {
+      text-align: center;
+      padding-top: 12px;
+    }
     .footer-link {
       font-size: 11px;
-      color: var(--figma-color-text-secondary, #999);
-      text-align: center;
-      margin-top: 12px;
+      color: var(--text-muted);
     }
-    .footer-link a { color: #7c3aed; text-decoration: none; }
+    .footer-link a {
+      color: var(--orange);
+      text-decoration: none;
+      font-weight: 500;
+    }
     .footer-link a:hover { text-decoration: underline; }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .btn-group .btn:first-child { flex: 1; }
+    .btn-group .btn:last-child { flex: 2; }
+
+    /* ============ DIVIDER ============ */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 16px 0;
+    }
+
+    /* ============ SCROLLBAR ============ */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
   </style>
 </head>
 <body>
+  <!-- HEADER -->
   <div class="header">
-    <div style="width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,#7c3aed,#ec4899);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:14px;">R</div>
-    <div>
-      <h1>Replay.build</h1>
+    <svg width="106" height="30" viewBox="0 0 106 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20.2929 9.92773C22.9779 11.478 22.9779 15.3531 20.2929 16.9033L10.0029 22.8447C6.30976 24.9769 2.26955 20.6584 4.64252 17.1152L6.77338 13.9326C6.98297 13.6197 6.98297 13.2114 6.77338 12.8984L4.64252 9.71582C2.26955 6.17263 6.30977 1.85411 10.0029 3.98633L20.2929 9.92773Z" stroke="#FF6E3C" stroke-width="3.09818" stroke-linejoin="round"/>
+      <rect x="11.2144" y="26.3158" width="12.9748" height="3.09818" rx="1.54909" transform="rotate(-30 11.2144 26.3158)" fill="#FF6E3C"/>
+      <path d="M36.2224 5.14303H44.0489C44.9479 5.14303 45.7587 5.28752 46.4811 5.5765C47.2196 5.86548 47.8457 6.27486 48.3595 6.80465C48.8732 7.33444 49.2745 7.97661 49.5635 8.73116C49.8525 9.46966 49.997 10.2965 49.997 11.2115C49.997 12.528 49.7 13.6678 49.106 14.6311C48.512 15.5783 47.6852 16.2686 46.6256 16.7021L50.0933 22H46.5293L43.3746 17.1837H39.2326V22H36.2224V5.14303ZM43.7599 14.4144C44.7392 14.4144 45.5179 14.1254 46.0958 13.5474C46.6898 12.9534 46.9868 12.1507 46.9868 11.1393C46.9868 10.16 46.6898 9.38136 46.0958 8.8034C45.5179 8.2094 44.7392 7.91239 43.7599 7.91239H39.2326V14.4144H43.7599ZM59.7366 14.294C59.4797 13.7 59.0864 13.2424 58.5566 12.9213C58.0429 12.6002 57.4248 12.4397 56.7023 12.4397C55.9799 12.4397 55.3618 12.6002 54.8481 12.9213C54.3343 13.2424 53.949 13.7 53.6922 14.294H59.7366ZM56.7023 19.5678C57.9225 19.5678 58.8295 19.1343 59.4235 18.2674H62.5782C62.1768 19.4875 61.4624 20.4508 60.4349 21.1572C59.4235 21.8635 58.1874 22.2167 56.7264 22.2167C55.7953 22.2167 54.9444 22.0722 54.1738 21.7833C53.4032 21.4782 52.745 21.0528 52.1991 20.507C51.6533 19.9611 51.2278 19.3029 50.9228 18.5323C50.6338 17.7617 50.4893 16.9108 50.4893 15.9797C50.4893 15.0485 50.6338 14.2057 50.9228 13.4511C51.2278 12.6805 51.6533 12.0303 52.1991 11.5005C52.745 10.9547 53.4032 10.5373 54.1738 10.2483C54.9444 9.94326 55.7953 9.79074 56.7264 9.79074C57.6576 9.79074 58.5004 9.94326 59.255 10.2483C60.0256 10.5373 60.6838 10.9547 61.2296 11.5005C61.7755 12.0303 62.1929 12.6805 62.4819 13.4511C62.7869 14.2057 62.9394 15.0485 62.9394 15.9797C62.9394 16.1563 62.9314 16.3248 62.9153 16.4854C62.9153 16.6299 62.9073 16.7824 62.8912 16.9429H53.4754C53.636 17.7777 53.9972 18.4279 54.5591 18.8935C55.121 19.343 55.8354 19.5678 56.7023 19.5678ZM64.043 26.8163V15.9556C64.043 14.9923 64.2036 14.1254 64.5246 13.3548C64.8618 12.5842 65.3113 11.934 65.8732 11.4042C66.4351 10.8744 67.1014 10.473 67.872 10.2001C68.6426 9.91115 69.4694 9.76666 70.3523 9.76666C71.2674 9.76666 72.0942 9.91918 72.8327 10.2242C73.5873 10.5132 74.2375 10.9306 74.7833 11.4764C75.3292 12.0223 75.7466 12.6725 76.0355 13.427C76.3406 14.1816 76.4931 15.0244 76.4931 15.9556C76.4931 16.8867 76.3406 17.7376 76.0355 18.5082C75.7466 19.2788 75.3372 19.937 74.8074 20.4829C74.2776 21.0287 73.6435 21.4542 72.905 21.7592C72.1665 22.0482 71.3638 22.1927 70.4968 22.1927C69.6299 22.1927 68.8914 22.0562 68.2813 21.7833C67.6713 21.5103 67.2218 21.1893 66.9328 20.82V26.8163H64.043ZM73.6033 15.9797C73.6033 14.8559 73.2983 13.9809 72.6882 13.3548C72.0942 12.7287 71.2915 12.4156 70.2801 12.4156C69.2687 12.4156 68.4579 12.7287 67.8479 13.3548C67.2378 13.9809 66.9328 14.8559 66.9328 15.9797C66.9328 17.1035 67.2378 17.9784 67.8479 18.6045C68.4579 19.2306 69.2687 19.5437 70.2801 19.5437C71.2915 19.5437 72.0942 19.2306 72.6882 18.6045C73.2983 17.9784 73.6033 17.1035 73.6033 15.9797ZM77.6123 5.14303H80.5021V22H77.6123V5.14303ZM87.7912 9.79074C88.7224 9.79074 89.5732 9.94326 90.3438 10.2483C91.1144 10.5373 91.7727 10.9547 92.3185 11.5005C92.8643 12.0464 93.2818 12.7046 93.5707 13.4752C93.8758 14.2458 94.0283 15.0967 94.0283 16.0278V22H91.1385V20.8441C90.8495 21.2133 90.4 21.5344 89.79 21.8073C89.196 22.0803 88.4575 22.2167 87.5745 22.2167C86.7075 22.2167 85.9048 22.0722 85.1663 21.7833C84.4278 21.4782 83.7937 21.0528 83.2639 20.507C82.7341 19.9611 82.3167 19.3029 82.0117 18.5323C81.7227 17.7617 81.5782 16.9108 81.5782 15.9797C81.5782 15.0485 81.7227 14.2057 82.0117 13.4511C82.3167 12.6805 82.7421 12.0303 83.288 11.5005C83.8338 10.9547 84.484 10.5373 85.2386 10.2483C86.0092 9.94326 86.8601 9.79074 87.7912 9.79074ZM91.1385 16.0037C91.1385 14.8799 90.8335 14.005 90.2234 13.3789C89.6294 12.7528 88.8267 12.4397 87.8153 12.4397C86.8039 12.4397 85.9931 12.7528 85.3831 13.3789C84.773 14.005 84.468 14.8799 84.468 16.0037C84.468 17.1275 84.773 18.0025 85.3831 18.6286C85.9931 19.2547 86.8039 19.5678 87.8153 19.5678C88.8267 19.5678 89.6294 19.2547 90.2234 18.6286C90.8335 18.0025 91.1385 17.1275 91.1385 16.0037ZM93.681 9.95931H96.6912L99.5809 18.2915L102.471 9.95931H105.481L101.218 22C100.978 22.7064 100.729 23.4128 100.472 24.1192C100.231 24.8255 99.91 25.4597 99.5087 26.0216C99.1073 26.5995 98.5856 27.0651 97.9434 27.4183C97.3173 27.7715 96.4985 27.9481 95.4871 27.9481V25.2991C95.8884 25.2991 96.2577 25.1868 96.5948 24.962C96.948 24.7372 97.237 24.4483 97.4618 24.0951C97.7026 23.7419 97.8551 23.3486 97.9193 22.9151C97.9996 22.4977 97.9675 22.0883 97.823 21.6869L93.681 9.95931Z" fill="white"/>
+    </svg>
+    <div class="header-text">
       <span>Design System Sync</span>
     </div>
   </div>
 
-  <!-- Screen 1: Connect -->
+  <!-- SCREEN 1: Connect -->
   <div id="screen-connect" class="screen active">
-    <label for="api-key">API Key</label>
-    <input type="password" id="api-key" placeholder="rk_live_..." />
-    <p class="hint">Get your API key from <strong>replay.build/settings</strong> → API Keys</p>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.5;">
+      Extract colors, typography, spacing, and components from your Figma file and sync them to Replay.build as a Design System.
+    </p>
 
-    <div style="margin-top:8px;">
+    <div class="field">
+      <label for="api-key">API Key</label>
+      <input type="password" id="api-key" placeholder="rk_live_..." />
+      <p class="hint">Go to <a href="https://www.replay.build/settings" target="_blank">replay.build/settings</a> → API Keys to generate one</p>
+    </div>
+
+    <div class="field">
       <label for="api-url">Server URL</label>
       <input type="text" id="api-url" value="https://www.replay.build" />
-      <p class="hint">Change to localhost:3000 for local dev</p>
+      <p class="hint">Change to <strong>http://localhost:3000</strong> for local dev</p>
     </div>
 
     <div class="spacer"></div>
-    <p id="connect-error" class="error" style="display:none;"></p>
-    <button class="btn btn-primary" id="btn-connect">Connect & Extract</button>
-    <div class="footer-link">Need an API key? <a href="https://www.replay.build/settings" target="_blank">Get one here</a></div>
+    <p id="connect-error" class="error-msg" style="display:none;"></p>
+    <button class="btn btn-primary" id="btn-connect">
+      Extract Design System
+    </button>
+    <div class="footer" style="margin-top:12px;">
+      <p class="footer-link">Don't have an account? <a href="https://www.replay.build" target="_blank">Sign up free</a></p>
+    </div>
   </div>
 
-  <!-- Screen 2: Extracting -->
+  <!-- SCREEN 2: Extracting -->
   <div id="screen-extracting" class="screen">
-    <div style="text-align:center;padding:40px 0;">
-      <div style="font-size:32px;margin-bottom:12px;">🔍</div>
-      <p style="font-weight:600;font-size:14px;">Extracting Design System</p>
-      <p id="extract-status" class="status-text" style="margin-top:8px;">Starting...</p>
+    <div class="progress-container">
+      <div class="progress-icon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z" stroke="#FF6E3C" stroke-width="2" stroke-linecap="round"/>
+          <path d="M21 21L16.65 16.65" stroke="#FF6E3C" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <p class="progress-title">Scanning your file</p>
+      <p class="progress-status" id="extract-status">Loading pages...</p>
       <div class="progress-bar"><div class="fill" id="progress-fill" style="width:10%"></div></div>
     </div>
   </div>
 
-  <!-- Screen 3: Preview -->
+  <!-- SCREEN 3: Preview -->
   <div id="screen-preview" class="screen">
-    <p style="font-weight:600;font-size:14px;margin-bottom:4px;" id="file-name">Design System</p>
-    <p class="hint" style="margin-bottom:12px;">Review extracted tokens before syncing</p>
+    <div style="margin-bottom: 4px;">
+      <p style="font-size:16px;font-weight:700;letter-spacing:-0.3px;" id="file-name">Design System</p>
+      <p class="hint" style="margin-top:4px;">Review what was found, then sync to Replay</p>
+    </div>
 
     <div class="stats-grid">
       <div class="stat-card">
@@ -175,7 +442,7 @@
       </div>
       <div class="stat-card">
         <div class="stat-value" id="stat-typography">0</div>
-        <div class="stat-label">Text Styles</div>
+        <div class="stat-label">Type</div>
       </div>
       <div class="stat-card">
         <div class="stat-value" id="stat-shadows">0</div>
@@ -187,53 +454,67 @@
       </div>
       <div class="stat-card">
         <div class="stat-value" id="stat-radii">0</div>
-        <div class="stat-label">Border Radii</div>
+        <div class="stat-label">Radii</div>
       </div>
       <div class="stat-card">
         <div class="stat-value" id="stat-components">0</div>
-        <div class="stat-label">Components</div>
+        <div class="stat-label">Comps</div>
       </div>
     </div>
 
-    <div id="color-preview-container" style="margin-bottom:12px;">
-      <label>Color Preview</label>
-      <div class="color-preview" id="color-swatches"></div>
+    <div class="color-section">
+      <label>Color Palette</label>
+      <div class="color-swatches" id="color-swatches"></div>
     </div>
 
-    <label for="ds-name">Design System Name</label>
-    <input type="text" id="ds-name" placeholder="My Design System" />
+    <div class="ds-name-field">
+      <div class="field" style="margin-bottom:0;">
+        <label for="ds-name">Design System Name</label>
+        <input type="text" id="ds-name" placeholder="My Design System" />
+      </div>
+    </div>
 
     <div class="spacer"></div>
-    <p id="preview-error" class="error" style="display:none;"></p>
-    <div style="display:flex;gap:8px;margin-top:12px;">
-      <button class="btn btn-secondary" id="btn-re-extract" style="flex:1;">Re-extract</button>
-      <button class="btn btn-primary" id="btn-send" style="flex:2;">Sync to Replay.build</button>
+    <p id="preview-error" class="error-msg" style="display:none;"></p>
+    <div class="btn-group">
+      <button class="btn btn-ghost" id="btn-re-extract">Re-extract</button>
+      <button class="btn btn-primary" id="btn-send">Sync to Replay</button>
     </div>
   </div>
 
-  <!-- Screen 4: Sending -->
+  <!-- SCREEN 4: Sending -->
   <div id="screen-sending" class="screen">
-    <div style="text-align:center;padding:40px 0;">
-      <div style="font-size:32px;margin-bottom:12px;">🚀</div>
-      <p style="font-weight:600;font-size:14px;">Syncing to Replay.build</p>
-      <p id="send-status" class="status-text" style="margin-top:8px;">Uploading tokens...</p>
-      <div class="progress-bar"><div class="fill" id="send-progress" style="width:50%"></div></div>
+    <div class="progress-container">
+      <div class="progress-icon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L12 16M12 16L7 11M12 16L17 11" stroke="#FF6E3C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M3 20H21" stroke="#FF6E3C" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <p class="progress-title">Uploading to Replay</p>
+      <p class="progress-status" id="send-status">Sending tokens & components...</p>
+      <div class="progress-bar"><div class="fill" id="send-progress" style="width:60%"></div></div>
     </div>
   </div>
 
-  <!-- Screen 5: Success -->
+  <!-- SCREEN 5: Success -->
   <div id="screen-success" class="screen">
-    <div style="text-align:center;padding:30px 0;">
-      <div style="font-size:48px;margin-bottom:12px;">✅</div>
-      <p style="font-weight:700;font-size:16px;color:#10b981;">Synced Successfully!</p>
-      <p class="hint" style="margin-top:8px;" id="success-details">Your design system is ready in Replay.build</p>
+    <div class="progress-container" style="justify-content:flex-start;padding-top:24px;">
+      <div class="success-icon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 6L9 17L4 12" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <p class="success-title">Sync Complete!</p>
+      <p class="success-details" id="success-details">Your design system is live in Replay.build</p>
+
+      <div class="success-stats" id="success-stats"></div>
+
+      <div style="width:100%;">
+        <button class="btn btn-primary" id="btn-open-replay" style="margin-bottom:8px;">Open in Replay.build</button>
+        <button class="btn btn-ghost" id="btn-done">Close Plugin</button>
+      </div>
     </div>
-
-    <div class="stats-grid" id="success-stats"></div>
-
-    <div class="spacer"></div>
-    <button class="btn btn-primary" id="btn-open-replay" style="margin-bottom:8px;">Open Replay.build</button>
-    <button class="btn btn-secondary" id="btn-done">Done</button>
   </div>
 
   <!-- BUNDLE_PLACEHOLDER -->

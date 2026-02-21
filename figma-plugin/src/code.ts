@@ -14,25 +14,28 @@ figma.showUI(__html__, { width: 440, height: 580, themeColors: true });
 figma.ui.onmessage = async (msg: UIMessage) => {
   if (msg.type === "extract") {
     try {
+      // Load all pages for dynamic-page access mode
+      await figma.loadAllPagesAsync();
+
       // Step 1: Colors
       figma.ui.postMessage({ type: "extracting", status: "Extracting colors..." });
-      const colors = extractColors();
+      const colors = await extractColors();
 
       // Step 2: Typography
       figma.ui.postMessage({ type: "extracting", status: "Extracting typography..." });
-      const typography = extractTypography();
+      const typography = await extractTypography();
 
       // Step 3: Effects (shadows)
       figma.ui.postMessage({ type: "extracting", status: "Extracting shadows & effects..." });
-      const shadows = extractEffects();
+      const shadows = await extractEffects();
 
       // Step 4: Spacing & border radius
       figma.ui.postMessage({ type: "extracting", status: "Extracting spacing & radii..." });
-      const { spacing, borderRadius } = extractSpacing();
+      const { spacing, borderRadius } = await extractSpacing();
 
       // Step 5: Components
       figma.ui.postMessage({ type: "extracting", status: "Extracting components..." });
-      const components = extractComponents();
+      const components = await extractComponents();
 
       // Send complete result to UI
       const result: ExtractionResult = {

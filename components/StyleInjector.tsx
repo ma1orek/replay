@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { ChevronDown, Search, Info, X, ImagePlus, Upload, Trash2 } from "lucide-react";
+import { ChevronDown, Search, Info, X, ImagePlus, Upload, Trash2, Eye, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -4276,6 +4276,11 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
   const searchInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // DS Preview Modal state
+  const [previewDSId, setPreviewDSId] = useState<string | null>(null);
+  const [previewData, setPreviewData] = useState<{ tokens: any; components: any[]; name: string; source_type: string | null } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
   // Check if a DS style is selected
   const isDSStyle = value.startsWith("DS_STYLE::");
   const selectedDSId = isDSStyle ? value.split("::")[1] : null;
@@ -4307,6 +4312,43 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
       p.fullDesc.toLowerCase().includes(q)
     );
   }, [searchQuery]);
+
+  // Storybook chrome colors to filter out of preview
+  const STORYBOOK_CHROME = new Set(["#ff4400","#ff0000","#f6f9fc","#fafbfc","#1ea7fd","#ff4785","#66bf3c","#e0e0e0","#f8f8f8","#333333","#eee","#ffffff","#000000"]);
+  const isSizeVal = (v: string) => /^[\d.]+(?:rem|em|px|%|vh|vw|ch|pt)$/i.test(v);
+
+  const openDSPreview = async (dsId: string, dsName: string, dsSourceType: string | null) => {
+    setPreviewDSId(dsId);
+    setPreviewLoading(true);
+    setPreviewData(null);
+    try {
+      const [dsRes, compRes] = await Promise.all([
+        fetch(`/api/design-systems/${dsId}`),
+        fetch(`/api/design-systems/${dsId}/components`),
+      ]);
+      const dsJson = await dsRes.json();
+      const compJson = await compRes.json();
+      const tokens = dsJson.designSystem?.tokens || {};
+      const components = compJson.components || dsJson.designSystem?.components || [];
+      setPreviewData({ tokens, components, name: dsName, source_type: dsSourceType });
+    } catch (_e) {
+      setPreviewData({ tokens: {}, components: [], name: dsName, source_type: dsSourceType });
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  // Filter DS colors for preview display
+  const getPreviewColors = (tokens: any): { name: string; hex: string }[] => {
+    if (!tokens?.colors) return [];
+    return Object.entries(tokens.colors as Record<string, string>)
+      .filter(([k, v]) => {
+        if (k.startsWith("discovered-") && STORYBOOK_CHROME.has(v.toLowerCase())) return false;
+        if (isSizeVal(v)) return false;
+        return true;
+      })
+      .map(([name, hex]) => ({ name, hex }));
+  };
 
   // Group by category
   const groupedPresets = useMemo(() => {
@@ -4555,6 +4597,17 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
                                         : "Imported Design System"}
                               </span>
                             </div>
+                            {/* Preview button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openDSPreview(ds.id, ds.name, ds.source_type || null);
+                              }}
+                              className="p-1 rounded transition-colors flex-shrink-0 text-white/20 hover:text-[#FF6E3C] hover:bg-[#FF6E3C]/10"
+                              title="Preview tokens"
+                            >
+                              <Eye className="w-3 h-3" />
+                            </button>
                             {/* Delete button */}
                             {onDeleteDS && (
                               <button
@@ -4765,6 +4818,206 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
           />
         </div>
       )}
+
+      {/* DS Preview Modal */}
+      <AnimatePresence>
+        {previewDSId && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setPreviewDSId(null)}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md mx-4 bg-zinc-900 border border-zinc-700/50 rounded-xl shadow-2xl overflow-hidden max-h-[80vh] flex flex-col"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-700/50">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-white">{previewData?.name || "Design System"}</span>
+                  {previewData?.source_type && (
+                    <span className={cn("text-[9px] px-1.5 py-0.5 rounded font-medium", previewData.source_type === "figma" ? "bg-violet-500/20 text-violet-400" : "bg-blue-500/20 text-blue-400")}>
+                      {previewData.source_type}
+                    </span>
+                  )}
+                </div>
+                <button onClick={() => setPreviewDSId(null)} className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="overflow-y-auto flex-1 p-4 space-y-4">
+                {previewLoading ? (
+                  <div className="flex flex-col items-center justify-center py-12 gap-3">
+                    <Loader2 className="w-6 h-6 text-[#FF6E3C] animate-spin" />
+                    <span className="text-xs text-white/40">Loading tokens...</span>
+                  </div>
+                ) : previewData ? (
+                  <>
+                    {/* Colors */}
+                    {(() => {
+                      const colors = getPreviewColors(previewData.tokens);
+                      if (colors.length === 0) return null;
+                      return (
+                        <div>
+                          <div className="text-[10px] font-medium text-white/50 uppercase tracking-wider mb-2">Colors ({colors.length})</div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {colors.slice(0, 40).map((c) => (
+                              <div key={c.name} className="group relative">
+                                <div
+                                  className="w-7 h-7 rounded-md border border-white/10 cursor-default transition-transform hover:scale-125 hover:z-10"
+                                  style={{ backgroundColor: c.hex }}
+                                  title={`${c.name}: ${c.hex}`}
+                                />
+                                <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-600 text-[8px] text-white/70 px-1 py-0.5 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-20">
+                                  {c.hex}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Typography */}
+                    {(() => {
+                      const typo = previewData.tokens?.typography || previewData.tokens?.fonts;
+                      if (!typo) return null;
+                      const families = typo.fontFamily || {};
+                      const sizes = typo.fontSize || {};
+                      if (Object.keys(families).length === 0 && Object.keys(sizes).length === 0) return null;
+                      return (
+                        <div>
+                          <div className="text-[10px] font-medium text-white/50 uppercase tracking-wider mb-2">Typography</div>
+                          <div className="space-y-1.5">
+                            {Object.entries(families).slice(0, 6).map(([name, val]) => (
+                              <div key={name} className="flex items-baseline gap-2 bg-white/[0.03] rounded-md px-2.5 py-1.5 border border-white/[0.06]">
+                                <span className="text-[9px] text-white/40 w-16 flex-shrink-0 truncate">{name}</span>
+                                <span className="text-xs text-white/80 truncate" style={{ fontFamily: String(val) }}>{String(val)}</span>
+                              </div>
+                            ))}
+                            {Object.keys(sizes).length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {Object.entries(sizes).slice(0, 8).map(([name, val]) => (
+                                  <span key={name} className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/[0.06] text-white/50">
+                                    {name}: {String(val)}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Spacing */}
+                    {(() => {
+                      const spacing = previewData.tokens?.spacing;
+                      if (!spacing || Object.keys(spacing).length === 0) return null;
+                      return (
+                        <div>
+                          <div className="text-[10px] font-medium text-white/50 uppercase tracking-wider mb-2">Spacing ({Object.keys(spacing).length})</div>
+                          <div className="space-y-1">
+                            {Object.entries(spacing).slice(0, 8).map(([name, val]) => (
+                              <div key={name} className="flex items-center gap-2">
+                                <span className="text-[9px] text-white/40 w-14 flex-shrink-0 truncate">{name}</span>
+                                <div className="h-3 rounded-sm bg-[#FF6E3C]/30 border border-[#FF6E3C]/20" style={{ width: `${Math.min(parseFloat(String(val)) * 16, 200)}px` }} />
+                                <span className="text-[9px] text-white/30">{String(val)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Border Radius */}
+                    {(() => {
+                      const radii = previewData.tokens?.borderRadius || previewData.tokens?.radii;
+                      if (!radii || Object.keys(radii).length === 0) return null;
+                      return (
+                        <div>
+                          <div className="text-[10px] font-medium text-white/50 uppercase tracking-wider mb-2">Border Radius ({Object.keys(radii).length})</div>
+                          <div className="flex flex-wrap gap-2">
+                            {Object.entries(radii).slice(0, 8).map(([name, val]) => (
+                              <div key={name} className="flex flex-col items-center gap-1">
+                                <div className="w-10 h-10 bg-[#FF6E3C]/15 border border-[#FF6E3C]/30" style={{ borderRadius: String(val) }} />
+                                <span className="text-[8px] text-white/40">{name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Shadows */}
+                    {(() => {
+                      const shadows = previewData.tokens?.shadows;
+                      if (!shadows || Object.keys(shadows).length === 0) return null;
+                      return (
+                        <div>
+                          <div className="text-[10px] font-medium text-white/50 uppercase tracking-wider mb-2">Shadows ({Object.keys(shadows).length})</div>
+                          <div className="flex flex-wrap gap-2">
+                            {Object.entries(shadows).slice(0, 6).map(([name, val]) => (
+                              <div key={name} className="flex flex-col items-center gap-1">
+                                <div className="w-12 h-12 bg-zinc-800 rounded-lg" style={{ boxShadow: String(val) }} />
+                                <span className="text-[8px] text-white/40 truncate max-w-[60px]">{name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Components */}
+                    {previewData.components.length > 0 && (
+                      <div>
+                        <div className="text-[10px] font-medium text-white/50 uppercase tracking-wider mb-2">Components ({previewData.components.length})</div>
+                        <div className="flex flex-wrap gap-1">
+                          {previewData.components.slice(0, 30).map((comp: any) => (
+                            <span key={comp.id || comp.name} className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/[0.06] text-white/50">
+                              {comp.name}
+                            </span>
+                          ))}
+                          {previewData.components.length > 30 && (
+                            <span className="text-[9px] px-1.5 py-0.5 text-white/30">+{previewData.components.length - 30} more</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Empty state */}
+                    {getPreviewColors(previewData.tokens).length === 0 && !previewData.tokens?.typography && !previewData.tokens?.spacing && previewData.components.length === 0 && (
+                      <div className="text-center py-8 text-white/30 text-xs">No tokens extracted yet</div>
+                    )}
+                  </>
+                ) : null}
+              </div>
+
+              {/* Footer */}
+              <div className="flex gap-2 px-4 py-3 border-t border-zinc-700/50">
+                <button
+                  onClick={() => setPreviewDSId(null)}
+                  className="flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-white/[0.06] border border-white/10 text-white/60 hover:bg-white/[0.1] hover:text-white transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    if (previewData) {
+                      onChange(`DS_STYLE::${previewDSId}::${previewData.name}`);
+                      setPreviewDSId(null);
+                      setIsOpen(false);
+                    }
+                  }}
+                  className="flex-[2] px-3 py-2 text-xs font-semibold rounded-lg bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white shadow-lg shadow-[#FF6E3C]/20 hover:shadow-[#FF6E3C]/40 transition-all"
+                >
+                  Use this Design System
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

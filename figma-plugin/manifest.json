@@ -1,10 +1,11 @@
 {
-  "name": "Replay.build DS Sync",
-  "id": "replay-build-ds-sync",
+  "name": "Replay.build — Design System Sync",
+  "id": "1607182078456696068",
   "api": "1.0.0",
   "main": "dist/code.js",
   "ui": "dist/ui.html",
   "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
   "networkAccess": {
     "allowedDomains": [
       "https://replay.build",

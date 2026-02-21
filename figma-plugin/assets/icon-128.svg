@@ -1,0 +1,9 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="128" height="128" rx="24" fill="#0a0a0b"/>
+  <rect x="1" y="1" width="126" height="126" rx="23" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
+  <!-- Orange play/arrow logo mark -->
+  <g transform="translate(28, 28) scale(3)">
+    <path d="M20.2929 9.92773C22.9779 11.478 22.9779 15.3531 20.2929 16.9033L10.0029 22.8447C6.30976 24.9769 2.26955 20.6584 4.64252 17.1152L6.77338 13.9326C6.98297 13.6197 6.98297 13.2114 6.77338 12.8984L4.64252 9.71582C2.26955 6.17263 6.30977 1.85411 10.0029 3.98633L20.2929 9.92773Z" fill="none" stroke="#FF6E3C" stroke-width="3.09818" stroke-linejoin="round"/>
+    <rect x="11.2144" y="23.3158" width="10" height="2.5" rx="1.25" transform="rotate(-30 11.2144 23.3158)" fill="#FF6E3C"/>
+  </g>
+</svg>

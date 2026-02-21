@@ -1,7 +1,7 @@
 import { ExtractedShadow } from "../types";
 
-export function extractEffects(): ExtractedShadow[] {
-  const effectStyles = figma.getLocalEffectStyles();
+export async function extractEffects(): Promise<ExtractedShadow[]> {
+  const effectStyles = await figma.getLocalEffectStylesAsync();
   const shadows: ExtractedShadow[] = [];
 
   for (const style of effectStyles) {

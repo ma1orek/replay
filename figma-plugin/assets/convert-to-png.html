@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Convert SVG to PNG for Figma Plugin</title>
+  <style>
+    body { font-family: Inter, sans-serif; background: #111; color: #fff; padding: 40px; }
+    h1 { color: #FF6E3C; }
+    .section { margin: 30px 0; }
+    canvas { border: 1px solid #333; display: block; margin: 10px 0; }
+    button { background: #FF6E3C; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin: 5px; }
+    button:hover { background: #ff8f5c; }
+    a { color: #FF6E3C; }
+  </style>
+</head>
+<body>
+  <h1>Figma Plugin Assets — PNG Export</h1>
+  <p>Click buttons below to download PNGs for Figma Community listing.</p>
+
+  <div class="section">
+    <h2>1. Icon (128x128)</h2>
+    <canvas id="icon-canvas" width="128" height="128"></canvas>
+    <button onclick="downloadCanvas('icon-canvas', 'replay-figma-icon-128.png')">Download Icon PNG</button>
+  </div>
+
+  <div class="section">
+    <h2>2. Cover Image (1920x960)</h2>
+    <canvas id="cover-canvas" width="1920" height="960" style="max-width:100%;height:auto;"></canvas>
+    <button onclick="downloadCanvas('cover-canvas', 'replay-figma-cover-1920x960.png')">Download Cover PNG</button>
+  </div>
+
+  <script>
+    function renderSVGToCanvas(svgPath, canvasId) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      img.onload = function() {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      };
+      img.src = svgPath;
+    }
+
+    function downloadCanvas(canvasId, filename) {
+      const canvas = document.getElementById(canvasId);
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    // Render both SVGs
+    renderSVGToCanvas('icon-128.svg', 'icon-canvas');
+    renderSVGToCanvas('cover-1920x960.svg', 'cover-canvas');
+  </script>
+</body>
+</html>
