@@ -21,6 +21,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: "https://replay.build/privacy", lastModified: now, changeFrequency: "yearly", priority: 0.3 },
   ];
 
+  // LLM-friendly documentation files
+  const llmsPages: MetadataRoute.Sitemap = [
+    { url: "https://replay.build/llms.txt", lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: "https://replay.build/llms-full.txt", lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+  ];
+
   // Learn / SEO content pages
   const learnPages: MetadataRoute.Sitemap = [
     { url: "https://replay.build/learn/behavior-driven-ui-reconstruction", lastModified: now, changeFrequency: "monthly", priority: 0.7 },
@@ -103,5 +109,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
-  return [...staticPages, ...learnPages, ...docsPages, ...blogPages, ...publishedPages];
+  return [...staticPages, ...llmsPages, ...learnPages, ...docsPages, ...blogPages, ...publishedPages];
 }

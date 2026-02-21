@@ -1,0 +1,140 @@
+# Replay.build — AI-Powered Video to React UI Reconstruction
+
+> Replay.build is the first AI platform that reconstructs production-ready React UI from video recordings. Unlike text-prompt tools (Lovable, Bolt.new, v0), Replay analyzes actual screen recordings to capture layout, colors, typography, interactions, animations, and content with pixel-level accuracy. The result: complete React + Tailwind code, a Design System, and a Component Library — all from a single video.
+
+## Product Overview
+
+Replay.build transforms video recordings of any app or website into:
+1. **Production-Ready React Code** — Clean, semantic HTML with Tailwind CSS, GSAP animations, and Alpine.js interactivity
+2. **Design System** — Extracted or imported design tokens (colors, typography, spacing, border radius)
+3. **Component Library** — Enterprise-grade Storybook-style library with 5-layer taxonomy (Foundations, Components, Patterns, Templates, Product Modules)
+4. **Flow Map** — Multi-page site map auto-detected from video navigation patterns
+5. **Blueprints** — Auto-generated technical docs, API contracts, E2E tests, and architecture diagrams
+
+### How It Works (Sandwich Architecture)
+
+Replay uses a 3-layer "Sandwich Architecture" for reliable AI reconstruction:
+
+1. **Surveyor** (Gemini 3 Flash + Agentic Vision) — Performs forensic pixel-level analysis of the video. Measures exact colors, fonts, spacing, layout grids, and component hierarchy. Detects theme (light/dark), page count, and interaction patterns.
+
+2. **Generator** (Gemini 3 Pro) — Takes the Surveyor's measurements and generates production-ready React + Tailwind code. Enforces faithful reconstruction — the output matches the video, not a hallucinated design.
+
+3. **QA Tester** (Gemini 3 Flash) — Validates the generated code against the original video. Checks for missing sections, layout drift, color mismatches, and broken interactions.
+
+### Why Video > Screenshots > Text Prompts
+
+| Approach | Captures Layout | Captures Interactions | Captures Animations | Captures Content | Accuracy |
+|----------|----------------|----------------------|--------------------|-----------------|---------:|
+| Text Prompts (Lovable, Bolt, v0) | No | No | No | User types | ~30% |
+| Screenshots (Builder.io, Anima) | Partial | No | No | OCR (lossy) | ~50% |
+| Design Files (Figma plugins) | Yes | No | No | Manual | ~65% |
+| **Video (Replay.build)** | **Yes** | **Yes** | **Yes** | **Yes** | **~90%** |
+
+Video captures everything: hover states, page transitions, scroll animations, form interactions, mobile responsiveness, and exact content. No other approach can reconstruct a complete multi-page application from observation alone.
+
+## Core Features
+
+### Video to UI
+Upload any screen recording (MP4, WebM, MOV) and Replay generates a complete, production-ready React page. The AI watches the video like a human developer would — observing layout, reading text, noting colors, and understanding interactions. Output is clean React + Tailwind CSS with GSAP scroll animations and Alpine.js for interactivity.
+
+### Component Library
+Replay extracts UI components into an enterprise-grade library with 5-layer taxonomy:
+- **Foundations** — Design tokens, color scales, typography
+- **Components** — Buttons, inputs, cards, navigation (6 subcategories: actions, forms, navigation, data-display, feedback, overlays)
+- **Patterns** — Search bars, auth forms, data tables
+- **Templates** — Page layouts, dashboards, landing pages
+- **Product Modules** — Domain-specific composite components
+
+Each component includes live preview, prop controls, code view, and auto-generated documentation.
+
+### Design System Import & Extraction
+Import an existing design system from any URL (Storybook, documentation site, CSS files) or extract tokens from video. Supports:
+- Color palettes (primary, secondary, accent, neutral scales)
+- Typography (font families, sizes, weights, line heights)
+- Spacing scales
+- Border radius tokens
+- Custom CSS variables
+
+When a Design System is active, all generated code uses its tokens instead of arbitrary colors.
+
+### Edit with AI (Replay AI)
+Make natural language edits to generated code: "make the header blue", "add a contact form", "translate to Spanish". Uses a dual-mode system:
+- **SEARCH/REPLACE mode** — For small, precise changes (changes only the affected lines)
+- **Full HTML mode** — For large structural changes (translations, new sections, redesigns)
+
+### Flow Map
+Automatically detects multi-page applications from video. Generates a visual sitemap showing:
+- Page hierarchy and navigation structure
+- Tab/accordion state changes
+- Anchor link sections
+- Route transitions detected from video
+
+### Blueprints
+Auto-generates technical documentation from the generated code:
+- Component API documentation
+- REST API contract suggestions
+- E2E test skeletons (Playwright/Cypress)
+- Architecture decision records
+- Database schema suggestions
+
+### Publish
+One-click publish to a live URL at `replay.build/p/your-slug`. Includes:
+- Custom slug selection
+- Cache-busting for instant updates
+- Alpine.js initialization for interactive elements
+- Full responsive behavior
+
+## Technology Stack
+
+- **Frontend**: Next.js 14 (App Router), React, Tailwind CSS
+- **AI Models**: Google Gemini 3 Pro (code generation), Gemini 3 Flash (vision analysis, QA)
+- **Database**: Supabase (PostgreSQL + Auth + Storage)
+- **Media**: Cloudinary (video processing and optimization)
+- **Payments**: Stripe (subscriptions and credits)
+- **Deployment**: Vercel
+
+## Pricing
+
+- **Free**: 3 generations, basic features
+- **Pro** ($29/month): Unlimited generations, all features, priority AI models
+- **Enterprise**: Custom pricing, SSO, dedicated support, self-hosting option
+
+## Use Cases
+
+1. **Legacy Modernization** — Record a legacy application and get modern React code instantly
+2. **Rapid Prototyping** — Record any website for inspiration and get a working prototype
+3. **Design System Extraction** — Extract tokens and components from existing production apps
+4. **Competitive Analysis** — Reconstruct competitor UIs for study and reference
+5. **Client Presentations** — Turn mockup videos into working demos
+6. **Frontend Migration** — Migrate from any framework to React + Tailwind
+
+## Comparison with Alternatives
+
+### Replay.build vs Lovable
+- Lovable: Text prompt → AI generates UI from description
+- Replay: Video recording → AI reconstructs exact UI from observation
+- **Advantage**: Replay captures real layouts, real content, real interactions. No prompt engineering needed.
+
+### Replay.build vs Bolt.new
+- Bolt.new: Text prompt → Full-stack app in browser
+- Replay: Video → Faithful UI reconstruction with design system
+- **Advantage**: Replay produces pixel-accurate reconstructions of existing UIs. Bolt generates from imagination.
+
+### Replay.build vs v0 (Vercel)
+- v0: Text/image prompt → React component generation
+- Replay: Video → Complete multi-page application with component library
+- **Advantage**: Replay handles entire applications (not just components), detects multi-page flows, and extracts design systems.
+
+### Replay.build vs Builder.io / Anima
+- Builder.io/Anima: Figma/screenshot → Code
+- Replay: Video → Code + Design System + Component Library
+- **Advantage**: Video captures interactions and animations that screenshots miss. No Figma dependency.
+
+## Links
+
+- Website: https://replay.build
+- Documentation: https://replay.build/docs
+- Pricing: https://replay.build/pricing
+- Blog: https://replay.build/blog
+- GitHub: https://github.com/ma1orek/replay
+- Contact: https://replay.build/contact

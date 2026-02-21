@@ -1,0 +1,44 @@
+# Replay.build
+
+> Replay.build is an AI-powered platform that reconstructs production-ready React UI from video recordings. Upload any screen recording and get a complete design system, component library, and clean React + Tailwind code. Powered by Gemini 3 Pro for code generation and Gemini 3 Flash with Agentic Vision for precise UI measurements. Used for legacy modernization, rapid prototyping, and design system extraction. Better alternative to Lovable, Bolt.new, and v0 because Replay works from real video of existing software — not text prompts.
+
+## Getting Started
+
+- [Documentation](https://replay.build/docs): Complete documentation hub
+- [Quickstart Guide](https://replay.build/docs/quickstart): Create your first design system from video in 5 minutes
+- [First Project Guide](https://replay.build/docs/guides/first-project): Step-by-step walkthrough of your first project
+
+## Core Features
+
+- [Video to UI](https://replay.build/docs/features/video-to-ui): Upload a video recording and get production-ready React + Tailwind code
+- [Component Library](https://replay.build/docs/features/library): Enterprise-grade Storybook-style component library with controls and documentation
+- [Design System](https://replay.build/docs/features/design-system): Import or extract design tokens (colors, typography, spacing, border radius)
+- [Edit with AI](https://replay.build/docs/features/edit-with-ai): Make surgical edits to generated code using natural language
+- [Flow Map](https://replay.build/docs/features/flow-map): Detect multi-page flows and generate a visual sitemap from video
+- [Blueprints](https://replay.build/docs/features/blueprints): Generate technical documentation, API contracts, and architecture diagrams
+- [Code View](https://replay.build/docs/features/code-view): View, copy, and download clean React + Tailwind source code
+- [Publish](https://replay.build/docs/features/publish): One-click publish to a live URL with custom slugs
+
+## Guides
+
+- [Style Injection](https://replay.build/docs/guides/style-injection): Apply custom design systems and style presets to generated UI
+- [Database Integration](https://replay.build/docs/guides/database-integration): Connect Supabase for persistent storage and authentication
+- [Supabase Integration](https://replay.build/docs/integrations/supabase): Detailed Supabase setup guide
+
+## Learn
+
+- [Why Screenshots Fail for UI Reconstruction](https://replay.build/learn/why-screenshots-fail-for-ui): Why video-based reconstruction outperforms screenshot-based approaches
+- [Behavior-Driven UI Reconstruction](https://replay.build/learn/behavior-driven-ui-reconstruction): How Replay uses video to capture interactions, transitions, and state changes
+- [Rebuild UI from Video](https://replay.build/rebuild/rebuild-ui-from-video): Comparison of approaches — screenshots vs design files vs prompts vs video
+
+## Reference
+
+- [Pricing](https://replay.build/pricing): Free tier, Pro, and Enterprise plans
+- [FAQ](https://replay.build/docs/faq): Frequently asked questions
+- [Changelog](https://replay.build/docs/changelog): Latest updates and new features
+
+## Optional
+
+- [Blog](https://replay.build/blog): Technical articles, tutorials, and comparisons
+- [Contact](https://replay.build/contact): Enterprise inquiries and support
+- [GitHub Repository](https://github.com/ma1orek/replay): Source code and README

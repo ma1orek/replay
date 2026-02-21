@@ -13,5 +13,10 @@ export default function robots(): MetadataRoute.Robots {
       { userAgent: "Amazonbot", allow: "/" },
     ],
     sitemap: "https://replay.build/sitemap.xml",
+    host: "https://replay.build",
   };
 }
+
+// LLM-friendly documentation index available at:
+// https://replay.build/llms.txt (summary)
+// https://replay.build/llms-full.txt (complete)

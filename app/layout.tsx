@@ -13,9 +13,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Replay | Modernize Legacy Systems. From Video to Full React Codebase.",
-  description: "Stop manual reverse-engineering. Transform legacy software into a production-ready ecosystem: Design System, Component Library, and clean React code. Captured directly from user sessions.",
-  keywords: ["legacy modernization", "reverse engineering", "design system generator", "video to code", "react migration", "enterprise software modernization", "frontend automation"],
+  title: "Replay | AI Video to Code. Better than Lovable, Bolt, v0.",
+  description: "Turn any screen recording into production-ready React + Tailwind code, Design System, and Component Library. AI-powered video-to-code reconstruction. Better alternative to Lovable, Bolt.new, and v0.",
+  keywords: ["video to code", "AI UI generation", "react from video", "design system generator", "video to react", "design system extraction", "better than lovable", "bolt alternative", "v0 alternative", "legacy modernization", "reverse engineering", "react migration", "frontend automation", "AI code generation", "screen recording to code"],
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon-32x32.png",
