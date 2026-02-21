@@ -8,32 +8,6 @@ export const dynamic = "force-dynamic";
 
 const SITE_URL = "https://www.replay.build";
 
-/** Extract FAQ Q&A pairs from markdown content for FAQPage schema */
-function extractFAQs(content: string): Array<{ question: string; answer: string }> {
-  const faqs: Array<{ question: string; answer: string }> = [];
-  // Match H3 questions inside FAQ section
-  const faqSectionMatch = content.match(/##\s*(?:Frequently Asked Questions|FAQ)[\s\S]*$/im);
-  if (!faqSectionMatch) return faqs;
-
-  const faqSection = faqSectionMatch[0];
-  const questionBlocks = faqSection.split(/###\s+/).slice(1); // Split by H3, skip preamble
-
-  for (const block of questionBlocks) {
-    const lines = block.trim().split("\n");
-    const question = lines[0]?.replace(/\*\*/g, "").replace(/\??\s*$/, "?").trim();
-    const answer = lines
-      .slice(1)
-      .map(l => l.replace(/[#*`>]/g, "").trim())
-      .filter(l => l.length > 0)
-      .join(" ")
-      .slice(0, 500);
-    if (question && answer) {
-      faqs.push({ question, answer });
-    }
-  }
-  return faqs.slice(0, 10); // Max 10 FAQs
-}
-
 /** Extract step-by-step instructions for HowTo schema */
 function extractHowToSteps(content: string): Array<{ name: string; text: string }> | null {
   // Look for "Step-by-Step" or "Implementation Guide" section with numbered/ordered steps
@@ -125,7 +99,6 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   const canonicalUrl = `${SITE_URL}/blog/${params.slug}`;
   const publishDate = post.published_at || post.created_at;
   const wordCount = post.content?.split(/\s+/).length || 0;
-  const faqs = extractFAQs(post.content || "");
   const howToSteps = extractHowToSteps(post.content || "");
 
   const articleSchema = {
@@ -195,19 +168,6 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
     ],
   };
 
-  const faqSchema = faqs.length > 0 ? {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: faqs.map(faq => ({
-      "@type": "Question",
-      name: faq.question,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: faq.answer,
-      },
-    })),
-  } : null;
-
   const howToSchema = howToSteps ? {
     "@context": "https://schema.org",
     "@type": "HowTo",
@@ -231,12 +191,6 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
-      {faqSchema && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
-        />
-      )}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }}

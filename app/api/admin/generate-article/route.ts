@@ -548,7 +548,7 @@ Answer with specific timelines... (2-4 sentences minimum per answer)
 ### What about business logic preservation?
 Answer here... (2-4 sentences minimum per answer)
 \`\`\`
-Each FAQ question MUST be a ### H3 header ending with "?" — this enables FAQPage schema extraction.
+Each FAQ question MUST be a ### H3 header ending with "?" for proper formatting.
 
 8. **Call to Action** - End with:
 \`\`\`
