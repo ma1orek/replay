@@ -159,7 +159,7 @@ const ChartComponent = ({ type, data, options = {} }) => {
         }
         return () => { if (chartRef.current) chartRef.current.destroy(); };
     }, [type, data, options]);
-    return <canvas ref={canvasRef} />;
+    return <div style={{ position: 'relative', maxHeight: '300px', width: '100%' }}><canvas ref={canvasRef} /></div>;
 };
 \`\`\`
 

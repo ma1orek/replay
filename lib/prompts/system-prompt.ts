@@ -491,8 +491,18 @@ new Chart(document.getElementById('donutChart'), {
 ❌ <div style="height:60px;width:70%;background:#6366f1"></div>  ← static painted bar
 ❌ <svg><rect width="70%" ...></rect></svg>  ← static SVG chart
 ❌ Hardcoded CSS width bars masquerading as charts
+❌ <canvas> without a height-constrained container ← canvas grows to INFINITE height!
 
 ✅ ALWAYS use Chart.js <canvas> with real data and animations!
+
+🚨 CANVAS CHART CONTAINER RULE (CRITICAL — prevents page-breaking):
+Every Chart.js <canvas> MUST be inside a container with EXPLICIT max-height!
+Without this, Chart.js responsive mode makes canvas grow infinitely tall and BREAKS the page.
+✅ CORRECT: <div style="max-height:300px; position:relative;"><canvas id="myChart"></canvas></div>
+✅ CORRECT: <div class="h-64 relative"><canvas id="myChart"></canvas></div>
+❌ WRONG: <canvas id="myChart"></canvas> ← NO container height = canvas grows to 60,000px+!
+❌ WRONG: <canvas id="myChart" class="mt-auto opacity-50"></canvas> ← NO height constraint!
+ALSO: Chart.js options MUST include: maintainAspectRatio: false, responsive: true
 
 ═══════════════════════════════════════════════════════════════════════════════
 🔢 STATS & KPI NUMBERS — ZERO BAN (MANDATORY!)

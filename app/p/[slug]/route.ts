@@ -349,6 +349,11 @@ export async function GET(
   [style*="scale(0)"] {
     opacity: 1 !important;
   }
+
+  /* CANVAS CHART SAFETY NET - prevent Chart.js canvas from growing to insane heights */
+  canvas[id*="chart" i], canvas[id*="Chart"], canvas[id*="graph" i], canvas[id*="Graph"] {
+    max-height: 400px !important;
+  }
 </style>
 `;
 
@@ -622,6 +627,8 @@ export async function GET(
     }
     .stagger-cards > *:not(canvas), [class*="stagger"] > *:not(canvas) { opacity: 1 !important; visibility: visible !important; }
     .grid > *:not(canvas), .flex > *:not(canvas), section > div:not(canvas), section > *:not(canvas):not(script):not(style) { opacity: 1 !important; visibility: visible !important; }
+    /* Canvas chart safety net */
+    canvas[id*="chart" i], canvas[id*="Chart"], canvas[id*="graph" i], canvas[id*="Graph"] { max-height: 400px !important; }
   </style>
   ${customStyles}
 </head>

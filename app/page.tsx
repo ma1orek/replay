@@ -4514,6 +4514,8 @@ function ReplayToolContent() {
   section:empty { min-height: 0 !important; }
   /* Ensure grid/flex children are visible (excluding overlays) */
   .grid > *:not(canvas), .flex > *:not(canvas) { opacity: 1 !important; visibility: visible !important; }
+  /* Canvas chart safety net - prevent Chart.js canvas from growing infinitely */
+  canvas[id*="chart" i], canvas[id*="Chart"], canvas[id*="graph" i], canvas[id*="Graph"] { max-height: 400px !important; }
 </style>
 <script>
 // Force all elements visible after load
