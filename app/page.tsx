@@ -13715,8 +13715,8 @@ ${publishCode}
                 sidebarView === "projects" && "rotate-180"
               )} />
             </button>
-            {/* + New Project button with tooltip */}
-            <div className="relative group/newproj flex-shrink-0">
+            {/* + New Project button */}
+            <div className="relative group/newproj flex-shrink-0 self-stretch">
               <button
                 onClick={() => {
                   if (!user) {
@@ -13726,11 +13726,11 @@ ${publishCode}
                   }
                   resetToNewProject();
                 }}
-                className="w-9 h-9 rounded-lg bg-zinc-800/50 border border-zinc-700/50 hover:bg-[#FF6E3C]/10 hover:border-[#FF6E3C]/30 flex items-center justify-center text-zinc-500 hover:text-[#FF6E3C] transition-all"
+                className="h-full aspect-square rounded-lg bg-zinc-800/50 border border-zinc-700/50 hover:bg-zinc-700/80 hover:border-zinc-600 flex items-center justify-center text-zinc-500 hover:text-zinc-200 transition-all min-w-[36px] min-h-[36px]"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-5 h-5" />
               </button>
-              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-2 py-1 bg-zinc-900 border border-zinc-700 rounded-md text-[10px] text-zinc-300 whitespace-nowrap opacity-0 invisible group-hover/newproj:opacity-100 group-hover/newproj:visible transition-all pointer-events-none z-50">
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2 py-1 bg-zinc-800 text-zinc-300 text-[10px] font-medium rounded-md whitespace-nowrap opacity-0 group-hover/newproj:opacity-100 transition-opacity pointer-events-none border border-zinc-700/50 z-[9999]">
                 Create New Project
               </div>
             </div>
@@ -13750,7 +13750,7 @@ ${publishCode}
                   <span>Create New Project</span>
                 </button>
               </div>
-              
+
               {/* Search - server-side with debounce */}
               <div className="px-3 pb-2">
                 <div className="relative">
@@ -16370,23 +16370,6 @@ ${publishCode}
                   )}
                 </div>
               )}
-              {/* Create New Project - Bottom of agentic chat sidebar */}
-              <div className="flex-shrink-0 p-3 border-t border-zinc-800/60">
-                <button
-                  onClick={() => {
-                    if (!user) {
-                      setShowAuthModal(true);
-                      showToast("Sign up free to create a new project!", "info");
-                      return;
-                    }
-                    resetToNewProject();
-                  }}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-[12px] font-semibold bg-zinc-800 hover:bg-zinc-700 border border-white/[0.08] hover:border-[#FF6E3C]/30 hover:text-[#FF6E3C] text-zinc-300 transition-all group"
-                >
-                  <Plus className="w-4 h-4 group-hover:text-[#FF6E3C] transition-colors" />
-                  <span>New Project</span>
-                </button>
-              </div>
             </div>
           ) : !sidebarCollapsed && sidebarView === "detail" ? (
             /* CONFIG MODE - Before Generation - Same style as Input tab */
