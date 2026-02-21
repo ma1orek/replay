@@ -4281,6 +4281,10 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
   const [previewData, setPreviewData] = useState<{ tokens: any; components: any[]; name: string; source_type: string | null } | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
+  // DS Delete confirmation state
+  const [deleteDSId, setDeleteDSId] = useState<string | null>(null);
+  const [deleteDSName, setDeleteDSName] = useState<string | null>(null);
+
   // Check if a DS style is selected
   const isDSStyle = value.startsWith("DS_STYLE::");
   const selectedDSId = isDSStyle ? value.split("::")[1] : null;
@@ -4555,7 +4559,7 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
                           key={ds.id}
                           className={cn(
                             "rounded-lg transition-colors",
-                            selectedDSId === ds.id ? "bg-[#FF6E3C]/10 border border-[#FF6E3C]/30" : "hover:bg-white/[0.03] border border-transparent"
+                            selectedDSId === ds.id ? "bg-blue-500/10 border border-blue-500/30" : "hover:bg-white/[0.03] border border-transparent"
                           )}
                         >
                           <div className="flex items-center gap-2 p-1.5 cursor-pointer" onClick={() => { onChange(`DS_STYLE::${ds.id}::${ds.name}`); setIsOpen(false); }}>
@@ -4573,29 +4577,31 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
                             {/* Name and description - same as StyleItem */}
                             <div className="flex-1 min-w-0 text-left">
                               <div className="flex items-center gap-1 justify-start">
-                                <span className={cn("text-xs font-medium text-left", selectedDSId === ds.id ? "text-[#FF6E3C]" : "text-white/80")}>
+                                <span className={cn("text-xs font-medium text-left truncate", selectedDSId === ds.id ? "text-blue-400" : "text-white/80")}>
                                   {ds.name}
                                 </span>
+                                {selectedDSId === ds.id && (
+                                  <span className="text-[8px] px-1 py-0.5 rounded bg-blue-500/20 text-blue-400 flex-shrink-0">Active</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5 text-left">
+                                <span className="text-[9px] text-white/40 truncate">
+                                  {ds.componentCount && ds.tokenCount
+                                    ? `${ds.componentCount} components · ${ds.tokenCount} tokens`
+                                    : ds.componentCount
+                                      ? `${ds.componentCount} components`
+                                      : ds.tokenCount
+                                        ? `${ds.tokenCount} tokens`
+                                        : ds.source_url
+                                          ? ds.source_url.replace(/https?:\/\//, '')
+                                          : "Imported Design System"}
+                                </span>
                                 {ds.source_type && (
-                                  <span className={cn("text-[8px] px-1 py-0.5 rounded", ds.source_type === "figma" ? "bg-violet-500/20 text-violet-400" : "bg-blue-500/20 text-blue-400")}>
+                                  <span className={cn("text-[8px] px-1 py-0.5 rounded flex-shrink-0", ds.source_type === "figma" ? "bg-violet-500/20 text-violet-400" : "bg-blue-500/20 text-blue-400")}>
                                     {ds.source_type === "figma" ? "figma" : ds.source_type === "storybook" ? "storybook" : ds.source_type}
                                   </span>
                                 )}
-                                {selectedDSId === ds.id && (
-                                  <span className="text-[8px] px-1 py-0.5 rounded bg-[#FF6E3C]/20 text-[#FF6E3C]">Active</span>
-                                )}
                               </div>
-                              <span className="text-[9px] text-white/40 truncate block text-left">
-                                {ds.componentCount && ds.tokenCount
-                                  ? `${ds.componentCount} components · ${ds.tokenCount} tokens`
-                                  : ds.componentCount
-                                    ? `${ds.componentCount} components`
-                                    : ds.tokenCount
-                                      ? `${ds.tokenCount} tokens`
-                                      : ds.source_url
-                                        ? ds.source_url.replace(/https?:\/\//, '')
-                                        : "Imported Design System"}
-                              </span>
                             </div>
                             {/* Preview button */}
                             <button
@@ -4603,7 +4609,7 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
                                 e.stopPropagation();
                                 openDSPreview(ds.id, ds.name, ds.source_type || null);
                               }}
-                              className="p-1 rounded transition-colors flex-shrink-0 text-white/20 hover:text-[#FF6E3C] hover:bg-[#FF6E3C]/10"
+                              className="p-1 rounded transition-colors flex-shrink-0 text-white/20 hover:text-blue-400 hover:bg-blue-500/10"
                               title="Preview tokens"
                             >
                               <Eye className="w-3 h-3" />
@@ -4613,12 +4619,8 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  if (confirm(`Delete "${ds.name}" from imported libraries?`)) {
-                                    onDeleteDS(ds.id);
-                                    if (selectedDSId === ds.id) {
-                                      onChange("");
-                                    }
-                                  }
+                                  setDeleteDSId(ds.id);
+                                  setDeleteDSName(ds.name);
                                 }}
                                 className="p-1 rounded transition-colors flex-shrink-0 text-white/20 hover:text-red-400 hover:bg-red-500/10"
                                 title="Delete imported library"
@@ -4849,7 +4851,7 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
               <div className="overflow-y-auto flex-1 p-4 space-y-4">
                 {previewLoading ? (
                   <div className="flex flex-col items-center justify-center py-12 gap-3">
-                    <Loader2 className="w-6 h-6 text-[#FF6E3C] animate-spin" />
+                    <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
                     <span className="text-xs text-white/40">Loading tokens...</span>
                   </div>
                 ) : previewData ? (
@@ -4921,7 +4923,7 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
                             {Object.entries(spacing).slice(0, 8).map(([name, val]) => (
                               <div key={name} className="flex items-center gap-2">
                                 <span className="text-[9px] text-white/40 w-14 flex-shrink-0 truncate">{name}</span>
-                                <div className="h-3 rounded-sm bg-[#FF6E3C]/30 border border-[#FF6E3C]/20" style={{ width: `${Math.min(parseFloat(String(val)) * 16, 200)}px` }} />
+                                <div className="h-3 rounded-sm bg-blue-500/30 border border-blue-500/20" style={{ width: `${Math.min(parseFloat(String(val)) * 16, 200)}px` }} />
                                 <span className="text-[9px] text-white/30">{String(val)}</span>
                               </div>
                             ))}
@@ -4940,7 +4942,7 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
                           <div className="flex flex-wrap gap-2">
                             {Object.entries(radii).slice(0, 8).map(([name, val]) => (
                               <div key={name} className="flex flex-col items-center gap-1">
-                                <div className="w-10 h-10 bg-[#FF6E3C]/15 border border-[#FF6E3C]/30" style={{ borderRadius: String(val) }} />
+                                <div className="w-10 h-10 bg-blue-500/15 border border-blue-500/30" style={{ borderRadius: String(val) }} />
                                 <span className="text-[8px] text-white/40">{name}</span>
                               </div>
                             ))}
@@ -5009,9 +5011,62 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
                       setIsOpen(false);
                     }
                   }}
-                  className="flex-[2] px-3 py-2 text-xs font-semibold rounded-lg bg-gradient-to-r from-[#FF6E3C] to-[#FF8F5C] text-white shadow-lg shadow-[#FF6E3C]/20 hover:shadow-[#FF6E3C]/40 transition-all"
+                  className="flex-[2] px-3 py-2 text-xs font-semibold rounded-lg bg-gradient-to-r from-blue-500 to-blue-400 text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all"
                 >
                   Use this Design System
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* DS Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteDSId && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => { setDeleteDSId(null); setDeleteDSName(null); }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm mx-4 bg-zinc-900 border border-zinc-700/50 rounded-xl shadow-2xl overflow-hidden"
+            >
+              <div className="px-5 pt-5 pb-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center flex-shrink-0">
+                    <Trash2 className="w-5 h-5 text-red-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">Delete Design System</h3>
+                    <p className="text-xs text-white/40 mt-0.5">This action cannot be undone</p>
+                  </div>
+                </div>
+                <p className="text-xs text-white/60 leading-relaxed">
+                  Are you sure you want to delete <span className="text-white font-medium">{deleteDSName}</span> from your imported libraries? All extracted tokens and components will be removed.
+                </p>
+              </div>
+              <div className="flex gap-2 px-5 py-3 border-t border-zinc-700/50 bg-zinc-900/50">
+                <button
+                  onClick={() => { setDeleteDSId(null); setDeleteDSName(null); }}
+                  className="flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-white/[0.06] border border-white/10 text-white/60 hover:bg-white/[0.1] hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (onDeleteDS && deleteDSId) {
+                      onDeleteDS(deleteDSId);
+                      if (selectedDSId === deleteDSId) {
+                        onChange("");
+                      }
+                    }
+                    setDeleteDSId(null);
+                    setDeleteDSName(null);
+                  }}
+                  className="flex-1 px-3 py-2 text-xs font-semibold rounded-lg bg-red-500/90 text-white hover:bg-red-500 transition-colors"
+                >
+                  Delete
                 </button>
               </div>
             </motion.div>

@@ -34,7 +34,6 @@ import {
 import { useAuth } from "@/lib/auth/context";
 import { useCredits, PLAN_LIMITS, CREDIT_COSTS } from "@/lib/credits/context";
 import { useProfile } from "@/lib/profile/context";
-import Logo from "@/components/Logo";
 import Avatar from "@/components/Avatar";
 import AuthModal from "@/components/modals/AuthModal";
 // Removed DitheringShader - using solid background
@@ -477,12 +476,6 @@ function SettingsContent() {
           })}
         </nav>
 
-        {/* Logo at bottom */}
-        <div className="p-4 border-t border-zinc-800/50">
-          <Link href="/" className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
-            <Logo />
-          </Link>
-        </div>
       </aside>
 
       {/* Main Content */}
