@@ -1029,19 +1029,38 @@ export const StylePreview = ({ styleId }: { styleId: string }) => {
         </motion.div>
       </div>
     ),
-    // === REACT BITS BACKGROUND STYLE PREVIEWS ===
-    "prism-refraction": (
-      <div className="w-full h-full bg-black relative overflow-hidden">
+    // === SPOTIFY DARK ===
+    "spotify": (
+      <div className="w-full h-full bg-[#121212] relative overflow-hidden">
+        <div className="absolute top-1 left-1 right-1 flex gap-[2px]">
+          {[0,1,2].map(i => (
+            <div key={i} className="flex-1 h-2 rounded-[1px] bg-[#181818]" />
+          ))}
+        </div>
         <motion.div
-          className="absolute inset-0"
-          style={{ background: "linear-gradient(135deg, #ff0080, #7928ca, #0070f3, #00dfd8, #f5a623)" }}
-          animate={{ x: [-16, 16, -16], opacity: [0.6, 1, 0.6] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <div className="absolute inset-0 bg-black/40" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[6px] border-b-white/60" />
+          className="absolute bottom-1.5 left-1.5 w-2 h-2 rounded-full bg-[#1DB954] flex items-center justify-center"
+          animate={{ scale: [1, 1.15, 1] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <div className="w-0 h-0 border-l-[3px] border-l-white border-t-[2px] border-t-transparent border-b-[2px] border-b-transparent ml-[1px]" />
+        </motion.div>
+        <motion.div
+          className="absolute bottom-1 right-1 flex gap-[1px] items-end"
+          animate={{ opacity: [0.6, 1, 0.6] }}
+          transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+        >
+          {[3,5,4,6,3].map((h,i) => (
+            <motion.div
+              key={i}
+              className="w-[2px] bg-[#1DB954] rounded-full"
+              animate={{ height: [`${h}px`, `${h+2}px`, `${h}px`] }}
+              transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut", delay: i * 0.1 }}
+            />
+          ))}
+        </motion.div>
       </div>
     ),
+    // === REACT BITS BACKGROUND STYLE PREVIEWS ===
     "light-pillar-cathedral": (
       <div className="w-full h-full bg-[#050510] relative overflow-hidden">
         <motion.div
@@ -1061,51 +1080,6 @@ export const StylePreview = ({ styleId }: { styleId: string }) => {
         />
       </div>
     ),
-    "light-rays-dawn": (
-      <div className="w-full h-full bg-[#0a0a0f] relative overflow-hidden">
-        <motion.div
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-full"
-          style={{ background: "conic-gradient(from 180deg at 50% 0%, transparent 30%, rgba(251,191,36,0.3) 45%, rgba(251,191,36,0.6) 50%, rgba(251,191,36,0.3) 55%, transparent 70%)" }}
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-t from-amber-500/20 to-transparent" />
-      </div>
-    ),
-    "color-bends-psychedelic": (
-      <div className="w-full h-full bg-black relative overflow-hidden">
-        <motion.div
-          className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-fuchsia-500/60 blur-sm"
-          animate={{ x: [0, 4, 0], y: [0, 3, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-cyan-400/60 blur-sm"
-          animate={{ x: [0, -4, 0], y: [0, -3, 0] }}
-          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-yellow-400/50 rounded-full blur-[2px]" />
-      </div>
-    ),
-    "lightning-storm": (
-      <div className="w-full h-full bg-[#0a0a12] relative overflow-hidden">
-        <motion.div
-          className="absolute inset-0 bg-indigo-200/10"
-          animate={{ opacity: [0, 0, 0.8, 0, 0, 0, 0.6, 0] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-        />
-        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 32 32">
-          <motion.path
-            d="M16 2 L14 14 L18 14 L12 30"
-            stroke="#e0e7ff"
-            strokeWidth="1.5"
-            fill="none"
-            animate={{ opacity: [0, 0, 1, 0.2, 0.8, 0] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
-          />
-        </svg>
-      </div>
-    ),
     "faulty-terminal-hacker": (
       <div className="w-full h-full bg-[#0a0a0a] relative overflow-hidden">
         <div className="absolute inset-0" style={{ background: "repeating-linear-gradient(transparent, transparent 2px, rgba(0,255,65,0.04) 2px, rgba(0,255,65,0.04) 4px)" }} />
@@ -1117,18 +1091,6 @@ export const StylePreview = ({ styleId }: { styleId: string }) => {
           {"> _"}
         </motion.div>
         <div className="absolute bottom-1 right-1 text-[3px] font-mono text-green-500/50">SYS</div>
-      </div>
-    ),
-    "iridescence-pearl": (
-      <div className="w-full h-full bg-[#0a0a1a] relative overflow-hidden">
-        <motion.div
-          className="absolute inset-0"
-          style={{ background: "linear-gradient(135deg, #ec4899, #3b82f6, #8b5cf6, #ec4899)" }}
-          animate={{ backgroundPosition: ["0% 0%", "100% 100%", "0% 0%"] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <div className="absolute inset-0 bg-[#0a0a1a]/60" />
-        <div className="absolute inset-1 rounded-sm bg-white/5 backdrop-blur-sm border border-white/20" />
       </div>
     ),
     "hyperspeed-warp": (
@@ -1143,22 +1105,6 @@ export const StylePreview = ({ styleId }: { styleId: string }) => {
           />
         ))}
         <div className="w-1.5 h-1.5 rounded-full bg-white/40 blur-[1px] z-10" />
-      </div>
-    ),
-    "beams-spotlight": (
-      <div className="w-full h-full bg-[#050505] relative overflow-hidden">
-        <motion.div
-          className="absolute top-0 w-4 h-full"
-          style={{ background: "linear-gradient(90deg, transparent, rgba(251,191,36,0.2), transparent)" }}
-          animate={{ left: ["-20%", "120%"] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute top-0 w-3 h-full"
-          style={{ background: "linear-gradient(90deg, transparent, rgba(96,165,250,0.15), transparent)" }}
-          animate={{ left: ["120%", "-20%"] }}
-          transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-        />
       </div>
     ),
     "grainient-analog": (
@@ -3815,140 +3761,6 @@ ANIMATIONS:
 - Skeleton loading states with shimmer
 
 ⚠️ MANDATORY: Preserve ALL content from video. Style changes appearance only.`, category: "brand" },
-  { id: "deep-blue-law", name: "Deep Blue Law", desc: "Deep Navy • Editorial Legal • Red Accent", fullDesc: `⚖️ DEEP BLUE LAW — Authoritative legal elegance. Modern, confident expertise. Clean editorial design with strong hierarchy.
-
-═══════════════════════════════════════════════════════════════════════════════
-🎨 MANDATORY REACT BITS COMPONENTS (import from react-bits):
-═══════════════════════════════════════════════════════════════════════════════
-HERO: Use Silk background (import { Silk } from "react-bits/backgrounds/silk") — deep navy silk flowing texture
-CARDS: Use SpotlightCard (import { SpotlightCard } from "react-bits/components/spotlight-card") for practice/service cards
-TEXT: Use SplitText (import { SplitText } from "react-bits/text/split-text") for hero headline + BlurText (import { BlurText } from "react-bits/text/blur-text") for section titles
-SCROLL: Use ScrollFloat (import { ScrollFloat } from "react-bits/text/scroll-float") for section headings on scroll
-HOVER: Use GlareHover (import { GlareHover } from "react-bits/animations/glare-hover") on profile/team cards
-NAV: Use FadeContent (import { FadeContent } from "react-bits/animations/fade-content") for section transitions
-COUNTER: Use CountUp (import { CountUp } from "react-bits/text/count-up") for statistics
-GALLERY: Use Masonry (import { Masonry } from "react-bits/components/masonry") for insights/articles grid
-
-═══════════════════════════════════════════════════════════════════════════════
-🎨 COLOR PALETTE:
-═══════════════════════════════════════════════════════════════════════════════
-Background primary: Deep Blue #002042 (hero, header, footer, dark sections)
-Background secondary: #001a35 (nav bars, accent bands)
-Background light: Off White #F0F1F2 (content sections, cards)
-Background warm: #FAFAFA (alternate light sections)
-Accent red: #ED2724 (SPARINGLY — max 10-15% — hover states, CTA, highlights, bullets)
-Secondary blue: #065193 (links, secondary buttons, interactive)
-Deep blue: #08249C (gradients, overlays)
-Text on dark: #FFFFFF pure white
-Text on light: #1A1A2E dark charcoal
-Text muted: #6B7280 (metadata, dates)
-Borders: rgba(255,255,255,0.08) on dark, rgba(0,32,66,0.08) on light
-Gold accent: #C9A962 (awards, badges — subtle only)
-
-═══════════════════════════════════════════════════════════════════════════════
-📝 TYPOGRAPHY:
-═══════════════════════════════════════════════════════════════════════════════
-Headlines: "Poppins", sans-serif
-- Weight 600-700, tracking -0.01em
-- Hero: text-5xl md:text-7xl, weight 700
-- Section titles: text-3xl md:text-5xl, weight 600
-- ALL CAPS for labels and category tags (tracking 0.15em, text-xs)
-
-Body: "Source Sans Pro", sans-serif
-- Weight 400, size text-base to text-lg
-- Line-height: 1.7 (generous editorial readability)
-
-Accent: "Playfair Display", serif — ONLY for pull-quotes, testimonials, taglines
-- Italic, weight 400-500
-
-═══════════════════════════════════════════════════════════════════════════════
-✨ SIGNATURE EFFECTS (IMPLEMENT ALL!):
-═══════════════════════════════════════════════════════════════════════════════
-1. SILK HERO: Full-viewport hero with Silk background (#002042 → #08249C gradient)
-   - White text with text-shadow: 0 2px 20px rgba(0,0,0,0.3)
-   - Thin horizontal rule below tagline:
-     width: 60px, height: 2px, background: #ED2724
-     animation: ruleExpand 1s ease-out forwards (0px → 60px)
-
-2. GLOW BORDER CARDS: Cards with subtle blue glow on hover
-   - background: rgba(255,255,255,0.03)
-   - border: 1px solid rgba(255,255,255,0.06)
-   - border-radius: 16px
-   - backdrop-filter: blur(12px)
-   - On hover: box-shadow: 0 0 30px rgba(6,81,147,0.15), border-color: rgba(6,81,147,0.3)
-   - transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1)
-   - Left border accent on hover: border-left: 3px solid #ED2724 (animate width 0 → 3px)
-
-3. EDITORIAL WHITE CARDS (light sections): Clean cards for articles/insights
-   - bg-white rounded-xl shadow-sm hover:shadow-lg
-   - transition: box-shadow 0.3s ease, transform 0.3s ease
-   - hover: translateY(-4px)
-   - Image top object-cover, content bottom p-6
-
-4. FLOATING GRADIENT ORB: Subtle ambient background animation
-   - position: fixed, width: 500px, height: 500px
-   - background: radial-gradient(circle, rgba(8,36,156,0.08) 0%, transparent 70%)
-   - animation: orbFloat 20s ease-in-out infinite
-   - @keyframes orbFloat { 0% { transform: translate(0,0) } 33% { transform: translate(100px,-50px) } 66% { transform: translate(-80px,60px) } 100% { transform: translate(0,0) } }
-   - pointer-events: none, z-index: 0
-
-5. SECTION DIVIDER LINE: Thin animated line between sections
-   - height: 1px, background: linear-gradient(90deg, transparent, #065193, transparent)
-   - animation: shimmerLine 3s ease-in-out infinite
-   - @keyframes shimmerLine { 0%,100% { opacity: 0.3 } 50% { opacity: 0.8 } }
-
-6. SCROLL REVEAL: Sections animate in on viewport enter
-   - Initial: opacity: 0, transform: translateY(40px)
-   - Animate to: opacity: 1, transform: translateY(0)
-   - transition: 0.8s cubic-bezier(0.16, 1, 0.3, 1)
-   - Stagger children by 100ms delay each
-
-7. DARK/LIGHT RHYTHM: Alternate sections
-   - Dark (#002042): hero, CTA bands, footer
-   - Light (#F0F1F2 or #FAFAFA): content, articles, team
-   - Smooth transitions between dark/light
-
-═══════════════════════════════════════════════════════════════════════════════
-🎬 REQUIRED ANIMATIONS:
-═══════════════════════════════════════════════════════════════════════════════
-- Hero headline: SplitText reveal, 80ms stagger per word
-   @keyframes wordReveal { from { opacity: 0; transform: translateY(30px) } to { opacity: 1; transform: translateY(0) } }
-   animation: wordReveal 0.6s ease-out forwards
-
-- Section titles: ScrollFloat on viewport enter with blur
-   @keyframes blurIn { from { opacity: 0; filter: blur(8px); transform: translateY(20px) } to { opacity: 1; filter: blur(0); transform: translateY(0) } }
-   animation: blurIn 0.8s ease-out forwards
-
-- Cards: Staggered entrance with lift
-   @keyframes cardIn { from { opacity: 0; transform: translateY(30px) scale(0.98) } to { opacity: 1; transform: translateY(0) scale(1) } }
-   animation: cardIn 0.6s ease-out forwards
-   Each card: animation-delay: calc(var(--i) * 100ms)
-
-- Stats: CountUp from 0 with spring feel
-- Hover on cards: GlareHover white sweep + shadow-lg transition 0.4s
-- Red accent line under active nav:
-   @keyframes navUnderline { from { width: 0 } to { width: 100% } }
-   height: 2px, background: #ED2724, animation: navUnderline 0.3s ease-out forwards
-
-- Button hover pulse:
-   @keyframes btnPulse { 0% { box-shadow: 0 0 0 0 rgba(237,39,36,0.4) } 70% { box-shadow: 0 0 0 10px rgba(237,39,36,0) } 100% { box-shadow: 0 0 0 0 rgba(237,39,36,0) } }
-   CTA buttons on hover: animation: btnPulse 1s ease-out
-
-- Smooth page scroll: scroll-behavior: smooth on html
-
-═══════════════════════════════════════════════════════════════════════════════
-🏛️ DEEP BLUE LAW PRINCIPLES:
-═══════════════════════════════════════════════════════════════════════════════
-- NEVER use legal clichés: no gavels, scales of justice, skyline stock photos
-- Whitespace is authority. Generous py-16 to py-24 section spacing
-- Thought leadership forward: articles feel like curated editorial, not blog posts
-- Trust through restraint: red accent is a HIGHLIGHT, never dominant
-- Mobile-first responsive: single-column on mobile, editorial grid on desktop
-
-⚠️ THE FEELING: Walking into the mahogany-paneled lobby of a world-class law firm. Deep navy walls, one red orchid on the reception desk. Clean. Uncluttered. Quiet confidence.
-
-⚠️ MANDATORY: Preserve ALL content from video. Style changes appearance only.`, category: "dark" },
-
   // === NEW SHADER & ANIMATION STYLES ===
   { id: "liquid-neon", name: "Liquid Neon", desc: "WebGL Metaballs • Lava Lamp • Glow", fullDesc: "CRITICAL: Black #000 background. Neon effect using CSS: Single animated blob with filter: blur(40px) and gradient colors. OR use radial-gradient blobs that animate position. Text has neon glow: text-shadow: 0 0 20px rgba(255,0,255,0.5). Keep layout clean, no overlapping blobs.", category: "shader" },
   { id: "matrix-rain", name: "Matrix Rain", desc: "Falling Code • Scramble Text • Hacker", fullDesc: "CRITICAL: Pure black #000 background. Green #00ff00 monospace text. Matrix rain effect: CSS animation with translateY on columns of characters, staggered delays. Or use a single canvas-style div with animated characters. Headlines can have scramble effect on load. NO overlapping elements.", category: "creative" },
@@ -4270,179 +4082,68 @@ CTA BUTTONS:
 - Section MUST have overflow-hidden
 - Preserve ALL content from video`, category: "creative" },
 
-  // === REACT BITS BACKGROUND STYLES (10 Awwwards-quality) ===
+  // === REACT BITS BACKGROUND STYLES ===
   // CRITICAL: Each style MUST import its React Bits background component. Without it the page is EMPTY.
   // HERO STRUCTURE: <section className="relative min-h-screen overflow-hidden"> + <BackgroundComponent className="absolute inset-0 z-0" /> + <div className="relative z-10">content</div>
   // TEXT: Always WHITE (#ffffff). Never use gradient text on headlines — it's unreadable.
   // CANVAS/CHARTS: Any canvas or chart element MUST be inside a container with max-height (e.g., h-64 or h-80). NEVER let canvas grow unconstrained.
-  { id: "prism-refraction", name: "Prism Refraction", desc: "Rainbow Refraction • Prismatic • Editorial", fullDesc: `🌈 PRISM REFRACTION — Light split into spectrum. High-fashion editorial meets physics.
-
-🚨 CRITICAL — BACKGROUND COMPONENT (NON-NEGOTIABLE):
-import { Prism } from "react-bits/backgrounds" — This IS the entire visual identity.
-<Prism /> renders the animated prismatic refraction background. Without it the page is EMPTY BLACK.
-Place inside hero: <section className="relative min-h-screen overflow-hidden"><div className="absolute inset-0 z-0"><Prism /></div><div className="relative z-10">...content...</div></section>
-
-MANDATORY REACT BITS IMPORTS:
-- TEXT: import { ScrollReveal } from "react-bits/text" — reveal text on scroll
-- CARDS: import { SpotlightCard } from "react-bits/components" — prismatic spotlight
-- ANIMATIONS: import { GlareHover } from "react-bits/animations" — rainbow glare on hover
-- COUNTERS: import { CountUp } from "react-bits/text" — animated numbers
-
-COLOR PALETTE:
-Background: Pure black #000000
-Text: Pure WHITE #ffffff for ALL headlines and body text. NO gradient text. NO colored headlines.
-Accent: Soft violet #8b5cf6 for labels/tags only
-Cards: bg-white/5 backdrop-blur-xl border border-white/10
-
-TYPOGRAPHY:
-Headlines: Inter Black (900), text-6xl md:text-8xl, text-white (PLAIN WHITE, no gradients)
-Body: Inter 400, text-white/70
-Labels: Inter 500, uppercase tracking-widest text-xs text-violet-400
-
-SIGNATURE EFFECTS:
-1. Prism background: absolute inset-0, z-0 — covers full hero
-2. ALL content text is WHITE — the Prism background provides the color
-3. Section dividers: thin rainbow gradient lines (h-px)
-4. Cards: SpotlightCard with GlareHover for prismatic sweep
-5. ScrollVelocity marquee between sections
-
-⚠️ HERO = min-h-screen EXACTLY. Content has relative z-10.
-⚠️ MANDATORY: Preserve ALL content from video.`, category: "shader" },
-
   { id: "light-pillar-cathedral", name: "Light Pillar Cathedral", desc: "Vertical Beams • Sacred • Monumental", fullDesc: `🏛️ LIGHT PILLAR CATHEDRAL — Vertical light beams rising from void. Sacred architecture meets digital.
 
-🚨 CRITICAL — BACKGROUND COMPONENT (NON-NEGOTIABLE):
-import { LightPillar } from "react-bits/backgrounds" — This IS the entire visual identity.
-<LightPillar /> renders animated vertical light beams. Without it the page is EMPTY BLACK.
-Place inside hero: <section className="relative min-h-screen overflow-hidden"><div className="absolute inset-0 z-0"><LightPillar /></div><div className="relative z-10">...content...</div></section>
+═══════════════════════════════════════════════════════════════════════════════
+🎨 MANDATORY REACT BITS COMPONENTS:
+═══════════════════════════════════════════════════════════════════════════════
+HERO BACKGROUND: import { LightPillar } from "react-bits/backgrounds/light-pillar" — MUST use as full-screen hero background
+TEXT: import { BlurText } from "react-bits/text/blur-text" — blur-to-clear reveal for headlines
+TEXT: import { ScrollFloat } from "react-bits/text/scroll-float" — floating text on scroll
+ANIMATIONS: import { FadeContent } from "react-bits/animations/fade-content" — section entrance
+COUNTERS: import { CountUp } from "react-bits/text/count-up" — stat numbers
 
-MANDATORY REACT BITS IMPORTS:
-- TEXT: import { BlurText } from "react-bits/text" — blur-to-clear reveal
-- TEXT: import { ScrollFloat } from "react-bits/text" — floating text on scroll
-- ANIMATIONS: import { FadeContent } from "react-bits/animations" — section entrance
-- COUNTERS: import { CountUp } from "react-bits/text" — stat numbers
-
-COLOR PALETTE:
+═══════════════════════════════════════════════════════════════════════════════
+🎨 COLOR PALETTE:
+═══════════════════════════════════════════════════════════════════════════════
 Background: Deep navy void #050510
 Primary: Warm amber #f59e0b (cathedral light)
 Secondary: Soft gold #fbbf24
+Accent: Cream #fef3c7
 Text: Pure WHITE #ffffff for all headlines. Muted #a1a1aa for body.
 Cards: bg-white/5 backdrop-blur-lg border border-amber-500/10
 
-TYPOGRAPHY:
+═══════════════════════════════════════════════════════════════════════════════
+📝 TYPOGRAPHY:
+═══════════════════════════════════════════════════════════════════════════════
 Headlines: Playfair Display or serif, text-5xl md:text-7xl, font-light, text-white
 Body: Inter 300, text-white/60
 Accents: Uppercase tracking-[0.3em] text-amber-400/80, text-xs
 
-SIGNATURE EFFECTS:
-1. LightPillar background: absolute inset-0, z-0 — animated beams in hero
+═══════════════════════════════════════════════════════════════════════════════
+✨ SIGNATURE EFFECTS:
+═══════════════════════════════════════════════════════════════════════════════
+1. LightPillar background fills hero — animated vertical light beams
 2. Vertical golden line accents beside headings
 3. Glass cards with amber-tinted borders
 4. Section backgrounds: dark void → slightly lighter navy
 
-⚠️ HERO = min-h-screen EXACTLY. Do NOT let hero grow beyond viewport.
+═══════════════════════════════════════════════════════════════════════════════
+🏗️ LAYOUT RULES (CRITICAL):
+═══════════════════════════════════════════════════════════════════════════════
+- Use CSS Grid (grid-cols-2, grid-cols-3) for card layouts, NOT inline-block or float
+- Features/services: grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6
+- Hero content: flexbox column, items-center, justify-center, text-center
+- Each section: py-20 or py-24 for vertical rhythm, max-w-7xl mx-auto px-6
+- Cards: equal height in grid rows, no overflow
+
+═══════════════════════════════════════════════════════════════════════════════
+⚠️ HERO TEXT SPACING (ZERO TOLERANCE):
+═══════════════════════════════════════════════════════════════════════════════
+- Hero headline: margin-bottom: 1rem (mb-4) ONLY. No extra top margin.
+- Hero subtitle/tagline: margin-bottom: 1.5rem (mb-6). No extra spacing.
+- Hero CTA buttons: margin-top: 1rem (mt-4). Compact grouping.
+- NEVER add large gaps (gap-8, gap-12, my-8, py-8) between hero text elements
+- Hero text group should feel TIGHT and cohesive, not spread across full viewport
+- Pattern: <h1 className="mb-4">Title</h1><p className="mb-6">Subtitle</p><div className="mt-4 flex gap-4">buttons</div>
+
+⚠️ HERO = min-h-screen with flex items-center. Content MUST NOT expand hero height.
 ⚠️ Content MUST have relative z-10 to appear above LightPillar.
-⚠️ MANDATORY: Preserve ALL content from video.`, category: "shader" },
-
-  { id: "light-rays-dawn", name: "Light Rays Dawn", desc: "Volumetric Rays • Cinematic • Golden", fullDesc: `🌅 LIGHT RAYS DAWN — Volumetric god rays breaking through atmosphere. Cinematic, golden, hopeful.
-
-🚨 CRITICAL — BACKGROUND COMPONENT (NON-NEGOTIABLE):
-import { LightRays } from "react-bits/backgrounds" — This IS the entire visual identity.
-<LightRays /> renders animated volumetric light rays. Without it the page is EMPTY BLACK.
-Place inside hero: <section className="relative min-h-screen overflow-hidden"><div className="absolute inset-0 z-0"><LightRays /></div><div className="relative z-10">...content...</div></section>
-
-MANDATORY REACT BITS IMPORTS:
-- TEXT: import { SplitText } from "react-bits/text" — word-by-word reveal
-- TEXT: import { DecryptedText } from "react-bits/text" — decrypt reveal
-- ANIMATIONS: import { AnimatedContent } from "react-bits/animations" — entrance
-- COUNTERS: import { CountUp } from "react-bits/text" — stat counters
-
-COLOR PALETTE:
-Background: Deep dark #0a0a0f (NOT brown — dark navy-black)
-Primary: Golden #fbbf24
-Secondary: Warm white #fef3c7
-Text: Pure WHITE #ffffff for all headlines. Body: text-white/70
-Cards: bg-white/5 backdrop-blur-lg border border-amber-500/15
-
-TYPOGRAPHY:
-Headlines: Inter Black 900, text-5xl md:text-7xl, text-white (PURE WHITE)
-Body: Inter 400, text-white/70
-Labels: Inter 600 uppercase text-xs tracking-widest text-amber-400
-
-SIGNATURE EFFECTS:
-1. LightRays background: absolute inset-0, z-0 — animated rays in hero
-2. Golden gradient accent lines as section dividers
-3. Cards have warm inner glow
-4. Grain texture overlay at 2% opacity
-
-⚠️ HERO = min-h-screen EXACTLY. Content has relative z-10.
-⚠️ Background must NOT be brown. Use #0a0a0f (near-black), NOT #1a1008.
-⚠️ MANDATORY: Preserve ALL content from video.`, category: "shader" },
-
-  { id: "color-bends-psychedelic", name: "Color Bends", desc: "Chromatic Warp • Psychedelic • Bold", fullDesc: `🎨 COLOR BENDS — Chromatic aberration and color warping. Bold, psychedelic, unapologetically vibrant.
-
-🚨 CRITICAL — BACKGROUND COMPONENT (NON-NEGOTIABLE):
-import { ColorBends } from "react-bits/backgrounds" — This IS the entire visual identity.
-<ColorBends /> renders animated chromatic warping. Without it the page is EMPTY BLACK.
-Place inside hero: <section className="relative min-h-screen overflow-hidden"><div className="absolute inset-0 z-0"><ColorBends /></div><div className="relative z-10">...content...</div></section>
-
-MANDATORY REACT BITS IMPORTS:
-- TEXT: import { GlitchText } from "react-bits/text" — chromatic glitch headline
-- TEXT: import { RotatingText } from "react-bits/text" — rotating word
-- ANIMATIONS: import { PixelTransition } from "react-bits/animations" — pixel reveal
-
-COLOR PALETTE:
-Background: Pure black #000000
-Primary: Electric magenta #ff00ff
-Secondary: Neon cyan #00ffff
-Text: Pure WHITE #ffffff for all headlines
-Cards: bg-white/5 border border-fuchsia-500/20
-
-TYPOGRAPHY:
-Headlines: Inter Black 900, text-6xl md:text-8xl, UPPERCASE, text-white
-Body: Inter 400, text-white/70
-Labels: Monospace, text-xs, text-cyan-400
-
-SIGNATURE EFFECTS:
-1. ColorBends background: absolute inset-0, z-0
-2. Neon glow on buttons: box-shadow with magenta/cyan
-3. Section dividers: gradient bands (magenta → cyan)
-
-⚠️ HERO = min-h-screen EXACTLY. Content has relative z-10.
-⚠️ MANDATORY: Preserve ALL content from video.`, category: "shader" },
-
-  { id: "lightning-storm", name: "Lightning Storm", desc: "Electric Bolts • High Voltage • Power", fullDesc: `⚡ LIGHTNING STORM — Raw electrical energy. High voltage. Unstoppable power.
-
-🚨 CRITICAL — BACKGROUND COMPONENT (NON-NEGOTIABLE):
-import { Lightning } from "react-bits/backgrounds" — This IS the entire visual identity.
-<Lightning /> renders animated lightning bolts. Without it the page is EMPTY BLACK.
-Place inside hero: <section className="relative min-h-screen overflow-hidden"><div className="absolute inset-0 z-0"><Lightning /></div><div className="relative z-10">...content...</div></section>
-
-MANDATORY REACT BITS IMPORTS:
-- TEXT: import { ScrambledText } from "react-bits/text" — scramble reveal
-- CARDS: import { SpotlightCard } from "react-bits/components" — electric spotlight
-- ANIMATIONS: import { StarBorder } from "react-bits/animations" — electric border
-- ANIMATIONS: import { ClickSpark } from "react-bits/animations" — sparks on click
-- COUNTERS: import { CountUp } from "react-bits/text" — stat counters
-
-COLOR PALETTE:
-Background: Storm dark #0a0a12
-Primary: Electric blue-white #e0e7ff
-Secondary: Charged purple #7c3aed
-Text: White #ffffff, muted #9ca3af
-Cards: bg-slate-900/60 backdrop-blur border border-indigo-500/20
-
-TYPOGRAPHY:
-Headlines: Inter Black 900, text-5xl md:text-7xl, text-white with glow
-Body: Inter 400, text-slate-300
-Labels: Monospace, text-xs, text-indigo-400, uppercase
-
-SIGNATURE EFFECTS:
-1. Lightning background: absolute inset-0, z-0 — animated bolts
-2. Electric glow on headline: text-shadow: 0 0 20px rgba(224,231,255,0.5)
-3. StarBorder on feature cards, ClickSpark on CTAs
-
-⚠️ HERO = min-h-screen EXACTLY. Content has relative z-10.
 ⚠️ MANDATORY: Preserve ALL content from video.`, category: "shader" },
 
   { id: "faulty-terminal-hacker", name: "Faulty Terminal", desc: "CRT Glitch • Terminal • Retro Hacker", fullDesc: `💀 FAULTY TERMINAL — Corrupted CRT display. Hacker aesthetic. Glitched out.
@@ -4475,38 +4176,6 @@ SIGNATURE EFFECTS:
 
 ⚠️ HERO = min-h-screen EXACTLY. Content has relative z-10.
 ⚠️ MANDATORY: Preserve ALL content from video.`, category: "creative" },
-
-  { id: "iridescence-pearl", name: "Iridescence Pearl", desc: "Soap Bubble • Holographic • Luxury", fullDesc: `🫧 IRIDESCENCE PEARL — Soap bubble surface. Holographic luxury. Delicate iridescence.
-
-🚨 CRITICAL — BACKGROUND COMPONENT (NON-NEGOTIABLE):
-import { Iridescence } from "react-bits/backgrounds" — This IS the entire visual identity.
-<Iridescence /> renders animated holographic surface. Without it the page is EMPTY BLACK.
-Place inside hero: <section className="relative min-h-screen overflow-hidden"><div className="absolute inset-0 z-0"><Iridescence /></div><div className="relative z-10">...content...</div></section>
-
-MANDATORY REACT BITS IMPORTS:
-- TEXT: import { ShinyText } from "react-bits/text" — holographic shimmer
-- TEXT: import { ScrollFloat } from "react-bits/text" — floating text
-- ANIMATIONS: import { GlareHover } from "react-bits/animations" — holographic glare
-
-COLOR PALETTE:
-Background: Deep navy #0a0a1a
-Primary: Iridescent pink #ec4899
-Secondary: Iridescent blue #3b82f6
-Text: White #ffffff, muted #a1a1aa
-Cards: bg-white/5 backdrop-blur-2xl border border-white/20
-
-TYPOGRAPHY:
-Headlines: Inter 200 ultralight, text-5xl md:text-7xl, text-white
-Body: Inter 300, text-white/60
-Labels: Inter 500, uppercase, tracking-[0.2em], text-xs
-
-SIGNATURE EFFECTS:
-1. Iridescence background: absolute inset-0, z-0
-2. Holographic shimmer on headline via ShinyText
-3. Iridescent gradient borders on cards
-
-⚠️ HERO = min-h-screen EXACTLY. Content has relative z-10.
-⚠️ MANDATORY: Preserve ALL content from video.`, category: "shader" },
 
   { id: "hyperspeed-warp", name: "Hyperspeed Warp", desc: "Star Tunnel • Speed Lines • Sci-Fi", fullDesc: `🚀 HYPERSPEED WARP — Entering hyperspace. Star tunnel. Blinding speed.
 
@@ -4542,78 +4211,54 @@ SIGNATURE EFFECTS:
 3. TiltedCard for features, ScrollVelocity band between sections
 
 ⚠️ HERO = min-h-screen EXACTLY. Content has relative z-10.
-⚠️ MANDATORY: Preserve ALL content from video.`, category: "shader" },
-
-  { id: "beams-spotlight", name: "Beams Spotlight", desc: "Searchlight Beams • Stage • Dramatic", fullDesc: `🔦 BEAMS SPOTLIGHT — Moving searchlights cutting through darkness. Theatrical. Main stage.
-
-🚨 CRITICAL — BACKGROUND COMPONENT (NON-NEGOTIABLE):
-import { Beams } from "react-bits/backgrounds" — This IS the entire visual identity.
-<Beams /> renders animated sweeping light beams. Without it the page is EMPTY BLACK.
-Place inside hero: <section className="relative min-h-screen overflow-hidden"><div className="absolute inset-0 z-0"><Beams /></div><div className="relative z-10">...content...</div></section>
-
-MANDATORY REACT BITS IMPORTS:
-- TEXT: import { BlurText } from "react-bits/text" — dramatic blur reveal
-- TEXT: import { TrueFocus } from "react-bits/text" — focus lens effect
-- CARDS: import { SpotlightCard } from "react-bits/components" — spotlight tracking
-- ANIMATIONS: import { Magnet } from "react-bits/animations" — magnetic pull
-- ANIMATIONS: import { FadeContent } from "react-bits/animations" — cinematic fade
-
-COLOR PALETTE:
-Background: Stage black #050505
-Primary: Warm spotlight #fbbf24
-Secondary: Cool spotlight #60a5fa
-Text: White #ffffff, muted #737373
-Cards: bg-zinc-900/80 backdrop-blur border border-zinc-700/50
-
-TYPOGRAPHY:
-Headlines: Inter 800, text-5xl md:text-7xl, text-white
-Body: Inter 400, text-zinc-400
-Labels: Inter 600, uppercase tracking-widest text-xs text-amber-400/80
-
-SIGNATURE EFFECTS:
-1. Beams background: absolute inset-0, z-0 — animated sweeping beams
-2. Spotlight effect on hero headline: radial gradient glow behind text
-3. SpotlightCard for each feature — light follows cursor
-4. Section backgrounds: alternating #050505 and #0a0a0a
-5. Golden accent lines (h-0.5 bg-amber-500/40) as subtle dividers
-6. TrueFocus on key stat numbers for dramatic lens effect
-
-⚠️ HERO = min-h-screen EXACTLY. Content has relative z-10.
+⚠️ FOOTER & BOTTOM SECTIONS: MUST have solid bg-[#000005] or bg-slate-900 background — NO backdrop-blur on footer!
+  Footer and CTA sections below the fold must be SHARP and CLEAR, not blurred.
+  Only hero section should have the Hyperspeed background. All other sections use solid dark backgrounds.
+  If using backdrop-blur on cards, the FOOTER itself must NOT have backdrop-blur — use opaque bg instead.
 ⚠️ MANDATORY: Preserve ALL content from video.`, category: "shader" },
 
   { id: "grainient-analog", name: "Grainient Analog", desc: "Film Grain • Warm Gradient • Organic", fullDesc: `📷 GRAINIENT ANALOG — Film grain meets gradient. Organic warmth. Analog soul in digital form.
 
-🚨 CRITICAL — BACKGROUND COMPONENT (NON-NEGOTIABLE):
-import { Grainient } from "react-bits/backgrounds" — This IS the entire visual identity.
-<Grainient /> renders warm gradient with natural film grain. Without it the page is EMPTY.
-Place inside hero: <section className="relative min-h-screen overflow-hidden"><div className="absolute inset-0 z-0"><Grainient /></div><div className="relative z-10">...content...</div></section>
+═══════════════════════════════════════════════════════════════════════════════
+🎨 MANDATORY REACT BITS COMPONENTS:
+═══════════════════════════════════════════════════════════════════════════════
+HERO BACKGROUND: import { Grainient } from "react-bits/backgrounds/grainient" — MUST use as full-screen hero background
+TEXT: import { FallingText } from "react-bits/text/falling-text" — letters fall into place for headline
+TEXT: import { ScrollReveal } from "react-bits/text/scroll-reveal" — reveal on scroll for body text
+CARDS: import { ReflectiveCard } from "react-bits/components/reflective-card" — warm reflective surfaces
+ANIMATIONS: import { StickerPeel } from "react-bits/animations/sticker-peel" — peel corner on cards
+COUNTERS: import { CountUp } from "react-bits/text/count-up" — warm stat counters
+MARQUEE: import { ScrollVelocity } from "react-bits/text/scroll-velocity" — organic scrolling text
 
-MANDATORY REACT BITS IMPORTS:
-- TEXT: import { FallingText } from "react-bits/text" — letters fall into place
-- TEXT: import { ScrollReveal } from "react-bits/text" — reveal on scroll
-- ANIMATIONS: import { StickerPeel } from "react-bits/animations" — peel corner
-- COUNTERS: import { CountUp } from "react-bits/text" — warm stat counters
-- MARQUEE: import { ScrollVelocity } from "react-bits/text" — organic scrolling text
-
-COLOR PALETTE:
+═══════════════════════════════════════════════════════════════════════════════
+🎨 COLOR PALETTE:
+═══════════════════════════════════════════════════════════════════════════════
 Background: Warm dark #1a1510 (like old photo paper)
 Primary: Warm coral #f97066
 Secondary: Soft amber #fbbf24
+Tertiary: Dusty rose #e879a0
+Accent: Cream #fef3c7
 Text: Warm white #fefce8, muted #a8a29e
 Cards: bg-stone-900/40 border border-stone-700/30 rounded-2xl
 
-TYPOGRAPHY:
-Headlines: Serif font (Playfair Display or Georgia), text-5xl md:text-7xl, warm white
+═══════════════════════════════════════════════════════════════════════════════
+📝 TYPOGRAPHY:
+═══════════════════════════════════════════════════════════════════════════════
+Headlines: Serif font (Playfair Display or Georgia), text-5xl md:text-7xl, font-normal, warm white
 Body: Inter 400, text-stone-300
-Labels: Inter 500, text-xs, text-stone-500, uppercase
+Labels: Inter 500, text-xs, text-stone-500, uppercase tracking-wide
 
-SIGNATURE EFFECTS:
-1. Grainient background: absolute inset-0, z-0 — warm gradient + film grain
-2. Cards: StickerPeel corner effect on hover
-3. Warm gradient accents between sections
-4. Photo-style rounded corners (rounded-2xl)
+═══════════════════════════════════════════════════════════════════════════════
+✨ SIGNATURE EFFECTS:
+═══════════════════════════════════════════════════════════════════════════════
+1. Grainient background fills hero — warm gradient + natural film grain
+2. Cards: ReflectiveCard with StickerPeel corner effect on hover
+3. Warm gradient accents: linear-gradient(135deg, #f97066, #fbbf24)
+4. Photo-style rounded corners on all cards (rounded-2xl)
+5. Organic shapes: SVG blobs with warm gradients at low opacity as section decoration
+6. ScrollVelocity band with warm tones between sections
 
-⚠️ HERO = min-h-screen EXACTLY. Content has relative z-10.
+⚠️ THE FEELING: Flipping through a film photography book. Warm, tactile, alive. Kodak Portra tones.
 ⚠️ MANDATORY: Preserve ALL content from video.`, category: "shader" },
 ];
 

@@ -1283,6 +1283,14 @@ EVERY text element MUST be clearly visible against its background:
 - If you want spaced-out letters, use CSS: letter-spacing: 0.2em — NOT actual space characters
 - NEVER truncate headline text — write the COMPLETE headline visible in video
 
+🚨 HERO TEXT ELEMENT MARGINS — TIGHT GROUPING!
+- Hero text elements (h1, p, buttons) must be TIGHTLY grouped — no large gaps
+- ❌ WRONG: gap-12, gap-16, my-8, py-8, space-y-8 between hero headline and subtitle
+- ❌ WRONG: Hero content spread across full viewport height with huge whitespace
+- ✅ CORRECT: h1 → mb-4, subtitle p → mb-6, button group → mt-4, flex gap-4
+- Hero content wrapper: flex flex-col items-center justify-center (centered, compact)
+- Total hero text block should occupy ~30-40% of viewport, NOT fill entire min-h-screen
+
 🚨 ANIMATIONS MUST ALWAYS BE VISIBLE ON LOAD!
 - Every GSAP animation MUST result in the element being VISIBLE after it completes
 - ❌ WRONG: Element starts at opacity:0, y:200 and NEVER gets triggered → permanently invisible

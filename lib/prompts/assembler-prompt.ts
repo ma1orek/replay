@@ -310,6 +310,7 @@ const Icon = ({ name, className = "w-5 h-5" }) => {
 □ NO shader/canvas/WebGL effects on buttons — buttons use clean CSS only (solid bg, gradient, border, shadow)
 □ Hero headlines have SINGLE spaces between words — NO extra spaces, NO letter-by-letter spacing with spaces
 □ If video shows "Open Workspace" → output exactly "Open Workspace", NOT "O P E N" or "Open Work..."
+□ Hero text elements are TIGHTLY grouped — h1 mb-4, subtitle mb-6, buttons mt-4. NO gap-12/space-y-8 between them!
 □ ALL animations result in visible elements — no orphaned opacity:0 elements after animation completes
 □ Hero animations fire IMMEDIATELY (no ScrollTrigger on hero). Below-fold: start:'top 85%' (generous trigger)
 
