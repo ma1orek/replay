@@ -102,6 +102,11 @@ gsap.utils.toArray('.counter').forEach(counter => {
     textContent: target, duration: 2, snap: { textContent: 1 }
   });
 });
+
+// Marquee / infinite scrolling text: ALWAYS duplicate items for seamless loop!
+// Container: overflow:hidden. Track: display:flex; animation:marquee Xs linear infinite
+// @keyframes marquee { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+// Items MUST appear TWICE inside the track — otherwise loop shows a visible GAP!
 \`\`\`
 
 CSS HOVER EFFECTS (MANDATORY):

@@ -3,6 +3,37 @@ import { Clock, Sparkles, Bug, ArrowUp, Bell } from "lucide-react";
 
 const changelog = [
   {
+    date: "February 21, 2026",
+    version: "2.6.0",
+    changes: [
+      {
+        type: "feature",
+        title: "LLM Discoverability (llms.txt)",
+        description: "Added llms.txt and llms-full.txt for AI agent indexing. AI assistants (ChatGPT, Claude, Perplexity, Gemini) can now read Replay's complete product documentation in a single file. Permissive robots.txt allows all major AI crawlers. AI-native metadata with comparison keywords."
+      },
+      {
+        type: "improvement",
+        title: "Seamless Marquee / Scrolling Text",
+        description: "All 3 generation prompts now enforce seamless infinite marquee loops. Scrolling text elements (logo bars, service tickers, category scrollers) must duplicate items and use translateX(-50%) for gap-free continuous animation."
+      },
+      {
+        type: "improvement",
+        title: "Text Visibility & Hero Overflow",
+        description: "Outline text (text-stroke/text-outline) now requires minimum opacity-60 for readability. Hero headlines enforce overflow-hidden + max-w-full to prevent text escaping viewport. Mobile hero text must use responsive clamp() or breakpoint classes."
+      },
+      {
+        type: "fix",
+        title: "Edit Mode Anti-Corruption",
+        description: "AI editor now detects and rejects truncated Tailwind class names (flex-col→fle, max-w-[1400px]→ma[1400px]). Both SEARCH/REPLACE and Full HTML paths have truncation detection. Corrupted edits preserve original code and ask user to retry."
+      },
+      {
+        type: "fix",
+        title: "Alpine.js Preservation in Edits",
+        description: "AI editor prompts now explicitly forbid removing Alpine.js directives (x-data, x-show, x-collapse, @click) during edits. Prevents interactive elements from breaking after AI modifications."
+      },
+    ]
+  },
+  {
     date: "February 18, 2026",
     version: "2.5.0",
     changes: [

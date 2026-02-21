@@ -352,6 +352,12 @@ ALSO add these CSS animations for hover effects:
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* INFINITE MARQUEE / SCROLLING TEXT — SEAMLESS LOOP */
+.marquee { overflow:hidden; width:100%; }
+.marquee-track { display:flex; width:max-content; gap:2rem; animation:marquee-scroll 25s linear infinite; }
+@keyframes marquee-scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+/* ⚠️ MARQUEE RULE: ALWAYS duplicate ALL items inside .marquee-track so the scroll loops seamlessly with NO gap. Every item appears TWICE. translateX(-50%) shifts exactly one full copy width. Without duplication the marquee will show a VISIBLE GAP before restarting! */
+
 /* ANIMATED GRADIENT BACKGROUND */
 .animated-gradient {
   background: linear-gradient(-45deg, #0a0a0a, #1a1a2e, #16213e, #0f0f23);

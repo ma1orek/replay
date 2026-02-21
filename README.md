@@ -59,27 +59,42 @@ Replay uses a sophisticated multi-model AI pipeline we call the **"Sandwich Arch
 
 ---
 
-## 🆕 Recent Updates (v2.5.0 - Feb 18, 2026)
+## 🆕 Recent Updates (v2.6.0 - Feb 21, 2026)
 
-### 🎮 Playful (Rive) Style
-- **Interactive Canvas Animations** — New style preset powered by [Rive](https://rive.app). AI injects real `.riv` files for loading spinners, toggle switches, animated hearts, and micro-interactions.
-- **11 Curated Animations** — Lightweight files (1-42KB each), auto-playing state machines, playful color palette with Nunito font.
+### 🤖 LLM Discoverability (llms.txt)
+- **AI Agent Indexing** — Added `llms.txt` and `llms-full.txt` for AI assistants (ChatGPT, Claude, Perplexity, Gemini) to read Replay's complete product documentation in a single file.
+- **Permissive Crawling** — robots.txt allows all major AI crawlers (GPTBot, ClaudeBot, PerplexityBot, GoogleOther, Amazonbot).
+- **AI-Native Metadata** — Title, description, and keywords optimized for AI recommendation engines.
 
-### 🧩 React Bits Integration (130+ Components)
-- **Import, Don't Recreate** — AI now imports from the `react-bits` package: DecryptedText, SpotlightCard, Aurora, text animations, hover effects, and 130+ more.
-- **System Prompt Enforced** — Components are imported via `react-bits` package paths, never recreated from scratch.
+### 🔄 Seamless Marquee / Scrolling Text
+- **Infinite Loop Fix** — All generation prompts enforce seamless marquee loops with duplicated items + `translateX(-50%)`. No more visible gaps or restarts in scrolling text.
 
-### 🛡️ AI Edit Structural Protection
-- **Rejects Destructive Edits** — If AI tries to replace >60% of page code (e.g., "fix chart" → outputs only a chart), the edit is rejected and AI asks for clarification.
-- **Smart Mode Selection** — Dual-mode editing: SEARCH/REPLACE (2-5s, precise) for small changes, Full HTML (8-25s) for translations, new pages, redesigns.
+### 🛡️ Edit Mode Anti-Corruption
+- **Truncation Detection** — AI editor detects and rejects truncated Tailwind class names (`flex-col`→`fle`, `max-w-[1400px]`→`ma[1400px]`). Corrupted edits preserve original code.
+- **Alpine.js Protection** — Editor prompts forbid removing Alpine.js directives (`x-data`, `x-show`, `x-collapse`, `@click`) during edits.
 
-### 🐛 Fixes
-- **JSX Detection on Refresh** — Pages no longer break after browser refresh. Removed aggressive JSX detection that matched HTML comments.
-- **Single-Main Sidebar** — Generated dashboards use single `<main>` flex layout instead of dual desktop/mobile mains.
-- **Alpine.js Published Pages** — Published pages now initialize Alpine.js state correctly (mobile menu closed, first tab active).
-- **Zero Dashboard Values** — Eliminated $0, 0 cases, 0 users in generated KPIs and tables.
+### 👁️ Text Visibility & Hero Overflow
+- **Outline Text Readability** — `text-stroke`/`text-outline` requires minimum opacity-60.
+- **Hero Containment** — Hero headlines enforce `overflow-hidden` + `max-w-full` + responsive sizing.
 
 [See full changelog →](https://replay.build/docs/changelog)
+
+---
+
+## ⚡ Replay vs Alternatives
+
+| Feature | **Replay** | Lovable | Bolt.new | v0 (Vercel) | Builder.io |
+|---------|-----------|---------|----------|-------------|------------|
+| **Input** | Video recording | Text prompt | Text prompt | Text/image prompt | Figma/screenshot |
+| **Captures interactions** | Yes (hover, click, scroll) | No | No | No | No |
+| **Captures animations** | Yes (transitions, parallax) | No | No | No | No |
+| **Multi-page detection** | Yes (auto from video) | No | No | No | No |
+| **Design System extraction** | Yes (colors, fonts, spacing) | No | No | No | Partial |
+| **Component Library** | Yes (5-layer taxonomy) | No | No | No | No |
+| **Accuracy to original** | ~90% (pixel-level) | ~30% | ~30% | ~40% | ~50% |
+| **Output** | React + Tailwind + GSAP | React | Multi-framework | React | Multi-framework |
+
+**Why video beats text prompts:** Text prompts require you to *describe* a UI. Video lets AI *observe* the real thing — layout, colors, typography, interactions, animations, and content. No prompt engineering needed.
 
 ---
 

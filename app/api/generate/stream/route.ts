@@ -1267,7 +1267,7 @@ document.querySelectorAll('.pixel-transition').forEach(el => {
 .marquee-track { display:flex; width:max-content; gap:3rem; animation:marquee-scroll 25s linear infinite; }
 .marquee-track:hover { animation-play-state:paused; }
 @keyframes marquee-scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
-IMPORTANT: duplicate all items inside marquee-track so loop is seamless!
+⚠️ CRITICAL: You MUST duplicate ALL items inside marquee-track (every item appears TWICE in the HTML). Without duplication the scroll will show a GAP before restarting. translateX(-50%) = exactly one copy width. This applies to ALL scrolling/marquee text, not just logos!
 
 ───── 40. HORIZONTAL SNAP CAROUSEL (testimonials) ─────
 .snap-carousel {
@@ -1528,10 +1528,11 @@ JS: document.querySelectorAll('.grid-distortion-wrap').forEach(el=>{
 ───── 67. LOGO LOOP (infinite horizontal auto-scroll) ─────
 HTML: <div class="logo-loop-track" style="overflow:hidden;white-space:nowrap;width:100%">
   <div class="logo-loop-inner" style="display:inline-block;animation:logoScroll 20s linear infinite">
-    <!-- logos here, then duplicate them -->
+    <!-- logos/items here, then DUPLICATE them all for seamless loop -->
   </div></div>
 CSS: @keyframes logoScroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
 JS: document.querySelectorAll('.logo-loop-inner').forEach(el=>{ el.innerHTML+=el.innerHTML; });
+⚠️ ALL marquee/scrolling text MUST have items duplicated (2x). No exceptions!
 
 ───── 68. CUBES 3D (rotating 3D cubes decoration) ─────
 CSS: .cube-3d{width:60px;height:60px;transform-style:preserve-3d;animation:cubeRotate 6s linear infinite}
