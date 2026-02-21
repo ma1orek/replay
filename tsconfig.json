@@ -39,7 +39,8 @@
     "node_modules",
     "skills",
     ".agents",
-    "mcp-server"
+    "mcp-server",
+    "figma-plugin"
   ]
 }
 

@@ -1,0 +1,19 @@
+{
+  "name": "replay-figma-plugin",
+  "version": "1.0.0",
+  "description": "Replay.build Design System Sync - Import DS tokens from Figma",
+  "scripts": {
+    "build": "npm run build:code && npm run build:ui",
+    "build:code": "esbuild src/code.ts --bundle --outfile=dist/code.js --target=es2020 --format=iife",
+    "build:ui": "esbuild src/ui.tsx --bundle --outfile=dist/ui-bundle.js --target=es2020 --format=iife --loader:.tsx=tsx --loader:.ts=ts && node scripts/build-ui-html.js",
+    "watch": "concurrently \"npm run watch:code\" \"npm run watch:ui\"",
+    "watch:code": "esbuild src/code.ts --bundle --outfile=dist/code.js --target=es2020 --format=iife --watch",
+    "watch:ui": "esbuild src/ui.tsx --bundle --outfile=dist/ui-bundle.js --target=es2020 --format=iife --loader:.tsx=tsx --loader:.ts=ts --watch"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.100.0",
+    "esbuild": "^0.24.0",
+    "concurrently": "^9.0.0",
+    "typescript": "^5.6.0"
+  }
+}

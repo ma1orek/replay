@@ -362,23 +362,31 @@ export function useDesignSystems() {
 export default DesignSystemSelector;
 
 /**
- * Import Library Modal - For importing from Storybook
+ * Import Library Modal - For importing from Storybook or Figma
  */
 interface ImportLibraryModalProps {
   isOpen: boolean;
   onClose: () => void;
   onImport: (url: string, name: string) => Promise<void>;
+  defaultTab?: "storybook" | "figma";
 }
 
-export function ImportLibraryModal({ 
-  isOpen, 
+export function ImportLibraryModal({
+  isOpen,
   onClose,
-  onImport 
+  onImport,
+  defaultTab = "storybook",
 }: ImportLibraryModalProps) {
+  const [activeTab, setActiveTab] = useState<"storybook" | "figma">(defaultTab);
   const [url, setUrl] = useState("");
   const [name, setName] = useState("");
   const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Reset tab on open
+  useEffect(() => {
+    if (isOpen) setActiveTab(defaultTab);
+  }, [isOpen, defaultTab]);
 
   // Auto-fill name from URL
   useEffect(() => {
@@ -434,53 +442,120 @@ export function ImportLibraryModal({
             <div className="px-5 py-4 border-b border-zinc-800">
               <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                 <Import className="w-5 h-5 text-zinc-400" />
-                Import from Storybook
+                Import Design System
               </h2>
-              <p className="text-sm text-zinc-400 mt-1">
-                Import components from any Storybook URL
-              </p>
+              {/* Tab switcher */}
+              <div className="flex gap-1 mt-3 bg-zinc-800/50 rounded-lg p-0.5">
+                <button
+                  onClick={() => { setActiveTab("storybook"); setError(null); }}
+                  className={cn(
+                    "flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+                    activeTab === "storybook"
+                      ? "bg-zinc-700 text-white"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  )}
+                >
+                  From Storybook
+                </button>
+                <button
+                  onClick={() => { setActiveTab("figma"); setError(null); }}
+                  className={cn(
+                    "flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+                    activeTab === "figma"
+                      ? "bg-zinc-700 text-white"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  )}
+                >
+                  From Figma
+                </button>
+              </div>
             </div>
 
-            {/* Content */}
-            <div className="p-5 space-y-4">
-              {/* URL input */}
-              <div>
-                <label className="block text-xs font-medium text-zinc-400 mb-1.5">
-                  Storybook URL
-                </label>
-                <input
-                  type="url"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  placeholder="https://designsystem.example.com/"
-                  className="w-full px-3 py-2.5 rounded-lg bg-zinc-800/50 border border-zinc-700/50 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
-                />
-                <p className="text-[10px] text-zinc-500 mt-1">
-                  e.g., https://designsystem.solenis.com/
-                </p>
-              </div>
-
-              {/* Name input */}
-              <div>
-                <label className="block text-xs font-medium text-zinc-400 mb-1.5">
-                  Library Name (optional)
-                </label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="My Design System"
-                  className="w-full px-3 py-2.5 rounded-lg bg-zinc-800/50 border border-zinc-700/50 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
-                />
-              </div>
-
-              {/* Error message */}
-              {error && (
-                <div className="px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
-                  {error}
+            {/* Content: Storybook tab */}
+            {activeTab === "storybook" && (
+              <div className="p-5 space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+                    Storybook URL
+                  </label>
+                  <input
+                    type="url"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    placeholder="https://designsystem.example.com/"
+                    className="w-full px-3 py-2.5 rounded-lg bg-zinc-800/50 border border-zinc-700/50 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+                  />
+                  <p className="text-[10px] text-zinc-500 mt-1">
+                    e.g., https://designsystem.solenis.com/
+                  </p>
                 </div>
-              )}
-            </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+                    Library Name (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="My Design System"
+                    className="w-full px-3 py-2.5 rounded-lg bg-zinc-800/50 border border-zinc-700/50 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+                  />
+                </div>
+
+                {error && (
+                  <div className="px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
+                    {error}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Content: Figma tab */}
+            {activeTab === "figma" && (
+              <div className="p-5 space-y-4">
+                <div className="px-4 py-3 rounded-lg bg-violet-500/10 border border-violet-500/20">
+                  <p className="text-sm font-medium text-violet-300 mb-2">Figma Plugin</p>
+                  <p className="text-xs text-zinc-400 leading-relaxed">
+                    Import your Design System directly from Figma using our plugin. It extracts colors, typography, spacing, shadows, and component metadata.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-5 h-5 rounded-full bg-violet-500/20 flex items-center justify-center text-[10px] font-bold text-violet-300 flex-shrink-0 mt-0.5">1</div>
+                    <div>
+                      <p className="text-xs font-medium text-zinc-200">Install the Figma plugin</p>
+                      <p className="text-[10px] text-zinc-500 mt-0.5">Search "Replay.build DS Sync" in Figma Plugins, or load from <code className="text-violet-400">figma-plugin/manifest.json</code> for dev mode.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-5 h-5 rounded-full bg-violet-500/20 flex items-center justify-center text-[10px] font-bold text-violet-300 flex-shrink-0 mt-0.5">2</div>
+                    <div>
+                      <p className="text-xs font-medium text-zinc-200">Get your API key</p>
+                      <p className="text-[10px] text-zinc-500 mt-0.5">
+                        Go to{" "}
+                        <a href="/settings" target="_blank" className="text-violet-400 underline underline-offset-2">Settings</a>
+                        {" "}to create an API key (<code className="text-violet-400">rk_live_...</code>).
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-5 h-5 rounded-full bg-violet-500/20 flex items-center justify-center text-[10px] font-bold text-violet-300 flex-shrink-0 mt-0.5">3</div>
+                    <div>
+                      <p className="text-xs font-medium text-zinc-200">Extract & sync</p>
+                      <p className="text-[10px] text-zinc-500 mt-0.5">Open the plugin in Figma, paste your API key, and click "Extract". Your DS will appear here automatically.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
+                    {error}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Footer */}
             <div className="px-5 py-4 border-t border-zinc-800 flex justify-end gap-3">
@@ -489,29 +564,31 @@ export function ImportLibraryModal({
                 disabled={isImporting}
                 className="px-4 py-2 rounded-lg text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
               >
-                Cancel
+                {activeTab === "figma" ? "Close" : "Cancel"}
               </button>
-              <button
-                onClick={handleImport}
-                disabled={isImporting || !url.trim()}
-                className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2",
-                  "bg-white text-black hover:bg-zinc-200",
-                  (isImporting || !url.trim()) && "opacity-50 cursor-not-allowed"
-                )}
-              >
-                {isImporting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Importing...
-                  </>
-                ) : (
-                  <>
-                    <Import className="w-4 h-4" />
-                    Import Library
-                  </>
-                )}
-              </button>
+              {activeTab === "storybook" && (
+                <button
+                  onClick={handleImport}
+                  disabled={isImporting || !url.trim()}
+                  className={cn(
+                    "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2",
+                    "bg-white text-black hover:bg-zinc-200",
+                    (isImporting || !url.trim()) && "opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  {isImporting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Importing...
+                    </>
+                  ) : (
+                    <>
+                      <Import className="w-4 h-4" />
+                      Import Library
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </motion.div>
         </div>

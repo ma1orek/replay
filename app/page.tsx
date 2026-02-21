@@ -3443,6 +3443,7 @@ function ReplayToolContent() {
       id: ds.id,
       name: ds.name,
       source_url: ds.source_url,
+      source_type: ds.source_type || null,
       tokenCount: ds.token_count || 0,
       componentCount: ds.component_count || 0,
     }));

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 13px;
+      color: var(--figma-color-text, #333);
+      background: var(--figma-color-bg, #fff);
+      padding: 16px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--figma-color-border, #e5e5e5);
+    }
+    .header img { width: 28px; height: 28px; border-radius: 6px; }
+    .header h1 { font-size: 15px; font-weight: 600; }
+    .header span { font-size: 11px; color: var(--figma-color-text-secondary, #999); }
+
+    .screen { display: none; flex-direction: column; flex: 1; }
+    .screen.active { display: flex; }
+
+    label { font-weight: 500; margin-bottom: 4px; display: block; }
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--figma-color-border, #ddd);
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: monospace;
+      background: var(--figma-color-bg-secondary, #f9f9f9);
+      color: var(--figma-color-text, #333);
+      outline: none;
+    }
+    input:focus { border-color: #7c3aed; box-shadow: 0 0 0 2px rgba(124,58,237,0.15); }
+
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      width: 100%;
+    }
+    .btn-primary {
+      background: #7c3aed;
+      color: white;
+    }
+    .btn-primary:hover { background: #6d28d9; }
+    .btn-primary:disabled { background: #c4b5fd; cursor: not-allowed; }
+    .btn-secondary {
+      background: var(--figma-color-bg-secondary, #f3f4f6);
+      color: var(--figma-color-text, #333);
+      border: 1px solid var(--figma-color-border, #ddd);
+    }
+    .btn-secondary:hover { background: var(--figma-color-bg-hover, #e5e7eb); }
+
+    .hint { font-size: 11px; color: var(--figma-color-text-secondary, #999); margin-top: 6px; }
+    .error { color: #ef4444; font-size: 12px; margin-top: 8px; }
+    .success { color: #10b981; font-size: 12px; margin-top: 8px; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .stat-card {
+      background: var(--figma-color-bg-secondary, #f9fafb);
+      border: 1px solid var(--figma-color-border, #e5e5e5);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .stat-card .stat-value { font-size: 20px; font-weight: 700; color: #7c3aed; }
+    .stat-card .stat-label { font-size: 11px; color: var(--figma-color-text-secondary, #999); margin-top: 2px; }
+
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: var(--figma-color-bg-secondary, #e5e7eb);
+      border-radius: 2px;
+      overflow: hidden;
+      margin: 12px 0;
+    }
+    .progress-bar .fill {
+      height: 100%;
+      background: #7c3aed;
+      border-radius: 2px;
+      transition: width 0.3s;
+    }
+
+    .status-text { font-size: 12px; color: var(--figma-color-text-secondary, #666); text-align: center; }
+
+    .spacer { flex: 1; }
+
+    .color-preview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 8px;
+    }
+    .color-swatch {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+
+    .footer-link {
+      font-size: 11px;
+      color: var(--figma-color-text-secondary, #999);
+      text-align: center;
+      margin-top: 12px;
+    }
+    .footer-link a { color: #7c3aed; text-decoration: none; }
+    .footer-link a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div style="width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,#7c3aed,#ec4899);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:14px;">R</div>
+    <div>
+      <h1>Replay.build</h1>
+      <span>Design System Sync</span>
+    </div>
+  </div>
+
+  <!-- Screen 1: Connect -->
+  <div id="screen-connect" class="screen active">
+    <label for="api-key">API Key</label>
+    <input type="password" id="api-key" placeholder="rk_live_..." />
+    <p class="hint">Get your API key from <strong>replay.build/settings</strong> → API Keys</p>
+
+    <div style="margin-top:8px;">
+      <label for="api-url">Server URL</label>
+      <input type="text" id="api-url" value="https://www.replay.build" />
+      <p class="hint">Change to localhost:3000 for local dev</p>
+    </div>
+
+    <div class="spacer"></div>
+    <p id="connect-error" class="error" style="display:none;"></p>
+    <button class="btn btn-primary" id="btn-connect">Connect & Extract</button>
+    <div class="footer-link">Need an API key? <a href="https://www.replay.build/settings" target="_blank">Get one here</a></div>
+  </div>
+
+  <!-- Screen 2: Extracting -->
+  <div id="screen-extracting" class="screen">
+    <div style="text-align:center;padding:40px 0;">
+      <div style="font-size:32px;margin-bottom:12px;">🔍</div>
+      <p style="font-weight:600;font-size:14px;">Extracting Design System</p>
+      <p id="extract-status" class="status-text" style="margin-top:8px;">Starting...</p>
+      <div class="progress-bar"><div class="fill" id="progress-fill" style="width:10%"></div></div>
+    </div>
+  </div>
+
+  <!-- Screen 3: Preview -->
+  <div id="screen-preview" class="screen">
+    <p style="font-weight:600;font-size:14px;margin-bottom:4px;" id="file-name">Design System</p>
+    <p class="hint" style="margin-bottom:12px;">Review extracted tokens before syncing</p>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-colors">0</div>
+        <div class="stat-label">Colors</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-typography">0</div>
+        <div class="stat-label">Text Styles</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-shadows">0</div>
+        <div class="stat-label">Shadows</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-spacing">0</div>
+        <div class="stat-label">Spacing</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-radii">0</div>
+        <div class="stat-label">Border Radii</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-components">0</div>
+        <div class="stat-label">Components</div>
+      </div>
+    </div>
+
+    <div id="color-preview-container" style="margin-bottom:12px;">
+      <label>Color Preview</label>
+      <div class="color-preview" id="color-swatches"></div>
+    </div>
+
+    <label for="ds-name">Design System Name</label>
+    <input type="text" id="ds-name" placeholder="My Design System" />
+
+    <div class="spacer"></div>
+    <p id="preview-error" class="error" style="display:none;"></p>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button class="btn btn-secondary" id="btn-re-extract" style="flex:1;">Re-extract</button>
+      <button class="btn btn-primary" id="btn-send" style="flex:2;">Sync to Replay.build</button>
+    </div>
+  </div>
+
+  <!-- Screen 4: Sending -->
+  <div id="screen-sending" class="screen">
+    <div style="text-align:center;padding:40px 0;">
+      <div style="font-size:32px;margin-bottom:12px;">🚀</div>
+      <p style="font-weight:600;font-size:14px;">Syncing to Replay.build</p>
+      <p id="send-status" class="status-text" style="margin-top:8px;">Uploading tokens...</p>
+      <div class="progress-bar"><div class="fill" id="send-progress" style="width:50%"></div></div>
+    </div>
+  </div>
+
+  <!-- Screen 5: Success -->
+  <div id="screen-success" class="screen">
+    <div style="text-align:center;padding:30px 0;">
+      <div style="font-size:48px;margin-bottom:12px;">✅</div>
+      <p style="font-weight:700;font-size:16px;color:#10b981;">Synced Successfully!</p>
+      <p class="hint" style="margin-top:8px;" id="success-details">Your design system is ready in Replay.build</p>
+    </div>
+
+    <div class="stats-grid" id="success-stats"></div>
+
+    <div class="spacer"></div>
+    <button class="btn btn-primary" id="btn-open-replay" style="margin-bottom:8px;">Open Replay.build</button>
+    <button class="btn btn-secondary" id="btn-done">Done</button>
+  </div>
+
+  <!-- BUNDLE_PLACEHOLDER -->
+</body>
+</html>

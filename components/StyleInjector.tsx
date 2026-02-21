@@ -9,6 +9,7 @@ export interface ImportedDesignSystem {
   id: string;
   name: string;
   source_url?: string;
+  source_type?: 'video' | 'storybook' | 'manual' | 'figma' | null;
   tokenCount?: number;
   componentCount?: number;
 }
@@ -4517,8 +4518,15 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
                         >
                           <div className="flex items-center gap-2 p-1.5 cursor-pointer" onClick={() => { onChange(`DS_STYLE::${ds.id}::${ds.name}`); setIsOpen(false); }}>
                             {/* DS thumbnail - matches StylePreview size */}
-                            <div className="w-8 h-8 rounded-lg border border-white/10 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                              <span className="text-[9px] font-bold text-indigo-400">DS</span>
+                            <div className={cn(
+                              "w-8 h-8 rounded-lg border border-white/10 flex items-center justify-center flex-shrink-0 overflow-hidden",
+                              ds.source_type === "figma"
+                                ? "bg-gradient-to-br from-violet-500/20 to-pink-500/20"
+                                : "bg-gradient-to-br from-indigo-500/20 to-purple-500/20"
+                            )}>
+                              <span className={cn("text-[9px] font-bold", ds.source_type === "figma" ? "text-violet-400" : "text-indigo-400")}>
+                                {ds.source_type === "figma" ? "F" : "DS"}
+                              </span>
                             </div>
                             {/* Name and description - same as StyleItem */}
                             <div className="flex-1 min-w-0 text-left">
@@ -4526,6 +4534,11 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
                                 <span className={cn("text-xs font-medium text-left", selectedDSId === ds.id ? "text-[#FF6E3C]" : "text-white/80")}>
                                   {ds.name}
                                 </span>
+                                {ds.source_type && (
+                                  <span className={cn("text-[8px] px-1 py-0.5 rounded", ds.source_type === "figma" ? "bg-violet-500/20 text-violet-400" : "bg-blue-500/20 text-blue-400")}>
+                                    {ds.source_type === "figma" ? "figma" : ds.source_type === "storybook" ? "storybook" : ds.source_type}
+                                  </span>
+                                )}
                                 {selectedDSId === ds.id && (
                                   <span className="text-[8px] px-1 py-0.5 rounded bg-[#FF6E3C]/20 text-[#FF6E3C]">Active</span>
                                 )}
@@ -4571,7 +4584,7 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
                           <div className="w-7 h-7 rounded-md bg-white/[0.03] border border-white/10 flex items-center justify-center flex-shrink-0">
                             <span className="text-[10px] text-white/40">+</span>
                           </div>
-                          <span className="text-xs text-white/40">Import from Storybook...</span>
+                          <span className="text-xs text-white/40">Import Design System...</span>
                         </button>
                       )}
                     </div>
@@ -4590,7 +4603,7 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
                       <div className="w-7 h-7 rounded-md bg-white/[0.03] border border-white/10 flex items-center justify-center flex-shrink-0">
                         <span className="text-[10px] text-white/40">+</span>
                       </div>
-                      <span className="text-xs text-white/40">Import from Storybook...</span>
+                      <span className="text-xs text-white/40">Import Design System...</span>
                     </button>
                   </div>
                 )}
