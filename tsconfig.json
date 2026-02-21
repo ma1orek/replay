@@ -38,7 +38,8 @@
   "exclude": [
     "node_modules",
     "skills",
-    ".agents"
+    ".agents",
+    "mcp-server"
   ]
 }
 

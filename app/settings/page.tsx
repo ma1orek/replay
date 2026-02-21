@@ -28,6 +28,8 @@ import {
   ChevronRight,
   Menu,
   Trash2,
+  Key,
+  Copy,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/context";
 import { useCredits, PLAN_LIMITS, CREDIT_COSTS } from "@/lib/credits/context";
@@ -65,6 +67,8 @@ const SIDEBAR_ITEMS = [
   { id: "credits", label: "Credits", icon: CreditCard },
   { type: "section", label: "Projects" },
   { id: "projects", label: "Your Projects", icon: FolderOpen },
+  { type: "section", label: "Developer" },
+  { id: "api-keys", label: "API Keys", icon: Key },
 ];
 
 // Pricing tiers - 4 active Stripe prices (Feb 26)
@@ -139,7 +143,14 @@ function SettingsContent() {
   const [projectsError, setProjectsError] = useState<string | null>(null);
   const [projectSearch, setProjectSearch] = useState("");
   const [deletingProject, setDeletingProject] = useState<string | null>(null);
-  
+
+  // API Keys state
+  const [apiKeys, setApiKeys] = useState<any[]>([]);
+  const [isLoadingKeys, setIsLoadingKeys] = useState(false);
+  const [newKeyName, setNewKeyName] = useState("");
+  const [createdKey, setCreatedKey] = useState<string | null>(null);
+  const [isCreatingKey, setIsCreatingKey] = useState(false);
+
   const { user, signOut } = useAuth();
   const { wallet, membership, totalCredits, isLoading, refreshCredits } = useCredits();
   const { profile, updateProfile, uploadAvatar } = useProfile();
@@ -184,6 +195,52 @@ function SettingsContent() {
       fetchProjects();
     }
   }, [activeTab, user, fetchProjects]);
+
+  // Fetch API keys
+  const fetchApiKeys = useCallback(async () => {
+    if (!user) return;
+    setIsLoadingKeys(true);
+    try {
+      const res = await fetch("/api/v1/keys");
+      if (res.ok) {
+        const data = await res.json();
+        setApiKeys(data.keys || []);
+      }
+    } catch {
+    } finally {
+      setIsLoadingKeys(false);
+    }
+  }, [user]);
+
+  const handleCreateKey = async () => {
+    setIsCreatingKey(true);
+    try {
+      const res = await fetch("/api/v1/keys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newKeyName || "Default" }),
+      });
+      const data = await res.json();
+      if (res.ok && data.key) {
+        setCreatedKey(data.key);
+        setNewKeyName("");
+        fetchApiKeys();
+      }
+    } catch {
+    } finally {
+      setIsCreatingKey(false);
+    }
+  };
+
+  const handleRevokeKey = async (keyId: string) => {
+    if (!confirm("Revoke this API key? It will stop working immediately.")) return;
+    await fetch(`/api/v1/keys?id=${keyId}`, { method: "DELETE" });
+    fetchApiKeys();
+  };
+
+  useEffect(() => {
+    if (activeTab === "api-keys" && user) fetchApiKeys();
+  }, [activeTab, user, fetchApiKeys]);
   
   // Filter projects by search
   const filteredProjects = projects.filter(p => 
@@ -1115,6 +1172,135 @@ function SettingsContent() {
                   )}
                 </div>
               )}
+            </motion.div>
+          )}
+
+          {/* API Keys */}
+          {activeTab === "api-keys" && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+              <div>
+                <h1 className="text-2xl font-semibold text-zinc-100 mb-1">API Keys</h1>
+                <p className="text-sm text-zinc-500">
+                  Use API keys to access Replay from AI agents, scripts, or the MCP server.
+                </p>
+              </div>
+
+              {/* Created key banner */}
+              {createdKey && (
+                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4">
+                  <p className="text-emerald-400 text-sm font-medium mb-2">API key created! Copy it now — it won't be shown again.</p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 bg-black/40 rounded-lg px-3 py-2 text-xs text-zinc-200 font-mono truncate">{createdKey}</code>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(createdKey); }}
+                      className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+                      title="Copy"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setCreatedKey(null)}
+                      className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Create new key */}
+              <div className="bg-[#141414]/80 border border-zinc-800/50 rounded-xl p-4">
+                <div className="flex items-end gap-3">
+                  <div className="flex-1">
+                    <label className="text-xs text-zinc-500 mb-1 block">Key name (optional)</label>
+                    <input
+                      type="text"
+                      value={newKeyName}
+                      onChange={(e) => setNewKeyName(e.target.value)}
+                      placeholder="e.g. Claude Code, Cursor, CI/CD"
+                      className="w-full h-10 px-3 rounded-lg bg-black/40 border border-zinc-700 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+                    />
+                  </div>
+                  <button
+                    onClick={handleCreateKey}
+                    disabled={isCreatingKey}
+                    className="h-10 px-4 rounded-lg bg-white hover:bg-zinc-200 text-black text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {isCreatingKey ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    Create key
+                  </button>
+                </div>
+              </div>
+
+              {/* Keys list */}
+              {isLoadingKeys ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="w-5 h-5 animate-spin text-zinc-500" />
+                </div>
+              ) : apiKeys.length > 0 ? (
+                <div className="space-y-2">
+                  {apiKeys.map((k) => (
+                    <div key={k.id} className="bg-[#141414]/80 border border-zinc-800/50 rounded-xl p-4 flex items-center gap-4">
+                      <Key className="w-5 h-5 text-zinc-500 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-zinc-200 font-medium">{k.name}</p>
+                        <p className="text-xs text-zinc-500 font-mono">{k.key_prefix}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-xs text-zinc-500">
+                          {k.last_used_at ? `Used ${new Date(k.last_used_at).toLocaleDateString()}` : "Never used"}
+                        </p>
+                        <p className="text-xs text-zinc-600">
+                          Created {new Date(k.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      {k.is_active ? (
+                        <button
+                          onClick={() => handleRevokeKey(k.id)}
+                          className="p-2 rounded-lg hover:bg-red-500/10 text-zinc-500 hover:text-red-400 transition-colors"
+                          title="Revoke"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        <span className="text-xs text-red-400/60 px-2">Revoked</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-[#141414]/80 border border-zinc-800/50 rounded-2xl p-12 text-center">
+                  <Key className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
+                  <p className="text-zinc-400 mb-2">No API keys yet</p>
+                  <p className="text-zinc-500 text-sm">Create a key to use Replay from AI agents or scripts.</p>
+                </div>
+              )}
+
+              {/* Quick start guide */}
+              <div className="bg-[#141414]/80 border border-zinc-800/50 rounded-xl p-5">
+                <h3 className="text-sm font-medium text-zinc-200 mb-3">Quick start</h3>
+                <div className="space-y-3 text-xs text-zinc-400">
+                  <div>
+                    <p className="text-zinc-500 mb-1">REST API — Generate code from video:</p>
+                    <code className="block bg-black/40 rounded-lg p-2.5 text-zinc-300 font-mono whitespace-pre-wrap">{`curl -X POST https://replay.build/api/v1/generate \\
+  -H "Authorization: Bearer YOUR_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"video_url": "https://..."}'`}</code>
+                  </div>
+                  <div>
+                    <p className="text-zinc-500 mb-1">MCP Server — Add to Claude Code / Cursor:</p>
+                    <code className="block bg-black/40 rounded-lg p-2.5 text-zinc-300 font-mono whitespace-pre-wrap">{`npx @replay-build/mcp-server`}</code>
+                  </div>
+                  <div>
+                    <p className="text-zinc-500 mb-1">Endpoints:</p>
+                    <ul className="list-disc list-inside space-y-1 text-zinc-400">
+                      <li><span className="text-zinc-300">POST /api/v1/generate</span> — Video → React code (150 credits)</li>
+                      <li><span className="text-zinc-300">POST /api/v1/scan</span> — Video → UI structure JSON (50 credits)</li>
+                      <li><span className="text-zinc-300">POST /api/v1/validate</span> — Code + DS → validation (5 credits)</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </motion.div>
           )}
         </div>

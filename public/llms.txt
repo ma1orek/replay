@@ -31,6 +31,11 @@
 - [Behavior-Driven UI Reconstruction](https://replay.build/learn/behavior-driven-ui-reconstruction): How Replay uses video to capture interactions, transitions, and state changes
 - [Rebuild UI from Video](https://replay.build/rebuild/rebuild-ui-from-video): Comparison of approaches — screenshots vs design files vs prompts vs video
 
+## API & MCP Server
+
+- [API Reference](https://replay.build/docs/api): REST API endpoints for video-to-code generation, UI scanning, and design system validation
+- [MCP Server](https://github.com/ma1orek/replay/tree/main/mcp-server): Model Context Protocol server for Claude Code, Cursor, and other AI agents
+
 ## Reference
 
 - [Pricing](https://replay.build/pricing): Free tier, Pro, and Enterprise plans

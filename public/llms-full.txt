@@ -84,6 +84,25 @@ One-click publish to a live URL at `replay.build/p/your-slug`. Includes:
 - Alpine.js initialization for interactive elements
 - Full responsive behavior
 
+## REST API & MCP Server
+
+Replay is available as a REST API and MCP server for AI agents (Claude Code, Cursor, Windsurf, Devin, etc.).
+
+### API Endpoints
+- `POST /api/v1/generate` — Video URL → React + Tailwind code (150 credits)
+- `POST /api/v1/scan` — Video URL → Structured UI data: pages, colors, navigation (50 credits)
+- `POST /api/v1/validate` — Code + Design System → Validation errors (5 credits)
+
+Authentication: `Authorization: Bearer rk_live_...` (API key from Settings).
+
+### MCP Server
+Install as MCP tool for AI agents:
+```json
+{ "mcpServers": { "replay": { "command": "npx", "args": ["@replay-build/mcp-server"], "env": { "REPLAY_API_KEY": "rk_live_..." } } } }
+```
+
+Tools: `replay_generate`, `replay_scan`, `replay_validate`.
+
 ## Technology Stack
 
 - **Frontend**: Next.js 14 (App Router), React, Tailwind CSS

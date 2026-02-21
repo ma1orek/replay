@@ -300,10 +300,50 @@ replay/
 - [x] 40+ style presets (including Rive interactive)
 - [x] React Bits component library (130+ components)
 - [x] Enterprise Library taxonomy (5-layer)
+- [x] REST API v1 (generate, scan, validate endpoints)
+- [x] MCP Server for AI agents (Claude Code, Cursor, etc.)
+- [x] LLM discoverability (llms.txt, AI-native metadata)
 - [ ] Figma plugin export
 - [ ] Team collaboration
-- [ ] API access
 - [ ] Component marketplace
+
+---
+
+## 🔌 API & MCP Server
+
+Replay is available as a REST API and MCP server for AI agents.
+
+### REST API
+
+```bash
+# Generate React code from video
+curl -X POST https://replay.build/api/v1/generate \
+  -H "Authorization: Bearer rk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{"video_url": "https://example.com/recording.mp4"}'
+```
+
+| Endpoint | Description | Credits |
+|----------|-------------|---------|
+| `POST /api/v1/generate` | Video → React + Tailwind code | 150 |
+| `POST /api/v1/scan` | Video → UI structure JSON | 50 |
+| `POST /api/v1/validate` | Code + Design System → errors | 5 |
+
+### MCP Server (Claude Code, Cursor, etc.)
+
+```json
+{
+  "mcpServers": {
+    "replay": {
+      "command": "npx",
+      "args": ["@replay-build/mcp-server"],
+      "env": { "REPLAY_API_KEY": "rk_live_..." }
+    }
+  }
+}
+```
+
+Get your API key at [replay.build/settings?tab=api-keys](https://replay.build/settings?tab=api-keys).
 
 ---
 
@@ -317,6 +357,7 @@ Full documentation at **[replay.build/docs](https://replay.build/docs)**
 - [Flow Map](https://replay.build/docs/features/flow-map)
 - [AI Editing](https://replay.build/docs/features/edit-with-ai)
 - [Publishing](https://replay.build/docs/features/publish)
+- [API Reference](https://replay.build/docs/api)
 
 ---
 

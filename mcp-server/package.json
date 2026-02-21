@@ -1,0 +1,27 @@
+{
+  "name": "@replay-build/mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for Replay.build — generate React UI from video recordings via AI agents",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "replay-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "keywords": ["mcp", "replay", "video-to-code", "ai", "react", "ui-generation"],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -54,6 +54,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "docs/guides/database-integration",
     "docs/integrations/supabase",
     "docs/integrations/project-settings",
+    "docs/api",
   ];
   const docsPages: MetadataRoute.Sitemap = docsPaths.map((path) => ({
     url: `https://replay.build/${path}`,
