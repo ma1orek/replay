@@ -596,6 +596,8 @@ RULES:
   - NEVER use text-8xl or text-9xl as fixed size — always use clamp() or responsive Tailwind (text-4xl md:text-6xl lg:text-7xl)
   - Add overflow-wrap:break-word on all text containers
   - Verify ALL text is fully visible — if a headline is too long, it must wrap naturally at WORD boundaries, never mid-word
+  - NEVER use text-outline / -webkit-text-stroke with opacity below 60 — stroked text is much harder to read!
+  - Hero container MUST have overflow-hidden + max-w-full to prevent text escaping viewport on mobile
 
 VARY layouts between sections — cycle through:
 1. Full-viewport cinematic hero (min-h-screen, font-size:clamp(2.5rem,6vw,5rem))

@@ -334,6 +334,8 @@ FORBIDDEN:
 - NEVER add React imports: no "import React", no "'use client'", no "import { useState }"
 - The output is a STATIC HTML PAGE served in an iframe — it is NOT a React/Next.js component!
 - If the input uses "class=", your output MUST also use "class=" — NEVER convert to className!
+- NEVER abbreviate or shorten Tailwind class names! Write COMPLETE names: "flex-col" NOT "fle", "max-w-[1400px]" NOT "ma[1400px]", "mx-auto" NOT "m", "flex-none" NOT "fle"
+- NEVER remove Alpine.js directives: x-data, x-show, x-collapse, x-transition, @click MUST stay!
 
 \`\`\`html
 <!DOCTYPE html>
@@ -808,7 +810,16 @@ CRITICAL RULES:
                 }
                 const srSizeDrop = extractedCode.length / currentCode.length;
 
-                if (srSizeDrop < 0.4 && currentCode.length > 5000) {
+                // TRUNCATION DETECTION: Check for abbreviated Tailwind classes
+                const srTruncated = /\bclass="[^"]*\b(fle|ma\[|m"|flexcol|fle-col)\b/;
+                if (srTruncated.test(extractedCode) && !srTruncated.test(currentCode)) {
+                  console.error('[Stream Edit] S/R fallback REJECTED: truncated class names detected');
+                  send("complete", {
+                    code: `The AI corrupted the page by abbreviating CSS class names. Your original code has been preserved.\n\nPlease try your edit again.`,
+                    isChat: true,
+                    needsClarification: true
+                  });
+                } else if (srSizeDrop < 0.4 && currentCode.length > 5000) {
                   console.error(`[Stream Edit] S/R fallback REJECTED: code destroyed ${currentCode.length} → ${extractedCode.length}`);
                   send("complete", {
                     code: `The AI tried to rewrite the entire page instead of making the small change you requested. Your original code has been preserved.\n\nTry being more specific with your edit request.`,
@@ -1426,6 +1437,8 @@ INSTRUCTIONS:
 7. Preserve all navigation, scripts, and sections
 8. Output PURE HTML only — NEVER use className (use class), NEVER use style={{}} (use style=""), NEVER wrap in React/JSX components
 9. The input is PLAIN HTML (class=, style="..."). Match the EXACT format. NEVER convert class to className.
+10. NEVER abbreviate Tailwind class names! Write COMPLETE names: "flex-col" NOT "fle", "max-w-[1400px]" NOT "ma[1400px]", "mx-auto" NOT "m"
+11. NEVER remove Alpine.js directives (x-data, x-show, x-collapse, @click) — they control page interactivity!
 
 Example:
 Changed button color to blue
@@ -1557,6 +1570,18 @@ async function runFullHtmlEdit(
           extractedCode = extractedCode.replace(/\bclassName=/g, 'class=');
           scripts.forEach((s, i) => { extractedCode = extractedCode!.replace(`__FORCE_SCRIPT_${i}__`, s); });
         }
+      }
+
+      // TRUNCATION DETECTION: Check for common abbreviated Tailwind class names
+      const truncatedPatterns = /\bclass="[^"]*\b(fle|ma\[|m"|flexcol|fle-col)\b/;
+      if (truncatedPatterns.test(extractedCode) && !truncatedPatterns.test(currentCode)) {
+        console.error('[Stream Edit] TRUNCATED CLASS NAMES detected — AI abbreviated Tailwind classes. Preserving original.');
+        send("complete", {
+          code: `The AI corrupted the page by abbreviating CSS class names. Your original code has been preserved.\n\nPlease try your edit again.`,
+          isChat: true,
+          needsClarification: true
+        });
+        return;
       }
     }
 

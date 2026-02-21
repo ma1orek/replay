@@ -1202,6 +1202,9 @@ EVERY text element MUST be clearly visible against its background:
 - Buttons → ensure button text contrasts with button background (not the page background)
 - ❌ NEVER place light text on light background or dark text on dark background
 - ❌ NEVER use text-white/30 or text-black/20 for readable content — too invisible!
+- ❌ NEVER use text-outline / -webkit-text-stroke with opacity below 60 — stroked text is MUCH harder to read than solid text!
+- Hero headlines: MUST have overflow-hidden on container + max-w-full to prevent text escaping viewport
+- Hero headlines on mobile: MUST shrink via clamp() or responsive classes (text-3xl md:text-5xl lg:text-7xl) — NEVER a fixed huge size
 
 ═══════════════════════════════════════════════════════════════════════════════
 📱 RESPONSIVE & MOBILE
