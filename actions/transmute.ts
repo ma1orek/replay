@@ -1466,6 +1466,58 @@ function fixBrokenHtmlTags(code: string): string {
   return fixed;
 }
 
+// Fix multiline JSX pattern: child tag placed inside parent opening tag
+// Pattern:
+//   <button onClick={() => ...}
+//       <span className="..."        ← child tag misplaced as attribute
+//   >                                ← orphaned closing >
+// Fix:
+//   <button onClick={() => ...}>
+//       <span className="...">
+function fixJsxChildInsideOpeningTag(code: string): string {
+  if (!code) return code;
+  const lines = code.split('\n');
+  const result: string[] = [];
+  let fixCount = 0;
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    const trimmed = line.trimStart();
+
+    // Detect: current line starts a new JSX element (<Tag attrs...) without closing >
+    // AND the very next line is a standalone `>`
+    if (
+      i + 1 < lines.length &&
+      trimmed.match(/^<[A-Za-z][a-zA-Z0-9]* /) &&
+      !trimmed.endsWith('>') &&
+      !trimmed.endsWith('/>') &&
+      !trimmed.includes('</') &&
+      lines[i + 1].trim() === '>'
+    ) {
+      const childIndent = line.match(/^(\s*)/)?.[1] ?? '';
+      const parentIndent = childIndent.length >= 4
+        ? childIndent.slice(0, childIndent.length - 4)
+        : childIndent;
+
+      // Close the parent tag, then open child tag properly on its own line
+      result.push(parentIndent + '>');
+      result.push(line + '>');
+      i += 2; // consume current line + orphaned `>` line
+      fixCount++;
+      continue;
+    }
+
+    result.push(line);
+    i++;
+  }
+
+  if (fixCount > 0) {
+    console.log(`[fixJsxChildInsideOpeningTag] Fixed ${fixCount} multiline child-inside-opening-tag patterns`);
+  }
+  return result.join('\n');
+}
+
 // Fix malformed double-tag patterns like <div <span className="..."> → <div className="...">
 // Also handles attributes before duplicate: <span key={i} <span className="..."> → <span key={i} className="...">
 function fixMalformedDoubleTags(code: string): string {
@@ -2103,6 +2155,7 @@ Generate the complete HTML file now:`;
     code = fixBrokenImageUrls(code);
     code = fixChartReference(code);
     code = fixBrokenHtmlTags(code);
+    code = fixJsxChildInsideOpeningTag(code);
     code = fixMalformedDoubleTags(code);
     
     // Get token usage
