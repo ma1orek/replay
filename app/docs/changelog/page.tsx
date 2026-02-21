@@ -3,6 +3,27 @@ import { Clock, Sparkles, Bug, ArrowUp, Bell } from "lucide-react";
 
 const changelog = [
   {
+    date: "February 22, 2026",
+    version: "2.7.0",
+    changes: [
+      {
+        type: "feature",
+        title: "Figma Plugin — Design System Sync",
+        description: "Official Figma plugin published to Figma Community. Extract colors, typography, spacing, shadows, border radius, and components directly from any Figma file and sync to Replay.build as a Design System. Supports paint styles, Figma variables, and canvas fill scanning for external/published libraries."
+      },
+      {
+        type: "feature",
+        title: "Design System Preview Modal",
+        description: "New Eye icon on each imported Design System in the style dropdown. Click to preview all DS tokens — color swatches, typography samples, spacing scale, border radius, shadows, and component list — before selecting. Includes 'Use this Design System' action button."
+      },
+      {
+        type: "fix",
+        title: "Meta Tags & SEO",
+        description: "Reverted page title from 'Better than Lovable, Bolt, v0' back to professional 'Modernize Legacy Systems. From Video to Full React Codebase.' Removed competitor name-dropping from keywords."
+      },
+    ]
+  },
+  {
     date: "February 21, 2026",
     version: "2.6.0",
     changes: [

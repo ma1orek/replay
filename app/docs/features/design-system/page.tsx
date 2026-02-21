@@ -121,16 +121,40 @@ export default function DesignSystemPage() {
       <div className="space-y-4">
         <h2 className="text-2xl font-semibold text-white">Import Design System</h2>
         <p className="text-zinc-400 leading-relaxed">
-          You can import an external Design System from any Storybook URL. Replay extracts tokens
-          (colors, typography, spacing, border radius) and applies them consistently across all
-          generated code.
+          Import your existing Design System from <strong className="text-white">Figma</strong>, <strong className="text-white">Storybook</strong>, or manually.
+          Replay extracts tokens (colors, typography, spacing, border radius) and applies them
+          consistently across all generated code.
         </p>
+
+        <h3 className="text-lg font-medium text-white mt-6">Figma Plugin</h3>
+        <p className="text-zinc-400 leading-relaxed">
+          Install the <strong className="text-white">Replay.build — Design System Sync</strong> plugin
+          from the Figma Community. Open any Figma file with your design system, enter your API key,
+          and click Extract. The plugin scans all pages for:
+        </p>
+        <ul className="list-disc list-inside text-zinc-400 space-y-1 text-sm ml-2">
+          <li>Paint styles and color variables (including alias resolution)</li>
+          <li>Text styles with font family, size, weight, and line height</li>
+          <li>Effect styles (drop shadows, layer blur)</li>
+          <li>Spacing and border radius variables</li>
+          <li>Component sets with variants and properties</li>
+        </ul>
+
+        <h3 className="text-lg font-medium text-white mt-6">Preview Tokens</h3>
+        <p className="text-zinc-400 leading-relaxed">
+          Click the <strong className="text-white">Eye icon</strong> next to any imported Design System
+          in the style dropdown to preview its tokens before selecting. The preview modal shows color
+          swatches, typography samples, spacing scale, border radius, shadows, and component list.
+        </p>
+
+        <h3 className="text-lg font-medium text-white mt-6">How DS Overrides Work</h3>
         <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-700 font-mono text-sm">
-          <p className="text-emerald-400">// When DS is imported:</p>
+          <p className="text-emerald-400">// When DS is selected:</p>
           <p className="text-zinc-400 mt-2">DS colors override video-detected colors</p>
           <p className="text-zinc-400">DS typography replaces default Inter font</p>
           <p className="text-zinc-400">DS spacing tokens used for all layout</p>
-          <p className="text-zinc-500 mt-2">→ Consistent branding across header, content, sidebar, and footer</p>
+          <p className="text-zinc-500 mt-2">→ Layout and content come from video, styling from your DS</p>
+          <p className="text-zinc-500">→ Works with both Reconstruct and Reimagine modes</p>
         </div>
       </div>
 
