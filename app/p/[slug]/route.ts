@@ -290,16 +290,19 @@ export async function GET(
   const seoTitle = typedProject.title.replace(/</g, "&lt;").replace(/>/g, "&gt;");
   
   // Visibility fix CSS - forces all elements visible (AI generates opacity:0 for GSAP animations)
+  // IMPORTANT: Must NOT force opacity on grain/noise canvas overlays (intentional semi-transparent effects)
   const visibilityFixCss = `
 <style id="visibility-fix">
-  /* AGGRESSIVE VISIBILITY FIX - Force ALL elements visible */
-  /* This overrides GSAP ScrollTrigger initial states */
-  
-  /* Target any element with inline opacity */
-  [style*="opacity: 0"], [style*="opacity:0"], [style*="opacity: 0."] { opacity: 1 !important; }
+  /* VISIBILITY FIX - Force animation-hidden elements visible */
+  /* Excludes: canvas overlays, grain/noise effects, script/style tags */
+
+  /* Target exact opacity:0 (with semicolon to avoid matching 0.04, 0.5, etc.) */
+  [style*="opacity: 0;"]:not(canvas), [style*="opacity:0;"]:not(canvas) { opacity: 1 !important; }
+  /* Also match opacity:0 at end of style attribute (no trailing semicolon) */
+  [style$="opacity: 0"]:not(canvas), [style$="opacity:0"]:not(canvas) { opacity: 1 !important; }
   [style*="visibility: hidden"], [style*="visibility:hidden"] { visibility: visible !important; }
-  [style*="translate"] { opacity: 1 !important; }
-  
+  [style*="translate"]:not(canvas) { opacity: 1 !important; }
+
   /* Target animation classes - only fix opacity/visibility, NOT transform (breaks layout) */
   .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .slide-left, .slide-right,
   .scale-up, .rotate-in, .blur-fade, .animate-fade,
@@ -308,38 +311,38 @@ export async function GET(
     opacity: 1 !important;
     visibility: visible !important;
   }
-  
+
   /* Target stagger containers and their children */
-  .stagger-cards, .stagger-cards > *,
-  [class*="stagger"] > * {
+  .stagger-cards, .stagger-cards > *:not(canvas),
+  [class*="stagger"] > *:not(canvas) {
     opacity: 1 !important;
     visibility: visible !important;
   }
-  
+
   /* Target data attributes used by animation libs */
   [data-state="hidden"], [data-visible="false"], [data-aos],
   [data-scroll], [data-gsap], [data-animate] {
     opacity: 1 !important;
     visibility: visible !important;
   }
-  
-  /* Ensure ALL grid/flex children are visible */
-  .grid > *, .flex > *,
-  [class*="grid"] > *, [class*="flex"] > *,
-  section > div, section > * {
+
+  /* Ensure grid/flex children are visible (excluding overlays) */
+  .grid > *:not(canvas), .flex > *:not(canvas),
+  [class*="grid"] > *:not(canvas), [class*="flex"] > *:not(canvas),
+  section > div:not(canvas), section > *:not(canvas):not(script):not(style):not(link) {
     opacity: 1 !important;
     visibility: visible !important;
   }
-  
+
   /* Target common card containers */
-  [class*="card"], [class*="Card"],
+  [class*="card"]:not(canvas), [class*="Card"]:not(canvas),
   [class*="step"], [class*="Step"],
   [class*="feature"], [class*="Feature"],
-  [class*="item"], [class*="Item"] {
+  [class*="item"]:not(canvas), [class*="Item"]:not(canvas) {
     opacity: 1 !important;
     visibility: visible !important;
   }
-  
+
   /* Fix transform-based hiding - only for elements hidden off-screen */
   [style*="translateY(-100"], [style*="translateX(-100"],
   [style*="translateY(100%"], [style*="translateX(100%"],
@@ -606,18 +609,19 @@ export async function GET(
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { min-height: 100vh; font-family: 'Inter', sans-serif; }
-    /* AGGRESSIVE VISIBILITY FIX */
-    [style*="opacity: 0"], [style*="opacity:0"] { opacity: 1 !important; }
+    /* VISIBILITY FIX - excludes canvas/grain/noise overlays */
+    [style*="opacity: 0;"]:not(canvas), [style*="opacity:0;"]:not(canvas) { opacity: 1 !important; }
+    [style$="opacity: 0"]:not(canvas), [style$="opacity:0"]:not(canvas) { opacity: 1 !important; }
     [style*="visibility: hidden"] { visibility: visible !important; }
     .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .slide-left, .slide-right,
     .scale-up, .rotate-in, .blur-fade, .animate-fade,
     [class*="fade-"], [class*="slide-"], [class*="stagger-"], [class*="animate-"],
-    [class*="card"], [class*="Card"], [class*="step"], [class*="Step"] {
+    [class*="card"]:not(canvas), [class*="Card"]:not(canvas), [class*="step"], [class*="Step"] {
       opacity: 1 !important;
       visibility: visible !important;
     }
-    .stagger-cards > *, [class*="stagger"] > * { opacity: 1 !important; visibility: visible !important; }
-    .grid > *, .flex > *, section > div, section > * { opacity: 1 !important; visibility: visible !important; }
+    .stagger-cards > *:not(canvas), [class*="stagger"] > *:not(canvas) { opacity: 1 !important; visibility: visible !important; }
+    .grid > *:not(canvas), .flex > *:not(canvas), section > div:not(canvas), section > *:not(canvas):not(script):not(style) { opacity: 1 !important; visibility: visible !important; }
   </style>
   ${customStyles}
 </head>

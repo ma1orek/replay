@@ -4491,9 +4491,11 @@ function ReplayToolContent() {
     const invisibleFixStyles = `
 <style id="invisible-fix">
   /* Force all elements visible - fix AI generated fade/slide animations */
-  [style*="opacity: 0"], [style*="opacity:0"] { opacity: 1 !important; }
+  /* Excludes canvas/grain/noise overlays (intentional semi-transparent effects) */
+  [style*="opacity: 0;"]:not(canvas), [style*="opacity:0;"]:not(canvas) { opacity: 1 !important; }
+  [style$="opacity: 0"]:not(canvas), [style$="opacity:0"]:not(canvas) { opacity: 1 !important; }
   [style*="visibility: hidden"], [style*="visibility:hidden"] { visibility: visible !important; }
-  [style*="translate"] { opacity: 1 !important; }
+  [style*="translate"]:not(canvas) { opacity: 1 !important; }
   .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .animate-fade,
   [class*="fade-"], [class*="slide-"], [class*="stagger-"], [class*="animate-"] {
     opacity: 1 !important;
@@ -4510,8 +4512,8 @@ function ReplayToolContent() {
   i[data-lucide]:has(svg) { opacity: 1 !important; }
   /* Fix sections with no content showing */
   section:empty { min-height: 0 !important; }
-  /* Ensure grid/flex children are visible */
-  .grid > *, .flex > * { opacity: 1 !important; visibility: visible !important; }
+  /* Ensure grid/flex children are visible (excluding overlays) */
+  .grid > *:not(canvas), .flex > *:not(canvas) { opacity: 1 !important; visibility: visible !important; }
 </style>
 <script>
 // Force all elements visible after load
@@ -4520,8 +4522,8 @@ function forceVisible() {
     var style = window.getComputedStyle(el);
     var inlineStyle = el.getAttribute('style') || '';
     
-    // Fix opacity:0
-    if (style.opacity === '0' || inlineStyle.includes('opacity:0') || inlineStyle.includes('opacity: 0')) {
+    // Fix opacity:0 (skip canvas - grain/noise overlays have intentional low opacity)
+    if (el.tagName !== 'CANVAS' && (style.opacity === '0' || inlineStyle.includes('opacity:0;') || inlineStyle.includes('opacity: 0;'))) {
       el.style.opacity = '1';
     }
     
