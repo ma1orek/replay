@@ -585,7 +585,10 @@ RULES:
 - position:absolute ONLY for decorative overlays (floating orbs, grain, aurora)
 - Every section needs proper padding (py-24 to py-32)
 - Cards: use grid with gap-6 to gap-8, responsive columns (grid-cols-1 md:grid-cols-2 lg:grid-cols-3)
-- All text readable: ensure contrast, use text-shadow on image backgrounds
+- All text readable: ensure contrast against background. Light bg → dark text, dark bg → white text
+- On gradient/image backgrounds: add text-shadow (0 1px 3px rgba(0,0,0,0.5)) OR overlay behind text
+- Nav items on gradient hero: MUST have text-shadow or bg backdrop for readability
+- ❌ NEVER place white text on light background or dark text on dark background — INVISIBLE!
 - Test: every section must look clean and aligned at 1200px width
 - NO broken overlapping elements, NO elements going off-screen
 - 🚨 TEXT VISIBILITY: NO text may be cut off or overflow its container!
@@ -2144,18 +2147,22 @@ If the video shows a dashboard, admin panel, SaaS app, or ANY interface with sid
 ✅ SINGLE <main> element — content renders once, works on ALL screen sizes!
 
 MANDATORY STRUCTURE (match the VIDEO's theme for colors!):
-<!-- Desktop: sidebar + main. Mobile: sidebar becomes horizontal top bar -->
-<div class="min-h-screen">
-  <!-- MOBILE TOP BAR (sidebar items become horizontal scrollable tabs) -->
-  <nav class="lg:hidden overflow-x-auto border-b sticky top-0 z-30" style="background:var(--sidebar-bg,#1f2937);border-color:var(--border,#374151);">
-    <div class="flex items-center gap-1 px-3 py-2 min-w-max">
-      <span class="font-bold text-sm mr-3 text-white">App Name</span>
-      <a class="px-3 py-1.5 text-xs font-medium rounded-full bg-white/10 text-white whitespace-nowrap">Dashboard</a>
-      <a class="px-3 py-1.5 text-xs font-medium rounded-full text-gray-300 hover:bg-white/5 whitespace-nowrap">Orders</a>
-      <a class="px-3 py-1.5 text-xs font-medium rounded-full text-gray-300 hover:bg-white/5 whitespace-nowrap">Products</a>
-      <!-- top 5-7 items from sidebar, rest behind ⋯ More dropdown -->
-    </div>
-  </nav>
+<!-- Desktop: sidebar + main. Mobile: hamburger + slide-out drawer -->
+<div x-data="{ sidebarOpen: false }" class="min-h-screen">
+  <!-- MOBILE TOP BAR with hamburger (shown < lg) -->
+  <div class="lg:hidden flex items-center justify-between p-4 border-b" style="background:var(--sidebar-bg,#1f2937);border-color:var(--border,#374151);">
+    <span class="font-bold text-white">App Name</span>
+    <button @click="sidebarOpen = !sidebarOpen" class="text-white p-1">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+  </div>
+  <!-- MOBILE SLIDE-OUT DRAWER (overlay) -->
+  <div x-show="sidebarOpen" x-transition class="lg:hidden fixed inset-0 z-40">
+    <div class="absolute inset-0 bg-black/50" @click="sidebarOpen=false"></div>
+    <aside class="relative z-50 w-64 h-full overflow-y-auto p-4" style="background:var(--sidebar-bg,#1f2937);">
+      <!-- SAME nav items as desktop sidebar -->
+    </aside>
+  </div>
   <!-- FLEX LAYOUT: desktop sidebar + main content -->
   <div class="flex min-h-screen">
     <!-- DESKTOP SIDEBAR (hidden on mobile, visible on lg+) -->
@@ -2172,17 +2179,16 @@ MANDATORY STRUCTURE (match the VIDEO's theme for colors!):
 
 🚨 CRITICAL: Only ONE <main> element! Do NOT create separate desktop/mobile main areas!
 The <main> content is written ONCE and works on all screen sizes automatically.
-On mobile: sidebar is hidden (hidden lg:flex), nav items shown as horizontal scrollable top bar.
+On mobile: sidebar hidden (hidden lg:flex), hamburger opens slide-out drawer with full navigation.
 
-📱 MOBILE SIDEBAR → TOP BAR RULES:
+📱 MOBILE SIDEBAR RULES:
 - Desktop sidebar: class="hidden lg:flex" — invisible on mobile, visible on desktop
-- Mobile: sidebar items become HORIZONTAL SCROLLABLE TABS in a top bar (class="lg:hidden")
-- Top bar matches sidebar's background color (dark sidebar = dark top bar)
-- Show top 5-7 nav items as pill tabs, active item highlighted
+- Mobile: hamburger top bar (class="lg:hidden") + slide-out drawer with SAME nav items
+- Drawer matches sidebar's background color (dark sidebar = dark drawer)
+- Drawer has backdrop overlay (bg-black/50) and closes on backdrop click
 - Tables on mobile: wrap in overflow-x:auto for horizontal scrolling
 - ❌ NEVER show a vertical sidebar on mobile — it covers the entire screen!
 - ❌ NEVER create TWO separate main content areas (one for desktop, one for mobile)
-- ❌ NEVER just use a hamburger menu that hides ALL navigation behind a tap
 
 📊 CHART OVERFLOW RULES (MANDATORY for dashboards!):
 - ALL chart containers MUST have overflow:hidden and a FIXED height — NEVER let charts grow unbounded!

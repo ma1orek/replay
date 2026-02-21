@@ -1190,6 +1190,20 @@ Implementation with Alpine.js:
 5. Do NOT omit or summarize any section (hero, partners, FAQ, newsletter, footer — all must appear with full text)
 
 ═══════════════════════════════════════════════════════════════════════════════
+👁️ TEXT VISIBILITY & CONTRAST (CRITICAL!)
+═══════════════════════════════════════════════════════════════════════════════
+
+EVERY text element MUST be clearly visible against its background:
+- Light backgrounds → dark text (text-gray-900, text-slate-800)
+- Dark backgrounds → light text (text-white, text-gray-100)
+- Gradient/image backgrounds → add text-shadow OR a dark/light overlay behind text
+- Nav items on gradient hero → use text-shadow: 0 1px 3px rgba(0,0,0,0.5) for readability
+- Subtle text (labels, captions) → minimum opacity-60, NEVER below opacity-40
+- Buttons → ensure button text contrasts with button background (not the page background)
+- ❌ NEVER place light text on light background or dark text on dark background
+- ❌ NEVER use text-white/30 or text-black/20 for readable content — too invisible!
+
+═══════════════════════════════════════════════════════════════════════════════
 📱 RESPONSIVE & MOBILE
 ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1199,22 +1213,38 @@ Implementation with Alpine.js:
 - Responsive text: text-3xl md:text-5xl lg:text-7xl
 - NO horizontal scrollbar
 
-🚨 SIDEBAR → MOBILE TOP BAR (CRITICAL!):
+🚨 SIDEBAR RESPONSIVENESS (CRITICAL!):
 If the design has a sidebar/left panel (dashboards, admin panels, SaaS apps):
 - Desktop: flex layout with <aside class="hidden lg:flex lg:w-[250px] lg:flex-col"> + <main class="flex-1">
-- Mobile: sidebar DISAPPEARS, becomes a HORIZONTAL TOP BAR with key nav items as scrollable tabs
+- Mobile: sidebar HIDDEN, replaced by hamburger top bar + slide-out drawer overlay
 - Only ONE <main> element! Content written ONCE for all screen sizes!
 
-Mobile top bar pattern:
-<nav class="lg:hidden overflow-x-auto border-b bg-white dark:bg-gray-900 sticky top-0 z-30">
-  <div class="flex items-center gap-1 px-3 py-2 min-w-max">
-    <span class="font-bold text-sm mr-3">AppName</span>
-    <a class="px-3 py-1.5 text-xs font-medium rounded-full bg-indigo-100 text-indigo-700 whitespace-nowrap">Dashboard</a>
-    <a class="px-3 py-1.5 text-xs font-medium rounded-full hover:bg-gray-100 whitespace-nowrap">Orders</a>
-    <a class="px-3 py-1.5 text-xs font-medium rounded-full hover:bg-gray-100 whitespace-nowrap">Products</a>
-    <!-- show top 5-7 items, rest behind a ⋯ More dropdown -->
+Mobile hamburger + slide-out drawer pattern (Alpine.js):
+<div x-data="{ sidebarOpen: false }" class="min-h-screen">
+  <!-- Mobile top bar with hamburger -->
+  <div class="lg:hidden flex items-center justify-between p-4 border-b" style="background:var(--sidebar-bg,#1f2937);">
+    <span class="font-bold text-white">App Name</span>
+    <button @click="sidebarOpen = !sidebarOpen" class="text-white">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
   </div>
-</nav>
+  <!-- Mobile slide-out drawer (overlay) -->
+  <div x-show="sidebarOpen" x-transition class="lg:hidden fixed inset-0 z-40">
+    <div class="absolute inset-0 bg-black/50" @click="sidebarOpen=false"></div>
+    <aside class="relative z-50 w-64 h-full overflow-y-auto p-4" style="background:var(--sidebar-bg,#1f2937);">
+      <!-- SAME nav items as desktop sidebar -->
+    </aside>
+  </div>
+  <!-- Desktop layout -->
+  <div class="flex min-h-screen">
+    <aside class="hidden lg:flex lg:flex-col lg:w-[250px] lg:flex-shrink-0 overflow-y-auto p-4" style="min-height:100vh;">
+      <!-- sidebar nav items -->
+    </aside>
+    <main class="flex-1 min-w-0 overflow-x-hidden p-4 lg:p-6">
+      <!-- ALL content ONCE — works on desktop AND mobile -->
+    </main>
+  </div>
+</div>
 
 - ❌ NEVER show a vertical sidebar on mobile — it covers the entire screen!
 - ❌ NEVER two <main> elements (desktop + mobile) — mobile one will be EMPTY!

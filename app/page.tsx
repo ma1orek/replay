@@ -10930,6 +10930,8 @@ Try these prompts in Cursor or v0:
 
   const handleGenerate = async () => {
     console.log("[handleGenerate] Called, flows:", flows.length, "user:", !!user);
+    // Reset demo mode — user is now generating their own project
+    if (isDemoMode) setIsDemoMode(false);
     if (flows.length === 0) {
       console.log("[handleGenerate] No flows - returning early");
       showToast("Please upload or record a video first", "error");
@@ -13697,14 +13699,14 @@ ${publishCode}
           
           {/* PROJECT Header - Clickable button to open projects dropdown */}
           {!sidebarCollapsed && (
-          <div className="flex-shrink-0 px-3 py-3 border-b border-zinc-800/50">
-            <button 
-              className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg bg-zinc-800/50 border border-zinc-700/50 cursor-pointer hover:bg-zinc-800 transition-all group"
+          <div className="flex-shrink-0 px-3 py-3 border-b border-zinc-800/50 flex items-center gap-1.5">
+            <button
+              className="flex items-center justify-between flex-1 min-w-0 px-3 py-2.5 rounded-lg bg-zinc-800/50 border border-zinc-700/50 cursor-pointer hover:bg-zinc-800 transition-all group"
               onClick={() => setSidebarView(sidebarView === "projects" ? "detail" : "projects")}
             >
               <div className="flex flex-col items-start min-w-0">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Project</span>
-                <span className="text-sm font-medium text-zinc-200 truncate max-w-[220px]">
+                <span className="text-sm font-medium text-zinc-200 truncate max-w-[180px]">
                   {generationTitle || "Untitled Project"}
                 </span>
               </div>
@@ -13713,6 +13715,25 @@ ${publishCode}
                 sidebarView === "projects" && "rotate-180"
               )} />
             </button>
+            {/* + New Project button with tooltip */}
+            <div className="relative group/newproj flex-shrink-0">
+              <button
+                onClick={() => {
+                  if (!user) {
+                    setShowAuthModal(true);
+                    showToast("Sign up free to create projects!", "info");
+                    return;
+                  }
+                  resetToNewProject();
+                }}
+                className="w-9 h-9 rounded-lg bg-zinc-800/50 border border-zinc-700/50 hover:bg-[#FF6E3C]/10 hover:border-[#FF6E3C]/30 flex items-center justify-center text-zinc-500 hover:text-[#FF6E3C] transition-all"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-2 py-1 bg-zinc-900 border border-zinc-700 rounded-md text-[10px] text-zinc-300 whitespace-nowrap opacity-0 invisible group-hover/newproj:opacity-100 group-hover/newproj:visible transition-all pointer-events-none z-50">
+                Create New Project
+              </div>
+            </div>
           </div>
           )}
           
@@ -16309,7 +16330,7 @@ ${publishCode}
                     <button 
                       onClick={() => {
                         // Require login for Supabase connection
-                        if (!user || isDemoMode) {
+                        if (!user) {
                           setShowAuthModal(true);
                           showToast("Sign up free to connect Supabase. Get 1 free generation!", "info");
                           return;
@@ -16323,16 +16344,16 @@ ${publishCode}
                       }}
                       className={cn(
                         "w-full px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-2 transition-colors bg-zinc-800/60 border border-zinc-700/50 hover:bg-zinc-700/60 text-zinc-300",
-                        (!user || isDemoMode || !isPaidPlan) && "opacity-50 cursor-not-allowed"
+                        (!user || !isPaidPlan) && "opacity-50 cursor-not-allowed"
                       )}
-                      title={!user || isDemoMode ? "Sign up to use Supabase integration" : !isPaidPlan ? "Pro feature - Upgrade to connect" : "Connect Supabase to fetch real data"}
+                      title={!user ? "Sign up to use Supabase integration" : !isPaidPlan ? "Pro feature - Upgrade to connect" : "Connect Supabase to fetch real data"}
                     >
                       <Database className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[#3ECF8E]" />
                       <span className="text-zinc-300">Wire to Supabase</span>
-                      {(!user || isDemoMode || !isPaidPlan) && <Lock className="w-3 h-3 text-white/30" />}
+                      {(!user || !isPaidPlan) && <Lock className="w-3 h-3 text-white/30" />}
                     </button>
                     <p className="text-[10px] text-white/25 mt-2 text-center">
-                      {!user || isDemoMode ? "Sign up to connect database" : !isPaidPlan ? "Pro feature" : "Connect your database to wire real data"}
+                      {!user ? "Sign up to connect database" : !isPaidPlan ? "Pro feature" : "Connect your database to wire real data"}
                     </p>
                   </div>
                   
@@ -16349,6 +16370,23 @@ ${publishCode}
                   )}
                 </div>
               )}
+              {/* Create New Project - Bottom of agentic chat sidebar */}
+              <div className="flex-shrink-0 p-3 border-t border-zinc-800/60">
+                <button
+                  onClick={() => {
+                    if (!user) {
+                      setShowAuthModal(true);
+                      showToast("Sign up free to create a new project!", "info");
+                      return;
+                    }
+                    resetToNewProject();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-[12px] font-semibold bg-zinc-800 hover:bg-zinc-700 border border-white/[0.08] hover:border-[#FF6E3C]/30 hover:text-[#FF6E3C] text-zinc-300 transition-all group"
+                >
+                  <Plus className="w-4 h-4 group-hover:text-[#FF6E3C] transition-colors" />
+                  <span>New Project</span>
+                </button>
+              </div>
             </div>
           ) : !sidebarCollapsed && sidebarView === "detail" ? (
             /* CONFIG MODE - Before Generation - Same style as Input tab */
@@ -24535,7 +24573,7 @@ module.exports = {
                 </div>
                 <button
                   onClick={() => {
-                    if (!user || isDemoMode) {
+                    if (!user) {
                       setShowAuthModal(true);
                       showToast("Sign up free to connect Supabase.", "info");
                       return;
@@ -24548,12 +24586,12 @@ module.exports = {
                   }}
                   className={cn(
                     "w-full px-3 py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition-colors bg-zinc-800/60 border border-zinc-700/50 active:bg-white/10 text-zinc-300 min-h-[44px]",
-                    (!user || isDemoMode || !isPaidPlan) && "opacity-50"
+                    (!user || !isPaidPlan) && "opacity-50"
                   )}
                 >
                   <Database className="w-3.5 h-3.5 text-zinc-400" />
                   <span>Wire to Supabase</span>
-                  {(!user || isDemoMode || !isPaidPlan) && <Lock className="w-3 h-3 text-white/30" />}
+                  {(!user || !isPaidPlan) && <Lock className="w-3 h-3 text-white/30" />}
                 </button>
               </div>
 

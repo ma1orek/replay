@@ -404,7 +404,7 @@ Your job is to create STUNNING, ANIMATED, PRODUCTION-QUALITY web interfaces.
    - Menu: "fixed inset-0 z-[100] bg-black" (FULL SCREEN, SOLID BLACK, no transparency!)
    - OR: "fixed top-16 left-0 right-0 z-50 bg-zinc-950" (below header, SOLID background!)
    - NEVER use transparent/translucent backgrounds - content will bleed through!
-5. SIDEBAR LAYOUT: If video shows a sidebar, keep it on DESKTOP using "hidden lg:flex" + flex layout. On MOBILE: sidebar DISAPPEARS → becomes a HORIZONTAL TOP BAR with nav items as scrollable pill tabs (NOT a hamburger drawer)!
+5. SIDEBAR LAYOUT: If video shows a sidebar, keep it on DESKTOP using "hidden lg:flex" + flex layout. On MOBILE: sidebar HIDDEN, hamburger top bar + slide-out drawer overlay with full navigation!
 
 ═══════════════════════════════════════════════════════════════════════════════
 🎨 AUTO-DETECT: PRESERVE EXACT COLORS FROM VIDEO!
@@ -658,8 +658,8 @@ All data MUST be defined in React components using useState!
 📱 NAVIGATION: RESPONSIVE NAVBAR WITH HAMBURGER ICON!
 ═══════════════════════════════════════════════════════════════════════════════
 
-🚨 SIDEBAR LAYOUT: If video shows a left sidebar, KEEP it on DESKTOP using class="hidden lg:flex" with flex layout. On MOBILE: sidebar DISAPPEARS → becomes a HORIZONTAL SCROLLABLE TOP BAR with nav items as pill tabs!
-✅ REQUIRED: On mobile, sidebar items become a horizontal scrollable nav bar at the top (NOT hidden behind hamburger)!
+🚨 SIDEBAR LAYOUT: If video shows a left sidebar, KEEP it on DESKTOP using class="hidden lg:flex" with flex layout. On MOBILE: sidebar HIDDEN → hamburger top bar + slide-out drawer with full navigation!
+✅ REQUIRED: On mobile, hamburger icon opens a slide-out drawer (overlay) with ALL sidebar navigation items!
 
 🚨🚨🚨 CRITICAL - MOBILE NAVBAR LAYOUT 🚨🚨🚨
 On mobile screens (md:hidden), the navbar MUST show:
@@ -2041,17 +2041,22 @@ ${isDSStyleDirective
 - If scanData describes a SPLIT HERO (text on one side, image on other) → build a two-column hero, NOT centered
 - If scanData shows sidebar+main → build RESPONSIVE sidebar with SINGLE main:
 
-  MANDATORY PATTERN (Alpine.js — sidebar → mobile top bar!):
-  <div class="min-h-screen">
-    <!-- MOBILE: sidebar items become horizontal scrollable top bar -->
-    <nav class="lg:hidden overflow-x-auto border-b sticky top-0 z-30" style="background:var(--sidebar-bg,#1f2937);">
-      <div class="flex items-center gap-1 px-3 py-2 min-w-max">
-        <span class="font-bold text-sm mr-3 text-white">App</span>
-        <a class="px-3 py-1.5 text-xs font-medium rounded-full bg-white/10 text-white whitespace-nowrap">Dashboard</a>
-        <a class="px-3 py-1.5 text-xs font-medium rounded-full text-gray-300 whitespace-nowrap">Orders</a>
-        <!-- top 5-7 sidebar items as horizontal pills -->
-      </div>
-    </nav>
+  MANDATORY PATTERN (Alpine.js — hamburger + slide-out drawer!):
+  <div x-data="{ sidebarOpen: false }" class="min-h-screen">
+    <!-- Mobile hamburger top bar -->
+    <div class="lg:hidden flex items-center justify-between p-4 border-b" style="background:var(--sidebar-bg,#1f2937);">
+      <span class="font-bold text-white">App</span>
+      <button @click="sidebarOpen = !sidebarOpen" class="text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+    <!-- Slide-out drawer overlay -->
+    <div x-show="sidebarOpen" x-transition class="lg:hidden fixed inset-0 z-40">
+      <div class="absolute inset-0 bg-black/50" @click="sidebarOpen=false"></div>
+      <aside class="relative z-50 w-64 h-full overflow-y-auto p-4" style="background:var(--sidebar-bg,#1f2937);">
+        <!-- Same nav items as desktop sidebar -->
+      </aside>
+    </div>
     <div class="flex min-h-screen">
       <aside class="hidden lg:flex lg:flex-col lg:w-[250px] lg:flex-shrink-0 p-4">sidebar</aside>
       <main class="flex-1 min-w-0 overflow-x-hidden p-4 lg:p-6">
@@ -2080,10 +2085,11 @@ ${isDSStyleDirective
 - GOOD: card-tokyo/800/600, card-berlin/800/600, card-paris/800/600 (unique seeds)
 - Use descriptive, contextual seeds — NOT just numbers!
 
-🚨🚨🚨 FINAL CHECK — SIDEBAR → MOBILE TOP BAR 🚨🚨🚨
+🚨🚨🚨 FINAL CHECK — SIDEBAR RESPONSIVENESS 🚨🚨🚨
 If your output has a sidebar/left panel, verify:
 ✅ Desktop sidebar has class="hidden lg:flex" (invisible on mobile!)
-✅ Mobile has a HORIZONTAL scrollable top bar (class="lg:hidden") with sidebar items as pill tabs
+✅ Mobile has hamburger top bar (class="lg:hidden") + slide-out drawer (x-show, x-transition)
+✅ Drawer has backdrop overlay (bg-black/50) and closes on click
 ✅ Only ONE <main> element — content written ONCE for all screen sizes!
 ❌ NEVER show a vertical sidebar on mobile!
 ❌ NEVER two <main> elements — mobile one will be EMPTY!
