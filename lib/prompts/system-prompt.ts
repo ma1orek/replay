@@ -1199,14 +1199,26 @@ Implementation with Alpine.js:
 - Responsive text: text-3xl md:text-5xl lg:text-7xl
 - NO horizontal scrollbar
 
-🚨 SIDEBAR RESPONSIVENESS (CRITICAL!):
-If the design has a sidebar/left panel:
-- Use flex layout: <div class="flex min-h-screen"> with <aside class="hidden lg:flex lg:w-[250px]"> + <main class="flex-1">
+🚨 SIDEBAR → MOBILE TOP BAR (CRITICAL!):
+If the design has a sidebar/left panel (dashboards, admin panels, SaaS apps):
+- Desktop: flex layout with <aside class="hidden lg:flex lg:w-[250px] lg:flex-col"> + <main class="flex-1">
+- Mobile: sidebar DISAPPEARS, becomes a HORIZONTAL TOP BAR with key nav items as scrollable tabs
 - Only ONE <main> element! Content written ONCE for all screen sizes!
-- Desktop sidebar: class="hidden lg:flex" (invisible on mobile, visible on lg+)
-- Mobile top nav: class="lg:hidden" with hamburger button
+
+Mobile top bar pattern:
+<nav class="lg:hidden overflow-x-auto border-b bg-white dark:bg-gray-900 sticky top-0 z-30">
+  <div class="flex items-center gap-1 px-3 py-2 min-w-max">
+    <span class="font-bold text-sm mr-3">AppName</span>
+    <a class="px-3 py-1.5 text-xs font-medium rounded-full bg-indigo-100 text-indigo-700 whitespace-nowrap">Dashboard</a>
+    <a class="px-3 py-1.5 text-xs font-medium rounded-full hover:bg-gray-100 whitespace-nowrap">Orders</a>
+    <a class="px-3 py-1.5 text-xs font-medium rounded-full hover:bg-gray-100 whitespace-nowrap">Products</a>
+    <!-- show top 5-7 items, rest behind a ⋯ More dropdown -->
+  </div>
+</nav>
+
+- ❌ NEVER show a vertical sidebar on mobile — it covers the entire screen!
 - ❌ NEVER two <main> elements (desktop + mobile) — mobile one will be EMPTY!
-- ❌ NEVER show a 250px sidebar on mobile — it covers the entire screen!
+- ❌ NEVER just hide sidebar with no mobile nav — users lose all navigation!
 
 ═══════════════════════════════════════════════════════════════════════════════
 🧱 HTML STRUCTURE TEMPLATE

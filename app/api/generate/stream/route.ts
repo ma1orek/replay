@@ -2144,22 +2144,18 @@ If the video shows a dashboard, admin panel, SaaS app, or ANY interface with sid
 ✅ SINGLE <main> element — content renders once, works on ALL screen sizes!
 
 MANDATORY STRUCTURE (match the VIDEO's theme for colors!):
-<!-- Responsive sidebar: desktop shows sidebar, mobile shows hamburger + drawer -->
-<div x-data="{ sidebarOpen: false }" class="min-h-screen">
-  <!-- MOBILE TOP NAV (shown < lg) -->
-  <div class="lg:hidden flex items-center justify-between p-4 border-b" style="border-color:var(--border,#e5e7eb);">
-    <span class="font-bold">App Name</span>
-    <button @click="sidebarOpen = !sidebarOpen">
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-    </button>
-  </div>
-  <!-- MOBILE SLIDE-OUT DRAWER (overlay on mobile) -->
-  <div x-show="sidebarOpen" @click.away="sidebarOpen=false" x-transition class="lg:hidden fixed inset-0 z-40">
-    <div class="absolute inset-0 bg-black/50" @click="sidebarOpen=false"></div>
-    <aside class="relative z-50 w-64 h-full overflow-y-auto p-4" style="background:var(--sidebar-bg,#1f2937);">
-      <!-- Same nav items as desktop sidebar -->
-    </aside>
-  </div>
+<!-- Desktop: sidebar + main. Mobile: sidebar becomes horizontal top bar -->
+<div class="min-h-screen">
+  <!-- MOBILE TOP BAR (sidebar items become horizontal scrollable tabs) -->
+  <nav class="lg:hidden overflow-x-auto border-b sticky top-0 z-30" style="background:var(--sidebar-bg,#1f2937);border-color:var(--border,#374151);">
+    <div class="flex items-center gap-1 px-3 py-2 min-w-max">
+      <span class="font-bold text-sm mr-3 text-white">App Name</span>
+      <a class="px-3 py-1.5 text-xs font-medium rounded-full bg-white/10 text-white whitespace-nowrap">Dashboard</a>
+      <a class="px-3 py-1.5 text-xs font-medium rounded-full text-gray-300 hover:bg-white/5 whitespace-nowrap">Orders</a>
+      <a class="px-3 py-1.5 text-xs font-medium rounded-full text-gray-300 hover:bg-white/5 whitespace-nowrap">Products</a>
+      <!-- top 5-7 items from sidebar, rest behind ⋯ More dropdown -->
+    </div>
+  </nav>
   <!-- FLEX LAYOUT: desktop sidebar + main content -->
   <div class="flex min-h-screen">
     <!-- DESKTOP SIDEBAR (hidden on mobile, visible on lg+) -->
@@ -2176,14 +2172,17 @@ MANDATORY STRUCTURE (match the VIDEO's theme for colors!):
 
 🚨 CRITICAL: Only ONE <main> element! Do NOT create separate desktop/mobile main areas!
 The <main> content is written ONCE and works on all screen sizes automatically.
-The sidebar is hidden on mobile (hidden lg:flex), shown as slide-out drawer on demand.
+On mobile: sidebar is hidden (hidden lg:flex), nav items shown as horizontal scrollable top bar.
 
-📱 MOBILE SIDEBAR RULES:
-- Sidebar uses class="hidden lg:flex" — invisible on mobile, visible on desktop
-- Mobile hamburger top nav uses class="lg:hidden"
+📱 MOBILE SIDEBAR → TOP BAR RULES:
+- Desktop sidebar: class="hidden lg:flex" — invisible on mobile, visible on desktop
+- Mobile: sidebar items become HORIZONTAL SCROLLABLE TABS in a top bar (class="lg:hidden")
+- Top bar matches sidebar's background color (dark sidebar = dark top bar)
+- Show top 5-7 nav items as pill tabs, active item highlighted
 - Tables on mobile: wrap in overflow-x:auto for horizontal scrolling
+- ❌ NEVER show a vertical sidebar on mobile — it covers the entire screen!
 - ❌ NEVER create TWO separate main content areas (one for desktop, one for mobile)
-- ❌ NEVER show a 250px sidebar on mobile
+- ❌ NEVER just use a hamburger menu that hides ALL navigation behind a tap
 
 📊 CHART OVERFLOW RULES (MANDATORY for dashboards!):
 - ALL chart containers MUST have overflow:hidden and a FIXED height — NEVER let charts grow unbounded!
