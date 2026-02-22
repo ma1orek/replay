@@ -191,8 +191,12 @@ gsap.to('.float', {
 // ANIMATION 16: TEXT SPLIT REVEAL (for headlines)
 // ═══════════════════════════════════════════════════════════════
 document.querySelectorAll('.split-text').forEach(el => {
-  el.innerHTML = el.textContent.split('').map(c => \`<span style="display:inline-block">\${c === ' ' ? '&nbsp;' : c}</span>\`).join('');
-  gsap.from(el.querySelectorAll('span'), {
+  // Wrap words first (white-space:nowrap per word) so wrapping only happens at word boundaries,
+  // then wrap individual letters inside each word for the stagger animation.
+  el.innerHTML = el.textContent.split(' ').map(word =>
+    \`<span style="display:inline-block;white-space:nowrap">\${word.split('').map(c => \`<span style="display:inline-block">\${c}</span>\`).join('')}</span>\`
+  ).join(' ');
+  gsap.from(el.querySelectorAll('span > span'), {
     scrollTrigger: { trigger: el, start: 'top 85%' },
     opacity: 0, y: 50, rotation: 10,
     stagger: 0.03, duration: 0.5, ease: 'back.out(1.7)'
@@ -1282,6 +1286,15 @@ EVERY text element MUST be clearly visible against its background:
 - ✅ CORRECT: "CHAD BROTHERS" or "Open Workspace" — normal text, use CSS letter-spacing for visual effect
 - If you want spaced-out letters, use CSS: letter-spacing: 0.2em — NOT actual space characters
 - NEVER truncate headline text — write the COMPLETE headline visible in video
+
+🚨 SPLIT-TEXT / ANIMATED TEXT — WORD WRAPPING RULE!
+- When using .split-text class or SplitText/DecryptedText from react-bits on multi-word headlines:
+  - The parent container MUST have: overflow: hidden (or overflow-hidden class)
+  - Each WORD must be wrapped in white-space: nowrap so wrapping only occurs at word boundaries, NOT mid-word
+  - ❌ WRONG: splitting every character to inline-block without word grouping → "The Science\nof\nMuscle\nGrowth" (each word on own line)
+  - ✅ CORRECT: group letters per word, add white-space:nowrap per word group, container is overflow-hidden
+- For react-bits SplitText: wrap the component in <div className="overflow-hidden"> and keep headline short enough to fit
+- For .split-text class: the ANIMATION 16 code in the template already handles word-grouping correctly — use as-is
 
 🚨 HERO TEXT ELEMENT MARGINS — TIGHT GROUPING!
 - Hero text elements (h1, p, buttons) must be TIGHTLY grouped — no large gaps

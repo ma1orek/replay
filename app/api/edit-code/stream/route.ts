@@ -782,7 +782,7 @@ CRITICAL RULES:
                 }
 
                 // Success: return edited code
-                const summary = parsed.summary || `Applied ${applyResult.appliedCount} change(s)`;
+                const summary = parsed.summary || `Applied: "${editRequest.slice(0, 60)}${editRequest.length > 60 ? '...' : ''}"${applyResult.appliedCount > 1 ? ` (${applyResult.appliedCount} changes)` : ''}`;
                 send("complete", {
                   code: applyResult.code,
                   summary,
@@ -1005,17 +1005,11 @@ function generateChangeSummary(oldCode: string, newCode: string, request: string
     summaryParts.push(`Added ${newSections - oldSections} section(s)`);
   }
   
-  if (lineDiff > 10) {
-    summaryParts.push(`+${lineDiff} lines`);
-  } else if (lineDiff < -10) {
-    summaryParts.push(`${lineDiff} lines`);
-  }
-  
+  // Instead of useless "+/-N lines", use the user request as summary when no specific changes detected
   if (summaryParts.length === 0) {
-    // Return a summary based on the user request
-    return `Updated based on: "${request.slice(0, 50)}${request.length > 50 ? '...' : ''}"`;
+    return `Applied: "${request.slice(0, 60)}${request.length > 60 ? '...' : ''}"`;
   }
-  
+
   return summaryParts.join(" • ");
 }
 

@@ -17413,7 +17413,32 @@ ${publishCode}
                   </>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-[#111111]">
-                    <EmptyState icon="logo" title="Drop or record video. Get code." subtitle="We analyze the flow, map interactions, and export clean code." />
+                    <div className="text-center px-8 max-w-sm">
+                      <div className="w-14 h-14 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mx-auto mb-5">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/20">
+                          <polygon points="23 7 16 12 23 17 23 7"/>
+                          <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                        </svg>
+                      </div>
+                      <h3 className="text-sm font-medium text-white/60 mb-2">Add a video or image to start</h3>
+                      <p className="text-xs text-white/30 leading-relaxed mb-4">
+                        Drop your screen recording or screenshot in the <span className="text-white/50">INPUT</span> panel on the left — Replay will reconstruct it as clean React code.
+                      </p>
+                      <div className="text-[10px] text-white/20 space-y-1">
+                        <div className="flex items-center gap-2 justify-center">
+                          <span className="w-1 h-1 rounded-full bg-white/20 flex-shrink-0" />
+                          <span>Analyze UI flow & interactions</span>
+                        </div>
+                        <div className="flex items-center gap-2 justify-center">
+                          <span className="w-1 h-1 rounded-full bg-white/20 flex-shrink-0" />
+                          <span>Generate full React + Tailwind code</span>
+                        </div>
+                        <div className="flex items-center gap-2 justify-center">
+                          <span className="w-1 h-1 rounded-full bg-white/20 flex-shrink-0" />
+                          <span>Edit with AI, publish instantly</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

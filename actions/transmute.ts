@@ -1742,6 +1742,12 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
               temperature: 0.1,
               maxOutputTokens: 16384,
             },
+            safetySettings: [
+              { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT" as any, threshold: "BLOCK_LOW_AND_ABOVE" as any },
+              { category: "HARM_CATEGORY_HATE_SPEECH" as any, threshold: "BLOCK_MEDIUM_AND_ABOVE" as any },
+              { category: "HARM_CATEGORY_HARASSMENT" as any, threshold: "BLOCK_MEDIUM_AND_ABOVE" as any },
+              { category: "HARM_CATEGORY_DANGEROUS_CONTENT" as any, threshold: "BLOCK_MEDIUM_AND_ABOVE" as any },
+            ],
           });
 
           scanResult = await withTimeout(
