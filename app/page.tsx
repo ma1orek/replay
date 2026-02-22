@@ -16272,8 +16272,9 @@ ${publishCode}
                       </span>
                       <span className="text-[10px] text-white/25 bg-zinc-800/50 px-2 py-0.5 rounded normal-case font-normal">Optional</span>
                     </div>
-                    <button 
+                    <button
                       onClick={() => {
+                        if (authLoading || creditsLoading) return;
                         // Require login for Supabase connection
                         if (!user) {
                           setShowAuthModal(true);
@@ -16289,16 +16290,24 @@ ${publishCode}
                       }}
                       className={cn(
                         "w-full px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-2 transition-colors bg-zinc-800/60 border border-zinc-700/50 hover:bg-zinc-700/60 text-zinc-300",
-                        (!user || !isPaidPlan) && "opacity-50 cursor-not-allowed"
+                        !authLoading && !creditsLoading && (!user || !isPaidPlan) && "opacity-50 cursor-not-allowed"
                       )}
-                      title={!user ? "Sign up to use Supabase integration" : !isPaidPlan ? "Pro feature - Upgrade to connect" : "Connect Supabase to fetch real data"}
+                      title={
+                        authLoading || creditsLoading ? "Loading..." :
+                        !user ? "Sign up to use Supabase integration" :
+                        !isPaidPlan ? "Pro feature - Upgrade to connect" :
+                        "Connect Supabase to fetch real data"
+                      }
                     >
                       <Database className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[#3ECF8E]" />
                       <span className="text-zinc-300">Wire to Supabase</span>
-                      {(!user || !isPaidPlan) && <Lock className="w-3 h-3 text-white/30" />}
+                      {!authLoading && !creditsLoading && (!user || !isPaidPlan) && <Lock className="w-3 h-3 text-white/30" />}
                     </button>
                     <p className="text-[10px] text-white/25 mt-2 text-center">
-                      {!user ? "Sign up to connect database" : !isPaidPlan ? "Pro feature" : "Connect your database to wire real data"}
+                      {authLoading || creditsLoading ? "" :
+                       !user ? "Sign up to connect database" :
+                       !isPaidPlan ? "Upgrade to Pro to connect" :
+                       "Connect your database to wire real data"}
                     </p>
                   </div>
                   
@@ -16558,8 +16567,9 @@ ${publishCode}
                   </span>
                   <span className="text-[10px] text-white/25 bg-zinc-800/50 px-2 py-0.5 rounded normal-case font-normal">Optional</span>
                 </div>
-                <button 
+                <button
                   onClick={() => {
+                    if (authLoading || creditsLoading) return;
                     if (!user || isDemoMode) {
                       setShowAuthModal(true);
                       showToast("Sign up free to connect Supabase. Get 1 free generation!", "info");
@@ -16573,16 +16583,24 @@ ${publishCode}
                   }}
                   className={cn(
                     "w-full px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-2 transition-colors bg-zinc-800/60 border border-zinc-700/50 hover:bg-zinc-700/60 text-zinc-300",
-                    (!user || isDemoMode || !isPaidPlan) && "opacity-50 cursor-not-allowed"
+                    !authLoading && !creditsLoading && (!user || isDemoMode || !isPaidPlan) && "opacity-50 cursor-not-allowed"
                   )}
-                  title={!user || isDemoMode ? "Sign up to use Supabase integration" : !isPaidPlan ? "Pro feature - Upgrade to connect" : "Connect Supabase to fetch real data"}
+                  title={
+                    authLoading || creditsLoading ? "Loading..." :
+                    !user || isDemoMode ? "Sign up to use Supabase integration" :
+                    !isPaidPlan ? "Pro feature - Upgrade to connect" :
+                    "Connect Supabase to fetch real data"
+                  }
                 >
                   <Database className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[#3ECF8E]" />
                   <span className="text-zinc-300">Wire to Supabase</span>
-                  {(!user || isDemoMode || !isPaidPlan) && <Lock className="w-3 h-3 text-white/30" />}
+                  {!authLoading && !creditsLoading && (!user || isDemoMode || !isPaidPlan) && <Lock className="w-3 h-3 text-white/30" />}
                 </button>
                 <p className="text-[10px] text-white/25 mt-2 text-center">
-                  {!user || isDemoMode ? "Sign up to connect database" : !isPaidPlan ? "Pro feature" : "Connect your database to wire real data"}
+                  {authLoading || creditsLoading ? "" :
+                   !user || isDemoMode ? "Sign up to connect database" :
+                   !isPaidPlan ? "Upgrade to Pro to connect" :
+                   "Connect your database to wire real data"}
                 </p>
               </div>
               
