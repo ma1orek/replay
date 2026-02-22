@@ -1170,13 +1170,13 @@ function BentoFeaturesSection() {
         {/* Technical Grid Layout */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
 
-          {/* RECONSTRUCTION - First / Top */}
-          <BentoCard className="col-span-1 md:col-span-12 min-h-[300px]" delay={0.05} title="RECONSTRUCTION" icon={Database}>
+          {/* RECONSTRUCTION & REIMAGINE - Full width */}
+          <BentoCard className="col-span-1 md:col-span-12 min-h-[300px]" delay={0.05} title="RECONSTRUCTION & REIMAGINE" icon={Database}>
             <div className="flex flex-col md:flex-row gap-8 h-full">
               <div className="md:w-1/3 flex flex-col justify-center">
-                <h3 className="text-xl text-white font-medium mb-3">Reconstruct from video</h3>
+                <h3 className="text-xl text-white font-medium mb-3">Video to code, mapped perfectly.</h3>
                 <p className="text-sm text-zinc-500 leading-relaxed">
-                  Turn screen recordings into pixel-perfect React code. Our engine analyzes layout, typography, and spacing to recreate your interface with accuracy in given style creating new design system.
+                  Turn screen recordings into pixel-perfect React architecture. Our engine analyzes layout, typography, and temporal state changes to recreate your interface 1:1. Need a fresh look? Run the video through our 19-step Reimagine pipeline to output a highly polished, modern UI.
                 </p>
               </div>
               <div className="md:w-2/3 relative rounded border border-zinc-800 overflow-hidden group">
@@ -1184,33 +1184,33 @@ function BentoFeaturesSection() {
               </div>
             </div>
           </BentoCard>
-          
+
           {/* LIBRARY - Large Main Card */}
-          <BentoCard className="col-span-1 md:col-span-8 md:row-span-2 min-h-[400px]" delay={0.1} title="COMPONENT LIBRARY" icon={Layers}>
+          <BentoCard className="col-span-1 md:col-span-8 md:row-span-2 min-h-[400px]" delay={0.1} title="LIBRARY" icon={Layers}>
             <p className="text-zinc-500 text-xs mb-6 max-w-sm">
-              From chaos to a living Design System. Instantly catalog every button, color, and input as reusable tokens.
+              From chaos to a living Design System. Instantly catalog every button, input, and state as reusable tokens. Replay outputs strictly modular, production-ready React components that build your library automatically.
             </p>
-            
+
             <div className="relative w-full h-[300px] rounded border border-zinc-800 overflow-hidden group">
               <Image src="/lib.png" alt="Library" fill className="object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
             </div>
           </BentoCard>
 
           {/* FLOW MAP */}
-          <BentoCard className="col-span-1 md:col-span-4 md:row-span-2 min-h-[400px]" delay={0.15} title="FLOW" icon={Workflow}>
+          <BentoCard className="col-span-1 md:col-span-4 md:row-span-2 min-h-[400px]" delay={0.15} title="FLOW MAP" icon={Workflow}>
             <p className="text-zinc-500 text-xs mb-6">
-              Visual architecture mapping from video. Detecting visited pages and logic gaps.
+              We don't just build isolated screens. Replay understands temporal video context, mapping multi-page navigation, detecting state changes over time, and highlighting logic gaps across your entire user journey.
             </p>
-            
+
             <div className="relative w-full h-[300px] rounded border border-zinc-800 overflow-hidden group">
               <Image src="/flow.png" alt="Flow Map" fill className="object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
             </div>
           </BentoCard>
 
-          {/* EDITOR */}
-          <BentoCard className="col-span-1 md:col-span-4 min-h-[240px]" delay={0.2} title="EDITOR" icon={Box}>
+          {/* AGENTIC EDITOR */}
+          <BentoCard className="col-span-1 md:col-span-4 min-h-[240px]" delay={0.2} title="AGENTIC EDITOR" icon={Box}>
             <p className="text-zinc-500 text-[11px] mb-4">
-              Create & edit components with AI. Changes propagate globally.
+              Create and edit components interactively. Powered by our Search/Replace agentic workflow — surgical changes that propagate globally without breaking surrounding logic.
             </p>
 
             <div className="relative w-full h-32 rounded border border-zinc-800 overflow-hidden group">
@@ -1221,14 +1221,14 @@ function BentoFeaturesSection() {
           {/* MULTIPLAYER - Animated */}
           <BentoCard className="col-span-1 md:col-span-4 min-h-[240px]" delay={0.25} title="MULTIPLAYER" icon={Grid}>
             <p className="text-zinc-500 text-[11px] mb-4">
-              Real-time collaboration with live cursors.
+              Real-time collaboration. Build alongside your team. Live cursors, shared component libraries, and instant sync.
             </p>
-            
+
             <div className="relative w-full h-32 rounded border border-zinc-800 overflow-hidden">
               <Image src="/multi-1.png" alt="Multiplayer" fill className="object-cover opacity-60" />
-              
+
               {/* Animated Cursors */}
-              <motion.div 
+              <motion.div
                 className="absolute z-10 top-1/4 left-1/4"
                 animate={{ x: [0, 40, 0], y: [0, 20, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
@@ -1239,7 +1239,7 @@ function BentoFeaturesSection() {
                 </div>
               </motion.div>
 
-              <motion.div 
+              <motion.div
                 className="absolute z-10 bottom-1/3 right-1/3"
                 animate={{ x: [0, -30, 0], y: [0, -40, 0] }}
                 transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
@@ -1250,7 +1250,7 @@ function BentoFeaturesSection() {
                 </div>
               </motion.div>
 
-              <motion.div 
+              <motion.div
                 className="absolute z-10 top-1/2 right-10"
                 animate={{ x: [0, -20, 0], y: [0, 30, 0] }}
                 transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 }}
@@ -1263,14 +1263,67 @@ function BentoFeaturesSection() {
             </div>
           </BentoCard>
 
-          {/* AI AUTOMATION / CODE */}
+          {/* AUTOMATION & CODE */}
           <BentoCard className="col-span-1 md:col-span-4 min-h-[240px]" delay={0.3} title="AUTOMATION & CODE" icon={Cpu}>
             <p className="text-zinc-500 text-[11px] mb-4">
-              Instant API contracts, tests, and technical debt audits.
+              Ship without the tech debt. Instant API contracts, E2E test generation, and technical debt audits directly from the generated React architecture.
             </p>
-            
+
             <div className="relative w-full h-32 rounded border border-zinc-800 overflow-hidden group">
               <Image src="/code.png" alt="Code" fill className="object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
+            </div>
+          </BentoCard>
+
+          {/* DESIGN SYSTEM SYNC - NEW */}
+          <BentoCard className="col-span-1 md:col-span-6 min-h-[280px]" delay={0.35} title="DESIGN SYSTEM SYNC" icon={Layers}>
+            <div className="flex flex-col md:flex-row gap-6 h-full">
+              <div className="md:w-1/2 flex flex-col justify-center">
+                <p className="text-zinc-500 text-[11px] leading-relaxed mb-3">
+                  Import your source of truth. Connect your Figma or Storybook directly to Replay. The engine auto-extracts your brand's exact colors, typography, and spacing tokens. No more generic Tailwind classes — every generated React component strictly adheres to your company's UI guidelines.
+                </p>
+                <span className="text-[9px] font-mono text-[#FF6E3C] uppercase tracking-widest">Figma · Storybook</span>
+              </div>
+              <div className="md:w-1/2 relative rounded border border-zinc-800 overflow-hidden group min-h-[140px]">
+                {/* ds.png placeholder - add public/ds.png to enable */}
+                <div className="w-full h-full bg-gradient-to-br from-violet-950/60 via-zinc-900 to-zinc-950 flex items-center justify-center">
+                  <div className="text-center space-y-2">
+                    <div className="flex gap-2 justify-center">
+                      {["#6366F1","#8B5CF6","#1E293B","#F1F5F9","#0F172A"].map((c, i) => (
+                        <div key={i} className="w-6 h-6 rounded" style={{ backgroundColor: c }} />
+                      ))}
+                    </div>
+                    <p className="text-[9px] text-zinc-600 font-mono">brand tokens extracted</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </BentoCard>
+
+          {/* HEADLESS API - NEW */}
+          <BentoCard className="col-span-1 md:col-span-6 min-h-[280px]" delay={0.4} title="HEADLESS API" icon={Zap}>
+            <div className="flex flex-col md:flex-row gap-6 h-full">
+              <div className="md:w-1/2 flex flex-col justify-center">
+                <p className="text-zinc-500 text-[11px] leading-relaxed mb-3">
+                  Infrastructure for AI Agents. Give your internal tools or external AI coding agents (like Devin) direct API access. Let them send a video and receive perfectly componentized React code or Playwright test scripts in return.
+                </p>
+                <span className="text-[9px] font-mono text-[#FF6E3C] uppercase tracking-widest">REST · Webhooks · Agent-ready</span>
+              </div>
+              <div className="md:w-1/2 relative rounded border border-zinc-800 overflow-hidden group min-h-[140px]">
+                {/* api.png placeholder - add public/api.png to enable */}
+                <div className="w-full h-full bg-zinc-950 flex items-center justify-center p-4">
+                  <pre className="text-[9px] text-emerald-400 font-mono leading-relaxed text-left">{`POST /v1/generate
+{
+  "video_url": "...",
+  "mode": "reconstruct"
+}
+
+→ 200 OK
+{
+  "code": "<App />",
+  "components": [...]
+}`}</pre>
+                </div>
+              </div>
             </div>
           </BentoCard>
 

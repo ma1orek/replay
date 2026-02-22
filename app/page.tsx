@@ -3012,85 +3012,11 @@ const getNodeIcon = (type: string) => {
   }
 };
 
-// Function to analyze what changed between two code versions - HUMAN STYLE
-const analyzeCodeChanges = (oldCode: string, newCode: string, userRequest: string): string => {
-  const insights: string[] = [];
-  const requestLower = userRequest.toLowerCase();
-  
-  // Detect the TYPE of change and respond appropriately
-  const isAnimation = requestLower.includes('animat') || requestLower.includes('transition') || requestLower.includes('smooth') || requestLower.includes('fade') || requestLower.includes('płynn');
-  const isResponsive = requestLower.includes('mobile') || requestLower.includes('responsive') || requestLower.includes('tablet') || requestLower.includes('telefon') || requestLower.includes('komórk');
-  const isLayout = requestLower.includes('layout') || requestLower.includes('grid') || requestLower.includes('flex') || requestLower.includes('spacing') || requestLower.includes('odstęp') || requestLower.includes('układ');
-  const isColors = requestLower.includes('color') || requestLower.includes('kolor') || requestLower.includes('theme') || requestLower.includes('dark') || requestLower.includes('ciemn') || requestLower.includes('jasn');
-  const isButtons = requestLower.includes('button') || requestLower.includes('przycisk') || requestLower.includes('cta') || requestLower.includes('klik');
-  const isNav = requestLower.includes('nav') || requestLower.includes('menu') || requestLower.includes('header') || requestLower.includes('sidebar') || requestLower.includes('nagłów');
-  const isFix = requestLower.includes('fix') || requestLower.includes('napraw') || requestLower.includes('bug') || requestLower.includes('błąd') || requestLower.includes('zepsu') || requestLower.includes('wrong');
-  const isAdd = requestLower.includes('add') || requestLower.includes('dodaj') || requestLower.includes('missing') || requestLower.includes('brakuj') || requestLower.includes('potrzeb');
-  
-  // Check for specific technical changes
-  const addedTailwind = (newCode.match(/class="[^"]*(?:flex|grid|gap-|p-|m-|text-|bg-|rounded)/g) || []).length > (oldCode.match(/class="[^"]*(?:flex|grid|gap-|p-|m-|text-|bg-|rounded)/g) || []).length;
-  const addedAnimations = (newCode.match(/@keyframes|animation:|transition:|animate-/g) || []).length > (oldCode.match(/@keyframes|animation:|transition:|animate-/g) || []).length;
-  const addedAlpine = (newCode.match(/x-data|x-show|x-on:|@click/g) || []).length > (oldCode.match(/x-data|x-show|x-on:|@click/g) || []).length;
-  const addedMedia = (newCode.match(/@media|sm:|md:|lg:|xl:/g) || []).length > (oldCode.match(/@media|sm:|md:|lg:|xl:/g) || []).length;
-  const addedBackdrop = newCode.includes('backdrop-blur') && !oldCode.includes('backdrop-blur');
-  const addedGradient = (newCode.match(/gradient/g) || []).length > (oldCode.match(/gradient/g) || []).length;
-  
-  // Build conversational response based on context - PROSTE, PO POLSKU
-  if (isAnimation && addedAnimations) {
-    insights.push("Dodałem płynne animacje ✨");
-  } else if (isAnimation) {
-    insights.push("Poprawiłem animacje - teraz są płynniejsze");
-  }
-  
-  if (isResponsive || addedMedia) {
-    insights.push("Dodałem responsywność - działa na mobile 📱");
-  }
-  
-  if (isLayout && addedTailwind) {
-    insights.push("Naprawiłem układ - lepsze odstępy");
-  }
-  
-  if (isColors || addedGradient) {
-    insights.push("Zmieniłem kolory");
-  }
-  
-  if (isButtons) {
-    insights.push("Ulepszyłem przyciski");
-  }
-  
-  if (isNav) {
-    insights.push("Rozbudowałem nawigację");
-  }
-  
-  if (addedAlpine && !isNav) {
-    insights.push("Dodałem interaktywność");
-  }
-  
-  if (addedBackdrop) {
-    insights.push("Dodałem efekt szkła");
-  }
-  
-  if (isFix) {
-    insights.push("Naprawione!");
-  }
-  
-  if (isAdd && insights.length === 0) {
-    insights.push("Dodane!");
-  }
-  
-  // If no specific insights, provide a generic but still human response
-  if (insights.length === 0) {
-    insights.push("Zastosowałem zmiany zgodnie z Twoją prośbą");
-  }
-  
-  // Build a descriptive response
-  let response = `**Zmiany wprowadzone:**\n\n`;
-  insights.forEach(insight => {
-    response += `• ${insight}\n`;
-  });
-  response += `\n**Preview zaktualizowany** - sprawdź rezultat!`;
-  
-  return response;
+// Function to confirm what the user asked for - echo back their request
+const analyzeCodeChanges = (_oldCode: string, _newCode: string, userRequest: string): string => {
+  const trimmed = userRequest.trim();
+  const display = trimmed.length > 120 ? trimmed.slice(0, 120) + '…' : trimmed;
+  return `Done! ✓ ${display}`;
 };
 
 function ReplayToolContent() {
@@ -6283,26 +6209,31 @@ Ready to generate from your own videos? Upload any screen recording to get start
     // No periodic sync - too expensive. User can refresh manually or load more
   }, [user, hasLoadedFromStorage]); // eslint-disable-line react-hooks/exhaustive-deps
   
-  // Auto-load demo for FREE users with no projects (so they see something, not empty screen)
+  // Auto-load demo for FREE users with no projects — only the very first visit (not on every refresh)
   const hasAutoLoadedDemoRef = useRef(false);
   useEffect(() => {
-    // Only auto-load once per session
+    // Only auto-load once per render cycle
     if (hasAutoLoadedDemoRef.current) return;
-    
+
     // Wait for loading to complete
     if (isLoadingHistory || !hasLoadedFromStorage) return;
-    
+
     // Only for logged-in users with no projects
     if (!user || generations.length > 0) return;
-    
+
     // Don't auto-load if already in demo mode or has active generation
     if (isDemoMode || activeGeneration) return;
-    
+
     // Don't auto-load if URL has project param (loading specific project)
     if (searchParams.get('project') || searchParams.get('demo')) return;
-    
-    console.log("[Auto-Demo] Loading showcase demo for new user");
+
+    // Only auto-load once per account lifetime — skip on subsequent refreshes
+    const demoSeenKey = `replay_demo_seen_${user.id}`;
+    if (localStorage.getItem(demoSeenKey)) return;
+
+    console.log("[Auto-Demo] Loading showcase demo for new user (first visit)");
     hasAutoLoadedDemoRef.current = true;
+    localStorage.setItem(demoSeenKey, 'true');
     
     // Load the showcase demo
     fetch(`/api/demo/${SHOWCASE_PROJECT_ID}`)
@@ -13661,8 +13592,17 @@ ${publishCode}
               </button>
             ) : (
               <div className="flex items-center justify-between w-full">
-                <a href="/" className="hover:opacity-80 transition-opacity">
-                  <LogoIcon className="w-7 h-7" color="white" />
+                <a href="/" className="hover:opacity-80 transition-opacity flex-shrink-0">
+                  <svg width="90" height="25" viewBox="0 0 106 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18.8403 10.2953C21.611 11.8936 21.6111 15.8814 18.8403 17.4797L8.13033 23.5701C4.62274 25.5701 0.316406 22.9148 0.316406 18.9152V6.73447C0.316406 2.73485 4.62273 0.0795374 8.13033 2.07955L18.8403 10.2953Z" stroke="white" strokeWidth="3.2"/>
+                    <path d="M9.75977 27.0659L20.4698 27.0659" stroke="white" strokeWidth="3.2" strokeLinecap="round"/>
+                    <path d="M29.5977 23.1298V6.99609H35.3516C36.6888 6.99609 37.8073 7.24935 38.707 7.75586C39.6133 8.2624 40.2943 8.97266 40.75 9.88672C41.2122 10.7943 41.4434 11.8607 41.4434 13.0859C41.4434 14.3112 41.2122 15.3809 40.75 16.2949C40.2878 17.2025 39.5938 17.9062 38.668 18.4062C37.7487 18.9062 36.6139 19.1562 35.2637 19.1562H31.9727V23.1298H29.5977ZM31.9727 17.0645H35.1318C36.3571 17.0645 37.2728 16.7467 37.8789 16.1113C38.485 15.4759 38.7881 14.4062 38.7881 13.0859C38.7881 11.7721 38.485 10.7155 37.8789 10.0156C37.2728 9.31576 36.3571 8.96582 35.1318 8.96582H31.9727V17.0645Z" fill="white"/>
+                    <path d="M43.4863 23.1298V9.91016H45.7637V12.0605H45.8906C46.0892 11.3281 46.4819 10.7454 47.0684 10.3125C47.6549 9.87305 48.3294 9.65332 49.0918 9.65332C49.2513 9.65332 49.4368 9.66309 49.6484 9.68262C49.8665 9.70215 50.0391 9.72493 50.166 9.75098V12.0117C50.0781 11.9792 49.8893 11.9466 49.5996 11.9141C49.3164 11.875 49.0332 11.8555 48.75 11.8555C48.1504 11.8555 47.6126 11.9824 47.1367 12.2363C46.6673 12.4837 46.2939 12.832 46.0156 13.2812C45.7373 13.7305 45.5977 14.2467 45.5977 14.8301V23.1298H43.4863Z" fill="white"/>
+                    <path d="M54.7227 23.3789C53.7969 23.3789 52.9883 23.1787 52.2969 22.7783C51.6055 22.3714 51.0645 21.7979 50.6738 21.0586C50.2832 20.3128 50.0879 19.4368 50.0879 18.4307C50.0879 17.4245 50.2832 16.5518 50.6738 15.8125C51.0645 15.0667 51.6055 14.4899 52.2969 14.082C52.9883 13.674 53.7969 13.47 54.7227 13.47C55.6484 13.47 56.457 13.674 57.1484 14.082C57.8398 14.4899 58.3809 15.0667 58.7715 15.8125C59.1621 16.5518 59.3574 17.4245 59.3574 18.4307C59.3574 19.4368 59.1621 20.3128 58.7715 21.0586C58.3809 21.7979 57.8398 22.3714 57.1484 22.7783C56.457 23.1787 55.6484 23.3789 54.7227 23.3789ZM54.7227 21.5273C55.4141 21.5273 55.9844 21.2979 56.4336 20.8389C56.8893 20.3734 57.1172 19.5518 57.1172 18.374C57.1172 17.1963 56.8893 16.3779 56.4336 15.9189C55.9844 15.4535 55.4141 15.2207 54.7227 15.2207C54.0312 15.2207 53.457 15.4535 52.9883 15.9189C52.5391 16.3779 52.3145 17.1963 52.3145 18.374C52.3145 19.5518 52.5391 20.3734 52.9883 20.8389C53.457 21.2979 54.0312 21.5273 54.7227 21.5273Z" fill="white"/>
+                    <path d="M63.5879 23.1298L59.8359 9.91016H62.0352L64.623 20.2207H64.75L67.4746 9.91016H69.7852L72.5098 20.2207H72.6367L75.2246 9.91016H77.4238L73.6719 23.1298H71.3613L68.5684 13.0469H68.4414L65.8984 23.1298H63.5879Z" fill="white"/>
+                    <path d="M84.3145 23.3789C83.2018 23.3789 82.2435 23.1494 81.4395 22.6904C80.6419 22.2314 80.0293 21.6126 79.6016 20.834C79.1738 20.0488 78.96 19.1532 78.96 18.1465C78.96 17.1072 79.1738 16.1934 79.6016 15.4053C80.0293 14.6107 80.6257 13.9952 81.3906 13.5586C82.1621 13.122 83.0671 12.9037 84.1055 12.9037C84.7839 12.9037 85.4362 13.0208 86.0625 13.2549C86.6953 13.4889 87.2526 13.8438 87.7344 14.3193C88.2227 14.7949 88.6016 15.3977 88.8711 16.1279C89.1406 16.8516 89.2754 17.7148 89.2754 18.7178V19.3994H81.1465V17.9111H87.1152C87.1152 17.3079 86.9987 16.7751 86.7656 16.3125C86.5326 15.8434 86.2038 15.4727 85.7793 15.2002C85.3613 14.9277 84.8677 14.7915 84.2969 14.7915C83.681 14.7915 83.1432 14.9473 82.6836 15.2588C82.2305 15.5638 81.8779 15.9635 81.626 16.458C81.3805 16.9525 81.2578 17.487 81.2578 18.0615V19.3945C81.2578 20.153 81.3936 20.7985 81.665 21.3311C81.9365 21.8571 82.3184 22.2568 82.8105 22.5303C83.3027 22.7972 83.876 22.9307 84.5303 22.9307C84.9583 22.9307 85.3451 22.8711 85.6895 22.752C86.0339 22.6263 86.3301 22.4395 86.5781 22.1914C86.8262 21.9434 87.0137 21.6357 87.1406 21.2686L89.2266 21.7217C89.0671 22.2856 88.7822 22.7806 88.3721 23.2065C87.9684 23.626 87.4648 23.9521 86.8613 24.1846C86.2643 24.4106 85.583 24.5234 84.8184 24.5234L84.3145 23.3789Z" fill="white"/>
+                    <path d="M91.6367 23.1298V9.91016H93.748V16.293H93.875L98.4785 9.91016H101.037L96.6504 15.8418L101.133 23.1298H98.5918L95.1309 17.3789L93.748 19.1729V23.1298H91.6367Z" fill="white"/>
+                  </svg>
                 </a>
                 <button
                   onClick={() => setSidebarCollapsed(true)}
@@ -15894,9 +15834,9 @@ ${publishCode}
                                       setEditableCode(result.code); setDisplayedCode(result.code); setGeneratedCode(result.code);
                                       setPreviewUrl(createPreviewUrl(result.code));
                                       
-                                      // Use summary from streaming if available, otherwise analyze
-                                      const responseMsg = result.summary 
-                                        ? `**Zmiany wprowadzone:**\n\n${result.summary}\n\n**Preview zaktualizowany** - sprawdź rezultat!`
+                                      // Use summary from streaming if available, otherwise confirm request
+                                      const responseMsg = result.summary
+                                        ? `Done! ✓ ${currentInput.trim().slice(0, 120)}${currentInput.trim().length > 120 ? '…' : ''}`
                                         : analyzeCodeChanges(editableCode, result.code, currentInput);
                                       
                                       setChatMessages(prev => [...prev, { id: generateId(), role: "assistant", content: responseMsg, timestamp: Date.now() }]);
