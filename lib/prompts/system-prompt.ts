@@ -157,18 +157,25 @@ gsap.from('.flip-in', {
 // ANIMATION 13: COUNTER (for stats/numbers)
 // ═══════════════════════════════════════════════════════════════
 document.querySelectorAll('.counter').forEach(counter => {
-  const target = parseInt(counter.textContent) || 100;
+  const target = parseInt(counter.textContent.replace(/[^0-9]/g, '')) || 100;
   counter.textContent = '0';
-  ScrollTrigger.create({
-    trigger: counter, start: 'top 85%',
-    onEnter: () => {
-      gsap.to(counter, {
-        textContent: target, duration: 2, ease: 'power1.out',
-        snap: { textContent: 1 },
-        onUpdate: function() { counter.textContent = Math.round(this.targets()[0].textContent); }
-      });
-    }
-  });
+  const animateCounter = () => {
+    gsap.to(counter, {
+      textContent: target, duration: 2, ease: 'power1.out',
+      snap: { textContent: 1 },
+      onUpdate: function() { counter.textContent = Math.round(parseFloat(this.targets()[0].textContent)); }
+    });
+  };
+  // If already in viewport on load, animate immediately; otherwise use ScrollTrigger
+  const rect = counter.getBoundingClientRect();
+  if (rect.top < window.innerHeight * 0.9) {
+    setTimeout(animateCounter, 300);
+  } else {
+    ScrollTrigger.create({
+      trigger: counter, start: 'top 85%', once: true,
+      onEnter: animateCounter
+    });
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════

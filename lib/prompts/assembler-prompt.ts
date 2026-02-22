@@ -96,11 +96,21 @@ gsap.utils.toArray('section, .card').forEach(el => {
 
 // Counter animations for numbers
 gsap.utils.toArray('.counter').forEach(counter => {
-  const target = parseInt(counter.textContent.replace(/[^0-9]/g, ''));
-  gsap.to(counter, {
-    scrollTrigger: { trigger: counter, start: 'top 80%' },
-    textContent: target, duration: 2, snap: { textContent: 1 }
-  });
+  const target = parseInt(counter.textContent.replace(/[^0-9]/g, '')) || 100;
+  counter.textContent = '0';
+  const animateCounter = () => {
+    gsap.to(counter, {
+      textContent: target, duration: 2, ease: 'power1.out',
+      snap: { textContent: 1 },
+      onUpdate: function() { counter.textContent = Math.round(parseFloat(this.targets()[0].textContent)); }
+    });
+  };
+  const rect = counter.getBoundingClientRect();
+  if (rect.top < window.innerHeight * 0.9) {
+    setTimeout(animateCounter, 300);
+  } else {
+    ScrollTrigger.create({ trigger: counter, start: 'top 85%', once: true, onEnter: animateCounter });
+  }
 });
 
 // Marquee / infinite scrolling text: PREFERRED: use React Bits ScrollVelocity component:
