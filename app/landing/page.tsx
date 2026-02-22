@@ -1221,7 +1221,7 @@ function BentoFeaturesSection() {
           {/* MULTIPLAYER - Animated */}
           <BentoCard className="col-span-1 md:col-span-4 min-h-[240px]" delay={0.25} title="MULTIPLAYER" icon={Grid}>
             <p className="text-zinc-500 text-[11px] mb-4">
-              Real-time collaboration. Build alongside your team. Live cursors, shared component libraries, and instant sync.
+              Real-time collaboration. Build alongside your team with live cursors, comments and instant sync. Turn video into modular code together — one person extracts the layout, while another componentizes the UI into your shared library.
             </p>
 
             <div className="relative w-full h-32 rounded border border-zinc-800 overflow-hidden">
@@ -1284,17 +1284,7 @@ function BentoFeaturesSection() {
                 <span className="text-[9px] font-mono text-[#FF6E3C] uppercase tracking-widest">Figma · Storybook</span>
               </div>
               <div className="md:w-1/2 relative rounded border border-zinc-800 overflow-hidden group min-h-[140px]">
-                {/* ds.png placeholder - add public/ds.png to enable */}
-                <div className="w-full h-full bg-gradient-to-br from-violet-950/60 via-zinc-900 to-zinc-950 flex items-center justify-center">
-                  <div className="text-center space-y-2">
-                    <div className="flex gap-2 justify-center">
-                      {["#6366F1","#8B5CF6","#1E293B","#F1F5F9","#0F172A"].map((c, i) => (
-                        <div key={i} className="w-6 h-6 rounded" style={{ backgroundColor: c }} />
-                      ))}
-                    </div>
-                    <p className="text-[9px] text-zinc-600 font-mono">brand tokens extracted</p>
-                  </div>
-                </div>
+                <Image src="/ds.png" alt="Design System Sync" fill className="object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-500" />
               </div>
             </div>
           </BentoCard>
@@ -1309,20 +1299,7 @@ function BentoFeaturesSection() {
                 <span className="text-[9px] font-mono text-[#FF6E3C] uppercase tracking-widest">REST · Webhooks · Agent-ready</span>
               </div>
               <div className="md:w-1/2 relative rounded border border-zinc-800 overflow-hidden group min-h-[140px]">
-                {/* api.png placeholder - add public/api.png to enable */}
-                <div className="w-full h-full bg-zinc-950 flex items-center justify-center p-4">
-                  <pre className="text-[9px] text-emerald-400 font-mono leading-relaxed text-left">{`POST /v1/generate
-{
-  "video_url": "...",
-  "mode": "reconstruct"
-}
-
-→ 200 OK
-{
-  "code": "<App />",
-  "components": [...]
-}`}</pre>
-                </div>
+                <Image src="/api.png" alt="Headless API" fill className="object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-500" />
               </div>
             </div>
           </BentoCard>
