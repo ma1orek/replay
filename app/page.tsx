@@ -367,7 +367,7 @@ function cancelAIRequest() {
   }
   return false;
 }
-import Logo from "@/components/Logo";
+import Logo, { LogoIcon } from "@/components/Logo";
 import StyleInjector from "@/components/StyleInjector";
 import { Highlight, themes } from "prism-react-renderer";
 import { usePendingFlow } from "@/app/providers";
@@ -13593,7 +13593,7 @@ ${publishCode}
             ) : (
               <div className="flex items-center justify-between w-full">
                 <a href="/" className="hover:opacity-80 transition-opacity flex-shrink-0">
-                  <Logo />
+                  <LogoIcon />
                 </a>
                 <button
                   onClick={() => setSidebarCollapsed(true)}
