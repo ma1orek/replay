@@ -98,6 +98,21 @@ export async function GET(req: Request) {
       return NextResponse.json({ status: "completed", processed: queue.processed, total: queue.total });
     }
 
+    // Concurrency guard: if another instance is already processing, skip
+    if ((queue as any).processing === true) {
+      const processingFor = Date.now() - new Date((queue as any).processingStartedAt || queue.startedAt).getTime();
+      // If processing for less than 3 min, skip (another instance is working)
+      if (processingFor < 3 * 60 * 1000) {
+        return NextResponse.json({ status: "already_processing", processed: queue.processed, total: queue.total });
+      }
+    }
+
+    // Mark as processing to prevent concurrent runs
+    await supabase
+      .from("aeo_config")
+      .update({ value: { ...queue, processing: true, processingStartedAt: new Date().toISOString() }, updated_at: new Date().toISOString() })
+      .eq("key", "content_queue");
+
     // Process next batch
     const startIdx = queue.processed;
     const endIdx = Math.min(startIdx + ARTICLES_PER_RUN, queue.total);
@@ -143,6 +158,13 @@ export async function GET(req: Request) {
         .from("aeo_config")
         .update({ value: updatedQueue, updated_at: new Date().toISOString() })
         .eq("key", "content_queue");
+
+      // Self-trigger next batch immediately (don't wait for Vercel Cron)
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.replay.build";
+      fetch(`${siteUrl}/api/admin/content-cron`, {
+        method: "GET",
+        headers: { "x-vercel-cron": "true" },
+      }).catch(() => {});
     }
 
     return NextResponse.json({
