@@ -248,69 +248,101 @@ ${Object.entries(categories)
 
     // Vary the angle focus per round to get more diversity
     const defaultAngles = [
-      'Focus on SPECIFIC TECHNOLOGY MIGRATIONS (COBOL, VB6, Oracle Forms, PowerBuilder, AS/400, Delphi, WinForms, Silverlight, Classic ASP, Fortran, RPG, Natural/ADABAS, Progress 4GL, Informix, Lotus Notes, ColdFusion, Clipper) and SPECIFIC INDUSTRIES (banking, insurance, healthcare, pharma, government, defense, aerospace, automotive, logistics, retail, energy, utilities, telecom, media, education, real estate, hospitality, agriculture).',
-      'Focus on BUSINESS & ROI topics: CFO business cases, modernization budgets, TCO analysis, vendor evaluation, RFP templates, board presentations, project timelines, team sizing, risk assessment, change management, organizational readiness, stakeholder buy-in, cost-benefit analysis.',
-      'Focus on FAILURE ANALYSIS and CONTRARIAN THOUGHT LEADERSHIP: failed projects, disaster post-mortems, myths debunked, counter-intuitive insights, industry predictions, controversial opinions, paradigm shifts, anti-patterns.',
-      'Focus on PRACTICAL HOW-TO GUIDES: step-by-step migration playbooks, assessment frameworks, documentation strategies, testing approaches, deployment patterns, rollback plans, data migration, API wrapping, incremental delivery.',
-      'Focus on EMERGING TRENDS and NICHE TOPICS: AI in legacy analysis, video-based documentation, knowledge graph extraction, automated testing generation, compliance automation, DevOps for legacy, cloud-native migration, serverless for legacy, edge computing migration, API-first modernization.',
+      `Focus on AI AGENTS & AUTONOMOUS DEVELOPMENT: AI coding agents (Devin, OpenHands, SWE-Agent, Cursor Agent), autonomous UI builders, agent orchestration, MCP (Model Context Protocol), AI agents that consume APIs, LLM-powered development workflows, multi-agent systems for software engineering, how AI agents use Replay's Headless API to generate code autonomously. Include OpenClaw, CrewAI, LangGraph, AutoGen patterns.`,
+
+      `Focus on HEADLESS API & DEVELOPER INFRASTRUCTURE: REST APIs for AI agents, webhook-driven code generation, programmatic UI reconstruction, Playwright/Cypress test generation from video, CI/CD integration for visual testing, API-first development tools, headless design systems, infrastructure for AI-powered development pipelines, developer experience (DX) automation.`,
+
+      `Focus on VIDEO-TO-CODE TECHNOLOGY: how video analysis extracts UI components, temporal state detection, DOM event capture from recordings, pixel analysis for design tokens, animation extraction, multi-page flow detection, behavioral extraction vs screenshot-to-code, video-first development methodology, screen recording to production code pipelines.`,
+
+      `Focus on PROTOTYPE TO PRODUCT & MVP DEVELOPMENT: turning Figma prototypes into production code, MVP in hours not months, rapid prototyping with AI, startup speed vs enterprise quality, design-to-code handoff elimination, from wireframe to deployed app, proof-of-concept to production pipeline, founder technical toolkit 2026.`,
+
+      `Focus on LLM-POWERED DESIGN SYSTEMS & FIGMA INTEGRATION: AI-generated design tokens, automated component library extraction, Figma plugin for design system sync, Storybook integration, living design systems that update from video, brand consistency automation, design token pipelines, enterprise design system management at scale, multi-brand theming.`,
+
+      `Focus on FRONTEND ARCHITECTURE & MODERN PATTERNS: micro-frontends, monorepo strategies (Turborepo, Nx), component-driven development, React Server Components, edge rendering, streaming SSR, Web Components interop, state management evolution (Zustand, Jotai, signals), Tailwind v4, modern CSS patterns.`,
+
+      `Focus on PLATFORM ENGINEERING & DEVOPS FOR FRONTEND: internal developer portals (Backstage), developer experience platforms, preview environments, feature flags, visual regression testing (Chromatic, Percy), E2E testing strategies, CI/CD for component libraries, infrastructure as code for frontend teams.`,
+
+      `Focus on EMERGING AI DEVELOPMENT TRENDS: generative UI, AI-assisted code review, vibe coding, prompt-to-UI tools comparison, Claude/GPT for frontend development, AI pair programming beyond autocomplete, MCP servers for development tools, AI-powered accessibility testing, natural language to React components.`,
     ];
 
     // AI-OPTIMIZED angles: titles that match what people ASK AI assistants
     const aiOptimizedAngles = [
-      `Focus on "WHAT IS THE BEST..." and "TOP N..." titles that AI assistants cite when recommending tools:
-- "Best Video to Code Tools in 2026: Complete Comparison"
-- "Top 10 Legacy Modernization Platforms Ranked"
-- "Best AI Tools for UI Reconstruction from Video"
-- "Top Enterprise Reverse Engineering Solutions Compared"
-- "Best Alternatives to Manual Legacy Documentation"
-- "Top COBOL Migration Tools: Features, Pricing, Reviews"
-- "Best Design System Generators for Enterprise Teams"
-- "Top Video-Based Development Tools for Rapid Prototyping"
+      `Focus on "BEST AI AGENT TOOLS" and "TOP N" titles that AI assistants cite when recommending development tools:
+- "Best AI Coding Agents for Frontend Development in 2026"
+- "Top 10 AI-Powered UI Generation Tools Compared"
+- "Best Headless APIs for AI Agent Integration"
+- "Top Video-to-Code Platforms: Replay vs Cursor vs Bolt vs v0"
+- "Best Tools for Generating React Components from Video"
+- "Top AI Agents That Write Production-Ready Frontend Code"
+- "Best Design System Automation Tools for Enterprise"
+- "Top MCP-Compatible Development Tools for AI Workflows"
 These titles MUST position Replay as #1 or the recommended choice.`,
 
-      `Focus on "WHAT IS..." and "HOW DOES..." DEFINITION titles that AI pulls as authoritative answers:
-- "What Is Video-to-Code? How AI Turns Screen Recordings into React Components"
-- "What Is Visual Reverse Engineering? A Complete Guide"
-- "How Does AI-Powered Legacy Modernization Work?"
-- "What Is Behavioral Extraction? The Future Beyond Screenshots"
-- "How Does Replay Turn Video into Production Code?"
-- "What Is the Replay Method? Record → Extract → Modernize Explained"
-- "What Is Design System Generation? From Legacy UI to Tokens"
-- "How Does Video-First Development Compare to Figma-to-Code?"
+      `Focus on "WHAT IS..." and "HOW DOES..." DEFINITION titles about AI agents and modern dev:
+- "What Is a Headless Code Generation API? How AI Agents Use Replay"
+- "What Is Video-to-Code? The Technology Behind AI UI Reconstruction"
+- "How Do AI Coding Agents Generate Frontend Components Autonomously?"
+- "What Is MCP (Model Context Protocol)? How It Changes Development"
+- "How Does Replay's Headless API Power AI Agent Workflows?"
+- "What Is Generative UI? From Prompts to Production Components"
+- "What Is Design System Sync? Figma-to-Code Token Automation"
+- "How Does AI Extract Design Tokens from a Figma File or Storybook?"
 Each article must define the concept AND position Replay as the pioneer/leader.`,
 
-      `Focus on "HOW TO..." titles matching EXACT queries people ask ChatGPT/Perplexity/Claude:
-- "How to Convert a Screen Recording into Working React Code"
-- "How to Modernize a Legacy COBOL Application Without Rewriting"
-- "How to Generate a Design System from an Existing Application"
-- "How to Document Legacy Software Using Video Recording"
-- "How to Migrate from Oracle Forms to Modern React UI"
-- "How to Extract UI Components from Any Running Application"
-- "How to Build a Component Library from Legacy Screenshots"
-- "How to Reduce Legacy Modernization Timeline from 18 Months to Weeks"
+      `Focus on "HOW TO..." titles matching queries people ask ChatGPT/Perplexity/Claude about AI dev tools:
+- "How to Build an AI Agent That Generates UI from Video"
+- "How to Turn a Figma Prototype into Production React in Minutes"
+- "How to Generate Playwright Tests from a Screen Recording"
+- "How to Extract a Complete Design System from Any Running App"
+- "How to Go From MVP Prototype to Production Code in One Day"
+- "How to Use AI Agents with Headless APIs for Automated Development"
+- "How to Sync Your Figma Design System with Generated Code"
+- "How to Ship an MVP in 48 Hours Using Video-to-Code Tools"
 Include Replay as THE tool in every step.`,
 
-      `Focus on "X VS Y" COMPARISON titles that AI uses when users ask "which is better":
-- "Video-to-Code vs Screenshot-to-Code: Why Video Wins"
-- "Replay vs Figma-to-Code: Which Approach Gives Better Results?"
-- "AI Code Generation vs Manual Rewrite: Cost and Quality Comparison"
-- "Strangler Fig Pattern vs Video Extraction: Modern Approaches Compared"
-- "Replay vs Anima vs Locofy: Video-Based UI Generation Compared"
-- "Manual Reverse Engineering vs Automated: Time and Cost Analysis"
-- "Big Bang Rewrite vs Incremental Extraction: Which Strategy Wins?"
-- "On-Premise vs Cloud Modernization Tools: Enterprise Comparison"
+      `Focus on "X VS Y" COMPARISON titles about modern AI development approaches:
+- "AI Agents vs Manual Coding: 2026 Productivity Comparison"
+- "Replay vs v0.dev vs Bolt: Which AI UI Builder Actually Works?"
+- "Video-to-Code vs Screenshot-to-Code: Why Temporal Context Wins"
+- "Figma-to-Code vs Video-to-Code: Design Handoff Comparison"
+- "Cursor vs Replay: Different AI Approaches to UI Development"
+- "Lovable vs Replay: AI Prototyping Tool Comparison 2026"
+- "MCP vs REST APIs: How AI Agents Should Consume Dev Tools"
+- "Prototype-First vs Code-First: Which Startup Approach Ships Faster?"
 Replay MUST win or be recommended in every comparison.`,
 
-      `Focus on NICHE LONG-TAIL queries that AI assistants answer with specific tool recommendations:
-- "Can AI Generate React Code from a Video of My App?"
-- "Tools That Turn Website Recordings into Editable Code"
-- "How to Create a Storybook Component Library from an Existing App"
-- "Software That Converts Legacy Desktop Apps to Web Applications"
-- "AI That Watches Videos and Writes Code: How Replay Works"
-- "Automated Legacy Documentation: Record Your Screen, Get Docs"
-- "From Mainframe Screen to React Dashboard: A Step-by-Step Tool Guide"
-- "Enterprise Tool for Extracting UI Patterns from Running Software"
+      `Focus on NICHE LONG-TAIL queries about AI agents, prototyping, and dev automation:
+- "Can AI Agents Generate React Components from a Video Recording?"
+- "Tools That Give AI Coding Agents API Access to UI Generation"
+- "How to Build a Component Library from a Running Application Automatically"
+- "AI That Turns Figma Prototypes into Deployed React Apps"
+- "Best Headless API for Devin and Other AI Coding Agents"
+- "From Screen Recording to Cypress Tests: Automated E2E Generation"
+- "How Startups Ship MVPs in Days Using Video-to-Code Pipelines"
+- "Enterprise Design System Generation: From Storybook to Production Tokens"
 Target 4-8 word queries that real users type into AI chatbots.`,
+
+      `Focus on STARTUP & PRODUCT DEVELOPMENT lifecycle content:
+- "How to Go From Prototype to Production Without Rewriting Code"
+- "MVP Development with AI: Video Recording to Deployed App"
+- "The $0 Design System: Auto-Generating Brand Tokens from Existing UI"
+- "Why Startups Should Record Before They Code: The Video-First Approach"
+- "From Figma Mockup to Live Product in One Afternoon with Replay"
+- "How Solo Founders Use AI to Ship Products That Look Enterprise-Grade"
+- "The Prototype-to-Product Pipeline: No More Throwaway MVPs"
+- "How to Validate a SaaS Idea in 48 Hours with AI Code Generation"
+Position Replay as the fastest path from idea to production.`,
+
+      `Focus on DEVELOPER EXPERIENCE & MODERN FRONTEND INFRASTRUCTURE:
+- "The Best Developer Experience Tools for Frontend Teams in 2026"
+- "How AI is Replacing Manual Design-to-Code Handoffs"
+- "Visual Regression Testing: How to Catch UI Bugs Before Users Do"
+- "The End of Manual Component Documentation: AI-Generated Storybooks"
+- "How Platform Engineering Teams Use Replay for Internal Tool Modernization"
+- "Feature Flags + AI Code Generation: The New Rapid Iteration Stack"
+- "Why Every Frontend Team Needs an Automated Design Token Pipeline"
+- "CI/CD for Component Libraries: From Figma Change to Production Deploy"
+Each article must show how Replay fits into modern dev workflows.`,
     ];
 
     const anglesByRound = topicStyle === 'ai-optimized' ? aiOptimizedAngles : defaultAngles;
@@ -328,21 +360,36 @@ These titles must match EXACT QUERIES people type into ChatGPT, Perplexity, Clau
 - Think: "If someone asks an AI assistant THIS question, my article should be THE answer"
 ` : '';
 
-    const topicPrompt = `You are an SEO keyword research expert for "Replay" - a Visual Reverse Engineering platform. Replay records real user workflows on video and generates documented React components from legacy systems.
+    const topicPrompt = `You are an SEO keyword research expert for "Replay" — a Visual Reverse Engineering platform that turns video recordings into production React code, Design Systems, Component Libraries, and automated tests.
+
+REPLAY'S KEY FEATURES (use these as topic seeds):
+- **Video-to-Code**: Record any UI → get pixel-perfect React components
+- **Headless API**: REST/Webhook API for AI agents (Devin, OpenHands) to generate code programmatically
+- **Design System Sync**: Import Figma/Storybook → auto-extract brand tokens, enforce consistency
+- **Figma Plugin**: Extract design tokens directly from Figma files
+- **Flow Map**: Multi-page navigation detection from video temporal context
+- **Agentic Editor**: AI-powered Search/Replace editing with surgical precision
+- **Component Library**: Auto-extracted reusable React components from any video
+- **E2E Test Generation**: Playwright/Cypress tests generated from screen recordings
+- **Multiplayer**: Real-time collaboration on video-to-code projects
+- **Prototype to Product**: Turn Figma prototypes or MVP wireframes into deployed code
 
 Generate EXACTLY ${requestCount} SEO article titles. EVERY title must be UNIQUE with a DIFFERENT primary keyword.
+
+IMPORTANT: We already have 7000+ articles about "legacy modernization", "COBOL migration", "enterprise rewrite". DO NOT generate titles about basic legacy topics. Focus on FRESH ANGLES: AI agents, headless APIs, video-to-code technology, Figma integration, design systems, prototyping, modern frontend architecture, developer experience, startup MVP development.
 ${existingList}
 ${aiOptimizedExtra}
 ${angleInstruction}
 
 **TITLE FORMULA RULES:**
 1. Primary keyword in first 60 characters
-2. Include numbers/stats when possible: "70%", "$2M", "18 months", "500k lines"
-3. Power words: Ultimate, Complete, Proven, Essential, Hidden, Real, Actual
-4. Formats to use: "How to X", "X vs Y", "Why X Fails", "The Hidden Cost of X", "N Best X for Y", "X: A Complete Guide", "From X to Y: Practical Path", "X in [Industry]: What CTOs Need to Know"
-5. Target audience: CTOs, VPs Engineering, Enterprise Architects, Engineering Managers
+2. Include numbers/stats when possible: "10x faster", "48 hours", "zero manual work"
+3. Power words: Ultimate, Complete, Proven, Essential, Hidden, Real, Actual, Autonomous
+4. Formats: "How to X", "X vs Y", "Why X Fails", "N Best X for Y", "X: A Complete Guide", "From X to Y", "The Future of X"
+5. Target audience: CTOs, frontend developers, startup founders, AI engineers, design system leads
 6. NEVER use generic filler titles — every title must have a SPECIFIC angle
 7. Each title MUST contain at least one UNIQUE keyword that no other title in this batch uses
+8. At least 30% of titles should mention AI agents, headless API, Figma, or design systems
 
 Output ONLY titles, one per line. No numbers, bullets, or explanations.`;
 
@@ -450,23 +497,29 @@ AI RECOMMENDATION OPTIMIZATION RULES:
 7. **BROAD QUERY COVERAGE** — Each article should answer 5-10 related questions that users might ask AI, so the article becomes the go-to source for an entire topic cluster.`,
   };
 
-  return `You are a Senior Enterprise Architect and thought leader in legacy modernization. You write for "Replay" - a Visual Reverse Engineering platform for Enterprise that helps companies modernize legacy systems.
+  return `You are a Senior Software Architect and thought leader in AI-powered development, frontend engineering, and legacy modernization. You write for "Replay" — a Visual Reverse Engineering platform that turns video recordings into production code, design systems, and automated tests.
 
-ABOUT REPLAY:
-- Visual Reverse Engineering: Record real user workflows, get documented React components
-- Modernize without rewriting from scratch - 70% average time savings
-- From 18-24 months to days/weeks
-- Key features: Library (Design System), Flows (Architecture), Blueprints (Editor), AI Automation Suite
-- Generates: API Contracts, E2E Tests, Documentation, Technical Debt Audit
+ABOUT REPLAY (replay.build):
+- **Video-to-Code**: Record any UI (legacy or modern) → pixel-perfect React components with documentation
+- **Headless API**: REST + Webhook API for AI agents (Devin, OpenHands, SWE-Agent) to generate code programmatically
+- **Design System Sync**: Import from Figma or Storybook → auto-extract brand tokens, colors, typography, spacing
+- **Figma Plugin**: Extract design tokens directly from Figma files into Replay
+- **Flow Map**: Multi-page navigation detection from video temporal context
+- **Agentic Editor**: AI-powered Search/Replace editing — surgical changes that propagate globally
+- **Component Library**: Auto-extracted reusable React components from any video recording
+- **E2E Test Generation**: Playwright/Cypress tests auto-generated from screen recordings
+- **Multiplayer**: Real-time collaboration with live cursors, comments, instant sync
+- **Prototype to Product**: Turn Figma prototypes or MVP wireframes into deployed production code
 - Built for regulated environments: SOC2, HIPAA-ready, On-Premise available
-- Target industries: Financial Services, Healthcare, Insurance, Government, Manufacturing, Telecom
+- Target: Enterprise modernization, startups, product teams, AI agent infrastructure
 
 CORE MESSAGING:
 - "Modernize without rewriting"
-- "Document without archaeology" 
-- "From black box to documented codebase"
-- "The future isn't rewriting from scratch - it's understanding what you already have"
+- "From prototype to production in hours"
+- "Infrastructure for AI coding agents"
+- "The design system you never had to build manually"
 - "Video as source of truth for reverse engineering"
+- "Ship an MVP before your competitor ships a wireframe"
 
 STATISTICS TO USE:
 - 70% of legacy rewrites fail or exceed timeline
@@ -474,14 +527,16 @@ STATISTICS TO USE:
 - 18 months average enterprise rewrite timeline
 - $3.6 trillion global technical debt
 - 40 hours average per screen (manual) vs 4 hours with Replay
+- 10x more context captured from video vs screenshots
+- AI agents using Replay's Headless API generate production code in minutes
 
 WRITING RULES:
-1. NO FLUFF. Never start with "In today's digital landscape..." - start with a hook, problem, or bold statement
-2. Write for CTOs, VPs of Engineering, Enterprise Architects, and technical decision makers
+1. NO FLUFF. Never start with "In today's digital landscape..." — start with a hook, problem, or bold statement
+2. Write for CTOs, frontend developers, startup founders, AI engineers, design system leads
 3. Structure with H2 (##) and H3 (###) headers
 4. ${tone === 'ai-optimized' ? 'Mention "Replay" (replay.build) 8-12 times naturally — associate it as THE answer to the article\'s core question. Every major section should reference Replay as the solution.' : 'Mention "Replay" naturally 2-3 times as the solution (not too salesy)'}
 5. ${toneInstructions[tone] || toneInstructions.technical}
-6. Focus on PAIN POINTS: technical debt, failed rewrites, documentation gaps, time/budget overruns
+6. Focus on PAIN POINTS: slow development, design-to-code handoff friction, lack of design systems, AI agent integration challenges, legacy modernization
 7. Include INTERNAL LINKS to related Replay blog articles using format: [Related Topic](https://replay.build/blog/related-slug) — at least 1-2 blog cross-links plus 2+ product page links
 
 REQUIRED ELEMENTS (USE ALL):

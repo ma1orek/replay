@@ -1654,8 +1654,8 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                       <div className="flex items-center gap-3 mb-4">
                         <Zap className="w-5 h-5 text-[#71717a]" />
                         <div>
-                          <p className="text-sm font-medium text-white">AI picks enterprise modernization topics</p>
-                          <p className="text-xs text-white/50">Technical debt, legacy rewrites, ROI, industry-specific</p>
+                          <p className="text-sm font-medium text-white">AI picks diverse development topics</p>
+                          <p className="text-xs text-white/50">AI agents, headless API, Figma, design systems, video-to-code, prototyping</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
@@ -1670,7 +1670,7 @@ CREATE POLICY "Allow all" ON public.feedback FOR ALL USING (true) WITH CHECK (tr
                         <label className="text-sm text-white/70">articles</label>
                       </div>
                       <p className="text-xs text-white/40 mt-3">
-                        AI will generate {autoCount} unique topics: legacy modernization, technical debt, enterprise ROI, industry cases
+                        AI will generate {autoCount} unique topics: AI agents, headless APIs, video-to-code, design systems, Figma, prototyping, frontend architecture
                       </p>
                     </div>
                   ) : (
