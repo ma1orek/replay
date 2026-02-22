@@ -4559,7 +4559,7 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
                           key={ds.id}
                           className={cn(
                             "rounded-lg transition-colors",
-                            selectedDSId === ds.id ? "bg-blue-500/10 border border-blue-500/30" : "hover:bg-white/[0.03] border border-transparent"
+                            selectedDSId === ds.id ? "bg-white/[0.06] border border-white/[0.12]" : "hover:bg-white/[0.03] border border-transparent"
                           )}
                         >
                           <div className="flex items-center gap-2 p-1.5 cursor-pointer" onClick={() => { onChange(`DS_STYLE::${ds.id}::${ds.name}`); setIsOpen(false); }}>
@@ -4577,11 +4577,11 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
                             {/* Name and description - same as StyleItem */}
                             <div className="flex-1 min-w-0 text-left">
                               <div className="flex items-center gap-1 justify-start">
-                                <span className={cn("text-xs font-medium text-left truncate", selectedDSId === ds.id ? "text-blue-400" : "text-white/80")}>
+                                <span className={cn("text-xs font-medium text-left truncate", selectedDSId === ds.id ? "text-white" : "text-white/80")}>
                                   {ds.name}
                                 </span>
                                 {selectedDSId === ds.id && (
-                                  <span className="text-[8px] px-1 py-0.5 rounded bg-blue-500/20 text-blue-400 flex-shrink-0">Active</span>
+                                  <span className="text-[8px] px-1 py-0.5 rounded bg-white/[0.12] text-white/70 flex-shrink-0">Active</span>
                                 )}
                               </div>
                               <div className="flex items-center gap-1.5 text-left">
@@ -4609,7 +4609,7 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
                                 e.stopPropagation();
                                 openDSPreview(ds.id, ds.name, ds.source_type || null);
                               }}
-                              className="p-1 rounded transition-colors flex-shrink-0 text-white/20 hover:text-blue-400 hover:bg-blue-500/10"
+                              className="p-1 rounded transition-colors flex-shrink-0 text-white/20 hover:text-white/70 hover:bg-white/[0.08]"
                               title="Preview tokens"
                             >
                               <Eye className="w-3 h-3" />
@@ -4851,7 +4851,7 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
               <div className="overflow-y-auto flex-1 p-4 space-y-4">
                 {previewLoading ? (
                   <div className="flex flex-col items-center justify-center py-12 gap-3">
-                    <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
+                    <Loader2 className="w-6 h-6 text-white/50 animate-spin" />
                     <span className="text-xs text-white/40">Loading tokens...</span>
                   </div>
                 ) : previewData ? (
@@ -4923,7 +4923,7 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
                             {Object.entries(spacing).slice(0, 8).map(([name, val]) => (
                               <div key={name} className="flex items-center gap-2">
                                 <span className="text-[9px] text-white/40 w-14 flex-shrink-0 truncate">{name}</span>
-                                <div className="h-3 rounded-sm bg-blue-500/30 border border-blue-500/20" style={{ width: `${Math.min(parseFloat(String(val)) * 16, 200)}px` }} />
+                                <div className="h-3 rounded-sm bg-white/20 border border-white/10" style={{ width: `${Math.min(parseFloat(String(val)) * 16, 200)}px` }} />
                                 <span className="text-[9px] text-white/30">{String(val)}</span>
                               </div>
                             ))}
@@ -4942,7 +4942,7 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
                           <div className="flex flex-wrap gap-2">
                             {Object.entries(radii).slice(0, 8).map(([name, val]) => (
                               <div key={name} className="flex flex-col items-center gap-1">
-                                <div className="w-10 h-10 bg-blue-500/15 border border-blue-500/30" style={{ borderRadius: String(val) }} />
+                                <div className="w-10 h-10 bg-white/[0.08] border border-white/[0.15]" style={{ borderRadius: String(val) }} />
                                 <span className="text-[8px] text-white/40">{name}</span>
                               </div>
                             ))}
@@ -5011,7 +5011,7 @@ export default function StyleInjector({ value, onChange, disabled, referenceImag
                       setIsOpen(false);
                     }
                   }}
-                  className="flex-[2] px-3 py-2 text-xs font-semibold rounded-lg bg-gradient-to-r from-blue-500 to-blue-400 text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all"
+                  className="flex-[2] px-3 py-2 text-xs font-semibold rounded-lg bg-white/90 text-zinc-900 hover:bg-white transition-all"
                 >
                   Use this Design System
                 </button>
