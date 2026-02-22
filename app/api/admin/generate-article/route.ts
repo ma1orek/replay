@@ -600,7 +600,55 @@ Opening Lines (DO start with):
 □ FAQ section at end (3+ questions)
 □ Internal links to replay.build
 □ Content length 1500+ words
-□ Meta description 150-160 chars`;
+□ Meta description 150-160 chars
+
+═══════════════════════════════════════════════════════════════════════════════
+🤖 HUMANIZER — WRITE LIKE AN EXPERT HUMAN, NOT AN AI
+═══════════════════════════════════════════════════════════════════════════════
+
+AI writing is detectable because it overuses statistical "safe" patterns. You must actively break these patterns.
+
+**BANNED WORDS — NEVER USE THESE:**
+"Additionally," "Furthermore," "Moreover," "In conclusion," "To summarize," "Lastly,"
+"crucial," "pivotal," "delve," "leverage," "showcase," "foster," "enhance," "intricate,"
+"vibrant," "tapestry," "testament," "landscape," "underscore," "highlight," "robust,"
+"It's worth noting," "It's important to," "it's no secret," "needless to say,"
+"stands as," "serves as," "marks a shift," "underscores the importance of,"
+"In today's fast-paced world," "In the digital age," "In the modern era,"
+"contributing to," "reflecting," "symbolizing" as filler participles
+
+**BANNED SENTENCE STRUCTURES:**
+❌ "Not only X, but also Y" — just say the thing
+❌ Rule of three in every bullet list (3 items, 3 examples, 3 reasons — mix it up)
+❌ "Despite challenges, [company/approach] has..." formula paragraphs
+❌ Generic closings: "exciting times ahead," "the future looks bright," "major step forward"
+❌ Knowledge cutoff hedges: "as of my last update," "based on available information"
+❌ Inline-header bullets: "**Term:** definition" format on every item
+❌ "I hope this helps," "Of course!," "Certainly!" filler responses
+
+**USE THESE INSTEAD:**
+✅ Short punchy sentences mixed with longer explanatory ones. Vary the rhythm.
+✅ Specific names, dates, companies — not "experts say" (say WHO, WHEN)
+✅ Direct claims: "This is broken" not "it could be argued that this is suboptimal"
+✅ Occasional 1-sentence paragraph for punch. It works.
+✅ Concrete numbers from named sources: "Gartner 2024," "McKinsey report," "IEEE study"
+✅ Show nuance: "This works well for X but fails completely at Y"
+✅ Use "you" to address the reader directly
+
+**CITATION SPECIFICITY RULE:**
+Replace every vague attribution with a specific one:
+❌ "Experts argue that legacy systems are risky"
+✅ "A 2024 Gartner survey found 73% of CIOs cite legacy technical debt as their #1 barrier to cloud adoption"
+❌ "Industry reports show rising costs"
+✅ "Forrester's 2023 Legacy Modernization Report puts average per-screen extraction cost at $40K manually vs $4K with automation"
+
+**RHYTHM RULE:** Every 3-4 paragraphs, write a single short sentence paragraph. Forces the reader to pause. Creates momentum.
+
+**SENTENCE VARIETY:**
+- 15-20 word sentences are fine
+- 6-word sentences hit hard
+- Occasionally go long with subordinate clauses that build toward a punchline or a surprising reversal at the end
+- Fragment OK.`;
 }
 
 export async function POST(request: NextRequest) {
@@ -808,7 +856,7 @@ SEO REQUIREMENTS:
               .single();
             
             if (existingSlug) {
-              articleData.slug = `${slug}-${Date.now()}`;
+              articleData.slug = `${slug}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
             }
             
             const { data: savedPost, error: saveError } = await supabase
@@ -993,7 +1041,7 @@ SEO REQUIREMENTS:
               }
               // If slug conflict, add timestamp
               if (saveError.code === '23505') {
-                articleData.slug = `${slug}-${Date.now()}`;
+                articleData.slug = `${slug}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
                 const { data: retryPost, error: retryError } = await supabase
                   .from('blog_posts')
                   .insert(articleData)

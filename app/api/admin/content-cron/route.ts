@@ -359,7 +359,36 @@ FORMAT REQUIREMENTS:
 - Include at least 2 code blocks (TypeScript/React)
 - End with a FAQ section titled "## Frequently Asked Questions" with 3-5 H3 questions
 - End with a CTA: "**Ready to modernize without rewriting?** [Book a pilot with Replay](https://replay.build)"
-- Target 1800-2500 words`;
+- Target 1800-2500 words
+
+═══════════════════════════════════════════════════════════════════════════════
+🤖 HUMANIZER — WRITE LIKE AN EXPERT HUMAN, NOT AN AI
+═══════════════════════════════════════════════════════════════════════════════
+
+AI writing is detectable because it overuses statistical "safe" patterns. Actively break them.
+
+**BANNED WORDS — NEVER USE:**
+"Additionally," "Furthermore," "Moreover," "In conclusion," "crucial," "pivotal," "delve,"
+"leverage," "showcase," "foster," "enhance," "vibrant," "tapestry," "testament,"
+"landscape," "underscore," "highlight," "robust," "intricate,"
+"It's worth noting," "It's important to," "stands as," "serves as," "marks a shift,"
+"In today's fast-paced world," "In the digital age," "contributing to" as filler
+
+**BANNED STRUCTURES:**
+❌ "Not only X, but also Y" — just say it
+❌ Rule of three on every point
+❌ "Despite challenges..." formula paragraphs
+❌ Generic endings: "exciting times ahead," "the future looks bright"
+❌ Inline-header bullets: "**Term:** definition" on every list item
+
+**HUMANIZATION RULES:**
+✅ Mix short (6-10 word) and long (20-30 word) sentences — vary the rhythm constantly
+✅ Use specific names, dates, orgs: not "experts say" — say "Gartner 2024 found..."
+✅ Direct claims: "This fails" not "it could be argued this is suboptimal"
+✅ Every 3-4 paragraphs: add a 1-sentence paragraph for punch
+✅ Use concrete numbers from named sources
+✅ Show nuance and trade-offs, not just positives
+✅ Address the reader as "you" directly`;
 }
 
 function extractKeyword(title: string): string {
@@ -453,7 +482,7 @@ SEO REQUIREMENTS:
   if (error) {
     // Try with unique slug if duplicate
     if (error.code === "23505") {
-      const uniqueSlug = `${slug}-${Date.now().toString(36)}`;
+      const uniqueSlug = `${slug}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
       const { error: retryError } = await supabase.from("blog_posts").insert({
         title: contentTitle,
         slug: uniqueSlug,
