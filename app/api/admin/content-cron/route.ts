@@ -35,7 +35,8 @@ interface ContentQueue {
 const STALE_THRESHOLD_MS = 15 * 60 * 1000;
 
 // How many articles to generate per cron run
-const ARTICLES_PER_RUN = 5;
+// 3 articles × ~60s each = ~3 min, well under Vercel's 5-min (300s) limit
+const ARTICLES_PER_RUN = 3;
 
 /**
  * GET - Called by Vercel Cron or manually
@@ -101,10 +102,12 @@ export async function GET(req: Request) {
     // Concurrency guard: if another instance is already processing, skip
     if ((queue as any).processing === true) {
       const processingFor = Date.now() - new Date((queue as any).processingStartedAt || queue.startedAt).getTime();
-      // If processing for less than 3 min, skip (another instance is working)
-      if (processingFor < 3 * 60 * 1000) {
+      // 3 articles × ~90s max = 270s. Allow 4 min before considering it stuck.
+      if (processingFor < 4 * 60 * 1000) {
         return NextResponse.json({ status: "already_processing", processed: queue.processed, total: queue.total });
       }
+      // Guard expired — previous function timed out, safe to re-process
+      console.log(`[ContentCron] Concurrency guard expired (${Math.round(processingFor / 1000)}s) — resuming from ${queue.processed}`);
     }
 
     // Mark as processing to prevent concurrent runs
@@ -138,13 +141,16 @@ export async function GET(req: Request) {
       }
     }
 
-    // Update queue progress
+    // Update queue progress — explicitly clear processing flag so it never gets stuck
     const updatedQueue: ContentQueue = {
       ...queue,
       processed: endIdx,
       lastProgressAt: new Date().toISOString(),
       results: [...queue.results, ...results],
     };
+    // Always clear processing flag (prevents permanent stuck state if previous run timed out)
+    (updatedQueue as any).processing = false;
+    (updatedQueue as any).processingStartedAt = undefined;
 
     if (endIdx >= queue.total) {
       // All done — clear queue
