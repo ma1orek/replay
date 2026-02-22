@@ -165,12 +165,16 @@ export async function GET(req: Request) {
         .update({ value: updatedQueue, updated_at: new Date().toISOString() })
         .eq("key", "content_queue");
 
-      // Self-trigger next batch immediately (don't wait for Vercel Cron)
+      // Trigger next batch — await with timeout so Vercel doesn't kill it before the request sends
+      // Vercel Cron (*/3 * * * *) also picks it up as a safety net
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.replay.build";
-      fetch(`${siteUrl}/api/admin/content-cron`, {
-        method: "GET",
-        headers: { "x-vercel-cron": "true" },
-      }).catch(() => {});
+      await Promise.race([
+        fetch(`${siteUrl}/api/admin/content-cron`, {
+          method: "GET",
+          headers: { "x-vercel-cron": "true" },
+        }),
+        new Promise(resolve => setTimeout(resolve, 3000)), // 3s timeout — don't block response
+      ]).catch(() => {});
     }
 
     return NextResponse.json({
@@ -250,13 +254,7 @@ export async function POST(req: Request) {
     if (error) throw error;
 
     console.log(`[ContentCron] Enqueued ${titles.length} articles (batch: ${batchId})`);
-
-    // Immediately trigger first batch (fire and forget)
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.replay.build";
-    fetch(`${siteUrl}/api/admin/content-cron`, {
-      method: "GET",
-      headers: { "x-vercel-cron": "true" },
-    }).catch(() => {}); // Fire and forget
+    // Vercel Cron fires every 3 min — first batch starts automatically
 
     return NextResponse.json({
       success: true,
