@@ -237,9 +237,16 @@ const Icon = ({ name, className = "w-5 h-5" }) => {
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- GOOGLE FONTS: Pick 2-3 fonts that match the brand. Mix display font for headings + clean font for body. -->
+  <!-- Examples: Syne+Inter, Playfair+DM Sans, Space Grotesk+Lato, Bebas Neue+Nunito, Outfit+Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Inter', sans-serif; }
+    /* heading-font = display/expressive, body-font = clean/readable */
+    :root { --font-heading: 'Syne', sans-serif; --font-body: 'Inter', sans-serif; }
+    html, body { overflow-x: hidden; max-width: 100%; }
+    * { box-sizing: border-box; }
+    body { font-family: var(--font-body); }
+    h1, h2, h3, .heading { font-family: var(--font-heading); }
     .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); }
     .hover-lift { transition: all 0.3s ease; }
     .hover-lift:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }

@@ -311,6 +311,10 @@ REMEMBER: Each section needs a DIFFERENT animation class. Mix and match!
 ALSO add these CSS animations for hover effects:
 
 <style>
+/* BASE RESET — prevent horizontal overflow on every page */
+html, body { overflow-x: hidden; max-width: 100%; }
+* { box-sizing: border-box; }
+
 /* HOVER ANIMATIONS - Must be in every page! */
 .hover-lift { transition: transform 0.3s ease, box-shadow 0.3s ease; }
 .hover-lift:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
@@ -1278,6 +1282,9 @@ EVERY text element MUST be clearly visible against its background:
 - ❌ NEVER use text-outline / -webkit-text-stroke with opacity below 60 — stroked text is MUCH harder to read than solid text!
 - Hero headlines: MUST have overflow-hidden on container + max-w-full to prevent text escaping viewport
 - Hero headlines on mobile: MUST shrink via clamp() or responsive classes (text-3xl md:text-5xl lg:text-7xl) — NEVER a fixed huge size
+- VERY LARGE TEXT (URLs, emails, long words like "HELLO@ARIQ.CAPITAL"): use word-break:break-all OR font-size:clamp(2rem,6vw,8rem) so text never overflows horizontally
+- ALWAYS add to <body> or root container: overflow-x:hidden — prevents any element from causing horizontal scroll
+- Text containers with huge text: add max-w-full + overflow-hidden + break-words on the parent div
 
 🚨 HERO HEADLINE SPACING — NO EXTRA SPACES!
 - Write hero headlines as NORMAL text with SINGLE spaces between words
@@ -1295,6 +1302,22 @@ EVERY text element MUST be clearly visible against its background:
   - ✅ CORRECT: group letters per word, add white-space:nowrap per word group, container is overflow-hidden
 - For react-bits SplitText: wrap the component in <div className="overflow-hidden"> and keep headline short enough to fit
 - For .split-text class: the ANIMATION 16 code in the template already handles word-grouping correctly — use as-is
+
+🚨 GOOGLE FONTS — ALWAYS USE BRAND-APPROPRIATE FONTS!
+- ALWAYS load 2 Google Fonts: one expressive/display for headings + one clean for body
+- Pick fonts that match the brand personality detected from the video:
+  • Finance / Law / Luxury: Playfair Display + DM Sans | Cormorant + Lato | EB Garamond + Inter
+  • Tech / SaaS / Startup: Space Grotesk + Inter | Syne + Nunito | Outfit + Roboto
+  • Bold / Street / Agency: Bebas Neue + Barlow | Oswald + Open Sans | Black Han Sans + Lato
+  • Minimal / Design: DM Serif Display + DM Sans | Libre Baskerville + Nunito | Raleway + Inter
+  • Creative / Studio: Fraunces + Manrope | Clash Display → use Syne as fallback | Bricolage Grotesque + Inter
+- Load via <link href="https://fonts.googleapis.com/css2?family=...&display=swap">
+- Apply heading font to: h1, h2, h3, .hero-title, large display text
+- Apply body font to: body, p, nav, small text
+- NEVER use only Inter for everything — boring. Pick a display font that gives character!
+- Example head tag:
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style> h1,h2,h3 { font-family: 'Space Grotesk', sans-serif; } body { font-family: 'Inter', sans-serif; } </style>
 
 🚨 HERO TEXT ELEMENT MARGINS — TIGHT GROUPING!
 - Hero text elements (h1, p, buttons) must be TIGHTLY grouped — no large gaps
