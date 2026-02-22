@@ -13593,7 +13593,7 @@ ${publishCode}
             ) : (
               <div className="flex items-center justify-between w-full">
                 <a href="/" className="hover:opacity-80 transition-opacity flex-shrink-0">
-                  <LogoIcon className="w-6 h-auto" color="white" />
+                  <LogoIcon className="w-4 h-auto" color="white" />
                 </a>
                 <button
                   onClick={() => setSidebarCollapsed(true)}
