@@ -299,14 +299,14 @@ export async function GET(
   /* VISIBILITY FIX - Force animation-hidden elements visible */
   /* Excludes: canvas overlays, grain/noise effects, script/style tags */
 
-  /* Target exact opacity:0 (with semicolon to avoid matching 0.04, 0.5, etc.) */
-  [style*="opacity: 0;"]:not(canvas), [style*="opacity:0;"]:not(canvas) { opacity: 1 !important; }
-  /* Also match opacity:0 at end of style attribute (no trailing semicolon) */
-  [style$="opacity: 0"]:not(canvas), [style$="opacity:0"]:not(canvas) { opacity: 1 !important; }
+  /* Target exact opacity:0 — excludes decorative overlays (grain/noise) with pointer-events:none */
+  [style*="opacity: 0;"]:not(canvas):not([style*="pointer-events"]):not(.pointer-events-none),
+  [style*="opacity:0;"]:not(canvas):not([style*="pointer-events"]):not(.pointer-events-none) { opacity: 1 !important; }
+  [style$="opacity: 0"]:not(canvas):not([style*="pointer-events"]):not(.pointer-events-none),
+  [style$="opacity:0"]:not(canvas):not([style*="pointer-events"]):not(.pointer-events-none) { opacity: 1 !important; }
   [style*="visibility: hidden"], [style*="visibility:hidden"] { visibility: visible !important; }
-  [style*="translate"]:not(canvas) { opacity: 1 !important; }
 
-  /* Target animation classes - only fix opacity/visibility, NOT transform (breaks layout) */
+  /* Target animation classes — NOT decorative overlays */
   .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .slide-left, .slide-right,
   .scale-up, .rotate-in, .blur-fade, .animate-fade,
   [class*="fade-"], [class*="slide-"], [class*="stagger-"],
@@ -316,8 +316,8 @@ export async function GET(
   }
 
   /* Target stagger containers and their children */
-  .stagger-cards, .stagger-cards > *:not(canvas),
-  [class*="stagger"] > *:not(canvas) {
+  .stagger-cards, .stagger-cards > *:not([style*="pointer-events"]):not(.pointer-events-none),
+  [class*="stagger"] > *:not([style*="pointer-events"]):not(.pointer-events-none) {
     opacity: 1 !important;
     visibility: visible !important;
   }
@@ -329,28 +329,15 @@ export async function GET(
     visibility: visible !important;
   }
 
-  /* Ensure grid/flex children are visible (excluding overlays) */
-  .grid > *:not(canvas), .flex > *:not(canvas),
-  [class*="grid"] > *:not(canvas), [class*="flex"] > *:not(canvas),
-  section > div:not(canvas), section > *:not(canvas):not(script):not(style):not(link) {
-    opacity: 1 !important;
-    visibility: visible !important;
-  }
-
-  /* Target common card containers */
-  [class*="card"]:not(canvas), [class*="Card"]:not(canvas),
+  /* Target common card containers — NOT decorative overlays */
+  [class*="card"]:not([style*="pointer-events"]):not(.pointer-events-none),
+  [class*="Card"]:not([style*="pointer-events"]):not(.pointer-events-none),
   [class*="step"], [class*="Step"],
   [class*="feature"], [class*="Feature"],
-  [class*="item"]:not(canvas), [class*="Item"]:not(canvas) {
+  [class*="item"]:not([style*="pointer-events"]):not(.pointer-events-none),
+  [class*="Item"]:not([style*="pointer-events"]):not(.pointer-events-none) {
     opacity: 1 !important;
     visibility: visible !important;
-  }
-
-  /* Fix transform-based hiding - only for elements hidden off-screen */
-  [style*="translateY(-100"], [style*="translateX(-100"],
-  [style*="translateY(100%"], [style*="translateX(100%"],
-  [style*="scale(0)"] {
-    opacity: 1 !important;
   }
 
   /* CANVAS CHART SAFETY NET - prevent Chart.js canvas from growing to insane heights */
@@ -358,6 +345,26 @@ export async function GET(
     max-height: 400px !important;
   }
 </style>
+<script>
+(function() {
+  function protectOverlays() {
+    document.querySelectorAll('[style*="pointer-events"],.pointer-events-none').forEach(function(el) {
+      var cs = window.getComputedStyle(el);
+      if (cs.pointerEvents !== 'none') return;
+      if (cs.position !== 'fixed' && cs.position !== 'absolute') return;
+      var match = (el.getAttribute('style') || '').match(/opacity\\s*:\\s*([\\d.]+)/);
+      if (match) {
+        var orig = parseFloat(match[1]);
+        if (orig > 0 && orig < 0.5) {
+          el.style.setProperty('opacity', match[1], 'important');
+        }
+      }
+    });
+  }
+  document.addEventListener('DOMContentLoaded', function() { protectOverlays(); setTimeout(protectOverlays, 100); });
+  window.addEventListener('load', function() { protectOverlays(); setTimeout(protectOverlays, 200); });
+})();
+</script>
 `;
 
   // Badge HTML - small, subtle, bottom-right corner (injected before </body>)
@@ -617,22 +624,46 @@ export async function GET(
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { min-height: 100vh; font-family: 'Inter', sans-serif; }
-    /* VISIBILITY FIX - excludes canvas/grain/noise overlays */
-    [style*="opacity: 0;"]:not(canvas), [style*="opacity:0;"]:not(canvas) { opacity: 1 !important; }
-    [style$="opacity: 0"]:not(canvas), [style$="opacity:0"]:not(canvas) { opacity: 1 !important; }
+    /* VISIBILITY FIX - excludes decorative overlays (grain/noise with pointer-events:none) */
+    [style*="opacity: 0;"]:not(canvas):not([style*="pointer-events"]):not(.pointer-events-none),
+    [style*="opacity:0;"]:not(canvas):not([style*="pointer-events"]):not(.pointer-events-none) { opacity: 1 !important; }
+    [style$="opacity: 0"]:not(canvas):not([style*="pointer-events"]):not(.pointer-events-none),
+    [style$="opacity:0"]:not(canvas):not([style*="pointer-events"]):not(.pointer-events-none) { opacity: 1 !important; }
     [style*="visibility: hidden"] { visibility: visible !important; }
     .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .slide-left, .slide-right,
     .scale-up, .rotate-in, .blur-fade, .animate-fade,
     [class*="fade-"], [class*="slide-"], [class*="stagger-"], [class*="animate-"],
-    [class*="card"]:not(canvas), [class*="Card"]:not(canvas), [class*="step"], [class*="Step"] {
+    [class*="card"]:not([style*="pointer-events"]):not(.pointer-events-none),
+    [class*="Card"]:not([style*="pointer-events"]):not(.pointer-events-none),
+    [class*="step"], [class*="Step"] {
       opacity: 1 !important;
       visibility: visible !important;
     }
-    .stagger-cards > *:not(canvas), [class*="stagger"] > *:not(canvas) { opacity: 1 !important; visibility: visible !important; }
-    .grid > *:not(canvas), .flex > *:not(canvas), section > div:not(canvas), section > *:not(canvas):not(script):not(style) { opacity: 1 !important; visibility: visible !important; }
+    .stagger-cards > *:not([style*="pointer-events"]):not(.pointer-events-none),
+    [class*="stagger"] > *:not([style*="pointer-events"]):not(.pointer-events-none) { opacity: 1 !important; visibility: visible !important; }
     /* Canvas chart safety net */
     canvas[id*="chart" i], canvas[id*="Chart"], canvas[id*="graph" i], canvas[id*="Graph"] { max-height: 400px !important; }
   </style>
+  <script>
+  (function() {
+    function protectOverlays() {
+      document.querySelectorAll('[style*="pointer-events"],.pointer-events-none').forEach(function(el) {
+        var cs = window.getComputedStyle(el);
+        if (cs.pointerEvents !== 'none') return;
+        if (cs.position !== 'fixed' && cs.position !== 'absolute') return;
+        var match = (el.getAttribute('style') || '').match(/opacity\\s*:\\s*([\\d.]+)/);
+        if (match) {
+          var orig = parseFloat(match[1]);
+          if (orig > 0 && orig < 0.5) {
+            el.style.setProperty('opacity', match[1], 'important');
+          }
+        }
+      });
+    }
+    document.addEventListener('DOMContentLoaded', function() { protectOverlays(); setTimeout(protectOverlays, 100); });
+    window.addEventListener('load', function() { protectOverlays(); setTimeout(protectOverlays, 200); });
+  })();
+  </script>
   ${customStyles}
 </head>
 <body${bodyClasses ? ` class="${bodyClasses}"` : ''}>

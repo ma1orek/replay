@@ -12749,8 +12749,9 @@ ${publishCode}
       // ═══════════════════════════════════════════════════════════════════════════
       const visibilityFix = `
 <style id="publish-visibility-fix">
-  /* VISIBILITY FIX - Make hidden content visible, but preserve decorative overlays */
-  [style*="opacity: 0;"], [style*="opacity:0;"] { opacity: 1 !important; }
+  /* VISIBILITY FIX - Make hidden content visible, but preserve decorative overlays (grain/noise) */
+  [style*="opacity: 0;"]:not([style*="pointer-events"]):not(.pointer-events-none),
+  [style*="opacity:0;"]:not([style*="pointer-events"]):not(.pointer-events-none) { opacity: 1 !important; }
   [style*="visibility: hidden"], [style*="visibility:hidden"] { visibility: visible !important; }
   .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .slide-left, .slide-right,
   .scale-up, .rotate-in, .blur-fade, .animate-fade,
@@ -12759,16 +12760,17 @@ ${publishCode}
     opacity: 1 !important;
     visibility: visible !important;
   }
-  .stagger-cards, .stagger-cards > *, [class*="stagger"] > * {
+  .stagger-cards, .stagger-cards > *:not([style*="pointer-events"]):not(.pointer-events-none),
+  [class*="stagger"] > *:not([style*="pointer-events"]):not(.pointer-events-none) {
     opacity: 1 !important;
     visibility: visible !important;
   }
-  [class*="card"], [class*="Card"], [class*="step"], [class*="Step"],
-  [class*="feature"], [class*="Feature"], [class*="item"], [class*="Item"] {
-    opacity: 1 !important;
-    visibility: visible !important;
-  }
-  .grid > *, .flex > *, section > div, section > * {
+  [class*="card"]:not([style*="pointer-events"]):not(.pointer-events-none),
+  [class*="Card"]:not([style*="pointer-events"]):not(.pointer-events-none),
+  [class*="step"], [class*="Step"],
+  [class*="feature"], [class*="Feature"],
+  [class*="item"]:not([style*="pointer-events"]):not(.pointer-events-none),
+  [class*="Item"]:not([style*="pointer-events"]):not(.pointer-events-none) {
     opacity: 1 !important;
     visibility: visible !important;
   }
