@@ -317,8 +317,8 @@ PRESERVATION RULES (MANDATORY):
 ICONS: Use Lucide only: <i data-lucide="icon-name" class="w-5 h-5"></i>
 IMAGES: https://picsum.photos/WxH?random=N | AVATARS: https://i.pravatar.cc/150?img=N
 
-RESPONSE: Brief summary (2-3 bullet points of what changed), then complete HTML code block.
-NEVER add explanations after the code block.
+RESPONSE: Start with a brief 1-2 sentence summary describing what YOU changed (not repeating the user's request). Write it as a confident confirmation in English, e.g. "Reduced the footer text size from text-lg to text-xs and lowered its opacity." Then output the complete HTML code block.
+NEVER add explanations after the code block. NEVER parrot or echo the user's message — describe the actual changes you made.
 
 FORBIDDEN:
 - Rewriting/regenerating sections the user didn't ask to change
@@ -782,7 +782,7 @@ CRITICAL RULES:
                 }
 
                 // Success: return edited code
-                const summary = parsed.summary || `Applied: "${editRequest.slice(0, 60)}${editRequest.length > 60 ? '...' : ''}"${applyResult.appliedCount > 1 ? ` (${applyResult.appliedCount} changes)` : ''}`;
+                const summary = parsed.summary || (applyResult.appliedCount > 1 ? `Made ${applyResult.appliedCount} changes to the code.` : "Made the requested changes.");
                 send("complete", {
                   code: applyResult.code,
                   summary,
@@ -1005,9 +1005,14 @@ function generateChangeSummary(oldCode: string, newCode: string, request: string
     summaryParts.push(`Added ${newSections - oldSections} section(s)`);
   }
   
-  // Instead of useless "+/-N lines", use the user request as summary when no specific changes detected
+  // Generate a meaningful fallback based on code diff
   if (summaryParts.length === 0) {
-    return `Applied: "${request.slice(0, 60)}${request.length > 60 ? '...' : ''}"`;
+    const lineDiffStr = lineDiff > 0 ? `Added ${lineDiff} lines.` : lineDiff < 0 ? `Removed ${Math.abs(lineDiff)} lines.` : '';
+    const sizeDiff = newCode.length - oldCode.length;
+    if (Math.abs(sizeDiff) < 50) {
+      return "Made the requested changes.";
+    }
+    return lineDiffStr || "Changes applied to the code.";
   }
 
   return summaryParts.join(" • ");
@@ -1410,7 +1415,7 @@ ${elementContext}
 USER REQUEST: ${editRequest}
 
 INSTRUCTIONS:
-1. Output brief summary of what you're changing (1 sentence)
+1. Output a brief SUMMARY line describing what YOU did (not what the user asked). Write it as a confident confirmation in English, e.g. "Reduced the footer email text from text-lg to text-sm." or "Changed the hero background from blue to dark gradient." NEVER parrot/repeat the user's message — describe the actual code change you made.
 2. Output one or more SEARCH/REPLACE blocks with this EXACT format:
 
 <<<SEARCH
@@ -1435,7 +1440,7 @@ INSTRUCTIONS:
 11. NEVER remove Alpine.js directives (x-data, x-show, x-collapse, @click) — they control page interactivity!
 
 Example:
-Changed button color to blue
+Swapped the Contact button from red to blue (bg-red-500 → bg-blue-600).
 
 <<<SEARCH
 <button class="bg-red-500 px-4 py-2">
