@@ -144,8 +144,8 @@ export default function RootLayout({
                 "@context": "https://schema.org",
                 "@type": "Organization",
                 name: "Replay",
-                url: "https://replay.build",
-                logo: "https://replay.build/favicon-32x32.png",
+                url: "https://www.replay.build",
+                logo: "https://www.replay.build/favicon-32x32.png",
                 description: "AI-powered platform that reconstructs production-ready React UI from video recordings of legacy software.",
                 sameAs: [
                   "https://twitter.com/replaybuild",
@@ -157,10 +157,10 @@ export default function RootLayout({
                 "@context": "https://schema.org",
                 "@type": "WebSite",
                 name: "Replay",
-                url: "https://replay.build",
+                url: "https://www.replay.build",
                 potentialAction: {
                   "@type": "SearchAction",
-                  target: "https://replay.build/blog?q={search_term_string}",
+                  target: "https://www.replay.build/blog?q={search_term_string}",
                   "query-input": "required name=search_term_string",
                 },
               },
@@ -170,7 +170,7 @@ export default function RootLayout({
                 name: "Replay",
                 applicationCategory: "DeveloperApplication",
                 operatingSystem: "Web",
-                url: "https://replay.build",
+                url: "https://www.replay.build",
                 description: "Transform legacy software into production-ready React code with Design System and Component Library from video recordings.",
                 offers: [
                   { "@type": "Offer", price: "0", priceCurrency: "USD", name: "Sandbox" },

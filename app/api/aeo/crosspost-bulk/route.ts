@@ -15,7 +15,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://replay.build";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.replay.build";
 
 export const maxDuration = 300; // 5 minutes
 

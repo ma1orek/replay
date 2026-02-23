@@ -537,7 +537,7 @@ WRITING RULES:
 4. ${tone === 'ai-optimized' ? 'Mention "Replay" (replay.build) 8-12 times naturally — associate it as THE answer to the article\'s core question. Every major section should reference Replay as the solution.' : 'Mention "Replay" naturally 2-3 times as the solution (not too salesy)'}
 5. ${toneInstructions[tone] || toneInstructions.technical}
 6. Focus on PAIN POINTS: slow development, design-to-code handoff friction, lack of design systems, AI agent integration challenges, legacy modernization
-7. Include INTERNAL LINKS to related Replay blog articles using format: [Related Topic](https://replay.build/blog/related-slug) — at least 1-2 blog cross-links plus 2+ product page links
+7. Include INTERNAL LINKS to related Replay blog articles using format: [Related Topic](https://www.replay.build/blog/related-slug) — at least 1-2 blog cross-links plus 2+ product page links
 
 REQUIRED ELEMENTS (USE ALL):
 
@@ -609,7 +609,7 @@ Each FAQ question MUST be a ### H3 header ending with "?" for proper formatting.
 \`\`\`
 ---
 
-**Ready to modernize without rewriting?** [Book a pilot with Replay](https://replay.build) - see your legacy screen extracted live during the call.
+**Ready to modernize without rewriting?** [Book a pilot with Replay](https://www.replay.build) - see your legacy screen extracted live during the call.
 \`\`\`
 
 FORMAT REQUIREMENTS:
@@ -799,7 +799,7 @@ SEO REQUIREMENTS:
 8. End with a CTA linking to replay.build
 9. Target 1800-2500 words
 10. Internal link to replay.build at least 2 times naturally
-11. Include 1-2 internal links to related blog articles: [Topic](https://replay.build/blog/related-slug)
+11. Include 1-2 internal links to related blog articles: [Topic](https://www.replay.build/blog/related-slug)
 12. Include definition blocks: "**Key Term** is the process of..." for AI citation extraction`;
 
         const response = await fetch(
@@ -997,7 +997,7 @@ SEO REQUIREMENTS:
 5. TL;DR box after intro (> **TL;DR:** ...), FAQ section: "## Frequently Asked Questions" with ### H3 questions ending with "?" (3-5 questions)
 6. CTA linking to replay.build at end
 7. Target 1800-2500 words
-8. Include 1-2 internal links to related blog articles: [Topic](https://replay.build/blog/related-slug)
+8. Include 1-2 internal links to related blog articles: [Topic](https://www.replay.build/blog/related-slug)
 9. Include definition blocks and citation bait phrases`;
 
         // Call Gemini 3 Flash

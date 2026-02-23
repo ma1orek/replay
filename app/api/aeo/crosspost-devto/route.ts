@@ -12,7 +12,7 @@ const supabase = createClient(
 );
 
 const DEVTO_API_KEY = process.env.DEVTO_API_KEY || "";
-const SITE_URL = "https://replay.build";
+const SITE_URL = "https://www.replay.build";
 
 /**
  * POST - Crosspost an article to Dev.to

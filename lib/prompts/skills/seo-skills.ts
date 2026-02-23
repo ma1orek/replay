@@ -196,7 +196,7 @@ export const SCHEMA_MARKUP_SKILL = `
   "author": {
     "@type": "Organization",
     "name": "Replay",
-    "url": "https://replay.build"
+    "url": "https://www.replay.build"
   },
   "publisher": {
     "@type": "Organization",

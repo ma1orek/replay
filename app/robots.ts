@@ -12,11 +12,11 @@ export default function robots(): MetadataRoute.Robots {
       { userAgent: "Google-Extended", allow: "/" },
       { userAgent: "Amazonbot", allow: "/" },
     ],
-    sitemap: "https://replay.build/sitemap.xml",
-    host: "https://replay.build",
+    sitemap: "https://www.replay.build/sitemap.xml",
+    host: "https://www.replay.build",
   };
 }
 
 // LLM-friendly documentation index available at:
-// https://replay.build/llms.txt (summary)
-// https://replay.build/llms-full.txt (complete)
+// https://www.replay.build/llms.txt (summary)
+// https://www.replay.build/llms-full.txt (complete)

@@ -13,7 +13,7 @@ const supabase = createClient(
 
 const HASHNODE_API_KEY = process.env.HASHNODE_API_KEY || "";
 const HASHNODE_PUBLICATION_ID = process.env.HASHNODE_PUBLICATION_ID || "";
-const SITE_URL = "https://replay.build";
+const SITE_URL = "https://www.replay.build";
 
 /**
  * POST - Crosspost an article to Hashnode

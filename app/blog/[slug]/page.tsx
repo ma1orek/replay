@@ -146,7 +146,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     name: "Replay",
-    url: "https://replay.build",
+    url: "https://www.replay.build",
     applicationCategory: "DeveloperApplication",
     operatingSystem: "Web",
     description: "AI-powered platform that converts video recordings of any UI into production React code, Design Systems, and Component Libraries.",

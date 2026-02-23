@@ -11,27 +11,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Core pages
   const staticPages: MetadataRoute.Sitemap = [
-    { url: "https://replay.build", lastModified: now, changeFrequency: "weekly", priority: 1.0 },
-    { url: "https://replay.build/tool", lastModified: now, changeFrequency: "weekly", priority: 0.9 },
-    { url: "https://replay.build/landing", lastModified: now, changeFrequency: "monthly", priority: 0.9 },
-    { url: "https://replay.build/pricing", lastModified: now, changeFrequency: "monthly", priority: 0.8 },
-    { url: "https://replay.build/blog", lastModified: now, changeFrequency: "daily", priority: 0.8 },
-    { url: "https://replay.build/contact", lastModified: now, changeFrequency: "yearly", priority: 0.3 },
-    { url: "https://replay.build/terms", lastModified: now, changeFrequency: "yearly", priority: 0.3 },
-    { url: "https://replay.build/privacy", lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: "https://www.replay.build", lastModified: now, changeFrequency: "weekly", priority: 1.0 },
+    { url: "https://www.replay.build/landing", lastModified: now, changeFrequency: "monthly", priority: 0.9 },
+    { url: "https://www.replay.build/pricing", lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: "https://www.replay.build/blog", lastModified: now, changeFrequency: "daily", priority: 0.8 },
+    { url: "https://www.replay.build/contact", lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: "https://www.replay.build/terms", lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: "https://www.replay.build/privacy", lastModified: now, changeFrequency: "yearly", priority: 0.3 },
   ];
 
   // LLM-friendly documentation files
   const llmsPages: MetadataRoute.Sitemap = [
-    { url: "https://replay.build/llms.txt", lastModified: now, changeFrequency: "monthly", priority: 0.8 },
-    { url: "https://replay.build/llms-full.txt", lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: "https://www.replay.build/llms.txt", lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: "https://www.replay.build/llms-full.txt", lastModified: now, changeFrequency: "monthly", priority: 0.8 },
   ];
 
   // Learn / SEO content pages
   const learnPages: MetadataRoute.Sitemap = [
-    { url: "https://replay.build/learn/behavior-driven-ui-reconstruction", lastModified: now, changeFrequency: "monthly", priority: 0.7 },
-    { url: "https://replay.build/learn/why-screenshots-fail-for-ui", lastModified: now, changeFrequency: "monthly", priority: 0.7 },
-    { url: "https://replay.build/rebuild/rebuild-ui-from-video", lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: "https://www.replay.build/learn/behavior-driven-ui-reconstruction", lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: "https://www.replay.build/learn/why-screenshots-fail-for-ui", lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: "https://www.replay.build/rebuild/rebuild-ui-from-video", lastModified: now, changeFrequency: "monthly", priority: 0.7 },
   ];
 
   // Documentation pages
@@ -57,7 +56,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "docs/api",
   ];
   const docsPages: MetadataRoute.Sitemap = docsPaths.map((path) => ({
-    url: `https://replay.build/${path}`,
+    url: `https://www.replay.build/${path}`,
     lastModified: now,
     changeFrequency: "weekly" as const,
     priority: path === "docs" ? 0.7 : 0.5,
@@ -81,7 +80,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   const blogPages: MetadataRoute.Sitemap = allPosts.map((post) => ({
-    url: `https://replay.build/blog/${post.slug}`,
+    url: `https://www.replay.build/blog/${post.slug}`,
     lastModified: new Date(post.published_at || post.created_at),
     changeFrequency: "monthly" as const,
     priority: 0.7,
@@ -104,7 +103,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   const publishedPages: MetadataRoute.Sitemap = allProjects.map((proj) => ({
-    url: `https://replay.build/p/${proj.slug}`,
+    url: `https://www.replay.build/p/${proj.slug}`,
     lastModified: new Date(proj.updated_at || proj.created_at),
     changeFrequency: "monthly" as const,
     priority: 0.5,

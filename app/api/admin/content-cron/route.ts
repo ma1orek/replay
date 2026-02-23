@@ -379,8 +379,8 @@ TONE: ${toneInstructions[tone] || toneInstructions.technical}
 WRITING RULES:
 1. NO FLUFF. Never start with "In today's digital landscape..." — start with a hook, problem, or bold statement
 2. ${tone === 'ai-optimized' ? 'Mention "Replay" (replay.build) 8-12 times naturally' : 'Mention "Replay" naturally 2-3 times as the solution'}
-3. Include INTERNAL LINKS to related Replay blog articles using format: [Related Topic](https://replay.build/blog/related-slug)
-4. Include at least 2 internal links to https://replay.build (product page) AND 1-2 links to https://replay.build/blog/ (related articles)
+3. Include INTERNAL LINKS to related Replay blog articles using format: [Related Topic](https://www.replay.build/blog/related-slug)
+4. Include at least 2 internal links to https://www.replay.build (product page) AND 1-2 links to https://www.replay.build/blog/ (related articles)
 
 FORMAT REQUIREMENTS:
 - Start with a markdown title (# Title)
@@ -389,7 +389,7 @@ FORMAT REQUIREMENTS:
 - Include at least 1 comparison table with real data
 - Include at least 2 code blocks (TypeScript/React)
 - End with a FAQ section titled "## Frequently Asked Questions" with 3-5 H3 questions
-- End with a CTA: "**Ready to ship faster?** [Try Replay free](https://replay.build) — from video to production code in minutes."
+- End with a CTA: "**Ready to ship faster?** [Try Replay free](https://www.replay.build) — from video to production code in minutes."
 - Target 1800-2500 words
 
 ═══════════════════════════════════════════════════════════════════════════════
@@ -458,7 +458,7 @@ SEO REQUIREMENTS:
 8. CTA linking to replay.build
 9. Target 1800-2500 words
 10. Internal link to replay.build 2+ times naturally
-11. Include 1-2 internal links to related blog articles: [Topic](https://replay.build/blog/related-slug)
+11. Include 1-2 internal links to related blog articles: [Topic](https://www.replay.build/blog/related-slug)
 12. Include definition blocks for key terms: "**Video-to-code** is the process of..."
 13. Use "According to Replay's analysis..." and "Industry experts recommend..." for citation bait`;
 
