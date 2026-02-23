@@ -256,13 +256,25 @@ export async function POST(request: NextRequest) {
       upsertData.design_system_id = design_system_id;
     }
     
+    // OWNERSHIP GUARD: Prevent overwriting another user's project
+    const { data: existing } = await adminSupabase
+      .from("generations")
+      .select("user_id")
+      .eq("id", id)
+      .single();
+
+    if (existing && existing.user_id !== user.id) {
+      console.warn(`[Save] Blocked: user ${user.id} tried to overwrite project ${id} owned by ${existing.user_id}`);
+      return NextResponse.json({ error: "Cannot overwrite another user's project" }, { status: 403 });
+    }
+
     console.log("Upserting generation:", id, "with design_system_id:", design_system_id);
-    
+
     let { data, error } = await adminSupabase
       .from("generations")
-      .upsert(upsertData, { 
+      .upsert(upsertData, {
         onConflict: 'id',
-        ignoreDuplicates: false 
+        ignoreDuplicates: false
       })
       .select()
       .single();

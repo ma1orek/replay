@@ -5223,6 +5223,7 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
 
   // Handle ?project=xxx URL param - load specific project for multiplayer collaboration
   const [hasLoadedFromUrl, setHasLoadedFromUrl] = useState(false);
+  const [isViewingForeignProject, setIsViewingForeignProject] = useState(false);
   useEffect(() => {
     const projectIdParam = searchParams.get('project');
     // Skip if no project param, already loaded this project from URL, or code already exists for this project
@@ -5254,6 +5255,14 @@ This UI was reconstructed entirely from a screen recording using Replay's AI.
           .eq("id", projectId)
           .single();
         
+        // OWNERSHIP CHECK: if project belongs to someone else, mark as foreign (read-only)
+        if (gen && gen.user_id && user?.id && gen.user_id !== user.id) {
+          console.log("[Project URL] Foreign project detected — read-only mode. Owner:", gen.user_id, "Viewer:", user.id);
+          setIsViewingForeignProject(true);
+        } else {
+          setIsViewingForeignProject(false);
+        }
+
         if (error || !gen) {
           console.log("[Project URL] Project not found in Supabase, error:", error?.message);
           
@@ -6275,7 +6284,13 @@ Ready to generate from your own videos? Upload any screen recording to get start
       console.log("[Save] Skipping - no user logged in");
       return;
     }
-    
+
+    // Block saves for foreign projects (viewing someone else's project via shared link)
+    if (isViewingForeignProject) {
+      console.log("[Save] Skipping - viewing foreign project (read-only)");
+      return;
+    }
+
     // Only skip demo saves if in demo mode (user came via ?demo= URL, not logged in as owner)
     // The owner CAN save changes to demo projects when loaded from their history
     if (isDemoMode && DEMO_PROJECT_IDS.has(gen.id)) {
@@ -6308,7 +6323,7 @@ Ready to generate from your own videos? Upload any screen recording to get start
       console.error("Error saving to Supabase:", e);
       failedSavesRef.current.add(gen.id);
     }
-  }, [user, isDemoMode, DEMO_PROJECT_IDS]);
+  }, [user, isDemoMode, DEMO_PROJECT_IDS, isViewingForeignProject]);
   
   // Lazy load full generation data (called when user selects from history)
   const loadFullGeneration = useCallback(async (genId: string): Promise<GenerationRecord | null> => {
