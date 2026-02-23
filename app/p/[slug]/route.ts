@@ -347,22 +347,17 @@ export async function GET(
 </style>
 <script>
 (function() {
-  function protectOverlays() {
-    document.querySelectorAll('[style*="pointer-events"],.pointer-events-none').forEach(function(el) {
+  function forceVisible() {
+    document.querySelectorAll('*').forEach(function(el) {
       var cs = window.getComputedStyle(el);
-      if (cs.pointerEvents !== 'none') return;
-      if (cs.position !== 'fixed' && cs.position !== 'absolute') return;
-      var match = (el.getAttribute('style') || '').match(/opacity\\s*:\\s*([\\d.]+)/);
-      if (match) {
-        var orig = parseFloat(match[1]);
-        if (orig > 0 && orig < 0.5) {
-          el.style.setProperty('opacity', match[1], 'important');
-        }
-      }
+      // Skip decorative overlays (noise/grain/texture) — pointer-events:none + fixed/absolute
+      if (cs.pointerEvents === 'none' && (cs.position === 'fixed' || cs.position === 'absolute')) return;
+      if (parseFloat(cs.opacity) === 0) el.style.setProperty('opacity', '1', 'important');
+      if (cs.visibility === 'hidden') el.style.setProperty('visibility', 'visible', 'important');
     });
   }
-  document.addEventListener('DOMContentLoaded', function() { protectOverlays(); setTimeout(protectOverlays, 100); });
-  window.addEventListener('load', function() { protectOverlays(); setTimeout(protectOverlays, 200); });
+  document.addEventListener('DOMContentLoaded', function() { forceVisible(); setTimeout(forceVisible, 100); setTimeout(forceVisible, 300); });
+  window.addEventListener('load', function() { forceVisible(); setTimeout(forceVisible, 100); setTimeout(forceVisible, 500); });
 })();
 </script>
 `;
@@ -471,7 +466,13 @@ export async function GET(
       code = code.replace(/<!DOCTYPE[^>]*>/i, (match) => `${match}\n<html lang="en"><head>${seoMeta}</head>`);
     }
     
-    // Inject visibility fix CSS into <head>
+    // STRIP old publish-time visibility fix (baked into DB HTML) — route.ts injects its own corrected version
+    // The old version had aggressive rules that broke grain/noise overlays
+    code = code.replace(/<style id="publish-visibility-fix">[\s\S]*?<\/style>/g, '<!-- old publish-visibility-fix stripped -->');
+    // Strip old forceVisible script (it forced opacity:1 on elements with opacity < 0.1, including grain overlays)
+    code = code.replace(/<script>\s*\(function\(\)\s*\{\s*function forceVisible[\s\S]*?<\/script>/g, '<!-- old forceVisible stripped -->');
+
+    // Inject corrected visibility fix CSS into <head>
     if (code.includes('</head>')) {
       code = code.replace('</head>', `${visibilityFixCss}\n</head>`);
     } else if (code.includes('<body')) {
@@ -646,22 +647,16 @@ export async function GET(
   </style>
   <script>
   (function() {
-    function protectOverlays() {
-      document.querySelectorAll('[style*="pointer-events"],.pointer-events-none').forEach(function(el) {
+    function forceVisible() {
+      document.querySelectorAll('*').forEach(function(el) {
         var cs = window.getComputedStyle(el);
-        if (cs.pointerEvents !== 'none') return;
-        if (cs.position !== 'fixed' && cs.position !== 'absolute') return;
-        var match = (el.getAttribute('style') || '').match(/opacity\\s*:\\s*([\\d.]+)/);
-        if (match) {
-          var orig = parseFloat(match[1]);
-          if (orig > 0 && orig < 0.5) {
-            el.style.setProperty('opacity', match[1], 'important');
-          }
-        }
+        if (cs.pointerEvents === 'none' && (cs.position === 'fixed' || cs.position === 'absolute')) return;
+        if (parseFloat(cs.opacity) === 0) el.style.setProperty('opacity', '1', 'important');
+        if (cs.visibility === 'hidden') el.style.setProperty('visibility', 'visible', 'important');
       });
     }
-    document.addEventListener('DOMContentLoaded', function() { protectOverlays(); setTimeout(protectOverlays, 100); });
-    window.addEventListener('load', function() { protectOverlays(); setTimeout(protectOverlays, 200); });
+    document.addEventListener('DOMContentLoaded', function() { forceVisible(); setTimeout(forceVisible, 100); setTimeout(forceVisible, 300); });
+    window.addEventListener('load', function() { forceVisible(); setTimeout(forceVisible, 100); setTimeout(forceVisible, 500); });
   })();
   </script>
   ${customStyles}
