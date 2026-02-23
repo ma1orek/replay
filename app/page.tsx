@@ -12637,9 +12637,31 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
         if (htmlFile?.content && htmlFile.content.includes('<!DOCTYPE')) {
           publishCode = htmlFile.content;
           console.log('[handlePublish] Using HTML from generatedFiles:', htmlFile.path);
-        } else {
-          publishCode = editableCode || generatedCode || '';
-          console.log('[handlePublish] Last resort fallback');
+        } else if (activeGeneration?.id) {
+          // RECOVERY: editableCode and generatedCode are both corrupt/short
+          // Fetch the original code directly from Supabase generation record
+          console.log('[handlePublish] editableCode too short, fetching from Supabase generation:', activeGeneration.id);
+          try {
+            const { createClient } = await import('@/lib/supabase/client');
+            const sb = createClient();
+            const { data: genRow } = await sb
+              .from('generations')
+              .select('code')
+              .eq('id', activeGeneration.id)
+              .single();
+            if (genRow?.code && genRow.code.length > 200 && (genRow.code.includes('<!DOCTYPE') || genRow.code.includes('<html'))) {
+              publishCode = genRow.code;
+              console.log('[handlePublish] Recovered code from Supabase, length:', publishCode.length);
+            }
+          } catch (e) {
+            console.warn('[handlePublish] Failed to fetch from Supabase:', e);
+          }
+        }
+        if (!publishCode || publishCode.length < 200) {
+          console.error('[handlePublish] No valid code found to publish, aborting');
+          showToast("Cannot publish — code is empty or corrupted. Try regenerating the page.", "error");
+          setIsPublishing(false);
+          return;
         }
       }
       
