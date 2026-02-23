@@ -3,6 +3,42 @@ import { Clock, Sparkles, Bug, ArrowUp, Bell } from "lucide-react";
 
 const changelog = [
   {
+    date: "February 23, 2026",
+    version: "2.8.0",
+    changes: [
+      {
+        type: "feature",
+        title: "Headless REST API",
+        description: "Production-ready REST API for AI agents and automation. 4 endpoints: /api/v1/generate (video → React code, 150 credits), /api/v1/scan (video → UI structure JSON, 50 credits), /api/v1/validate (code + Design System → compliance errors, 5 credits), /api/v1/keys (API key management). Bearer token auth with rk_live_ prefixed keys."
+      },
+      {
+        type: "feature",
+        title: "MCP Server for AI Coding Agents",
+        description: "Official @replay-build/mcp-server NPM package. Connects Replay to Claude Code, Cursor, Windsurf, and any MCP-compatible agent. Exposes replay_generate, replay_scan, and replay_validate tools. One-line setup via npx. Available on GitHub."
+      },
+      {
+        type: "feature",
+        title: "API Key Management",
+        description: "Create and manage up to 5 API keys per account at Settings → API Keys. SHA256 hashed storage, per-key usage tracking, credit spend logging. Keys shown once on creation for security."
+      },
+      {
+        type: "improvement",
+        title: "SEO & Indexing Overhaul",
+        description: "Normalized all URLs to www.replay.build across sitemap, robots.txt, schema.org JSON-LD, OG tags, crosspost canonical URLs, and article CTAs. Fixes 1,000+ Google Search Console redirect errors. Removed dead /tool route from sitemap."
+      },
+      {
+        type: "improvement",
+        title: "Content Engine Topic Diversification",
+        description: "Blog content engine now generates articles across 8 categories: AI agents, headless API, video-to-code, prototype-to-product, LLM-based design systems, frontend architecture, platform engineering, and emerging AI trends. Previously saturated on legacy modernization topics."
+      },
+      {
+        type: "improvement",
+        title: "Updated Meta & OG Tags",
+        description: "Page title updated to 'Replay | Video to React Code & Agent Infrastructure'. Meta description now covers Design Systems, Figma sync, Component Libraries, E2E tests, and Headless API for AI coding agents."
+      },
+    ]
+  },
+  {
     date: "February 22, 2026",
     version: "2.7.0",
     changes: [
