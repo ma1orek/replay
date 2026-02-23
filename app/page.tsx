@@ -12614,30 +12614,32 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
       
       // ═══════════════════════════════════════════════════════════════════════════
       // PRIORITY ORDER for finding the best code to publish:
-      // 1. generatedCode (original AI output with full React/Babel) 
-      // 2. HTML file from generatedFiles
-      // 3. editableCode (fallback - may be incomplete)
+      // 1. editableCode (ALWAYS the most current code the user sees in preview)
+      // 2. generatedCode (fallback if editableCode is empty)
+      // 3. HTML file from generatedFiles (last resort)
       // ═══════════════════════════════════════════════════════════════════════════
       let publishCode = '';
-      
-      // FIRST: Try to use generatedCode if it's a full HTML document with React
-      if (generatedCode && (generatedCode.includes('<!DOCTYPE') || generatedCode.includes('<html'))) {
+
+      // FIRST: Always prefer editableCode — it's what the user sees in the preview/editor
+      if (editableCode && editableCode.length > 100) {
+        publishCode = editableCode;
+        console.log('[handlePublish] Using editableCode (current preview code, length:', editableCode.length, ')');
+      } else if (generatedCode && (generatedCode.includes('<!DOCTYPE') || generatedCode.includes('<html'))) {
         publishCode = generatedCode;
         console.log('[handlePublish] Using generatedCode (full HTML with React/Babel)');
       } else {
         // Find HTML file in generatedFiles (flat FileNode array)
-        const htmlFile = generatedFiles.find(f => 
+        const htmlFile = generatedFiles.find(f =>
           f.language === 'html' && (f.path.includes('index.html') || f.name === 'index.html')
         );
-        
+
         // Try to get HTML from generatedFiles
         if (htmlFile?.content && htmlFile.content.includes('<!DOCTYPE')) {
           publishCode = htmlFile.content;
           console.log('[handlePublish] Using HTML from generatedFiles:', htmlFile.path);
         } else {
-          // Fallback to editableCode
-          publishCode = editableCode;
-          console.log('[handlePublish] Using editableCode as fallback');
+          publishCode = editableCode || generatedCode || '';
+          console.log('[handlePublish] Last resort fallback');
         }
       }
       

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
+// Force dynamic rendering - prevent Vercel edge caching of published pages
+export const dynamic = "force-dynamic";
+
 interface Project {
   id: string;
   slug: string;
@@ -688,6 +691,8 @@ ${badgeHtml}
       // NO CACHE - ensures updates are immediately visible after republishing
       // s-maxage=0 prevents Vercel Edge Cache from caching (critical!)
       "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0, s-maxage=0, stale-while-revalidate=0",
+      "CDN-Cache-Control": "no-store",
+      "Vercel-CDN-Cache-Control": "no-store",
       "Pragma": "no-cache",
       "Expires": "0",
     },
