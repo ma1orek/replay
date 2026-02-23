@@ -148,9 +148,8 @@ export default function ApiDocsPage() {
 }`}</pre>
           </div>
         </div>
-      </div>
 
-      {/* Keys endpoint */}
+        {/* Keys endpoint */}
         <div className="space-y-3 bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
           <div className="flex items-center gap-3">
             <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">POST</span>
