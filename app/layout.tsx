@@ -13,9 +13,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Replay | Modernize Legacy Systems. From Video to Full React Codebase.",
-  description: "Stop manual reverse-engineering. Transform legacy software into a production-ready ecosystem: Design System, Component Library, and clean React code. Captured directly from user sessions.",
-  keywords: ["legacy modernization", "reverse engineering", "design system generator", "video to code", "react migration", "enterprise software modernization", "frontend automation"],
+  title: "Replay | Video to React Code & Agent Infrastructure",
+  description: "Record your UI, ship production React. Auto-extract Design Systems from Figma. Component Libraries, E2E tests, and Headless API for AI coding agents.",
+  keywords: ["video to code", "ai coding agents", "headless api", "design system generator", "figma to code", "react component library", "prototype to production", "ui reconstruction", "e2e test generation"],
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon-32x32.png",
@@ -23,8 +23,8 @@ export const metadata: Metadata = {
     apple: "/favicon-32x32.png",
   },
   openGraph: {
-    title: "Modernize without rewriting. Document without archaeology.",
-    description: "Replay reconstructs working UI from video recordings. Transform legacy software into production-ready React code with Design System and Component Library.",
+    title: "Replay | Video to React Code & Agent Infrastructure",
+    description: "Replay turns screen recordings into pixel-perfect React code, Design Systems, and Component Libraries. Figma sync. Headless API for AI agents.",
     url: "https://replay.build/",
     type: "website",
     siteName: "Replay.build",
@@ -33,14 +33,14 @@ export const metadata: Metadata = {
         url: "https://replay.build/imgg.png",
         width: 1200,
         height: 630,
-        alt: "Replay - Modernize without rewriting. Document without archaeology.",
+        alt: "Replay - Video to React Code & Agent Infrastructure",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Modernize without rewriting | Replay",
-    description: "Replay reconstructs working UI from video recordings. Transform legacy software into production-ready React code.",
+    title: "Video to React Code & Agent Infrastructure | Replay",
+    description: "Replay turns screen recordings into pixel-perfect React code, Design Systems, and Component Libraries. Figma sync. Headless API for AI agents.",
     images: ["https://replay.build/imgg.png"],
   },
   appleWebApp: {
