@@ -12749,8 +12749,8 @@ ${publishCode}
       // ═══════════════════════════════════════════════════════════════════════════
       const visibilityFix = `
 <style id="publish-visibility-fix">
-  /* AGGRESSIVE VISIBILITY FIX - Same as preview */
-  [style*="opacity: 0"], [style*="opacity:0"], [style*="opacity: 0."] { opacity: 1 !important; }
+  /* VISIBILITY FIX - Make hidden content visible, but preserve decorative overlays */
+  [style*="opacity: 0;"], [style*="opacity:0;"] { opacity: 1 !important; }
   [style*="visibility: hidden"], [style*="visibility:hidden"] { visibility: visible !important; }
   .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .slide-left, .slide-right,
   .scale-up, .rotate-in, .blur-fade, .animate-fade,
@@ -12783,7 +12783,9 @@ ${publishCode}
   function forceVisible() {
     document.querySelectorAll('*').forEach(function(el) {
       var style = window.getComputedStyle(el);
-      if (parseFloat(style.opacity) < 0.1) el.style.setProperty('opacity', '1', 'important');
+      // Skip decorative overlays (noise, grain, texture) — they use pointer-events:none + low opacity intentionally
+      if (style.pointerEvents === 'none' && (style.position === 'fixed' || style.position === 'absolute')) return;
+      if (parseFloat(style.opacity) === 0) el.style.setProperty('opacity', '1', 'important');
       if (style.visibility === 'hidden') el.style.setProperty('visibility', 'visible', 'important');
     });
   }
