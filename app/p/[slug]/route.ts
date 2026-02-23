@@ -361,8 +361,23 @@ export async function GET(
       if (cs.visibility === 'hidden') el.style.setProperty('visibility', 'visible', 'important');
     });
   }
+  // Protect grain/noise overlays: if old aggressive forceVisible (from DB HTML) forced them
+  // to opacity:1, undo it by removing the inline override and letting CSS define the opacity.
+  function protectGrainOverlays() {
+    document.querySelectorAll('*').forEach(function(el) {
+      var cs = window.getComputedStyle(el);
+      if (cs.pointerEvents !== 'none') return;
+      if (cs.position !== 'fixed' && cs.position !== 'absolute') return;
+      if (el.style.opacity === '1') {
+        el.style.removeProperty('opacity');
+        var cssOpacity = parseFloat(window.getComputedStyle(el).opacity);
+        if (cssOpacity >= 0.5) { el.style.opacity = '1'; } // intentionally opaque — restore
+        // else: CSS controls opacity (grain at 0.02-0.1 will render correctly)
+      }
+    });
+  }
   document.addEventListener('DOMContentLoaded', function() { forceVisible(); setTimeout(forceVisible, 100); setTimeout(forceVisible, 300); });
-  window.addEventListener('load', function() { forceVisible(); setTimeout(forceVisible, 100); setTimeout(forceVisible, 500); });
+  window.addEventListener('load', function() { forceVisible(); setTimeout(forceVisible, 100); setTimeout(forceVisible, 500); setTimeout(protectGrainOverlays, 200); setTimeout(protectGrainOverlays, 800); });
 })();
 </script>
 `;
@@ -471,11 +486,12 @@ export async function GET(
       code = code.replace(/<!DOCTYPE[^>]*>/i, (match) => `${match}\n<html lang="en"><head>${seoMeta}</head>`);
     }
     
-    // STRIP old publish-time visibility fix (baked into DB HTML) — route.ts injects its own corrected version
-    // The old version had aggressive rules that broke grain/noise overlays
+    // STRIP old publish-time visibility fix CSS (safe — matches exact id attribute, no false positives)
     code = code.replace(/<style id="publish-visibility-fix">[\s\S]*?<\/style>/g, '<!-- old publish-visibility-fix stripped -->');
-    // Strip old forceVisible script (it forced opacity:1 on elements with opacity < 0.1, including grain overlays)
-    code = code.replace(/<script>\s*\(function\(\)\s*\{\s*function forceVisible[\s\S]*?<\/script>/g, '<!-- old forceVisible stripped -->');
+    // NOTE: We do NOT strip forceVisible scripts by regex — regex stops at first </script>
+    // which can be inside a template literal in AI-generated code, corrupting the page.
+    // Instead: the new injected CSS below has :not(.pointer-events-none) exclusions that
+    // protect grain/noise overlays even if old forceVisible JS is still present.
 
     // Inject corrected visibility fix CSS into <head>
     if (code.includes('</head>')) {
