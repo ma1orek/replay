@@ -306,25 +306,30 @@ export async function GET(
   [style$="opacity:0"]:not(canvas):not([style*="pointer-events"]):not(.pointer-events-none) { opacity: 1 !important; }
   [style*="visibility: hidden"], [style*="visibility:hidden"] { visibility: visible !important; }
 
-  /* Target animation classes — NOT decorative overlays */
-  .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .slide-left, .slide-right,
-  .scale-up, .rotate-in, .blur-fade, .animate-fade,
-  [class*="fade-"], [class*="slide-"], [class*="stagger-"],
-  [class*="gsap"], [class*="scroll"] {
+  /* Target animation classes — NOT decorative overlays (pointer-events:none excluded) */
+  .fade-up:not(.pointer-events-none), .fade-in:not(.pointer-events-none), .fade-down:not(.pointer-events-none),
+  .slide-up:not(.pointer-events-none), .slide-in:not(.pointer-events-none), .slide-left:not(.pointer-events-none), .slide-right:not(.pointer-events-none),
+  .scale-up:not(.pointer-events-none), .rotate-in:not(.pointer-events-none), .blur-fade:not(.pointer-events-none), .animate-fade:not(.pointer-events-none),
+  [class*="fade-"]:not(.pointer-events-none):not([style*="pointer-events"]),
+  [class*="slide-"]:not(.pointer-events-none):not([style*="pointer-events"]),
+  [class*="stagger-"]:not(.pointer-events-none):not([style*="pointer-events"]),
+  [class*="gsap"]:not(.pointer-events-none):not([style*="pointer-events"]),
+  [class*="scroll"]:not(.pointer-events-none):not([style*="pointer-events"]) {
     opacity: 1 !important;
     visibility: visible !important;
   }
 
   /* Target stagger containers and their children */
-  .stagger-cards, .stagger-cards > *:not([style*="pointer-events"]):not(.pointer-events-none),
+  .stagger-cards:not(.pointer-events-none), .stagger-cards > *:not([style*="pointer-events"]):not(.pointer-events-none),
   [class*="stagger"] > *:not([style*="pointer-events"]):not(.pointer-events-none) {
     opacity: 1 !important;
     visibility: visible !important;
   }
 
-  /* Target data attributes used by animation libs */
-  [data-state="hidden"], [data-visible="false"], [data-aos],
-  [data-scroll], [data-gsap], [data-animate] {
+  /* Target data attributes used by animation libs — NOT decorative overlays */
+  [data-state="hidden"]:not(.pointer-events-none), [data-visible="false"]:not(.pointer-events-none),
+  [data-aos]:not(.pointer-events-none), [data-scroll]:not(.pointer-events-none),
+  [data-gsap]:not(.pointer-events-none), [data-animate]:not(.pointer-events-none) {
     opacity: 1 !important;
     visibility: visible !important;
   }
@@ -332,8 +337,8 @@ export async function GET(
   /* Target common card containers — NOT decorative overlays */
   [class*="card"]:not([style*="pointer-events"]):not(.pointer-events-none),
   [class*="Card"]:not([style*="pointer-events"]):not(.pointer-events-none),
-  [class*="step"], [class*="Step"],
-  [class*="feature"], [class*="Feature"],
+  [class*="step"]:not(.pointer-events-none), [class*="Step"]:not(.pointer-events-none),
+  [class*="feature"]:not(.pointer-events-none), [class*="Feature"]:not(.pointer-events-none),
   [class*="item"]:not([style*="pointer-events"]):not(.pointer-events-none),
   [class*="Item"]:not([style*="pointer-events"]):not(.pointer-events-none) {
     opacity: 1 !important;
@@ -631,12 +636,16 @@ export async function GET(
     [style$="opacity: 0"]:not(canvas):not([style*="pointer-events"]):not(.pointer-events-none),
     [style$="opacity:0"]:not(canvas):not([style*="pointer-events"]):not(.pointer-events-none) { opacity: 1 !important; }
     [style*="visibility: hidden"] { visibility: visible !important; }
-    .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .slide-left, .slide-right,
-    .scale-up, .rotate-in, .blur-fade, .animate-fade,
-    [class*="fade-"], [class*="slide-"], [class*="stagger-"], [class*="animate-"],
+    .fade-up:not(.pointer-events-none), .fade-in:not(.pointer-events-none), .fade-down:not(.pointer-events-none),
+    .slide-up:not(.pointer-events-none), .slide-in:not(.pointer-events-none), .slide-left:not(.pointer-events-none), .slide-right:not(.pointer-events-none),
+    .scale-up:not(.pointer-events-none), .rotate-in:not(.pointer-events-none), .blur-fade:not(.pointer-events-none), .animate-fade:not(.pointer-events-none),
+    [class*="fade-"]:not(.pointer-events-none):not([style*="pointer-events"]),
+    [class*="slide-"]:not(.pointer-events-none):not([style*="pointer-events"]),
+    [class*="stagger-"]:not(.pointer-events-none):not([style*="pointer-events"]),
+    [class*="animate-"]:not(.pointer-events-none):not([style*="pointer-events"]),
     [class*="card"]:not([style*="pointer-events"]):not(.pointer-events-none),
     [class*="Card"]:not([style*="pointer-events"]):not(.pointer-events-none),
-    [class*="step"], [class*="Step"] {
+    [class*="step"]:not(.pointer-events-none), [class*="Step"]:not(.pointer-events-none) {
       opacity: 1 !important;
       visibility: visible !important;
     }
