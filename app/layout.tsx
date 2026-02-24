@@ -17,6 +17,13 @@ export const metadata: Metadata = {
   description: "Record your UI, ship production React. Auto-extract Design Systems from Figma. Component Libraries, E2E tests, and Headless API for AI coding agents.",
   keywords: ["video to code", "ai coding agents", "headless api", "design system generator", "figma to code", "react component library", "prototype to production", "ui reconstruction", "e2e test generation"],
   manifest: "/manifest.json",
+  alternates: {
+    canonical: "https://www.replay.build",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   icons: {
     icon: "/favicon-32x32.png",
     shortcut: "/favicon-32x32.png",
@@ -25,12 +32,12 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Replay | Video to React Code & Agent Infrastructure",
     description: "Replay turns screen recordings into pixel-perfect React code, Design Systems, and Component Libraries. Figma sync. Headless API for AI agents.",
-    url: "https://replay.build/",
+    url: "https://www.replay.build/",
     type: "website",
     siteName: "Replay.build",
     images: [
       {
-        url: "https://replay.build/imgg.png",
+        url: "https://www.replay.build/imgg.png",
         width: 1200,
         height: 630,
         alt: "Replay - Video to React Code & Agent Infrastructure",
@@ -41,7 +48,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Video to React Code & Agent Infrastructure | Replay",
     description: "Replay turns screen recordings into pixel-perfect React code, Design Systems, and Component Libraries. Figma sync. Headless API for AI agents.",
-    images: ["https://replay.build/imgg.png"],
+    images: ["https://www.replay.build/imgg.png"],
   },
   appleWebApp: {
     capable: true,

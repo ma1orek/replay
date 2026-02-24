@@ -5,9 +5,17 @@ import { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Replay Blog - AI Engineering & UI Development Insights",
   description: "Deep dives into video-to-code technology, AI engineering, frontend development, and building the future of UI tools.",
+  alternates: {
+    canonical: "https://www.replay.build/blog",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   openGraph: {
     title: "Replay Blog - AI Engineering & UI Development Insights",
     description: "Deep dives into video-to-code technology, AI engineering, frontend development, and building the future of UI tools.",
+    url: "https://www.replay.build/blog",
     type: "website",
   },
 };
