@@ -553,10 +553,8 @@ ${databaseContext}`;
 
 WATCH THE VIDEO TO EXTRACT ALL CONTENT AND DATA. Then BUILD A COMPLETELY NEW, BREATHTAKING DESIGN.
 
-🎨 REIMAGINE MODE — VIBRANT PREMIUM DESIGN, KEEP ALL CONTENT
-The video is your CONTENT SOURCE only. You must INVENT a brand-new, BREATHTAKING layout.
-🌟 STYLE: Use VIBRANT WebGL backgrounds (Grainient is the #1 choice for hero), bold colors, premium animations.
-❌ NO plain CSS gradients, NO flat/analog/muted designs. This must look PREMIUM and ALIVE!
+🎨 REIMAGINE MODE — BE MORE CREATIVE, KEEP ALL CONTENT
+The video is your CONTENT SOURCE only. You must INVENT a brand-new layout.
 
 ═══════════════════════════════════════════════════
 CONTENT RULES (MANDATORY — violating = failure):
@@ -2255,12 +2253,10 @@ MANDATORY (every page):
 - Custom scrollbar styling on <html>
 
 PICK 2+ background effects (VARY per section — NEVER same background twice!):
-🌟 HERO MUST USE: grainient (flowing noise gradient with film grain — VIBRANT, PREMIUM look!)
-- OGL WebGL (PREFERRED — use these!): grainient, aurora, iridescence, liquid-chrome, balatro, 3d-particles
-- Canvas 2D (secondary): waves-bg, squares-bg, dotgrid-bg
-- CSS (last resort only): beams-bg
-🚨 NEVER use plain CSS linear-gradient as a hero background — ALWAYS use WebGL grainient or aurora!
-Grainient = the signature Replay.build look. Customize uColor1/uColor2/uColor3 to match the brand.
+- OGL WebGL: aurora, 3d-particles, iridescence, liquid-chrome, balatro, grainient
+- Canvas 2D: waves-bg, squares-bg, dotgrid-bg
+- CSS: beams-bg
+Prefer OGL WebGL backgrounds — they are PREMIUM quality with real shaders!
 
 PICK 2+ hover effects:
 - hover-lift, tilt-card, spotlight, glare-hover, electric-border, star-border, decay-card, pixel-card, magnet-pull
