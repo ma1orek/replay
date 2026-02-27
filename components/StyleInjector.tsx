@@ -1110,14 +1110,14 @@ export const StylePreview = ({ styleId }: { styleId: string }) => {
     ),
     "grainient-analog": (
       <div className="w-full h-full relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#f97066]/60 via-[#fbbf24]/40 to-[#e879a0]/50" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#ff9ffc]/70 via-[#5227ff]/60 to-[#b19ef0]/50" />
         <motion.div
           className="absolute inset-0"
           style={{ backgroundImage: "url('data:image/svg+xml,%3Csvg viewBox=%270 0 200 200%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%273%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27 opacity=%270.15%27/%3E%3C/svg%3E')" }}
           animate={{ opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         />
-        <div className="absolute bottom-1 left-1 text-[4px] text-white/60 italic" style={{ fontFamily: 'serif' }}>film</div>
+        <div className="absolute bottom-1 left-1 text-[4px] text-white/60 font-bold">✦</div>
       </div>
     ),
   };
@@ -4218,48 +4218,49 @@ SIGNATURE EFFECTS:
   If using backdrop-blur on cards, the FOOTER itself must NOT have backdrop-blur — use opaque bg instead.
 ⚠️ MANDATORY: Preserve ALL content from video.`, category: "shader" },
 
-  { id: "grainient-analog", name: "Grainient Analog", desc: "Film Grain • Warm Gradient • Organic", fullDesc: `📷 GRAINIENT ANALOG — Film grain meets gradient. Organic warmth. Analog soul in digital form.
+  { id: "grainient-analog", name: "Grainient Vibrant", desc: "WebGL Grain • Vibrant Gradient • Electric", fullDesc: `✦ GRAINIENT VIBRANT — Flowing WebGL noise gradient with film grain. Vibrant pink-blue-purple. Electric and alive.
 
 ═══════════════════════════════════════════════════════════════════════════════
 🎨 MANDATORY REACT BITS COMPONENTS:
 ═══════════════════════════════════════════════════════════════════════════════
-HERO BACKGROUND: import { Grainient } from "react-bits/backgrounds/grainient" — MUST use as full-screen hero background
-TEXT: import { FallingText } from "react-bits/text/falling-text" — letters fall into place for headline
+HERO BACKGROUND: import { Grainient } from "react-bits/backgrounds/grainient" — MUST use as full-screen hero background with vibrant colors
+TEXT: import { DecryptedText } from "react-bits/text/decrypted-text" — encrypted-to-readable reveal for headline
 TEXT: import { ScrollReveal } from "react-bits/text/scroll-reveal" — reveal on scroll for body text
-CARDS: import { ReflectiveCard } from "react-bits/components/reflective-card" — warm reflective surfaces
-ANIMATIONS: import { StickerPeel } from "react-bits/animations/sticker-peel" — peel corner on cards
-COUNTERS: import { CountUp } from "react-bits/text/count-up" — warm stat counters
-MARQUEE: import { ScrollVelocity } from "react-bits/text/scroll-velocity" — organic scrolling text
+TEXT: import { ShinyText } from "react-bits/text/shiny-text" — shimmering accent text
+CARDS: import { SpotlightCard } from "react-bits/components/spotlight-card" — cursor-following spotlight on cards
+COUNTERS: import { CountUp } from "react-bits/text/count-up" — animated stat counters
+MARQUEE: import { ScrollVelocity } from "react-bits/text/scroll-velocity" — fast scrolling text band
 
 ═══════════════════════════════════════════════════════════════════════════════
 🎨 COLOR PALETTE:
 ═══════════════════════════════════════════════════════════════════════════════
-Background: Warm dark #1a1510 (like old photo paper)
-Primary: Warm coral #f97066
-Secondary: Soft amber #fbbf24
-Tertiary: Dusty rose #e879a0
-Accent: Cream #fef3c7
-Text: Warm white #fefce8, muted #a8a29e
-Cards: bg-stone-900/40 border border-stone-700/30 rounded-2xl
+Background: Deep dark #0a0a12 (cool dark, NOT warm)
+Primary: Vibrant pink #ff9ffc
+Secondary: Electric blue-purple #5227ff
+Tertiary: Soft lavender #b19ef0
+Accent: Hot pink #ff5fbe
+Text: Pure white #ffffff, muted #a5a0c8
+Cards: bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl
+Gradient accents: linear-gradient(135deg, #ff9ffc, #5227ff, #b19ef0)
 
 ═══════════════════════════════════════════════════════════════════════════════
 📝 TYPOGRAPHY:
 ═══════════════════════════════════════════════════════════════════════════════
-Headlines: Serif font (Playfair Display or Georgia), text-5xl md:text-7xl, font-normal, warm white
-Body: Inter 400, text-stone-300
-Labels: Inter 500, text-xs, text-stone-500, uppercase tracking-wide
+Headlines: Sans-serif (Inter or system), text-5xl md:text-7xl, font-bold, white
+Body: Inter 400, text-white/70
+Labels: Inter 600, text-xs, text-purple-300/60, uppercase tracking-widest
 
 ═══════════════════════════════════════════════════════════════════════════════
 ✨ SIGNATURE EFFECTS:
 ═══════════════════════════════════════════════════════════════════════════════
-1. Grainient background fills hero — warm gradient + natural film grain
-2. Cards: ReflectiveCard with StickerPeel corner effect on hover
-3. Warm gradient accents: linear-gradient(135deg, #f97066, #fbbf24)
-4. Photo-style rounded corners on all cards (rounded-2xl)
-5. Organic shapes: SVG blobs with warm gradients at low opacity as section decoration
-6. ScrollVelocity band with warm tones between sections
+1. Grainient WebGL background fills hero — flowing noise gradient (pink → purple → blue) with subtle film grain
+2. SpotlightCard with glass-morphism (bg-white/5, backdrop-blur-xl)
+3. Vibrant gradient borders: border-image with pink-purple-blue gradient
+4. Glow effects: box-shadow with rgba(82,39,255,0.3) and rgba(255,159,252,0.2)
+5. Grain overlay: subtle film grain canvas on top of everything (opacity 0.04)
+6. ScrollVelocity band with gradient text between sections
 
-⚠️ THE FEELING: Flipping through a film photography book. Warm, tactile, alive. Kodak Portra tones.
+⚠️ THE FEELING: Electric, vibrant, alive. Like neon light through morning fog. Premium WebGL quality.
 ⚠️ MANDATORY: Preserve ALL content from video.`, category: "shader" },
 ];
 
