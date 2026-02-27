@@ -3090,7 +3090,7 @@ function ReplayToolContent() {
   
   // Initialize to empty string to avoid hydration mismatch
   const [styleDirective, setStyleDirective] = useState("");
-  const [generationMode, setGenerationMode] = useState<"reconstruct" | "reimagine">("reconstruct");
+  const [generationMode, setGenerationMode] = useState<"reconstruct" | "reimagine">("reimagine");
 
   // Enterprise removed - using system-prompt.ts only for premium styling
   
