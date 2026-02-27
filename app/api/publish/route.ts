@@ -32,10 +32,38 @@ function generateDescription(code: string, title: string): string {
   return `${title} - UI rebuilt with Replay. Transform screen recordings into production-ready code.`;
 }
 
+export async function GET(request: NextRequest) {
+  try {
+    const slug = request.nextUrl.searchParams.get("slug");
+    if (!slug) {
+      return NextResponse.json({ error: "slug required" }, { status: 400 });
+    }
+
+    const admin = createAdminClient();
+    if (!admin) {
+      return NextResponse.json({ error: "Service unavailable" }, { status: 500 });
+    }
+
+    const { data, error } = await admin
+      .from("published_projects")
+      .select("hide_badge")
+      .eq("slug", slug)
+      .single();
+
+    if (error || !data) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ hide_badge: data.hide_badge ?? false });
+  } catch {
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { code, title, thumbnailDataUrl, existingSlug, libraryData } = body;
+    const { code, title, thumbnailDataUrl, existingSlug, libraryData, hideBadge } = body;
 
     if (!code || !title) {
       return NextResponse.json(
@@ -91,7 +119,7 @@ export async function POST(request: NextRequest) {
       // First check if the record exists
       const { data: existingRecord, error: checkError } = await updateClient
         .from("published_projects")
-        .select("id, slug, user_id")
+        .select("id, slug, user_id, thumbnail_url")
         .eq("slug", existingSlug)
         .single();
       
@@ -99,58 +127,34 @@ export async function POST(request: NextRequest) {
       
       if (existingRecord) {
         // Record exists, update it
-        console.log('[publish] Updating record, code length:', code.length);
-        
+        console.log('[publish] Updating record, code length:', code.length, 'hide_badge:', hideBadge);
+
+        const updatePayload = {
+          title,
+          description,
+          code,
+          library_data: libraryData || null,
+          thumbnail_url: thumbnailUrl || existingRecord.thumbnail_url || null,
+          hide_badge: hideBadge === true,
+          updated_at: new Date().toISOString(),
+        };
+
         const { data, error } = await updateClient
           .from("published_projects")
-          .update({
-            title,
-            description,
-            code,
-            library_data: libraryData || null,
-            thumbnail_url: thumbnailUrl || existingRecord.thumbnail_url,
-            updated_at: new Date().toISOString(),
-          })
+          .update(updatePayload)
           .eq("slug", existingSlug)
           .select()
           .single();
 
         if (error) {
           console.error("Database update error:", error);
-          
-          // Try with admin client if regular client failed
-          if (updateClient === supabase && adminSupabase) {
-            console.log('[publish] Retrying with admin client...');
-            const { data: retryData, error: retryError } = await adminSupabase
-              .from("published_projects")
-              .update({
-                title,
-                description,
-                code,
-                library_data: libraryData || null,
-                thumbnail_url: thumbnailUrl || existingRecord.thumbnail_url,
-                updated_at: new Date().toISOString(),
-              })
-              .eq("slug", existingSlug)
-              .select()
-              .single();
-            
-            if (retryError) {
-              console.error("Admin update also failed:", retryError);
-              return NextResponse.json({
-                error: "Failed to update project: " + retryError.message,
-              }, { status: 500 });
-            }
-            console.log('[publish] Admin update succeeded');
-          } else {
-            return NextResponse.json({
-              error: "Failed to update project: " + error.message,
-            }, { status: 500 });
-          }
-        } else {
-          console.log('[publish] Successfully updated existing project, new code length:', data?.code?.length);
+          return NextResponse.json({
+            error: "Failed to update project: " + error.message,
+          }, { status: 500 });
         }
-        
+
+        console.log('[publish] Successfully updated existing project, new code length:', data?.code?.length, 'hide_badge:', data?.hide_badge);
+
         return NextResponse.json({
           success: true,
           slug: existingSlug,
@@ -158,7 +162,7 @@ export async function POST(request: NextRequest) {
           updated: true,
         });
       } else {
-        console.log('[publish] No existing record found for slug, will create new');
+        console.log('[publish] No existing record found for slug:', existingSlug, 'checkError:', checkError?.message, '— will create new');
       }
     }
 
@@ -175,6 +179,7 @@ export async function POST(request: NextRequest) {
         code,
         library_data: libraryData || null,
         thumbnail_url: thumbnailUrl,
+        hide_badge: hideBadge === true,
         user_id: user?.id || null,
       })
       .select()
@@ -195,6 +200,7 @@ export async function POST(request: NextRequest) {
             code,
             library_data: libraryData || null,
             thumbnail_url: thumbnailUrl,
+            hide_badge: hideBadge === true,
             user_id: user?.id || null,
           })
           .select()

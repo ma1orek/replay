@@ -3090,7 +3090,7 @@ function ReplayToolContent() {
   
   // Initialize to empty string to avoid hydration mismatch
   const [styleDirective, setStyleDirective] = useState("");
-  const [generationMode, setGenerationMode] = useState<"reconstruct" | "reimagine">("reimagine");
+  const [generationMode, setGenerationMode] = useState<"reconstruct" | "reimagine">("reconstruct");
 
   // Enterprise removed - using system-prompt.ts only for premium styling
   
@@ -12684,8 +12684,8 @@ ${publishCode}
       }
       
       console.log('[handlePublish] Code validation passed, publishing...');
-      console.log('[handlePublish] Sending code length:', publishCode.length, 'existingSlug:', existingSlug);
-      console.log('[handlePublish] Code first 100 chars:', publishCode.substring(0, 100));
+      console.log('[handlePublish] Sending code length:', publishCode.length, 'existingSlug:', existingSlug, 'hideBadge:', hideBadgeOnPublish, 'isSandbox:', isSandbox);
+      console.log('[handlePublish] activeGeneration?.publishedSlug:', activeGeneration?.publishedSlug);
       
       const response = await fetch("/api/publish", {
         method: "POST",
@@ -12737,10 +12737,6 @@ ${publishCode}
         if (activeGeneration && !data.updated) {
           try { updateProjectAnalytics(activeGeneration.id, "export"); } catch (e) { console.warn("[Analytics] Failed:", e); }
         }
-
-        // Auto-open the published page in a new tab with fresh cache-busted URL
-        const freshUrl = `${data.url}?v=${newTimestamp}&_=${Date.now()}.${Math.random().toString(36).substring(7)}`;
-        window.open(freshUrl, '_blank', 'noopener,noreferrer');
 
         showToast(data.updated ? "Project updated!" : "Project published!", "success");
       } else {
@@ -17068,25 +17064,13 @@ ${publishCode}
                 <button
                   onClick={() => {
                     // Demo mode: publish is Pro feature (only block free users)
-                    if (isDemoMode && !isPaidPlan) {
-                      setUpgradeFeature("publish");
-                      setShowUpgradeModal(true);
+                    if (showPublishModal) {
+                      // Close if already open
+                      setShowPublishModal(false);
                       return;
                     }
-                    // Not logged in: require sign up
-                    if (!user) {
-                      setShowAuthModal(true);
-                      showToast("Sign up free to publish. You get 1 free generation!", "info");
-                      return;
-                    }
-                    if (!isPaidPlan) {
-                      setUpgradeFeature("publish");
-                      setShowUpgradeModal(true);
-                      return;
-                    }
-                    if (!editableCode) return;
-                    // Toggle publish dropdown
-                    setShowPublishModal(!showPublishModal);
+                    // Use handlePublishClick which properly initializes slug + badge state
+                    handlePublishClick();
                   }}
                   disabled={isPublishing}
                   className="px-4 py-2 rounded-lg text-sm font-medium bg-zinc-800 hover:bg-zinc-700 text-white transition-colors flex items-center gap-2 disabled:opacity-50"

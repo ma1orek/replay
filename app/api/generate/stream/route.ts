@@ -378,8 +378,10 @@ export async function POST(request: NextRequest) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     
-    // Primary: Gemini 3.1 Pro, Fallback: Gemini 3 Pro
-    const modelConfig = {
+    // SINGLE MODEL: Gemini 3.1 Pro with VISION
+    // Pro SEES the video directly and generates code - NO intermediate JSON!
+    const model = genAI.getGenerativeModel({
+      model: "gemini-3.1-pro-preview",
       generationConfig: {
         temperature: 0.85, // High for creative Awwwards-level designs
         maxOutputTokens: 65000, // Gemini 3.1 Pro limit is 65,536
@@ -390,9 +392,7 @@ export async function POST(request: NextRequest) {
         { category: "HARM_CATEGORY_HARASSMENT" as any, threshold: "BLOCK_MEDIUM_AND_ABOVE" as any },
         { category: "HARM_CATEGORY_DANGEROUS_CONTENT" as any, threshold: "BLOCK_MEDIUM_AND_ABOVE" as any },
       ],
-    };
-    const modelsToTry = ["gemini-3.1-pro-preview"];
-    let model = genAI.getGenerativeModel({ model: modelsToTry[0], ...modelConfig });
+    });
     
     // Timeout helper
     const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> => {
@@ -2369,59 +2369,51 @@ THEME MATCHING:
 Generate the COMPLETE HTML now — every section from the video must be present.` });
           }
 
-          // Retry loop with model fallback (primary → fallback)
-          const MAX_RETRIES = 2;
+          // BOTH modes: enforce zero ban and content completeness as final reminder
+          if (!isDSStyle) {
+            contentParts.push({ text: `🚨🚨🚨 FINAL MANDATORY CHECK — READ THIS LAST:
+1. ZERO BAN: The number 0 is BANNED in ALL statistics, metrics, KPIs. If you see "5 questions" in the video, output "5" NOT "0". SCAN THE LAST 5 SECONDS for final counter values!
+2. ALL SECTIONS: Include EVERY section from the video — hero, stats, features, pricing, testimonials, CTA, footer. Do NOT skip any section.
+3. ALL TEXT VERBATIM: Every headline, paragraph, button label, stat label, nav item must match the video EXACTLY.` });
+          }
+
+          // Retry loop for 503/429 high demand errors
+          const MAX_RETRIES = 3;
           const retryDelay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
           let streamResult;
           let lastStreamError;
 
-          for (const modelName of modelsToTry) {
-            model = genAI.getGenerativeModel({ model: modelName, ...modelConfig });
-            for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-              try {
-                console.log(`[stream] Trying ${modelName} (attempt ${attempt}/${MAX_RETRIES})...`);
-                streamResult = await withTimeout(
-                  model.generateContentStream(contentParts),
-                  240000, // 4 minute timeout for complex generation
-                  `Direct Vision Code Generation (${modelName})`
-                );
-                console.log(`[stream] Success with ${modelName}`);
-                break; // success
-              } catch (error: any) {
-                lastStreamError = error;
-                console.error(`[stream] ${modelName} attempt ${attempt}/${MAX_RETRIES} failed:`, error?.message);
-                const isRetryable = error?.message?.includes('503') ||
-                                    error?.message?.includes('overloaded') ||
-                                    error?.message?.includes('Service Unavailable') ||
-                                    error?.message?.includes('429') ||
-                                    error?.message?.includes('timed out');
-                if (!isRetryable && !error?.message?.includes('timed out')) throw error;
+          for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+              streamResult = await withTimeout(
+                model.generateContentStream(contentParts),
+                240000, // 4 minute timeout for complex generation
+                "Direct Vision Code Generation"
+              );
+              break; // success
+            } catch (error: any) {
+              lastStreamError = error;
+              console.error(`[stream] Attempt ${attempt}/${MAX_RETRIES} failed:`, error?.message);
+              const isRetryable = error?.message?.includes('503') ||
+                                  error?.message?.includes('overloaded') ||
+                                  error?.message?.includes('Service Unavailable') ||
+                                  error?.message?.includes('429');
+              if (!isRetryable) throw error;
 
-                if (attempt < MAX_RETRIES) {
-                  const waitTime = Math.min(2000 * Math.pow(2, attempt - 1), 10000);
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-                    type: "status",
-                    message: `Model busy, retrying in ${waitTime / 1000}s... (attempt ${attempt + 1}/${MAX_RETRIES})`,
-                    progress: 5
-                  })}\n\n`));
-                  await retryDelay(waitTime);
-                }
+              if (attempt < MAX_RETRIES) {
+                const waitTime = Math.min(2000 * Math.pow(2, attempt - 1), 10000);
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                  type: "status",
+                  message: `Model busy, retrying in ${waitTime / 1000}s... (attempt ${attempt + 1}/${MAX_RETRIES})`,
+                  progress: 5
+                })}\n\n`));
+                await retryDelay(waitTime);
               }
-            }
-            if (streamResult) break; // got a result, stop trying models
-            // If primary model exhausted retries, notify about fallback
-            if (modelName === modelsToTry[0] && modelsToTry.length > 1) {
-              console.log(`[stream] Primary model failed, falling back to ${modelsToTry[1]}...`);
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-                type: "status",
-                message: "Switching to fallback model...",
-                progress: 8
-              })}\n\n`));
             }
           }
 
           if (!streamResult) {
-            throw lastStreamError || new Error("All models and retry attempts failed");
+            throw lastStreamError || new Error("All retry attempts failed");
           }
 
           const result = streamResult;
