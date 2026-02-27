@@ -3090,7 +3090,7 @@ function ReplayToolContent() {
   
   // Initialize to empty string to avoid hydration mismatch
   const [styleDirective, setStyleDirective] = useState("");
-  const [generationMode, setGenerationMode] = useState<"reconstruct" | "reimagine">("reconstruct");
+  const [generationMode, setGenerationMode] = useState<"reconstruct" | "reimagine">("reimagine");
 
   // Enterprise removed - using system-prompt.ts only for premium styling
   
@@ -12712,8 +12712,9 @@ ${publishCode}
       
       if (data.success && data.url) {
         const newSlug = data.slug;
+        const newTimestamp = Date.now();
         setPublishedUrl(data.url);
-        setPublishCacheTimestamp(Date.now()); // Update cache-busting timestamp
+        setPublishCacheTimestamp(newTimestamp);
         trackFunnelEvent("published", { userId: user?.id, email: user?.email || undefined, label: generationTitle || "Untitled" });
 
         // Save the slug to the generation record for future updates
@@ -12724,21 +12725,23 @@ ${publishCode}
               publishedSlug: newSlug,
             };
             setActiveGeneration(updatedGen);
-            setGenerations(prev => prev.map(g => 
+            setGenerations(prev => prev.map(g =>
               g.id === activeGeneration.id ? updatedGen : g
             ));
             // Also save to Supabase
             saveGenerationToSupabase(updatedGen);
           }
-          // Skip localStorage save here - let the dedicated effect handle it
-          // This prevents quota issues from multiple save attempts
         }
-        
+
         // Track export analytics (non-critical)
         if (activeGeneration && !data.updated) {
           try { updateProjectAnalytics(activeGeneration.id, "export"); } catch (e) { console.warn("[Analytics] Failed:", e); }
         }
-        
+
+        // Auto-open the published page in a new tab with fresh cache-busted URL
+        const freshUrl = `${data.url}?v=${newTimestamp}&_=${Date.now()}.${Math.random().toString(36).substring(7)}`;
+        window.open(freshUrl, '_blank', 'noopener,noreferrer');
+
         showToast(data.updated ? "Project updated!" : "Project published!", "success");
       } else {
         showToast(data.error || "Failed to publish", "error");
