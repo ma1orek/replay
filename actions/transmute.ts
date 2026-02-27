@@ -5,12 +5,13 @@ import { GoogleGenAI } from "@google/genai";
 import { GoogleGenerativeAI, Part } from "@google/generative-ai";
 
 // Agentic Vision - The Sandwich Architecture
-import { 
-  runParallelSurveyor, 
+import {
+  runParallelSurveyor,
   validateMeasurements,
   formatSurveyorDataForPrompt,
-  LayoutMeasurements 
+  LayoutMeasurements
 } from "@/lib/agentic-vision";
+import { ANIMATION_LIBRARY_PROMPT } from "@/lib/prompts/animation-library";
 
 // Design System Context for AI prompts
 import { 
@@ -2103,7 +2104,10 @@ If your output has a sidebar/left panel, verify:
 ❌ NEVER two <main> elements — mobile one will be EMPTY!
 
 Generate the complete HTML file now:`;
-    
+
+    // Add animation library for premium WebGL backgrounds, text effects, card interactions
+    assemblerPrompt += '\n\n' + ANIMATION_LIBRARY_PROMPT;
+
     // Calculate remaining time for Phase 2 (leave buffer for Vercel 300s limit)
     const elapsedMs = Date.now() - startTime;
     const phase2Timeout = Math.max(150000, 280000 - elapsedMs); // At least 150s, up to remaining time
