@@ -2403,7 +2403,9 @@ Generate the COMPLETE HTML now — every section from the video must be present.
             } catch (error: any) {
               lastStreamError = error;
               console.error(`[stream] Attempt ${attempt}/${MAX_RETRIES} failed:`, error?.message);
-              const isRetryable = error?.message?.includes('503') ||
+              const isRetryable = error?.message?.includes('500') ||
+                                  error?.message?.includes('Internal Server Error') ||
+                                  error?.message?.includes('503') ||
                                   error?.message?.includes('overloaded') ||
                                   error?.message?.includes('Service Unavailable') ||
                                   error?.message?.includes('429');

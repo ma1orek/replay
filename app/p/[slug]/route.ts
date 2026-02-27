@@ -48,6 +48,70 @@ function extractHeadStyles(code: string): string {
   return '';
 }
 
+// Escape </script> inside script tag content to prevent browser from prematurely closing script tags.
+// AI-generated code often has template literals like: const html = `<script>...</script>`;
+// The browser parser sees the inner </script> as the real closing tag, exposing JS code as visible text (e.g., ); })
+// Fix: For each <script> tag, find all </script> within its scope, escape all but the real closing one.
+function escapeInternalScriptTags(html: string): string {
+  if (!html) return html;
+  let result = '';
+  let pos = 0;
+  const lower = html.toLowerCase();
+
+  while (pos < html.length) {
+    // Find next <script opening tag
+    const scriptIdx = lower.indexOf('<script', pos);
+    if (scriptIdx === -1) {
+      result += html.slice(pos);
+      break;
+    }
+
+    // Find end of opening tag (>)
+    const tagEndIdx = html.indexOf('>', scriptIdx);
+    if (tagEndIdx === -1) {
+      result += html.slice(pos);
+      break;
+    }
+
+    // Add everything up to and including the opening tag
+    result += html.slice(pos, tagEndIdx + 1);
+    pos = tagEndIdx + 1;
+
+    // Find the next <script opening to bound our search (scope per-tag)
+    const nextScriptOpen = lower.indexOf('<script', pos);
+    const searchBound = nextScriptOpen !== -1 ? nextScriptOpen : html.length;
+
+    // Find ALL </script> between current position and the search boundary
+    const closingPositions: number[] = [];
+    let searchPos = pos;
+    while (searchPos < searchBound) {
+      const ci = lower.indexOf('</script>', searchPos);
+      if (ci === -1 || ci >= searchBound) break;
+      closingPositions.push(ci);
+      searchPos = ci + 9;
+    }
+
+    if (closingPositions.length === 0) {
+      // No closing tag in this scope — output content up to boundary and continue
+      result += html.slice(pos, searchBound);
+      pos = searchBound;
+    } else if (closingPositions.length === 1) {
+      // Only one </script> in scope — it's the real closing tag, no escaping needed
+      result += html.slice(pos, closingPositions[0]) + '</script>';
+      pos = closingPositions[0] + 9;
+    } else {
+      // Multiple </script> in scope — last one is the real closing tag, escape the rest
+      const realCloseIdx = closingPositions[closingPositions.length - 1];
+      let content = html.slice(pos, realCloseIdx);
+      content = content.replace(/<\/script>/gi, '<\\/script>');
+      result += content + '</script>';
+      pos = realCloseIdx + 9;
+    }
+  }
+
+  return result;
+}
+
 // Convert JSX/React code to plain HTML for rendering
 function jsxToHtml(code: string): string {
   if (!code) return '';
@@ -391,10 +455,16 @@ export async function GET(
   // Share bar HTML — floating share buttons (top-right)
   let code = typedProject.code || '';
 
+  // CRITICAL FIX: Escape </script> inside JS template literals to prevent browser premature script closing
+  // AI-generated code often has `</script>` inside template strings (e.g., dynamically building HTML).
+  // The browser's HTML parser sees this as the real closing tag, exposing remaining JS (like ); }) as visible text.
+  // Fix: Replace </script> with <\/script> inside script content (safe in JS — backslash before / is ignored)
+  code = escapeInternalScriptTags(code);
+
   // Check if this is a full HTML document with React/Babel (our generated code format)
-  const isFullHtmlWithReact = code.includes('<!DOCTYPE') && 
+  const isFullHtmlWithReact = code.includes('<!DOCTYPE') &&
     (code.includes('react.production.min.js') || code.includes('babel.min.js') || code.includes('type="text/babel"'));
-  
+
   // Check if this is a full HTML document (any kind)
   const isFullHtml = /^<!DOCTYPE|^<html/i.test(code.trim());
   

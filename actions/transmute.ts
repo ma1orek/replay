@@ -1646,7 +1646,7 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
   const retryDelay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
   const isRetryableError = (error: any) => {
     const msg = error?.message || '';
-    return msg.includes('503') || msg.includes('overloaded') || msg.includes('Service Unavailable') || msg.includes('429') || msg.includes('rate limit');
+    return msg.includes('500') || msg.includes('Internal Server Error') || msg.includes('503') || msg.includes('overloaded') || msg.includes('Service Unavailable') || msg.includes('429') || msg.includes('rate limit');
   };
 
   // Timeout helper - CRITICAL to avoid 504 errors on Vercel

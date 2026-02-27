@@ -12485,6 +12485,12 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
 
   const handlePublish = async () => {
     if (!editableCode || isPublishing) return;
+
+    // GUARD: Never publish during streaming animation — editableCode is truncated mid-stream
+    if (isStreamingCode || isProcessing) {
+      showToast("Please wait for generation to complete before publishing.", "error");
+      return;
+    }
     
     setIsPublishing(true);
     try {
