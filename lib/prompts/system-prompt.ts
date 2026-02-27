@@ -156,10 +156,12 @@ gsap.from('.flip-in', {
 // ═══════════════════════════════════════════════════════════════
 // ANIMATION 13: COUNTER (for stats/numbers)
 // ═══════════════════════════════════════════════════════════════
+// IMPORTANT: HTML must show REAL values (e.g. <span class="counter">500</span>, NEVER 0)
+// The animation sets to 0 then counts up — but only AFTER it fires, so if JS fails the real value is visible
 document.querySelectorAll('.counter').forEach(counter => {
   const target = parseInt(counter.textContent.replace(/[^0-9]/g, '')) || 100;
-  counter.textContent = '0';
   const animateCounter = () => {
+    counter.textContent = '0';
     gsap.to(counter, {
       textContent: target, duration: 2, ease: 'power1.out',
       snap: { textContent: 1 },

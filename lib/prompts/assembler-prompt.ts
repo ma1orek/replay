@@ -95,10 +95,12 @@ gsap.utils.toArray('section, .card').forEach(el => {
 });
 
 // Counter animations for numbers
+// IMPORTANT: HTML must show REAL values (e.g. <span class="counter">500</span>, NEVER 0)
+// Animation sets to 0 then counts up — only AFTER firing, so if JS fails the real value stays visible
 gsap.utils.toArray('.counter').forEach(counter => {
   const target = parseInt(counter.textContent.replace(/[^0-9]/g, '')) || 100;
-  counter.textContent = '0';
   const animateCounter = () => {
+    counter.textContent = '0';
     gsap.to(counter, {
       textContent: target, duration: 2, ease: 'power1.out',
       snap: { textContent: 1 },

@@ -553,8 +553,10 @@ ${databaseContext}`;
 
 WATCH THE VIDEO TO EXTRACT ALL CONTENT AND DATA. Then BUILD A COMPLETELY NEW, BREATHTAKING DESIGN.
 
-🎨 REIMAGINE MODE — BE MORE CREATIVE, KEEP ALL CONTENT
-The video is your CONTENT SOURCE only. You must INVENT a brand-new layout.
+🎨 REIMAGINE MODE — VIBRANT PREMIUM DESIGN, KEEP ALL CONTENT
+The video is your CONTENT SOURCE only. You must INVENT a brand-new, BREATHTAKING layout.
+🌟 STYLE: Use VIBRANT WebGL backgrounds (Grainient is the #1 choice for hero), bold colors, premium animations.
+❌ NO plain CSS gradients, NO flat/analog/muted designs. This must look PREMIUM and ALIVE!
 
 ═══════════════════════════════════════════════════
 CONTENT RULES (MANDATORY — violating = failure):
@@ -751,10 +753,12 @@ document.querySelectorAll('.rotating-text').forEach(el => {
 });
 
 ───── 10. COUNT-UP NUMBERS (stats/metrics) ─────
+🚨 HTML MUST show REAL values: <span class="count-up" data-to="500" data-prefix="$">$500</span> (NEVER 0!)
+The JS sets to 0 ONLY when animation fires — so if JS fails, real value stays visible.
 document.querySelectorAll('.count-up').forEach(el => {
   const to = parseFloat(el.dataset.to); const prefix = el.dataset.prefix||''; const suffix = el.dataset.suffix||'';
-  el.textContent = prefix + '0' + suffix;
   const obs = new IntersectionObserver(entries => { entries.forEach(entry => { if(entry.isIntersecting) { obs.unobserve(el);
+    el.textContent = prefix + '0' + suffix;
     const start = performance.now();
     (function step(now) { const t = Math.min((now-start)/2000,1); const ease = 1-Math.pow(1-t,4);
       el.textContent = prefix + Math.round(to*ease).toLocaleString() + suffix;
@@ -2251,10 +2255,12 @@ MANDATORY (every page):
 - Custom scrollbar styling on <html>
 
 PICK 2+ background effects (VARY per section — NEVER same background twice!):
-- OGL WebGL: aurora, 3d-particles, iridescence, liquid-chrome, balatro, grainient
-- Canvas 2D: waves-bg, squares-bg, dotgrid-bg
-- CSS: beams-bg
-Prefer OGL WebGL backgrounds — they are PREMIUM quality with real shaders!
+🌟 HERO MUST USE: grainient (flowing noise gradient with film grain — VIBRANT, PREMIUM look!)
+- OGL WebGL (PREFERRED — use these!): grainient, aurora, iridescence, liquid-chrome, balatro, 3d-particles
+- Canvas 2D (secondary): waves-bg, squares-bg, dotgrid-bg
+- CSS (last resort only): beams-bg
+🚨 NEVER use plain CSS linear-gradient as a hero background — ALWAYS use WebGL grainient or aurora!
+Grainient = the signature Replay.build look. Customize uColor1/uColor2/uColor3 to match the brand.
 
 PICK 2+ hover effects:
 - hover-lift, tilt-card, spotlight, glare-hover, electric-border, star-border, decay-card, pixel-card, magnet-pull
@@ -2369,12 +2375,13 @@ THEME MATCHING:
 Generate the COMPLETE HTML now — every section from the video must be present.` });
           }
 
-          // BOTH modes: enforce zero ban and content completeness as final reminder
+          // BOTH modes: enforce zero ban, content completeness, and counter values as final reminder
           if (!isDSStyle) {
             contentParts.push({ text: `🚨🚨🚨 FINAL MANDATORY CHECK — READ THIS LAST:
 1. ZERO BAN: The number 0 is BANNED in ALL statistics, metrics, KPIs. If you see "5 questions" in the video, output "5" NOT "0". SCAN THE LAST 5 SECONDS for final counter values!
 2. ALL SECTIONS: Include EVERY section from the video — hero, stats, features, pricing, testimonials, CTA, footer. Do NOT skip any section.
-3. ALL TEXT VERBATIM: Every headline, paragraph, button label, stat label, nav item must match the video EXACTLY.` });
+3. ALL TEXT VERBATIM: Every headline, paragraph, button label, stat label, nav item must match the video EXACTLY.
+4. COUNTER HTML VALUES: Every <span class="count-up" data-to="X"> MUST show the REAL value as text content, NOT 0! Example: <span class="count-up" data-to="500">500</span> ✅ | <span class="count-up" data-to="500">0</span> ❌. The JS animation handles counting from 0 — but if JS fails, the real value must be visible!` });
           }
 
           // Retry loop for 503/429 high demand errors
