@@ -172,11 +172,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No image or description provided" }, { status: 400 });
     }
 
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-3.1-pro-preview",
+    const blueprintModels = ["gemini-3.1-pro-preview"];
+    let model = genAI.getGenerativeModel({
+      model: blueprintModels[0],
       generationConfig: {
         temperature: 0.3,
-        maxOutputTokens: 32768, // enough for full-page 1:1 content (hero, FAQ, footer, etc.)
+        maxOutputTokens: 32768,
       }
     });
 
@@ -231,8 +232,25 @@ export async function POST(request: NextRequest) {
       contentParts.push(imagePart);
     }
     
-    const result = await model.generateContentStream(contentParts);
-    
+    let result;
+    for (const modelName of blueprintModels) {
+      try {
+        console.log(`[Blueprint] Trying ${modelName}...`);
+        model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: { temperature: 0.3, maxOutputTokens: 32768 },
+        });
+        result = await model.generateContentStream(contentParts);
+        console.log(`[Blueprint] Success with ${modelName}`);
+        break;
+      } catch (err: any) {
+        console.error(`[Blueprint] ${modelName} failed:`, err?.message);
+        if (modelName === blueprintModels[blueprintModels.length - 1]) throw err;
+      }
+    }
+
+    if (!result) throw new Error("All models failed");
+
     // Create readable stream for SSE
     const encoder = new TextEncoder();
     const stream = new ReadableStream({

@@ -60,13 +60,7 @@ export async function POST(request: NextRequest) {
     const startTime = Date.now();
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-3.1-pro-preview", // Pro for quality animations
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 60000,
-      },
-    });
+    const enhanceModels = ["gemini-3.1-pro-preview"];
 
     const prompt = `${ANIMATION_ENHANCER_PROMPT}
 
@@ -79,9 +73,23 @@ ${code}
 Add MORE animations to this code. Make it feel ALIVE and PREMIUM.
 Return the complete enhanced HTML wrapped in \`\`\`html code blocks.`;
 
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const text = response.text();
+    let text = "";
+    for (const modelName of enhanceModels) {
+      try {
+        console.log(`[enhance-animations] Trying ${modelName}...`);
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: { temperature: 0.7, maxOutputTokens: 60000 },
+        });
+        const result = await model.generateContent(prompt);
+        text = result.response.text();
+        console.log(`[enhance-animations] Success with ${modelName}`);
+        break;
+      } catch (err: any) {
+        console.error(`[enhance-animations] ${modelName} failed:`, err?.message);
+        if (modelName === enhanceModels[enhanceModels.length - 1]) throw err;
+      }
+    }
     
     const enhancedCode = extractCodeFromResponse(text);
     

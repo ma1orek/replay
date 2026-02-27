@@ -378,10 +378,8 @@ export async function POST(request: NextRequest) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     
-    // SINGLE MODEL: Gemini 3 Pro with VISION
-    // Pro SEES the video directly and generates code - NO intermediate JSON!
-    const model = genAI.getGenerativeModel({
-      model: "gemini-3.1-pro-preview",
+    // Primary: Gemini 3.1 Pro, Fallback: Gemini 3 Pro
+    const modelConfig = {
       generationConfig: {
         temperature: 0.85, // High for creative Awwwards-level designs
         maxOutputTokens: 65000, // Gemini 3.1 Pro limit is 65,536
@@ -392,7 +390,9 @@ export async function POST(request: NextRequest) {
         { category: "HARM_CATEGORY_HARASSMENT" as any, threshold: "BLOCK_MEDIUM_AND_ABOVE" as any },
         { category: "HARM_CATEGORY_DANGEROUS_CONTENT" as any, threshold: "BLOCK_MEDIUM_AND_ABOVE" as any },
       ],
-    });
+    };
+    const modelsToTry = ["gemini-3.1-pro-preview"];
+    let model = genAI.getGenerativeModel({ model: modelsToTry[0], ...modelConfig });
     
     // Timeout helper
     const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> => {
@@ -2348,55 +2348,80 @@ Apply these DS colors to buttons, backgrounds, accents, links, borders.
 The video provides layout + content. The DS provides ALL colors and typography.
 Generate the HTML now using ONLY Design System colors.` });
           } else if (!isReimagine) {
-            // RECONSTRUCT mode — remind to match the video's theme
-            contentParts.push({ text: `🚨 POST-VIDEO THEME REMINDER:
-You just watched a video. Before generating code, answer this question:
-Was the main background in the video LIGHT (white/cream/gray) or DARK (black/dark gray)?
+            // RECONSTRUCT mode — enforce content completeness + theme matching
+            contentParts.push({ text: `🚨 RECONSTRUCT MODE — FAITHFUL REPRODUCTION:
+You just watched a video. You MUST reproduce it COMPLETELY — every section, every element, every piece of text.
 
-- If LIGHT: <body class="bg-white text-gray-900"> and use light Tailwind classes throughout
-- If DARK: <body class="bg-[#0a0a0a] text-white"> and use dark Tailwind classes throughout
+CONTENT COMPLETENESS (MANDATORY):
+- Keep ALL text VERBATIM: every headline, paragraph, nav item, stat, testimonial, button label, footer link
+- Keep ALL data EXACT: numbers, metrics, company names, dates, prices
+- Include ALL sections shown in video — hero, features, pricing, testimonials, CTA, footer, etc.
+- NO empty sections, NO placeholder text, NO skipped content
+- 🚨 ZERO BAN: 0 is BANNED in statistics/KPIs — use the ACTUAL values from the video!
+- SCAN THE LAST 5 SECONDS of the video for FINAL counter values!
 
-Match the video EXACTLY. Do NOT default to dark if the video was light!
-Generate the HTML now matching the video's actual theme.` });
+THEME MATCHING:
+- Was the background LIGHT (white/cream/gray) or DARK (black/dark gray)?
+- If LIGHT: <body class="bg-white text-gray-900"> and light Tailwind classes
+- If DARK: <body class="bg-[#0a0a0a] text-white"> and dark Tailwind classes
+- Match the video EXACTLY. Do NOT default to dark if the video was light!
+
+Generate the COMPLETE HTML now — every section from the video must be present.` });
           }
 
-          // Retry loop for 503/429 high demand errors
-          const MAX_RETRIES = 3;
+          // Retry loop with model fallback (primary → fallback)
+          const MAX_RETRIES = 2;
           const retryDelay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
           let streamResult;
           let lastStreamError;
 
-          for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-            try {
-              streamResult = await withTimeout(
-                model.generateContentStream(contentParts),
-                240000, // 4 minute timeout for complex generation
-                "Direct Vision Code Generation"
-              );
-              break; // success
-            } catch (error: any) {
-              lastStreamError = error;
-              console.error(`[stream] Attempt ${attempt}/${MAX_RETRIES} failed:`, error?.message);
-              const isRetryable = error?.message?.includes('503') ||
-                                  error?.message?.includes('overloaded') ||
-                                  error?.message?.includes('Service Unavailable') ||
-                                  error?.message?.includes('429');
-              if (!isRetryable) throw error;
+          for (const modelName of modelsToTry) {
+            model = genAI.getGenerativeModel({ model: modelName, ...modelConfig });
+            for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+              try {
+                console.log(`[stream] Trying ${modelName} (attempt ${attempt}/${MAX_RETRIES})...`);
+                streamResult = await withTimeout(
+                  model.generateContentStream(contentParts),
+                  240000, // 4 minute timeout for complex generation
+                  `Direct Vision Code Generation (${modelName})`
+                );
+                console.log(`[stream] Success with ${modelName}`);
+                break; // success
+              } catch (error: any) {
+                lastStreamError = error;
+                console.error(`[stream] ${modelName} attempt ${attempt}/${MAX_RETRIES} failed:`, error?.message);
+                const isRetryable = error?.message?.includes('503') ||
+                                    error?.message?.includes('overloaded') ||
+                                    error?.message?.includes('Service Unavailable') ||
+                                    error?.message?.includes('429') ||
+                                    error?.message?.includes('timed out');
+                if (!isRetryable && !error?.message?.includes('timed out')) throw error;
 
-              if (attempt < MAX_RETRIES) {
-                const waitTime = Math.min(2000 * Math.pow(2, attempt - 1), 10000);
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-                  type: "status",
-                  message: `Model busy, retrying in ${waitTime / 1000}s... (attempt ${attempt + 1}/${MAX_RETRIES})`,
-                  progress: 5
-                })}\n\n`));
-                await retryDelay(waitTime);
+                if (attempt < MAX_RETRIES) {
+                  const waitTime = Math.min(2000 * Math.pow(2, attempt - 1), 10000);
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                    type: "status",
+                    message: `Model busy, retrying in ${waitTime / 1000}s... (attempt ${attempt + 1}/${MAX_RETRIES})`,
+                    progress: 5
+                  })}\n\n`));
+                  await retryDelay(waitTime);
+                }
               }
+            }
+            if (streamResult) break; // got a result, stop trying models
+            // If primary model exhausted retries, notify about fallback
+            if (modelName === modelsToTry[0] && modelsToTry.length > 1) {
+              console.log(`[stream] Primary model failed, falling back to ${modelsToTry[1]}...`);
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                type: "status",
+                message: "Switching to fallback model...",
+                progress: 8
+              })}\n\n`));
             }
           }
 
           if (!streamResult) {
-            throw lastStreamError || new Error("All retry attempts failed");
+            throw lastStreamError || new Error("All models and retry attempts failed");
           }
 
           const result = streamResult;

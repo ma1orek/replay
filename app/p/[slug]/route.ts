@@ -167,10 +167,10 @@ function jsxToHtml(code: string): string {
   
   // CRITICAL FIX: Find the first COMPLETE HTML opening tag
   const validTags = 'div|section|main|header|footer|nav|aside|article|body|html|span|p|h[1-6]|ul|ol|li|a|button|form|input|img|table|thead|tbody|tr|td|th|figure|figcaption|blockquote|pre|code|label|select|option|textarea';
-  
+
   const tagPattern = new RegExp(`(?:^|[\\s\\n>])(<(?:${validTags})(?:\\s|>|$))`, 'i');
   const match = html.match(tagPattern);
-  
+
   if (match && match.index !== undefined) {
     const fullMatch = match[0];
     const tagStart = match[1];
@@ -183,9 +183,14 @@ function jsxToHtml(code: string): string {
       html = html.slice(fallbackMatch.index);
     }
   }
-  
+
   // Remove trailing ); or } from React component
   html = html.replace(/\s*\)\s*;?\s*\}?\s*$/, '');
+
+  // DEFENSIVE CHECK: If extraction failed and no valid HTML tags remain, return error
+  if (!/<[a-zA-Z]/.test(html) || html.trim().length < 20) {
+    return '<div style="padding:40px;text-align:center;font-family:sans-serif;color:#888;">Content could not be rendered. Please republish this page.</div>';
+  }
   
   // Remove React fragments
   html = html.replace(/<>\s*/g, '').replace(/\s*<\/>/g, '');
@@ -292,59 +297,10 @@ export async function GET(
   // Use simple title for SEO only, not displayed in browser tab
   const seoTitle = typedProject.title.replace(/</g, "&lt;").replace(/>/g, "&gt;");
   
-  // Visibility fix CSS - forces all elements visible (AI generates opacity:0 for GSAP animations)
-  // IMPORTANT: Must NOT force opacity on grain/noise canvas overlays (intentional semi-transparent effects)
+  // Visibility fix — delayed JS only (no CSS overrides that break GSAP/React Bits animations)
+  // Waits for animations to initialize, then fixes any elements still stuck at opacity:0
   const visibilityFixCss = `
 <style id="visibility-fix">
-  /* VISIBILITY FIX - Force animation-hidden elements visible */
-  /* Excludes: canvas overlays, grain/noise effects, script/style tags */
-
-  /* Target exact opacity:0 — excludes decorative overlays (grain/noise) with pointer-events:none */
-  [style*="opacity: 0;"]:not(canvas):not([style*="pointer-events"]):not(.pointer-events-none),
-  [style*="opacity:0;"]:not(canvas):not([style*="pointer-events"]):not(.pointer-events-none) { opacity: 1 !important; }
-  [style$="opacity: 0"]:not(canvas):not([style*="pointer-events"]):not(.pointer-events-none),
-  [style$="opacity:0"]:not(canvas):not([style*="pointer-events"]):not(.pointer-events-none) { opacity: 1 !important; }
-  [style*="visibility: hidden"], [style*="visibility:hidden"] { visibility: visible !important; }
-
-  /* Target animation classes — NOT decorative overlays (pointer-events:none excluded) */
-  .fade-up:not(.pointer-events-none), .fade-in:not(.pointer-events-none), .fade-down:not(.pointer-events-none),
-  .slide-up:not(.pointer-events-none), .slide-in:not(.pointer-events-none), .slide-left:not(.pointer-events-none), .slide-right:not(.pointer-events-none),
-  .scale-up:not(.pointer-events-none), .rotate-in:not(.pointer-events-none), .blur-fade:not(.pointer-events-none), .animate-fade:not(.pointer-events-none),
-  [class*="fade-"]:not(.pointer-events-none):not([style*="pointer-events"]),
-  [class*="slide-"]:not(.pointer-events-none):not([style*="pointer-events"]),
-  [class*="stagger-"]:not(.pointer-events-none):not([style*="pointer-events"]),
-  [class*="gsap"]:not(.pointer-events-none):not([style*="pointer-events"]),
-  [class*="scroll"]:not(.pointer-events-none):not([style*="pointer-events"]) {
-    opacity: 1 !important;
-    visibility: visible !important;
-  }
-
-  /* Target stagger containers and their children */
-  .stagger-cards:not(.pointer-events-none), .stagger-cards > *:not([style*="pointer-events"]):not(.pointer-events-none),
-  [class*="stagger"] > *:not([style*="pointer-events"]):not(.pointer-events-none) {
-    opacity: 1 !important;
-    visibility: visible !important;
-  }
-
-  /* Target data attributes used by animation libs — NOT decorative overlays */
-  [data-state="hidden"]:not(.pointer-events-none), [data-visible="false"]:not(.pointer-events-none),
-  [data-aos]:not(.pointer-events-none), [data-scroll]:not(.pointer-events-none),
-  [data-gsap]:not(.pointer-events-none), [data-animate]:not(.pointer-events-none) {
-    opacity: 1 !important;
-    visibility: visible !important;
-  }
-
-  /* Target common card containers — NOT decorative overlays */
-  [class*="card"]:not([style*="pointer-events"]):not(.pointer-events-none),
-  [class*="Card"]:not([style*="pointer-events"]):not(.pointer-events-none),
-  [class*="step"]:not(.pointer-events-none), [class*="Step"]:not(.pointer-events-none),
-  [class*="feature"]:not(.pointer-events-none), [class*="Feature"]:not(.pointer-events-none),
-  [class*="item"]:not([style*="pointer-events"]):not(.pointer-events-none),
-  [class*="Item"]:not([style*="pointer-events"]):not(.pointer-events-none) {
-    opacity: 1 !important;
-    visibility: visible !important;
-  }
-
   /* CANVAS CHART SAFETY NET - prevent Chart.js canvas from growing to insane heights */
   canvas[id*="chart" i], canvas[id*="Chart"], canvas[id*="graph" i], canvas[id*="Graph"] {
     max-height: 400px !important;
@@ -355,29 +311,20 @@ export async function GET(
   function forceVisible() {
     document.querySelectorAll('*').forEach(function(el) {
       var cs = window.getComputedStyle(el);
+      // Skip canvas, script, style tags
+      if (el.tagName === 'CANVAS' || el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return;
       // Skip decorative overlays (noise/grain/texture) — pointer-events:none + fixed/absolute
       if (cs.pointerEvents === 'none' && (cs.position === 'fixed' || cs.position === 'absolute')) return;
+      // Skip elements that GSAP is actively animating
+      if (el._gsap || el._gsTransform) return;
+      // Fix elements stuck at opacity:0 (GSAP failed to animate them)
       if (parseFloat(cs.opacity) === 0) el.style.setProperty('opacity', '1', 'important');
       if (cs.visibility === 'hidden') el.style.setProperty('visibility', 'visible', 'important');
     });
   }
-  // Protect grain/noise overlays: if old aggressive forceVisible (from DB HTML) forced them
-  // to opacity:1, undo it by removing the inline override and letting CSS define the opacity.
-  function protectGrainOverlays() {
-    document.querySelectorAll('*').forEach(function(el) {
-      var cs = window.getComputedStyle(el);
-      if (cs.pointerEvents !== 'none') return;
-      if (cs.position !== 'fixed' && cs.position !== 'absolute') return;
-      if (el.style.opacity === '1') {
-        el.style.removeProperty('opacity');
-        var cssOpacity = parseFloat(window.getComputedStyle(el).opacity);
-        if (cssOpacity >= 0.5) { el.style.opacity = '1'; } // intentionally opaque — restore
-        // else: CSS controls opacity (grain at 0.02-0.1 will render correctly)
-      }
-    });
-  }
-  document.addEventListener('DOMContentLoaded', function() { forceVisible(); setTimeout(forceVisible, 100); setTimeout(forceVisible, 300); });
-  window.addEventListener('load', function() { forceVisible(); setTimeout(forceVisible, 100); setTimeout(forceVisible, 500); setTimeout(protectGrainOverlays, 200); setTimeout(protectGrainOverlays, 800); });
+  // Wait 3s for GSAP/ScrollTrigger/React Bits to initialize and animate first
+  setTimeout(forceVisible, 3000);
+  setTimeout(forceVisible, 5000);
 })();
 </script>
 `;
@@ -440,9 +387,10 @@ export async function GET(
       }
     </script>
   ` : '';
-  
+
+  // Share bar HTML — floating share buttons (top-right)
   let code = typedProject.code || '';
-  
+
   // Check if this is a full HTML document with React/Babel (our generated code format)
   const isFullHtmlWithReact = code.includes('<!DOCTYPE') && 
     (code.includes('react.production.min.js') || code.includes('babel.min.js') || code.includes('type="text/babel"'));
@@ -561,7 +509,7 @@ export async function GET(
 })();
 </script>`;
 
-    // Inject Alpine init script + badge before </body>
+    // Inject Alpine init script + badge + share bar before </body>
     if (code.includes('</body>')) {
       code = code.replace('</body>', `${alpineInitScript}\n${badgeHtml}\n</body>`);
     } else if (code.includes('</html>')) {
@@ -646,27 +594,6 @@ export async function GET(
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { min-height: 100vh; font-family: 'Inter', sans-serif; }
-    /* VISIBILITY FIX - excludes decorative overlays (grain/noise with pointer-events:none) */
-    [style*="opacity: 0;"]:not(canvas):not([style*="pointer-events"]):not(.pointer-events-none),
-    [style*="opacity:0;"]:not(canvas):not([style*="pointer-events"]):not(.pointer-events-none) { opacity: 1 !important; }
-    [style$="opacity: 0"]:not(canvas):not([style*="pointer-events"]):not(.pointer-events-none),
-    [style$="opacity:0"]:not(canvas):not([style*="pointer-events"]):not(.pointer-events-none) { opacity: 1 !important; }
-    [style*="visibility: hidden"] { visibility: visible !important; }
-    .fade-up:not(.pointer-events-none), .fade-in:not(.pointer-events-none), .fade-down:not(.pointer-events-none),
-    .slide-up:not(.pointer-events-none), .slide-in:not(.pointer-events-none), .slide-left:not(.pointer-events-none), .slide-right:not(.pointer-events-none),
-    .scale-up:not(.pointer-events-none), .rotate-in:not(.pointer-events-none), .blur-fade:not(.pointer-events-none), .animate-fade:not(.pointer-events-none),
-    [class*="fade-"]:not(.pointer-events-none):not([style*="pointer-events"]),
-    [class*="slide-"]:not(.pointer-events-none):not([style*="pointer-events"]),
-    [class*="stagger-"]:not(.pointer-events-none):not([style*="pointer-events"]),
-    [class*="animate-"]:not(.pointer-events-none):not([style*="pointer-events"]),
-    [class*="card"]:not([style*="pointer-events"]):not(.pointer-events-none),
-    [class*="Card"]:not([style*="pointer-events"]):not(.pointer-events-none),
-    [class*="step"]:not(.pointer-events-none), [class*="Step"]:not(.pointer-events-none) {
-      opacity: 1 !important;
-      visibility: visible !important;
-    }
-    .stagger-cards > *:not([style*="pointer-events"]):not(.pointer-events-none),
-    [class*="stagger"] > *:not([style*="pointer-events"]):not(.pointer-events-none) { opacity: 1 !important; visibility: visible !important; }
     /* Canvas chart safety net */
     canvas[id*="chart" i], canvas[id*="Chart"], canvas[id*="graph" i], canvas[id*="Graph"] { max-height: 400px !important; }
   </style>
@@ -674,14 +601,16 @@ export async function GET(
   (function() {
     function forceVisible() {
       document.querySelectorAll('*').forEach(function(el) {
+        if (el.tagName === 'CANVAS' || el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return;
         var cs = window.getComputedStyle(el);
         if (cs.pointerEvents === 'none' && (cs.position === 'fixed' || cs.position === 'absolute')) return;
+        if (el._gsap || el._gsTransform) return;
         if (parseFloat(cs.opacity) === 0) el.style.setProperty('opacity', '1', 'important');
         if (cs.visibility === 'hidden') el.style.setProperty('visibility', 'visible', 'important');
       });
     }
-    document.addEventListener('DOMContentLoaded', function() { forceVisible(); setTimeout(forceVisible, 100); setTimeout(forceVisible, 300); });
-    window.addEventListener('load', function() { forceVisible(); setTimeout(forceVisible, 100); setTimeout(forceVisible, 500); });
+    setTimeout(forceVisible, 3000);
+    setTimeout(forceVisible, 5000);
   })();
   </script>
   ${customStyles}

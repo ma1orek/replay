@@ -63,7 +63,7 @@ async function executeGeminiWithRetry(
   // Try different models in order of preference
   const modelsToTry = [
     modelName,
-    "gemini-3.1-pro-preview", // Use Gemini 3 Pro for code editing
+    "gemini-3.1-pro-preview",
   ].filter((m, i, arr) => arr.indexOf(m) === i); // Remove duplicates
   
   for (const currentModel of modelsToTry) {
@@ -81,14 +81,14 @@ async function executeGeminiWithRetry(
         lastError = error;
         const isOverloaded = error?.message?.includes('503') || error?.message?.includes('overloaded');
         const isRateLimit = error?.message?.includes('429');
-        
+
         console.error(`[Gemini] ${currentModel} attempt ${attempt}/${maxRetries} failed:`, error?.message);
-        
+
         // Notify about retry
         if (onRetry && (isOverloaded || isRateLimit)) {
           onRetry(attempt, error);
         }
-        
+
         // Wait before retry (exponential backoff)
         if (attempt < maxRetries && (isOverloaded || isRateLimit)) {
           const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 8000);
@@ -493,8 +493,9 @@ Odpowiedz krótko i przyjaźnie:`;
           }
           
           const genAI = new GoogleGenerativeAI(geminiKey);
-          const model = genAI.getGenerativeModel({
-            model: "gemini-3.1-pro-preview", // Gemini 3 Pro for image processing
+          const imageModelNames = ["gemini-3.1-pro-preview"];
+          let model = genAI.getGenerativeModel({
+            model: imageModelNames[0],
             generationConfig: { temperature: 0.4, maxOutputTokens: 65536 },
           });
           
@@ -620,9 +621,22 @@ CRITICAL RULES:
           send("status", { message: isAssetReplacement ? "Replacing asset..." : "Applying style from image...", phase: "writing" });
           
           try {
-            const result = await model.generateContent(parts);
-            let fullCode = result.response.text();
-            
+            let result;
+            for (const imgModelName of imageModelNames) {
+              try {
+                model = genAI.getGenerativeModel({
+                  model: imgModelName,
+                  generationConfig: { temperature: 0.4, maxOutputTokens: 65536 },
+                });
+                result = await model.generateContent(parts);
+                break;
+              } catch (modelErr: any) {
+                console.error(`[Stream Edit] ${imgModelName} failed:`, modelErr?.message);
+                if (imgModelName === imageModelNames[imageModelNames.length - 1]) throw modelErr;
+              }
+            }
+            let fullCode = result!.response.text();
+
             // Send the full code as chunks for UI update
             const lines = fullCode.split('\n').length;
             send("progress", { lines, chars: fullCode.length, preview: fullCode.slice(-300) });

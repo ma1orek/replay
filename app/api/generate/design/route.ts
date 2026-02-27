@@ -5,7 +5,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-const MODEL_NAME = "gemini-3.1-pro-preview"; // Using PRO for best quality design extraction
+const MODELS_TO_TRY = ["gemini-3.1-pro-preview"];
 
 function getApiKey(): string | null {
   return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || null;
@@ -248,20 +248,30 @@ export async function POST(request: NextRequest) {
     const prompt = buildDesignPrompt(body);
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: MODEL_NAME,
-      generationConfig: {
-        temperature: 0.4, // Lower for more consistent output
-        maxOutputTokens: 16384,
-      },
-    });
-
-    const result = await model.generateContent([
+    const contentParts = [
       { text: prompt },
       { text: `\n\nCODE TO ANALYZE:\n${generatedCode?.slice(0, 15000) || "No code provided"}\n\nGenerate the customized design system JSON:` }
-    ]);
+    ];
 
-    const responseText = result.response.text();
+    let responseText = "";
+    let usedModel = MODELS_TO_TRY[0];
+    for (const modelName of MODELS_TO_TRY) {
+      try {
+        console.log(`[Design] Trying ${modelName}...`);
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: { temperature: 0.4, maxOutputTokens: 16384 },
+        });
+        const result = await model.generateContent(contentParts);
+        responseText = result.response.text();
+        usedModel = modelName;
+        console.log(`[Design] Success with ${modelName}`);
+        break;
+      } catch (err: any) {
+        console.error(`[Design] ${modelName} failed:`, err?.message);
+        if (modelName === MODELS_TO_TRY[MODELS_TO_TRY.length - 1]) throw err;
+      }
+    }
     
     // Extract JSON
     let jsonContent: any;
@@ -286,7 +296,7 @@ export async function POST(request: NextRequest) {
       success: true,
       data: jsonContent,
       generatedAt: new Date().toISOString(),
-      model: MODEL_NAME
+      model: usedModel
     });
 
   } catch (error: any) {

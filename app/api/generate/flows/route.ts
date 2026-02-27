@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 export const maxDuration = 120;
 
 // Use Gemini 3 Pro Preview for best quality flow detection
-const MODEL_NAME = "gemini-3.1-pro-preview";
+const MODELS_TO_TRY = ["gemini-3.1-pro-preview"];
 
 function getApiKey(): string | null {
   return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || null;
@@ -199,20 +199,28 @@ ${generatedCode?.slice(0, 12000) || "No code provided"}
 `;
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: MODEL_NAME,
-      generationConfig: {
-        temperature: 0.4,
-        maxOutputTokens: 16384,
-      },
-    });
-
-    const result = await model.generateContent([
+    const contentParts = [
       { text: FLOW_PROMPT },
       { text: `\n\nCONTEXT:\n${context}\n\nGenerate comprehensive flow diagrams:` }
-    ]);
+    ];
 
-    const responseText = result.response.text();
+    let responseText = "";
+    for (const modelName of MODELS_TO_TRY) {
+      try {
+        console.log(`[Flows] Trying ${modelName}...`);
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: { temperature: 0.4, maxOutputTokens: 16384 },
+        });
+        const result = await model.generateContent(contentParts);
+        responseText = result.response.text();
+        console.log(`[Flows] Success with ${modelName}`);
+        break;
+      } catch (err: any) {
+        console.error(`[Flows] ${modelName} failed:`, err?.message);
+        if (modelName === MODELS_TO_TRY[MODELS_TO_TRY.length - 1]) throw err;
+      }
+    }
     
     // Extract JSON
     let jsonContent: any;

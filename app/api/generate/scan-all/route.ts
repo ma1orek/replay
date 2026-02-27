@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 export const runtime = "nodejs";
 export const maxDuration = 300; // 5 minutes for all passes
 
-const MODEL_NAME = "gemini-3.1-pro-preview"; // Pro for maximum video understanding
+const MODELS_TO_TRY = ["gemini-3.1-pro-preview"];
 
 function getApiKey(): string | null {
   return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || null;
@@ -360,17 +360,10 @@ export async function POST(request: NextRequest) {
     console.log("[Scan-All] Starting unified multi-pass analysis...");
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: MODEL_NAME,
-      generationConfig: {
-        temperature: 0.1,
-        maxOutputTokens: 32768, // Large output for comprehensive analysis
-      },
-    });
 
     // Build content parts
     const parts: any[] = [{ text: UNIFIED_SCAN_PROMPT }];
-    
+
     if (videoBase64) {
       parts.push({
         inlineData: {
@@ -380,9 +373,29 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.log("[Scan-All] Sending to Gemini 3 Pro...");
-    const result = await model.generateContent(parts);
-    const responseText = result.response.text();
+    // Try models with fallback
+    let responseText = "";
+    let usedModel = MODELS_TO_TRY[0];
+    for (const modelName of MODELS_TO_TRY) {
+      try {
+        console.log(`[Scan-All] Trying ${modelName}...`);
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 32768,
+          },
+        });
+        const result = await model.generateContent(parts);
+        responseText = result.response.text();
+        usedModel = modelName;
+        console.log(`[Scan-All] Success with ${modelName}`);
+        break;
+      } catch (err: any) {
+        console.error(`[Scan-All] ${modelName} failed:`, err?.message);
+        if (modelName === MODELS_TO_TRY[MODELS_TO_TRY.length - 1]) throw err;
+      }
+    }
     
     // Extract JSON from response
     let unifiedData: any;
@@ -411,7 +424,7 @@ export async function POST(request: NextRequest) {
       ...unifiedData.meta,
       scanDuration: duration,
       scanCompletedAt: new Date().toISOString(),
-      model: MODEL_NAME,
+      model: usedModel,
     };
 
     return NextResponse.json({

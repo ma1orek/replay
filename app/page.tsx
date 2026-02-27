@@ -405,7 +405,7 @@ import AnimatedLoadingSkeleton from "@/components/ui/animated-loading-skeleton";
 // MobileScanner removed - mobile users now use MobileLayout exclusively
 import Link from "next/link";
 import type { CodeMode, FileNode, FileTreeFolder, FileTreeFile, CodeReferenceMap } from "@/types";
-import { trackViewContent, trackStartGeneration } from "@/lib/fb-tracking";
+import { trackViewContent, trackStartGeneration, trackFunnelEvent } from "@/lib/fb-tracking";
 
 // Generate smart version label from user input (like Bolt/Lovable)
 function generateVersionLabel(userInput: string): string {
@@ -2167,29 +2167,6 @@ const ShadowPreview = ({
     .font-semibold { font-weight: 600 !important; }
     .font-bold { font-weight: 700 !important; }
     
-    /* ═══════════════════════════════════════════════════════════════════════════ */
-    /* FIX INVISIBLE ELEMENTS - AI often generates opacity:0 for animations       */
-    /* ═══════════════════════════════════════════════════════════════════════════ */
-    /* Force all elements visible */
-    [style*="opacity: 0"], [style*="opacity:0"] {
-      opacity: 1 !important;
-    }
-    /* Fix elements with transform animations that start hidden */
-    [style*="translate"] {
-      opacity: 1 !important;
-      transform: none !important;
-    }
-    /* Common animation classes that hide elements initially */
-    .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .animate-fade,
-    [class*="fade-"], [class*="slide-"], [class*="stagger-"] {
-      opacity: 1 !important;
-      transform: none !important;
-    }
-    /* Framer Motion / GSAP style hidden states */
-    [data-state="hidden"], [data-visible="false"] {
-      opacity: 1 !important;
-      visibility: visible !important;
-    }
   </style>
 </head>
 <body>
@@ -2199,42 +2176,35 @@ const ShadowPreview = ({
     if (typeof lucide !== 'undefined') {
       lucide.createIcons();
     }
-    
-    // ═══════════════════════════════════════════════════════════════════════════
-    // FIX INVISIBLE ELEMENTS - Force all elements to be visible
-    // ═══════════════════════════════════════════════════════════════════════════
+
+    // Force stuck-invisible elements visible AFTER animations have run
     function forceVisible() {
-      // Find all elements with inline opacity:0 and fix them
       document.querySelectorAll('*').forEach(el => {
-        const style = el.getAttribute('style') || '';
-        if (style.includes('opacity') && (style.includes('opacity: 0') || style.includes('opacity:0'))) {
-          el.style.opacity = '1';
-        }
-        // Also fix transform with translateY for fade-up animations
-        if (style.includes('translate') && style.includes('opacity')) {
-          el.style.opacity = '1';
-          el.style.transform = 'none';
-        }
+        if (el.tagName === 'CANVAS' || el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return;
+        var cs = window.getComputedStyle(el);
+        if (cs.pointerEvents === 'none' && (cs.position === 'fixed' || cs.position === 'absolute')) return;
+        if (el._gsap || el._gsTransform) return;
+        if (parseFloat(cs.opacity) === 0) el.style.opacity = '1';
+        if (cs.visibility === 'hidden') el.style.visibility = 'visible';
       });
     }
-    
+
     // Auto-resize iframe to content
     function sendHeight() {
       const height = document.getElementById('preview-content')?.scrollHeight || 200;
       window.parent.postMessage({ type: 'IFRAME_HEIGHT', height: Math.max(height + 32, 120) }, '*');
     }
-    
+
     // Send on load and after Tailwind processes
     window.addEventListener('load', () => {
       if (typeof lucide !== 'undefined') lucide.createIcons();
-      forceVisible();
       setTimeout(sendHeight, 100);
     });
-    
-    // Run multiple times to catch dynamically rendered content
-    setTimeout(() => { forceVisible(); sendHeight(); }, 100);
-    setTimeout(() => { forceVisible(); sendHeight(); }, 500);
-    setTimeout(() => { forceVisible(); sendHeight(); }, 1000);
+
+    // Wait for GSAP/animations, then fix stuck elements
+    setTimeout(() => { sendHeight(); }, 100);
+    setTimeout(() => { sendHeight(); }, 500);
+    setTimeout(() => { forceVisible(); sendHeight(); }, 3000);
     
     // ═══════════════════════════════════════════════════════════════════════════
     // FIX BROKEN IMAGES - Replace failed images with Unsplash placeholders
@@ -2482,29 +2452,7 @@ const InteractiveReactPreview = ({
       height: 1em; 
     }
     
-    /* ═══════════════════════════════════════════════════════════════════════════ */
-    /* FIX INVISIBLE ELEMENTS - AI often generates opacity:0 for animations       */
-    /* ═══════════════════════════════════════════════════════════════════════════ */
-    /* Force all elements visible */
-    [style*="opacity: 0"], [style*="opacity:0"] {
-      opacity: 1 !important;
-    }
-    /* Fix elements with transform animations that start hidden */
-    [style*="translate"] {
-      opacity: 1 !important;
-      transform: none !important;
-    }
-    /* Common animation classes that hide elements initially */
-    .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .animate-fade,
-    [class*="fade-"], [class*="slide-"], [class*="stagger-"] {
-      opacity: 1 !important;
-      transform: none !important;
-    }
-    /* Framer Motion / GSAP style hidden states */
-    [data-state="hidden"], [data-visible="false"] {
-      opacity: 1 !important;
-      visibility: visible !important;
-    }
+    /* Visibility fix removed — handled by delayed JS to not break GSAP/React Bits animations */
     
     /* ═══════════════════════════════════════════════════════════════════════════ */
     /* GRADIENT ORBS & ANIMATED BACKGROUNDS - Make them look like glowing blurs   */
@@ -2777,19 +2725,15 @@ const InteractiveReactPreview = ({
       }
     }, 100);
     
-    // ═══════════════════════════════════════════════════════════════════════════
-    // FIX INVISIBLE ELEMENTS - Force all elements to be visible
-    // ═══════════════════════════════════════════════════════════════════════════
+    // Fix stuck-invisible elements AFTER GSAP/animations have run
     const forceVisible = () => {
       document.querySelectorAll('*').forEach(el => {
-        const style = el.getAttribute('style') || '';
-        if (style.includes('opacity') && (style.includes('opacity: 0') || style.includes('opacity:0'))) {
-          el.style.opacity = '1';
-        }
-        if (style.includes('translate') && style.includes('opacity')) {
-          el.style.opacity = '1';
-          el.style.transform = 'none';
-        }
+        if (el.tagName === 'CANVAS' || el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return;
+        const cs = window.getComputedStyle(el);
+        if (cs.pointerEvents === 'none' && (cs.position === 'fixed' || cs.position === 'absolute')) return;
+        if (el._gsap || el._gsTransform) return;
+        if (parseFloat(cs.opacity) === 0) el.style.opacity = '1';
+        if (cs.visibility === 'hidden') el.style.visibility = 'visible';
       });
     };
     
@@ -2904,13 +2848,15 @@ const InteractiveReactPreview = ({
       }
     };
     
-    // Initial + resize + mutation observer
-    setTimeout(() => { forceVisible(); fixBrokenImages(); sendSize(); }, 100);
-    setTimeout(() => { forceVisible(); fixBrokenImages(); sendSize(); }, 500);
-    setTimeout(() => { forceVisible(); fixBrokenImages(); sendSize(); runAccessibilityCheck(); }, 1500);
+    // Initial: fix images + measure size (don't force visibility yet — let GSAP animate first)
+    setTimeout(() => { fixBrokenImages(); sendSize(); }, 100);
+    setTimeout(() => { fixBrokenImages(); sendSize(); }, 500);
+    setTimeout(() => { fixBrokenImages(); sendSize(); runAccessibilityCheck(); }, 1500);
+    // Wait for GSAP/animations to finish, then fix any stuck elements
+    setTimeout(() => { forceVisible(); sendSize(); }, 3000);
     window.addEventListener('resize', sendSize);
-    
-    const observer = new MutationObserver(() => { forceVisible(); fixBrokenImages(); sendSize(); });
+
+    const observer = new MutationObserver(() => { fixBrokenImages(); sendSize(); });
     observer.observe(document.body, { childList: true, subtree: true, attributes: true });
   </script>
 </body>
@@ -4108,6 +4054,8 @@ function ReplayToolContent() {
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [publishCacheTimestamp, setPublishCacheTimestamp] = useState(Date.now()); // Cache-busting timestamp
   const [showPublishModal, setShowPublishModal] = useState(false);
+  const [hideBadgeOnPublish, setHideBadgeOnPublish] = useState(false);
+  const [showShareCTA, setShowShareCTA] = useState(false);
   
   // Storybook / Design System state
   
@@ -4414,68 +4362,42 @@ function ReplayToolContent() {
       processedCode = jsxToHtml(processedCode);
     }
     
-    // FIX INVISIBLE ELEMENTS - CSS to force visibility (AI generates opacity:0 for animations)
+    // FIX INVISIBLE ELEMENTS - delayed JS only (no CSS overrides that break GSAP/React Bits animations)
     const invisibleFixStyles = `
 <style id="invisible-fix">
-  /* Force all elements visible - fix AI generated fade/slide animations */
-  /* Excludes canvas/grain/noise overlays (intentional semi-transparent effects) */
-  [style*="opacity: 0;"]:not(canvas), [style*="opacity:0;"]:not(canvas) { opacity: 1 !important; }
-  [style$="opacity: 0"]:not(canvas), [style$="opacity:0"]:not(canvas) { opacity: 1 !important; }
-  [style*="visibility: hidden"], [style*="visibility:hidden"] { visibility: visible !important; }
-  [style*="translate"]:not(canvas) { opacity: 1 !important; }
-  .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .animate-fade,
-  [class*="fade-"], [class*="slide-"], [class*="stagger-"], [class*="animate-"] {
-    opacity: 1 !important;
-    visibility: visible !important;
-  }
-  [data-state="hidden"], [data-visible="false"], [data-aos] {
-    opacity: 1 !important;
-    visibility: visible !important;
-    transform: none !important;
-  }
   /* Fix Lucide icons - make invisible instead of hidden to preserve layout */
   i[data-lucide]:empty { opacity: 0; width: 1em; height: 1em; display: inline-block; }
   i[data-lucide]:not(:has(svg)) { opacity: 0; width: 1em; height: 1em; display: inline-block; }
   i[data-lucide]:has(svg) { opacity: 1 !important; }
   /* Fix sections with no content showing */
   section:empty { min-height: 0 !important; }
-  /* Ensure grid/flex children are visible (excluding overlays) */
-  .grid > *:not(canvas), .flex > *:not(canvas) { opacity: 1 !important; visibility: visible !important; }
   /* Canvas chart safety net - prevent Chart.js canvas from growing infinitely */
   canvas[id*="chart" i], canvas[id*="Chart"], canvas[id*="graph" i], canvas[id*="Graph"] { max-height: 400px !important; }
 </style>
 <script>
-// Force all elements visible after load
+// Force stuck-invisible elements visible AFTER GSAP/animations have had time to run
 function forceVisible() {
   document.querySelectorAll('*').forEach(function(el) {
-    var style = window.getComputedStyle(el);
-    var inlineStyle = el.getAttribute('style') || '';
-    
-    // Fix opacity:0 (skip canvas - grain/noise overlays have intentional low opacity)
-    if (el.tagName !== 'CANVAS' && (style.opacity === '0' || inlineStyle.includes('opacity:0;') || inlineStyle.includes('opacity: 0;'))) {
-      el.style.opacity = '1';
+    var cs = window.getComputedStyle(el);
+    // Skip canvas (grain/noise overlays), script, style tags
+    if (el.tagName === 'CANVAS' || el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return;
+    // Skip decorative overlays (pointer-events:none + fixed/absolute = grain/noise)
+    if (cs.pointerEvents === 'none' && (cs.position === 'fixed' || cs.position === 'absolute')) return;
+    // Skip elements that GSAP is actively animating
+    if (el._gsap || el._gsTransform) return;
+    // Fix elements stuck at opacity:0 (GSAP failed to animate them)
+    if (parseFloat(cs.opacity) === 0) {
+      el.style.setProperty('opacity', '1', 'important');
     }
-    
     // Fix visibility:hidden
-    if (style.visibility === 'hidden') {
-      el.style.visibility = 'visible';
-    }
-    
-    // Fix elements positioned off-screen
-    if (el.getBoundingClientRect && el.offsetParent !== null) {
-      var rect = el.getBoundingClientRect();
-      if (rect.top < -1000 || rect.left < -1000) {
-        el.style.transform = 'none';
-        el.style.top = 'auto';
-        el.style.left = 'auto';
-      }
+    if (cs.visibility === 'hidden') {
+      el.style.setProperty('visibility', 'visible', 'important');
     }
   });
 }
-window.addEventListener('load', forceVisible);
-setTimeout(forceVisible, 100);
-setTimeout(forceVisible, 500);
-setTimeout(forceVisible, 1000);
+// Wait 3s for GSAP/ScrollTrigger/React Bits animations to initialize first
+setTimeout(forceVisible, 3000);
+setTimeout(forceVisible, 5000);
 // Initialize Lucide icons if available
 window.addEventListener('load', function() {
   if (typeof lucide !== 'undefined') {
@@ -4871,8 +4793,8 @@ ${processedCode}
       console.log("Notification/Audio error:", e);
     }
     
-    // Track successful generation (FB Pixel + CAPI)
-    trackViewContent("Generation Complete", user?.id);
+    // Track successful generation (GA + FB Pixel + CAPI)
+    trackFunnelEvent("generation_completed", { userId: user?.id, email: user?.email || undefined, label: generationTitle || "Untitled" });
     
     setDisplayedCode(code);
     setEditableCode(code);
@@ -5668,20 +5590,18 @@ Ready to generate from your own videos? Upload any screen recording to get start
     }
   }, [generatedCode, displayedCode, isStreamingCode, isProcessing, sidebarMode]);
   
-  // Show feedback modal after generation (separate effect)
-  // Feedback modal effect removed
-  /*
+  // Show share CTA after first generation (once per session)
+  const hasShownShareCTARef = useRef(false);
   useEffect(() => {
-    if (generationComplete && !hasShownFeedback) {
-      const timer = setTimeout(() => {
-        setShowFeedbackModal(true);
-        setHasShownFeedback(true);
-        localStorage.setItem("replay_feedback_shown", "true");
-      }, 10000);
-      return () => clearTimeout(timer);
-    }
-  }, [generationComplete, hasShownFeedback]);
-  */
+    if (!generationComplete || hasShownShareCTARef.current) return;
+    if (!generatedCode || generatedCode.length < 200) return;
+    // Only show once per session
+    hasShownShareCTARef.current = true;
+    const timer = setTimeout(() => {
+      setShowShareCTA(true);
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [generationComplete, generatedCode]);
 
   useEffect(() => {
     return () => {
@@ -6218,59 +6138,8 @@ Ready to generate from your own videos? Upload any screen recording to get start
     // No periodic sync - too expensive. User can refresh manually or load more
   }, [user, hasLoadedFromStorage]); // eslint-disable-line react-hooks/exhaustive-deps
   
-  // Auto-load demo for FREE users with no projects — only the very first visit (not on every refresh)
-  const hasAutoLoadedDemoRef = useRef(false);
-  useEffect(() => {
-    // Only auto-load once per render cycle
-    if (hasAutoLoadedDemoRef.current) return;
-
-    // Wait for loading to complete
-    if (isLoadingHistory || !hasLoadedFromStorage) return;
-
-    // Only for logged-in users with no projects
-    if (!user || generations.length > 0) return;
-
-    // Don't auto-load if already in demo mode or has active generation
-    if (isDemoMode || activeGeneration) return;
-
-    // Don't auto-load if URL has project param (loading specific project)
-    if (searchParams.get('project') || searchParams.get('demo')) return;
-
-    // Only auto-load once per account lifetime — skip on subsequent refreshes
-    const demoSeenKey = `replay_demo_seen_${user.id}`;
-    if (localStorage.getItem(demoSeenKey)) return;
-
-    console.log("[Auto-Demo] Loading showcase demo for new user (first visit)");
-    hasAutoLoadedDemoRef.current = true;
-    localStorage.setItem(demoSeenKey, 'true');
-    
-    // Load the showcase demo
-    fetch(`/api/demo/${SHOWCASE_PROJECT_ID}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.generation) {
-          const gen = data.generation;
-          setIsDemoMode(true);
-          setGenerationTitle(gen.title || "Showcase Demo");
-          setActiveGeneration(gen);
-          setGeneratedCode(gen.code);
-          setDisplayedCode(gen.code);
-          setEditableCode(gen.code);
-          setFlowNodes(gen.flowNodes || []);
-          setFlowEdges(gen.flowEdges || []);
-          setStyleInfo(gen.styleInfo || null);
-          setLibraryData(gen.libraryData || null);
-          setChatMessages(gen.chatMessages || []);
-          setGenerationComplete(true);
-          setViewMode("preview");
-          setShowHistoryMode(false);
-          showToast("Welcome! Explore this demo project to see what Replay can do.", "info");
-        }
-      })
-      .catch(err => {
-        console.error("[Auto-Demo] Failed to load demo:", err);
-      });
-  }, [user, generations.length, isLoadingHistory, hasLoadedFromStorage, isDemoMode, activeGeneration, searchParams, SHOWCASE_PROJECT_ID, showToast]);
+  // New users see empty project — no auto-demo
+  // (Demo projects still accessible via ?demo= URL param)
   
   
   // Save active generation to Supabase when complete
@@ -11422,7 +11291,8 @@ Try these prompts in Cursor or v0:
           
           videoUrl = publicUrl;
           console.log("Video uploaded to Supabase:", videoUrl);
-          
+          trackFunnelEvent("video_uploaded", { userId: user?.id, email: user?.email || undefined });
+
           // Update flow with permanent URL
           setFlows(prev => prev.map(f => 
             f.id === flow.id ? { ...f, videoUrl: publicUrl } : f
@@ -11599,6 +11469,9 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
       if (videoBlobToUse && videoBlobToUse.size > 0) {
         const videoSizeMB = videoBlobToUse.size / (1024 * 1024);
         const STREAMING_BASE64_LIMIT_MB = 3; // Vercel body limit is 4.5MB; 3MB raw = ~4MB base64
+
+        // Track generation start
+        trackFunnelEvent("generation_started", { userId: user?.id, email: user?.email || undefined, label: generationTitle || "Untitled" });
 
         // ALL videos use streaming now! Large videos send URL (server fetches), small send base64
         const useUrlMode = videoSizeMB > STREAMING_BASE64_LIMIT_MB;
@@ -12599,6 +12472,13 @@ ${dsComponents.length > 0 ? `=== COMPONENT PATTERNS ===\n${dsComponents.slice(0,
     // Initialize published URL from active generation if exists
     if (activeGeneration?.publishedSlug) {
       setPublishedUrl(`https://www.replay.build/p/${activeGeneration.publishedSlug}`);
+      // Fetch current hide_badge value from DB
+      fetch(`/api/publish?slug=${activeGeneration.publishedSlug}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data?.hide_badge !== undefined) setHideBadgeOnPublish(data.hide_badge);
+        })
+        .catch(() => {});
     }
     setShowPublishModal(true);
   };
@@ -12771,51 +12651,23 @@ ${publishCode}
       // ═══════════════════════════════════════════════════════════════════════════
       const visibilityFix = `
 <style id="publish-visibility-fix">
-  /* VISIBILITY FIX - Make hidden content visible, but preserve decorative overlays (grain/noise) */
-  [style*="opacity: 0;"]:not([style*="pointer-events"]):not(.pointer-events-none),
-  [style*="opacity:0;"]:not([style*="pointer-events"]):not(.pointer-events-none) { opacity: 1 !important; }
-  [style*="visibility: hidden"], [style*="visibility:hidden"] { visibility: visible !important; }
-  .fade-up, .fade-in, .fade-down, .slide-up, .slide-in, .slide-left, .slide-right,
-  .scale-up, .rotate-in, .blur-fade, .animate-fade,
-  [class*="fade-"], [class*="slide-"], [class*="stagger-"], [class*="animate-"],
-  [class*="gsap"], [class*="scroll"] {
-    opacity: 1 !important;
-    visibility: visible !important;
-  }
-  .stagger-cards, .stagger-cards > *:not([style*="pointer-events"]):not(.pointer-events-none),
-  [class*="stagger"] > *:not([style*="pointer-events"]):not(.pointer-events-none) {
-    opacity: 1 !important;
-    visibility: visible !important;
-  }
-  [class*="card"]:not([style*="pointer-events"]):not(.pointer-events-none),
-  [class*="Card"]:not([style*="pointer-events"]):not(.pointer-events-none),
-  [class*="step"], [class*="Step"],
-  [class*="feature"], [class*="Feature"],
-  [class*="item"]:not([style*="pointer-events"]):not(.pointer-events-none),
-  [class*="Item"]:not([style*="pointer-events"]):not(.pointer-events-none) {
-    opacity: 1 !important;
-    visibility: visible !important;
-  }
-  [data-state="hidden"], [data-visible="false"], [data-aos] {
-    opacity: 1 !important;
-    visibility: visible !important;
-    transform: none !important;
-  }
+  /* Canvas chart safety net */
+  canvas[id*="chart" i], canvas[id*="Chart"], canvas[id*="graph" i], canvas[id*="Graph"] { max-height: 400px !important; }
 </style>
 <script>
 (function() {
   function forceVisible() {
     document.querySelectorAll('*').forEach(function(el) {
-      var style = window.getComputedStyle(el);
-      // Skip decorative overlays (noise, grain, texture) — they use pointer-events:none + low opacity intentionally
-      if (style.pointerEvents === 'none' && (style.position === 'fixed' || style.position === 'absolute')) return;
-      if (parseFloat(style.opacity) === 0) el.style.setProperty('opacity', '1', 'important');
-      if (style.visibility === 'hidden') el.style.setProperty('visibility', 'visible', 'important');
+      if (el.tagName === 'CANVAS' || el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return;
+      var cs = window.getComputedStyle(el);
+      if (cs.pointerEvents === 'none' && (cs.position === 'fixed' || cs.position === 'absolute')) return;
+      if (el._gsap || el._gsTransform) return;
+      if (parseFloat(cs.opacity) === 0) el.style.setProperty('opacity', '1', 'important');
+      if (cs.visibility === 'hidden') el.style.setProperty('visibility', 'visible', 'important');
     });
   }
-  document.addEventListener('DOMContentLoaded', function() { forceVisible(); setTimeout(forceVisible, 100); setTimeout(forceVisible, 300); });
-  window.addEventListener('load', function() { forceVisible(); setTimeout(forceVisible, 100); setTimeout(forceVisible, 500); setTimeout(forceVisible, 1000); });
-  var count = 0; var iv = setInterval(function() { forceVisible(); if (++count > 20) clearInterval(iv); }, 100);
+  setTimeout(forceVisible, 3000);
+  setTimeout(forceVisible, 5000);
 })();
 </script>`;
       
@@ -12844,6 +12696,7 @@ ${publishCode}
           thumbnailDataUrl: null,
           existingSlug,
           libraryData: libraryData || null,
+          hideBadge: isSandbox ? false : hideBadgeOnPublish,
         }),
       });
       
@@ -12861,7 +12714,8 @@ ${publishCode}
         const newSlug = data.slug;
         setPublishedUrl(data.url);
         setPublishCacheTimestamp(Date.now()); // Update cache-busting timestamp
-        
+        trackFunnelEvent("published", { userId: user?.id, email: user?.email || undefined, label: generationTitle || "Untitled" });
+
         // Save the slug to the generation record for future updates
         if (newSlug) {
           if (activeGeneration) {
@@ -17299,6 +17153,21 @@ ${publishCode}
                           </div>
                         </div>
                         
+                        {/* Badge toggle — free tier forced ON */}
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={hideBadgeOnPublish}
+                            onChange={(e) => setHideBadgeOnPublish(e.target.checked)}
+                            disabled={isSandbox}
+                            className="rounded border-zinc-600 accent-orange-500 w-3.5 h-3.5"
+                          />
+                          <span className="text-xs text-zinc-400">
+                            Hide &quot;Built with Replay&quot; badge
+                            {isSandbox && <span className="text-orange-400 ml-1">(Pro+)</span>}
+                          </span>
+                        </label>
+
                         {/* Actions */}
                         <div className="flex gap-2">
                           {publishedUrl && (
@@ -17351,6 +17220,38 @@ ${publishCode}
           </div>
 
           <div className="flex-1 overflow-hidden flex flex-col relative bg-[#111111]">
+            {/* Share CTA banner — appears once after first generation */}
+            {showShareCTA && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 fade-in duration-500">
+                <div className="flex items-center gap-3 px-4 py-2.5 bg-zinc-900/95 backdrop-blur-sm border border-zinc-700 rounded-xl shadow-2xl">
+                  <span className="text-sm text-zinc-300">Share your creation</span>
+                  <a
+                    href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Just turned a screen recording into production React code in under a minute with @replaybuild")}&url=${encodeURIComponent("https://www.replay.build")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    Tweet
+                  </a>
+                  <a
+                    href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://www.replay.build")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                    LinkedIn
+                  </a>
+                  <button
+                    onClick={() => setShowShareCTA(false)}
+                    className="p-1 rounded hover:bg-white/10 transition-colors ml-1"
+                  >
+                    <X className="w-3.5 h-3.5 text-zinc-500" />
+                  </button>
+                </div>
+              </div>
+            )}
             {/* Preview - show loading during generation, keep preview visible during editing */}
             {viewMode === "preview" && (
               <div className="flex-1 preview-container relative bg-[#111111] flex flex-col overflow-hidden" style={{ overscrollBehavior: 'none' }}>
@@ -17486,23 +17387,26 @@ ${publishCode}
                                 showToast("Sign up free to export code. You get 1 free generation!", "info");
                                 return;
                               }
-                              // User exists but no credits and not paid -> Show starter pack modal
-                              if (!isPaidPlan && userTotalCredits <= 0) {
-                                setShowOutOfCreditsModal(true);
+                              // Free users can export their own generated code (let them see value)
+                              // Only block if demo mode AND not paid
+                              if (isDemoMode && !isPaidPlan) {
+                                setUpgradeFeature("code");
+                                setShowUpgradeModal(true);
                                 return;
                               }
-                              // User can export (paid OR has credits)
+                              // User can export (paid OR has own generation)
                               setShowCopyDropdown(!showCopyDropdown);
+                              trackFunnelEvent("code_exported", { userId: user?.id, email: user?.email || undefined });
                             }}
                             className={cn(
                               "flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-colors",
                               agentMode 
                                 ? "bg-zinc-800/10 text-zinc-300 hover:bg-zinc-800/20 border border-zinc-700" 
                                 : "text-zinc-500 hover:text-zinc-400 hover:bg-zinc-800/50",
-                              (!user || (!isPaidPlan && userTotalCredits <= 0)) && "opacity-50"
+                              (!user || (isDemoMode && !isPaidPlan)) && "opacity-50"
                             )}
                           >
-                            {(!user || (!isPaidPlan && userTotalCredits <= 0)) && <Lock className="w-2.5 h-2.5" />}
+                            {(!user || (isDemoMode && !isPaidPlan)) && <Lock className="w-2.5 h-2.5" />}
                             <Copy className="w-3 h-3" />
                             <span>Copy for AI</span>
                             <ChevronDown className="w-3 h-3" />
@@ -17578,7 +17482,7 @@ ${publishCode}
                           )}
                         </div>
                         
-                        <button 
+                        <button
                           onClick={() => {
                             // No user -> Sign up
                             if (!user) {
@@ -17586,17 +17490,19 @@ ${publishCode}
                               showToast("Sign up free to download code. You get 1 free generation!", "info");
                               return;
                             }
-                            // No credits and not paid -> Show starter pack modal
-                            if (!isPaidPlan && userTotalCredits <= 0) {
-                              setShowOutOfCreditsModal(true);
+                            // Demo mode + free tier -> upgrade
+                            if (isDemoMode && !isPaidPlan) {
+                              setUpgradeFeature("download");
+                              setShowUpgradeModal(true);
                               return;
                             }
-                            // Allow download
+                            // Allow download (free users can download their own generated code)
                             handleDownload();
+                            trackFunnelEvent("code_exported", { userId: user?.id, email: user?.email || undefined });
                           }}
                           className={cn(
                             "flex items-center gap-1 px-2 py-1 rounded text-[10px] text-zinc-500 hover:text-zinc-400 hover:bg-zinc-800/50 transition-colors",
-                            (!user || (!isPaidPlan && userTotalCredits <= 0)) && "opacity-50"
+                            (!user || (isDemoMode && !isPaidPlan)) && "opacity-50"
                           )}
                         >
                           {(!user || (!isPaidPlan && userTotalCredits <= 0)) && <Lock className="w-2.5 h-2.5" />}
