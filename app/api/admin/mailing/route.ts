@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { mode, testEmail } = body;
+    const { mode, testEmail, skipEmails } = body;
 
     const resend = getResend();
 
@@ -187,12 +187,15 @@ export async function POST(request: NextRequest) {
         page++;
       }
 
-      console.log(`[Mailing] Found ${userEmails.length} user emails`);
+      // Filter out already-sent emails if skipEmails provided
+      const skipSet = new Set(skipEmails || []);
+      const toSend = skipSet.size > 0 ? userEmails.filter(e => !skipSet.has(e)) : userEmails;
+      console.log(`[Mailing] Found ${userEmails.length} total, sending to ${toSend.length} (skipping ${skipSet.size})`);
 
-      // Send emails (with rate limiting - Resend has limits)
+      // Send emails (with rate limiting - Resend allows 2 req/s)
       const results: { email: string; success: boolean; error?: string; id?: string }[] = [];
-      
-      for (const email of userEmails) {
+
+      for (const email of toSend) {
         try {
           const result = await resend.emails.send({
             from: "Bartosz from Replay <bartosz@replay.build>",
@@ -208,7 +211,7 @@ export async function POST(request: NextRequest) {
           }
 
           // Small delay to respect rate limits
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, 600));
         } catch (err: any) {
           results.push({ email, success: false, error: err.message });
         }
