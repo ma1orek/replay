@@ -181,8 +181,8 @@ export default function RootLayout({
                 description: "Transform legacy software into production-ready React code with Design System and Component Library from video recordings.",
                 offers: [
                   { "@type": "Offer", price: "0", priceCurrency: "USD", name: "Sandbox" },
-                  { "@type": "Offer", price: "149", priceCurrency: "USD", name: "Pro", billingIncrement: "P1M" },
-                  { "@type": "Offer", price: "499", priceCurrency: "USD", name: "Agency", billingIncrement: "P1M" },
+                  { "@type": "Offer", price: "19", priceCurrency: "USD", name: "Pro", billingIncrement: "P1M" },
+                  { "@type": "Offer", price: "99", priceCurrency: "USD", name: "Agency", billingIncrement: "P1M" },
                 ],
               },
             ]),

@@ -52,13 +52,13 @@ function getSupabaseAdmin() {
   );
 }
 
-const PRO_MONTHLY_CREDITS = 15000;
+const PRO_MONTHLY_CREDITS = 1500;
 const PRO_MAX_ROLLOVER = 3000;
 
-// Credit amounts by plan (Feb 26 pricing - Pro + Agency)
+// Credit amounts by plan (Feb 28 pricing - Pro $19 + Agency $99)
 const TIER_CREDITS: Record<string, number> = {
-  pro: 15000,
-  agency: 60000,
+  pro: 1500,
+  agency: 15000,
 };
 
 // Credit amounts for top-ups
@@ -129,11 +129,11 @@ export async function POST(request: NextRequest) {
         // Handle subscription purchase
         if (session.mode === "subscription" && session.subscription) {
           // Determine credits from tier
-          const tierId = session.metadata?.tier_id || "pro";
+          const tierId = session.metadata?.tier_id || session.metadata?.plan || "pro";
           const creditsFromMeta = parseInt(session.metadata?.credits_amount || "0");
           const credits = creditsFromMeta > 0 ? creditsFromMeta : (TIER_CREDITS[tierId] || PRO_MONTHLY_CREDITS);
 
-          // UPSERT membership (handles missing rows) — use tierId for plan (pro or agency)
+          // UPSERT membership — check both tier_id and plan metadata keys
           const plan = tierId === "agency" ? "agency" : "pro";
           await supabase
             .from("memberships")
@@ -254,11 +254,11 @@ export async function POST(request: NextRequest) {
             ? new Date(subscription.current_period_start * 1000)
             : null;
 
-          const tierId = subscription.metadata?.tier_id || "pro";
+          const tierId = subscription.metadata?.tier_id || subscription.metadata?.plan || "pro";
           const creditsFromMeta = parseInt(subscription.metadata?.credits_amount || "0");
           const credits = creditsFromMeta > 0 ? creditsFromMeta : (TIER_CREDITS[tierId] || PRO_MONTHLY_CREDITS);
 
-          // UPSERT membership — use tierId for plan (pro or agency)
+          // UPSERT membership — check both tier_id and plan metadata keys
           const plan = tierId === "agency" ? "agency" : "pro";
           await supabase
             .from("memberships")
@@ -356,7 +356,7 @@ export async function POST(request: NextRequest) {
 
           if (resolvedUserId) {
             // Determine correct credits from tier metadata
-            const tierId = (subscription as any).metadata?.tier_id || "pro";
+            const tierId = (subscription as any).metadata?.tier_id || (subscription as any).metadata?.plan || "pro";
             const creditsFromMeta = parseInt((subscription as any).metadata?.credits_amount || "0");
             const monthlyCredits = creditsFromMeta > 0 ? creditsFromMeta : (TIER_CREDITS[tierId] || PRO_MONTHLY_CREDITS);
 

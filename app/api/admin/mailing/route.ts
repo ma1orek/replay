@@ -41,8 +41,8 @@ function createAdminClient() {
   return createClient(url, key);
 }
 
-// Email template for Maker announcement
-function getMakerEmailHtml() {
+// Email template for new pricing announcement
+function getPricingEmailHtml() {
   return `
 <!DOCTYPE html>
 <html>
@@ -52,83 +52,81 @@ function getMakerEmailHtml() {
 </head>
 <body style="margin: 0; padding: 0; background-color: #0a0a0a;">
   <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background: #0a0a0a; color: #fff;">
-    
+
     <!-- Logo -->
     <div style="text-align: center; margin-bottom: 40px;">
       <img src="https://auth.replay.build/storage/v1/object/public/f/logostan.png" alt="Replay" width="140" height="40" style="display: inline-block;" />
     </div>
-    
+
     <!-- Main Content Card -->
     <div style="background: linear-gradient(135deg, rgba(255,110,60,0.1) 0%, rgba(255,143,92,0.05) 100%); border: 1px solid rgba(255,110,60,0.2); border-radius: 16px; padding: 32px;">
-      
-      <h1 style="color: #fff; font-size: 24px; margin: 0 0 20px 0; text-align: center;">Hey! 👋</h1>
-      
+
+      <h1 style="color: #fff; font-size: 24px; margin: 0 0 20px 0; text-align: center;">We dropped our prices</h1>
+
       <p style="color: rgba(255,255,255,0.85); font-size: 16px; line-height: 1.7; margin: 0 0 20px 0;">
-        I noticed you've already created a generation with Replay — that's awesome! I hope it's been helpful for your projects.
+        Hey! After listening to your feedback, we've made Replay significantly more accessible. Our new pricing is live today:
       </p>
-      
-      <p style="color: rgba(255,255,255,0.85); font-size: 16px; line-height: 1.7; margin: 0 0 28px 0;">
-        I wanted to personally let you know about our new <strong style="color: #FF6E3C;">Maker</strong> plan:
-      </p>
-      
-      <!-- Maker Box -->
-      <div style="background: rgba(255,110,60,0.12); border-radius: 12px; padding: 24px; margin: 0 0 28px 0; border: 1px solid rgba(255,110,60,0.25);">
-        
-        <div style="margin-bottom: 20px;">
-          <h2 style="color: #FF6E3C; font-size: 24px; margin: 0; font-weight: 700;">Maker</h2>
-          <p style="color: rgba(255,255,255,0.55); font-size: 14px; margin: 6px 0 0 0;">One-time purchase, no subscription</p>
+
+      <!-- Pro Box -->
+      <div style="background: rgba(255,110,60,0.12); border-radius: 12px; padding: 24px; margin: 0 0 16px 0; border: 1px solid rgba(255,110,60,0.25);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h2 style="color: #FF6E3C; font-size: 22px; margin: 0; font-weight: 700;">Pro</h2>
+          <div style="text-align: right;">
+            <span style="color: rgba(255,255,255,0.4); font-size: 14px; text-decoration: line-through;">$149/mo</span>
+            <span style="color: #fff; font-size: 24px; font-weight: 700; margin-left: 8px;">$19/mo</span>
+          </div>
         </div>
-        
         <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
-          <tr>
-            <td style="padding: 8px 0; color: rgba(255,255,255,0.9); font-size: 15px;">
-              ✓ <strong>300 credits</strong> to use whenever you want
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 0; color: rgba(255,255,255,0.9); font-size: 15px;">
-              ✓ <strong>Export your code</strong> — download your generated UI
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 0; color: rgba(255,255,255,0.9); font-size: 15px;">
-              ✓ <strong>No subscription required</strong> — pay once, use your credits
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 0; color: rgba(255,255,255,0.9); font-size: 15px;">
-              ✓ Credits never expire
-            </td>
-          </tr>
+          <tr><td style="padding: 6px 0; color: rgba(255,255,255,0.9); font-size: 14px;">&#10003; 1,500 credits/month</td></tr>
+          <tr><td style="padding: 6px 0; color: rgba(255,255,255,0.9); font-size: 14px;">&#10003; Unlimited projects</td></tr>
+          <tr><td style="padding: 6px 0; color: rgba(255,255,255,0.9); font-size: 14px;">&#10003; React + Tailwind export</td></tr>
+          <tr><td style="padding: 6px 0; color: rgba(255,255,255,0.9); font-size: 14px;">&#10003; Flow Map, Design System, AI Editor</td></tr>
         </table>
       </div>
-      
+
+      <!-- Agency Box -->
+      <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 24px; margin: 0 0 28px 0; border: 1px solid rgba(255,255,255,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h2 style="color: #fff; font-size: 22px; margin: 0; font-weight: 700;">Agency</h2>
+          <div style="text-align: right;">
+            <span style="color: rgba(255,255,255,0.4); font-size: 14px; text-decoration: line-through;">$499/mo</span>
+            <span style="color: #fff; font-size: 24px; font-weight: 700; margin-left: 8px;">$99/mo</span>
+          </div>
+        </div>
+        <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+          <tr><td style="padding: 6px 0; color: rgba(255,255,255,0.9); font-size: 14px;">&#10003; 15,000 credits/month</td></tr>
+          <tr><td style="padding: 6px 0; color: rgba(255,255,255,0.9); font-size: 14px;">&#10003; 5 team members</td></tr>
+          <tr><td style="padding: 6px 0; color: rgba(255,255,255,0.9); font-size: 14px;">&#10003; Shared Design System</td></tr>
+          <tr><td style="padding: 6px 0; color: rgba(255,255,255,0.9); font-size: 14px;">&#10003; Priority GPU processing</td></tr>
+        </table>
+      </div>
+
       <p style="color: rgba(255,255,255,0.75); font-size: 15px; line-height: 1.7; margin: 0 0 28px 0;">
-        It's perfect if you want to export your work and keep building without committing to a monthly plan.
+        Same AI that turns video recordings into production React code. Same Design System extraction, Flow Maps, and visual editor. Just a lot more affordable.
       </p>
-      
+
       <!-- CTA Button -->
       <div style="text-align: center;">
-        <a href="https://replay.build" style="display: inline-block; background: linear-gradient(135deg, #FF6E3C 0%, #FF8F5C 100%); color: #fff; text-decoration: none; padding: 14px 36px; border-radius: 8px; font-weight: 600; font-size: 16px;">
-          Check it out →
+        <a href="https://replay.build/pricing" style="display: inline-block; background: linear-gradient(135deg, #FF6E3C 0%, #FF8F5C 100%); color: #fff; text-decoration: none; padding: 14px 36px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+          See new pricing →
         </a>
       </div>
     </div>
-    
+
     <!-- Footer -->
     <div style="margin-top: 36px; text-align: center;">
       <p style="color: rgba(255,255,255,0.5); font-size: 14px; margin: 0 0 8px 0;">
-        Thanks for being an early user! 🙏
+        Thanks for being part of Replay!
       </p>
       <p style="color: rgba(255,255,255,0.6); font-size: 15px; margin: 0; font-weight: 500;">
         — Bartosz, Founder of Replay
       </p>
     </div>
-    
+
     <p style="text-align: center; color: rgba(255,255,255,0.3); font-size: 12px; margin-top: 36px;">
       Replay — Rebuild UI from Video. Instantly.
     </p>
-    
+
     <p style="text-align: center; color: rgba(255,255,255,0.2); font-size: 11px; margin-top: 16px;">
       You're receiving this because you signed up for Replay.<br/>
       <a href="https://replay.build" style="color: rgba(255,255,255,0.35);">replay.build</a>
@@ -166,8 +164,8 @@ export async function POST(request: NextRequest) {
       const result = await resend.emails.send({
         from: "Bartosz from Replay <bartosz@replay.build>",
         to: testEmail,
-        subject: "I saw you created a generation — here's something for you ✨",
-        html: getMakerEmailHtml(),
+        subject: "We dropped our prices — Pro is now $19/mo",
+        html: getPricingEmailHtml(),
       });
 
       if (result.error) {
@@ -190,26 +188,18 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
       }
 
-      // Get all unique user IDs from generations
-      const { data: generations, error: genError } = await adminSupabase
-        .from("generations")
-        .select("user_id");
-
-      if (genError) {
-        console.error("[Mailing] Error fetching generations:", genError);
-        return NextResponse.json({ error: genError.message }, { status: 500 });
-      }
-
-      const uniqueUserIds = [...new Set(generations?.map(g => g.user_id) || [])];
-      console.log(`[Mailing] Found ${uniqueUserIds.length} users with generations`);
-
-      // Get user emails from auth
+      // Get all users from auth
       const userEmails: string[] = [];
-      for (const userId of uniqueUserIds) {
-        const { data: userData, error: userError } = await adminSupabase.auth.admin.getUserById(userId);
-        if (!userError && userData?.user?.email) {
-          userEmails.push(userData.user.email);
+      let page = 1;
+      const perPage = 1000;
+      while (true) {
+        const { data: { users }, error: listError } = await adminSupabase.auth.admin.listUsers({ page, perPage });
+        if (listError || !users || users.length === 0) break;
+        for (const u of users) {
+          if (u.email) userEmails.push(u.email);
         }
+        if (users.length < perPage) break;
+        page++;
       }
 
       console.log(`[Mailing] Found ${userEmails.length} user emails`);
@@ -222,8 +212,8 @@ export async function POST(request: NextRequest) {
           const result = await resend.emails.send({
             from: "Bartosz from Replay <bartosz@replay.build>",
             to: email,
-            subject: "I saw you created a generation — here's something for you ✨",
-            html: getMakerEmailHtml(),
+            subject: "We dropped our prices — Pro is now $19/mo",
+            html: getPricingEmailHtml(),
           });
 
           if (result.error) {
@@ -279,30 +269,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
     }
 
-    // Get all unique user IDs from generations
-    const { data: generations, error: genError } = await adminSupabase
-      .from("generations")
-      .select("user_id");
-
-    if (genError) {
-      return NextResponse.json({ error: genError.message }, { status: 500 });
-    }
-
-    const uniqueUserIds = [...new Set(generations?.map(g => g.user_id) || [])];
-
-    // Get user emails
+    // Get all users
     const users: { id: string; email: string }[] = [];
-    for (const userId of uniqueUserIds) {
-      const { data: userData } = await adminSupabase.auth.admin.getUserById(userId);
-      if (userData?.user?.email) {
-        users.push({ id: userId, email: userData.user.email });
+    let page = 1;
+    const perPage = 1000;
+    while (true) {
+      const { data: { users: batch }, error: listError } = await adminSupabase.auth.admin.listUsers({ page, perPage });
+      if (listError || !batch || batch.length === 0) break;
+      for (const u of batch) {
+        if (u.email) users.push({ id: u.id, email: u.email });
       }
+      if (batch.length < perPage) break;
+      page++;
     }
 
     return NextResponse.json({
-      totalUsersWithGenerations: users.length,
+      totalUsers: users.length,
       users,
-      emailPreview: getMakerEmailHtml()
+      emailPreview: getPricingEmailHtml()
     });
 
   } catch (error: any) {
