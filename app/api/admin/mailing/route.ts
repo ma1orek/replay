@@ -61,65 +61,50 @@ function getPricingEmailHtml() {
     <!-- Main Content Card -->
     <div style="background: linear-gradient(135deg, rgba(255,110,60,0.1) 0%, rgba(255,143,92,0.05) 100%); border: 1px solid rgba(255,110,60,0.2); border-radius: 16px; padding: 32px;">
 
-      <h1 style="color: #fff; font-size: 24px; margin: 0 0 20px 0; text-align: center;">We dropped our prices</h1>
+      <p style="color: rgba(255,255,255,0.85); font-size: 16px; line-height: 1.8; margin: 0 0 20px 0;">
+        Hey,
+      </p>
 
-      <p style="color: rgba(255,255,255,0.85); font-size: 16px; line-height: 1.7; margin: 0 0 20px 0;">
-        Hey! After listening to your feedback, we've made Replay significantly more accessible. Our new pricing is live today:
+      <p style="color: rgba(255,255,255,0.85); font-size: 16px; line-height: 1.8; margin: 0 0 20px 0;">
+        Bartosz here, founder of Replay. Quick personal note for you.
+      </p>
+
+      <p style="color: rgba(255,255,255,0.85); font-size: 16px; line-height: 1.8; margin: 0 0 24px 0;">
+        After talking to early users, I realized our AI pricing was too high for most developers and freelancers. So I changed it. <strong style="color: #FF6E3C;">Replay Pro is now $19/mo</strong> — that gives you 1,500 credits, unlimited projects, full React + Tailwind code export, Design System extraction, Flow Maps, and the AI visual editor.
       </p>
 
       <!-- Pro Box -->
-      <div style="background: rgba(255,110,60,0.12); border-radius: 12px; padding: 24px; margin: 0 0 16px 0; border: 1px solid rgba(255,110,60,0.25);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-          <h2 style="color: #FF6E3C; font-size: 22px; margin: 0; font-weight: 700;">Pro</h2>
-          <div style="text-align: right;">
-            <span style="color: rgba(255,255,255,0.4); font-size: 14px; text-decoration: line-through;">$149/mo</span>
-            <span style="color: #fff; font-size: 24px; font-weight: 700; margin-left: 8px;">$19/mo</span>
-          </div>
-        </div>
+      <div style="background: rgba(255,110,60,0.12); border-radius: 12px; padding: 24px; margin: 0 0 28px 0; border: 1px solid rgba(255,110,60,0.25);">
         <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
-          <tr><td style="padding: 6px 0; color: rgba(255,255,255,0.9); font-size: 14px;">&#10003; 1,500 credits/month</td></tr>
+          <tr>
+            <td style="padding: 0 0 12px 0;">
+              <span style="color: #FF6E3C; font-size: 22px; font-weight: 700;">Pro</span>
+              <span style="color: #fff; font-size: 22px; font-weight: 700; float: right;">$19<span style="color: rgba(255,255,255,0.5); font-size: 14px; font-weight: 400;">/mo</span></span>
+            </td>
+          </tr>
+          <tr><td style="padding: 6px 0; color: rgba(255,255,255,0.9); font-size: 14px;">&#10003; 1,500 credits/month (~10 full generations)</td></tr>
           <tr><td style="padding: 6px 0; color: rgba(255,255,255,0.9); font-size: 14px;">&#10003; Unlimited projects</td></tr>
-          <tr><td style="padding: 6px 0; color: rgba(255,255,255,0.9); font-size: 14px;">&#10003; React + Tailwind export</td></tr>
+          <tr><td style="padding: 6px 0; color: rgba(255,255,255,0.9); font-size: 14px;">&#10003; React + Tailwind code export</td></tr>
           <tr><td style="padding: 6px 0; color: rgba(255,255,255,0.9); font-size: 14px;">&#10003; Flow Map, Design System, AI Editor</td></tr>
         </table>
       </div>
 
-      <!-- Agency Box -->
-      <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 24px; margin: 0 0 28px 0; border: 1px solid rgba(255,255,255,0.1);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-          <h2 style="color: #fff; font-size: 22px; margin: 0; font-weight: 700;">Agency</h2>
-          <div style="text-align: right;">
-            <span style="color: rgba(255,255,255,0.4); font-size: 14px; text-decoration: line-through;">$499/mo</span>
-            <span style="color: #fff; font-size: 24px; font-weight: 700; margin-left: 8px;">$99/mo</span>
-          </div>
-        </div>
-        <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
-          <tr><td style="padding: 6px 0; color: rgba(255,255,255,0.9); font-size: 14px;">&#10003; 15,000 credits/month</td></tr>
-          <tr><td style="padding: 6px 0; color: rgba(255,255,255,0.9); font-size: 14px;">&#10003; 5 team members</td></tr>
-          <tr><td style="padding: 6px 0; color: rgba(255,255,255,0.9); font-size: 14px;">&#10003; Shared Design System</td></tr>
-          <tr><td style="padding: 6px 0; color: rgba(255,255,255,0.9); font-size: 14px;">&#10003; Priority GPU processing</td></tr>
-        </table>
-      </div>
-
       <p style="color: rgba(255,255,255,0.75); font-size: 15px; line-height: 1.7; margin: 0 0 28px 0;">
-        Same AI that turns video recordings into production React code. Same Design System extraction, Flow Maps, and visual editor. Just a lot more affordable.
+        Record any UI, get production code back. That's it. If you've been waiting for the right moment — this is it.
       </p>
 
       <!-- CTA Button -->
       <div style="text-align: center;">
         <a href="https://replay.build/pricing" style="display: inline-block; background: linear-gradient(135deg, #FF6E3C 0%, #FF8F5C 100%); color: #fff; text-decoration: none; padding: 14px 36px; border-radius: 8px; font-weight: 600; font-size: 16px;">
-          See new pricing →
+          Get Pro for $19/mo →
         </a>
       </div>
     </div>
 
     <!-- Footer -->
     <div style="margin-top: 36px; text-align: center;">
-      <p style="color: rgba(255,255,255,0.5); font-size: 14px; margin: 0 0 8px 0;">
-        Thanks for being part of Replay!
-      </p>
       <p style="color: rgba(255,255,255,0.6); font-size: 15px; margin: 0; font-weight: 500;">
-        — Bartosz, Founder of Replay
+        — Bartosz
       </p>
     </div>
 
@@ -164,7 +149,7 @@ export async function POST(request: NextRequest) {
       const result = await resend.emails.send({
         from: "Bartosz from Replay <bartosz@replay.build>",
         to: testEmail,
-        subject: "We dropped our prices — Pro is now $19/mo",
+        subject: "Replay Pro is now $19/mo",
         html: getPricingEmailHtml(),
       });
 
@@ -212,7 +197,7 @@ export async function POST(request: NextRequest) {
           const result = await resend.emails.send({
             from: "Bartosz from Replay <bartosz@replay.build>",
             to: email,
-            subject: "We dropped our prices — Pro is now $19/mo",
+            subject: "Replay Pro is now $19/mo",
             html: getPricingEmailHtml(),
           });
 
