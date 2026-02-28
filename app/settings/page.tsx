@@ -70,40 +70,39 @@ const SIDEBAR_ITEMS = [
   { id: "api-keys", label: "API Keys", icon: Key },
 ];
 
-// Pricing tiers - 4 active Stripe prices (Feb 26)
-// Pro: $149/mo ($119/mo yearly), 15,000 credits (~100 gens)
-// Agency: $499/mo ($399/mo yearly), 60,000 credits (~400 gens)
+// Pricing tiers - Feb 2026
+// Pro: $19/mo, 1,500 credits
+// Agency: $99/mo, 15,000 credits, 5 team members
 const PRO_PLAN = {
   id: 'pro',
   name: 'Pro',
-  description: 'For freelancers',
-  credits: 15000,
-  monthlyPrice: 149,
-  stripePriceId_Monthly: "price_1SttxZAxch1s4iBGchJgatG6",
+  description: 'For freelancers & developers',
+  credits: 1500,
+  monthlyPrice: 19,
+  stripePriceId_Monthly: "price_1T5tG4Axch1s4iBG8U87YxF7",
   stripePriceId_Yearly: "price_1Stty3Axch1s4iBGaQxPAF82",
   features: [
-    "15,000 credits/month (~100 gens)",
+    "1,500 credits/month",
     "Unlimited projects",
     "React + Tailwind export",
     "Flow Map & Design System",
-    "AI editing (~10 credits)",
+    "AI visual editing",
   ],
 };
 
 const AGENCY_PLAN = {
   id: 'agency',
   name: 'Agency',
-  description: 'For teams',
-  credits: 60000,
-  monthlyPrice: 499,
-  stripePriceId_Monthly: "price_1SttyTAxch1s4iBGhsSdu8pm",
+  description: 'For teams & dev shops',
+  credits: 15000,
+  monthlyPrice: 99,
+  stripePriceId_Monthly: "price_1T5tGeAxch1s4iBG8pTzl3EZ",
   stripePriceId_Yearly: "price_1SttynAxch1s4iBGshtjRh8R",
   features: [
-    "60,000 credits/month (~400 gens)",
-    "Unlimited projects",
+    "15,000 credits/month",
     "5 team members",
     "Shared Design System",
-    "Priority GPU + API",
+    "Priority GPU processing",
   ],
 };
 
@@ -794,7 +793,7 @@ function SettingsContent() {
                   )}
                 </div>
 
-                {/* Pro - $149/mo */}
+                {/* Pro - $19/mo */}
                 <div className={cn(
                   "bg-[#141414]/80 backdrop-blur border rounded-2xl p-6 pt-8 relative overflow-visible",
                   currentPlan === "pro" ? "border-zinc-500" : "border-zinc-800/50"
@@ -838,7 +837,7 @@ function SettingsContent() {
                   )}
                 </div>
 
-                {/* Agency - $499/mo */}
+                {/* Agency - $99/mo */}
                 <div className={cn(
                   "bg-[#141414]/80 backdrop-blur border rounded-2xl p-6",
                   currentPlan === "agency" ? "border-zinc-500" : "border-zinc-800/50"

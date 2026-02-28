@@ -659,13 +659,13 @@ export default function AdminPage() {
 
   // Available tiers for admin assignment - matching pricing page
   // Free: $0, 300 credits (2 generations)
-  // Pro: $149/mo, 15,000 credits (~100 generations)
-  // Agency: $499/mo, 60,000 credits (~400 generations)
+  // Pro: $19/mo, 1,500 credits (~10 generations)
+  // Agency: $99/mo, 15,000 credits (~100 generations)
   // Enterprise: Custom
   const PRO_TIERS = [
     { id: "free", label: "Free", credits: 300, membership: "free", isTopup: false, price: "$0" },
-    { id: "pro", label: "Pro ($149/mo)", credits: 15000, membership: "pro", isTopup: false, price: "$149/mo" },
-    { id: "agency", label: "Agency ($499/mo)", credits: 60000, membership: "agency", isTopup: false, price: "$499/mo" },
+    { id: "pro", label: "Pro ($19/mo)", credits: 1500, membership: "pro", isTopup: false, price: "$19/mo" },
+    { id: "agency", label: "Agency ($99/mo)", credits: 15000, membership: "agency", isTopup: false, price: "$99/mo" },
     { id: "enterprise", label: "Enterprise (Custom)", credits: 50000, membership: "enterprise", isTopup: false, price: "Custom" },
   ];
 

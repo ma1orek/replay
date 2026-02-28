@@ -16,7 +16,7 @@ const faqs = [
   },
   { 
     q: "How many credits does a generation cost?", 
-    a: "Each video-to-code generation costs ~150 credits. AI edits cost ~10 credits each. Pro accounts get 3,000 credits/month (~20 generations). Agency accounts get 15,000 credits/month. You can also buy credit top-ups anytime." 
+    a: "Each video-to-code generation costs ~150 credits. AI edits cost ~10 credits each. Pro accounts get 1,500 credits/month ($19/mo). Agency accounts get 15,000 credits/month ($99/mo). You can also buy credit top-ups anytime." 
   },
   { 
     q: "Can I really upload a video of a physical object?",
@@ -44,7 +44,7 @@ const faqs = [
   },
   { 
     q: "What's the difference between plans?", 
-    a: "Free: 300 credits (2 generations), preview & flow map. Pro ($149/month): 15,000 credits (~100 gens), unlimited projects, full code export, AI editing. Agency ($499/month): 60,000 credits (~400 gens), 5 team members, priority GPU. Enterprise: Custom pricing with on-premise deployment." 
+    a: "Free: 300 credits, preview & flow map. Pro ($19/month): 1,500 credits/month, unlimited projects, full code export, AI visual editing. Agency ($99/month): 15,000 credits/month, 5 team members, shared design system, priority GPU. Enterprise: Custom pricing with on-premise deployment." 
   },
   { 
     q: "Can I cancel my subscription anytime?", 

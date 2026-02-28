@@ -16,8 +16,8 @@ interface OutOfCreditsModalProps {
 
 const DEMO_PROJECT_URL = "https://www.replay.build/tool?project=flow_1771341842965_15zr9r5qa";
 
-// Stripe Price ID - Pro $149/mo (Jan 26 correct price)
-const PRO_SUBSCRIPTION_PRICE_ID = "price_1SttxZAxch1s4iBGchJgatG6";
+// Stripe Price ID - Pro $19/mo (Feb 26 pricing)
+const PRO_SUBSCRIPTION_PRICE_ID = "price_1T5tG4Axch1s4iBG8U87YxF7";
 
 export default function OutOfCreditsModal({
   isOpen,
@@ -45,7 +45,7 @@ export default function OutOfCreditsModal({
           type: "subscription",
           priceId: PRO_SUBSCRIPTION_PRICE_ID,
           tierId: "pro",
-          credits: 15000,
+          credits: 1500,
           interval: "monthly"
         }),
       });
@@ -117,12 +117,12 @@ export default function OutOfCreditsModal({
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-sm font-medium text-white">Pro</span>
                       <div className="text-right">
-                        <span className="text-xl font-bold text-white">$149</span>
+                        <span className="text-xl font-bold text-white">$19</span>
                         <span className="text-xs text-zinc-500">/mo</span>
                       </div>
                     </div>
                     <div className="space-y-1.5 text-xs text-zinc-400">
-                      <p>15,000 credits/month (~100 generations)</p>
+                      <p>1,500 credits/month</p>
                       <p>Unlimited projects</p>
                       <p>React + Tailwind export</p>
                       <p>Flow Map & Design System</p>

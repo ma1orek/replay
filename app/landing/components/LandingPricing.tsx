@@ -112,11 +112,11 @@ export default function LandingPricing() {
     }
   };
 
-  // Prices
-  const proMonthly = PLAN_CONFIGS.pro.price / 100; // $149
-  const proYearly = PLAN_CONFIGS.pro.yearlyPrice / 100; // $119
-  const agencyMonthly = PLAN_CONFIGS.agency.price / 100; // $499
-  const agencyYearly = PLAN_CONFIGS.agency.yearlyPrice / 100; // $399
+  // Prices (from lib/stripe.ts PLAN_CONFIGS)
+  const proMonthly = PLAN_CONFIGS.pro.price / 100; // $19
+  const proYearly = PLAN_CONFIGS.pro.yearlyPrice / 100; // $15
+  const agencyMonthly = PLAN_CONFIGS.agency.price / 100; // $99
+  const agencyYearly = PLAN_CONFIGS.agency.yearlyPrice / 100; // $79
 
   const proDisplay = isAnnual ? proYearly : proMonthly;
   const agencyDisplay = isAnnual ? agencyYearly : agencyMonthly;

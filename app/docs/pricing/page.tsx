@@ -110,10 +110,10 @@ export default function PricingPage() {
               <p className="text-sm text-zinc-500">For developers</p>
             </div>
             <div className="mb-4">
-              <span className="text-4xl font-bold text-white">$149</span>
+              <span className="text-4xl font-bold text-white">$19</span>
               <span className="text-zinc-500">/mo</span>
             </div>
-            <p className="text-xs text-zinc-500 mb-4">3,000 credits/month (~20 generations)</p>
+            <p className="text-xs text-zinc-500 mb-4">1,500 credits/month</p>
             <ul className="space-y-2 text-sm text-zinc-400 mb-6">
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-zinc-300" />
@@ -151,10 +151,10 @@ export default function PricingPage() {
               <p className="text-sm text-zinc-500">For teams</p>
             </div>
             <div className="mb-4">
-              <span className="text-4xl font-bold text-white">$499</span>
+              <span className="text-4xl font-bold text-white">$99</span>
               <span className="text-zinc-500">/mo</span>
             </div>
-            <p className="text-xs text-zinc-500 mb-4">15,000 credits/month (~100 generations)</p>
+            <p className="text-xs text-zinc-500 mb-4">15,000 credits/month</p>
             <ul className="space-y-2 text-sm text-zinc-400 mb-6">
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-zinc-300" />
@@ -257,7 +257,7 @@ export default function PricingPage() {
           </div>
           <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
             <h4 className="font-medium text-white mb-1">How many generations can I do?</h4>
-            <p className="text-sm text-zinc-400">Each video-to-UI generation costs ~150 credits. Pro plan ($149/mo, 3,000 credits) gives you ~20 generations. Agency plan ($499/mo, 15,000 credits) gives you ~100 generations.</p>
+            <p className="text-sm text-zinc-400">Each video-to-UI generation costs ~150 credits. Pro plan ($19/mo, 1,500 credits) gives you ~10 generations. Agency plan ($99/mo, 15,000 credits) gives you ~100 generations.</p>
           </div>
           <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
             <h4 className="font-medium text-white mb-1">What payment methods do you accept?</h4>

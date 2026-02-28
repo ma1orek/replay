@@ -18,12 +18,15 @@ const TOPUP_MAP: Record<number, { priceId: string; credits: number }> = {
 
 // Maker Pack removed - only PRO subscriptions available
 
-// Valid Stripe Price IDs for subscriptions (Jan 26 - only 4 active prices)
+// Valid Stripe Price IDs for subscriptions (Feb 26 pricing)
 const VALID_SUBSCRIPTION_PRICE_IDS = new Set([
-  "price_1SttxZAxch1s4iBGchJgatG6", // Pro Monthly $149
-  "price_1Stty3Axch1s4iBGaQxPAF82", // Pro Yearly $1,428
-  "price_1SttyTAxch1s4iBGhsSdu8pm", // Agency Monthly $499
-  "price_1SttynAxch1s4iBGshtjRh8R", // Agency Yearly $4,788
+  "price_1T5tG4Axch1s4iBG8U87YxF7", // Pro Monthly $19
+  "price_1Stty3Axch1s4iBGaQxPAF82", // Pro Yearly
+  "price_1T5tGeAxch1s4iBG8pTzl3EZ", // Agency Monthly $99
+  "price_1SttynAxch1s4iBGshtjRh8R", // Agency Yearly
+  // Legacy IDs (still valid for existing subscribers)
+  "price_1SttxZAxch1s4iBGchJgatG6", // Old Pro Monthly $149
+  "price_1SttyTAxch1s4iBGhsSdu8pm", // Old Agency Monthly $499
 ]);
 
 export async function POST(request: NextRequest) {

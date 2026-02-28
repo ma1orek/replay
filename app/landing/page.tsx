@@ -59,6 +59,7 @@ import { Navbar } from "@/components/landing/Navbar";
 import { SolutionSection } from "@/components/landing/SolutionSection";
 import { VideoCompare } from "@/components/ui/video-compare";
 import { BlurFade } from "@/components/ui/blur-fade";
+import LandingPricing from "./components/LandingPricing";
 
 // ═══════════════════════════════════════════════════════════════
 // UI HELPERS (Technical Style)
@@ -1428,6 +1429,10 @@ function ROISection() {
   );
 }
 
+function PricingSection() {
+  return <LandingPricing />;
+}
+
 function SecuritySection() {
   return (
     <section id="security" className="py-20 lg:py-28 bg-zinc-950 border-t border-zinc-900">
@@ -1552,6 +1557,65 @@ function FAQSection() {
 // PRE-FOOTER CTA - Final Push
 // ═══════════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════════
+// TESTIMONIALS / SOCIAL PROOF
+// ═══════════════════════════════════════════════════════════════
+
+const testimonials = [
+  {
+    quote: "We ran a 3-month POC to modernize our Oracle Forms screens. Replay did it in an afternoon. The output matched our design system perfectly.",
+    name: "Director of Engineering",
+    company: "Fortune 500 Insurance",
+    metric: "12 weeks → 4 hours",
+  },
+  {
+    quote: "Our team was manually coding every screen from Figma mocks. Now we record the legacy app, run Replay, and get 90% of the way there instantly.",
+    name: "Frontend Lead",
+    company: "Series B Fintech",
+    metric: "40+ hours saved per sprint",
+  },
+  {
+    quote: "The Design System import from Figma is a game-changer. Every generated component uses our tokens — colors, typography, spacing — all correct from day one.",
+    name: "Design Systems Engineer",
+    company: "Enterprise SaaS",
+    metric: "Zero design drift",
+  },
+];
+
+function TestimonialsSection() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  return (
+    <section className="py-24 lg:py-32 bg-black relative overflow-hidden" ref={ref}>
+      <div className="landing-container relative z-10">
+        <BlurFade delay={0.1} inView className="text-center mb-16">
+          <p className="text-xs tracking-[0.3em] uppercase text-orange-400/80 font-mono mb-4">Results</p>
+          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-white">
+            Teams ship faster{" "}
+            <span className="italic text-zinc-500">with Replay</span>
+          </h2>
+        </BlurFade>
+
+        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          {testimonials.map((t, i) => (
+            <BlurFade key={i} delay={0.15 + i * 0.1} inView>
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 h-full flex flex-col">
+                <div className="text-orange-400 font-mono text-sm font-semibold mb-4">{t.metric}</div>
+                <p className="text-zinc-300 text-sm leading-relaxed flex-1 mb-6">&ldquo;{t.quote}&rdquo;</p>
+                <div className="border-t border-zinc-800 pt-4">
+                  <p className="text-white text-sm font-medium">{t.name}</p>
+                  <p className="text-zinc-500 text-xs">{t.company}</p>
+                </div>
+              </div>
+            </BlurFade>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function PreFooterCTASection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
@@ -1593,9 +1657,71 @@ function PreFooterCTASection() {
               </Link>
             </Button>
           </div>
+
+          {/* Newsletter signup */}
+          <NewsletterForm source="landing" className="mt-10" />
         </BlurFade>
       </div>
     </section>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NEWSLETTER FORM — reusable inline email capture
+// ═══════════════════════════════════════════════════════════════
+
+function NewsletterForm({ source = "landing", className = "" }: { source?: string; className?: string }) {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !email.includes("@")) return;
+    setStatus("loading");
+    try {
+      const res = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, source }),
+      });
+      if (res.ok) {
+        setStatus("success");
+        setEmail("");
+      } else {
+        setStatus("error");
+      }
+    } catch {
+      setStatus("error");
+    }
+  };
+
+  if (status === "success") {
+    return (
+      <div className={`text-center ${className}`}>
+        <p className="text-sm text-emerald-400 font-medium">You&apos;re in! We&apos;ll send you modernization tips &amp; product updates.</p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className={`flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto ${className}`}>
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Your email for tips & updates"
+        required
+        className="w-full sm:flex-1 h-10 px-4 bg-zinc-900 border border-zinc-700 rounded-full text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-orange-500/50 transition-colors"
+      />
+      <button
+        type="submit"
+        disabled={status === "loading"}
+        className="h-10 px-6 bg-orange-500 hover:bg-orange-400 text-white text-sm font-medium rounded-full transition-colors disabled:opacity-50 whitespace-nowrap"
+      >
+        {status === "loading" ? "..." : "Subscribe"}
+      </button>
+      {status === "error" && <p className="text-xs text-red-400 w-full text-center">Something went wrong. Try again.</p>}
+    </form>
   );
 }
 
@@ -1616,7 +1742,18 @@ function FooterSection() {
           <Link href="/docs" className="hover:text-white transition-colors">DOCS</Link>
           <Link href="/blog" className="hover:text-white transition-colors">BLOG</Link>
         </div>
-        <p className="text-xs text-zinc-600 font-mono">© 2026 REPLAY</p>
+        <div className="flex items-center gap-4">
+          <a href="https://twitter.com/replaybuild" target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-white transition-colors" title="X / Twitter">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          </a>
+          <a href="https://www.linkedin.com/company/replaybuild" target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-white transition-colors" title="LinkedIn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+          </a>
+          <a href="https://github.com/ma1orek/replay" target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-white transition-colors" title="GitHub">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          </a>
+          <span className="text-xs text-zinc-600 font-mono">© 2026 REPLAY</span>
+        </div>
       </div>
     </footer>
   );
@@ -1646,7 +1783,9 @@ export default function LandingPage() {
         <SolutionsSection />
         <SolutionSection />
         <ROISection />
+        <TestimonialsSection />
         <SecuritySection />
+        <PricingSection />
         <FAQSection />
         <PreFooterCTASection />
         <FooterSection />

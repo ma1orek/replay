@@ -14,11 +14,11 @@ export function getStripe(): Stripe {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// PRICING TIERS (January 2026) - CREDIT-BASED
+// PRICING TIERS (February 2026) - CREDIT-BASED
 // ═══════════════════════════════════════════════════════════════
-// Free: 300 credits (2 generations) - preview + flow only
-// Pro: $149/mo = 15,000 credits/month (~100 generations)
-// Agency: $499/mo = 60,000 credits/month (~400 generations)
+// Free: 300 credits - preview + flow only
+// Pro: $19/mo = 1,500 credits/month
+// Agency: $99/mo = 15,000 credits/month, 5 team members
 // Enterprise: Custom
 //
 // CREDIT COSTS:
@@ -29,9 +29,9 @@ export function getStripe(): Stripe {
 // Price IDs from Stripe Dashboard
 export const STRIPE_PRICES = {
   // Subscriptions
-  PRO_MONTHLY: "price_1SttxZAxch1s4iBGchJgatG6",
+  PRO_MONTHLY: "price_1T5tG4Axch1s4iBG8U87YxF7",
   PRO_YEARLY: "price_1Stty3Axch1s4iBGaQxPAF82",
-  AGENCY_MONTHLY: "price_1SttyTAxch1s4iBGhsSdu8pm",
+  AGENCY_MONTHLY: "price_1T5tGeAxch1s4iBG8pTzl3EZ",
   AGENCY_YEARLY: "price_1SttynAxch1s4iBGshtjRh8R",
   
   // Top-ups (one-time purchases)
@@ -42,9 +42,9 @@ export const STRIPE_PRICES = {
 
 // Credits per plan (monthly)
 export const PLAN_CREDITS: Record<string, number> = {
-  free: 300,      // Free tier - 2 generations
-  pro: 15000,     // ~100 generations
-  agency: 60000,  // ~400 generations
+  free: 300,      // Free tier
+  pro: 1500,      // $19/mo
+  agency: 15000,  // $99/mo
   enterprise: 999999,
 };
 
@@ -83,31 +83,29 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
   },
   pro: {
     name: "Pro",
-    price: 14900, // $149
-    yearlyPrice: 11900, // $119 (yearly discount)
-    credits: 15000,
+    price: 1900, // $19
+    yearlyPrice: 1500, // $15 (yearly discount)
+    credits: 1500,
     teamSeats: 1,
     features: [
-      "15,000 credits/month (~100 generations)",
+      "1,500 credits/month",
       "Unlimited projects",
-      "React/Tailwind export",
-      "Flow Map & Library",
-      "AI editing",
+      "React + Tailwind export",
+      "Flow Map & Design System",
+      "AI visual editing",
     ],
   },
   agency: {
     name: "Agency",
-    price: 49900, // $499
-    yearlyPrice: 39900, // $399 (yearly discount)
-    credits: 60000,
+    price: 9900, // $99
+    yearlyPrice: 7900, // $79 (yearly discount)
+    credits: 15000,
     teamSeats: 5,
     features: [
-      "60,000 credits/month (~400 generations)",
-      "Unlimited projects",
-      "5 team seats",
+      "15,000 credits/month",
+      "5 team members",
       "Shared Design System",
-      "Priority GPU",
-      "API access",
+      "Priority GPU processing",
     ],
   },
   enterprise: {
@@ -129,9 +127,13 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
 };
 
 // Map Stripe Price ID to plan tier
+// Legacy Stripe price IDs (existing subscribers still on old prices)
+const LEGACY_PRO_MONTHLY = "price_1SttxZAxch1s4iBGchJgatG6";
+const LEGACY_AGENCY_MONTHLY = "price_1SttyTAxch1s4iBGhsSdu8pm";
+
 export function getPlanFromPriceId(priceId: string): PlanTier {
-  if (priceId === STRIPE_PRICES.PRO_MONTHLY || priceId === STRIPE_PRICES.PRO_YEARLY) return "pro";
-  if (priceId === STRIPE_PRICES.AGENCY_MONTHLY || priceId === STRIPE_PRICES.AGENCY_YEARLY) return "agency";
+  if (priceId === STRIPE_PRICES.PRO_MONTHLY || priceId === STRIPE_PRICES.PRO_YEARLY || priceId === LEGACY_PRO_MONTHLY) return "pro";
+  if (priceId === STRIPE_PRICES.AGENCY_MONTHLY || priceId === STRIPE_PRICES.AGENCY_YEARLY || priceId === LEGACY_AGENCY_MONTHLY) return "agency";
   return "free";
 }
 

@@ -158,8 +158,8 @@ Deploy instantly to `replay.build/p/your-project`
 | Plan | Price | Credits/Month | Best For |
 |------|-------|---------------|----------|
 | **Sandbox** | $0 | 0 (demo only) | Explore the app |
-| **Pro** | $149/mo | 3,000 | Freelancers |
-| **Agency** | $499/mo | 15,000 | Teams (5 members) |
+| **Pro** | $19/mo | 1,500 | Freelancers |
+| **Agency** | $99/mo | 15,000 | Teams (5 members) |
 | **Enterprise** | Custom | Custom | Banks & enterprise |
 
 **Credit Costs:**

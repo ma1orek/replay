@@ -47,7 +47,7 @@ Use real features, be honest about both tools.
 How each tool works technically. Replay uses video analysis (record UI → AI generates React), explain ${competitor}'s approach.
 
 ## Pricing Comparison
-Replay: Free tier available, Pro $149/mo, Agency $499/mo.
+Replay: Free tier available, Pro $19/mo, Agency $99/mo.
 Research ${competitor}'s pricing or note "check their website."
 
 ## Use Cases: When to Choose Each

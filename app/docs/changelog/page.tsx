@@ -280,8 +280,8 @@ const changelog = [
       },
       {
         type: "feature",
-        title: "Agency Plan ($499/mo)",
-        description: "New Agency tier with 15,000 credits/month, 5 team members, shared Design System, and priority GPU access."
+        title: "Agency Plan ($99/mo)",
+        description: "Agency tier with 15,000 credits/month, 5 team members, shared Design System, and priority GPU processing."
       },
       {
         type: "feature",

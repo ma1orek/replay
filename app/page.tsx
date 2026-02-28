@@ -3169,7 +3169,7 @@ function ReplayToolContent() {
   
   // Active subscription plans (Feb 2026 pricing)
   const PRO_TIERS = [
-    { id: 'pro', credits: 15000, price: 149, priceId: "price_1SttxZAxch1s4iBGchJgatG6" },
+    { id: 'pro', credits: 1500, price: 19, priceId: "price_1T5tG4Axch1s4iBG8U87YxF7" },
   ];
   const selectedProTier = PRO_TIERS[selectedProTierIndex] || PRO_TIERS[0];
   
@@ -17684,11 +17684,11 @@ export default function GeneratedPage() {
                                           <span className="text-[10px] text-zinc-500 ml-2">For freelancers</span>
                                         </div>
                                         <div className="text-right">
-                                          <span className="text-lg font-bold text-white">$149</span>
+                                          <span className="text-lg font-bold text-white">$19</span>
                                           <span className="text-xs text-zinc-500">/mo</span>
                                         </div>
                                       </div>
-                                      <p className="text-[11px] text-zinc-500 mt-2 ml-7">15,000 credits/month (~100 gens) • Full access • Credits roll over</p>
+                                      <p className="text-[11px] text-zinc-500 mt-2 ml-7">1,500 credits/month • Full access</p>
                                     </div>
 
                                     {/* Agency */}
@@ -17703,11 +17703,11 @@ export default function GeneratedPage() {
                                           <span className="text-[10px] text-zinc-500 ml-2">For teams</span>
                                         </div>
                                         <div className="text-right">
-                                          <span className="text-lg font-bold text-white">$499</span>
+                                          <span className="text-lg font-bold text-white">$99</span>
                                           <span className="text-xs text-zinc-500">/mo</span>
                                         </div>
                                       </div>
-                                      <p className="text-[11px] text-zinc-500 mt-2 ml-7">60,000 credits/month (~400 gens) • 5 team members • Priority GPU</p>
+                                      <p className="text-[11px] text-zinc-500 mt-2 ml-7">15,000 credits/month • 5 team members • Priority GPU</p>
                                     </div>
                                   </div>
 
@@ -17723,7 +17723,7 @@ export default function GeneratedPage() {
                                         Processing...
                                       </>
                                     ) : (
-                                      `Get Pro — $149/mo`
+                                      `Get Pro — $19/mo`
                                     )}
                                   </button>
 
