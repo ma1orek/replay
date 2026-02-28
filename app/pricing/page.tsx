@@ -162,7 +162,7 @@ export default function PricingPage() {
   ];
 
   const comparisonFeatures = [
-    { name: "Monthly Credits", sandbox: "300", pro: "15,000", agency: "60,000", enterprise: "Custom" },
+    { name: "Monthly Credits", sandbox: "300", pro: "1,500", agency: "15,000", enterprise: "Custom" },
     { name: "Generation", sandbox: "~150 credits", pro: "~150 credits", agency: "~150 credits", enterprise: "~150 credits" },
     { name: "AI Edit", sandbox: false, pro: "~10 credits", agency: "~10 credits", enterprise: "~10 credits" },
     { name: "Projects", sandbox: "1", pro: "Unlimited", agency: "Unlimited", enterprise: "Unlimited" },

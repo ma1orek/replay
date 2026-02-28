@@ -59,7 +59,7 @@ import { Navbar } from "@/components/landing/Navbar";
 import { SolutionSection } from "@/components/landing/SolutionSection";
 import { VideoCompare } from "@/components/ui/video-compare";
 import { BlurFade } from "@/components/ui/blur-fade";
-import LandingPricing from "./components/LandingPricing";
+
 
 // ═══════════════════════════════════════════════════════════════
 // UI HELPERS (Technical Style)
@@ -1429,10 +1429,6 @@ function ROISection() {
   );
 }
 
-function PricingSection() {
-  return <LandingPricing />;
-}
-
 function SecuritySection() {
   return (
     <section id="security" className="py-20 lg:py-28 bg-zinc-950 border-t border-zinc-900">
@@ -1785,7 +1781,6 @@ export default function LandingPage() {
         <ROISection />
         <TestimonialsSection />
         <SecuritySection />
-        <PricingSection />
         <FAQSection />
         <PreFooterCTASection />
         <FooterSection />

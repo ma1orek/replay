@@ -14,7 +14,7 @@ const menuItems = [
   { name: "Features", href: "#features" },
   { name: "Solutions", href: "#solutions" },
   { name: "How it Works", href: "#how-it-works" },
-  { name: "Pricing", href: "#pricing" },
+  { name: "Pricing", href: "/pricing" },
   { name: "ROI", href: "#roi" },
   { name: "Security", href: "#security" },
   { name: "FAQ", href: "#faq" },
