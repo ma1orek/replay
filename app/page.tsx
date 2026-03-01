@@ -12961,27 +12961,31 @@ ${publishCode}
   
   const LoadingState = ({ customMessage }: { customMessage?: string }) => {
     const defaultMsg = isEditing ? "Applying changes..." : "Reconstructing from video...";
-    const displayMessage = customMessage || loadingMessage || defaultMsg;
-    
+    const isQueued = streamingStatus?.includes("queue");
+    const displayMessage = isQueued ? streamingStatus : (customMessage || loadingMessage || defaultMsg);
+
     return (
       <div className="w-full h-full flex flex-col bg-[#111111] overflow-hidden">
         {/* Main Content */}
         <div className="flex-1 flex flex-col items-center justify-center p-6">
-          
+
           {/* Animated Loading Skeleton */}
           <AnimatedLoadingSkeleton />
-          
-          {/* Status Message */}
-          <div className="h-8 mt-6 flex items-center justify-center">
-            <p className="text-sm text-zinc-500 text-center">
+
+          {/* Status Message — queue-aware */}
+          <div className="h-8 mt-6 flex items-center justify-center gap-2">
+            {isQueued && (
+              <div className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse flex-shrink-0" />
+            )}
+            <p className={`text-sm text-center ${isQueued ? "text-orange-400" : "text-zinc-500"}`}>
               {displayMessage}
             </p>
           </div>
-          
+
           {/* Tip Banner */}
           <div className="w-full max-w-lg mt-4 h-12 flex items-center justify-center">
             <p className="font-mono text-[10px] text-zinc-600 leading-relaxed text-center">
-              {GENERATION_TIPS[currentTipIndex]}
+              {isQueued ? "AI model is at capacity. Your generation will start automatically — don't close this tab." : GENERATION_TIPS[currentTipIndex]}
             </p>
           </div>
 
@@ -15532,11 +15536,15 @@ ${publishCode}
                         transition={{ duration: 0.2 }}
                         className="rounded-lg border border-zinc-700 bg-[#111111] overflow-hidden"
                       >
-                        {/* Status */}
+                        {/* Status — queue-aware */}
                         <div className="flex items-center justify-between px-3 py-2">
                           <div className="flex items-center gap-2">
-                            <Loader2 className="w-3 h-3 text-zinc-300 animate-spin" />
-                            <span className="text-xs text-zinc-400">{streamingStatus || "Thinking..."}</span>
+                            {streamingStatus?.includes("queue") ? (
+                              <div className="w-3 h-3 rounded-full bg-orange-500 animate-pulse" />
+                            ) : (
+                              <Loader2 className="w-3 h-3 text-zinc-300 animate-spin" />
+                            )}
+                            <span className={`text-xs ${streamingStatus?.includes("queue") ? "text-orange-400" : "text-zinc-400"}`}>{streamingStatus || "Thinking..."}</span>
                           </div>
                           <button
                             onClick={() => { cancelAIRequest(); setIsEditing(false); showToast("Cancelled", "info"); }}
@@ -25501,8 +25509,12 @@ module.exports = {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <Loader2 className="w-3.5 h-3.5 text-zinc-400 animate-spin" />
-                          <span className="text-xs text-zinc-500">{streamingStatus || "Working..."}</span>
+                          {streamingStatus?.includes("queue") ? (
+                            <div className="w-3.5 h-3.5 rounded-full bg-orange-500 animate-pulse" />
+                          ) : (
+                            <Loader2 className="w-3.5 h-3.5 text-zinc-400 animate-spin" />
+                          )}
+                          <span className={`text-xs ${streamingStatus?.includes("queue") ? "text-orange-400" : "text-zinc-500"}`}>{streamingStatus || "Working..."}</span>
                           {streamingLines > 0 && (
                             <span className="text-[10px] text-zinc-600 font-mono">{streamingLines} lines</span>
                           )}

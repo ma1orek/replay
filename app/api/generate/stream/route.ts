@@ -2386,11 +2386,12 @@ Generate the COMPLETE HTML now — every section from the video must be present.
 4. COUNTER HTML VALUES: Every <span class="count-up" data-to="X"> MUST show the REAL value as text content, NOT 0! Example: <span class="count-up" data-to="500">500</span> ✅ | <span class="count-up" data-to="500">0</span> ❌. The JS animation handles counting from 0 — but if JS fails, the real value must be visible!` });
           }
 
-          // Retry loop for 503/429 high demand errors
-          const MAX_RETRIES = 3;
+          // Retry loop for 503/429 high demand errors — brutal retry with queue UX
+          const MAX_RETRIES = 12;
           const retryDelay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
           let streamResult;
           let lastStreamError;
+          const retryStartTime = Date.now();
 
           for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
             try {
@@ -2412,13 +2413,23 @@ Generate the COMPLETE HTML now — every section from the video must be present.
               if (!isRetryable) throw error;
 
               if (attempt < MAX_RETRIES) {
-                const waitTime = Math.min(2000 * Math.pow(2, attempt - 1), 10000);
+                // Fast phase (1-3): exponential backoff 2s→4s→8s, Queue phase (4+): flat 10s
+                const waitTime = attempt <= 3
+                  ? Math.min(2000 * Math.pow(2, attempt - 1), 8000)
+                  : 10000;
+                const jitteredWait = Math.round(waitTime * (0.5 + Math.random()));
+                const elapsed = Math.round((Date.now() - retryStartTime) / 1000);
+                const isQueuePhase = attempt >= 3;
+
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify({
                   type: "status",
-                  message: `Model busy, retrying in ${waitTime / 1000}s... (attempt ${attempt + 1}/${MAX_RETRIES})`,
+                  phase: isQueuePhase ? "queued" : "retrying",
+                  message: isQueuePhase
+                    ? `⏳ Server queue — waiting for capacity... (${elapsed}s elapsed)`
+                    : `Model busy, retrying in ${Math.round(jitteredWait / 1000)}s... (attempt ${attempt + 1})`,
                   progress: 5
                 })}\n\n`));
-                await retryDelay(waitTime);
+                await retryDelay(jitteredWait);
               }
             }
           }

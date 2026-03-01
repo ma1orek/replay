@@ -1641,8 +1641,8 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
     return { success: false, error: "API key not configured" };
   }
   
-  // Retry helpers for 503/429 high demand errors
-  const MAX_RETRIES = 3;
+  // Retry helpers for 503/429 high demand errors — brutal retry (up to ~2 min)
+  const MAX_RETRIES = 12;
   const retryDelay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
   const isRetryableError = (error: any) => {
     const msg = error?.message || '';
@@ -1768,9 +1768,12 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
             throw error;
           }
           if (attempt < MAX_RETRIES) {
-            const waitTime = Math.min(2000 * Math.pow(2, attempt - 1), 10000);
-            console.log(`[transmute] Phase 1 retrying in ${waitTime / 1000}s...`);
-            await retryDelay(waitTime);
+            const waitTime = attempt <= 3
+              ? Math.min(2000 * Math.pow(2, attempt - 1), 8000)
+              : 10000;
+            const jitteredWait = Math.round(waitTime * (0.5 + Math.random()));
+            console.log(`[transmute] Phase 1 retrying in ${jitteredWait / 1000}s... (attempt ${attempt + 1}/${MAX_RETRIES})`);
+            await retryDelay(jitteredWait);
           }
         }
       }
@@ -2150,9 +2153,12 @@ Generate the complete HTML file now:`;
             throw error;
           }
           if (attempt < MAX_RETRIES) {
-            const waitTime = Math.min(2000 * Math.pow(2, attempt - 1), 10000);
-            console.log(`[transmute] Phase 2 retrying in ${waitTime / 1000}s...`);
-            await retryDelay(waitTime);
+            const waitTime = attempt <= 3
+              ? Math.min(2000 * Math.pow(2, attempt - 1), 8000)
+              : 10000;
+            const jitteredWait = Math.round(waitTime * (0.5 + Math.random()));
+            console.log(`[transmute] Phase 2 retrying in ${jitteredWait / 1000}s... (attempt ${attempt + 1}/${MAX_RETRIES})`);
+            await retryDelay(jitteredWait);
           }
         }
       }
