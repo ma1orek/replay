@@ -1729,8 +1729,8 @@ export async function transmuteVideoToCode(options: TransmuteOptions): Promise<T
     let scanResult;
     let usedModel = "gemini-3.1-pro-preview";
     
-    // Use Gemini 3 Pro for best video understanding, fallback to 2.5 Pro if 503/overloaded
-    const phase1Models = ["gemini-3.1-pro-preview", "gemini-2.5-pro-preview-05-06"];
+    // Use Gemini 3 Pro for best video understanding
+    const phase1Models = ["gemini-3.1-pro-preview"];
     let phase1Error: any;
     
     for (const modelName of phase1Models) {
@@ -2135,8 +2135,8 @@ Generate the complete HTML file now:`;
       );
     };
     
-    // Use Gemini 3 Pro for code generation, fallback to 2.5 Pro if 503/overloaded
-    const modelsToTry = ["gemini-3.1-pro-preview", "gemini-2.5-pro-preview-05-06"];
+    // Use Gemini 3 Pro for code generation
+    const modelsToTry = ["gemini-3.1-pro-preview"];
     let lastError: any;
     
     for (const modelName of modelsToTry) {

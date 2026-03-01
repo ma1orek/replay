@@ -379,16 +379,13 @@ export async function POST(request: NextRequest) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     
-    // PRIMARY: Gemini 3.1 Pro with VISION, FALLBACK: 2.5 Pro if 503/overloaded
-    const PRIMARY_MODEL = "gemini-3.1-pro-preview";
-    const FALLBACK_MODEL = "gemini-2.5-pro-preview-05-06";
-    const FALLBACK_AFTER_ATTEMPT = 4; // Switch to fallback after 4 failed attempts with primary
-
-    const createModel = (modelName: string) => genAI.getGenerativeModel({
-      model: modelName,
+    // SINGLE MODEL: Gemini 3.1 Pro with VISION
+    // Pro SEES the video directly and generates code - NO intermediate JSON!
+    const model = genAI.getGenerativeModel({
+      model: "gemini-3.1-pro-preview",
       generationConfig: {
         temperature: 0.85, // High for creative Awwwards-level designs
-        maxOutputTokens: 65000,
+        maxOutputTokens: 65000, // Gemini 3.1 Pro limit is 65,536
       },
       safetySettings: [
         { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT" as any, threshold: "BLOCK_LOW_AND_ABOVE" as any },
@@ -397,9 +394,6 @@ export async function POST(request: NextRequest) {
         { category: "HARM_CATEGORY_DANGEROUS_CONTENT" as any, threshold: "BLOCK_MEDIUM_AND_ABOVE" as any },
       ],
     });
-
-    let model = createModel(PRIMARY_MODEL);
-    let usedModelName = PRIMARY_MODEL;
     
     // Timeout helper
     const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> => {
@@ -2400,30 +2394,16 @@ Generate the COMPLETE HTML now — every section from the video must be present.
           const retryStartTime = Date.now();
 
           for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-            // Switch to fallback model after FALLBACK_AFTER_ATTEMPT failed attempts
-            if (attempt === FALLBACK_AFTER_ATTEMPT + 1 && usedModelName === PRIMARY_MODEL) {
-              console.log(`[stream] Switching to fallback model: ${FALLBACK_MODEL}`);
-              model = createModel(FALLBACK_MODEL);
-              usedModelName = FALLBACK_MODEL;
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-                type: "status",
-                phase: "fallback",
-                message: `Switching to backup model for reliability...`,
-                progress: 5
-              })}\n\n`));
-            }
-
             try {
               streamResult = await withTimeout(
                 model.generateContentStream(contentParts),
                 240000, // 4 minute timeout for complex generation
-                `Direct Vision Code Generation (${usedModelName})`
+                "Direct Vision Code Generation"
               );
-              console.log(`[stream] Success with model: ${usedModelName} on attempt ${attempt}`);
               break; // success
             } catch (error: any) {
               lastStreamError = error;
-              console.error(`[stream] Attempt ${attempt}/${MAX_RETRIES} (${usedModelName}) failed:`, error?.message);
+              console.error(`[stream] Attempt ${attempt}/${MAX_RETRIES} failed:`, error?.message);
               const isRetryable = error?.message?.includes('500') ||
                                   error?.message?.includes('Internal Server Error') ||
                                   error?.message?.includes('503') ||
