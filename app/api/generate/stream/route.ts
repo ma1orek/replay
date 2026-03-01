@@ -2409,7 +2409,9 @@ Generate the COMPLETE HTML now — every section from the video must be present.
                                   error?.message?.includes('503') ||
                                   error?.message?.includes('overloaded') ||
                                   error?.message?.includes('Service Unavailable') ||
-                                  error?.message?.includes('429');
+                                  error?.message?.includes('429') ||
+                                  error?.message?.includes('timed out') ||
+                                  error?.message?.includes('Failed to parse');
               if (!isRetryable) throw error;
 
               if (attempt < MAX_RETRIES) {
@@ -2438,39 +2440,68 @@ Generate the COMPLETE HTML now — every section from the video must be present.
             throw lastStreamError || new Error("All retry attempts failed");
           }
 
-          const result = streamResult;
-
+          // Stream reading with retry — "Failed to parse stream" can happen mid-read
           let fullText = "";
           let chunkCount = 0;
           let codeStarted = false;
+          let usageMetadata: any = null;
+          const STREAM_READ_RETRIES = 3;
 
-          for await (const chunk of result.stream) {
-            const chunkText = chunk.text();
-            fullText += chunkText;
-            chunkCount++;
-            
-            if (!codeStarted && (fullText.includes("```html") || fullText.includes("<!DOCTYPE"))) {
-              codeStarted = true;
+          for (let streamAttempt = 1; streamAttempt <= STREAM_READ_RETRIES; streamAttempt++) {
+            try {
+              const result = streamResult;
+              fullText = "";
+              chunkCount = 0;
+              codeStarted = false;
+
+              for await (const chunk of result.stream) {
+                const chunkText = chunk.text();
+                fullText += chunkText;
+                chunkCount++;
+
+                if (!codeStarted && (fullText.includes("```html") || fullText.includes("<!DOCTYPE"))) {
+                  codeStarted = true;
+                }
+
+                const estimatedProgress = codeStarted
+                  ? Math.min(10 + Math.floor((fullText.length / 50000) * 80), 95)
+                  : 15;
+
+                const lineCount = (fullText.match(/\n/g) || []).length;
+
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                  type: "chunk",
+                  content: chunkText,
+                  chunkIndex: chunkCount,
+                  totalLength: fullText.length,
+                  lineCount: lineCount,
+                  progress: estimatedProgress
+                })}\n\n`));
+              }
+
+              const finalResponse = await result.response;
+              usageMetadata = finalResponse.usageMetadata;
+              break; // stream read success
+            } catch (streamReadError: any) {
+              console.error(`[stream] Stream read attempt ${streamAttempt}/${STREAM_READ_RETRIES} failed:`, streamReadError?.message);
+              if (streamAttempt >= STREAM_READ_RETRIES) {
+                throw streamReadError; // all stream read retries exhausted
+              }
+              // Re-initiate the stream for next attempt
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                type: "status",
+                phase: "retrying",
+                message: `Stream interrupted, retrying... (attempt ${streamAttempt + 1})`,
+                progress: 5
+              })}\n\n`));
+              await retryDelay(2000);
+              streamResult = await withTimeout(
+                model.generateContentStream(contentParts),
+                240000,
+                "Direct Vision Code Generation (stream retry)"
+              );
             }
-            
-            const estimatedProgress = codeStarted 
-              ? Math.min(10 + Math.floor((fullText.length / 50000) * 80), 95)
-              : 15;
-            
-            const lineCount = (fullText.match(/\n/g) || []).length;
-            
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
-              type: "chunk", 
-              content: chunkText,
-              chunkIndex: chunkCount,
-              totalLength: fullText.length,
-              lineCount: lineCount,
-              progress: estimatedProgress
-            })}\n\n`));
           }
-          
-          const finalResponse = await result.response;
-          const usageMetadata = finalResponse.usageMetadata;
           
           const duration = ((Date.now() - startTime) / 1000).toFixed(1);
           console.log(`[stream] Completed in ${duration}s`);
