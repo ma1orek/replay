@@ -59,11 +59,13 @@ Your job is to FAITHFULLY RECONSTRUCT this UI as production-quality React + Tail
 ✅ Layout structure from scanData.ui.layout
 
 **VISUAL QUALITY (apply WITHOUT changing content/colors):**
-🚀 Typography → Clear hierarchy with font weights
+🚀 Typography → Clear hierarchy with font weights. MATCH the video's font weight (800-900 for bold headlines)!
 🚀 Shadows → Subtle depth on cards
 🚀 Animations → GSAP on scroll + hover (smooth, not excessive)
 🚀 Hover effects → Cards lift, buttons highlight
 🚀 Images → picsum.photos with UNIQUE contextual seeds (every image DIFFERENT seed!)
+🚀 BACKGROUNDS → MANDATORY: Dark hero sections MUST use a React Bits background (Aurora, Plasma, Beams, Particles, etc.)
+   Pattern: <div className="relative"><BackgroundComponent className="absolute inset-0 z-0" /><div className="relative z-10">content</div></div>
 
 **FALLBACK DESIGN SYSTEM (only when NO style/DS is selected AND video colors are unclear):**
 
@@ -249,8 +251,9 @@ const Icon = ({ name, className = "w-5 h-5" }) => {
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-  <!-- GOOGLE FONTS: Pick 2-3 fonts that match the brand. Mix display font for headings + clean font for body. -->
-  <!-- Examples: Syne+Inter, Playfair+DM Sans, Space Grotesk+Lato, Bebas Neue+Nunito, Outfit+Inter -->
+  <!-- GOOGLE FONTS: MATCH the video's font style! Bold geometric? Thin elegant? Serif? Pick the CLOSEST Google Font. -->
+  <!-- Use font-weight 800-900 if the video has heavy/bold headings. Load wght@400;600;800 or ;900 -->
+  <!-- Examples: Plus Jakarta Sans+Inter, Syne+Inter, Playfair+DM Sans, Space Grotesk+Lato, Bebas Neue+Nunito -->
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     /* heading-font = display/expressive, body-font = clean/readable */

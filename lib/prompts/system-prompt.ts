@@ -903,20 +903,37 @@ import { Lanyard } from "react-bits/components/lanyard"
   <p>Description</p>
 </ReflectiveCard>
 
-🚨 WHEN TO USE REACT BITS:
-- User video shows premium/animated UI
-- Landing page or hero section
-- You want to add wow-factor
-- Stats/numbers that should animate
-- Feature cards that deserve glass effect
-- Text animations (typewriter, glitch, decrypt)
-- Cursor effects and hover states
-- Premium backgrounds (aurora, plasma, beams)
+🚨🚨🚨 MANDATORY: REACT BITS BACKGROUNDS FOR HERO SECTIONS!
+Every landing page / hero section MUST use a React Bits background component!
+This is NOT optional — a flat dark background with no effect looks CHEAP and UNFINISHED.
+
+RULE: If the page has a dark hero section → ALWAYS add a React Bits background behind it.
+Match the background to the video's visual mood:
+- Purple/blue glows, gradients → Aurora, Plasma, Prism, LiquidEther
+- Particle effects, stars → Particles, Galaxy, Beams, PixelSnow
+- Grid/tech/cyber feel → GridScan, DotGrid, GridDistortion, FloatingLines
+- Organic/smooth → Silk, Waves, Iridescence, LiquidChrome
+- Dark/moody → DarkVeil, Dither, Threads, Grainient
+- Bold/energetic → Lightning, PrismaticBurst, Hyperspeed, LightRays
+
+PATTERN — background + content layering:
+<div className="relative min-h-screen overflow-hidden">
+  <Aurora className="absolute inset-0 z-0" />
+  <div className="relative z-10">
+    {/* hero content here */}
+  </div>
+</div>
+
+🚨 ALSO USE REACT BITS FOR:
+- Stats/numbers → CountUp (ALWAYS, not plain text)
+- Feature cards → SpotlightCard, ReflectiveCard, TiltedCard
+- Text animations → DecryptedText, GradientText, BlurText, ShinyText
+- Hover effects → GlareHover, ElectricBorder, StarBorder
 
 🚫 DON'T USE when:
-- Simple utility pages (forms, dashboards)
+- Simple utility pages (forms, dashboards with tables)
 - User explicitly wants "clean/minimal" design
-- Video shows basic/simple UI
+- Video shows a basic wireframe or simple admin UI
 
 📖 FULL CATALOG: See REACT_BITS_CATALOG.md for all 130+ components
 
@@ -1312,21 +1329,30 @@ EVERY text element MUST be clearly visible against its background:
 - For react-bits SplitText: wrap the component in <div className="overflow-hidden"> and keep headline short enough to fit
 - For .split-text class: the ANIMATION 16 code in the template already handles word-grouping correctly — use as-is
 
-🚨 GOOGLE FONTS — ALWAYS USE BRAND-APPROPRIATE FONTS!
-- ALWAYS load 2 Google Fonts: one expressive/display for headings + one clean for body
-- Pick fonts that match the brand personality detected from the video:
-  • Finance / Law / Luxury: Playfair Display + DM Sans | Cormorant + Lato | EB Garamond + Inter
-  • Tech / SaaS / Startup: Space Grotesk + Inter | Syne + Nunito | Outfit + Roboto
-  • Bold / Street / Agency: Bebas Neue + Barlow | Oswald + Open Sans | Black Han Sans + Lato
-  • Minimal / Design: DM Serif Display + DM Sans | Libre Baskerville + Nunito | Raleway + Inter
-  • Creative / Studio: Fraunces + Manrope | Clash Display → use Syne as fallback | Bricolage Grotesque + Inter
+🚨 GOOGLE FONTS — MATCH THE VIDEO'S TYPOGRAPHY!
+STEP 1: LOOK at the video's heading font — is it serif, sans-serif, mono, display?
+  - Is it BOLD/heavy or thin/light?
+  - Is it rounded or geometric or humanist?
+  - Does it have distinctive features (sharp corners, wide spacing, condensed)?
+STEP 2: Pick the CLOSEST Google Font match. Common mappings:
+  • Bold geometric sans (like the FINEX example) → Inter:wght@700;900 | Plus Jakarta Sans:wght@700;800 | Outfit:wght@700;800
+  • Thin/light elegant sans → DM Sans | Manrope | Nunito
+  • Tech/modern geometric → Space Grotesk | Syne | Urbanist | Lexend
+  • Finance / Law / Luxury serif → Playfair Display | Cormorant | EB Garamond
+  • Bold display / Agency → Bebas Neue | Oswald | Black Han Sans | Anton
+  • Minimal / Design → DM Serif Display | Libre Baskerville | Raleway
+  • Creative / Studio → Fraunces | Bricolage Grotesque | Cabinet Grotesk → use Syne
+  • Rounded/friendly → Nunito | Quicksand | Poppins
+STEP 3: ALWAYS load 2 fonts — one display/heading + one body/text
+STEP 4: Match font-weight! If video has HEAVY bold headlines (800-900), use those weights!
 - Load via <link href="https://fonts.googleapis.com/css2?family=...&display=swap">
 - Apply heading font to: h1, h2, h3, .hero-title, large display text
 - Apply body font to: body, p, nav, small text
 - NEVER use only Inter for everything — boring. Pick a display font that gives character!
+- If the video heading font is VERY BOLD, use font-weight: 800 or 900, NOT just 700!
 - Example head tag:
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <style> h1,h2,h3 { font-family: 'Space Grotesk', sans-serif; } body { font-family: 'Inter', sans-serif; } </style>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style> h1,h2,h3 { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; } body { font-family: 'Inter', sans-serif; } </style>
 
 🚨 HERO TEXT ELEMENT MARGINS — TIGHT GROUPING!
 - Hero text elements (h1, p, buttons) must be TIGHTLY grouped — no large gaps

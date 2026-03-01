@@ -2383,7 +2383,9 @@ Generate the COMPLETE HTML now — every section from the video must be present.
 1. ZERO BAN: The number 0 is BANNED in ALL statistics, metrics, KPIs. If you see "5 questions" in the video, output "5" NOT "0". SCAN THE LAST 5 SECONDS for final counter values!
 2. ALL SECTIONS: Include EVERY section from the video — hero, stats, features, pricing, testimonials, CTA, footer. Do NOT skip any section.
 3. ALL TEXT VERBATIM: Every headline, paragraph, button label, stat label, nav item must match the video EXACTLY.
-4. COUNTER HTML VALUES: Every <span class="count-up" data-to="X"> MUST show the REAL value as text content, NOT 0! Example: <span class="count-up" data-to="500">500</span> ✅ | <span class="count-up" data-to="500">0</span> ❌. The JS animation handles counting from 0 — but if JS fails, the real value must be visible!` });
+4. COUNTER HTML VALUES: Every <span class="count-up" data-to="X"> MUST show the REAL value as text content, NOT 0! Example: <span class="count-up" data-to="500">500</span> ✅ | <span class="count-up" data-to="500">0</span> ❌. The JS animation handles counting from 0 — but if JS fails, the real value must be visible!
+5. 🎨 REACT BITS BACKGROUND: If the hero section has a dark background → you MUST use a React Bits background component (Aurora, Plasma, Beams, Particles, etc.) behind the hero content. A flat dark background = UNFINISHED. Pattern: <div className="relative"><Aurora className="absolute inset-0 z-0" /><div className="relative z-10">hero content</div></div>
+6. 🔤 FONT MATCHING: LOOK at the video's heading font — match its weight and style! If headings are BOLD/HEAVY → use font-weight: 800 or 900. Pick the closest Google Font (Plus Jakarta Sans, Space Grotesk, Syne, etc.) — don't just default to Inter/Syne.` });
           }
 
           // Retry loop for 503/429 high demand errors — brutal retry with queue UX
